@@ -106,73 +106,65 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             var typeCtx = analysis.TypeCtx;
             var flowState = analysis.State;
-            Optional<object> resultConstVal;
-            bool wasHandled;
 
             switch (name)
             {
                 case "is_int":
                 case "is_integer":
                 case "is_long":
-                    resultConstVal = EnsureType(arg, typeCtx.GetLongTypeMask(), branch, flowState);
-                    wasHandled = true;
-                    break;
+                    HandleTypeCheckingExpression(arg, typeCtx.GetLongTypeMask(), branch, flowState, checkExpr: call);
+                    return true;
 
                 case "is_bool":
-                    resultConstVal = EnsureType(arg, typeCtx.GetBooleanTypeMask(), branch, flowState);
-                    wasHandled = true;
-                    break;
+                    HandleTypeCheckingExpression(arg, typeCtx.GetBooleanTypeMask(), branch, flowState, checkExpr: call);
+                    return true;
 
                 case "is_float":
                 case "is_double":
                 case "is_real":
-                    resultConstVal = EnsureType(arg, typeCtx.GetDoubleTypeMask(), branch, flowState);
-                    wasHandled = true;
-                    break;
+                    HandleTypeCheckingExpression(arg, typeCtx.GetDoubleTypeMask(), branch, flowState, checkExpr: call);
+                    return true;
 
                 case "is_string":
                     var stringMask = typeCtx.GetStringTypeMask() | typeCtx.GetWritableStringTypeMask();
-                    resultConstVal = EnsureType(arg, stringMask, branch, flowState);
-                    wasHandled = true;
-                    break;
+                    HandleTypeCheckingExpression(arg, stringMask, branch, flowState, checkExpr: call);
+                    return true;
 
                 case "is_resource":
-                    resultConstVal = EnsureType(arg, typeCtx.GetResourceTypeMask(), branch, flowState);
-                    wasHandled = true;
-                    break;
+                    HandleTypeCheckingExpression(arg, typeCtx.GetResourceTypeMask(), branch, flowState, checkExpr: call);
+                    return true;
 
                 case "is_null":
-                    resultConstVal = EnsureType(arg, typeCtx.GetNullTypeMask(), branch, flowState);
-                    wasHandled = true;
-                    break;
+                    HandleTypeCheckingExpression(arg, typeCtx.GetNullTypeMask(), branch, flowState, checkExpr: call);
+                    return true;
 
                 case "is_array":
-                    resultConstVal = EnsureType(
+                    HandleTypeCheckingExpression(
                         arg,
                         currentType => typeCtx.GetArraysFromMask(currentType),
                         branch,
                         flowState,
-                        skipTrueIfAnyType: true);
-                    wasHandled = true;
-                    break;
+                        skipPositiveIfAnyType: true,
+                        checkExpr: call);
+                    return true;
 
                 case "is_object":
                     // Keep IncludesSubclasses flag in the true branch and clear it in the false branch
-                    resultConstVal = EnsureType(
+                    HandleTypeCheckingExpression(
                         arg,
                         currentType => typeCtx.GetObjectsFromMask(currentType).WithIncludesSubclasses,
                         branch,
                         flowState,
-                        skipTrueIfAnyType: true);
-                    wasHandled = true;
-                    break;
+                        skipPositiveIfAnyType: true,
+                        checkExpr: call);
+                    return true;
 
                 // TODO
                 //case "is_scalar":
                 //    return;
 
                 case "is_numeric":
-                    resultConstVal = EnsureType(
+                    HandleTypeCheckingExpression(
                         arg,
                         currentType =>
                         {
@@ -196,12 +188,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         },
                         branch,
                         flowState,
-                        skipTrueIfAnyType: true);
-                    wasHandled = true;
-                    break;
+                        skipPositiveIfAnyType: true,
+                        checkExpr: call);
+                    return true;
 
                 case "is_callable":
-                    resultConstVal = EnsureType(
+                    HandleTypeCheckingExpression(
                         arg,
                         currentType =>
                         {
@@ -228,36 +220,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         },
                         branch,
                         flowState,
-                        skipTrueIfAnyType: true);
-                    wasHandled = true;
-                    break;
+                        skipPositiveIfAnyType: true,
+                        checkExpr: call);
+                    return true;
 
                 // TODO
                 //case "is_iterable":
                 //    return;
 
                 default:
-                    resultConstVal = default(Optional<object>);
-                    wasHandled = false;
-                    break;
+                    return false;
             }
-
-            if (!wasHandled)
-            {
-                return false;
-            }
-
-            // Each branch can clean only the constant value it produced during its analysis (in order not to loose result
-            // of the other branch): true branch can produce false value and vice versa
-            if (!resultConstVal.EqualsOptional(call.ConstantValue)
-                && (resultConstVal.HasValue
-                    || call.ConstantValue.Value is false && branch == ConditionBranch.ToTrue
-                    || call.ConstantValue.Value is true && branch == ConditionBranch.ToFalse))
-            {
-                call.ConstantValue = resultConstVal;
-            }
-
-            return true;
         }
 
         private static void AddTypeIfInContext(TypeRefContext typeCtx, QualifiedName name, bool includeSubclasses, ref TypeRefMask mask)
@@ -270,54 +243,84 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         }
 
         /// <summary>
-        /// Ensures that the variable is of the type(s) given by <paramref name="targetType"/> in the true branch and
-        /// not of this type in the false branch. If <paramref name="skipTrueIfAnyType"/> is true, the IsAnyType variant
-        /// is skipped in the true branch. In the false branch, it is always skipped.
+        /// Ensures that the variable is of the given type(s) in the positive branch or not of this type in the negative
+        /// branch. If the current branch is unfeasible, assigns an appropriate boolean to the
+        /// <see cref="BoundExpression.ConstantValue"/> of <paramref name="checkExpr"/>.
         /// </summary>
-        /// <returns>
-        /// Returns optional constant value of a comparison of the variable against the type(s).
-        /// </returns>
-        public static Optional<object> EnsureType(
+        /// <param name="varRef">The reference to the variable whose types to check.</param>
+        /// <param name="targetType">The target type of the variable.</param>
+        /// <param name="branch">The branch to check - <see cref="ConditionBranch.ToTrue"/> is understood as the positive
+        /// branch if <paramref name="isPositiveCheck"/> is true.</param>
+        /// <param name="flowState">The flow state of the branch.</param>
+        /// <param name="skipPositiveIfAnyType">Whether to skip a mask with <see cref="TypeRefMask.IsAnyType"/> in the
+        /// positive branch (in the negative branch, it is always skipped).</param>
+        /// <param name="checkExpr">The expression to have its <see cref="BoundExpression.ConstantValue"/> potentially
+        /// updated.</param>
+        /// <param name="isPositiveCheck">Whether the expression returns true when the type check succeeds. For example,
+        /// in the case of != it would be false.</param>
+        public static void HandleTypeCheckingExpression(
             BoundVariableRef varRef,
             TypeRefMask targetType,
             ConditionBranch branch,
             FlowState flowState,
-            bool skipTrueIfAnyType = false)
+            bool skipPositiveIfAnyType = false,
+            BoundExpression checkExpr = null,
+            bool isPositiveCheck = true)
         {
-            if (!TryGetVariableHandle(varRef, flowState, out VariableHandle handle))
-            {
-                return default(Optional<object>);
-            }
-
-            var currentType = flowState.GetLocalType(handle);
-
-            return EnsureTypeImpl(currentType, targetType, branch, flowState, handle, skipTrueIfAnyType);
+            HandleTypeCheckingExpression(varRef, (var) => targetType, branch, flowState, skipPositiveIfAnyType, checkExpr, isPositiveCheck);
         }
 
         /// <summary>
-        /// Ensures that the variable is of the given type(s) (retrieved by <paramref name="targetTypeCallback"/> from its
-        /// current type) in the true branch and not of this type in the false branch. If <paramref name="skipTrueIfAnyType"/>
-        /// is true, the IsAnyType variant is skipped in the true branch. In the false branch, it is always skipped.
+        /// Ensures that the variable is of the given type(s) in the positive branch or not of this type in the negative
+        /// branch. If the current branch is unfeasible, assigns an appropriate boolean to the
+        /// <see cref="BoundExpression.ConstantValue"/> of <paramref name="checkExpr"/>.
         /// </summary>
-        /// <returns>
-        /// Returns optional constant value of a comparison of the variable against the type(s).
-        /// </returns>
-        public static Optional<object> EnsureType(
+        /// <param name="varRef">The reference to the variable whose types to check.</param>
+        /// <param name="targetTypeCallback">The callback that receives the current type mask of the variable and returns
+        /// the target one.</param>
+        /// <param name="branch">The branch to check - <see cref="ConditionBranch.ToTrue"/> is understood as the positive
+        /// branch if <paramref name="isPositiveCheck"/> is true.</param>
+        /// <param name="flowState">The flow state of the branch.</param>
+        /// <param name="skipPositiveIfAnyType">Whether to skip a mask with <see cref="TypeRefMask.IsAnyType"/> in the
+        /// positive branch (in the negative branch, it is always skipped).</param>
+        /// <param name="checkExpr">The expression to have its <see cref="BoundExpression.ConstantValue"/> potentially
+        /// updated.</param>
+        /// <param name="isPositiveCheck">Whether the expression returns true when the type check succeeds. For example,
+        /// in the case of != it would be false.</param>
+        public static void HandleTypeCheckingExpression(
             BoundVariableRef varRef,
             Func<TypeRefMask, TypeRefMask> targetTypeCallback,
             ConditionBranch branch,
             FlowState flowState,
-            bool skipTrueIfAnyType = false)
+            bool skipPositiveIfAnyType = false,
+            BoundExpression checkExpr = null,
+            bool isPositiveCheck = true)
         {
             if (!TryGetVariableHandle(varRef, flowState, out VariableHandle handle))
             {
-                return default(Optional<object>);
+                return;
             }
 
             var currentType = flowState.GetLocalType(handle);
             var targetType = targetTypeCallback(currentType);
 
-            return EnsureTypeImpl(currentType, targetType, branch, flowState, handle, skipTrueIfAnyType);
+            // Model negative type checks (such as $x != null) by inverting branches for the core checking function
+            var branchHlp = isPositiveCheck ? branch : branch.NegativeBranch();
+
+            bool isFeasible = HandleTypeChecking(currentType, targetType, branchHlp, flowState, handle, skipPositiveIfAnyType);
+
+            // If the true branch proves to be unfeasible, the function always returns false and vice versa
+            var resultConstVal = isFeasible ? default(Optional<object>) : new Optional<object>(!branch.ToBool().Value);
+
+            // Each branch can clean only the constant value it produced during its analysis (in order not to lose result
+            // of the other branch): true branch can produce false value and vice versa
+            if (checkExpr != null && !resultConstVal.EqualsOptional(checkExpr.ConstantValue)
+                && (resultConstVal.HasValue
+                    || checkExpr.ConstantValue.Value is false && branch == ConditionBranch.ToTrue
+                    || checkExpr.ConstantValue.Value is true && branch == ConditionBranch.ToFalse))
+            {
+                checkExpr.ConstantValue = resultConstVal;
+            }
         }
 
         private static bool TryGetVariableHandle(BoundVariableRef varRef, FlowState state, out VariableHandle varHandle)
@@ -334,7 +337,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        private static Optional<object> EnsureTypeImpl(
+        private static bool HandleTypeChecking(
             TypeRefMask currentType,
             TypeRefMask targetType,
             ConditionBranch branch,
@@ -342,14 +345,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             VariableHandle handle,
             bool skipTrueIfAnyType)
         {
-            Optional<object> result = default(Optional<object>);
+            // Information whether this path can ever be taken
+            bool isFeasible = true;
 
             if (branch == ConditionBranch.ToTrue)
             {
                 // In the true branch the IsAnyType case can be optionally skipped
                 if (skipTrueIfAnyType && currentType.IsAnyType)
                 {
-                    return result;
+                    return isFeasible;
                 }
 
                 // Intersect the possible types with those checked by the function, always keeping the IsRef flag.
@@ -358,12 +362,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 if (resultType.IsVoid)
                 {
-                    // Clearing the type out in this branch means the function will always return false.
+                    // Clearing the type out in this branch means the variable will never be of that type.
                     // In order to prevent errors in analysis and code generation, set the type to the one specified.
                     resultType = targetType | (currentType & TypeRefMask.IsRefMask);
 
-                    // Make this function always return false
-                    result = new Optional<object>(false);
+                    isFeasible = false;
                 }
 
                 flowState.SetLocalType(handle, resultType);
@@ -375,7 +378,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // In the false branch we cannot handle the IsAnyType case
                 if (currentType.IsAnyType)
                 {
-                    return result;
+                    return isFeasible;
                 }
 
                 // Remove the types and flags excluded by the fact that the function returned false
@@ -383,11 +386,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 if (resultType.IsVoid)
                 {
-                    // Clearing the type out in this branch means the function will always return true.
+                    // Clearing the type out in this branch means the variable will always be of that type
                     // In order to prevent errors in analysis and code generation, do not alter the type in this case.
 
-                    // Make this function always return true
-                    result = new Optional<object>(true);
+                    isFeasible = false;
                 }
                 else
                 {
@@ -395,7 +397,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
             }
 
-            return result;
+            return isFeasible;
         }
     }
 }

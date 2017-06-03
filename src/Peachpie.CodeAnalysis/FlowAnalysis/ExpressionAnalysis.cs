@@ -125,32 +125,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        Optional<object> Eq(BoundReferenceExpression r, Optional<object> value, bool isStrict)
-        {
-            if (isStrict && value.IsNull() && r is BoundVariableRef varRef)
-            {
-                // True branch of $v === NULL implies the type must be null
-                return AnalysisFacts.EnsureType(varRef, TypeCtx.GetNullTypeMask(), ConditionBranch.ToTrue, State);
-            }
-            else
-            {
-                return default(Optional<object>);
-            }
-        }
-
-        Optional<object> NotEq(BoundReferenceExpression r, Optional<object> value, bool isStrict)
-        {
-            if (value.IsNull() && r is BoundVariableRef varRef)
-            {
-                // $v != NULL (or $v !== NULL) implies that $v is certainly not NULL -> same semantics as !is_null($v)
-                return AnalysisFacts.EnsureType(varRef, TypeCtx.GetNullTypeMask(), ConditionBranch.ToFalse, State);
-            }
-            else
-            {
-                return default(Optional<object>);
-            }
-        }
-
         /// <summary>
         /// In case of a local variable or parameter, gets its name.
         /// </summary>
@@ -764,12 +738,27 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 case Operations.Equal:
                 case Operations.NotEqual:
+                case Operations.Identical:
+                case Operations.NotIdentical:
+
+                    if (branch != ConditionBranch.AnyResult)
+                    {
+                        if (x.Right.ConstantValue.HasValue && x.Left is BoundReferenceExpression boundLeft)
+                        {
+                            ResolveEqualityWithConstantValue(x, boundLeft, x.Right.ConstantValue, branch);
+                        }
+                        else if (x.Left.ConstantValue.HasValue && x.Right is BoundReferenceExpression boundRight)
+                        {
+                            ResolveEqualityWithConstantValue(x, boundRight, x.Left.ConstantValue, branch);
+                        }
+                    }
+
+                    return TypeCtx.GetBooleanTypeMask();
+
                 case Operations.GreaterThan:
                 case Operations.LessThan:
                 case Operations.GreaterThanOrEqual:
                 case Operations.LessThanOrEqual:
-                case Operations.Identical:
-                case Operations.NotIdentical:
 
                     if (branch == ConditionBranch.ToTrue)
                     {
@@ -777,33 +766,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         {
                             // $x < LONG
                             LTInt64Max(x.Left as BoundReferenceExpression, true);
-                        }
-
-                        if (x.Operation == Operations.Equal || x.Operation == Operations.Identical)
-                        {
-                            bool isStrict = x.Operation == Operations.Identical;
-
-                            if (x.Right.ConstantValue.HasValue && x.Left is BoundReferenceExpression boundLeft)
-                            {
-                                x.ConstantValue = Eq(boundLeft, x.Right.ConstantValue, isStrict);
-                            }
-                            else if (x.Left.ConstantValue.HasValue && x.Right is BoundReferenceExpression boundRight)
-                            {
-                                x.ConstantValue = Eq(boundRight, x.Left.ConstantValue, isStrict);
-                            }
-                        }
-                        else if (x.Operation == Operations.NotEqual || x.Operation == Operations.NotIdentical)
-                        {
-                            bool isStrict = x.Operation == Operations.NotIdentical;
-
-                            if (x.Right.ConstantValue.HasValue && x.Left is BoundReferenceExpression boundLeft)
-                            {
-                                x.ConstantValue = NotEq(boundLeft, x.Right.ConstantValue, isStrict);
-                            }
-                            else if (x.Left.ConstantValue.HasValue && x.Right is BoundReferenceExpression boundRight)
-                            {
-                                x.ConstantValue = NotEq(boundRight, x.Left.ConstantValue, isStrict);
-                            }
                         }
                     }
 
@@ -819,6 +781,38 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 default:
                     throw ExceptionUtilities.Unreachable;
+            }
+        }
+
+        /// <summary>
+        /// Resolves variable types and potentially assigns a constant boolean value to an expression of a comparison of
+        /// a variable and a constant - operators ==, !=, === and !==.
+        /// </summary>
+        private void ResolveEqualityWithConstantValue(
+            BoundBinaryEx cmpExpr,
+            BoundReferenceExpression refExpr,
+            Optional<object> value,
+            ConditionBranch branch)
+        {
+            Debug.Assert(branch != ConditionBranch.AnyResult);
+
+            if (value.IsNull() && refExpr is BoundVariableRef varRef)
+            {
+                bool isStrict = (cmpExpr.Operation == Operations.Identical || cmpExpr.Operation == Operations.NotIdentical);
+                bool isPositive = (cmpExpr.Operation == Operations.Equal || cmpExpr.Operation == Operations.Identical);
+
+                // We cannot say much about the type of $x in the true branch of ($x == null) and the false branch of ($x != null),
+                // because it holds for false, 0, "", array() etc.
+                if (isStrict || branch.ToBool() != isPositive)
+                {
+                    AnalysisFacts.HandleTypeCheckingExpression(
+                        varRef,
+                        TypeCtx.GetNullTypeMask(),
+                        branch,
+                        State,
+                        checkExpr: cmpExpr,
+                        isPositiveCheck: isPositive);
+                } 
             }
         }
 

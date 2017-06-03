@@ -32,5 +32,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             return (ConditionBranch)(-((int)branch));
         }
+
+        public static bool? ToBool(this ConditionBranch branch)
+        {
+            switch (branch)
+            {
+                case ConditionBranch.ToTrue:
+                    return true;
+                case ConditionBranch.ToFalse:
+                    return false;
+                default:
+                    return null;
+            }
+        }
     }
 }

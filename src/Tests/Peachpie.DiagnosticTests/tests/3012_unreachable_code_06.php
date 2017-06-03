@@ -72,6 +72,8 @@ function unreachable_null($x) {
     if (is_null($x)) {
       echo "unreachable";/*!PHP3012!*/
       echo /*|null|*/$x;
+    } else {
+      echo "reachable";
     }
   }
 
