@@ -859,6 +859,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         : TypeCtx.GetObjectsFromMask(x.Operand.TypeRefMask);    // (object)T
 
                 case Operations.LogicNegation:
+                    var constVal = x.Operand.ConstantValue.ToConstantValueOrNull();
+                    if (constVal != null && constVal.TryConvertToBool(out bool constBool) == true)
+                    {
+                        x.ConstantValue = new Optional<object>(!constBool);
+                    }
                     return TypeCtx.GetBooleanTypeMask();
 
                 case Operations.Minus:
