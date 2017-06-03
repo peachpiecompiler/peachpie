@@ -4,7 +4,11 @@ function unreachable_bool($x) {
   if (is_int($x)) {
     if (is_bool($x)) {
       echo "unreachable";/*!PHP3012!*/
+      echo /*|boolean|*/$x;
     }
+
+    // TODO: Test for integer when it's corrected (currently, it's boolean|integer) 
+    echo $x;
   }
 
   $y = true;
@@ -19,6 +23,7 @@ function unreachable_int($x) {
   if (is_bool($x)) {
     if (is_int($x)) {
       echo "unreachable";/*!PHP3012!*/
+      echo /*|integer|*/$x;
     }
   }
 
@@ -34,6 +39,7 @@ function unreachable_float($x) {
   if (is_bool($x)) {
     if (is_float($x)) {
       echo "unreachable";/*!PHP3012!*/
+      echo /*|double|*/$x;
     }
   }
 
@@ -49,6 +55,7 @@ function unreachable_string($x) {
   if (is_bool($x)) {
     if (is_string($x)) {
       echo "unreachable";/*!PHP3012!*/
+      echo /*|string|*/$x;
     }
   }
 
@@ -64,6 +71,7 @@ function unreachable_null($x) {
   if (is_bool($x)) {
     if (is_null($x)) {
       echo "unreachable";/*!PHP3012!*/
+      echo /*|null|*/$x;
     }
   }
 

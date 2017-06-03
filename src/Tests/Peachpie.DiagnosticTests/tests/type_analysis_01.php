@@ -55,3 +55,19 @@ function foo(/*|mixed|*/$x)
 
   echo /*|array|boolean|double|integer|resource|stdClass|string|System\Object|*/$result;
 }
+
+function bar(bool .../*|boolean[]|*/$x) {
+  echo /*|boolean[]|*/$x;
+}
+
+function baz(int /*|integer|*/$x) {
+  echo /*|integer|*/$x;
+
+  // TODO: Enable annotations also for this statement (it's not in the CFG -> unable to be annotated)
+  global $k;
+
+  echo /*|mixed|*/$k;
+}
+
+/*|integer|*/$i = 5;
+echo /*|integer|*/$i;
