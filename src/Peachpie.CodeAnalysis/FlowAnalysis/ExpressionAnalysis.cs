@@ -982,25 +982,47 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         protected override void Visit(BoundIsSetEx x, ConditionBranch branch)
         {
-            if (branch == ConditionBranch.ToTrue)
+            bool isSingle = (x.VarReferences.Length == 1);
+
+            foreach (var refExpr in x.VarReferences)
             {
-                foreach (var refExpr in x.VarReferences)
+                Accept(refExpr);
+
+                if (refExpr is BoundVariableRef varRef && varRef.Name.IsDirect)
                 {
-                    // TODO: Solve also $foo[0], $foo->bar and their combinations
-                    var varRef = refExpr as BoundVariableRef;
-                    if (varRef != null && varRef.Name.IsDirect)
+                    var handle = State.GetLocalHandle(varRef.Name.NameValue.Value);
+
+                    // We cannot reason about the negative branch of isset($x, $y)
+                    if (isSingle || branch == ConditionBranch.ToTrue)
                     {
-                        State.SetVarInitialized(State.GetLocalHandle(varRef.Name.NameValue.Value));
+                        if (State.IsLocalSet(handle))
+                        {
+                            // If the variable is always defined, isset() behaves like !is_null()
+                            AnalysisFacts.HandleTypeCheckingExpression(
+                                varRef,
+                                TypeCtx.GetNullTypeMask(),
+                                branch,
+                                State,
+                                // We would have to somehow aggregate the constant value if there were more variables checked
+                                checkExpr: isSingle ? x : null,
+                                isPositiveCheck: false); 
+                        }
+                        else
+                        {
+                            // Remove any constant value of isset() if the variable can be undefined
+                            x.ConstantValue = default(Optional<object>);
+                        }
                     }
 
-                    Accept(refExpr);
+                    // In the positive branch, all variables must be initialized
+                    if (branch == ConditionBranch.ToTrue)
+                    {
+                        // TODO: Solve also $foo[0], $foo->bar and their combinations
+                        State.SetVarInitialized(handle);
+                    }
                 }
             }
-            else
-            {
-                x.VarReferences.ForEach(Accept);
-            }
-            
+
             x.TypeRefMask = TypeCtx.GetBooleanTypeMask();
         }
 

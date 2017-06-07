@@ -1,6 +1,6 @@
 <?php
 
-function bar($foo) {
+function never_maybe_defined($foo) {
   if ($foo == 'something') {
     $maybeDefined = 42;
   }
@@ -8,6 +8,7 @@ function bar($foo) {
   if (isset($maybeDefined)) {
     echo $maybeDefined;
   } else {
+    echo "reachable";
     echo $maybeDefined/*!PHP3007!*/;    
   }
 
@@ -28,19 +29,56 @@ function bar($foo) {
   }
 }
 
-function baz() {
+function always_defined_integer() {
   $alwaysDefined = 42;
 
-  if (isset($alwaysDefined)) {
-    echo $alwaysDefined;
+  if (isset(/*|integer|*/$alwaysDefined)) {
+    echo /*|integer|*/$alwaysDefined;
   } else {
-    echo $alwaysDefined;    
+    echo "unreachable";/*!PHP3012!*/
+    echo /*|null|*/$alwaysDefined;
   }
 
   echo $alwaysDefined;
+}
 
-  if (!isset($alwaysDefined)) {
-    // It may be defined but potentially NULL
-    echo $alwaysDefined;
+function always_defined_int_null($x) {
+  $alwaysDefined = $x ? 42 : null;
+
+  if (isset(/*|integer|null*/$alwaysDefined)) {
+    echo /*|integer|*/$alwaysDefined;
+  } else {
+    echo "reachable";
+    echo /*|null|*/$alwaysDefined;
+  }
+
+  echo /*|integer|null*/$alwaysDefined;
+}
+
+function always_defined_mixed($alwaysDefined) {
+  if (isset(/*|mixed|*/$alwaysDefined)) {
+
+    if (isset(/*|mixed|*/$alwaysDefined)) {
+      echo /*|mixed|*/$alwaysDefined;
+    } else {
+      echo "reachable";               // If the type is mixed, we were unable to propagate that it is never null
+      echo /*|null|*/$alwaysDefined;
+    }
+
+    echo /*|mixed|*/$alwaysDefined;
+  }
+}
+
+function always_defined_int_null_multiple($x) {
+  /*|integer|null|*/$a = $x ? 42 : null;
+  /*|integer|null|*/$b = $x ? 42 : null;
+
+  if (isset($a, $b)) {
+    echo /*|integer|*/$a;
+    echo /*|integer|*/$b;
+  } else {
+    // We don't know exactly which check failed => can't constraint the type
+    echo /*|integer|null|*/$a;
+    echo /*|integer|null|*/$b;
   }
 }
