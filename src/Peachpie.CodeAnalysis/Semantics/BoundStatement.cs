@@ -286,4 +286,32 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
         public override void Accept(PhpOperationVisitor visitor) => visitor.VisitUnset(this);
     }
+
+    /// <summary>
+    /// Represents yield return and continuation.
+    /// </summary>
+    public partial class BoundYieldStatement : BoundStatement, IReturnStatement
+    {
+        public override OperationKind Kind => OperationKind.YieldReturnStatement;
+
+        public BoundExpression YieldedValue { get; private set; }
+        public BoundExpression YieldedKey { get; private set; }
+
+        public IExpression Returned => YieldedValue;
+
+        public BoundYieldStatement(BoundExpression valueExpression, BoundExpression keyExpression)
+        {
+            YieldedValue = valueExpression;
+            YieldedKey = keyExpression;
+        }
+
+        public override void Accept(PhpOperationVisitor visitor)
+            => visitor.VisitYieldStatement(this);
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.VisitReturnStatement(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.VisitReturnStatement(this, argument);
+    }
 }

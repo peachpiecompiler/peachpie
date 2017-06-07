@@ -86,6 +86,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitVariableRef(x);
         }
 
+        public override void VisitSynthesizedVariableRef(BoundSynthesizedVariableRef x)
+        {
+            // do not make diagnostics on syntesized variables
+        }
+
         private void CheckUndefinedFunctionCall(BoundGlobalFunctionCall x)
         {
             if (x.Name.IsDirect && x.TargetMethod.IsErrorMethod())
@@ -183,18 +188,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitStaticStatement(x);
         }
 
-        public override void VisitYield(BoundYieldEx boundYieldEx)
+        public override void VisitYieldStatement(BoundYieldStatement boundYieldStatement)
         {
+
             // TODO: Start supporting yielding from exception handling constructs.
             if (inTryLevel > 0 || inCatchLevel > 0 || inFinallyLevel > 0)
             {
-                _diagnostics.Add(_routine, boundYieldEx.PhpSyntax, ErrorCode.ERR_NotYetImplemented, "Yielding from an exception handling construct (try, catch, finally)");
-            }
-
-            // TODO: Start supporting sending values & subsequently yield as an Expression
-            if (boundYieldEx.Access.IsRead)
-            {
-                _diagnostics.Add(_routine, boundYieldEx.PhpSyntax, ErrorCode.ERR_NotYetImplemented, "Returning a value from yield");
+                _diagnostics.Add(_routine, boundYieldStatement.PhpSyntax, ErrorCode.ERR_NotYetImplemented, "Yielding from an exception handling construct (try, catch, finally)");
             }
         }
     }

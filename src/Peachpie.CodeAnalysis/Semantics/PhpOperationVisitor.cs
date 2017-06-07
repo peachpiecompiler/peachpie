@@ -117,6 +117,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
         }
 
+        public virtual void VisitSynthesizedVariableRef(BoundSynthesizedVariableRef x)
+        {
+            // BoundSynthesizedVariableRef is based solely on BoundVariableRef so far 
+            VisitVariableRef(x);
+        }
+
         public virtual void VisitList(BoundListEx x)
         {
             x.Variables.ForEach(Accept);
@@ -190,10 +196,9 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
 
-        public virtual void VisitYield(BoundYieldEx boundYieldEx)
+        public virtual void VisitYieldEx(BoundYieldEx boundYieldEx)
         {
-            Accept(boundYieldEx.YieldedValue);
-            Accept(boundYieldEx.YieldedKey);
+
         }
 
         #endregion
@@ -243,6 +248,12 @@ namespace Pchp.CodeAnalysis.Semantics
         public virtual void VisitStaticStatement(BoundStaticVariableStatement x)
         {
             
+        }
+
+        public virtual void VisitYieldStatement(BoundYieldStatement boundYieldStatement)
+        {
+            Accept(boundYieldStatement.YieldedValue);
+            Accept(boundYieldStatement.YieldedKey);
         }
 
         #endregion

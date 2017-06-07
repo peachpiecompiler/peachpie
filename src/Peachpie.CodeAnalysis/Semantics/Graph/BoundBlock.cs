@@ -232,17 +232,17 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         protected override string DebugName => IsDefault ? "default:" : "case:";
 
         /// <summary>
-        /// Gets case value expression. In case of default item, returns <c>null</c>.
+        /// Gets case value expression bag. In case of default item, returns <c>BoundItemsBag/<BoundExpression/>.Empty</c>.
         /// </summary>
-        public BoundExpression CaseValue { get { return _caseValue; } }
-        private readonly BoundExpression _caseValue;
+        public BoundItemsBag<BoundExpression> CaseValue { get { return _caseValue; } }
+        private readonly BoundItemsBag<BoundExpression> _caseValue;
 
         /// <summary>
         /// Gets value indicating whether the case represents a default.
         /// </summary>
-        public bool IsDefault => _caseValue == null;
+        public bool IsDefault => _caseValue.IsEmpty;
 
-        public CaseBlock(BoundExpression caseValue)
+        public CaseBlock(BoundItemsBag<BoundExpression> caseValue)
         {
             _caseValue = caseValue;
         }

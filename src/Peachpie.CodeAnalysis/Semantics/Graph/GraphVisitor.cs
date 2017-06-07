@@ -60,7 +60,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public virtual void VisitCFGCaseBlock(CaseBlock x)
         {
-            Accept(x.CaseValue);
+            if (!x.CaseValue.IsOnlyBoundElement) { VisitCFGBlock(x.CaseValue.PreBoundBlockFirst); }
+            if (!x.CaseValue.IsEmpty) { Accept(x.CaseValue.BoundElement); }
+            
             VisitCFGBlockInternal(x);
         }
 

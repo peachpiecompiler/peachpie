@@ -33,8 +33,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             Accept(x.Condition);
 
-            var constantValue = x.Condition.ConstantValue.ToConstantValueOrNull();
-            if (constantValue != null && constantValue.TryConvertToBool(out bool value))
+            if (x.Condition.ConstantValue.TryConvertToBool(out bool value))
             {
                 // Process only the reachable branch, let the reachability of the other be checked later
                 if (value)

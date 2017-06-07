@@ -40,8 +40,20 @@ namespace Pchp.CodeAnalysis.Symbols
                     // create initial flow state
                     var state = StateBinder.CreateInitialState(this);
 
+                    // TODO: Change YieldEx to a common ancestor of YieldEx and YieldFromEx
+
+                    // try to get yields from current routine
+                    var yields = ImmutableArray<YieldEx>.Empty;
+                    if (Syntax.Properties.TryGetProperty(typeof(ImmutableArray<YieldEx>), out object tmpYields))
+                    { yields = (ImmutableArray<YieldEx>)tmpYields; }
+
+                    var isGeneratorMethod = !yields.IsDefaultOrEmpty;
+                    if (isGeneratorMethod) { this.Flags |= RoutineFlags.IsGenerator; }
+
                     //
-                    var binder = new SemanticsBinder(this.LocalsTable, DeclaringCompilation.DeclarationDiagnostics);
+                    var binder = isGeneratorMethod
+                        ? new GeneratorSemanticsBinder(yields, this.LocalsTable, DeclaringCompilation.DeclarationDiagnostics)
+                        : new SemanticsBinder(this.LocalsTable, DeclaringCompilation.DeclarationDiagnostics);
 
                     // build control flow graph
                     _cfg = new ControlFlowGraph(this.Statements, binder, this.GetNamingContext());

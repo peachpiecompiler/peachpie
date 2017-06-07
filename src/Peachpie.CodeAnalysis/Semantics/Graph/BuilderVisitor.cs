@@ -128,7 +128,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _tryTargets.Push(edge);
         }
 
-        private void CloeTryScope()
+        private void CloseTryScope()
         {
             Debug.Assert(_tryTargets != null && _tryTargets.Count != 0);
             _tryTargets.Pop();
@@ -142,6 +142,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             Contract.ThrowIfNull(statements);
             Contract.ThrowIfNull(binder);
+
+            // TODO: Implement a cleaner way to enable SemanticsBinder to create BoundBlocks trough BuilderVisitor
+            if(binder is GeneratorSemanticsBinder gsb)
+            {
+                gsb.GetNewBlock = this.NewBlock;
+            }
 
             _binder = binder;
             _naming = naming;
@@ -183,13 +189,24 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         }
 
         private void Add(Statement stmt)
+           => Add(_binder.BindWholeStatement(stmt));
+        
+
+        private void Add(BoundItemsBag<BoundStatement> stmtBag)
         {
-            Add(_binder.BindStatement(stmt));
+            ConnectBoundItemsBagBlocksToCurrentBlock(stmtBag);
+            _current.Add(stmtBag.BoundElement);
         }
 
-        private void Add(BoundStatement stmt)
+        private void ConnectBoundItemsBagBlocksToCurrentBlock<T>(BoundItemsBag<T> bag) where T : class, IPhpOperation
+            => _current = ConnectBoundItemsBagBlocks(bag, _current);
+
+        private BoundBlock ConnectBoundItemsBagBlocks<T>(BoundItemsBag<T> bag, BoundBlock block) where T : class, IPhpOperation
         {
-            _current.Add(stmt);
+            if (bag.IsOnlyBoundElement) { return block; }
+
+            Connect(block, bag.PreBoundBlockFirst);
+            return bag.PreBoundBlockLast;
         }
 
         private void FinalizeRoutine()
@@ -234,17 +251,22 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private CaseBlock/*!*/NewBlock(SwitchItem item)
         {
-            var caseitem = item as CaseItem;
-            BoundExpression caseValue =  // null => DefaultItem
-                (caseitem != null) ? _binder.BindExpression(caseitem.CaseVal, BoundAccess.Read) : null;
-            return WithNewOrdinal(new CaseBlock(caseValue) { PhpSyntax = item, Naming = _naming });
+            BoundItemsBag<BoundExpression> caseValueBag = item is CaseItem caseItem
+                ? _binder.BindWholeExpression(caseItem.CaseVal, BoundAccess.Read)
+                : BoundItemsBag<BoundExpression>.Empty; // BoundItem -eq null => DefaultItem
+
+            return WithNewOrdinal(new CaseBlock(caseValueBag) { PhpSyntax = item, Naming = _naming });
         }
 
         private BoundBlock/*!*/Connect(BoundBlock/*!*/source, BoundBlock/*!*/ifTarget, BoundBlock/*!*/elseTarget, Expression condition, bool isloop = false)
         {
             if (condition != null)
             {
-                new ConditionalEdge(source, ifTarget, elseTarget, _binder.BindExpression(condition, BoundAccess.Read))
+                // bind condition expression & connect pre-condition blocks to source
+                var boundConditionBag = _binder.BindWholeExpression(condition, BoundAccess.Read);
+                source = ConnectBoundItemsBagBlocks(boundConditionBag, source);
+
+                new ConditionalEdge(source, ifTarget, elseTarget, boundConditionBag.BoundElement)
                 {
                     IsLoop = isloop,
                 };
@@ -446,6 +468,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override void VisitForeachStmt(ForeachStmt x)
         {
+            // binds enumeree expression & connect pre-enumeree-expr blocks
+            var boundEnumereeBag = _binder.BindWholeExpression(x.Enumeree, BoundAccess.Read);
+            ConnectBoundItemsBagBlocksToCurrentBlock(boundEnumereeBag);
+            
             var end = NewBlock();
             var move = NewBlock();
             var body = NewBlock();
@@ -454,17 +480,26 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             // ForeachEnumereeEdge : SimpleEdge
             // x.Enumeree.GetEnumerator();
-            var enumereeEdge = new ForeachEnumereeEdge(_current, move, _binder.BindExpression(x.Enumeree, BoundAccess.Read), x.ValueVariable.Alias);
+            var enumereeEdge = new ForeachEnumereeEdge(_current, move, boundEnumereeBag.BoundElement, x.ValueVariable.Alias);
 
             // ContinueTarget:
             OpenBreakScope(end, move);
-            
+
+            // bind reference expression for foreach key variable
+            BoundReferenceExpression keyVar = (x.KeyVariable != null) ? 
+                (BoundReferenceExpression)_binder.BindWholeExpression(x.KeyVariable.Variable, BoundAccess.Write).GetOnlyBoundElement()
+                : null;
+ 
+
+            // bind reference expression for foreach value variable 
+            var valueVar = (BoundReferenceExpression)(_binder.BindWholeExpression(
+                    (Expression)x.ValueVariable.Variable ?? x.ValueVariable.List,
+                    x.ValueVariable.Alias ? BoundAccess.Write.WithWriteRef(FlowAnalysis.TypeRefMask.AnyType) : BoundAccess.Write
+                    ).GetOnlyBoundElement());
+
             // ForeachMoveNextEdge : ConditionalEdge
             var moveEdge = new ForeachMoveNextEdge(move, body, end, enumereeEdge,
-                (x.KeyVariable != null) ? (BoundReferenceExpression)_binder.BindExpression(x.KeyVariable.Variable, BoundAccess.Write) : null,
-                (BoundReferenceExpression)_binder.BindExpression(
-                    (Expression)x.ValueVariable.Variable ?? x.ValueVariable.List,
-                    x.ValueVariable.Alias ? BoundAccess.Write.WithWriteRef(FlowAnalysis.TypeRefMask.AnyType) : BoundAccess.Write),
+                keyVar, valueVar,
                 Span.FromBounds(x.Enumeree.Span.End + 1, (x.KeyVariable ?? x.ValueVariable).Span.Start - 1).ToTextSpan() /*"as" between enumeree and variables*/);
             // while (enumerator.MoveNext()) {
             //   var value = enumerator.Current.Value
@@ -645,6 +680,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             if (items == null || items.Length == 0)
                 return;
 
+            // get bound item for switch value & connect potential pre-switch-value blocks
+            var boundBagForSwitchValue = _binder.BindWholeExpression(x.SwitchValue, BoundAccess.Read);
+            ConnectBoundItemsBagBlocksToCurrentBlock(boundBagForSwitchValue);
+            var switchValue = boundBagForSwitchValue.BoundElement;
+
             var end = NewBlock();
 
             bool hasDefault = false;
@@ -660,8 +700,17 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 cases.Add(NewBlock(new DefaultItem(x.Span, EmptyArray<Statement>.Instance)));
             }
 
+            // if switch value isn't a constant & there're case values with preBoundStatements 
+            // -> the switch value might get evaluated multiple times (see SwitchEdge.Generate) -> preemptively evaluate and cache it
+            if (!switchValue.IsConstant() && !cases.All(c => c.CaseValue.IsOnlyBoundElement))
+            {
+                var result = BoundSynthesizedVariableRef.CreateAndAssignSynthesizedVariable(switchValue, BoundAccess.Read, $"<switchValueCacher>{x.Span}");
+                switchValue = result.Item1;
+                _current.Add(new BoundExpressionStatement(result.Item2));
+            }
+            
             // SwitchEdge // Connects _current to cases
-            var edge = new SwitchEdge(_current, _binder.BindExpression(x.SwitchValue, BoundAccess.Read), cases.ToArray(), end);
+            var edge = new SwitchEdge(_current, switchValue, cases.ToArray(), end);
             _current = WithNewOrdinal(cases[0]);
 
             OpenBreakScope(end, end); // NOTE: inside switch, Continue ~ Break
@@ -746,7 +795,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _current = WithNewOrdinal(body);
             VisitElement(x.Body);
             CloseScope();
-            CloeTryScope();
+            CloseTryScope();
             _current = Leave(_current, finallyBlock ?? end);
 
             // built catches

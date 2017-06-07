@@ -1073,6 +1073,49 @@ namespace Pchp.CodeAnalysis.Semantics
         public override void Accept(PhpOperationVisitor visitor) => visitor.VisitVariableRef(this);
     }
 
+    /// <summary>
+    /// A non-source synthesized variable reference that can be read or written to. 
+    /// </summary>
+    /// <remarks>
+    /// Inheriting from <c>BoundVariableRef</c> is just a temporary measure. Do NOT take dependencies on anything but <c>IReferenceExpression</c>.
+    /// </remarks>
+    public partial class BoundSynthesizedVariableRef : BoundVariableRef
+    {
+
+        // TODO: Maybe change to visitor.VisitSyntheticLocalReferenceExpression
+        public override void Accept(OperationVisitor visitor)
+            => base.Accept(visitor);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => base.Accept(visitor, argument);
+
+        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
+        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
+        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitSynthesizedVariableRef(this);
+
+        public BoundSynthesizedVariableRef(string name) : base(new BoundVariableName(new VariableName(name))) { }
+
+        // TODO: Change to new dotnet's System.ValueType
+        internal static Roslyn.Utilities.ValueTuple<BoundReferenceExpression, BoundAssignEx> CreateAndAssignSynthesizedVariable(BoundExpression expr, BoundAccess access, string name)
+        {
+            // determine whether the synthesized variable should be by ref (for readRef and writes) or a normal PHP copy
+            var refAccess = (access.IsReadRef || access.IsWrite);
+
+            // bind assigment target variable with appropriate access
+            var targetVariable = new BoundSynthesizedVariableRef(name);
+            targetVariable.Access = (refAccess) ? targetVariable.Access.WithWriteRef(0) : targetVariable.Access.WithWrite(0);
+
+            // set appropriate access of the original value expression
+            var valueBeingMoved = (refAccess) ? expr.WithAccess(BoundAccess.ReadRef) : expr.WithAccess(BoundAccess.Read);
+
+            // bind assigment and reference to the created synthesized variable
+            var assigment = new BoundAssignEx(targetVariable, valueBeingMoved);
+            var boundExpr = new BoundSynthesizedVariableRef(name).WithAccess(access);
+
+            return new Roslyn.Utilities.ValueTuple<BoundReferenceExpression, BoundAssignEx>(boundExpr, assigment);
+        }
+    }
+
     #endregion
 
     #region BoundListEx
@@ -1475,38 +1518,19 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundYieldEx
     /// <summary>
-    /// BoundYieldEx
+    /// Represents a reference to an item sent to the generator.
     /// </summary>
-    /// <remarks>
-    /// Instances used for continuation labels in emit.
-    /// </remarks>
-    public partial class BoundYieldEx : BoundExpression, IReturnStatement
+    public partial class BoundYieldEx : BoundExpression
     {
-        //Not sure about BoundYieldEx being IReturnStatement but yield is statement in C# and
-        // ..BoundYieldReturnStatement from Roslyn implements it this way, it also enables us
-        // ..use the same visitor's accepts as Roslyn 
-
-        public override OperationKind Kind => OperationKind.YieldReturnStatement;
-
-        public BoundExpression YieldedValue { get; private set; }
-        public BoundExpression YieldedKey { get; private set; }
-
-        public IExpression Returned => YieldedValue;
-
-        public BoundYieldEx(BoundExpression valueExpression, BoundExpression keyExpression)
-        {
-            YieldedValue = valueExpression;
-            YieldedKey = keyExpression;
-        }
-
+        public override OperationKind Kind => OperationKind.FieldReferenceExpression;
         public override void Accept(PhpOperationVisitor visitor)
-            => visitor.VisitYield(this);
+            => visitor.VisitYieldEx(this);
 
         public override void Accept(OperationVisitor visitor)
-            => visitor.VisitReturnStatement(this);
+            => visitor.DefaultVisit(this);
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
-            => visitor.VisitReturnStatement(this, argument);
+            => visitor.DefaultVisit(this, argument);
     }
     #endregion
 }
