@@ -988,7 +988,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 Accept(refExpr);
 
-                if (refExpr is BoundVariableRef varRef && varRef.Name.IsDirect)
+                if (branch != ConditionBranch.AnyResult && refExpr is BoundVariableRef varRef && varRef.Name.IsDirect)
                 {
                     var handle = State.GetLocalHandle(varRef.Name.NameValue.Value);
 
