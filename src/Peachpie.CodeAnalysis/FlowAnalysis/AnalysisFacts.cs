@@ -309,17 +309,31 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             bool isFeasible = HandleTypeChecking(currentType, targetType, branchHlp, flowState, handle, skipPositiveIfAnyType);
 
-            // If the true branch proves to be unfeasible, the function always returns false and vice versa
-            var resultConstVal = isFeasible ? default(Optional<object>) : new Optional<object>(!branch.ToBool().Value);
-
-            // Each branch can clean only the constant value it produced during its analysis (in order not to lose result
-            // of the other branch): true branch can produce false value and vice versa
-            if (checkExpr != null && !resultConstVal.EqualsOptional(checkExpr.ConstantValue)
-                && (resultConstVal.HasValue
-                    || checkExpr.ConstantValue.Value is false && branch == ConditionBranch.ToTrue
-                    || checkExpr.ConstantValue.Value is true && branch == ConditionBranch.ToFalse))
+            // If the constant value was not meant to be updated, skip its computation
+            if (checkExpr == null)
             {
-                checkExpr.ConstantValue = resultConstVal;
+                return;
+            }
+
+            if (!currentType.IsRef)
+            {
+                // If the true branch proves to be unfeasible, the function always returns false and vice versa
+                var resultConstVal = isFeasible ? default(Optional<object>) : new Optional<object>(!branch.ToBool().Value);
+
+                // Each branch can clean only the constant value it produced during its analysis (in order not to lose result
+                // of the other branch): true branch can produce false value and vice versa
+                if (!resultConstVal.EqualsOptional(checkExpr.ConstantValue)
+                    && (resultConstVal.HasValue
+                        || checkExpr.ConstantValue.Value is false && branch == ConditionBranch.ToTrue
+                        || checkExpr.ConstantValue.Value is true && branch == ConditionBranch.ToFalse))
+                {
+                    checkExpr.ConstantValue = resultConstVal;
+                } 
+            }
+            else
+            {
+                // We cannot reason about the result of the check if the variable can be modified by reference
+                checkExpr.ConstantValue = default(Optional<object>);
             }
         }
 
