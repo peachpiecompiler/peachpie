@@ -521,7 +521,7 @@ namespace Pchp.CodeAnalysis
 
                 result = maybenull ? MergeNull(result) : result;
 
-                Debug.Assert(result != null && result.SpecialType != SpecialType.System_Void);
+                Debug.Assert(result != null);
 
                 //
                 return result;

@@ -52,7 +52,6 @@ namespace Pchp.CodeAnalysis.Symbols
             // for non virtual methods:
             if (routine.IsStatic || routine.DeclaredAccessibility == Accessibility.Private || (routine.IsSealed && !routine.IsOverride))
             {
-
                 // /** @return */
                 var typeCtx = routine.TypeRefContext;
                 if (routine.PHPDocBlock != null && (compilation.Options.PhpDocTypes & PhpDocTypes.ReturnTypes) != 0)

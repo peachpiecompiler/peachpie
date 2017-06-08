@@ -23,7 +23,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         private Stack<LocalScopeInfo> _scopes = new Stack<LocalScopeInfo>(1);
         private int _index = 0;
         private NamingContext _naming;
-        
+
         public BoundBlock/*!*/Start { get; private set; }
         public BoundBlock/*!*/Exit { get; private set; }
         //public BoundBlock Exception { get; private set; }
@@ -144,7 +144,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Contract.ThrowIfNull(binder);
 
             // TODO: Implement a cleaner way to enable SemanticsBinder to create BoundBlocks trough BuilderVisitor
-            if(binder is GeneratorSemanticsBinder gsb)
+            if (binder is GeneratorSemanticsBinder gsb)
             {
                 gsb.GetNewBlock = this.NewBlock;
             }
@@ -190,7 +190,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private void Add(Statement stmt)
            => Add(_binder.BindWholeStatement(stmt));
-        
+
 
         private void Add(BoundItemsBag<BoundStatement> stmtBag)
         {
@@ -211,20 +211,29 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private void FinalizeRoutine()
         {
-            if (_binder.Routine.IsGlobalScope)
+            if (!_deadBlocks.Contains(_current))
             {
-                if (!_deadBlocks.Contains(_current))
-                {
-                    // global code returns 1 by default if no other value is specified
-                    AddReturn1();
-                }
+                AddFinalReturn();
             }
         }
 
-        private void AddReturn1()
+        private void AddFinalReturn()
         {
-            // return (int)1;
-            _current.Add(new BoundReturnStatement(new BoundLiteral(1).WithAccess(BoundAccess.Read)));
+            BoundExpression expression;
+
+            if (_binder.Routine.IsGlobalScope)
+            {
+                // global code returns 1 by default if no other value is specified
+                expression = new BoundLiteral(1).WithAccess(BoundAccess.Read);
+            }
+            else
+            {
+                // function returns NULL by default (void?)
+                expression = null; // void
+            }
+
+            // return <expression>;
+            _current.Add(new BoundReturnStatement(expression));
         }
 
         private BoundBlock/*!*/NewBlock()
@@ -471,7 +480,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             // binds enumeree expression & connect pre-enumeree-expr blocks
             var boundEnumereeBag = _binder.BindWholeExpression(x.Enumeree, BoundAccess.Read);
             ConnectBoundItemsBagBlocksToCurrentBlock(boundEnumereeBag);
-            
+
             var end = NewBlock();
             var move = NewBlock();
             var body = NewBlock();
@@ -486,10 +495,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             OpenBreakScope(end, move);
 
             // bind reference expression for foreach key variable
-            BoundReferenceExpression keyVar = (x.KeyVariable != null) ? 
+            BoundReferenceExpression keyVar = (x.KeyVariable != null) ?
                 (BoundReferenceExpression)_binder.BindWholeExpression(x.KeyVariable.Variable, BoundAccess.Write).GetOnlyBoundElement()
                 : null;
- 
+
 
             // bind reference expression for foreach value variable 
             var valueVar = (BoundReferenceExpression)(_binder.BindWholeExpression(
@@ -580,7 +589,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             var/*!*/label = GetLabelBlock(x.LabelName.Name.Value);
             label.Flags |= ControlFlowGraph.LabelBlockFlags.Used;   // label is used
-            
+
             Connect(_current, label.TargetBlock);
 
             _current.NextEdge.PhpSyntax = x;
@@ -708,7 +717,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 switchValue = result.Item1;
                 _current.Add(new BoundExpressionStatement(result.Item2));
             }
-            
+
             // SwitchEdge // Connects _current to cases
             var edge = new SwitchEdge(_current, switchValue, cases.ToArray(), end);
             _current = WithNewOrdinal(cases[0]);
