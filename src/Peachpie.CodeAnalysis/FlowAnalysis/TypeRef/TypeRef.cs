@@ -293,6 +293,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             switch (TypeCode)
             {
+                case PhpTypeCode.Void: return compilation.CoreTypes.Void.Symbol;
                 case PhpTypeCode.Boolean: return compilation.CoreTypes.Boolean.Symbol;
                 case PhpTypeCode.Long: return compilation.CoreTypes.Long.Symbol;
                 case PhpTypeCode.Double: return compilation.CoreTypes.Double.Symbol;
