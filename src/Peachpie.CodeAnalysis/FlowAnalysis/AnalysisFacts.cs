@@ -199,15 +199,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         {
                             // Closure is specified in both branches
                             TypeRefMask targetType = 0;
-                            AddTypeIfInContext(typeCtx, NameUtils.SpecialNames.Closure, false, ref targetType);
+                            AddTypeIfInContext(typeCtx, type => type.IsLambda, false, ref targetType);
 
                             if (branch == ConditionBranch.ToTrue)
                             {
-                                // Also string types, arrays and object can make is_callable return true, but not anything else
+                                // Also string types, arrays and objects can make is_callable return true, but not anything else
                                 targetType |= typeCtx.IsReadonlyString(currentType) ? typeCtx.GetStringTypeMask() : 0;
                                 targetType |= typeCtx.IsWritableString(currentType) ? typeCtx.GetWritableStringTypeMask() : 0;
                                 targetType |= typeCtx.GetArraysFromMask(currentType);
-                                AddTypeIfInContext(typeCtx, NameUtils.SpecialNames.System_Object, true, ref targetType);
+                                targetType |= typeCtx.GetObjectsFromMask(currentType);
 
                                 return targetType;
                             }
@@ -233,9 +233,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        private static void AddTypeIfInContext(TypeRefContext typeCtx, QualifiedName name, bool includeSubclasses, ref TypeRefMask mask)
+        private static void AddTypeIfInContext(
+            TypeRefContext typeCtx,
+            Func<ITypeRef, bool> selector,
+            bool includeSubclasses,
+            ref TypeRefMask mask)
         {
-            var closureTypeRef = typeCtx.Types.FirstOrDefault(t => t.QualifiedName == name);
+            var closureTypeRef = typeCtx.Types.FirstOrDefault(selector);
             if (closureTypeRef != null)
             {
                 mask |= typeCtx.GetTypeMask(closureTypeRef, includeSubclasses);
