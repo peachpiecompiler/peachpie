@@ -12,6 +12,7 @@ namespace Pchp.CodeAnalysis
     {
         #region Primitive Types
 
+        internal static readonly PrimitiveTypeRef/*!*/VoidTypeRef = new PrimitiveTypeRef(PhpTypeCode.Void);
         internal static readonly PrimitiveTypeRef/*!*/NullTypeRef = new PrimitiveTypeRef(PhpTypeCode.Null);
         internal static readonly PrimitiveTypeRef/*!*/BoolTypeRef = new PrimitiveTypeRef(PhpTypeCode.Boolean);
         internal static readonly PrimitiveTypeRef/*!*/LongTypeRef = new PrimitiveTypeRef(PhpTypeCode.Long);

@@ -1727,6 +1727,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // reanalyse blocks depending on this routine return type
                 EnqueueSubscribers((ExitBlock)this.Routine?.ControlFlowGraph.Exit);
             }
+            else
+            {
+                // remember "void" type explicitly
+                State.FlowThroughReturn(0);
+            }
         }
 
         public override void VisitThrow(BoundThrowStatement x)
