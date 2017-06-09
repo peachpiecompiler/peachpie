@@ -37,7 +37,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Gets the boolean value of the condition that led to this branch or null if
         /// <see cref="ConditionBranch.AnyResult"/>.
         /// </summary>
-        public static bool? ToBool(this ConditionBranch branch)
+        public static bool? TargetValue(this ConditionBranch branch)
         {
             switch (branch)
             {

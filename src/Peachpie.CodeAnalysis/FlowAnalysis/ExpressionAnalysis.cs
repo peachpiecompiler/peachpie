@@ -805,7 +805,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 // We cannot say much about the type of $x in the true branch of ($x == null) and the false branch of ($x != null),
                 // because it holds for false, 0, "", array() etc.
-                if (isStrict || branch.ToBool() != isPositive)
+                if (isStrict || branch.TargetValue() != isPositive)
                 {
                     AnalysisFacts.HandleTypeCheckingExpression(
                         varRef,

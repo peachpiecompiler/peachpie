@@ -322,7 +322,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (!currentType.IsRef)
             {
                 // If the true branch proves to be unfeasible, the function always returns false and vice versa
-                var resultConstVal = isFeasible ? default(Optional<object>) : new Optional<object>(!branch.ToBool().Value);
+                var resultConstVal = isFeasible ? default(Optional<object>) : new Optional<object>(!branch.TargetValue().Value);
 
                 // Each branch can clean only the constant value it produced during its analysis (in order not to lose result
                 // of the other branch): true branch can produce false value and vice versa
