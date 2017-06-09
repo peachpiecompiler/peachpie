@@ -29,6 +29,31 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
+        public override void VisitCFGConditionalEdge(ConditionalEdge x)
+        {
+            Accept(x.Condition);
+
+            if (x.Condition.ConstantValue.TryConvertToBool(out bool value))
+            {
+                // Process only the reachable branch, let the reachability of the other be checked later
+                if (value)
+                {
+                    _unreachableQueue.Enqueue(x.FalseTarget);
+                    x.TrueTarget.Accept(this);
+                }
+                else
+                {
+                    _unreachableQueue.Enqueue(x.TrueTarget);
+                    x.FalseTarget.Accept(this);
+                }
+            }
+            else
+	        {
+                x.TrueTarget.Accept(this);
+                x.FalseTarget.Accept(this); 
+            }
+        }
+
         private void CheckUnreachableCode(ControlFlowGraph graph)
         {
             graph.UnreachableBlocks.ForEach(_unreachableQueue.Enqueue);

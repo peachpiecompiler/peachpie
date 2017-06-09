@@ -9,6 +9,7 @@ using System.Diagnostics;
 using Pchp.CodeAnalysis.Semantics;
 using Devsense.PHP.Text;
 using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
@@ -147,9 +148,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     Visit((BoundBinaryEx)condition, branch);
                     return;
                 }
-                if (condition is BoundUnaryEx)
+                if (condition is BoundUnaryEx unaryEx)
                 {
-                    Visit((BoundUnaryEx)condition, branch);
+                    Visit(unaryEx, branch);
                     return;
                 }
                 if (condition is BoundGlobalFunctionCall)

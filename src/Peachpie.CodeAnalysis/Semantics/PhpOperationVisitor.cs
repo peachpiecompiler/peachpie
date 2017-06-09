@@ -130,7 +130,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual void VisitFieldRef(BoundFieldRef x)
         {
-            VisitTypeRef(x.ParentType);
+            if (x.ParentType != null)
+            {
+                VisitTypeRef(x.ParentType); 
+            }
+
             Accept(x.Instance);
             Accept(x.FieldName.NameExpression);
         }

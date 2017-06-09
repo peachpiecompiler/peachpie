@@ -249,6 +249,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 switch (_code)
                 {
+                    case PhpTypeCode.Void: return QualifiedName.Void;
                     case PhpTypeCode.Boolean: return QualifiedName.Boolean;
                     case PhpTypeCode.Long: return QualifiedName.Integer;
                     case PhpTypeCode.Double: return QualifiedName.Double;

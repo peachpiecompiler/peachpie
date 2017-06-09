@@ -34,7 +34,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public ImmutableArray<SourceFunctionSymbol> Functions => _lazyMembers.OfType<SourceFunctionSymbol>().ToImmutableArray();
 
         /// <summary>
-        /// List of functions declared within the file.
+        /// List of types declared within the file.
         /// </summary>
         public List<SourceTypeSymbol> ContainedTypes
         {
@@ -106,6 +106,24 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 return (PathUtilities.GetDirectoryName(this.RelativeFilePath) ?? string.Empty)
                     .TrimEnd(PathUtilities.AltDirectorySeparatorChar);     // NormalizeRelativeDirectoryPath
+            }
+        }
+
+        /// <summary>
+        /// Gets enumeration of all routines (global code, functions and methods) within the file.
+        /// </summary>
+        public IEnumerable<SourceRoutineSymbol> AllRoutines    // all functions + global code + methods + lambdas
+        {
+            get
+            {
+                var funcs = Functions.Cast<SourceRoutineSymbol>();
+                var main = MainMethod;
+
+                var types = ContainedTypes.SelectMany(t => t.AllVersions());
+                var methods = types.SelectMany(f => f.GetMembers().OfType<SourceRoutineSymbol>());
+                var lambdas = types.Cast<ILambdaContainerSymbol>().Concat(this).SelectMany(c => c.Lambdas);
+
+                return funcs.Concat(main).Concat(methods).Concat(lambdas);
             }
         }
 

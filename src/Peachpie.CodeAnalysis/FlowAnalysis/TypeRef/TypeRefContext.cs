@@ -479,12 +479,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         }
 
         /// <summary>
+        /// Gets type mask of a closure.
+        /// </summary>
+        public TypeRefMask GetClosureTypeMask()
+        {
+            return GetTypeMask(NameUtils.SpecialNames.Closure, false);
+        }
+
+        /// <summary>
         /// Gets type mask of all callable types.
         /// </summary>
         public TypeRefMask GetCallableTypeMask()
         {
             // string | Closure | array | object
-            return GetStringTypeMask() | GetTypeMask(NameUtils.SpecialNames.Closure, false) | GetArrayTypeMask() | GetSystemObjectTypeMask();
+            return GetStringTypeMask() | GetClosureTypeMask() | GetArrayTypeMask() | GetSystemObjectTypeMask();
         }
 
         /// <summary>

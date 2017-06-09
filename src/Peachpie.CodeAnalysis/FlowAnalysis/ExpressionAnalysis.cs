@@ -26,6 +26,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         readonly ISymbolProvider _model;
 
+        internal ISymbolProvider Model => _model;
+
         /// <summary>
         /// Reference to corresponding source routine.
         /// </summary>
@@ -120,28 +122,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (varname != null)
             {
                 State.LTInt64Max(State.GetLocalHandle(varname), lt);
-            }
-        }
-
-        void Eq(BoundReferenceExpression r, Optional<object> value)
-        {
-            //var varname = AsVariableName(r);
-            //if (varname != null)
-            //{
-            //    if (value.IsNull())
-            //    {
-
-            //    }
-            //}
-        }
-
-        void NotEq(BoundReferenceExpression r, Optional<object> value)
-        {
-            var varname = AsVariableName(r);
-            if (varname != null && TypeCtx.IsNull(r.TypeRefMask) && value.IsNull())
-            {
-                // varname != NULL
-                State.SetLocalType(State.GetLocalHandle(varname), TypeCtx.WithoutNull(r.TypeRefMask));
             }
         }
 
@@ -760,12 +740,27 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 case Operations.Equal:
                 case Operations.NotEqual:
+                case Operations.Identical:
+                case Operations.NotIdentical:
+
+                    if (branch != ConditionBranch.AnyResult)
+                    {
+                        if (x.Right.ConstantValue.HasValue && x.Left is BoundReferenceExpression boundLeft)
+                        {
+                            ResolveEqualityWithConstantValue(x, boundLeft, x.Right.ConstantValue, branch);
+                        }
+                        else if (x.Left.ConstantValue.HasValue && x.Right is BoundReferenceExpression boundRight)
+                        {
+                            ResolveEqualityWithConstantValue(x, boundRight, x.Left.ConstantValue, branch);
+                        }
+                    }
+
+                    return TypeCtx.GetBooleanTypeMask();
+
                 case Operations.GreaterThan:
                 case Operations.LessThan:
                 case Operations.GreaterThanOrEqual:
                 case Operations.LessThanOrEqual:
-                case Operations.Identical:
-                case Operations.NotIdentical:
 
                     if (branch == ConditionBranch.ToTrue)
                     {
@@ -773,17 +768,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         {
                             // $x < LONG
                             LTInt64Max(x.Left as BoundReferenceExpression, true);
-                        }
-
-                        if (x.Operation == Operations.Equal)
-                        {
-                            Eq(x.Left as BoundReferenceExpression, x.Right.ConstantValue);
-                            Eq(x.Right as BoundReferenceExpression, x.Left.ConstantValue);
-                        }
-                        else if (x.Operation == Operations.NotEqual)
-                        {
-                            NotEq(x.Left as BoundReferenceExpression, x.Right.ConstantValue);
-                            NotEq(x.Right as BoundReferenceExpression, x.Left.ConstantValue);
                         }
                     }
 
@@ -802,6 +786,38 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
+        /// <summary>
+        /// Resolves variable types and potentially assigns a constant boolean value to an expression of a comparison of
+        /// a variable and a constant - operators ==, !=, === and !==.
+        /// </summary>
+        private void ResolveEqualityWithConstantValue(
+            BoundBinaryEx cmpExpr,
+            BoundReferenceExpression refExpr,
+            Optional<object> value,
+            ConditionBranch branch)
+        {
+            Debug.Assert(branch != ConditionBranch.AnyResult);
+
+            if (value.IsNull() && refExpr is BoundVariableRef varRef)
+            {
+                bool isStrict = (cmpExpr.Operation == Operations.Identical || cmpExpr.Operation == Operations.NotIdentical);
+                bool isPositive = (cmpExpr.Operation == Operations.Equal || cmpExpr.Operation == Operations.Identical);
+
+                // We cannot say much about the type of $x in the true branch of ($x == null) and the false branch of ($x != null),
+                // because it holds for false, 0, "", array() etc.
+                if (isStrict || branch.ToBool() != isPositive)
+                {
+                    AnalysisFacts.HandleTypeCheckingExpression(
+                        varRef,
+                        TypeCtx.GetNullTypeMask(),
+                        branch,
+                        State,
+                        checkExpr: cmpExpr,
+                        isPositiveCheck: isPositive);
+                } 
+            }
+        }
+
         #endregion
 
         #region Visit UnaryEx
@@ -813,8 +829,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         TypeRefMask ResolveUnaryOperatorExpression(BoundUnaryEx x, ConditionBranch branch)
         {
-            //
-            Accept(x.Operand);
+            if (branch != ConditionBranch.AnyResult && x.Operation == Operations.LogicNegation)
+            {
+                // Negation swaps the branches
+                VisitCondition(x.Operand, branch.NegativeBranch());
+            }
+            else
+            {
+                Accept(x.Operand);
+            }
 
             //
             switch (x.Operation)
@@ -832,6 +855,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         : TypeCtx.GetObjectsFromMask(x.Operand.TypeRefMask);    // (object)T
 
                 case Operations.LogicNegation:
+                    if (x.Operand.ConstantValue.TryConvertToBool(out bool constBool) == true)
+                    {
+                        x.ConstantValue = new Optional<object>(!constBool);
+                    }
                     return TypeCtx.GetBooleanTypeMask();
 
                 case Operations.Minus:
@@ -956,25 +983,47 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         protected override void Visit(BoundIsSetEx x, ConditionBranch branch)
         {
-            if (branch == ConditionBranch.ToTrue)
+            bool isSingle = (x.VarReferences.Length == 1);
+
+            foreach (var refExpr in x.VarReferences)
             {
-                foreach (var refExpr in x.VarReferences)
+                Accept(refExpr);
+
+                if (branch != ConditionBranch.AnyResult && refExpr is BoundVariableRef varRef && varRef.Name.IsDirect)
                 {
-                    // Solve also $foo[0], $foo->bar and their combinations
-                    var varRef = refExpr as BoundVariableRef;
-                    if (varRef != null && varRef.Name.IsDirect)
+                    var handle = State.GetLocalHandle(varRef.Name.NameValue.Value);
+
+                    // We cannot reason about the negative branch of isset($x, $y)
+                    if (isSingle || branch == ConditionBranch.ToTrue)
                     {
-                        State.SetVarInitialized(State.GetLocalHandle(varRef.Name.NameValue.Value));
+                        if (State.IsLocalSet(handle))
+                        {
+                            // If the variable is always defined, isset() behaves like !is_null()
+                            AnalysisFacts.HandleTypeCheckingExpression(
+                                varRef,
+                                TypeCtx.GetNullTypeMask(),
+                                branch,
+                                State,
+                                // We would have to somehow aggregate the constant value if there were more variables checked
+                                checkExpr: isSingle ? x : null,
+                                isPositiveCheck: false); 
+                        }
+                        else
+                        {
+                            // Remove any constant value of isset() if the variable can be undefined
+                            x.ConstantValue = default(Optional<object>);
+                        }
                     }
 
-                    Accept(refExpr);
+                    // In the positive branch, all variables must be initialized
+                    if (branch == ConditionBranch.ToTrue)
+                    {
+                        // TODO: Solve also $foo[0], $foo->bar and their combinations
+                        State.SetVarInitialized(handle);
+                    }
                 }
             }
-            else
-            {
-                x.VarReferences.ForEach(Accept);
-            }
-            
+
             x.TypeRefMask = TypeCtx.GetBooleanTypeMask();
         }
 
@@ -1140,7 +1189,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 x.TargetMethod = new OverloadsList(AsMethodOverloads(symbol)).Resolve(this.TypeCtx, args, null);
 
                 //
-                x.ConstantValue = AnalysisFacts.TryResolve(x, _model);
+                AnalysisFacts.HandleFunctionCall(x, this, branch);
             }
 
             VisitRoutineCallEpilogue(x);
