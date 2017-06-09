@@ -11,7 +11,7 @@ using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis
 {
-    internal static class AstUtils
+    public static class AstUtils
     {
         /// <summary>
         /// Fixes <see cref="ItemUse"/> so it propagates correctly through our visitor.
@@ -70,6 +70,21 @@ namespace Pchp.CodeAnalysis
             lines.GetLineColumnFromPosition(pos, out line, out col);
 
             return new LinePosition(line, col);
+        }
+
+        /// <summary>
+        /// Returns the offset of the location specified by (zero-based) line and character from the start of the file.
+        /// In the case of invalid line, -1 is returned.
+        /// </summary>
+        public static int GetOffset(this PhpSyntaxTree tree, LinePosition linePosition)
+        {
+            if (linePosition.Line < 0 || linePosition.Line > tree.Source.LineBreaks.Count)
+            {
+                return -1;
+            }
+
+            int lineStart = (linePosition.Line == 0) ? 0 : tree.Source.LineBreaks.EndOfLineBreak(linePosition.Line - 1);
+            return lineStart + linePosition.Character;
         }
 
         /// <summary>

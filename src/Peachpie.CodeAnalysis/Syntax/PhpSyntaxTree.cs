@@ -206,21 +206,6 @@ namespace Pchp.CodeAnalysis
             return new FileLinePositionSpan(_source.FilePath, _source.LinePosition(span.Start), _source.LinePosition(span.End));
         }
 
-        /// <summary>
-        /// Returns the offset of the location specified by (zero-based) line and character from the start of the file.
-        /// In the case of invalid line, -1 is returned.
-        /// </summary>
-        public int GetPosition(LinePosition linePosition)
-        {
-            if (linePosition.Line < 0 || linePosition.Line > _source.LineBreaks.Count)
-            {
-                return -1;
-            }
-
-            int lineStart = (linePosition.Line == 0) ? 0 : _source.LineBreaks.EndOfLineBreak(linePosition.Line - 1);
-            return lineStart + linePosition.Character;
-        }
-
         public override Location GetLocation(TextSpan span)
         {
             throw new NotImplementedException();
