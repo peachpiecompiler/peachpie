@@ -46,37 +46,14 @@ namespace Pchp.CodeAnalysis
         }
 
         /// <summary>
-        /// Determines whether the specified optional value is equal to the current one. If <see cref="Optional{T}.HasValue"/>
-        /// of both is set to false, they are considered equal.
+        /// Determines whether the specified optional value is equal to the current one.
+        /// If <see cref="Optional{T}.HasValue"/> of both is set to false, they are considered equal.
         /// </summary>
         public static bool EqualsOptional(this Optional<object> value, Optional<object> other)
         {
-            if (value.HasValue != other.HasValue)
-            {
-                // The first one contains a value and the second one doesn't
-                return false;
-            }
-            else if (!value.HasValue)
-            {
-                // We know that value.HasValue == other.HasValue => !value.HasValue implies !other.HasValue
-                // => neither of them has a value, so they are equal (as specified above)
-                return true;
-            }
-            else if (value.Value == null)
-            {
-                // If one is null, the other one must be null too in order to be equal
-                return other.Value == null;
-            }
-            else if (other.Value == null)
-            {
-                // value.Value != null and other.Value == null => they are different
-                return false;
-            }
-            else
-            {
-                // They both have non-null values => delegate to object.Equals(object)
-                return value.Value.Equals(other.Value);
-            }
+            return
+                (value.HasValue == other.HasValue) &&
+                (value.HasValue == false || Equals(value.Value, other.Value));
         }
 
         /// <summary>
