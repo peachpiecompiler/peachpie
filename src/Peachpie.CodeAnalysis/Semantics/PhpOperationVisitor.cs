@@ -30,7 +30,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual void VisitTypeRef(BoundTypeRef x)
         {
-            Accept(x.TypeExpression);
+            if (x != null)
+            {
+                Accept(x.TypeExpression);
+            }
         }
 
         public virtual void VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
@@ -130,11 +133,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual void VisitFieldRef(BoundFieldRef x)
         {
-            if (x.ParentType != null)
-            {
-                VisitTypeRef(x.ParentType); 
-            }
 
+            VisitTypeRef(x.ParentType); 
             Accept(x.Instance);
             Accept(x.FieldName.NameExpression);
         }
