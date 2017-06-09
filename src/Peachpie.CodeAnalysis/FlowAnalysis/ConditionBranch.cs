@@ -33,6 +33,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return (ConditionBranch)(-((int)branch));
         }
 
+        /// <summary>
+        /// Gets the boolean value of the condition that led to this branch or null if
+        /// <see cref="ConditionBranch.AnyResult"/>.
+        /// </summary>
         public static bool? ToBool(this ConditionBranch branch)
         {
             switch (branch)

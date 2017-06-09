@@ -53,22 +53,28 @@ namespace Pchp.CodeAnalysis
         {
             if (value.HasValue != other.HasValue)
             {
+                // The first one contains a value and the second one doesn't
                 return false;
             }
             else if (!value.HasValue)
             {
+                // We know that value.HasValue == other.HasValue => !value.HasValue implies !other.HasValue
+                // => neither of them has a value, so they are equal (as specified above)
                 return true;
             }
             else if (value.Value == null)
             {
+                // If one is null, the other one must be null too in order to be equal
                 return other.Value == null;
             }
             else if (other.Value == null)
             {
+                // value.Value != null and other.Value == null => they are different
                 return false;
             }
             else
             {
+                // They both have non-null values => delegate to object.Equals(object)
                 return value.Value.Equals(other.Value);
             }
         }
