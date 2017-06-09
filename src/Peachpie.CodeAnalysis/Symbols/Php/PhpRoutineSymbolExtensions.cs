@@ -3,6 +3,7 @@ using Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
+using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -232,5 +233,21 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <param name="routine">The analysed routine.</param>
         /// <returns>Value indicating the routine gets a generator.</returns>
         internal static bool IsGeneratorMethod(this SourceRoutineSymbol routine) => (routine.Flags & RoutineFlags.IsGenerator) != 0;
+
+        /// <summary>
+        /// Gets enumeration of all routines (global code, functions and methods) within the file.
+        /// </summary>
+        internal static IEnumerable<SourceRoutineSymbol> GetAllRoutines(this SourceFileSymbol file)
+        {
+            // all functions + global code + methods + lambdas
+            var funcs = file.Functions.Cast<SourceRoutineSymbol>();
+            var main = file.MainMethod;
+
+            var types = file.ContainedTypes.SelectMany(t => t.AllVersions());
+            var methods = types.SelectMany(f => f.GetMembers().OfType<SourceRoutineSymbol>());
+            var lambdas = types.Cast<ILambdaContainerSymbol>().Concat(file).SelectMany(c => c.Lambdas);
+
+            return funcs.Concat(main).Concat(methods).Concat(lambdas);
+        }
     }
 }

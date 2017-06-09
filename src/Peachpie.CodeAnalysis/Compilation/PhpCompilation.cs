@@ -107,7 +107,7 @@ namespace Pchp.CodeAnalysis
                 PhpFileUtilities.NormalizeSlashes(_options.BaseDirectory));
             var fileSymbol = _tables.GetFile(relativePath);
 
-            return fileSymbol?.AllRoutines ?? ImmutableArray<SourceRoutineSymbol>.Empty;
+            return fileSymbol?.GetAllRoutines() ?? ImmutableArray<SourceRoutineSymbol>.Empty;
         }
 
         /// <summary>
