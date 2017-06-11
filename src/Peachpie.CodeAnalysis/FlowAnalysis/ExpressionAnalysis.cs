@@ -316,7 +316,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 Debug.Assert(x is BoundSynthesizedVariableRef || x.PhpSyntax != null);
                 var varSpan = (x.PhpSyntax != null) ? x.PhpSyntax.Span.ToTextSpan() : default(Microsoft.CodeAnalysis.Text.TextSpan);
                 x.Variable = Routine.LocalsTable.BindVariable(local.Name, State.GetVarKind(local), varSpan);
-                
+
                 //
                 State.VisitLocal(local);
 
@@ -814,7 +814,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         State,
                         checkExpr: cmpExpr,
                         isPositiveCheck: isPositive);
-                } 
+                }
             }
         }
 
@@ -983,44 +983,38 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         protected override void Visit(BoundIsSetEx x, ConditionBranch branch)
         {
-            bool isSingle = (x.VarReferences.Length == 1);
+            var refExpr = x.VarReference;
 
-            foreach (var refExpr in x.VarReferences)
+            Accept(refExpr);
+
+            if (branch != ConditionBranch.AnyResult && refExpr is BoundVariableRef varRef && varRef.Name.IsDirect)
             {
-                Accept(refExpr);
+                var handle = State.GetLocalHandle(varRef.Name.NameValue.Value);
 
-                if (branch != ConditionBranch.AnyResult && refExpr is BoundVariableRef varRef && varRef.Name.IsDirect)
+                // We cannot reason about the negative branch of isset($x, $y)
+                if (State.IsLocalSet(handle))
                 {
-                    var handle = State.GetLocalHandle(varRef.Name.NameValue.Value);
+                    // If the variable is always defined, isset() behaves like !is_null()
+                    AnalysisFacts.HandleTypeCheckingExpression(
+                        varRef,
+                        TypeCtx.GetNullTypeMask(),
+                        branch,
+                        State,
+                        // We would have to somehow aggregate the constant value if there were more variables checked
+                        checkExpr: x,
+                        isPositiveCheck: false);
+                }
+                else
+                {
+                    // Remove any constant value of isset() if the variable can be undefined
+                    x.ConstantValue = default(Optional<object>);
+                }
 
-                    // We cannot reason about the negative branch of isset($x, $y)
-                    if (isSingle || branch == ConditionBranch.ToTrue)
-                    {
-                        if (State.IsLocalSet(handle))
-                        {
-                            // If the variable is always defined, isset() behaves like !is_null()
-                            AnalysisFacts.HandleTypeCheckingExpression(
-                                varRef,
-                                TypeCtx.GetNullTypeMask(),
-                                branch,
-                                State,
-                                // We would have to somehow aggregate the constant value if there were more variables checked
-                                checkExpr: isSingle ? x : null,
-                                isPositiveCheck: false); 
-                        }
-                        else
-                        {
-                            // Remove any constant value of isset() if the variable can be undefined
-                            x.ConstantValue = default(Optional<object>);
-                        }
-                    }
-
-                    // In the positive branch, all variables must be initialized
-                    if (branch == ConditionBranch.ToTrue)
-                    {
-                        // TODO: Solve also $foo[0], $foo->bar and their combinations
-                        State.SetVarInitialized(handle);
-                    }
+                // In the positive branch, all variables must be initialized
+                if (branch == ConditionBranch.ToTrue)
+                {
+                    // TODO: Solve also $foo[0], $foo->bar and their combinations
+                    State.SetVarInitialized(handle);
                 }
             }
 
@@ -1597,15 +1591,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // bind arguments to parameters
             var ps = symbol.SourceParameters;
-            
+
             // first {N} source parameters correspond to "use" parameters
-            for (int pi = 0; pi < x.UseVars.Length; pi ++)
+            for (int pi = 0; pi < x.UseVars.Length; pi++)
             {
                 x.UseVars[pi].Parameter = ps[pi];
             }
 
             x.UseVars.ForEach(VisitArgument);
-            
+
             //
             x.BoundLambdaMethod = symbol;
             x.ResultType = Routine.DeclaringCompilation.CoreTypes.Closure;

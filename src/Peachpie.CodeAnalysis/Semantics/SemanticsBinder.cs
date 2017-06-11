@@ -136,8 +136,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #endregion
 
-        public virtual BoundItemsBag<BoundStatement> BindWholeStatement(AST.Statement stmt) 
-            => new BoundItemsBag<BoundStatement>(BindStatement(stmt));       
+        public virtual BoundItemsBag<BoundStatement> BindWholeStatement(AST.Statement stmt)
+            => new BoundItemsBag<BoundStatement>(BindStatement(stmt));
 
         protected virtual BoundStatement BindStatement(AST.Statement stmt)
         {
@@ -195,7 +195,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 .WithAccess(BoundAccess.Write);
         }
 
-        public virtual BoundItemsBag<BoundExpression> BindWholeExpression(AST.Expression expr, BoundAccess access) 
+        public virtual BoundItemsBag<BoundExpression> BindWholeExpression(AST.Expression expr, BoundAccess access)
             => new BoundItemsBag<BoundExpression>(BindExpression(expr, access));
 
         protected virtual BoundExpression BindExpression(AST.Expression expr, BoundAccess access)
@@ -287,7 +287,27 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindIsSet(AST.IssetEx x)
         {
-            return new BoundIsSetEx(x.VarList.Select(v => (BoundReferenceExpression)BindExpression(v, BoundAccess.Read.WithQuiet())).ToImmutableArray());
+            var varlist = x.VarList;
+
+            BoundExpression result = null;
+
+            for (int i = varlist.Count - 1; i >= 0; i--)
+            {
+                var expr = new BoundIsSetEx((BoundReferenceExpression)BindExpression(varlist[i], BoundAccess.Read.WithQuiet()));
+
+                if (result == null)
+                {
+                    result = expr;
+                }
+                else
+                {
+                    // isset(i1) && ... && isset(iN)
+                    result = new BoundBinaryEx(expr, result, AST.Operations.And);
+                }
+            }
+
+            //
+            return result ?? throw new ArgumentException("isset() without arguments!");
         }
 
         protected BoundExpression BindPseudoConst(AST.PseudoConstUse x) => new BoundPseudoConst(x.Type);
@@ -689,7 +709,7 @@ namespace Pchp.CodeAnalysis.Semantics
         readonly List<BoundYieldStatement> _yields;
 
         readonly HashSet<AST.LangElement> _yieldsToStatementRootPath;
-        int _rewriterVariableIndex = 0; 
+        int _rewriterVariableIndex = 0;
         int _underYieldLikeExLevel = -1;
         #endregion
 
@@ -726,7 +746,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public GeneratorSemanticsBinder(ImmutableArray<AST.YieldEx> yields, LocalsTable locals = null, DiagnosticBag diagnostics = null)
             : base(locals, diagnostics)
         {
-            _yields = new List<BoundYieldStatement>();      
+            _yields = new List<BoundYieldStatement>();
             _yieldsToStatementRootPath = new HashSet<AST.LangElement>();
 
             // save all parents of all yieldLikeEx in current routine -> will need to realocate all expressions on path and in its children
@@ -810,6 +830,7 @@ namespace Pchp.CodeAnalysis.Semantics
         #endregion
 
         #region SpecificExOverrides
+
         protected override BoundExpression BindBinaryEx(AST.BinaryEx expr)
         {
             // if not a short-circuit operator -> use normal logic for binding
@@ -842,18 +863,18 @@ namespace Pchp.CodeAnalysis.Semantics
                         condition = new BoundUnaryEx(leftExpr, AST.Operations.LogicNegation); // left is false
                         break;
                     case AST.Operations.Coalesce:
-                        if(leftExpr is BoundReferenceExpression leftRef) // left is not set or null
+                        if (leftExpr is BoundReferenceExpression leftRef) // left is not set or null
                         {
                             condition = new BoundUnaryEx(
-                                new BoundIsSetEx(ImmutableArray.Create(leftRef)), 
+                                new BoundIsSetEx(leftRef),
                                 AST.Operations.LogicNegation
                                 );
                         }
                         else
                         {
                             condition = new BoundGlobalFunctionCall(
-                                new QualifiedName(new Name("is_null")), 
-                                null, 
+                                new QualifiedName(new Name("is_null")),
+                                null,
                                 ImmutableArray.Create(new BoundArgument(leftExpr))
                                 );
                         }

@@ -1496,11 +1496,11 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Reference to be checked if it is set.
         /// </summary>
-        public ImmutableArray<BoundReferenceExpression> VarReferences { get; set; }
+        public BoundReferenceExpression VarReference { get; set; }
 
-        public BoundIsSetEx(ImmutableArray<BoundReferenceExpression> vars)
+        public BoundIsSetEx(BoundReferenceExpression varref)
         {
-            this.VarReferences = vars;
+            this.VarReference = varref;
         }
 
         public override void Accept(OperationVisitor visitor)

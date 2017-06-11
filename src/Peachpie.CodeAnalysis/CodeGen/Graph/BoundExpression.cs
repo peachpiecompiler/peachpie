@@ -3390,7 +3390,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 tArray.IsArray() ||
                 tArray.IsOfType(cg.CoreTypes.ArrayAccess) ||
                 tArray == cg.CoreTypes.PhpValue);
-            
+
             //
             // LOAD [Index]
             //
@@ -4011,47 +4011,26 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            var end_label = new object();
+            var t = cg.Emit(this.VarReference);
 
-            var vars = this.VarReferences;
-            for (int i = 0; i < vars.Length; i++)
+            // t.IsSet
+            if (t == cg.CoreTypes.PhpValue)
             {
-                if (i > 0)
-                {
-                    cg.Builder.EmitOpCode(ILOpCode.Pop);
-                }
-
-                var t = cg.Emit(vars[i]);
-
-                // t.IsSet
-                if (t == cg.CoreTypes.PhpValue)
-                {
-                    // IsSet(value)
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.IsSet_PhpValue);
-                }
-                else if (t.IsReferenceType)
-                {
-                    // object != null
-                    cg.Builder.EmitNullConstant(); // .ldnull
-                    cg.Builder.EmitOpCode(ILOpCode.Cgt_un); // .cgt.un
-                }
-                else
-                {
-                    // value type => true
-                    cg.EmitPop(t);
-                    cg.Builder.EmitBoolConstant(true);
-                }
-
-                if (i + 1 < vars.Length)
-                {
-                    // if (result == false) goto end_label;
-                    cg.Builder.EmitOpCode(ILOpCode.Dup);
-                    cg.Builder.EmitBranch(ILOpCode.Brfalse, end_label);
-                }
+                // IsSet(value)
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.IsSet_PhpValue);
             }
-
-            //
-            cg.Builder.MarkLabel(end_label);
+            else if (t.IsReferenceType)
+            {
+                // object != null
+                cg.Builder.EmitNullConstant(); // .ldnull
+                cg.Builder.EmitOpCode(ILOpCode.Cgt_un); // .cgt.un
+            }
+            else
+            {
+                // value type => true
+                cg.EmitPop(t);
+                cg.Builder.EmitBoolConstant(true);
+            }
 
             //
             return cg.CoreTypes.Boolean;
@@ -4063,15 +4042,13 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
             var il = cg.Builder;
-            
+
             // leave result of yield expr. (sent value) on eval stack
             il.EmitLoadArgumentOpcode(3);
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorSentItem_Generator);
 
             // type of expression result is PHP value (sent value)
             return cg.CoreTypes.PhpValue;
-
         }
-
     }
 }

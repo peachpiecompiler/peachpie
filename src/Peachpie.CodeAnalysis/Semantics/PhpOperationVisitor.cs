@@ -181,7 +181,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual void VisitIsSet(BoundIsSetEx x)
         {
-            x.VarReferences.ForEach(Accept);
+            Accept(x.VarReference);
         }
 
         public virtual void VisitLambda(BoundLambda x)
