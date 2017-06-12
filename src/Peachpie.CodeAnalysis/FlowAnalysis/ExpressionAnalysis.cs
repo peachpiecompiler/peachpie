@@ -178,6 +178,29 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return (TypeSymbol)_model.GetType(dtype.ClassName);
         }
 
+        /// <summary>
+        /// Finds the root of given chain, i.e.:
+        /// $a : $a
+        /// $$a : $a
+        /// $a->b : $a
+        /// $a[..] : $a
+        /// $a->foo() : $a
+        /// etc.
+        /// </summary>
+        /// <remarks>If given expression 'isset', its root returned by this method must be set as well.</remarks>
+        internal BoundExpression TryGetExpressionChainRoot(BoundExpression x)
+        {
+            if (x != null)
+            {
+                if (x is BoundVariableRef v) return v.Name.IsDirect ? v : TryGetExpressionChainRoot(v.Name.NameExpression);
+                if (x is BoundFieldRef f) return TryGetExpressionChainRoot(f.Instance ?? f.ParentType?.TypeExpression);
+                if (x is BoundInstanceFunctionCall m) return TryGetExpressionChainRoot(m.Instance);
+                if (x is BoundArrayItemEx a) return TryGetExpressionChainRoot(a.Array);
+            }
+
+            return null;
+        }
+
         #endregion
 
         #region Construction
@@ -983,41 +1006,64 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         protected override void Visit(BoundIsSetEx x, ConditionBranch branch)
         {
-            var refExpr = x.VarReference;
+            Accept(x.VarReference);
 
-            Accept(refExpr);
-
-            if (branch != ConditionBranch.AnyResult && refExpr is BoundVariableRef varRef && varRef.Name.IsDirect)
+            if (branch != ConditionBranch.AnyResult)
             {
-                var handle = State.GetLocalHandle(varRef.Name.NameValue.Value);
+                // try to get resulting value and type of the variable
+                var localname = AsVariableName(x.VarReference);
+                if (localname != null)
+                {
+                    var handle = State.GetLocalHandle(localname);
+                    Debug.Assert(handle.IsValid);
 
-                // We cannot reason about the negative branch of isset($x, $y)
-                if (State.IsLocalSet(handle))
-                {
-                    // If the variable is always defined, isset() behaves like !is_null()
-                    AnalysisFacts.HandleTypeCheckingExpression(
-                        varRef,
-                        TypeCtx.GetNullTypeMask(),
-                        branch,
-                        State,
-                        // We would have to somehow aggregate the constant value if there were more variables checked
-                        checkExpr: x,
-                        isPositiveCheck: false);
-                }
-                else
-                {
-                    // Remove any constant value of isset() if the variable can be undefined
+                    // Remove any constant value of isset()
                     x.ConstantValue = default(Optional<object>);
+
+                    //
+                    if (State.IsLocalSet(handle))
+                    {
+                        // If the variable is always defined, isset() behaves like !is_null()
+                        var currenttype = State.GetLocalType(handle);
+
+                        // a type in the true branch:
+                        var positivetype = TypeCtx.WithoutNull(currenttype);
+
+                        // resolve the constant if possible,
+                        // does not depend on the branch
+                        if (!currenttype.IsRef)
+                        {
+                            if (positivetype.IsVoid)    // always false
+                            {
+                                x.ConstantValue = new Optional<object>(false);
+                            }
+                            else if (positivetype == currenttype && !currenttype.IsAnyType)   // not void nor null
+                            {
+                                x.ConstantValue = new Optional<object>(true);
+                            }
+                        }
+
+                        // update target type in true/false branch:
+                        var newtype = (branch == ConditionBranch.ToTrue)
+                            ? positivetype
+                            : TypeCtx.GetNullTypeMask();
+
+                        State.SetLocalType(handle, newtype);
+                    }
                 }
 
-                // In the positive branch, all variables must be initialized
+                // In the positive branch, the variable will be initialized for sure
                 if (branch == ConditionBranch.ToTrue)
                 {
-                    // TODO: Solve also $foo[0], $foo->bar and their combinations
-                    State.SetVarInitialized(handle);
+                    var varname = AsVariableName(TryGetExpressionChainRoot(x.VarReference) as BoundReferenceExpression);    // in case of a chained expression, we know its root will be initialized
+                    if (varname != null)
+                    {
+                        State.SetVarInitialized(State.GetLocalHandle(varname));
+                    }
                 }
             }
 
+            // always returns a boolean
             x.TypeRefMask = TypeCtx.GetBooleanTypeMask();
         }
 
