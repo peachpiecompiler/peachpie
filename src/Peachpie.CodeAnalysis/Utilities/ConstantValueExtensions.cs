@@ -114,5 +114,13 @@ namespace Pchp.CodeAnalysis
         {
             return !string.IsNullOrEmpty(value) && value != "0";
         }
+
+        readonly static object s_true = true;
+        readonly static object s_false = false;
+
+        /// <summary>
+        /// Gets <see cref="Optional{Object}"/> of <see cref="bool"/>.
+        /// </summary>
+        public static Optional<object> AsOptional(this bool b) => new Optional<object>(b ? s_true : s_false);
     }
 }

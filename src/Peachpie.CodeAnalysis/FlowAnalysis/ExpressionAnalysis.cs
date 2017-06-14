@@ -880,7 +880,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.LogicNegation:
                     if (x.Operand.ConstantValue.TryConvertToBool(out bool constBool) == true)
                     {
-                        x.ConstantValue = new Optional<object>(!constBool);
+                        x.ConstantValue = ConstantValueExtensions.AsOptional(!constBool);
                     }
                     return TypeCtx.GetBooleanTypeMask();
 
@@ -1035,11 +1035,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         {
                             if (positivetype.IsVoid)    // always false
                             {
-                                x.ConstantValue = new Optional<object>(false);
+                                x.ConstantValue = ConstantValueExtensions.AsOptional(false);
                             }
                             else if (positivetype == currenttype && !currenttype.IsAnyType)   // not void nor null
                             {
-                                x.ConstantValue = new Optional<object>(true);
+                                x.ConstantValue = ConstantValueExtensions.AsOptional(true);
                             }
                         }
 
