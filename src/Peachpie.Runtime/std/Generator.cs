@@ -5,7 +5,7 @@ using Pchp.Core;
 public delegate void GeneratorStateMachineDelegate(Context ctx, object @this, PhpArray locals, Generator gen);
 
 [PhpType("[name]")]
-public class Generator : Iterator, IDisposable
+public class Generator : Iterator
 {
     #region BoundVariables
     /// <summary>
@@ -26,7 +26,7 @@ public class Generator : Iterator, IDisposable
     /// <summary>
     /// Lifted local variables from the state machine function.
     /// </summary>
-    readonly PhpArray _locals; // Change to internal after all access moved to Operators method
+    readonly PhpArray _locals;
     #endregion
 
     #region StateVariables
@@ -39,15 +39,15 @@ public class Generator : Iterator, IDisposable
     ///  -2: closed
     /// +x: valid state
     /// </remarks>
-    internal int _state = 0; // Change to internal after all access moved to Operators method
+    internal int _state = 0;
 
     /// <summary>
     /// Did last yield returned user-specified key.
     /// </summary>
-    internal bool _userKeyReturned = false; // Change to internal after all access moved to Operators method
+    internal bool _userKeyReturned = false;
 
-    internal PhpValue _currValue, _currKey, _currSendItem, _returnValue; // Change to internal after all access moved to Operators method
-    internal Exception _currException; // Change to internal after all access moved to Operators method
+    internal PhpValue _currValue, _currKey, _currSendItem, _returnValue;
+    internal Exception _currException;
     #endregion
 
     #region HelperLocalVariables
@@ -220,41 +220,6 @@ public class Generator : Iterator, IDisposable
     }
 
     #endregion
-
-    #region IDisposable Support
-    private bool disposedValue = false; // To detect redundant calls
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!disposedValue)
-        {
-            if (disposing)
-            {
-                // TODO: dispose managed state (managed objects).
-            }
-
-            // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
-            // TODO: set large fields to null.
-
-            disposedValue = true;
-        }
-    }
-
-    // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
-    // ~Generator() {
-    //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-    //   Dispose(false);
-    // }
-
-    // This code added to correctly implement the disposable pattern.
-    public void Dispose()
-    {
-        // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
-        Dispose(true);
-        // TODO: uncomment the following line if the finalizer is overridden above.
-        // GC.SuppressFinalize(this);
-    }
-    #endregion
-
+    
 }
 
