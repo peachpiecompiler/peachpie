@@ -228,6 +228,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.LambdaFunctionExpr lambFuncEx) return BindLambda(lambFuncEx).WithAccess(access);
             if (expr is AST.EvalEx evalEx) return BindEval(evalEx).WithAccess(access);
             if (expr is AST.YieldEx yieldEx) return BindYieldEx(yieldEx).WithAccess(access);
+            if (expr is AST.ShellEx shellEx) return BindShellEx(shellEx).WithAccess(access);
 
             //
             _diagnostics.Add(_locals.Routine, expr, Errors.ErrorCode.ERR_NotYetImplemented, $"Expression of type '{expr.GetType().Name}'");
@@ -432,6 +433,14 @@ namespace Pchp.CodeAnalysis.Semantics
 
             //
             return new BoundIncDecEx(varref, kind);
+        }
+
+        protected BoundExpression BindShellEx(AST.ShellEx expr)
+        {
+            return new BoundGlobalFunctionCall(
+                new QualifiedName(new Name("shell_exec")),
+                null,
+                ImmutableArray.Create(new BoundArgument(BindExpression(expr.Command))));
         }
 
         protected BoundExpression BindVarLikeConstructUse(AST.VarLikeConstructUse expr, BoundAccess access)
