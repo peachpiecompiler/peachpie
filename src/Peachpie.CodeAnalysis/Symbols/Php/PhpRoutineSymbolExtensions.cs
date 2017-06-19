@@ -15,6 +15,18 @@ namespace Pchp.CodeAnalysis.Symbols
     public static class PhpRoutineSymbolExtensions
     {
         /// <summary>
+        /// Gets value indicating the routine does not override any other routine.
+        /// (static methods, private methods or sealed virtual methods not overriding anything)
+        /// </summary>
+        static bool IsNotOverriding(SourceRoutineSymbol routine)
+        {
+            return
+                routine.IsStatic ||
+                routine.DeclaredAccessibility == Accessibility.Private ||
+                ((routine.IsSealed || routine.ContainingType.IsSealed) && routine.OverriddenMethod == null);
+        }
+
+        /// <summary>
         /// Constructs most appropriate CLR return type of given routine.
         /// The method handles returning by alias, PHP7 return type, PHPDoc @return tag and result of flow analysis.
         /// In case the routine is an override or can be overriden, the CLR type is a value.
@@ -28,7 +40,7 @@ namespace Pchp.CodeAnalysis.Symbols
             if (routine.IsGeneratorMethod())
             {
                 // if non-virtual -> return Generator directly
-                if (routine.IsStatic || routine.DeclaredAccessibility == Accessibility.Private || (routine.IsSealed && !routine.IsOverride))
+                if (IsNotOverriding(routine))
                 {
                     return compilation.CoreTypes.Generator;
                 }
@@ -51,7 +63,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // for non virtual methods:
-            if (routine.IsStatic || routine.DeclaredAccessibility == Accessibility.Private || (routine.IsSealed && !routine.IsOverride))
+            if (IsNotOverriding(routine))
             {
                 // /** @return */
                 var typeCtx = routine.TypeRefContext;
