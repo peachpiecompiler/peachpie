@@ -300,7 +300,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             BoundExpression checkExpr = null,
             bool isPositiveCheck = true)
         {
-            if (!TryGetVariableHandle(varRef, flowState, out VariableHandle handle))
+            if (!TryGetVariableHandle(varRef.Variable, flowState, out VariableHandle handle))
             {
                 return;
             }
@@ -341,18 +341,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        private static bool TryGetVariableHandle(BoundVariableRef varRef, FlowState state, out VariableHandle varHandle)
+        private static bool TryGetVariableHandle(BoundVariable boundvar, FlowState state, out VariableHandle varHandle)
         {
-            if (varRef.Variable.VariableKind == VariableKind.LocalVariable || varRef.Variable.VariableKind == VariableKind.Parameter)
+            if (boundvar.Name != null)  // direct variable name
             {
-                varHandle = state.GetLocalHandle(varRef.Variable.Name);
-                return true;
+                if (boundvar.VariableKind == VariableKind.LocalVariable || boundvar.VariableKind == VariableKind.Parameter)
+                {
+                    varHandle = state.GetLocalHandle(boundvar.Name);
+                    return true;
+                }
             }
-            else
-            {
-                varHandle = default(VariableHandle);
-                return false;
-            }
+
+            //
+            varHandle = default(VariableHandle);
+            return false;
         }
 
         private static bool HandleTypeChecking(
