@@ -169,10 +169,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 return ConversionCost.NoConversion;
             }
 
-            if (method.ReturnType != basemethod.ReturnType)
-            {
-                return ConversionCost.ImplicitCast;
-            }
+            //if (method.ReturnType != basemethod.ReturnType)   // the return type is not important for the override cost
+            //{
+            //    return ConversionCost.ImplicitCast;
+            //}
 
             //
             var ps = method.Parameters;
