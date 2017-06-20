@@ -115,11 +115,14 @@ namespace Pchp.CodeAnalysis
             return !string.IsNullOrEmpty(value) && value != "0";
         }
 
+        /// <summary>Boxed <c>boolean</c> to be re-used.</summary>
         readonly static object s_true = true;
+        /// <summary>Boxed <c>boolean</c> to be re-used.</summary>
         readonly static object s_false = false;
 
         /// <summary>
         /// Gets <see cref="Optional{Object}"/> of <see cref="bool"/>.
+        /// This method does not allocate a new boolean on heap.
         /// </summary>
         public static Optional<object> AsOptional(this bool b) => new Optional<object>(b ? s_true : s_false);
     }

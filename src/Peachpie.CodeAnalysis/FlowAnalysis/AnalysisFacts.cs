@@ -42,18 +42,58 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var args = call.ArgumentsInSourceOrder;
                 switch (name)
                 {
+                    // bool function_exists ( string $function_name )
                     case "function_exists":
                         if (args.Length == 1)
                         {
-                            // TRUE <=> function name is defined unconditionally in a reference library (PE assembly)
-                            var str = args[0].Value.ConstantValue.Value as string;
-                            if (str != null)
+                            // TRUE <=> function is defined unconditionally in a reference library (PE assembly)
+                            var function_name = args[0].Value.ConstantValue.Value as string;
+                            if (function_name != null)
                             {
-                                var tmp = analysis.Model.ResolveFunction(NameUtils.MakeQualifiedName(str, true));
-                                if (tmp is PEMethodSymbol || (tmp is AmbiguousMethodSymbol && ((AmbiguousMethodSymbol)tmp).Ambiguities.All(f => f is PEMethodSymbol)))
+                                var tmp = analysis.Model.ResolveFunction(NameUtils.MakeQualifiedName(function_name, true));
+                                if (tmp is PEMethodSymbol || (tmp is AmbiguousMethodSymbol && ((AmbiguousMethodSymbol)tmp).Ambiguities.All(f => f is PEMethodSymbol)))  // TODO: unconditional declaration ?
                                 {
-                                    call.ConstantValue = new Optional<object>(true);
+                                    call.ConstantValue = ConstantValueExtensions.AsOptional(true);
                                     return;
+                                }
+                            }
+                        }
+                        break;
+
+                    // bool class_exists ( string $class_name [, bool $autoload = true ] )
+                    case "class_exists":
+                        if (args.Length >= 1)
+                        {
+                            // TRUE <=> class is defined unconditionally in a reference library (PE assembly)
+                            var class_name = args[0].Value.ConstantValue.Value as string;
+                            if (class_name != null)
+                            {
+                                var tmp = analysis.Model.GetType(NameUtils.MakeQualifiedName(class_name, true));
+                                if (tmp is PENamedTypeSymbol)   // TODO: unconditional declaration ?
+                                {
+                                    call.ConstantValue = ConstantValueExtensions.AsOptional(true);
+                                    return;
+                                }
+                            }
+                        }
+                        break;
+
+                    // bool method_exists ( string $class_name , string $method_name )
+                    case "method_exists":
+                        if (args.Length == 2)
+                        {
+                            var class_name = args[0].Value.ConstantValue.Value as string;
+                            var function_name = args[1].Value.ConstantValue.Value as string;
+                            if (class_name != null && function_name != null)
+                            {
+                                var tmp = (NamedTypeSymbol)analysis.Model.GetType(NameUtils.MakeQualifiedName(class_name, true));
+                                if (tmp is PENamedTypeSymbol)
+                                {
+                                    if (tmp.LookupMethods(function_name).Any())
+                                    {
+                                        call.ConstantValue = ConstantValueExtensions.AsOptional(true);
+                                        return;
+                                    }
                                 }
                             }
                         }
@@ -332,7 +372,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         || checkExpr.ConstantValue.Value is true && branch == ConditionBranch.ToFalse))
                 {
                     checkExpr.ConstantValue = resultConstVal;
-                } 
+                }
             }
             else
             {

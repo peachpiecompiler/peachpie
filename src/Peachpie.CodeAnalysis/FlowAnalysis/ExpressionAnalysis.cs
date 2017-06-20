@@ -1267,7 +1267,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     var candidates = resolvedtype.LookupMethods(x.Name.NameValue.Name.Value);
                     var args = x.ArgumentsInSourceOrder.Select(a => a.Value.TypeRefMask).ToArray();
-                    x.TargetMethod = new OverloadsList(candidates.ToArray()).Resolve(this.TypeCtx, args, this.TypeCtx.ContainingType);
+                    x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, args, this.TypeCtx.ContainingType);
                 }
             }
 
@@ -1289,7 +1289,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // if (candidates.Any(c => c.HasThis)) throw new NotImplementedException("instance method called statically");
 
                 var args = x.ArgumentsInSourceOrder.Select(a => a.Value.TypeRefMask).ToArray();
-                x.TargetMethod = new OverloadsList(candidates.ToArray()).Resolve(this.TypeCtx, args, this.TypeCtx.ContainingType);
+                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, args, this.TypeCtx.ContainingType);
             }
 
             VisitRoutineCallEpilogue(x);
