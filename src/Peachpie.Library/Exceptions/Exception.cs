@@ -73,6 +73,22 @@ namespace Pchp.Library.Spl
     }
 
     /// <summary>
+    /// Exception that represents error in the program logic.
+    /// This kind of exception should lead directly to a fix in your code.
+    /// </summary>
+    [PhpType("[name]")]
+    public class LogicException : Spl.Exception
+    {
+        [PhpFieldsOnlyCtor]
+        protected LogicException() { }
+
+        public LogicException(string message = "", long code = 0, Throwable previous = null)
+        {
+            __construct(message, code, previous);
+        }
+    }
+
+    /// <summary>
     /// An Error Exception.
     /// </summary>
     [PhpType("[name]")]
