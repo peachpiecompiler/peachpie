@@ -389,6 +389,55 @@ namespace Pchp.Library.Spl
     }
 
     /// <summary>
+    /// This iterator allows to unset and modify values and keys while iterating over Arrays and Objects in the same way
+    /// as the <see cref="ArrayIterator"/>. Additionally it is possible to iterate over the current iterator entry.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName)]
+    public class RecursiveArrayIterator : ArrayIterator, RecursiveIterator
+    {
+        // TODO: Add and use the CHILD_ARRAYS_ONLY constant when flags are functional
+
+        [PhpFieldsOnlyCtor]
+        protected RecursiveArrayIterator(Context/*!*/ctx) : base(ctx)
+        {
+        }
+
+        public RecursiveArrayIterator(Context/*!*/ctx, PhpValue array, int flags = 0)
+            : this(ctx)
+        {
+            __construct(ctx, array, flags);
+        }
+
+        public RecursiveArrayIterator getChildren()
+        {
+            if (!valid())
+            {
+                return null;
+            }
+
+            var elem = current();
+            var type = GetType();
+            if (type == typeof(RecursiveArrayIterator))
+            {
+                return new RecursiveArrayIterator(_ctx, elem);
+            }
+            else
+            {
+                // We create an instance of the current type, if used from a subclass
+                return (RecursiveArrayIterator)_ctx.Create(default(RuntimeTypeHandle), type.GetPhpTypeInfo(), elem); 
+            }
+        }
+
+        RecursiveIterator RecursiveIterator.getChildren() => getChildren();
+
+        public bool hasChildren()
+        {
+            var elem = current();
+            return (elem.IsArray || elem.IsObject) && !elem.IsEmpty;
+        }
+    }
+
+    /// <summary>
     /// The EmptyIterator class for an empty iterator.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
@@ -562,7 +611,19 @@ namespace Pchp.Library.Spl
         {
         }
 
-        void SkipNotAccepted()
+        public override void rewind()
+        {
+            base.rewind();
+            SkipNotAccepted();
+        }
+
+        public override void next()
+        {
+            base.next();
+            SkipNotAccepted();
+        }
+
+        private void SkipNotAccepted()
         {
             if (_enumerator != null)
             {
@@ -580,31 +641,41 @@ namespace Pchp.Library.Spl
         public abstract bool accept();
     }
 
+    /// <summary>
+    /// This abstract iterator filters out unwanted values for a RecursiveIterator.
+    /// This class should be extended to implement custom filters.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName)]
+    public abstract class RecursiveFilterIterator : FilterIterator, RecursiveIterator
+    {
+        readonly protected Context _ctx;
 
-    ///// <summary>
-    ///// This abstract iterator filters out unwanted values for a RecursiveIterator.
-    ///// This class should be extended to implement custom filters.
-    ///// </summary>
-    //[PhpType(PhpTypeAttribute.InheritName)]
-    //public abstract class RecursiveFilterIterator : FilterIterator, RecursiveIterator
-    //{
-    //    [PhpFieldsOnlyCtor]
-    //    protected RecursiveFilterIterator() { }
+        [PhpFieldsOnlyCtor]
+        protected RecursiveFilterIterator(Context ctx)
+        {
+            _ctx = ctx;
+        }
 
-    //    public RecursiveFilterIterator(RecursiveIterator iterator) => __construct(iterator);
+        public RecursiveFilterIterator(Context ctx, RecursiveIterator iterator) : this (ctx)
+        {
+            __construct(iterator);
+        }
 
-    //    public sealed override void __construct(Traversable iterator, string classname = null) => base.__construct(iterator, classname);
+        // TODO: Force also __construct to take RecursiveIterator
 
-    //    public virtual void __construct(RecursiveIterator iterator) => __construct((Iterator)iterator);
-        
-    //    public RecursiveIterator getChildren()
-    //    {
-    //        throw new NotImplementedException();
-    //    }
+        public RecursiveFilterIterator getChildren()
+        {
+            var childrenIt = ((RecursiveIterator)getInnerIterator()).getChildren();
+            object result = _ctx.Create(default(RuntimeTypeHandle), this.GetPhpTypeInfo(), PhpValue.FromClass(childrenIt));
 
-    //    public bool hasChildren()
-    //    {
-    //        throw new NotImplementedException();
-    //    }
-    //}
+            return (RecursiveFilterIterator)result;
+        }
+
+        RecursiveIterator RecursiveIterator.getChildren() => getChildren();
+
+        public bool hasChildren()
+        {
+            return ((RecursiveIterator)getInnerIterator()).hasChildren();
+        }
+    }
 }
