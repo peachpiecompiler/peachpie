@@ -30,6 +30,19 @@ namespace Pchp.Core.Reflection
         }
 
         /// <summary>
+        /// Checks if the field represents special PHP context holder.
+        /// </summary>
+        public static bool IsContextField(FieldInfo fld)
+        {
+            // TODO: [CompilerGenerated] attribute
+            // protected Context _ctx|<ctx>;
+            return !fld.IsStatic &&
+                (fld.Attributes & FieldAttributes.Family) != 0 &&
+                (fld.Name == "_ctx" || fld.Name == "<ctx>") &&
+                fld.FieldType == typeof(Context);
+        }
+
+        /// <summary>
         /// Determines whether given constructor is <c>PhpFieldsOnlyCtorAttribute</c>.
         /// </summary>
         public static bool IsPhpFieldsOnlyCtor(this ConstructorInfo ctor)
