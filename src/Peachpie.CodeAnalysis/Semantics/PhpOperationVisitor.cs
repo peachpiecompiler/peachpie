@@ -255,6 +255,10 @@ namespace Pchp.CodeAnalysis.Semantics
             Accept(boundYieldStatement.YieldedKey);
         }
 
+        public virtual void VisitDeclareStatement(BoundDeclareStatement x)
+        {
+        }
+
         #endregion
     }
 }

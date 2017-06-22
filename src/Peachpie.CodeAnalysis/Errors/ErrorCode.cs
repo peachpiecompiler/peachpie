@@ -87,6 +87,7 @@ namespace Pchp.CodeAnalysis.Errors
         /// <summary>The declaration of class, interface or trait is ambiguous since its base types cannot be resolved.</summary>
         WRN_AmbiguousDeclaration,
         WRN_UnreachableCode,
+        WRN_NotYetImplementedIgnored,
 
         //
         // Visible information

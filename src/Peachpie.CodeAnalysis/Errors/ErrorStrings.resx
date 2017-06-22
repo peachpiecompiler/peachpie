@@ -141,6 +141,9 @@
   <data name="WRN_EvalDiscouraged" xml:space="preserve">
     <value>Use of 'eval()' is discouraged. Construct allows execution of arbitrary code and is subject to performance and memory overhead.</value>
   </data>
+  <data name="WRN_NotYetImplementedIgnored" xml:space="preserve">
+    <value>{0} will be ignored, because it is currently not supported by Peachpie.</value>
+  </data>
   <data name="WRN_UndefinedFunctionCall" xml:space="preserve">
     <value>Call to undefined function: '{0}'</value>
   </data>

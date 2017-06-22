@@ -169,5 +169,25 @@ namespace Pchp.CodeAnalysis
             //
             return element;
         }
+
+        public static Microsoft.CodeAnalysis.Text.TextSpan GetDeclareClauseSpan(this DeclareStmt declStmt)
+        {
+            if (declStmt.Statement is EmptyStmt)
+            {
+                // declare (...); - return whole span
+                return declStmt.Span.ToTextSpan();
+            }
+            else
+            {
+                // declare (...) { ... } - return only the span of declare (...)
+                int clauseStart = declStmt.Span.Start;
+                int blockStart = declStmt.Statement.Span.Start;
+                var searchSpan = new Span(clauseStart, blockStart - clauseStart);
+                string searchText = declStmt.ContainingSourceUnit.GetSourceCode(searchSpan);
+                int clauseLength = searchText.LastIndexOf(')') + 1;
+
+                return new Microsoft.CodeAnalysis.Text.TextSpan(clauseStart, clauseLength);
+            }
+        }
     }
 }

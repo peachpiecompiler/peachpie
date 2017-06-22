@@ -91,6 +91,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // do not make diagnostics on syntesized variables
         }
 
+        public override void VisitDeclareStatement(BoundDeclareStatement x)
+        {
+            _diagnostics.Add(
+                _routine,
+                ((DeclareStmt)x.PhpSyntax).GetDeclareClauseSpan(),
+                ErrorCode.WRN_NotYetImplementedIgnored,
+                "Declare construct");
+
+            base.VisitDeclareStatement(x);
+        }
+
         private void CheckUndefinedFunctionCall(BoundGlobalFunctionCall x)
         {
             if (x.Name.IsDirect && x.TargetMethod.IsErrorMethod())

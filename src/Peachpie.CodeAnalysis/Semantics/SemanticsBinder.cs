@@ -165,6 +165,7 @@ namespace Pchp.CodeAnalysis.Semantics
             { PhpSyntax = stmt };
             if (stmt is AST.ThrowStmt throwStm) return new BoundThrowStatement(BindExpression(throwStm.Expression, BoundAccess.Read)) { PhpSyntax = stmt };
             if (stmt is AST.PHPDocStmt) return new BoundEmptyStatement() { PhpSyntax = stmt };
+            if (stmt is AST.DeclareStmt declareStm) return new BoundDeclareStatement() { PhpSyntax = stmt };
 
             //
             _diagnostics.Add(_locals.Routine, stmt, Errors.ErrorCode.ERR_NotYetImplemented, $"Statement of type '{stmt.GetType().Name}'");

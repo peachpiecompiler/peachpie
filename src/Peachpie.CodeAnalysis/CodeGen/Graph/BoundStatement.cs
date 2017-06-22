@@ -366,4 +366,11 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.EmitCall(ILOpCode.Call, setMethod);
         }
     }
+
+    partial class BoundDeclareStatement
+    {
+        internal override void Emit(CodeGenerator cg)
+        {
+        }
+    }
 }

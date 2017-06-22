@@ -418,6 +418,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public override void VisitDeclareStmt(DeclareStmt x)
         {
             Add(x);
+
+            base.VisitDeclareStmt(x); // visit inner statement, if present
         }
 
         public override void VisitGlobalCode(GlobalCode x)
