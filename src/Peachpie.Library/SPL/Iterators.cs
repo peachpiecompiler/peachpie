@@ -661,7 +661,15 @@ namespace Pchp.Library.Spl
             __construct(iterator);
         }
 
-        // TODO: Force also __construct to take RecursiveIterator
+        public override void __construct(Traversable iterator, string classname = null)
+        {
+            if (!(iterator is RecursiveIterator))
+            {
+                PhpException.InvalidArgument(nameof(iterator));
+            }
+
+            base.__construct(iterator, classname);
+        }
 
         public RecursiveFilterIterator getChildren()
         {
