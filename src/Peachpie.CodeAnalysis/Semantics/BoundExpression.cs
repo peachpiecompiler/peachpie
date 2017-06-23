@@ -336,11 +336,16 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public partial class BoundArgument : IArgument
     {
-        public ArgumentKind ArgumentKind => ArgumentKind.Positional;    // TODO: DefaultValue, ParamArray
+        public ArgumentKind ArgumentKind { get; private set; }
 
         public IExpression InConversion => null;
 
         public bool IsInvalid => false;
+
+        /// <summary>
+        /// Variable unpacking in PHP, the triple-dot syntax.
+        /// </summary>
+        public bool IsUnpacking => this.ArgumentKind == ArgumentKind.ParamArray;
 
         public OperationKind Kind => OperationKind.Argument;
 
@@ -354,12 +359,31 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundExpression Value { get; set; }
 
-        public BoundArgument(BoundExpression value)
+        /// <summary>
+        /// Creates the argument.
+        /// </summary>
+        public static BoundArgument Create(BoundExpression value)
+        {
+            return new BoundArgument(value, ArgumentKind.Positional);
+        }
+
+        /// <summary>
+        /// Creates the argument that will be unpacked.
+        /// The argument is an array which elements will be passed as actual arguments.
+        /// </summary>
+        public static BoundArgument CreateUnpacking(BoundExpression value)
+        {
+            Debug.Assert(!value.Access.IsReadRef);
+            return new BoundArgument(value, ArgumentKind.ParamArray);
+        }
+
+        private BoundArgument(BoundExpression value, ArgumentKind kind = ArgumentKind.Positional)
         {
             Contract.ThrowIfNull(value);
             Debug.Assert(value.Access.IsRead);  // we do not support OUT parameters in PHP I guess, just aliasing ~ IsReadRef
 
             this.Value = value;
+            this.ArgumentKind = kind;
         }
 
         public void Accept(OperationVisitor visitor)
@@ -413,6 +437,11 @@ namespace Pchp.CodeAnalysis.Semantics
         public virtual bool IsVirtual => false;
 
         public override OperationKind Kind => OperationKind.InvocationExpression;
+
+        /// <summary>
+        /// Gets value indicating the arguments has to be unpacked in runtime.
+        /// </summary>
+        public bool HasArgumentsUnpacking => _arguments.Any(x => x.IsUnpacking);
 
         public BoundRoutineCall(ImmutableArray<BoundArgument> arguments)
         {
@@ -639,7 +668,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public InclusionTypes InclusionType { get; private set; }
 
         public BoundIncludeEx(BoundExpression target, InclusionTypes type)
-            : base(ImmutableArray.Create(new BoundArgument(target)))
+            : base(ImmutableArray.Create(BoundArgument.Create(target)))
         {
             Debug.Assert(target.Access.IsRead);
 
@@ -659,7 +688,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public override BoundExpression Instance => null;
 
         public BoundExitEx(BoundExpression value = null)
-            : base(value != null ? ImmutableArray.Create(new BoundArgument(value)) : ImmutableArray<BoundArgument>.Empty)
+            : base(value != null ? ImmutableArray.Create(BoundArgument.Create(value)) : ImmutableArray<BoundArgument>.Empty)
         {
             Debug.Assert(value == null || value.Access.IsRead);
         }

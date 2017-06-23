@@ -28,7 +28,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public T BoundElement { get; private set; }
 
-        public BoundItemsBag(T bound, BoundBlock preBoundFirst, BoundBlock preBoundLast)
+        public BoundItemsBag(T bound, BoundBlock preBoundFirst = null, BoundBlock preBoundLast = null)
         {
             Debug.Assert(bound != null || (preBoundFirst == null && preBoundLast == null));
             Debug.Assert(preBoundFirst != null || preBoundLast == null);
@@ -38,9 +38,6 @@ namespace Pchp.CodeAnalysis.Semantics
             BoundElement = bound;
         }
         public static BoundItemsBag<T> Empty => new BoundItemsBag<T>(null);
-
-        public BoundItemsBag(T bound) : this(bound, null) { }
-        public BoundItemsBag(T bound, BoundBlock preBound) : this(bound, preBound, null) { }
 
         /// <summary>
         /// Returns bound elemenent and asserts that there are no <c>PreBoundStatements</c>.
@@ -55,7 +52,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public bool IsEmpty => IsOnlyBoundElement && BoundElement == null;
         public bool IsOnlyBoundElement => (PreBoundBlockFirst == null);
-
     }
 
     /// <summary>
@@ -105,22 +101,62 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindExpression(AST.Expression expr) => BindExpression(expr, BoundAccess.Read);
 
-        protected ImmutableArray<BoundArgument> BindArguments(IEnumerable<AST.Expression> expressions)
+        protected BoundArgument BindArgument(AST.Expression expr, bool isByRef = false, bool isUnpack = false)
         {
-            return BindExpressions(expressions)
-                .Select(x => new BoundArgument(x))
-                .ToImmutableArray();
-        }
-
-        protected ImmutableArray<BoundArgument> BindArguments(IEnumerable<AST.ActualParam> parameters)
-        {
-            var unsupported = parameters.FirstOrDefault(p => p.IsUnpack || p.Ampersand);
-            if (unsupported != null)
+            if (isUnpack)
             {
-                _diagnostics.Add(_locals.Routine, unsupported, Errors.ErrorCode.ERR_NotYetImplemented, "Passing parameter by ref or parameter unpacking.");
+                // remove:
+                _diagnostics.Add(_locals.Routine, expr, Errors.ErrorCode.ERR_NotYetImplemented, "Parameter unpacking");
             }
 
-            return BindArguments(parameters.Select(p => p.Expression));
+            var bound = BindExpression(expr, isByRef ? BoundAccess.ReadRef : BoundAccess.Read);
+            Debug.Assert(!isUnpack || !isByRef);
+
+            return isUnpack
+                ? BoundArgument.CreateUnpacking(bound)
+                : BoundArgument.Create(bound);
+        }
+
+        protected ImmutableArray<BoundArgument> BindArguments(params AST.Expression[] expressions)
+        {
+            Debug.Assert(expressions != null);
+
+            if (expressions.Length == 0)
+            {
+                return ImmutableArray<BoundArgument>.Empty;
+            }
+
+            //
+            var arguments = new BoundArgument[expressions.Length];
+            for (int i = 0; i < expressions.Length; i++)
+            {
+                var expr = expressions[i];
+                arguments[i] = BindArgument(expr);
+            }
+
+            //
+            return ImmutableArray.Create(arguments);
+        }
+
+        protected ImmutableArray<BoundArgument> BindArguments(params AST.ActualParam[] parameters)
+        {
+            Debug.Assert(parameters != null);
+
+            if (parameters.Length == 0)
+            {
+                return ImmutableArray<BoundArgument>.Empty;
+            }
+
+            //
+            var arguments = new BoundArgument[parameters.Length];
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                var p = parameters[i];
+                arguments[i] = BindArgument(p.Expression, p.Ampersand, p.IsUnpack);
+            }
+
+            //
+            return ImmutableArray.Create(arguments);
         }
 
         protected ImmutableArray<BoundArgument> BindLambdaUseArguments(IEnumerable<AST.FormalParam> usevars)
@@ -130,21 +166,20 @@ namespace Pchp.CodeAnalysis.Semantics
                 var varuse = new AST.DirectVarUse(v.Name.Span, v.Name.Name);
                 return BindExpression(varuse, v.PassedByRef ? BoundAccess.ReadRef : BoundAccess.Read);
             })
-            .Select(expr => new BoundArgument(expr))
+            .Select(BoundArgument.Create)
             .ToImmutableArray();
         }
 
         #endregion
 
-        public virtual BoundItemsBag<BoundStatement> BindWholeStatement(AST.Statement stmt)
-            => new BoundItemsBag<BoundStatement>(BindStatement(stmt));
+        public virtual BoundItemsBag<BoundStatement> BindWholeStatement(AST.Statement stmt) => BindStatement(stmt);
 
         protected virtual BoundStatement BindStatement(AST.Statement stmt)
         {
             Debug.Assert(stmt != null);
 
-            if (stmt is AST.EchoStmt echoStm) return new BoundExpressionStatement(new BoundEcho(BindArguments((echoStm).Parameters))) { PhpSyntax = stmt };
-            if (stmt is AST.ExpressionStmt exprStm) return new BoundExpressionStatement(BindExpression((exprStm).Expression, BoundAccess.None)) { PhpSyntax = stmt };
+            if (stmt is AST.EchoStmt echoStm) return new BoundExpressionStatement(new BoundEcho(BindArguments(echoStm.Parameters))) { PhpSyntax = stmt };
+            if (stmt is AST.ExpressionStmt exprStm) return new BoundExpressionStatement(BindExpression(exprStm.Expression, BoundAccess.None)) { PhpSyntax = stmt };
             if (stmt is AST.JumpStmt jmpStm) return BindJumpStmt(jmpStm);
             if (stmt is AST.FunctionDecl) return new BoundFunctionDeclStatement(stmt.GetProperty<SourceFunctionSymbol>());
             if (stmt is AST.TypeDecl) return new BoundTypeDeclStatement(stmt.GetProperty<SourceTypeSymbol>());
@@ -196,8 +231,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 .WithAccess(BoundAccess.Write);
         }
 
-        public virtual BoundItemsBag<BoundExpression> BindWholeExpression(AST.Expression expr, BoundAccess access)
-            => new BoundItemsBag<BoundExpression>(BindExpression(expr, access));
+        public virtual BoundItemsBag<BoundExpression> BindWholeExpression(AST.Expression expr, BoundAccess access) => BindExpression(expr, access);
 
         protected virtual BoundExpression BindExpression(AST.Expression expr, BoundAccess access)
         {
@@ -438,10 +472,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindShellEx(AST.ShellEx expr)
         {
-            return new BoundGlobalFunctionCall(
-                new QualifiedName(new Name("shell_exec")),
-                null,
-                ImmutableArray.Create(new BoundArgument(BindExpression(expr.Command))));
+            return new BoundGlobalFunctionCall(NameUtils.SpecialNames.shell_exec, null, BindArguments(expr.Command));
         }
 
         protected BoundExpression BindVarLikeConstructUse(AST.VarLikeConstructUse expr, BoundAccess access)
@@ -472,6 +503,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (access.IsReadRef)
             {
                 // TODO: warninng deprecated
+                // _diagnostics. ...
             }
 
             return new BoundArrayEx(BindArrayItems(x.Items)) { PhpSyntax = x }.WithAccess(access);
@@ -882,11 +914,10 @@ namespace Pchp.CodeAnalysis.Semantics
                         }
                         else
                         {
+                            // Template: "is_null( LValue )"
                             condition = new BoundGlobalFunctionCall(
-                                new QualifiedName(new Name("is_null")),
-                                null,
-                                ImmutableArray.Create(new BoundArgument(leftExpr))
-                                );
+                                NameUtils.SpecialNames.is_null, null,
+                                ImmutableArray.Create(BoundArgument.Create(leftExpr)));
                         }
                         break;
                     default:
