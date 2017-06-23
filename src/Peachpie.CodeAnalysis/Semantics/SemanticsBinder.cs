@@ -55,7 +55,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public bool IsEmpty => IsOnlyBoundElement && BoundElement == null;
         public bool IsOnlyBoundElement => (PreBoundBlockFirst == null);
-
     }
 
     /// <summary>
@@ -112,15 +111,35 @@ namespace Pchp.CodeAnalysis.Semantics
                 .ToImmutableArray();
         }
 
-        protected ImmutableArray<BoundArgument> BindArguments(IEnumerable<AST.ActualParam> parameters)
+        protected BoundArgument BindArgument(AST.Expression expr, bool isByRef = false, bool isUnpack = false)
         {
-            var unsupported = parameters.FirstOrDefault(p => p.IsUnpack || p.Ampersand);
-            if (unsupported != null)
+            if (isUnpack)
             {
-                _diagnostics.Add(_locals.Routine, unsupported, Errors.ErrorCode.ERR_NotYetImplemented, "Passing parameter by ref or parameter unpacking.");
+                _diagnostics.Add(_locals.Routine, expr, Errors.ErrorCode.ERR_NotYetImplemented, "Parameter unpacking");
             }
 
-            return BindArguments(parameters.Select(p => p.Expression));
+            return new BoundArgument(BindExpression(expr, isByRef ? BoundAccess.ReadRef : BoundAccess.Read));
+        }
+
+        protected ImmutableArray<BoundArgument> BindArguments(params AST.ActualParam[] parameters)
+        {
+            Debug.Assert(parameters != null);
+
+            if (parameters.Length == 0)
+            {
+                return ImmutableArray<BoundArgument>.Empty;
+            }
+
+            //
+            var arguments = new BoundArgument[parameters.Length];
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                var p = parameters[i];
+                arguments[i] = BindArgument(p.Expression, p.Ampersand, p.IsUnpack);
+            }
+
+            //
+            return ImmutableArray.Create(arguments);
         }
 
         protected ImmutableArray<BoundArgument> BindLambdaUseArguments(IEnumerable<AST.FormalParam> usevars)
@@ -143,8 +162,8 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(stmt != null);
 
-            if (stmt is AST.EchoStmt echoStm) return new BoundExpressionStatement(new BoundEcho(BindArguments((echoStm).Parameters))) { PhpSyntax = stmt };
-            if (stmt is AST.ExpressionStmt exprStm) return new BoundExpressionStatement(BindExpression((exprStm).Expression, BoundAccess.None)) { PhpSyntax = stmt };
+            if (stmt is AST.EchoStmt echoStm) return new BoundExpressionStatement(new BoundEcho(BindArguments(echoStm.Parameters))) { PhpSyntax = stmt };
+            if (stmt is AST.ExpressionStmt exprStm) return new BoundExpressionStatement(BindExpression(exprStm.Expression, BoundAccess.None)) { PhpSyntax = stmt };
             if (stmt is AST.JumpStmt jmpStm) return BindJumpStmt(jmpStm);
             if (stmt is AST.FunctionDecl) return new BoundFunctionDeclStatement(stmt.GetProperty<SourceFunctionSymbol>());
             if (stmt is AST.TypeDecl) return new BoundTypeDeclStatement(stmt.GetProperty<SourceTypeSymbol>());
