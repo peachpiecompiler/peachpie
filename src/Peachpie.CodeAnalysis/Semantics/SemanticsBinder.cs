@@ -925,7 +925,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
 
                 // create a conditional edge and set the last (current) pre-bound block to the conditional edge's end block
-                CurrentPreBoundBlock = CreateConditionalEdge(currBlock, condition, rightExprBag.PreBoundBlockFirst, null);
+                CurrentPreBoundBlock = CreateConditionalEdge(currBlock, condition, rightExprBag.PreBoundBlockFirst, rightExprBag.PreBoundBlockLast, null, null);
             }
 
             return new BoundBinaryEx(
@@ -950,7 +950,8 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 condExpr = MakeTmpCopyAndPrependAssigment(condExpr, BoundAccess.Read);
                 // create a conditional edge and set the last (current) pre-bound block to the conditional edge's end block
-                CurrentPreBoundBlock = CreateConditionalEdge(currBlock, condExpr, trueExprBag.PreBoundBlockFirst, falseExprBag.PreBoundBlockFirst);
+                CurrentPreBoundBlock = CreateConditionalEdge(currBlock, condExpr,
+                    trueExprBag.PreBoundBlockFirst, trueExprBag.PreBoundBlockLast, falseExprBag.PreBoundBlockFirst, falseExprBag.PreBoundBlockLast);
             }
 
             return new BoundConditionalEx(
@@ -1011,16 +1012,20 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Creates a conditional edge and returns its endBlock.
         /// </summary>
-        private BoundBlock CreateConditionalEdge(BoundBlock sourceBlock, BoundExpression condExpr, BoundBlock trueBlock, BoundBlock falseBlock)
+        private BoundBlock CreateConditionalEdge(BoundBlock sourceBlock, BoundExpression condExpr,
+            BoundBlock trueBlockStart, BoundBlock trueBlockEnd, BoundBlock falseBlockStart, BoundBlock falseBlockEnd)
         {
+            Debug.Assert(falseBlockStart == null || falseBlockEnd != null);
+            Debug.Assert(trueBlockStart != null && trueBlockEnd != null);
+
             object _; // discard
 
             var endBlock = GetNewBlock();
-            falseBlock = falseBlock ?? endBlock;
+            falseBlockStart = falseBlockStart ?? endBlock;
 
-            _ = new ConditionalEdge(sourceBlock, trueBlock, falseBlock, condExpr);
-            _ = new SimpleEdge(trueBlock, endBlock);
-            if (falseBlock != endBlock) { _ = new SimpleEdge(falseBlock, endBlock); }
+            _ = new ConditionalEdge(sourceBlock, trueBlockStart, falseBlockStart, condExpr);
+            _ = new SimpleEdge(trueBlockEnd, endBlock);
+            if (falseBlockStart != endBlock) { _ = new SimpleEdge(falseBlockEnd, endBlock); }
 
             return endBlock;
         }
