@@ -104,21 +104,41 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindExpression(AST.Expression expr) => BindExpression(expr, BoundAccess.Read);
 
-        protected ImmutableArray<BoundArgument> BindArguments(IEnumerable<AST.Expression> expressions)
-        {
-            return BindExpressions(expressions)
-                .Select(x => new BoundArgument(x))
-                .ToImmutableArray();
-        }
-
         protected BoundArgument BindArgument(AST.Expression expr, bool isByRef = false, bool isUnpack = false)
         {
             if (isUnpack)
             {
+                // remove:
                 _diagnostics.Add(_locals.Routine, expr, Errors.ErrorCode.ERR_NotYetImplemented, "Parameter unpacking");
             }
 
-            return new BoundArgument(BindExpression(expr, isByRef ? BoundAccess.ReadRef : BoundAccess.Read));
+            var bound = BindExpression(expr, isByRef ? BoundAccess.ReadRef : BoundAccess.Read);
+            Debug.Assert(!isUnpack || !isByRef);
+
+            return isUnpack
+                ? BoundArgument.CreateUnpacking(bound)
+                : BoundArgument.Create(bound);
+        }
+
+        protected ImmutableArray<BoundArgument> BindArguments(params AST.Expression[] expressions)
+        {
+            Debug.Assert(expressions != null);
+
+            if (expressions.Length == 0)
+            {
+                return ImmutableArray<BoundArgument>.Empty;
+            }
+
+            //
+            var arguments = new BoundArgument[expressions.Length];
+            for (int i = 0; i < expressions.Length; i++)
+            {
+                var expr = expressions[i];
+                arguments[i] = BindArgument(expr);
+            }
+
+            //
+            return ImmutableArray.Create(arguments);
         }
 
         protected ImmutableArray<BoundArgument> BindArguments(params AST.ActualParam[] parameters)
@@ -149,7 +169,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 var varuse = new AST.DirectVarUse(v.Name.Span, v.Name.Name);
                 return BindExpression(varuse, v.PassedByRef ? BoundAccess.ReadRef : BoundAccess.Read);
             })
-            .Select(expr => new BoundArgument(expr))
+            .Select(BoundArgument.Create)
             .ToImmutableArray();
         }
 
@@ -457,10 +477,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindShellEx(AST.ShellEx expr)
         {
-            return new BoundGlobalFunctionCall(
-                new QualifiedName(new Name("shell_exec")),
-                null,
-                ImmutableArray.Create(new BoundArgument(BindExpression(expr.Command))));
+            return new BoundGlobalFunctionCall(NameUtils.SpecialNames.shell_exec, null, BindArguments(expr.Command));
         }
 
         protected BoundExpression BindVarLikeConstructUse(AST.VarLikeConstructUse expr, BoundAccess access)
@@ -491,6 +508,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (access.IsReadRef)
             {
                 // TODO: warninng deprecated
+                // _diagnostics. ...
             }
 
             return new BoundArrayEx(BindArrayItems(x.Items)) { PhpSyntax = x }.WithAccess(access);
@@ -901,11 +919,10 @@ namespace Pchp.CodeAnalysis.Semantics
                         }
                         else
                         {
+                            // Template: "is_null( LValue )"
                             condition = new BoundGlobalFunctionCall(
-                                new QualifiedName(new Name("is_null")),
-                                null,
-                                ImmutableArray.Create(new BoundArgument(leftExpr))
-                                );
+                                NameUtils.SpecialNames.is_null, null,
+                                ImmutableArray.Create(BoundArgument.Create(leftExpr)));
                         }
                         break;
                     default:

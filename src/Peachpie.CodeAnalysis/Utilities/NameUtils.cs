@@ -295,6 +295,12 @@ namespace Pchp.CodeAnalysis
             public static Name offsetGet { get { return new Name("offsetGet"); } }
             public static Name offsetSet { get { return new Name("offsetSet"); } }
             public static Name current { get { return new Name("current"); } }
+
+            /// <summary>Special <c>shell_exec</c> function name.</summary>
+            public static QualifiedName shell_exec { get { return new QualifiedName(new Name("shell_exec")); } }
+
+            /// <summary>Special <c>is_null</c> function name.</summary>
+            public static QualifiedName is_null { get { return new QualifiedName(new Name("is_null")); } }
         }
     }
 }
