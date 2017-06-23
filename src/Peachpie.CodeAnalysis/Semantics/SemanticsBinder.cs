@@ -28,7 +28,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public T BoundElement { get; private set; }
 
-        public BoundItemsBag(T bound, BoundBlock preBoundFirst, BoundBlock preBoundLast)
+        public BoundItemsBag(T bound, BoundBlock preBoundFirst = null, BoundBlock preBoundLast = null)
         {
             Debug.Assert(bound != null || (preBoundFirst == null && preBoundLast == null));
             Debug.Assert(preBoundFirst != null || preBoundLast == null);
@@ -38,9 +38,6 @@ namespace Pchp.CodeAnalysis.Semantics
             BoundElement = bound;
         }
         public static BoundItemsBag<T> Empty => new BoundItemsBag<T>(null);
-
-        public BoundItemsBag(T bound) : this(bound, null) { }
-        public BoundItemsBag(T bound, BoundBlock preBound) : this(bound, preBound, null) { }
 
         /// <summary>
         /// Returns bound elemenent and asserts that there are no <c>PreBoundStatements</c>.
@@ -175,8 +172,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #endregion
 
-        public virtual BoundItemsBag<BoundStatement> BindWholeStatement(AST.Statement stmt)
-            => new BoundItemsBag<BoundStatement>(BindStatement(stmt));
+        public virtual BoundItemsBag<BoundStatement> BindWholeStatement(AST.Statement stmt) => BindStatement(stmt);
 
         protected virtual BoundStatement BindStatement(AST.Statement stmt)
         {
@@ -235,8 +231,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 .WithAccess(BoundAccess.Write);
         }
 
-        public virtual BoundItemsBag<BoundExpression> BindWholeExpression(AST.Expression expr, BoundAccess access)
-            => new BoundItemsBag<BoundExpression>(BindExpression(expr, access));
+        public virtual BoundItemsBag<BoundExpression> BindWholeExpression(AST.Expression expr, BoundAccess access) => BindExpression(expr, access);
 
         protected virtual BoundExpression BindExpression(AST.Expression expr, BoundAccess access)
         {
