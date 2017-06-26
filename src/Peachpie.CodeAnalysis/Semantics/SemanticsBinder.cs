@@ -892,6 +892,8 @@ namespace Pchp.CodeAnalysis.Semantics
             if (!rightExprBag.IsOnlyBoundElement)
             {
                 // make a defensive copy if multiple evaluations could be a problem for left expr (which serves as the condition)
+                // no need to worry about order of execution: right bag contains preBoundStatements  
+                // .. -> we are on yield<>root path -> expression to the left are already prepended
                 leftExpr = MakeTmpCopyAndPrependAssigment(leftExpr, BoundAccess.Read);
 
                 // create a condition expr. that is true only when right operand would have to be evaluated
@@ -947,11 +949,16 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // if at least branch has any pre-bound statements we need to condition them
             if (!trueExprBag.IsOnlyBoundElement || !falseExprBag.IsOnlyBoundElement)
-            {
+            {                
+                // make a defensive copy of condition, would be evaluated twice otherwise (conditioned prebound blocks and original position)
+                // no need to worry about order of execution: either true or false branch contains preBoundStatements  
+                // .. -> we are on yield<>root path -> expression to the left are already prepended
                 condExpr = MakeTmpCopyAndPrependAssigment(condExpr, BoundAccess.Read);
+
                 // create a conditional edge and set the last (current) pre-bound block to the conditional edge's end block
                 CurrentPreBoundBlock = CreateConditionalEdge(currBlock, condExpr,
-                    trueExprBag.PreBoundBlockFirst, trueExprBag.PreBoundBlockLast, falseExprBag.PreBoundBlockFirst, falseExprBag.PreBoundBlockLast);
+                    trueExprBag.PreBoundBlockFirst, trueExprBag.PreBoundBlockLast, 
+                    falseExprBag.PreBoundBlockFirst, falseExprBag.PreBoundBlockLast);
             }
 
             return new BoundConditionalEx(
