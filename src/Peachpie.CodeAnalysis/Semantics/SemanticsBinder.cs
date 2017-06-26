@@ -1022,8 +1022,19 @@ namespace Pchp.CodeAnalysis.Semantics
         private BoundBlock CreateConditionalEdge(BoundBlock sourceBlock, BoundExpression condExpr,
             BoundBlock trueBlockStart, BoundBlock trueBlockEnd, BoundBlock falseBlockStart, BoundBlock falseBlockEnd)
         {
-            Debug.Assert(falseBlockStart == null || falseBlockEnd != null);
-            Debug.Assert(trueBlockStart != null && trueBlockEnd != null);
+            Debug.Assert(trueBlockStart != null || falseBlockStart != null);
+            Debug.Assert(trueBlockStart == null ^ trueBlockEnd != null);       
+            Debug.Assert(falseBlockStart == null ^ falseBlockEnd != null);
+       
+            // if only false branch is non-empty flip the condition and conditioned blocks so that true is non-empty
+            if (trueBlockStart == null)
+            {
+                condExpr = new BoundUnaryEx(condExpr, AST.Operations.LogicNegation);
+                trueBlockStart = falseBlockStart;
+                trueBlockEnd = falseBlockEnd;
+                falseBlockStart = null;
+                falseBlockEnd = null;
+            }
 
             object _; // discard
 
@@ -1031,7 +1042,7 @@ namespace Pchp.CodeAnalysis.Semantics
             falseBlockStart = falseBlockStart ?? endBlock;
 
             _ = new ConditionalEdge(sourceBlock, trueBlockStart, falseBlockStart, condExpr);
-            _ = new SimpleEdge(trueBlockEnd, endBlock);
+            _ = new SimpleEdge(trueBlockEnd, endBlock); 
             if (falseBlockStart != endBlock) { _ = new SimpleEdge(falseBlockEnd, endBlock); }
 
             return endBlock;
