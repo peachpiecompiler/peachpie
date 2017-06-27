@@ -69,7 +69,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        public bool EnqueueRoutine(IPhpRoutineSymbol routine, T caller, ImmutableArray<BoundExpression> args)
+        public bool EnqueueRoutine(IPhpRoutineSymbol routine, T caller)
         {
             Contract.ThrowIfNull(routine);
 
