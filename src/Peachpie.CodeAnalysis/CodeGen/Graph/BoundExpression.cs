@@ -2247,9 +2247,27 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            return !TargetMethod.IsErrorMethod()
-                ? EmitDirectCall(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod, LateStaticTypeRef)
-                : EmitCallsiteCall(cg);
+            if (!TargetMethod.IsErrorMethod())
+            {
+                if (this.HasArgumentsUnpacking)
+                {
+                    // the arguments have to be unpacked and flatterned into PhpValue[],
+                    // the function call has to be invoked through Invoke() if possible
+                    var routinefield = (TargetMethod as SourceFunctionSymbol)?.EnsureRoutineInfoField(cg.Module);
+                    if (routinefield != null)
+                    {
+                        return EmitRoutineInvoke(cg, routinefield);
+                    }
+                }
+                else
+                {
+                    // the method can be called directly
+                    return EmitDirectCall(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod, LateStaticTypeRef);
+                }
+            }
+
+            //
+            return EmitCallsiteCall(cg);
         }
 
         internal virtual TypeSymbol EmitDirectCall(CodeGenerator cg, ILOpCode opcode, MethodSymbol method, BoundTypeRef staticType = null)
@@ -2258,6 +2276,19 @@ namespace Pchp.CodeAnalysis.Semantics
             // <ctx>.AssertFunctionDeclared
 
             return (this.ResultType = cg.EmitMethodAccess(cg.EmitCall(opcode, method, this.Instance, _arguments, staticType), method, Access));
+        }
+
+        TypeSymbol EmitRoutineInvoke(CodeGenerator cg, FieldSymbol phproutineField)
+        {
+            // PhpValue Invoke(Context ctx, object target, PhpValue[] arguments)
+            var routine_invoke = cg.CoreTypes.RoutineInfo.Symbol.GetMembers("Invoke").OfType<MethodSymbol>().Single();
+            
+            // Template: RoutineInfo.Invoke(ctx, instance, args)
+            new FieldPlace(null, phproutineField).EmitLoad(cg.Builder); // LOAD RoutineInfo
+            cg.EmitLoadContext();   // ctx
+            Debug.Assert(this.Instance == null); cg.Builder.EmitNullConstant();  // null
+            cg.Emit_ArgumentsIntoArray(_arguments);
+            return cg.EmitCall(ILOpCode.Callvirt, routine_invoke);
         }
 
         protected virtual string CallsiteName => null;
@@ -2331,6 +2362,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             foreach (var a in _arguments)
             {
+                Debug.Assert(!a.IsUnpacking);
                 callsiteargs.Add(cg.Emit(a.Value));
             }
 
@@ -2384,10 +2416,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype)
         {
-            cg.Builder.EmitStringConstant(CallsiteName);
-            cg.Builder.EmitStringConstant(_nameOpt.HasValue ? _nameOpt.Value.ToString() : null);
-            cg.EmitLoadToken(returntype, null);
-            cg.Builder.EmitIntConstant(0);
+            cg.Builder.EmitStringConstant(CallsiteName);    // function name
+            cg.Builder.EmitStringConstant(_nameOpt.HasValue ? _nameOpt.Value.ToString() : null);    // fallback function name
+            cg.EmitLoadToken(returntype, null); // return type
+            cg.Builder.EmitIntConstant(0);      // generic params count
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.CallBinderFactory_Function);
         }
     }
