@@ -744,23 +744,14 @@ namespace Pchp.Core
             switch (argument.TypeCode)
             {
                 case PhpTypeCode.PhpArray:
-                    var enumerator = argument.Array.GetFastEnumerator();
-                    while (enumerator.MoveNext())
-                    {
-                        stack.Add(enumerator.CurrentValue);
-                    }
+                    Unpack(stack, argument.Array, byrefs);
                     break;
 
                 case PhpTypeCode.Object:
-                    var iterator = argument.Object as Iterator;
-                    if (iterator != null)
+                    var traversable = argument.Object as Traversable;
+                    if (traversable != null)
                     {
-                        iterator.rewind();
-                        while (iterator.valid())
-                        {
-                            stack.Add(iterator.current());
-                            iterator.next();
-                        }
+                        Unpack(stack, traversable, byrefs);
                         break;
                     }
                     else
@@ -773,9 +764,55 @@ namespace Pchp.Core
                     break;
 
                 default:
-                    // TODO: warning
+                    // TODO: Warning: Only arrays and Traversables can be unpacked
                     stack.Add(argument);
                     break;
+            }
+        }
+
+        /// <summary>
+        /// The method implements <c>...</c> unpack operator.
+        /// Unpacks <paramref name="array"/> into <paramref name="stack"/>.
+        /// </summary>
+        /// <param name="stack">The list with unpacked arguments.</param>
+        /// <param name="array">Value to be unpacked.</param>
+        /// <param name="byrefs">Bit mask of parameters that are passed by reference. Arguments corresponding to <c>1</c>-bit are aliased.</param>
+        public static void Unpack(List<PhpValue> stack, PhpArray array, ulong byrefs)
+        {
+            Debug.Assert(array != null);
+
+            // TODO: byrefs
+
+            // https://wiki.php.net/rfc/argument_unpacking
+
+            var enumerator = array.GetFastEnumerator();
+            while (enumerator.MoveNext())
+            {
+                stack.Add(enumerator.CurrentValue);
+            }
+        }
+
+        /// <summary>
+        /// The method implements <c>...</c> unpack operator.
+        /// Unpacks <paramref name="traversable"/> into <paramref name="stack"/>.
+        /// </summary>
+        /// <param name="stack">The list with unpacked arguments.</param>
+        /// <param name="traversable">Value to be unpacked.</param>
+        /// <param name="byrefs">Bit mask of parameters that are passed by reference. Arguments corresponding to <c>1</c>-bit are aliased.</param>
+        public static void Unpack(List<PhpValue> stack, Traversable traversable, ulong byrefs)
+        {
+            Debug.Assert(traversable != null);
+            Debug.Assert(traversable is Iterator, "Iterator expected.");
+
+            // TODO: byrefs
+
+            var iterator = (Iterator)traversable;
+
+            iterator.rewind();
+            while (iterator.valid())
+            {
+                stack.Add(iterator.current());
+                iterator.next();
             }
         }
 

@@ -439,9 +439,18 @@ namespace Pchp.CodeAnalysis.Semantics
         public override OperationKind Kind => OperationKind.InvocationExpression;
 
         /// <summary>
-        /// Gets value indicating the arguments has to be unpacked in runtime.
+        /// Gets value indicating the arguments has to be unpacked in runtime before passed to the function.
         /// </summary>
-        public bool HasArgumentsUnpacking => _arguments.Any(x => x.IsUnpacking);
+        public bool HasArgumentsUnpacking
+        {
+            get
+            {
+                // the last argument must be unpacking,
+                // otherwise unpacking is not even allowed
+                var args = _arguments;
+                return args.Length != 0 && args.Last().IsUnpacking;
+            }
+        }
 
         public BoundRoutineCall(ImmutableArray<BoundArgument> arguments)
         {
@@ -729,7 +738,7 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         public override OperationKind Kind => OperationKind.LambdaExpression;
-        
+
         public override void Accept(PhpOperationVisitor visitor) => visitor.VisitLambda(this);
 
         public override void Accept(OperationVisitor visitor) => visitor.VisitLambdaExpression(this);

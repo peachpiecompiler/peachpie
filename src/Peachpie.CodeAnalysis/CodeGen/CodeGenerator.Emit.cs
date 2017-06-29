@@ -584,7 +584,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 .Expect(CoreTypes.PhpArray);
         }
 
-        public void Emit_NewArray(TypeSymbol elementType, BoundExpression[] values)
+        public void Emit_NewArray(TypeSymbol elementType, ImmutableArray<BoundArgument> values) => Emit_NewArray(elementType, values, a => a.Value);
+        public void Emit_NewArray(TypeSymbol elementType, ImmutableArray<BoundExpression> values) => Emit_NewArray(elementType, values, a => a);
+
+        public void Emit_NewArray<T>(TypeSymbol elementType, ImmutableArray<T> values, Func<T, BoundExpression> selector)
         {
             if (values.Length != 0)
             {
@@ -598,7 +601,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     _il.EmitOpCode(ILOpCode.Dup);   // <array>
                     _il.EmitIntConstant(i);         // [i]
-                    EmitConvert(values[i], elementType);
+                    EmitConvert(selector(values[i]), elementType);
                     _il.EmitOpCode(ILOpCode.Stelem);
                     EmitSymbolToken(elementType, null);
                 }
@@ -745,10 +748,30 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Emits <c>PhpValue[]</c> containing given <paramref name="args"/>.
         /// Argument unpacking is taken into account and flatterned.
         /// </summary>
+        internal void Emit_ArgumentsIntoArray(ImmutableArray<BoundArgument> args)  // TODO: which parameters are by-reference
+        {
+            if (args.Length == 0)
+            {
+                Emit_EmptyArray(CoreTypes.PhpValue);
+            }
+            else if (args.Last().IsUnpacking)   // => handle unpacking   // last argument must be unpacking otherwise unpacking is not allowed anywhere else
+            {
+                UnpackArgumentsIntoArray(args);
+            }
+            else
+            {
+                Emit_NewArray(CoreTypes.PhpValue, args);
+            }
+        }
+
+        /// <summary>
+        /// Emits <c>PhpValue[]</c> containing given <paramref name="args"/>.
+        /// Argument unpacking is taken into account and flatterned.
+        /// </summary>
         /// <param name="args">Arguments to be flatterned into a single dimensional array.</param>
         /// <remarks>The method assumes the arguments list contains a variable unpacking. Otherwise this method is not well performance optimized.</remarks>
         /// <returns>Type symbol corresponding to <c>PhpValue[]</c></returns>
-        TypeSymbol UnpackArgumentsIntoArray(ImmutableArray<BoundArgument> args) // TODO: which parameters are by-reference
+        internal TypeSymbol UnpackArgumentsIntoArray(ImmutableArray<BoundArgument> args) // TODO: which parameters are by-reference
         {
             if (args.IsDefaultOrEmpty)
             {
@@ -769,7 +792,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             var list_toarray = (MethodSymbol)list_phpvalue.GetMembers("ToArray").Single();
 
             // Symbol: Operators.Unpack
-            var unpack_list_value_ulong = CoreTypes.Operators.Symbol.GetMembers("Unpack").OfType<MethodSymbol>().Single(m => m.Parameters[1].Type == CoreTypes.PhpValue);
+            var unpack_methods = CoreTypes.Operators.Symbol.GetMembers("Unpack").OfType<MethodSymbol>();
+            var unpack_list_value_ulong = unpack_methods.Single(m => m.Parameters[1].Type == CoreTypes.PhpValue);
+            //var unpack_list_array_ulong = unpack_methods.Single(m => m.Parameters[1].Type == CoreTypes.PhpArray);
 
             // 1. create temporary List<PhpValue>
 
@@ -957,7 +982,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         if (containingType.IsReferenceType && dummyctor != null)
                         {
                             // new T(Context)
-                            EmitCall(ILOpCode.Newobj, dummyctor, null, ImmutableArray<BoundExpression>.Empty, null)
+                            EmitCall(ILOpCode.Newobj, dummyctor, null, ImmutableArray<BoundArgument>.Empty, null)
                                 .Expect(containingType);
                         }
                         else
@@ -1059,9 +1084,11 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        internal TypeSymbol EmitCall(ILOpCode code, MethodSymbol method, BoundExpression thisExpr, ImmutableArray<BoundExpression> arguments, BoundTypeRef staticType = null)
+        internal TypeSymbol EmitCall(ILOpCode code, MethodSymbol method, BoundExpression thisExpr, ImmutableArray<BoundArgument> arguments, BoundTypeRef staticType = null)
         {
             Contract.ThrowIfNull(method);
+
+            Debug.Assert(arguments.All(a => !a.IsUnpacking), "Unpacking does not allow us to call the method directly.");
 
             // {this}
             var thisType = (code != ILOpCode.Newobj) ? LoadMethodThisArgument(method, thisExpr) : null;
@@ -1098,7 +1125,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     Debug.Assert(p.Type.IsArray());
 
                     // wrap remaining arguments to array
-                    var values = (arg_index < arguments.Length) ? arguments.Skip(arg_index).ToArray() : Array.Empty<BoundExpression>();
+                    var values = (arg_index < arguments.Length) ? arguments.Skip(arg_index).AsImmutable() : ImmutableArray<BoundArgument>.Empty;
                     arg_index += values.Length;
                     Emit_NewArray(((ArrayTypeSymbol)p.Type).ElementType, values);
                     break;  // p is last one
@@ -1106,7 +1133,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (arg_index < arguments.Length)
                 {
-                    EmitLoadArgument(p, arguments[arg_index++], writebacks);
+                    EmitLoadArgument(p, arguments[arg_index++].Value, writebacks);
                 }
                 else
                 {
@@ -1117,7 +1144,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             // emit remaining not used arguments
             for (; arg_index < arguments.Length; arg_index++)
             {
-                EmitPop(Emit(arguments[arg_index]));
+                EmitPop(Emit(arguments[arg_index].Value));
             }
 
             // call the method
@@ -1500,7 +1527,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             else if (targetp.IsParams)
             {
                 // new T[0]
-                Emit_NewArray(((ArrayTypeSymbol)targetp.Type).ElementType, Array.Empty<BoundExpression>());
+                Emit_EmptyArray(((ArrayTypeSymbol)targetp.Type).ElementType);
                 return;
             }
             else
