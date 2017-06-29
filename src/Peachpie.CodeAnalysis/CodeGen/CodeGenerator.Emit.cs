@@ -610,12 +610,13 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        void Emit_EmptyArray(TypeSymbol elementType)
+        TypeSymbol Emit_EmptyArray(TypeSymbol elementType)
         {
+            // Array.Empty<elementType>()
             var array_empty_T = ((MethodSymbol)this.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Array__Empty))
                 .Construct(elementType);
 
-            EmitCall(ILOpCode.Call, array_empty_T);
+            return EmitCall(ILOpCode.Call, array_empty_T);
         }
 
         /// <summary>
@@ -647,7 +648,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             else
             {
                 arrtype = ArrayTypeSymbol.CreateSZArray(this.DeclaringCompilation.SourceAssembly, elementType);
-                
+
                 // COUNT: (N + params.Length)
                 _il.EmitIntConstant(ps.Length);
 
@@ -738,6 +739,70 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             //
             return arrtype;
+        }
+
+        /// <summary>
+        /// Emits <c>PhpValue[]</c> containing given <paramref name="args"/>.
+        /// Argument unpacking is taken into account and flatterned.
+        /// </summary>
+        /// <param name="args">Arguments to be flatterned into a single dimensional array.</param>
+        /// <remarks>The method assumes the arguments list contains a variable unpacking. Otherwise this method is not well performance optimized.</remarks>
+        /// <returns>Type symbol corresponding to <c>PhpValue[]</c></returns>
+        TypeSymbol UnpackArgumentsIntoArray(ImmutableArray<BoundArgument> args) // TODO: which parameters are by-reference
+        {
+            if (args.IsDefaultOrEmpty)
+            {
+                // Array.Empty<PhpValue>()
+                return Emit_EmptyArray(this.CoreTypes.PhpValue);
+            }
+
+            // assuming the arguments list contains a variable unpacking,
+            // otherwise we could do this much more efficiently
+            Debug.Assert(args.Any(a => a.IsUnpacking));
+
+            // TODO: args.Length == 1 => unpack directly to an array // Template: Unpack(args[0]) => args[0].CopyTo(new PhpValue[args[0].Count])
+
+            // Symbol: List<PhpValue>
+            var list_phpvalue = DeclaringCompilation.GetWellKnownType(WellKnownType.System_Collections_Generic_List_T).Construct(CoreTypes.PhpValue);
+            var list_ctor_int = list_phpvalue.InstanceConstructors.Single(m => m.ParameterCount == 1 && m.Parameters[0].Type.SpecialType == SpecialType.System_Int32);
+            var list_add_PhpValue = list_phpvalue.GetMembers(WellKnownMemberNames.CollectionInitializerAddMethodName).OfType<MethodSymbol>().SingleOrDefault(m => m.ParameterCount == 1 && !m.IsStatic);
+            var list_toarray = (MethodSymbol)list_phpvalue.GetMembers("ToArray").Single();
+
+            // Symbol: Operators.Unpack
+            var unpack_list_value_ulong = CoreTypes.Operators.Symbol.GetMembers("Unpack").OfType<MethodSymbol>().Single(m => m.Parameters[1].Type == CoreTypes.PhpValue);
+
+            // 1. create temporary List<PhpValue>
+
+            // Template: new List<PhpValue>(COUNT)
+            _il.EmitIntConstant(args.Length + 8);   // estimate unpackged arguments count
+            EmitCall(ILOpCode.Newobj, list_ctor_int)
+                .Expect(list_phpvalue);
+
+            // 2. evaluate arguments and unpack them to the List<PhpValue> (on <STACK>)
+            for (int i = 0; i < args.Length; i++)
+            {
+                _il.EmitOpCode(ILOpCode.Dup);   // .dup <STACK>
+
+                if (args[i].IsUnpacking)
+                {
+                    // Template: Unpack(<STACK>, args[i], byrefs)
+                    EmitConvert(args[i].Value, CoreTypes.PhpValue);
+                    _il.EmitLongConstant(0L);    // TODO: byref args
+                    EmitCall(ILOpCode.Call, unpack_list_value_ulong)
+                        .Expect(SpecialType.System_Void);
+                }
+                else
+                {
+                    // Template: <STACK>.Add((PhpValue)args[i])
+                    EmitConvert(args[i].Value, CoreTypes.PhpValue);
+                    EmitCall(ILOpCode.Call, list_add_PhpValue)
+                        .Expect(SpecialType.System_Void);
+                }
+            }
+
+            // 3. copy the list into PhpValue[]
+            // Template: List<PhpValue>.ToArray()
+            return EmitCall(ILOpCode.Call, list_toarray);
         }
 
         /// <summary>
@@ -880,7 +945,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         // $this is undefined
                         // PHP would throw a notice when undefined $this is used
-                        
+
                         // create dummy instance
                         // TODO: when $this is accessed from PHP code, throw error
                         // NOTE: we can't just pass NULL since the instance holds reference to Context that is needed by API internally

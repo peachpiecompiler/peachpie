@@ -1083,7 +1083,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitRoutineCall(x);
         }
 
-        void ProcessRoutineCall(BoundRoutineCall x, MethodSymbol target)
+        void PostProcessRoutineCall(BoundRoutineCall x, MethodSymbol target)
         {
             //
             if (target != null && target.IsErrorMethod() == false)
@@ -1107,11 +1107,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var expectedparams = target.GetExpectedArguments(this.TypeCtx);
                 for (int i = 0; i < expectedparams.Length && i < args.Length; i++)
                 {
-                    if (args[i].IsUnpacking)    // => the rest of arguments can't be bound to arguments
+                    if (args[i].IsUnpacking)    // => the rest of arguments can't be bound to parameters
                     {
                         break;
                     }
 
+                    // bind ref parameters to variables:
                     var ep = expectedparams[i];
                     if (ep.IsAlias || ep.IsByRef)  // => args[i] must be a variable
                     {
@@ -1180,21 +1181,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override void VisitExit(BoundExitEx x)
         {
             VisitRoutineCall(x);
-            ProcessRoutineCall(x, null);
+            PostProcessRoutineCall(x, null);
         }
 
         public override void VisitEcho(BoundEcho x)
         {
             VisitRoutineCall(x);
             x.TypeRefMask = 0;
-            ProcessRoutineCall(x, null);
+            PostProcessRoutineCall(x, null);
         }
 
         public override void VisitConcat(BoundConcatEx x)
         {
             VisitRoutineCall(x);
             x.TypeRefMask = TypeCtx.GetWritableStringTypeMask();
-            ProcessRoutineCall(x, null);
+            PostProcessRoutineCall(x, null);
         }
 
         MethodSymbol[] AsMethodOverloads(MethodSymbol method)
@@ -1229,7 +1230,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 AnalysisFacts.HandleFunctionCall(x, this, branch);
             }
 
-            ProcessRoutineCall(x, x.TargetMethod);
+            PostProcessRoutineCall(x, x.TargetMethod);
         }
 
         public override void VisitInstanceFunctionCall(BoundInstanceFunctionCall x)
@@ -1267,7 +1268,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
             }
 
-            ProcessRoutineCall(x, x.TargetMethod);
+            PostProcessRoutineCall(x, x.TargetMethod);
         }
 
         public override void VisitStaticFunctionCall(BoundStaticFunctionCall x)
@@ -1287,7 +1288,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, this.TypeCtx.ContainingType);
             }
 
-            ProcessRoutineCall(x, x.TargetMethod);
+            PostProcessRoutineCall(x, x.TargetMethod);
         }
 
         public override void VisitTypeRef(BoundTypeRef tref)
@@ -1428,7 +1429,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             //
-            ProcessRoutineCall(x, null);
+            PostProcessRoutineCall(x, null);
         }
 
         public override void VisitArgument(BoundArgument x)

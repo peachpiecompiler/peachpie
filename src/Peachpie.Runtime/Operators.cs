@@ -682,7 +682,7 @@ namespace Pchp.Core
 
         #endregion
 
-        #region Copy
+        #region Copy, Unpack
 
         /// <summary>
         /// Gets copy of given value.
@@ -726,6 +726,57 @@ namespace Pchp.Core
             }
 
             return value;
+        }
+
+        /// <summary>
+        /// The method implements <c>...</c> unpack operator.
+        /// Unpacks <paramref name="argument"/> into <paramref name="stack"/>.
+        /// </summary>
+        /// <param name="stack">The list with unpacked arguments.</param>
+        /// <param name="argument">Value to be unpacked.</param>
+        /// <param name="byrefs">Bit mask of parameters that are passed by reference. Arguments corresponding to <c>1</c>-bit are aliased.</param>
+        public static void Unpack(List<PhpValue> stack, PhpValue argument, ulong byrefs)
+        {
+            // TODO: byrefs
+
+            // https://wiki.php.net/rfc/argument_unpacking
+
+            switch (argument.TypeCode)
+            {
+                case PhpTypeCode.PhpArray:
+                    var enumerator = argument.Array.GetFastEnumerator();
+                    while (enumerator.MoveNext())
+                    {
+                        stack.Add(enumerator.CurrentValue);
+                    }
+                    break;
+
+                case PhpTypeCode.Object:
+                    var iterator = argument.Object as Iterator;
+                    if (iterator != null)
+                    {
+                        iterator.rewind();
+                        while (iterator.valid())
+                        {
+                            stack.Add(iterator.current());
+                            iterator.next();
+                        }
+                        break;
+                    }
+                    else
+                    {
+                        goto default;
+                    }
+
+                case PhpTypeCode.Alias:
+                    Unpack(stack, argument.Alias.Value, byrefs);
+                    break;
+
+                default:
+                    // TODO: warning
+                    stack.Add(argument);
+                    break;
+            }
         }
 
         #endregion
