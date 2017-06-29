@@ -69,6 +69,7 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_NotYetImplemented, // Used for all valid PHP constructs that Peachipe doesn't currently support.
         ERR_CircularBase,
         ERR_TypeNameCannotBeResolved,
+        ERR_PositionalArgAfterUnpacking,    // Cannot use positional argument after argument unpacking
 
         //
         // Warnings

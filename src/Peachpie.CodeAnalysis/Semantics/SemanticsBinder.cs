@@ -168,8 +168,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     if (unpacking)
                     {
                         // https://wiki.php.net/rfc/argument_unpacking
-                        // TODO: _diagnostics.Add it is not possible to use normal arguments after argument unpacking was used
-                        Debug.Fail("it is not possible to use normal arguments after argument unpacking was used");
+                        _diagnostics.Add(this.Routine, p, Errors.ErrorCode.ERR_PositionalArgAfterUnpacking);
                     }
                 }
             }

@@ -129,6 +129,9 @@
   <data name="ERR_NotYetImplemented" xml:space="preserve">
     <value>{0} is currently not supported by Peachpie.</value>
   </data>
+  <data name="ERR_PositionalArgAfterUnpacking" xml:space="preserve">
+    <value>Cannot use positional argument after argument unpacking</value>
+  </data>
   <data name="ERR_TypeNameCannotBeResolved" xml:space="preserve">
     <value>Type name '{0}' could not be resolved.</value>
   </data>

@@ -2280,13 +2280,15 @@ namespace Pchp.CodeAnalysis.Semantics
 
         TypeSymbol EmitRoutineInvoke(CodeGenerator cg, FieldSymbol phproutineField)
         {
+            Debug.Assert(this.Instance == null);
+
             // PhpValue Invoke(Context ctx, object target, PhpValue[] arguments)
             var routine_invoke = cg.CoreTypes.RoutineInfo.Symbol.GetMembers("Invoke").OfType<MethodSymbol>().Single();
             
             // Template: RoutineInfo.Invoke(ctx, instance, args)
             new FieldPlace(null, phproutineField).EmitLoad(cg.Builder); // LOAD RoutineInfo
             cg.EmitLoadContext();   // ctx
-            Debug.Assert(this.Instance == null); cg.Builder.EmitNullConstant();  // null
+            cg.Builder.EmitNullConstant();  // null
             cg.Emit_ArgumentsIntoArray(_arguments);
             return cg.EmitCall(ILOpCode.Callvirt, routine_invoke);
         }
@@ -2362,7 +2364,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
             foreach (var a in _arguments)
             {
-                Debug.Assert(!a.IsUnpacking);
+                if (a.IsUnpacking)
+                {
+                    throw new InvalidOperationException("Argument unpacking is not handled by callsites.");
+                }
+
                 callsiteargs.Add(cg.Emit(a.Value));
             }
 
