@@ -652,10 +652,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                     EmitLoadContext();
                     EmitCall(ILOpCode.Call, CoreMethods.Operators.ToString_Double_Context);
                     break;
-                case SpecialType.System_Object:
-                    // PhpValue.Create(object)
-                    from = EmitCall(ILOpCode.Call, CoreMethods.PhpValue.FromClass_Object);
-                    goto default;
                 default:
                     if (from == CoreTypes.PhpNumber)
                     {
@@ -677,6 +673,22 @@ namespace Pchp.CodeAnalysis.CodeGen
                         EmitPhpValueAddr(); // PhpValue -> PhpValue addr
                         EmitLoadContext();  // Context
                         EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToString_Context)
+                            .Expect(SpecialType.System_String);
+                        break;
+                    }
+                    //else if (from.IsOfType(CoreTypes.IPhpConvertible))
+                    //{
+                    //    // Template: ((IPhpConvertible)STACK).ToStringOrThrow(ctx)
+                    //    EmitCastClass(from, CoreTypes.IPhpConvertible);
+                    //    EmitLoadContext();
+                    //    EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpConvertible.ToStringOrThrow_Context)
+                    //        .Expect(SpecialType.System_String);
+                    //    break;
+                    //}
+                    else if (from.IsReferenceType)
+                    {
+                        // Template: STACK.ToString()
+                        EmitCall(ILOpCode.Callvirt, (MethodSymbol)DeclaringCompilation.GetSpecialTypeMember(SpecialMember.System_Object__ToString))
                             .Expect(SpecialType.System_String);
                         break;
                     }
