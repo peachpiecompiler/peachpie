@@ -835,40 +835,133 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public TypeSymbol ArrayToPhpArray(IPlace arrplace, bool deepcopy = false)
         {
-            var tmparr = GetTemporaryLocal(CoreTypes.PhpArray);
-            var arr_element = ((ArrayTypeSymbol)arrplace.TypeOpt).ElementType;
+            var phparr = GetTemporaryLocal(CoreTypes.PhpArray);
 
             // Template: tmparr = new PhpArray(arrplace.Length)
             arrplace.EmitLoad(_il);
             EmitArrayLength();
             EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpArray_int);
+            _il.EmitLocalStore(phparr);
+
+            // enumeration body:
+            EmitEnumerateArray(arrplace, 0, (srcindex, element_loader) =>
+            {
+                // Template: <tmparr>.Add((T)arrplace[i])
+                _il.EmitLocalLoad(phparr);   // <array>
+                var t = element_loader();   // arrplace[i]
+                t = (deepcopy) ? EmitDeepCopy(t, true) : t;
+                EmitConvert(t, 0, CoreTypes.PhpValue);    // (PhpValue)arrplace[i]
+                EmitPop(EmitCall(ILOpCode.Call, CoreMethods.PhpArray.Add_PhpValue));    // <array>.Add( value )
+            });
+
+            _il.EmitLocalLoad(phparr);
+
+            ReturnTemporaryLocal(phparr);
+
+            //
+            return (TypeSymbol)phparr.Type;
+        }
+
+        /// <summary>
+        /// Creates array from source array.
+        /// </summary>
+        /// <param name="srcarray">Source array.</param>
+        /// <param name="srcfrom">First element to be copied.</param>
+        /// <param name="targetArrElement">Target array element type.</param>
+        /// <returns>Type of target array which is left on top of stack.</returns>
+        public TypeSymbol ArrayToNewArray(IPlace srcarray, int srcfrom, TypeSymbol targetArrElement)
+        {
+            // Template: <tmplength> = srcarray.Length - srcfrom
+            srcarray.EmitLoad(_il);
+            EmitArrayLength();
+            _il.EmitIntConstant(srcfrom);
+            _il.EmitOpCode(ILOpCode.Sub);
+            var tmplength = GetTemporaryLocal(CoreTypes.Int32);
+            _il.EmitLocalStore(tmplength);
+
+            // Template: if (tmplength > 0) ... else { Array.Empty<T>(); }
+
+            var lblempty = new object();
+            var lblend = new object();
+
+            _il.EmitLocalLoad(tmplength);
+            _il.EmitIntConstant(0);
+            _il.EmitBranch(ILOpCode.Ble, lblempty); // length <= 0 : goto lblempty;
+
+            // <tmparr> = new T[tmplength]
+            _il.EmitLocalLoad(tmplength);
+            _il.EmitOpCode(ILOpCode.Newarr);
+            EmitSymbolToken(targetArrElement, null);
+            var tmparr = GetTemporaryLocal(ArrayTypeSymbol.CreateSZArray(this.DeclaringCompilation.SourceAssembly, targetArrElement));
             _il.EmitLocalStore(tmparr);
+
+            ReturnTemporaryLocal(tmplength);
+
+            // enumerator body:
+            EmitEnumerateArray(srcarray, srcfrom, (srcindex, element_loader) =>
+            {
+                // Template: tmparr[srcindex - srcfrom] = (T)element_loader();
+                _il.EmitLocalLoad(tmparr);
+
+                _il.EmitLocalLoad(srcindex);    // srcindex
+                _il.EmitIntConstant(srcfrom);   // srcfrom
+                _il.EmitOpCode(ILOpCode.Sub);   // -
+
+                EmitConvert(element_loader(), 0, targetArrElement);  // (T) LOAD source element
+
+                _il.EmitOpCode(ILOpCode.Stelem);    // STORE
+                EmitSymbolToken(targetArrElement, null);
+            });
+
+            _il.EmitLocalLoad(tmparr);  // LOAD tmparr
+            _il.EmitBranch(ILOpCode.Br, lblend);    // goto end;
+
+            // lblempty:
+            _il.MarkLabel(lblempty);
+            Emit_EmptyArray(targetArrElement);
+
+            // lblend:
+            _il.MarkLabel(lblend);
+
+            //
+            ReturnTemporaryLocal(tmparr);
+            return (TypeSymbol)tmparr.Type;
+        }
+
+        /// <summary>
+        /// Emits for-loop of elements in given array provided through <paramref name="arrplace"/>.
+        /// </summary>
+        /// <param name="arrplace">Place representing source array.</param>
+        /// <param name="startindex">First element index to enumerato from.</param>
+        /// <param name="bodyemit">Action used to emit the body of the enumeration.
+        /// Gets source element index and delegate that emits the LOAD of source element.</param>
+        public void EmitEnumerateArray(IPlace arrplace, int startindex, Action<LocalDefinition, Func<TypeSymbol>> bodyemit)
+        {
+            var arr_element = ((ArrayTypeSymbol)arrplace.TypeOpt).ElementType;
 
             // Template: for (i = 0; i < params.Length; i++) <phparr>.Add(arrplace[i])
 
             var lbl_block = new object();
             var lbl_cond = new object();
 
-            // i = 0
+            // i = <startindex>
             var tmpi = GetTemporaryLocal(CoreTypes.Int32);
-            _il.EmitIntConstant(0);
+            _il.EmitIntConstant(startindex);
             _il.EmitLocalStore(tmpi);
             _il.EmitBranch(ILOpCode.Br, lbl_cond);
 
             // {body}
             _il.MarkLabel(lbl_block);
 
-            // <array>.Add((T)arrplace[i])
-            _il.EmitLocalLoad(tmparr);   // <array>
-
-            arrplace.EmitLoad(_il);
-            _il.EmitLocalLoad(tmpi);
-            _il.EmitOpCode(ILOpCode.Ldelem);
-            EmitSymbolToken(arr_element, null);
-            var t = (deepcopy) ? EmitDeepCopy(arr_element, true) : arr_element;
-            EmitConvert(t, 0, CoreTypes.PhpValue);    // (PhpValue)arrplace[i]
-
-            EmitPop(EmitCall(ILOpCode.Call, CoreMethods.PhpArray.Add_PhpValue));    // <array>.Add( value )
+            bodyemit(tmpi, () =>
+                {
+                    // LOAD arrplace[i]
+                    arrplace.EmitLoad(_il);
+                    _il.EmitLocalLoad(tmpi);
+                    _il.EmitOpCode(ILOpCode.Ldelem);
+                    EmitSymbolToken(arr_element, null);
+                    return arr_element;
+                });
 
             // i++
             _il.EmitLocalLoad(tmpi);
@@ -886,11 +979,6 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             //
             ReturnTemporaryLocal(tmpi);
-            ReturnTemporaryLocal(tmparr);
-
-            //
-            _il.EmitLocalLoad(tmparr);
-            return (TypeSymbol)tmparr.Type;
         }
 
         public void EmitUnset(BoundReferenceExpression expr)
@@ -1140,13 +1228,12 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else
                     {
-                        //// wrap remaining arguments to array
-                        //var values = (arg_index < arguments.Length) ? arguments.Skip(arg_index).AsImmutable() : ImmutableArray<BoundArgument>.Empty;
-                        //arg_index += values.Length;
-                        //Emit_NewArray(((ArrayTypeSymbol)p.Type).ElementType, values);
-                        //break;  // p is last one
-                        throw new NotImplementedException();
+                        // create new array and copy&convert values from argsarray
+
+                        ArrayToNewArray(tmpargs_place, arg_index, ((ArrayTypeSymbol)p.Type).ElementType);
                     }
+
+                    break;  // p is last one
                 }
                 else
                 {
