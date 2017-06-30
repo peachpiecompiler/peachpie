@@ -775,12 +775,13 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToLong = t.Method("ToLong");
                 ToDouble = t.Method("ToDouble");
                 ToString_Context = t.Method("ToString", ct.Context);
+                ToStringOrThrow_Context = t.Method("ToStringOrThrow", ct.Context);
                 ToNumber = t.Method("ToNumber");
                 ToClass = t.Method("ToClass");
             }
 
             public readonly CoreMethod
-                ToLong, ToDouble, ToBoolean, ToString_Context, ToNumber, ToClass;
+                ToLong, ToDouble, ToBoolean, ToString_Context, ToStringOrThrow_Context, ToNumber, ToClass;
         }
 
         public struct PhpStringHolder
