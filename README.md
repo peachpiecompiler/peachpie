@@ -5,7 +5,7 @@
 # Peachpie Compiler
 ### The open-source PHP compiler to .NET
 
-> **Peachpie** is still in the alpha stages of development and not fully compatible with the PHP language yet. As a result, we do not recommend using it in a production environment at this point.
+> **Peachpie** is still in the alpha stages of development and not fully compatible with the PHP language yet. We recommend using the project with caution and testing it thoroughly before utilizing Peachpie in a production environment.
 
 [![NuGet](https://img.shields.io/nuget/v/Peachpie.App.svg?style=flat)](http://www.nuget.org/profiles/peachpie)
 [![Join the chat at https://gitter.im/iolevel/peachpie](https://badges.gitter.im/iolevel/peachpie.svg)](https://gitter.im/iolevel/peachpie?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -24,7 +24,6 @@
 | Travis CI | Ubuntu  | [![Build status](https://api.travis-ci.org/iolevel/peachpie.svg?branch=master)](https://travis-ci.org/iolevel/peachpie)  |
 | MyGet Build Services  | Windows  | [![peachpie MyGet Build Status](https://www.myget.org/BuildSource/Badge/peachpie?identifier=14586f8c-2600-412f-b9b0-39db8e930806)](https://www.myget.org/gallery/peachpie)    |
 
-
 ## What is Peachpie?
 Peachpie is a modern PHP compiler based on the Microsoft Roslyn compiler platform and drawing from our popular Phalanger project. It allows PHP to be executed within the .NET framework, thereby opening the door for PHP developers into the world of .NET – and vice versa.
 
@@ -32,7 +31,8 @@ Peachpie is a modern PHP compiler based on the Microsoft Roslyn compiler platfor
 <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=BY2V98VY57K2E" target="_blank"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif"/></a>
 </p>
 
-*If you would like to reward us for our hard work on this project, we will be happy to accept donations of all amounts.*
+## Status
+You can find an up-to-date status of the project in our [Roadmap](https://github.com/iolevel/peachpie/wiki/Peachpie-Roadmap) section. Please note that the status is dynamic; Peachpie is a work in progress, which means that the list of finished and planned features frequently changes and will be updated on a regular basis.
 
 ## Project goals
 - **Increased performance**: Peachpie's extensive type analysis and the influence of Microsoft Roslyn should provide an improved performance of PHP applications and components. 
@@ -66,9 +66,6 @@ alt="Peachpie Introduction" border="10" /></a>
 
 ### Command line building
 Alternatively, you can also work with Peachpie on the command line. Please refer to our [short introduction video](https://www.youtube.com/watch?v=GVWVInYiYLY) to see how to run the compiler on the command line and to our [Getting Started](https://github.com/iolevel/peachpie/wiki/Getting-Started) section. 
-
-## Status
-You can find an up-to-date status of the project in our [Roadmap](https://github.com/iolevel/peachpie/wiki/Peachpie-Roadmap) section. Please note that the status is dynamic; Peachpie is a work in progress, which means that the list of finished and planned features frequently changes and will be updated on a regular basis.
 
 ## How to contribute?
 We can use all the help we can get. You can contribute to our repository, spread the word about this project, or give us a small donation to help fund the development. If you believe you have valuable knowledge and experience to add to this project, please do not hesitate to contribute to our repo – your help is much appreciated. 
