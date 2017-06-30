@@ -2251,22 +2251,25 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 if (this.HasArgumentsUnpacking)
                 {
-                    // the arguments have to be unpacked and flatterned into PhpValue[],
-                    // the function call has to be invoked through Invoke() if possible
-                    var routinefield = (TargetMethod as SourceFunctionSymbol)?.EnsureRoutineInfoField(cg.Module);
-                    if (routinefield != null)
-                    {
-                        return EmitRoutineInvoke(cg, routinefield);
-                    }
+                    return EmitDirectCall_UnpackingArgs(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod, LateStaticTypeRef);
                 }
                 else
                 {
+                    // the most preferred case when both method and arguments are known,
                     // the method can be called directly
                     return EmitDirectCall(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod, LateStaticTypeRef);
                 }
             }
 
             //
+            return EmitDynamicCall(cg);
+        }
+
+        /// <summary>
+        /// Emits the routine call in case the method symbol couldn't be resolved or it cannot be called directly.
+        /// </summary>
+        internal virtual TypeSymbol EmitDynamicCall(CodeGenerator cg)
+        {
             return EmitCallsiteCall(cg);
         }
 
@@ -2276,6 +2279,14 @@ namespace Pchp.CodeAnalysis.Semantics
             // <ctx>.AssertFunctionDeclared
 
             return (this.ResultType = cg.EmitMethodAccess(cg.EmitCall(opcode, method, this.Instance, _arguments, staticType), method, Access));
+        }
+
+        internal TypeSymbol EmitDirectCall_UnpackingArgs(CodeGenerator cg, ILOpCode opcode, MethodSymbol method, BoundTypeRef staticType = null)
+        {
+            // TODO: in case of a global user routine -> emit check the function is declared
+            // <ctx>.AssertFunctionDeclared
+
+            return (this.ResultType = cg.EmitMethodAccess(cg.EmitCall_UnpackingArgs(opcode, method, this.Instance, _arguments, staticType), method, Access));
         }
 
         TypeSymbol EmitRoutineInvoke(CodeGenerator cg, FieldSymbol phproutineField)
@@ -2288,7 +2299,8 @@ namespace Pchp.CodeAnalysis.Semantics
             // Template: RoutineInfo.Invoke(ctx, instance, args)
             new FieldPlace(null, phproutineField).EmitLoad(cg.Builder); // LOAD RoutineInfo
             cg.EmitLoadContext();   // ctx
-            cg.Builder.EmitNullConstant();  // null
+            if (this.Instance == null) cg.Builder.EmitNullConstant();   // null
+            else cg.EmitConvert(this.Instance, cg.CoreTypes.Object);    // target
             cg.Emit_ArgumentsIntoArray(_arguments);
             return cg.EmitCall(ILOpCode.Callvirt, routine_invoke);
         }
@@ -2319,7 +2331,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        internal virtual TypeSymbol EmitCallsiteCall(CodeGenerator cg)
+        internal TypeSymbol EmitCallsiteCall(CodeGenerator cg)
         {
             // callsite
 
@@ -2398,11 +2410,11 @@ namespace Pchp.CodeAnalysis.Semantics
         protected override BoundExpression RoutineNameExpr => _name.NameExpression;
         protected override bool IsVirtualCall => false;
 
-        internal override TypeSymbol EmitCallsiteCall(CodeGenerator cg)
+        internal override TypeSymbol EmitDynamicCall(CodeGenerator cg)
         {
             if (_name.IsDirect)
             {
-                return base.EmitCallsiteCall(cg);
+                return EmitCallsiteCall(cg);
             }
             else
             {
@@ -2456,6 +2468,11 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override TypeSymbol EmitTarget(CodeGenerator cg)
         {
             return cg.EmitThisOrNull();
+        }
+
+        internal override TypeSymbol EmitDynamicCall(CodeGenerator cg)
+        {
+            return base.EmitDynamicCall(cg);
         }
 
         internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype)
