@@ -103,11 +103,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundArgument BindArgument(AST.Expression expr, bool isByRef = false, bool isUnpack = false)
         {
-            if (isUnpack)
-            {
-                // remove:
-                _diagnostics.Add(_locals.Routine, expr, Errors.ErrorCode.ERR_NotYetImplemented, "Parameter unpacking");
-            }
+            //if (isUnpack)
+            //{
+            //    // remove:
+            //    _diagnostics.Add(_locals.Routine, expr, Errors.ErrorCode.ERR_NotYetImplemented, "Parameter unpacking");
+            //}
 
             var bound = BindExpression(expr, isByRef ? BoundAccess.ReadRef : BoundAccess.Read);
             Debug.Assert(!isUnpack || !isByRef);
@@ -148,11 +148,29 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             //
+            var unpacking = false;
             var arguments = new BoundArgument[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)
             {
                 var p = parameters[i];
-                arguments[i] = BindArgument(p.Expression, p.Ampersand, p.IsUnpack);
+                var arg = BindArgument(p.Expression, p.Ampersand, p.IsUnpack);
+
+                //
+                arguments[i] = arg;
+
+                // check the unpacking is not used before normal arguments:
+                if (arg.IsUnpacking)
+                {
+                    unpacking = true;
+                }
+                else
+                {
+                    if (unpacking)
+                    {
+                        // https://wiki.php.net/rfc/argument_unpacking
+                        _diagnostics.Add(this.Routine, p, Errors.ErrorCode.ERR_PositionalArgAfterUnpacking);
+                    }
+                }
             }
 
             //

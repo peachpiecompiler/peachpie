@@ -232,8 +232,8 @@ namespace Pchp.CodeAnalysis.Symbols
                     return ((FieldSymbol)s).AsMember(newOwner);
                 case SymbolKind.Method:
                     return ((MethodSymbol)s).AsMember(newOwner);
-                //case SymbolKind.NamedType:
-                //    return ((NamedTypeSymbol)s).AsMember(newOwner);
+                case SymbolKind.NamedType:
+                    return ((NamedTypeSymbol)s).AsMember(newOwner);
                 case SymbolKind.Property:
                     return ((PropertySymbol)s).AsMember(newOwner);
                 //case SymbolKind.Event:

@@ -978,6 +978,9 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitConvert(BoundExpression expr, TypeSymbol to)
         {
+            Debug.Assert(expr != null);
+            Debug.Assert(to != null);
+
             // bind target expression type
             expr.Access = expr.Access.WithRead(to);
 

@@ -2247,19 +2247,46 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            return !TargetMethod.IsErrorMethod()
-                ? EmitDirectCall(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod, LateStaticTypeRef)
-                : EmitCallsiteCall(cg);
+            if (!TargetMethod.IsErrorMethod())
+            {
+                if (this.HasArgumentsUnpacking)
+                {
+                    return EmitDirectCall_UnpackingArgs(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod, LateStaticTypeRef);
+                }
+                else
+                {
+                    // the most preferred case when both method and arguments are known,
+                    // the method can be called directly
+                    return EmitDirectCall(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod, LateStaticTypeRef);
+                }
+            }
+
+            //
+            return EmitDynamicCall(cg);
+        }
+
+        /// <summary>
+        /// Emits the routine call in case the method symbol couldn't be resolved or it cannot be called directly.
+        /// </summary>
+        internal virtual TypeSymbol EmitDynamicCall(CodeGenerator cg)
+        {
+            return EmitCallsiteCall(cg);
         }
 
         internal virtual TypeSymbol EmitDirectCall(CodeGenerator cg, ILOpCode opcode, MethodSymbol method, BoundTypeRef staticType = null)
         {
-            // TODO: emit check the routine is declared
+            // TODO: in case of a global user routine -> emit check the function is declared
             // <ctx>.AssertFunctionDeclared
 
-            var arguments = _arguments.Select(a => a.Value).ToImmutableArray();
+            return (this.ResultType = cg.EmitMethodAccess(cg.EmitCall(opcode, method, this.Instance, _arguments, staticType), method, Access));
+        }
 
-            return (this.ResultType = cg.EmitMethodAccess(cg.EmitCall(opcode, method, this.Instance, arguments, staticType), method, Access));
+        internal TypeSymbol EmitDirectCall_UnpackingArgs(CodeGenerator cg, ILOpCode opcode, MethodSymbol method, BoundTypeRef staticType = null)
+        {
+            // TODO: in case of a global user routine -> emit check the function is declared
+            // <ctx>.AssertFunctionDeclared
+
+            return (this.ResultType = cg.EmitMethodAccess(cg.EmitCall_UnpackingArgs(opcode, method, this.Instance, _arguments, staticType), method, Access));
         }
 
         protected virtual string CallsiteName => null;
@@ -2288,7 +2315,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        internal virtual TypeSymbol EmitCallsiteCall(CodeGenerator cg)
+        internal TypeSymbol EmitCallsiteCall(CodeGenerator cg)
         {
             // callsite
 
@@ -2333,6 +2360,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
             foreach (var a in _arguments)
             {
+                if (a.IsUnpacking)
+                {
+                    throw new InvalidOperationException("Argument unpacking is not handled by callsites.");
+                }
+
                 callsiteargs.Add(cg.Emit(a.Value));
             }
 
@@ -2362,11 +2394,11 @@ namespace Pchp.CodeAnalysis.Semantics
         protected override BoundExpression RoutineNameExpr => _name.NameExpression;
         protected override bool IsVirtualCall => false;
 
-        internal override TypeSymbol EmitCallsiteCall(CodeGenerator cg)
+        internal override TypeSymbol EmitDynamicCall(CodeGenerator cg)
         {
             if (_name.IsDirect)
             {
-                return base.EmitCallsiteCall(cg);
+                return EmitCallsiteCall(cg);
             }
             else
             {
@@ -2378,7 +2410,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 cg.EmitConvert(_name.NameExpression, cg.CoreTypes.IPhpCallable);    // (IPhpCallable)Name
                 cg.EmitLoadContext();       // Context
-                cg.Emit_NewArray(cg.CoreTypes.PhpValue, _arguments.Select(a => a.Value).ToArray()); // PhpValue[]
+                cg.Emit_ArgumentsIntoArray(_arguments); // PhpValue[]
 
                 return cg.EmitCall(ILOpCode.Callvirt, cg.CoreTypes.IPhpCallable.Symbol.LookupMember<MethodSymbol>("Invoke"));
             }
@@ -2386,10 +2418,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype)
         {
-            cg.Builder.EmitStringConstant(CallsiteName);
-            cg.Builder.EmitStringConstant(_nameOpt.HasValue ? _nameOpt.Value.ToString() : null);
-            cg.EmitLoadToken(returntype, null);
-            cg.Builder.EmitIntConstant(0);
+            cg.Builder.EmitStringConstant(CallsiteName);    // function name
+            cg.Builder.EmitStringConstant(_nameOpt.HasValue ? _nameOpt.Value.ToString() : null);    // fallback function name
+            cg.EmitLoadToken(returntype, null); // return type
+            cg.Builder.EmitIntConstant(0);      // generic params count
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.CallBinderFactory_Function);
         }
     }
@@ -2420,6 +2452,11 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override TypeSymbol EmitTarget(CodeGenerator cg)
         {
             return cg.EmitThisOrNull();
+        }
+
+        internal override TypeSymbol EmitDynamicCall(CodeGenerator cg)
+        {
+            return base.EmitDynamicCall(cg);
         }
 
         internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype)
@@ -2461,7 +2498,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         private TypeSymbol EmitNewClass(CodeGenerator cg)
         {
-            if (!TargetMethod.IsErrorMethod())
+            if (!TargetMethod.IsErrorMethod() && !this.HasArgumentsUnpacking)
             {
                 return EmitDirectCall(cg, ILOpCode.Newobj, TargetMethod);
             }
@@ -2478,9 +2515,9 @@ namespace Pchp.CodeAnalysis.Semantics
                         .Single()
                         .Construct(_typeref.ResolvedType);
 
-                    cg.EmitLoadContext();               // Context
-                    cg.EmitCallerRuntimeTypeHandle();   // RuntimeTypeHandle
-                    cg.Emit_NewArray(cg.CoreTypes.PhpValue, _arguments.Select(a => a.Value).ToArray());  // PhpValue[]
+                    cg.EmitLoadContext();                   // Context
+                    cg.EmitCallerRuntimeTypeHandle();       // RuntimeTypeHandle
+                    cg.Emit_ArgumentsIntoArray(_arguments); // PhpValue[]
 
                     return cg.EmitCall(ILOpCode.Call, create_t);
                 }
@@ -2498,7 +2535,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitLoadContext();                   // Context
                     cg.EmitCallerRuntimeTypeHandle();       // RuntimeTypeHandle
                     _typeref.EmitLoadTypeInfo(cg, true);    // PhpTypeInfo
-                    cg.Emit_NewArray(cg.CoreTypes.PhpValue, _arguments.Select(a => a.Value).ToArray());  // PhpValue[]
+                    cg.Emit_ArgumentsIntoArray(_arguments); // PhpValue[]
 
                     return cg.EmitCall(ILOpCode.Call, create);
                 }

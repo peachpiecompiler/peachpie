@@ -22,7 +22,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _methods = new List<MethodSymbol>(methods);
         }
 
-        public MethodSymbol Resolve(TypeRefContext typeCtx, TypeRefMask[] args, TypeSymbol classCtx)
+        public MethodSymbol Resolve(TypeRefContext typeCtx, ImmutableArray<BoundArgument> args, TypeSymbol classCtx)
         {
             if (_methods.Count == 0)
             {
@@ -62,6 +62,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 var hasoptional = false;
                 var hasparams = false;
                 var match = true;
+                var hasunpacking = false;
 
                 var expectedparams = m.GetExpectedArguments(typeCtx);
 
@@ -71,15 +72,17 @@ namespace Pchp.CodeAnalysis.Symbols
                     hasparams |= p.IsVariadic;
                     if (!hasoptional && !hasparams) nmandatory++;
 
-                    // TODO: check args[i] is convertible to p.Type
                     if (p.Index < args.Length)
                     {
-                        match &= args[p.Index] == p.Type;
+                        hasunpacking |= args[p.Index].IsUnpacking;
+
+                        // TODO: check args[i] is convertible to p.Type
+                        match &= args[p.Index].Value.TypeRefMask == p.Type && !hasunpacking;
                     }
                 }
 
                 //
-                if (args.Length >= nmandatory && (hasparams || args.Length <= expectedparams.Length))
+                if ((args.Length >= nmandatory || hasunpacking) && (hasparams || args.Length <= expectedparams.Length))
                 {
                     // TODO: this is naive implementation of overload resolution,
                     // make it properly using Conversion Cost

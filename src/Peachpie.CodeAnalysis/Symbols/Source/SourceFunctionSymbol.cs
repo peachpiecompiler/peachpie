@@ -37,7 +37,7 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
-        /// A field representing the function info at runtime.
+        /// A field representing the function info at runtime of type <c>RoutineInfo</c>.
         /// Lazily associated with index by runtime.
         /// </summary>
         internal FieldSymbol EnsureRoutineInfoField(Emit.PEModuleBuilder module)

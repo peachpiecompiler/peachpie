@@ -584,7 +584,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 .Expect(CoreTypes.PhpArray);
         }
 
-        public void Emit_NewArray(TypeSymbol elementType, BoundExpression[] values)
+        public void Emit_NewArray(TypeSymbol elementType, ImmutableArray<BoundArgument> values) => Emit_NewArray(elementType, values, a => a.Value);
+        public void Emit_NewArray(TypeSymbol elementType, ImmutableArray<BoundExpression> values) => Emit_NewArray(elementType, values, a => a);
+
+        public void Emit_NewArray<T>(TypeSymbol elementType, ImmutableArray<T> values, Func<T, BoundExpression> selector)
         {
             if (values.Length != 0)
             {
@@ -598,7 +601,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     _il.EmitOpCode(ILOpCode.Dup);   // <array>
                     _il.EmitIntConstant(i);         // [i]
-                    EmitConvert(values[i], elementType);
+                    EmitConvert(selector(values[i]), elementType);
                     _il.EmitOpCode(ILOpCode.Stelem);
                     EmitSymbolToken(elementType, null);
                 }
@@ -610,12 +613,13 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        void Emit_EmptyArray(TypeSymbol elementType)
+        TypeSymbol Emit_EmptyArray(TypeSymbol elementType)
         {
+            // Array.Empty<elementType>()
             var array_empty_T = ((MethodSymbol)this.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Array__Empty))
                 .Construct(elementType);
 
-            EmitCall(ILOpCode.Call, array_empty_T);
+            return EmitCall(ILOpCode.Call, array_empty_T);
         }
 
         /// <summary>
@@ -647,7 +651,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             else
             {
                 arrtype = ArrayTypeSymbol.CreateSZArray(this.DeclaringCompilation.SourceAssembly, elementType);
-                
+
                 // COUNT: (N + params.Length)
                 _il.EmitIntConstant(ps.Length);
 
@@ -738,6 +742,92 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             //
             return arrtype;
+        }
+
+        /// <summary>
+        /// Emits <c>PhpValue[]</c> containing given <paramref name="args"/>.
+        /// Argument unpacking is taken into account and flatterned.
+        /// </summary>
+        internal void Emit_ArgumentsIntoArray(ImmutableArray<BoundArgument> args)  // TODO: which parameters are by-reference
+        {
+            if (args.Length == 0)
+            {
+                Emit_EmptyArray(CoreTypes.PhpValue);
+            }
+            else if (args.Last().IsUnpacking)   // => handle unpacking   // last argument must be unpacking otherwise unpacking is not allowed anywhere else
+            {
+                UnpackArgumentsIntoArray(args);
+            }
+            else
+            {
+                Emit_NewArray(CoreTypes.PhpValue, args);
+            }
+        }
+
+        /// <summary>
+        /// Emits <c>PhpValue[]</c> containing given <paramref name="args"/>.
+        /// Argument unpacking is taken into account and flatterned.
+        /// </summary>
+        /// <param name="args">Arguments to be flatterned into a single dimensional array.</param>
+        /// <remarks>The method assumes the arguments list contains a variable unpacking. Otherwise this method is not well performance optimized.</remarks>
+        /// <returns>Type symbol corresponding to <c>PhpValue[]</c></returns>
+        internal TypeSymbol UnpackArgumentsIntoArray(ImmutableArray<BoundArgument> args) // TODO: which parameters are by-reference
+        {
+            if (args.IsDefaultOrEmpty)
+            {
+                // Array.Empty<PhpValue>()
+                return Emit_EmptyArray(this.CoreTypes.PhpValue);
+            }
+
+            // assuming the arguments list contains a variable unpacking,
+            // otherwise we could do this much more efficiently
+            Debug.Assert(args.Any(a => a.IsUnpacking));
+
+            // TODO: args.Length == 1 => unpack directly to an array // Template: Unpack(args[0]) => args[0].CopyTo(new PhpValue[args[0].Count])
+
+            // Symbol: List<PhpValue>
+            var list_phpvalue = DeclaringCompilation.GetWellKnownType(WellKnownType.System_Collections_Generic_List_T).Construct(CoreTypes.PhpValue);
+            var list_ctor_int = list_phpvalue.InstanceConstructors.Single(m => m.ParameterCount == 1 && m.Parameters[0].Type.SpecialType == SpecialType.System_Int32);
+            var list_add_PhpValue = list_phpvalue.GetMembers(WellKnownMemberNames.CollectionInitializerAddMethodName).OfType<MethodSymbol>().SingleOrDefault(m => m.ParameterCount == 1 && !m.IsStatic);
+            var list_toarray = (MethodSymbol)list_phpvalue.GetMembers("ToArray").Single();
+
+            // Symbol: Operators.Unpack
+            var unpack_methods = CoreTypes.Operators.Symbol.GetMembers("Unpack").OfType<MethodSymbol>();
+            var unpack_list_value_ulong = unpack_methods.Single(m => m.Parameters[1].Type == CoreTypes.PhpValue);
+            //var unpack_list_array_ulong = unpack_methods.Single(m => m.Parameters[1].Type == CoreTypes.PhpArray);
+
+            // 1. create temporary List<PhpValue>
+
+            // Template: new List<PhpValue>(COUNT)
+            _il.EmitIntConstant(args.Length + 8);   // estimate unpackged arguments count
+            EmitCall(ILOpCode.Newobj, list_ctor_int)
+                .Expect(list_phpvalue);
+
+            // 2. evaluate arguments and unpack them to the List<PhpValue> (on <STACK>)
+            for (int i = 0; i < args.Length; i++)
+            {
+                _il.EmitOpCode(ILOpCode.Dup);   // .dup <STACK>
+
+                if (args[i].IsUnpacking)
+                {
+                    // Template: Unpack(<STACK>, args[i], byrefs)
+                    EmitConvert(args[i].Value, CoreTypes.PhpValue);
+                    _il.EmitLongConstant(0L);    // TODO: byref args
+                    EmitCall(ILOpCode.Call, unpack_list_value_ulong)
+                        .Expect(SpecialType.System_Void);
+                }
+                else
+                {
+                    // Template: <STACK>.Add((PhpValue)args[i])
+                    EmitConvert(args[i].Value, CoreTypes.PhpValue);
+                    EmitCall(ILOpCode.Call, list_add_PhpValue)
+                        .Expect(SpecialType.System_Void);
+                }
+            }
+
+            // 3. copy the list into PhpValue[]
+            // Template: List<PhpValue>.ToArray()
+            return EmitCall(ILOpCode.Call, list_toarray);
         }
 
         /// <summary>
@@ -880,7 +970,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         // $this is undefined
                         // PHP would throw a notice when undefined $this is used
-                        
+
                         // create dummy instance
                         // TODO: when $this is accessed from PHP code, throw error
                         // NOTE: we can't just pass NULL since the instance holds reference to Context that is needed by API internally
@@ -892,7 +982,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         if (containingType.IsReferenceType && dummyctor != null)
                         {
                             // new T(Context)
-                            EmitCall(ILOpCode.Newobj, dummyctor, null, ImmutableArray<BoundExpression>.Empty, null)
+                            EmitCall(ILOpCode.Newobj, dummyctor, null, ImmutableArray<BoundArgument>.Empty, null)
                                 .Expect(containingType);
                         }
                         else
@@ -994,9 +1084,110 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        internal TypeSymbol EmitCall(ILOpCode code, MethodSymbol method, BoundExpression thisExpr, ImmutableArray<BoundExpression> arguments, BoundTypeRef staticType = null)
+        /// <summary>
+        /// Emits known method call if arguments have to be unpacked before the call.
+        /// </summary>
+        internal TypeSymbol EmitCall_UnpackingArgs(ILOpCode code, MethodSymbol method, BoundExpression thisExpr, ImmutableArray<BoundArgument> packedarguments, BoundTypeRef staticType = null)
         {
             Contract.ThrowIfNull(method);
+            Debug.Assert(packedarguments.Any(a => a.IsUnpacking));
+
+            // {this}
+            var thisType = (code != ILOpCode.Newobj) ? LoadMethodThisArgument(method, thisExpr) : null;
+
+            // .callvirt -> .call
+            if (code == ILOpCode.Callvirt && (!method.HasThis || !method.IsMetadataVirtual()))
+            {
+                // ignores null check in method call
+                code = ILOpCode.Call;
+            }
+
+            // arguments
+            var parameters = method.Parameters;
+            int arg_index = 0;      // next argument to be emitted from <arguments>
+            var param_index = 0;    // loaded parameters
+            var writebacks = new List<WriteBackInfo>();
+
+            // unpack arguments (after $this was evaluated)
+            // Template: PhpValue[] <tmpargs> = UNPACK <arguments>
+            var tmpargs = GetTemporaryLocal(UnpackArgumentsIntoArray(packedarguments));
+            _il.EmitLocalStore(tmpargs);
+            var tmpargs_place = new LocalPlace(tmpargs);
+
+            //
+            for (; param_index < parameters.Length; param_index++)
+            {
+                var p = parameters[param_index];
+
+                // special implicit parameters
+                if (arg_index == 0 &&           // no source parameter were loaded yet
+                    p.IsImplicitlyDeclared &&   // implicitly declared parameter
+                    !p.IsParams)
+                {
+                    LoadMethodSpecialArgument(p, thisType, staticType);
+                    continue;
+                }
+
+                // pass argument:
+                if (p.IsParams)
+                {
+                    Debug.Assert(p.Type.IsArray());
+
+                    if (((ArrayTypeSymbol)p.Type).ElementType == CoreTypes.PhpValue && arg_index == 0)
+                    {
+                        // just pass argsarray as it is
+                        tmpargs_place.EmitLoad(_il);
+                    }
+                    else
+                    {
+                        //// wrap remaining arguments to array
+                        //var values = (arg_index < arguments.Length) ? arguments.Skip(arg_index).AsImmutable() : ImmutableArray<BoundArgument>.Empty;
+                        //arg_index += values.Length;
+                        //Emit_NewArray(((ArrayTypeSymbol)p.Type).ElementType, values);
+                        //break;  // p is last one
+                        throw new NotImplementedException();
+                    }
+                }
+                else
+                {
+                    // Template: (index < tmpargs.Length) ? tmpargs[index] : default
+                    var lbldefault = new object();
+                    var lblend = new object();
+
+                    _il.EmitIntConstant(arg_index);                 // LOAD index
+                    _il.EmitLocalLoad(tmpargs); EmitArrayLength();  // LOAD <tmpargs>.Length
+                    _il.EmitBranch(ILOpCode.Bge, lbldefault);       // .bge (lbldefault)
+                    EmitLoadArgument(p, tmpargs_place, arg_index,
+                        writebacks);                                // LOAD tmpargs[index]
+                    _il.EmitBranch(ILOpCode.Br, lblend);            // goto lblend;
+                    _il.MarkLabel(lbldefault);                      // lbldefault:
+                    EmitParameterDefaultValue(p);                   // default(p)
+                    _il.MarkLabel(lblend);                          // lblend:
+
+                    //
+                    arg_index++;
+                }
+            }
+
+            // return <tmpargs> asap
+            ReturnTemporaryLocal(tmpargs);
+            tmpargs = null;
+
+            // call the method
+            var result = EmitCall(code, method);
+
+            // write ref parameters back if necessary
+            WriteBackInfo.WriteBackAndFree(this, writebacks);
+
+            //
+            return result;
+        }
+
+        internal TypeSymbol EmitCall(ILOpCode code, MethodSymbol method, BoundExpression thisExpr, ImmutableArray<BoundArgument> arguments, BoundTypeRef staticType = null)
+        {
+            Contract.ThrowIfNull(method);
+
+            Debug.Assert(arguments.All(a => !a.IsUnpacking), "Unpacking does not allow us to call the method directly.");
 
             // {this}
             var thisType = (code != ILOpCode.Newobj) ? LoadMethodThisArgument(method, thisExpr) : null;
@@ -1033,7 +1224,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     Debug.Assert(p.Type.IsArray());
 
                     // wrap remaining arguments to array
-                    var values = (arg_index < arguments.Length) ? arguments.Skip(arg_index).ToArray() : Array.Empty<BoundExpression>();
+                    var values = (arg_index < arguments.Length) ? arguments.Skip(arg_index).AsImmutable() : ImmutableArray<BoundArgument>.Empty;
                     arg_index += values.Length;
                     Emit_NewArray(((ArrayTypeSymbol)p.Type).ElementType, values);
                     break;  // p is last one
@@ -1041,7 +1232,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (arg_index < arguments.Length)
                 {
-                    EmitLoadArgument(p, arguments[arg_index++], writebacks);
+                    EmitLoadArgument(p, arguments[arg_index++].Value, writebacks);
                 }
                 else
                 {
@@ -1052,7 +1243,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             // emit remaining not used arguments
             for (; arg_index < arguments.Length; arg_index++)
             {
-                EmitPop(Emit(arguments[arg_index]));
+                EmitPop(Emit(arguments[arg_index].Value));
             }
 
             // call the method
@@ -1274,8 +1465,53 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Temporary data used to call routines that expect ref or out parameters when given variable can't be passed by ref.
         /// </summary>
-        struct WriteBackInfo
+        class WriteBackInfo
         {
+            class WriteBackInfo_ArgsArray : WriteBackInfo
+            {
+                public IPlace arrplace;
+                public int argindex;
+
+                TypeSymbol arr_element => ((ArrayTypeSymbol)arrplace.TypeOpt).ElementType;
+
+                protected override void EmitLoadTarget(CodeGenerator cg, TypeSymbol type)
+                {
+                    // Template: (type)arr[argindex] 
+
+                    Debug.Assert(arr_element == cg.CoreTypes.PhpValue);
+
+                    arrplace.EmitLoad(cg.Builder);
+                    cg.Builder.EmitIntConstant(argindex);
+                    cg.Builder.EmitOpCode(ILOpCode.Ldelem);
+                    cg.EmitSymbolToken(arr_element, null);
+                    cg.EmitConvert(arr_element, 0, type);
+                }
+
+                protected override void WriteBackAndFree(CodeGenerator cg)
+                {
+                    // Template: Operators.SetValue(ref arr[argindex], <TmpLocal>)
+
+                    var arr_element = ((ArrayTypeSymbol)arrplace.TypeOpt).ElementType;
+                    Debug.Assert(arr_element == cg.CoreTypes.PhpValue);
+
+                    // ref arr[argindex] : &PhpValue
+                    arrplace.EmitLoad(cg.Builder);
+                    cg.Builder.EmitIntConstant(argindex);
+                    cg.Builder.EmitOpCode(ILOpCode.Ldelema);
+                    cg.EmitSymbolToken(arr_element, null);
+
+                    // (PhpValue)TmpLocal : PhpValue
+                    cg.Builder.EmitLocalLoad(TmpLocal);
+                    cg.EmitConvert((TypeSymbol)TmpLocal.Type, 0, arr_element);
+
+                    // CALL SetValue
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetValue_PhpValueRef_PhpValue);
+
+                    //
+                    Dispose(cg);
+                }
+            }
+
             /// <summary>
             /// The temporary local passed by reference to a function call.
             /// After the call, it's value has to be written back to <see cref="Target"/>.
@@ -1310,6 +1546,22 @@ namespace Pchp.CodeAnalysis.CodeGen
                 return writeback;
             }
 
+            public static WriteBackInfo CreateAndLoad(CodeGenerator cg, ParameterSymbol targetp, IPlace arrplace, int argindex)
+            {
+                var writeback = new WriteBackInfo_ArgsArray()
+                {
+                    TmpLocal = cg.GetTemporaryLocal(targetp.Type),
+                    arrplace = arrplace,
+                    argindex = argindex,
+                };
+
+                //
+                writeback.EmitLoadArgument(cg, targetp);
+
+                //
+                return writeback;
+            }
+
             void EmitLoadArgument(CodeGenerator cg, ParameterSymbol targetp)
             {
                 Debug.Assert(TmpLocal != null);
@@ -1319,7 +1571,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     // copy Target to TmpLocal
                     // Template: TmpLocal = Target;
-                    cg.EmitConvert(Target, (TypeSymbol)TmpLocal.Type);
+                    EmitLoadTarget(cg, (TypeSymbol)TmpLocal.Type);
                     cg.Builder.EmitLocalStore(TmpLocal);
                 }
 
@@ -1336,10 +1588,15 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
             }
 
+            protected virtual void EmitLoadTarget(CodeGenerator cg, TypeSymbol type)
+            {
+                cg.EmitConvert(Target, type);
+            }
+
             /// <summary>
             /// Writes the value back to <see cref="Target"/> and free resources.
             /// </summary>
-            public void WriteBackAndFree(CodeGenerator cg)
+            protected virtual void WriteBackAndFree(CodeGenerator cg)
             {
                 // Template: <Target> = <TmpLocal>;
                 var place = Target.BindPlace(cg);
@@ -1347,9 +1604,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 cg.Builder.EmitLocalLoad(TmpLocal);
                 place.EmitStore(cg, (TypeSymbol)TmpLocal.Type);
 
-                // free <TmpLocal>
-                cg.ReturnTemporaryLocal(TmpLocal);
-                TmpLocal = null;
+                //
+                Dispose(cg);
             }
 
             public static void WriteBackAndFree(CodeGenerator cg, IList<WriteBackInfo> writebacks)
@@ -1362,10 +1618,17 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                 }
             }
+
+            protected void Dispose(CodeGenerator cg)
+            {
+                // free <TmpLocal>
+                cg.ReturnTemporaryLocal(TmpLocal);
+                TmpLocal = null;
+            }
         }
 
         /// <summary>
-        /// Loads argument 
+        /// Loads argument from bound expression.
         /// </summary>
         void EmitLoadArgument(ParameterSymbol targetp, BoundExpression expr, List<WriteBackInfo> writebacks)
         {
@@ -1394,6 +1657,35 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     throw new ArgumentException("Argument must be passed as a variable.");
                 }
+            }
+        }
+
+        /// <summary>
+        /// Loads argument from arguments array.
+        /// </summary>
+        void EmitLoadArgument(ParameterSymbol targetp, IPlace arrplace, int argindex, List<WriteBackInfo> writebacks)
+        {
+            // assert arrplace is of type PhpValue[]
+            Debug.Assert(arrplace != null);
+            Debug.Assert(arrplace.TypeOpt.IsSZArray());
+
+            var arr_element = ((ArrayTypeSymbol)arrplace.TypeOpt).ElementType;
+            Debug.Assert(arr_element == CoreTypes.PhpValue);
+
+            //
+            if (targetp.RefKind == RefKind.None)
+            {
+                // Template: (T)arrplace[argindex]
+                arrplace.EmitLoad(_il);
+                _il.EmitIntConstant(argindex);
+                _il.EmitOpCode(ILOpCode.Ldelem);
+                EmitSymbolToken(arr_element, null);
+                EmitConvert(CoreTypes.PhpValue, 0, targetp.Type);
+            }
+            else
+            {
+                // write-back
+                writebacks.Add(WriteBackInfo.CreateAndLoad(this, targetp, arrplace, argindex));
             }
         }
 
@@ -1435,7 +1727,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             else if (targetp.IsParams)
             {
                 // new T[0]
-                Emit_NewArray(((ArrayTypeSymbol)targetp.Type).ElementType, Array.Empty<BoundExpression>());
+                Emit_EmptyArray(((ArrayTypeSymbol)targetp.Type).ElementType);
                 return;
             }
             else
