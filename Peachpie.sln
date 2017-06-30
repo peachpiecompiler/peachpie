@@ -72,6 +72,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Peachpie.DiagnosticTests", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Library.Graphics", "src\Peachpie.Library.Graphics\Peachpie.Library.Graphics.csproj", "{A0B305A4-36D2-41AC-BCB3-3D3395D7940A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Peachpie.Library.XmlDom", "src\Peachpie.Library.XmlDom\Peachpie.Library.XmlDom.csproj", "{92192652-C989-4882-A356-5149255A76F6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -565,6 +567,26 @@ Global
 		{A0B305A4-36D2-41AC-BCB3-3D3395D7940A}.Release|x64.Build.0 = Release|Any CPU
 		{A0B305A4-36D2-41AC-BCB3-3D3395D7940A}.Release|x86.ActiveCfg = Release|Any CPU
 		{A0B305A4-36D2-41AC-BCB3-3D3395D7940A}.Release|x86.Build.0 = Release|Any CPU
+		{92192652-C989-4882-A356-5149255A76F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92192652-C989-4882-A356-5149255A76F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92192652-C989-4882-A356-5149255A76F6}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{92192652-C989-4882-A356-5149255A76F6}.Debug|ARM.Build.0 = Debug|Any CPU
+		{92192652-C989-4882-A356-5149255A76F6}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{92192652-C989-4882-A356-5149255A76F6}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{92192652-C989-4882-A356-5149255A76F6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{92192652-C989-4882-A356-5149255A76F6}.Debug|x64.Build.0 = Debug|Any CPU
+		{92192652-C989-4882-A356-5149255A76F6}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{92192652-C989-4882-A356-5149255A76F6}.Debug|x86.Build.0 = Debug|Any CPU
+		{92192652-C989-4882-A356-5149255A76F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{92192652-C989-4882-A356-5149255A76F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{92192652-C989-4882-A356-5149255A76F6}.Release|ARM.ActiveCfg = Release|Any CPU
+		{92192652-C989-4882-A356-5149255A76F6}.Release|ARM.Build.0 = Release|Any CPU
+		{92192652-C989-4882-A356-5149255A76F6}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{92192652-C989-4882-A356-5149255A76F6}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{92192652-C989-4882-A356-5149255A76F6}.Release|x64.ActiveCfg = Release|Any CPU
+		{92192652-C989-4882-A356-5149255A76F6}.Release|x64.Build.0 = Release|Any CPU
+		{92192652-C989-4882-A356-5149255A76F6}.Release|x86.ActiveCfg = Release|Any CPU
+		{92192652-C989-4882-A356-5149255A76F6}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -590,6 +612,7 @@ Global
 		{AC8B71D2-59AF-42B0-8F85-BE0BA7D6E836} = {30104149-66C2-44B1-899F-F97E9ECA3860}
 		{62958B65-6A36-4685-A1F9-01867C6ACB93} = {30104149-66C2-44B1-899F-F97E9ECA3860}
 		{A0B305A4-36D2-41AC-BCB3-3D3395D7940A} = {30D6D91F-A671-4E73-A571-5614500FDE0B}
+		{92192652-C989-4882-A356-5149255A76F6} = {30D6D91F-A671-4E73-A571-5614500FDE0B}
 	EndGlobalSection
 	GlobalSection(Performance) = preSolution
 		HasPerformanceSessions = true
