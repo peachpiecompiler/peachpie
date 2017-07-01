@@ -1,21 +1,27 @@
-<p align="left">
-<img src="http://www.peachpie.io/wp-content/uploads/2016/12/peachpie-round.png" width="400"/>
-</p>
+<h1 align="center">
+  <br>
+  <a href="http://www.peachpie.io"><img src="http://www.peachpie.io/wp-content/uploads/2016/12/peachpie-round.png" width="400" alt="Peachpie" width="400"></a>
+  <br>
+  Peachpie Compiler
+  <br>
+</h1>
 
-# Peachpie Compiler
-### The open-source PHP compiler to .NET
+<h3 align="center">The open-source PHP compiler to .NET</h3>
 
 > **Peachpie** is still in the alpha stages of development and not fully compatible with the PHP language yet. We recommend using the project with caution and testing it thoroughly before utilizing Peachpie in a production environment.
 
-[![NuGet](https://img.shields.io/nuget/v/Peachpie.App.svg?style=flat)](http://www.nuget.org/profiles/peachpie)
-[![Join the chat at https://gitter.im/iolevel/peachpie](https://badges.gitter.im/iolevel/peachpie.svg)](https://gitter.im/iolevel/peachpie?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![License](https://img.shields.io/hexpm/l/plug.svg)](https://github.com/iolevel/peachpie/blob/master/LICENSE.txt)
-[![Twitter](https://img.shields.io/badge/Twitter-%40pchpcompiler-blue.svg)](https://twitter.com/pchpcompiler)
-[![Facebook](https://img.shields.io/badge/FB-pchpcompiler-blue.svg)](https://www.facebook.com/pchpcompiler)
-[![Peachpie.io](https://img.shields.io/badge/Web-peachpie.io-orange.svg)](http://www.peachpie.io)
+<p align="center">
+<a href="http://www.nuget.org/profiles/peachpie"><img src="https://img.shields.io/nuget/v/Peachpie.App.svg?style=flat"></a>
+<a href="https://gitter.im/iolevel/peachpie"><img src="https://badges.gitter.im/iolevel/peachpie.svg"></a>
+<a href="https://github.com/iolevel/peachpie/blob/master/LICENSE.txt"><img src="https://img.shields.io/hexpm/l/plug.svg"></a>
+<a href="http://www.peachpie.io"><img src="https://img.shields.io/badge/Web-peachpie.io-orange.svg"></a>
+<a href="https://twitter.com/pchpcompiler"><img src="https://img.shields.io/badge/Twitter-%40pchpcompiler-blue.svg"></a>
+<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=BY2V98VY57K2E" target="_blank"><img src="https://img.shields.io/badge/$-donate-ff69b4.svg?maxAge=2592000&amp;style=flat"></a>
+</p>
 
 - [Getting Started](https://github.com/iolevel/peachpie/wiki/Getting-Started)  
 - [Documentation](https://github.com/iolevel/peachpie/wiki)
+
 
 ## Continuous Integration
 
@@ -27,12 +33,10 @@
 ## What is Peachpie?
 Peachpie is a modern PHP compiler based on the Microsoft Roslyn compiler platform and drawing from our popular Phalanger project. It allows PHP to be executed within the .NET framework, thereby opening the door for PHP developers into the world of .NET – and vice versa.
 
-<p align="center">
-<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=BY2V98VY57K2E" target="_blank"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif"/></a>
-</p>
-
-## Status
+## Status and Compatibility
 You can find an up-to-date status of the project in our [Roadmap](https://github.com/iolevel/peachpie/wiki/Peachpie-Roadmap) section. Please note that the status is dynamic; Peachpie is a work in progress, which means that the list of finished and planned features frequently changes and will be updated on a regular basis.
+
+The Wiki also includes a [Compatibility matrix](https://github.com/iolevel/peachpie/wiki/Compatibility) for a quick overview of which frameworks Peachpie is compatible with and which features are already supported. 
 
 ## Project goals
 - **Increased performance**: Peachpie's extensive type analysis and the influence of Microsoft Roslyn should provide an improved performance of PHP applications and components. 
