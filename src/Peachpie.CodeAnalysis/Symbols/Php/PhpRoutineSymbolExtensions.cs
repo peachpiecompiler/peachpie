@@ -174,14 +174,14 @@ namespace Pchp.CodeAnalysis.Symbols
             Contract.ThrowIfNull(routine);
 
             var ps = routine.Parameters;
-            var table = (routine as SourceRoutineSymbol)?.LocalsTable;
+            //var table = (routine as SourceRoutineSymbol)?.LocalsTable;
             var result = new List<PhpParam>(ps.Length);
 
             int index = 0;
 
             foreach (ParameterSymbol p in ps)
             {
-                if (result.Count == 0 && p.IsImplicitlyDeclared)
+                if (result.Count == 0 && p.IsImplicitlyDeclared && !p.IsParams)
                 {
                     continue;
                 }
@@ -206,6 +206,35 @@ namespace Pchp.CodeAnalysis.Symbols
 
             //
             return result.ToArray();
+        }
+
+        /// <summary>
+        /// Gets mask with 1-bits corresponding to an argument that must be passed by reference.
+        /// </summary>
+        internal static PhpSignatureMask GetByRefArguments(this IPhpRoutineSymbol routine)
+        {
+
+            Contract.ThrowIfNull(routine);
+
+            var mask = new PhpSignatureMask();
+            var ps = routine.Parameters;
+
+            int index = 0;
+
+            foreach (ParameterSymbol p in ps)
+            {
+                if (index == 0 && p.IsImplicitlyDeclared && !p.IsParams)
+                {
+                    continue;
+                }
+
+                mask[index++] =
+                    p.RefKind != RefKind.None ||    // C#: ref|out p
+                    p.Type.Is_PhpAlias() ||         // PHP: &$p
+                    (p.IsParams && ((ArrayTypeSymbol)p.Type).ElementType.Is_PhpAlias());    // PHP: ... &$p
+            }
+
+            return mask;
         }
 
         /// <summary>

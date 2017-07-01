@@ -737,8 +737,6 @@ namespace Pchp.Core
         /// <param name="byrefs">Bit mask of parameters that are passed by reference. Arguments corresponding to <c>1</c>-bit are aliased.</param>
         public static void Unpack(List<PhpValue> stack, PhpValue argument, ulong byrefs)
         {
-            // TODO: byrefs
-
             // https://wiki.php.net/rfc/argument_unpacking
 
             switch (argument.TypeCode)
@@ -781,14 +779,19 @@ namespace Pchp.Core
         {
             Debug.Assert(array != null);
 
-            // TODO: byrefs
-
-            // https://wiki.php.net/rfc/argument_unpacking
-
             var enumerator = array.GetFastEnumerator();
             while (enumerator.MoveNext())
             {
-                stack.Add(enumerator.CurrentValue);
+                if ((byrefs & (1ul << stack.Count)) == 0)
+                {
+                    // pass by value
+                    stack.Add(enumerator.CurrentValue);
+                }
+                else
+                {
+                    // pass by reference
+                    stack.Add(PhpValue.Create(enumerator.CurrentValueAliased));
+                }
             }
         }
 
@@ -804,13 +807,16 @@ namespace Pchp.Core
             Debug.Assert(traversable != null);
             Debug.Assert(traversable is Iterator, "Iterator expected.");
 
-            // TODO: byrefs
-
             var iterator = (Iterator)traversable;
 
             iterator.rewind();
             while (iterator.valid())
             {
+                Debug.Assert((byrefs & (1ul << stack.Count)) == 0, "Cannot pass by-reference when unpacking a Traversable");
+                //{
+                //    // TODO: Warning: Cannot pass by-reference argument {stack.Count + 1} of {function_name}() by unpacking a Traversable, passing by-value instead
+                //}
+
                 stack.Add(iterator.current());
                 iterator.next();
             }

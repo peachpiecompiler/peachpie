@@ -2410,7 +2410,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 cg.EmitConvert(_name.NameExpression, cg.CoreTypes.IPhpCallable);    // (IPhpCallable)Name
                 cg.EmitLoadContext();       // Context
-                cg.Emit_ArgumentsIntoArray(_arguments); // PhpValue[]
+                cg.Emit_ArgumentsIntoArray(_arguments, default(PhpSignatureMask)); // PhpValue[]
 
                 return cg.EmitCall(ILOpCode.Callvirt, cg.CoreTypes.IPhpCallable.Symbol.LookupMember<MethodSymbol>("Invoke"));
             }
@@ -2515,9 +2515,9 @@ namespace Pchp.CodeAnalysis.Semantics
                         .Single()
                         .Construct(_typeref.ResolvedType);
 
-                    cg.EmitLoadContext();                   // Context
-                    cg.EmitCallerRuntimeTypeHandle();       // RuntimeTypeHandle
-                    cg.Emit_ArgumentsIntoArray(_arguments); // PhpValue[]
+                    cg.EmitLoadContext();                       // Context
+                    cg.EmitCallerRuntimeTypeHandle();           // RuntimeTypeHandle
+                    cg.Emit_ArgumentsIntoArray(_arguments, default(PhpSignatureMask));  // PhpValue[]
 
                     return cg.EmitCall(ILOpCode.Call, create_t);
                 }
@@ -2532,10 +2532,10 @@ namespace Pchp.CodeAnalysis.Semantics
                             SpecialParameterSymbol.IsCallerClassParameter(s.Parameters[0]))
                         .Single();
 
-                    cg.EmitLoadContext();                   // Context
-                    cg.EmitCallerRuntimeTypeHandle();       // RuntimeTypeHandle
-                    _typeref.EmitLoadTypeInfo(cg, true);    // PhpTypeInfo
-                    cg.Emit_ArgumentsIntoArray(_arguments); // PhpValue[]
+                    cg.EmitLoadContext();                       // Context
+                    cg.EmitCallerRuntimeTypeHandle();           // RuntimeTypeHandle
+                    _typeref.EmitLoadTypeInfo(cg, true);        // PhpTypeInfo
+                    cg.Emit_ArgumentsIntoArray(_arguments, default(PhpSignatureMask));  // PhpValue[]
 
                     return cg.EmitCall(ILOpCode.Call, create);
                 }
