@@ -19,7 +19,12 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Implicitly converts the mask to <see cref="ulong"/> mask.
         /// </summary>
         public static implicit operator ulong(PhpSignatureMask mask) => mask._mask;
-        
+
+        /// <summary>
+        /// Combines two masks.
+        /// </summary>
+        public static PhpSignatureMask operator |(PhpSignatureMask a, PhpSignatureMask b) => new PhpSignatureMask() { _mask = a._mask | b._mask };
+
         public bool this[int index]
         {
             get
@@ -39,6 +44,9 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        /// <summary>
+        /// Sets all bits from given position to <c>1</c>.
+        /// </summary>
         public void SetFrom(int start)
         {
             _mask |= ~(BitAt(start) - 1);
