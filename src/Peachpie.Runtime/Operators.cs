@@ -763,7 +763,7 @@ namespace Pchp.Core
 
                 default:
                     // TODO: Warning: Only arrays and Traversables can be unpacked
-                    stack.Add(argument);
+                    // do not add item to the arguments list // stack.Add(argument);
                     break;
             }
         }
@@ -782,6 +782,12 @@ namespace Pchp.Core
             var enumerator = array.GetFastEnumerator();
             while (enumerator.MoveNext())
             {
+                if (enumerator.CurrentKey.IsString)
+                {
+                    // TODO: E_RECOVERABLE error
+                    break;  // no further arguments will be unpacked
+                }
+
                 if ((byrefs & (1ul << stack.Count)) == 0)
                 {
                     // pass by value
