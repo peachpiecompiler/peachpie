@@ -795,7 +795,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             // Symbol: Operators.Unpack
             var unpack_methods = CoreTypes.Operators.Symbol.GetMembers("Unpack").OfType<MethodSymbol>();
             var unpack_list_value_ulong = unpack_methods.Single(m => m.Parameters[1].Type == CoreTypes.PhpValue);
-            //var unpack_list_array_ulong = unpack_methods.Single(m => m.Parameters[1].Type == CoreTypes.PhpArray);
+            var unpack_list_array_ulong = unpack_methods.Single(m => m.Parameters[1].Type == CoreTypes.PhpArray);
 
             // 1. create temporary List<PhpValue>
 
@@ -812,10 +812,20 @@ namespace Pchp.CodeAnalysis.CodeGen
                 if (args[i].IsUnpacking)
                 {
                     // Template: Unpack(<STACK>, args[i], byrefs)
-                    EmitConvert(args[i].Value, CoreTypes.PhpValue);
-                    _il.EmitLongConstant((long)(ulong)byrefargs);    // byref args
-                    EmitCall(ILOpCode.Call, unpack_list_value_ulong)
-                        .Expect(SpecialType.System_Void);
+                    var t = Emit(args[i].Value);
+                    if (t == CoreTypes.PhpArray)
+                    {
+                        _il.EmitLongConstant((long)(ulong)byrefargs);    // byref args
+                        EmitCall(ILOpCode.Call, unpack_list_array_ulong)
+                            .Expect(SpecialType.System_Void);
+                    }
+                    else
+                    {
+                        EmitConvert(t, args[i].Value.TypeRefMask, CoreTypes.PhpValue);
+                        _il.EmitLongConstant((long)(ulong)byrefargs);    // byref args
+                        EmitCall(ILOpCode.Call, unpack_list_value_ulong)
+                            .Expect(SpecialType.System_Void);
+                    }
                 }
                 else
                 {
