@@ -102,7 +102,16 @@ namespace Pchp.CodeAnalysis.Symbols
             // aliased parameter:
             if (_syntax.IsOut || _syntax.PassedByRef)
             {
-                return DeclaringCompilation.CoreTypes.PhpAlias;
+                if (_syntax.IsVariadic)
+                {
+                    // PhpAlias[]
+                    return ArrayTypeSymbol.CreateSZArray(this.ContainingAssembly, DeclaringCompilation.CoreTypes.PhpAlias);
+                }
+                else
+                {
+                    // PhpAlias
+                    return DeclaringCompilation.CoreTypes.PhpAlias;
+                }
             }
 
             // 1. specified type hint

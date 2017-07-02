@@ -2249,16 +2249,9 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if (!TargetMethod.IsErrorMethod())
             {
-                if (this.HasArgumentsUnpacking)
-                {
-                    return EmitDirectCall_UnpackingArgs(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod, LateStaticTypeRef);
-                }
-                else
-                {
-                    // the most preferred case when both method and arguments are known,
-                    // the method can be called directly
-                    return EmitDirectCall(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod, LateStaticTypeRef);
-                }
+                // the most preferred case when method is known,
+                // the method can be called directly
+                return EmitDirectCall(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod, LateStaticTypeRef);
             }
 
             //
@@ -2278,15 +2271,12 @@ namespace Pchp.CodeAnalysis.Semantics
             // TODO: in case of a global user routine -> emit check the function is declared
             // <ctx>.AssertFunctionDeclared
 
-            return (this.ResultType = cg.EmitMethodAccess(cg.EmitCall(opcode, method, this.Instance, _arguments, staticType), method, Access));
-        }
+            var stacktype = this.HasArgumentsUnpacking
+                ? cg.EmitCall_UnpackingArgs(opcode, method, this.Instance, _arguments, staticType)  // call method with respect to argument unpacking
+                : cg.EmitCall(opcode, method, this.Instance, _arguments, staticType);               // call method and pass provided arguments as they are
 
-        internal TypeSymbol EmitDirectCall_UnpackingArgs(CodeGenerator cg, ILOpCode opcode, MethodSymbol method, BoundTypeRef staticType = null)
-        {
-            // TODO: in case of a global user routine -> emit check the function is declared
-            // <ctx>.AssertFunctionDeclared
-
-            return (this.ResultType = cg.EmitMethodAccess(cg.EmitCall_UnpackingArgs(opcode, method, this.Instance, _arguments, staticType), method, Access));
+            //
+            return (this.ResultType = cg.EmitMethodAccess(stacktype, method, Access));
         }
 
         protected virtual string CallsiteName => null;
@@ -2410,7 +2400,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 cg.EmitConvert(_name.NameExpression, cg.CoreTypes.IPhpCallable);    // (IPhpCallable)Name
                 cg.EmitLoadContext();       // Context
-                cg.Emit_ArgumentsIntoArray(_arguments); // PhpValue[]
+                cg.Emit_ArgumentsIntoArray(_arguments, default(PhpSignatureMask)); // PhpValue[]
 
                 return cg.EmitCall(ILOpCode.Callvirt, cg.CoreTypes.IPhpCallable.Symbol.LookupMember<MethodSymbol>("Invoke"));
             }
@@ -2498,7 +2488,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         private TypeSymbol EmitNewClass(CodeGenerator cg)
         {
-            if (!TargetMethod.IsErrorMethod() && !this.HasArgumentsUnpacking)
+            if (!TargetMethod.IsErrorMethod())
             {
                 return EmitDirectCall(cg, ILOpCode.Newobj, TargetMethod);
             }
@@ -2515,9 +2505,9 @@ namespace Pchp.CodeAnalysis.Semantics
                         .Single()
                         .Construct(_typeref.ResolvedType);
 
-                    cg.EmitLoadContext();                   // Context
-                    cg.EmitCallerRuntimeTypeHandle();       // RuntimeTypeHandle
-                    cg.Emit_ArgumentsIntoArray(_arguments); // PhpValue[]
+                    cg.EmitLoadContext();                       // Context
+                    cg.EmitCallerRuntimeTypeHandle();           // RuntimeTypeHandle
+                    cg.Emit_ArgumentsIntoArray(_arguments, default(PhpSignatureMask));  // PhpValue[]
 
                     return cg.EmitCall(ILOpCode.Call, create_t);
                 }
@@ -2532,10 +2522,10 @@ namespace Pchp.CodeAnalysis.Semantics
                             SpecialParameterSymbol.IsCallerClassParameter(s.Parameters[0]))
                         .Single();
 
-                    cg.EmitLoadContext();                   // Context
-                    cg.EmitCallerRuntimeTypeHandle();       // RuntimeTypeHandle
-                    _typeref.EmitLoadTypeInfo(cg, true);    // PhpTypeInfo
-                    cg.Emit_ArgumentsIntoArray(_arguments); // PhpValue[]
+                    cg.EmitLoadContext();                       // Context
+                    cg.EmitCallerRuntimeTypeHandle();           // RuntimeTypeHandle
+                    _typeref.EmitLoadTypeInfo(cg, true);        // PhpTypeInfo
+                    cg.Emit_ArgumentsIntoArray(_arguments, default(PhpSignatureMask));  // PhpValue[]
 
                     return cg.EmitCall(ILOpCode.Call, create);
                 }

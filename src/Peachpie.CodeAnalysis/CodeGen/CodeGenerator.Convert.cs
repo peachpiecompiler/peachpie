@@ -1181,6 +1181,13 @@ namespace Pchp.CodeAnalysis.CodeGen
             //
             from = EmitSpecialize(from, fromHint);
 
+            // conversion is not needed:
+            if (from.SpecialType == to.SpecialType &&
+                (from == to || (to.SpecialType != SpecialType.System_Object && from.IsOfType(to))))
+            {
+                return;
+            }
+
             // specialized conversions:
             switch (to.SpecialType)
             {
@@ -1216,8 +1223,21 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else if (to == CoreTypes.PhpAlias)
                     {
-                        EmitConvertToPhpValue(from, fromHint);
-                        Emit_PhpValue_MakeAlias();
+                        if (from != CoreTypes.PhpValue)
+                        {
+                            if (from != CoreTypes.PhpAlias)
+                            {
+                                // Template: new PhpAlias((PhpValue))
+                                EmitConvertToPhpValue(from, fromHint);
+                                Emit_PhpValue_MakeAlias();
+                            }
+                        }
+                        else
+                        {
+                            // Template: <STACK>.EnsureAlias()    // keeps already aliased value
+                            EmitPhpValueAddr();
+                            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.EnsureAlias);
+                        }
                     }
                     else if (to == CoreTypes.PhpNumber)
                     {
@@ -1245,9 +1265,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else
                     {
-                        break;
+                        break;  // NotImplementedException
                     }
-                    return;
+                    return; // Handled
             }
 
             //

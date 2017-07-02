@@ -748,7 +748,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Emits <c>PhpValue[]</c> containing given <paramref name="args"/>.
         /// Argument unpacking is taken into account and flatterned.
         /// </summary>
-        internal void Emit_ArgumentsIntoArray(ImmutableArray<BoundArgument> args)  // TODO: which parameters are by-reference
+        internal void Emit_ArgumentsIntoArray(ImmutableArray<BoundArgument> args, PhpSignatureMask byrefargs)
         {
             if (args.Length == 0)
             {
@@ -756,7 +756,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else if (args.Last().IsUnpacking)   // => handle unpacking   // last argument must be unpacking otherwise unpacking is not allowed anywhere else
             {
-                UnpackArgumentsIntoArray(args);
+                UnpackArgumentsIntoArray(args, byrefargs);
             }
             else
             {
@@ -769,9 +769,10 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Argument unpacking is taken into account and flatterned.
         /// </summary>
         /// <param name="args">Arguments to be flatterned into a single dimensional array.</param>
+        /// <param name="byrefargs">Mask of arguments that must be passed by reference.</param>
         /// <remarks>The method assumes the arguments list contains a variable unpacking. Otherwise this method is not well performance optimized.</remarks>
         /// <returns>Type symbol corresponding to <c>PhpValue[]</c></returns>
-        internal TypeSymbol UnpackArgumentsIntoArray(ImmutableArray<BoundArgument> args) // TODO: which parameters are by-reference
+        internal TypeSymbol UnpackArgumentsIntoArray(ImmutableArray<BoundArgument> args, PhpSignatureMask byrefargs)
         {
             if (args.IsDefaultOrEmpty)
             {
@@ -794,7 +795,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             // Symbol: Operators.Unpack
             var unpack_methods = CoreTypes.Operators.Symbol.GetMembers("Unpack").OfType<MethodSymbol>();
             var unpack_list_value_ulong = unpack_methods.Single(m => m.Parameters[1].Type == CoreTypes.PhpValue);
-            //var unpack_list_array_ulong = unpack_methods.Single(m => m.Parameters[1].Type == CoreTypes.PhpArray);
+            var unpack_list_array_ulong = unpack_methods.Single(m => m.Parameters[1].Type == CoreTypes.PhpArray);
 
             // 1. create temporary List<PhpValue>
 
@@ -811,10 +812,20 @@ namespace Pchp.CodeAnalysis.CodeGen
                 if (args[i].IsUnpacking)
                 {
                     // Template: Unpack(<STACK>, args[i], byrefs)
-                    EmitConvert(args[i].Value, CoreTypes.PhpValue);
-                    _il.EmitLongConstant(0L);    // TODO: byref args
-                    EmitCall(ILOpCode.Call, unpack_list_value_ulong)
-                        .Expect(SpecialType.System_Void);
+                    var t = Emit(args[i].Value);
+                    if (t == CoreTypes.PhpArray)
+                    {
+                        _il.EmitLongConstant((long)(ulong)byrefargs);    // byref args
+                        EmitCall(ILOpCode.Call, unpack_list_array_ulong)
+                            .Expect(SpecialType.System_Void);
+                    }
+                    else
+                    {
+                        EmitConvert(t, args[i].Value.TypeRefMask, CoreTypes.PhpValue);
+                        _il.EmitLongConstant((long)(ulong)byrefargs);    // byref args
+                        EmitCall(ILOpCode.Call, unpack_list_value_ulong)
+                            .Expect(SpecialType.System_Void);
+                    }
                 }
                 else
                 {
@@ -1198,7 +1209,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // unpack arguments (after $this was evaluated)
             // Template: PhpValue[] <tmpargs> = UNPACK <arguments>
-            var tmpargs = GetTemporaryLocal(UnpackArgumentsIntoArray(packedarguments));
+            var tmpargs = GetTemporaryLocal(UnpackArgumentsIntoArray(packedarguments, method.GetByRefArguments()));
             _il.EmitLocalStore(tmpargs);
             var tmpargs_place = new LocalPlace(tmpargs);
 

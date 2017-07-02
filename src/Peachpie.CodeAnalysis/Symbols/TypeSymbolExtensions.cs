@@ -62,6 +62,16 @@ namespace Pchp.CodeAnalysis.Symbols
             return typeSymbol.IsReferenceType || typeSymbol.IsEnumType() || typeSymbol.SpecialType.CanBeConst();
         }
 
+        public static bool Is_PhpAlias(this TypeSymbol t)
+        {
+            return t.MetadataName == "PhpAlias" && t.ContainingAssembly?.IsPchpCorLibrary == true;
+        }
+
+        public static bool Is_PhpValue(this TypeSymbol t)
+        {
+            return t.MetadataName == "PhpValue" && t.ContainingAssembly?.IsPchpCorLibrary == true;
+        }
+
         public static bool IsOfType(this TypeSymbol t, TypeSymbol oftype)
         {
             if (oftype != null)
@@ -348,7 +358,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 type.Name == "Expression" &&
                 CheckFullName(type.ContainingSymbol, s_expressionsNamespaceName);
         }
-
 
         /// <summary>
         /// return true if the type is constructed from a generic interface that 

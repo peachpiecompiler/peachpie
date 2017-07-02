@@ -38,7 +38,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var local = state.GetLocalHandle(p.Name);
                 state.SetLocalType(local, p.GetResultType(typeCtx));
 
-                if (p.Syntax.PassedByRef)
+                if (p.Syntax.PassedByRef && !p.Syntax.IsVariadic)
                 {
                     state.MarkLocalByRef(local);
                 }
