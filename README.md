@@ -74,7 +74,7 @@ Alternatively, you can also work with Peachpie on the command line. Please refer
 ## How to contribute?
 We can use all the help we can get. You can contribute to our repository, spread the word about this project, or give us a small donation to help fund the development. If you believe you have valuable knowledge and experience to add to this project, please do not hesitate to contribute to our repo – your help is much appreciated. 
 
-However, please read the [Contribution Guidelines](https://github.com/iolevel/peachpie/blob/master/CONTRIBUTING.md) first and ensure you are following them.
+However, please read the [Contribution Guidelines](https://github.com/iolevel/peachpie/blob/master/CONTRIBUTING.md) first and ensure you are following them. Also, we kindly ask you to respect our [Code of Conduct](https://github.com/iolevel/peachpie/blob/master/CODE_OF_CONDUCT.md) when posting or interacting with other users. 
 
 ## Providing feedback
 If you found a bug, the easiest way of providing feedback is to post it on [Gitter](https://gitter.im/iolevel/peachpie). We will enable the posting of issues on GitHub once the compiler will be in version 1.0.
