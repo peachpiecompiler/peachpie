@@ -2249,16 +2249,9 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if (!TargetMethod.IsErrorMethod())
             {
-                if (this.HasArgumentsUnpacking)
-                {
-                    return EmitDirectCall_UnpackingArgs(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod, LateStaticTypeRef);
-                }
-                else
-                {
-                    // the most preferred case when both method and arguments are known,
-                    // the method can be called directly
-                    return EmitDirectCall(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod, LateStaticTypeRef);
-                }
+                // the most preferred case when method is known,
+                // the method can be called directly
+                return EmitDirectCall(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod, LateStaticTypeRef);
             }
 
             //
@@ -2278,15 +2271,12 @@ namespace Pchp.CodeAnalysis.Semantics
             // TODO: in case of a global user routine -> emit check the function is declared
             // <ctx>.AssertFunctionDeclared
 
-            return (this.ResultType = cg.EmitMethodAccess(cg.EmitCall(opcode, method, this.Instance, _arguments, staticType), method, Access));
-        }
+            var stacktype = this.HasArgumentsUnpacking
+                ? cg.EmitCall_UnpackingArgs(opcode, method, this.Instance, _arguments, staticType)  // call method with respect to argument unpacking
+                : cg.EmitCall(opcode, method, this.Instance, _arguments, staticType);               // call method and pass provided arguments as they are
 
-        internal TypeSymbol EmitDirectCall_UnpackingArgs(CodeGenerator cg, ILOpCode opcode, MethodSymbol method, BoundTypeRef staticType = null)
-        {
-            // TODO: in case of a global user routine -> emit check the function is declared
-            // <ctx>.AssertFunctionDeclared
-
-            return (this.ResultType = cg.EmitMethodAccess(cg.EmitCall_UnpackingArgs(opcode, method, this.Instance, _arguments, staticType), method, Access));
+            //
+            return (this.ResultType = cg.EmitMethodAccess(stacktype, method, Access));
         }
 
         protected virtual string CallsiteName => null;
@@ -2498,7 +2488,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         private TypeSymbol EmitNewClass(CodeGenerator cg)
         {
-            if (!TargetMethod.IsErrorMethod() && !this.HasArgumentsUnpacking)
+            if (!TargetMethod.IsErrorMethod())
             {
                 return EmitDirectCall(cg, ILOpCode.Newobj, TargetMethod);
             }
