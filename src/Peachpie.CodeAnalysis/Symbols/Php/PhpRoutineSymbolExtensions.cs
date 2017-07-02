@@ -213,7 +213,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal static PhpSignatureMask GetByRefArguments(this IPhpRoutineSymbol routine)
         {
-
             Contract.ThrowIfNull(routine);
 
             var mask = new PhpSignatureMask();
@@ -228,10 +227,19 @@ namespace Pchp.CodeAnalysis.Symbols
                     continue;
                 }
 
-                mask[index++] =
-                    p.RefKind != RefKind.None ||    // C#: ref|out p
-                    p.Type.Is_PhpAlias() ||         // PHP: &$p
-                    (p.IsParams && ((ArrayTypeSymbol)p.Type).ElementType.Is_PhpAlias());    // PHP: ... &$p
+                if (p.IsParams)
+                {
+                    if (((ArrayTypeSymbol)p.Type).ElementType.Is_PhpAlias())    // PHP: ... &$p
+                    {
+                        mask.SetFrom(index++);
+                    }
+                }
+                else
+                {
+                    mask[index++] =
+                        p.RefKind != RefKind.None ||  // C#: ref|out p
+                        p.Type.Is_PhpAlias();         // PHP: &$p
+                }
             }
 
             return mask;
