@@ -343,7 +343,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     var vartype = previoustype;
 
-                    if (vartype.IsVoid || x.Variable.VariableKind == VariableKind.GlobalVariable)
+                    if (vartype.IsVoid || Routine.IsGlobalScope)
                     {
                         // in global code or in case of undefined variable,
                         // assume the type is mixed (unspecified).
