@@ -360,28 +360,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             //_varKindMap[varname] = kind;
         }
 
-        /// <summary>
-        /// Gets kind of variable declaration in this state.
-        /// </summary>
-        public VariableKind GetVarKind(VariableHandle handle)
-        {
-            handle.ThrowIfInvalid();
-
-            //// explicit variable declaration
-            //if (_varKindMap != null)
-            //{
-            //    VariableKind kind = VariableKind.LocalVariable;
-
-            //    if (_varKindMap.TryGetValue(varname, out kind))
-            //    {
-            //        return kind;
-            //    }
-            //}
-
-            // already declared on locals label
-            return Routine.LocalsTable.GetVariableKind(handle.Name);
-        }
-
         //#endregion
     }
 }

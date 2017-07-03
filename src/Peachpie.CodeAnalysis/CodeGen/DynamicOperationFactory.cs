@@ -226,6 +226,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         internal SynthesizedStaticLocHolder DeclareStaticLocalHolder(string locName, TypeSymbol locType)
         {
+            // TODO: make only one for locName in routine
+
             var holder = new SynthesizedStaticLocHolder(_cg.Routine, locName, locType);
 
             _cg.Module.SynthesizedManager.AddNestedType(_container, holder);

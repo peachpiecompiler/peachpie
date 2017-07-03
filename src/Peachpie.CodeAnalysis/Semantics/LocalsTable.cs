@@ -69,24 +69,15 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        BoundVariable CreateVariable(VariableName name, VariableKind kind, Func<BoundExpression> initializer)
+        BoundVariable CreateVariable(VariableName name, TextSpan span)
         {
-            switch (kind)
+            if (name.IsAutoGlobal)
             {
-                case VariableKind.LocalVariable:
-                    Debug.Assert(initializer == null);
-                    return new BoundLocal(new SourceLocalSymbol(_routine, name.Value, kind));
-
-                case VariableKind.StaticVariable:
-                    return new BoundStaticLocal(new SourceLocalSymbol(_routine, name.Value, kind), initializer?.Invoke());
-
-                case VariableKind.GlobalVariable:
-                    Debug.Assert(initializer == null);
-                    return new BoundGlobalVariable(name);
-
-                default:
-                    Debug.Assert(initializer == null);
-                    throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(kind);
+                return new BoundSuperGlobalVariable(name);
+            }
+            else
+            {
+                return new BoundLocal(new SourceLocalSymbol(_routine, name.Value, span));
             }
         }
 
@@ -131,24 +122,13 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Gets local variable or create local if not yet.
         /// </summary>
-        public BoundVariable BindVariable(VariableName varname, VariableKind kind, TextSpan span, Func<BoundExpression> initializer = null)
+        public BoundVariable BindVariable(VariableName varname, TextSpan span)
         {
             BoundVariable value;
 
-            if (_dict.TryGetValue(varname, out value))
+            if (!_dict.TryGetValue(varname, out value))
             {
-                if (value.VariableKind != kind)
-                {
-                    // it's a source variable -> has non-default span
-                    Debug.Assert(span != default(TextSpan));
-
-                    // variable redeclared with a different kind
-                    _routine.DeclaringCompilation.DeclarationDiagnostics.Add(_routine, span, Errors.ErrorCode.ERR_NotYetImplemented, $"Combination of {value.VariableKind} and {kind} kinds of the same variable.");
-                }
-            }
-            else
-            {
-                _dict[varname] = value = CreateVariable(varname, kind, initializer);
+                _dict[varname] = value = CreateVariable(varname, span);
             }
 
             //

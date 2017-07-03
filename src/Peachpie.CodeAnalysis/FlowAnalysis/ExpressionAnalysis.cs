@@ -218,40 +218,35 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void VisitStaticStatement(BoundStaticVariableStatement x)
         {
-            foreach (var v in x.Variables)
+            var v = x.Declaration;
+            var local = State.GetLocalHandle(v.Variable.Name);
+
+            State.SetVarKind(local, VariableKind.StaticVariable);
+
+            var oldtype = State.GetLocalType(local).WithRefFlag;
+
+            // set var
+            if (v.InitialValue != null)
             {
-                var local = State.GetLocalHandle(v.Variable.Name);
+                // analyse initializer
+                Accept(v.InitialValue);
 
-                State.SetVarKind(local, VariableKind.StaticVariable);
-
-                var oldtype = State.GetLocalType(local);
-
-                // set var
-                if (v.InitialValue != null)
-                {
-                    // analyse initializer
-                    Accept((IPhpOperation)v.InitialValue);
-
-                    State.LTInt64Max(local, (v.InitialValue.ConstantValue.HasValue && v.InitialValue.ConstantValue.Value is long && (long)v.InitialValue.ConstantValue.Value < long.MaxValue));
-                    State.SetLocalType(local, ((IPhpExpression)v.InitialValue).TypeRefMask | oldtype);
-                }
-                else
-                {
-                    State.LTInt64Max(local, false);
-                    State.SetLocalType(local, TypeCtx.GetNullTypeMask() | oldtype);
-                    // TODO: explicitly State.SetLocalUninitialized() ?
-                }
+                State.LTInt64Max(local, (v.InitialValue.ConstantValue.HasValue && v.InitialValue.ConstantValue.Value is long && (long)v.InitialValue.ConstantValue.Value < long.MaxValue));
+                State.SetLocalType(local, ((IPhpExpression)v.InitialValue).TypeRefMask | oldtype);
+            }
+            else
+            {
+                State.LTInt64Max(local, false);
+                State.SetLocalType(local, TypeCtx.GetNullTypeMask() | oldtype);
+                // TODO: explicitly State.SetLocalUninitialized() ?
             }
         }
 
         public override void VisitGlobalStatement(BoundGlobalVariableStatement x)
         {
-            foreach (var v in x.Variables)
-            {
-                var local = State.GetLocalHandle(v.Name);
-                State.SetVarKind(local, VariableKind.GlobalVariable);
-                State.SetLocalType(local, TypeRefMask.AnyType);
-            }
+            var local = State.GetLocalHandle(x.Variable.Name);
+            State.SetVarKind(local, VariableKind.GlobalVariable);
+            State.SetLocalType(local, TypeRefMask.AnyType.WithRefFlag);
         }
 
         #endregion
@@ -338,7 +333,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // bind variable place either with a PHPSyntax span (from source) or with an emepty one (for non-source variables)
                 Debug.Assert(x is BoundSynthesizedVariableRef || x.PhpSyntax != null);
                 var varSpan = (x.PhpSyntax != null) ? x.PhpSyntax.Span.ToTextSpan() : default(Microsoft.CodeAnalysis.Text.TextSpan);
-                x.Variable = Routine.LocalsTable.BindVariable(local.Name, State.GetVarKind(local), varSpan);
+                x.Variable = Routine.LocalsTable.BindVariable(local.Name, varSpan);
 
                 //
                 State.VisitLocal(local);

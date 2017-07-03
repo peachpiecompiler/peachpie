@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -44,26 +45,19 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         readonly protected SourceRoutineSymbol _routine;
         readonly string _name;
-        readonly VariableKind _kind;
 
-        public SourceLocalSymbol(SourceRoutineSymbol routine, string name, VariableKind kind)
+        public SourceLocalSymbol(SourceRoutineSymbol routine, string name, TextSpan span)
         {
             Debug.Assert(routine != null);
             Debug.Assert(!string.IsNullOrWhiteSpace(name));
 
             _routine = routine;
             _name = name;
-            _kind = kind;
         }
 
         #region Symbol
 
         public override string Name => _name;
-
-        /// <summary>
-        /// Gets local kind.
-        /// </summary>
-        public VariableKind LocalKind => _kind;
 
         public override void Accept(SymbolVisitor visitor)
             => visitor.VisitLocal(this);
@@ -93,7 +87,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsSealed => true;
 
-        public override bool IsStatic => _kind == VariableKind.StaticVariable;
+        public override bool IsStatic => false;
 
         public override bool IsVirtual => false;
 
@@ -146,7 +140,7 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly TypeSymbol _type;
 
         public SynthesizedLocalSymbol(SourceRoutineSymbol routine, string name, TypeSymbol type)
-            :base(routine, name + "#", VariableKind.LocalVariable)
+            : base(routine, name + "'", default(TextSpan))
         {
             Contract.ThrowIfNull(type);
             _type = type;

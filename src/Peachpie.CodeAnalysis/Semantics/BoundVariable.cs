@@ -60,7 +60,7 @@ namespace Pchp.CodeAnalysis.Semantics
         private SourceLocalSymbol _symbol;
 
         internal BoundLocal(SourceLocalSymbol symbol)
-            : base(symbol.LocalKind)
+            : base(VariableKind.LocalVariable)
         {
             _symbol = symbol;
         }
@@ -114,27 +114,27 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
-    #region BoundStaticLocal
+    //#region BoundStaticLocal
 
-    public partial class BoundStaticLocal : BoundLocal
-    {
-        protected BoundExpression _initialier;
+    //public partial class BoundStaticLocal : BoundLocal
+    //{
+    //    protected BoundExpression _initialier;
 
-        internal BoundStaticLocal(SourceLocalSymbol symbol, BoundExpression initializer)
-            : base(symbol)
-        {
-            _initialier = initializer;
-        }
+    //    internal BoundStaticLocal(SourceLocalSymbol symbol, BoundExpression initializer)
+    //        : base(symbol)
+    //    {
+    //        _initialier = initializer;
+    //    }
 
-        public override IExpression InitialValue => _initialier;
+    //    public override IExpression InitialValue => _initialier;
 
-        public void Update(BoundExpression initializer)
-        {
-            _initialier = initializer;
-        }
-    }
+    //    public void Update(BoundExpression initializer)
+    //    {
+    //        _initialier = initializer;
+    //    }
+    //}
 
-    #endregion
+    //#endregion
 
     #region BoundParameter
 
@@ -199,11 +199,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundGlobalVariable
 
-    public partial class BoundGlobalVariable : BoundVariable
+    public partial class BoundSuperGlobalVariable : BoundVariable
     {
         private VariableName _name;
 
-        public BoundGlobalVariable(VariableName name)
+        public BoundSuperGlobalVariable(VariableName name)
             : base(VariableKind.GlobalVariable)
         {
             _name = name;
