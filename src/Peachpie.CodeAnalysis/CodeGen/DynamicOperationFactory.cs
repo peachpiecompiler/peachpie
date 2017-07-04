@@ -230,10 +230,10 @@ namespace Pchp.CodeAnalysis.CodeGen
             //var holders = _cg.Module.SynthesizedManager.GetMembers<SynthesizedStaticLocHolder>(_container);
             //var holder = holders.FirstOrDefault(h => ReferenceEquals(h.DeclaringMethod, _cg.Routine) && h.VariableName == locName && h.ValueType == locType);
             //if (holder == null)
-            {
+            //{
                 var holder = new SynthesizedStaticLocHolder(_cg.Routine, locName, locType);
                 _cg.Module.SynthesizedManager.AddNestedType(_container, holder);
-            }
+            //}
 
             return holder;
         }
