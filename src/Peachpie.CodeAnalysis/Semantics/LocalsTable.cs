@@ -107,19 +107,6 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         /// <summary>
-        /// Gets kind of declared variable or <see cref="VariableKind.LocalVariable"/> by default.
-        /// </summary>
-        public VariableKind GetVariableKind(VariableName varname)
-        {
-            BoundVariable value;
-            return _dict.TryGetValue(varname, out value)
-                ? value.VariableKind
-                : varname.IsAutoGlobal
-                    ? VariableKind.GlobalVariable
-                    : VariableKind.LocalVariable;
-        }
-
-        /// <summary>
         /// Gets local variable or create local if not yet.
         /// </summary>
         public BoundVariable BindVariable(VariableName varname, TextSpan span)

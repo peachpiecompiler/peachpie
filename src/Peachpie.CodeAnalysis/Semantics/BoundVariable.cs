@@ -114,28 +114,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
-    //#region BoundStaticLocal
-
-    //public partial class BoundStaticLocal : BoundLocal
-    //{
-    //    protected BoundExpression _initialier;
-
-    //    internal BoundStaticLocal(SourceLocalSymbol symbol, BoundExpression initializer)
-    //        : base(symbol)
-    //    {
-    //        _initialier = initializer;
-    //    }
-
-    //    public override IExpression InitialValue => _initialier;
-
-    //    public void Update(BoundExpression initializer)
-    //    {
-    //        _initialier = initializer;
-    //    }
-    //}
-
-    //#endregion
-
     #region BoundParameter
 
     public partial class BoundParameter : BoundVariable, IParameterInitializer
@@ -197,7 +175,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
-    #region BoundGlobalVariable
+    #region BoundSuperGlobalVariable
 
     public partial class BoundSuperGlobalVariable : BoundVariable
     {

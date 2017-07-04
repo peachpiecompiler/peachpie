@@ -24,16 +24,19 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Containing source routine.
         /// </summary>
+        public IMethodSymbol DeclaringMethod => _routine;
         readonly SourceRoutineSymbol _routine;
 
         /// <summary>
         /// Name of the local variable.
         /// </summary>
+        public string VariableName => _locName;
         readonly string _locName;
 
         /// <summary>
         /// Type of local variable.
         /// </summary>
+        public TypeSymbol ValueType => _locType;
         readonly TypeSymbol _locType;
 
         public override bool IsImplicitlyDeclared => true;

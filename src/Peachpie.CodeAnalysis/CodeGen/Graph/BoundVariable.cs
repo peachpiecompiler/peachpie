@@ -97,43 +97,6 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override IPlace Place(ILBuilder il) => null;
     }
 
-    //partial class BoundStaticLocal
-    //{
-    //    /// <summary>
-    //    /// Place of the local variable containing the holder instance.
-    //    /// </summary>
-    //    internal IPlace _holderPlace;
-
-    //    internal SynthesizedStaticLocHolder _holder;
-
-    //    internal override void EmitInit(CodeGenerator cg)
-    //    {
-    //        // variable holder class
-    //        _holder = cg.Factory.DeclareStaticLocalHolder(this.Name, (TypeSymbol)this.Variable.Type);
-
-    //        // local with its instance
-    //        var symbol = new SynthesizedLocalSymbol(cg.Routine, this.Name, _holder);
-    //        var loc = cg.Builder.LocalSlotManager.DeclareLocal(_holder, symbol, symbol.Name, SynthesizedLocalKind.OptimizerTemp, LocalDebugId.None, 0, LocalSlotConstraints.None, false, default(ImmutableArray<TypedConstant>), false);
-
-    //        _holderPlace = new LocalPlace(loc);
-
-    //        // place = holder.value
-    //        _place = new FieldPlace(_holderPlace, _holder.ValueField);
-
-    //        if (cg.HasUnoptimizedLocals)
-    //        {
-    //            // TODO reference to <locals>
-    //        }
-    //    }
-
-    //    internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)
-    //    {
-    //        return new BoundLocalPlace(_place, access, thint);
-    //    }
-
-    //    internal override IPlace Place(ILBuilder il) => _place;
-    //}
-
     partial class BoundParameter
     {
         /// <summary>
