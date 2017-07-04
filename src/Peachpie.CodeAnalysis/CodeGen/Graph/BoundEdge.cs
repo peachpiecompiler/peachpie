@@ -250,11 +250,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             var enumeratorPlace = new LocalPlace(_enumeratorLoc);
 
-            if (valueVar is BoundListEx)
-            {
-                throw new NotImplementedException();    // TODO: list(vars) = enumerator.GetCurrent()
-            }
-
             if (_currentValue != null && _currentKey != null)
             {
                 // special PhpArray enumerator
