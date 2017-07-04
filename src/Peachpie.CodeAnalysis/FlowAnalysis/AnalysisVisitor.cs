@@ -123,6 +123,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             this.CurrentBlock = x;
         }
 
+        /// <summary>
+        /// Updates the expression access and visits it.
+        /// </summary>
+        /// <param name="x">The expression.</param>
+        /// <param name="access">New access.</param>
+        protected void Visit(BoundExpression x, BoundAccess access)
+        {
+            x.Access = access;
+            Accept(x);
+        }
+
         #endregion
 
         #region Short-Circuit Evaluation
@@ -270,7 +281,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override void VisitCFGCaseBlock(CaseBlock x)
         {
             VisitCFGBlockInit(x);
-            if (!x.CaseValue.IsOnlyBoundElement) { VisitCFGBlock(x.CaseValue.PreBoundBlockFirst); } 
+            if (!x.CaseValue.IsOnlyBoundElement) { VisitCFGBlock(x.CaseValue.PreBoundBlockFirst); }
             if (!x.CaseValue.IsEmpty) { Accept(x.CaseValue.BoundElement); }
             VisitCFGBlockInternal(x);
         }
@@ -330,24 +341,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // set key variable and value variable at current state
 
             var valueVar = x.ValueVariable;
-            if (valueVar is BoundListEx)
-            {
-                throw new NotImplementedException();
-                //VisitListEx(valueVar.List, elementType);
-            }
-            else
-            {
-                valueVar.Access = valueVar.Access.WithWrite(valueVar.Access.IsWriteRef ? elementType.WithRefFlag : elementType);
-                Accept(valueVar);
+            var islistunpacking = valueVar is BoundListEx;
 
-                //
-                var keyVar = x.KeyVariable;
-                if (keyVar != null)
-                {
-                    keyVar.Access = keyVar.Access.WithWrite(TypeRefMask.AnyType);
-                    Accept(keyVar);
-                }
+            // analyse Value
+            Visit(valueVar, valueVar.Access.WithWrite(valueVar.Access.IsWriteRef ? elementType.WithRefFlag : elementType));
+
+            // analyse Key
+            var keyVar = x.KeyVariable;
+            if (keyVar != null)
+            {
+                Visit(keyVar, keyVar.Access.WithWrite(TypeRefMask.AnyType));
             }
+
             TraverseToBlock(x, _state, x.BodyBlock);
 
             // End branch
