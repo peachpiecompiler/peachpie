@@ -70,4 +70,5 @@ function baz(int /*|integer|*/$x) {
 }
 
 /*|integer|*/$i = 5;
-echo /*|integer|*/$i;
+// global variables may be changed from outside, so the type is always mixed
+echo /*|mixed|*/$i;

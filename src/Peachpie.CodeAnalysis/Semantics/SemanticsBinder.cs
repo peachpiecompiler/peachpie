@@ -194,35 +194,80 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected virtual BoundStatement BindStatement(AST.Statement stmt)
         {
+            var bound = BindStatementCore(stmt);
+            bound.PhpSyntax = stmt;
+            return bound;
+        }
+
+        BoundStatement BindStatementCore(AST.Statement stmt)
+        {
             Debug.Assert(stmt != null);
 
-            if (stmt is AST.EchoStmt echoStm) return new BoundExpressionStatement(new BoundEcho(BindArguments(echoStm.Parameters))) { PhpSyntax = stmt };
-            if (stmt is AST.ExpressionStmt exprStm) return new BoundExpressionStatement(BindExpression(exprStm.Expression, BoundAccess.None)) { PhpSyntax = stmt };
+            if (stmt is AST.EchoStmt echoStm) return new BoundExpressionStatement(new BoundEcho(BindArguments(echoStm.Parameters)));
+            if (stmt is AST.ExpressionStmt exprStm) return new BoundExpressionStatement(BindExpression(exprStm.Expression, BoundAccess.None));
             if (stmt is AST.JumpStmt jmpStm) return BindJumpStmt(jmpStm);
             if (stmt is AST.FunctionDecl) return new BoundFunctionDeclStatement(stmt.GetProperty<SourceFunctionSymbol>());
             if (stmt is AST.TypeDecl) return new BoundTypeDeclStatement(stmt.GetProperty<SourceTypeSymbol>());
-            if (stmt is AST.GlobalStmt) return new BoundGlobalVariableStatement(
-                ((AST.GlobalStmt)stmt).VarList.Cast<AST.DirectVarUse>()
-                    .Select(s => _locals.BindVariable(s.VarName, VariableKind.GlobalVariable, s.Span.ToTextSpan(), null))
-                    .ToImmutableArray());
-            if (stmt is AST.StaticStmt staticStm) return new BoundStaticVariableStatement(
-                staticStm.StVarList
-                    .Select(s => (BoundStaticLocal)_locals.BindVariable(s.Variable, VariableKind.StaticVariable, s.Span.ToTextSpan(),
-                        () => (s.Initializer != null ? BindExpression(s.Initializer) : null)))
-                    .ToImmutableArray())
-            { PhpSyntax = stmt };
+            if (stmt is AST.GlobalStmt glStmt) return BindGlobalStmt(glStmt);
+            if (stmt is AST.StaticStmt staticStm) return BindStaticStmt(staticStm);
             if (stmt is AST.UnsetStmt unsetStm) return new BoundUnset(
                 unsetStm.VarList
                     .Select(v => (BoundReferenceExpression)BindExpression(v, BoundAccess.Unset))
-                    .ToImmutableArray())
-            { PhpSyntax = stmt };
-            if (stmt is AST.ThrowStmt throwStm) return new BoundThrowStatement(BindExpression(throwStm.Expression, BoundAccess.Read)) { PhpSyntax = stmt };
-            if (stmt is AST.PHPDocStmt) return new BoundEmptyStatement() { PhpSyntax = stmt };
-            if (stmt is AST.DeclareStmt declareStm) return new BoundDeclareStatement() { PhpSyntax = stmt };
+                    .ToImmutableArray());
+            if (stmt is AST.ThrowStmt throwStm) return new BoundThrowStatement(BindExpression(throwStm.Expression, BoundAccess.Read));
+            if (stmt is AST.PHPDocStmt) return new BoundEmptyStatement();
+            if (stmt is AST.DeclareStmt declareStm) return new BoundDeclareStatement();
 
             //
             _diagnostics.Add(_locals.Routine, stmt, Errors.ErrorCode.ERR_NotYetImplemented, $"Statement of type '{stmt.GetType().Name}'");
             return new BoundEmptyStatement(stmt.Span.ToTextSpan());
+        }
+
+        BoundStatement BindGlobalStmt(AST.DirectVarUse varuse)
+        {
+            return new BoundGlobalVariableStatement(_locals.BindVariable(varuse.VarName, varuse.Span.ToTextSpan()));
+        }
+
+        protected BoundStatement BindGlobalStmt(AST.GlobalStmt stmt)
+        {
+            if (stmt.VarList.Count == 1)
+            {
+                return BindGlobalStmt((AST.DirectVarUse)stmt.VarList[0]);
+            }
+            else
+            {
+                return new BoundBlock(
+                    stmt.VarList
+                        .Cast<AST.DirectVarUse>()
+                        .Select(BindGlobalStmt)
+                        .ToList()
+                    );
+            }
+        }
+
+        protected BoundStatement BindStaticStmt(AST.StaticVarDecl decl)
+        {
+            return new BoundStaticVariableStatement(new BoundStaticVariableStatement.StaticVarDecl()
+            {
+                Variable = _locals.BindVariable(decl.Variable, decl.Span.ToTextSpan()),
+                InitialValue = (decl.Initializer != null) ? BindExpression(decl.Initializer) : null,
+            });
+        }
+
+        protected BoundStatement BindStaticStmt(AST.StaticStmt stmt)
+        {
+            if (stmt.StVarList.Count == 1)
+            {
+                return BindStaticStmt(stmt.StVarList[0]);
+            }
+            else
+            {
+                return new BoundBlock(
+                    stmt.StVarList
+                        .Select(BindStaticStmt)
+                        .ToList()
+                    );
+            }
         }
 
         protected BoundStatement BindJumpStmt(AST.JumpStmt stmt)
@@ -234,10 +279,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     ? BoundAccess.ReadRef
                     : BoundAccess.Read;
 
-                return new BoundReturnStatement(stmt.Expression != null ? BindExpression(stmt.Expression, access) : null)
-                {
-                    PhpSyntax = stmt
-                };
+                return new BoundReturnStatement(stmt.Expression != null ? BindExpression(stmt.Expression, access) : null);
             }
 
             throw ExceptionUtilities.Unreachable;
@@ -967,7 +1009,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // if at least branch has any pre-bound statements we need to condition them
             if (!trueExprBag.IsOnlyBoundElement || !falseExprBag.IsOnlyBoundElement)
-            {                
+            {
                 // make a defensive copy of condition, would be evaluated twice otherwise (conditioned prebound blocks and original position)
                 // no need to worry about order of execution: either true or false branch contains preBoundStatements  
                 // .. -> we are on yield<>root path -> expression to the left are already prepended
@@ -975,7 +1017,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 // create a conditional edge and set the last (current) pre-bound block to the conditional edge's end block
                 CurrentPreBoundBlock = CreateConditionalEdge(currBlock, condExpr,
-                    trueExprBag.PreBoundBlockFirst, trueExprBag.PreBoundBlockLast, 
+                    trueExprBag.PreBoundBlockFirst, trueExprBag.PreBoundBlockLast,
                     falseExprBag.PreBoundBlockFirst, falseExprBag.PreBoundBlockLast);
             }
 
@@ -1041,9 +1083,9 @@ namespace Pchp.CodeAnalysis.Semantics
             BoundBlock trueBlockStart, BoundBlock trueBlockEnd, BoundBlock falseBlockStart, BoundBlock falseBlockEnd)
         {
             Debug.Assert(trueBlockStart != null || falseBlockStart != null);
-            Debug.Assert(trueBlockStart == null ^ trueBlockEnd != null);       
+            Debug.Assert(trueBlockStart == null ^ trueBlockEnd != null);
             Debug.Assert(falseBlockStart == null ^ falseBlockEnd != null);
-       
+
             // if only false branch is non-empty flip the condition and conditioned blocks so that true is non-empty
             if (trueBlockStart == null)
             {
@@ -1060,7 +1102,7 @@ namespace Pchp.CodeAnalysis.Semantics
             falseBlockStart = falseBlockStart ?? endBlock;
 
             _ = new ConditionalEdge(sourceBlock, trueBlockStart, falseBlockStart, condExpr);
-            _ = new SimpleEdge(trueBlockEnd, endBlock); 
+            _ = new SimpleEdge(trueBlockEnd, endBlock);
             if (falseBlockStart != endBlock) { _ = new SimpleEdge(falseBlockEnd, endBlock); }
 
             return endBlock;

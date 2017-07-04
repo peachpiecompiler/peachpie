@@ -19,4 +19,4 @@ foreach($gen as $key => $value){
     echo "k:".$key."v:".$value."\n";
 }
 
-
+echo "Done.";

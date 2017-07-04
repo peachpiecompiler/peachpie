@@ -14,7 +14,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 {
     partial class BoundBlock : IGenerator
     {
-        internal virtual void Emit(CodeGenerator cg)
+        internal override void Emit(CodeGenerator cg)
         {
             // emit contained statements
             if (_statements.Count != 0)

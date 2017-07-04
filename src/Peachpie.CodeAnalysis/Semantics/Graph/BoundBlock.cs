@@ -18,7 +18,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Represents control flow block.
     /// </summary>
     [DebuggerDisplay("{DebugDisplay}")]
-    public partial class BoundBlock : AstNode, IBlockStatement
+    public partial class BoundBlock : BoundStatement, IBlockStatement
     {
         /// <summary>
         /// Internal name of the block.
@@ -38,11 +38,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// </summary>
         public int Tag { get { return _tag; } set { _tag = value; } }
         private int _tag;
-
-        /// <summary>
-        /// Associated syntax node.
-        /// </summary>
-        internal LangElement PhpSyntax { get; set; }
 
         /// <summary>
         /// Current naming context.
@@ -77,8 +72,15 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public bool IsDead => _ordinal < 0;
 
         internal BoundBlock()
+            :this(new List<BoundStatement>())
         {
-            _statements = new List<BoundStatement>();
+            
+        }
+
+        internal BoundBlock(List<BoundStatement> statements)
+        {
+            Debug.Assert(statements != null);
+            _statements = statements;
         }
 
         /// <summary>
@@ -134,16 +136,17 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         ImmutableArray<ILocalSymbol> IBlockStatement.Locals => Locals;
         protected virtual ImmutableArray<ILocalSymbol> Locals => ImmutableArray<ILocalSymbol>.Empty;
 
-        OperationKind IOperation.Kind => OperationKind.BlockStatement;
+        public override OperationKind Kind => OperationKind.BlockStatement;
 
         bool IOperation.IsInvalid => false;
 
         SyntaxNode IOperation.Syntax => null;
 
-        void IOperation.Accept(OperationVisitor visitor)
-            => visitor.VisitBlockStatement(this);
+        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitBlockStatement(this);
 
-        TResult IOperation.Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+        public override void Accept(OperationVisitor visitor) => visitor.VisitBlockStatement(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitBlockStatement(this, argument);
 
         #endregion

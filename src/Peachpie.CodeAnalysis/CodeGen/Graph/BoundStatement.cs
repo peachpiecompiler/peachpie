@@ -9,6 +9,7 @@ using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using Devsense.PHP.Text;
+using Pchp.CodeAnalysis.FlowAnalysis;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -191,7 +192,24 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override void Emit(CodeGenerator cg)
         {
-            // global variables declared in LocalsTable
+            cg.EmitSequencePoint(this.PhpSyntax);
+
+            // Template: <local> = $GLOBALS.EnsureItemAlias("name")
+
+            var local = this.Variable.BindPlace(cg.Builder, BoundAccess.Write.WithWriteRef(TypeRefMask.AnyType), 0);
+            local.EmitStorePrepare(cg);
+
+            // <ctx>.Globals : PhpArray
+            cg.EmitLoadContext();
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Context.Globals.Getter);
+
+            // PhpArray.EnsureItemAlias( name ) : PhpAlias
+            cg.EmitIntStringKey(this.Variable.Name);
+            var t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.EnsureItemAlias_IntStringKey)
+                .Expect(cg.CoreTypes.PhpAlias);
+
+            //
+            local.EmitStore(cg, t);
         }
     }
 
@@ -201,30 +219,30 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             cg.EmitSequencePoint(this.PhpSyntax);
 
-            foreach (var v in _variables)
-            {
-                var getmethod = cg.CoreMethods.Context.GetStatic_T.Symbol.Construct(v._holder);
-                var place = v._holderPlace;
+            // synthesize the holder class H { PhpAlias value }
+            var holder = cg.Factory.DeclareStaticLocalHolder(this.Declaration.Name, cg.CoreTypes.PhpAlias); // (TypeSymbol)((ILocalSymbol)this.Declaration.Variable.Symbol).Type);
 
-                // Template: x = ctx.GetStatic<holder_x>()
-                place.EmitStorePrepare(cg.Builder);
+            // Context.GetStatic<H>()
+            var getmethod = cg.CoreMethods.Context.GetStatic_T.Symbol.Construct(holder);
+            
+            // Template: <local> = &Context.GetStatic<H>().value
+            var local = this.Declaration.Variable.BindPlace(cg.Builder, BoundAccess.Write.WithWriteRef(TypeRefMask.AnyType), 0);
+            local.EmitStorePrepare(cg);
 
-                cg.EmitLoadContext();
-                cg.EmitCall(ILOpCode.Callvirt, getmethod);
+            cg.EmitLoadContext();   // <ctx>
+            cg.EmitCall(ILOpCode.Callvirt, getmethod);  // .GetStatic<H>()
+            cg.Builder.EmitOpCode(ILOpCode.Ldfld);  // .value
+            cg.EmitSymbolToken(holder.ValueField, null);
 
-                place.EmitStore(cg.Builder);
+            local.EmitStore(cg, holder.ValueField.Type);
 
-                // holder initialization routine
-                EmitInit(cg.Module, cg.Diagnostics, cg.DeclaringCompilation, v._holder, (BoundExpression)v.InitialValue);
-
-            }
+            // holder initialization routine
+            EmitInit(cg.Module, cg.Diagnostics, cg.DeclaringCompilation, holder, Declaration.InitialValue);
         }
 
         void EmitInit(Emit.PEModuleBuilder module, DiagnosticBag diagnostic, PhpCompilation compilation, SynthesizedStaticLocHolder holder, BoundExpression initializer)
         {
-            var loctype = holder.ValueField.Type;
-
-            bool requiresContext = initializer != null && initializer.RequiresContext;
+            var requiresContext = initializer != null && initializer.RequiresContext;
 
             if (requiresContext)
             {

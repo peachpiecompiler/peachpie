@@ -216,15 +216,17 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         public override OperationKind Kind => OperationKind.VariableDeclarationStatement;
 
-        ImmutableArray<IVariable> IVariableDeclarationStatement.Variables { get { throw new InvalidOperationException(); } }   // global variable does not have a symbol (yet?)
+        ImmutableArray<IVariable> IVariableDeclarationStatement.Variables => ImmutableArray.Create((IVariable)_variable);
 
-        public ImmutableArray<BoundVariable> Variables => _variables;
+        /// <summary>
+        /// The variable that will be referenced to a global variable.
+        /// </summary>
+        public BoundVariable Variable => _variable;
+        readonly BoundVariable _variable;
 
-        readonly ImmutableArray<BoundVariable> _variables;
-
-        public BoundGlobalVariableStatement(ImmutableArray<BoundVariable> variables)
+        public BoundGlobalVariableStatement(BoundVariable variable)
         {
-            _variables = variables;
+            _variable = variable;
         }
 
         public override void Accept(OperationVisitor visitor)
@@ -240,15 +242,27 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public sealed partial class BoundStaticVariableStatement : BoundStatement, IVariableDeclarationStatement
     {
+        public struct StaticVarDecl
+        {
+            public BoundVariable Variable;
+            public BoundExpression InitialValue;
+
+            /// <summary>
+            /// Variable name.
+            /// </summary>
+            public string Name => Variable.Name;
+        }
+
         public override OperationKind Kind => OperationKind.VariableDeclarationStatement;
 
-        public ImmutableArray<IVariable> Variables => StaticCast<IVariable>.From(_variables);
+        ImmutableArray<IVariable> IVariableDeclarationStatement.Variables => ImmutableArray.Create((IVariable)_variable.Variable);
 
-        readonly ImmutableArray<BoundStaticLocal> _variables;
+        public StaticVarDecl Declaration => _variable;
+        readonly StaticVarDecl _variable;
 
-        public BoundStaticVariableStatement(ImmutableArray<BoundStaticLocal> variables)
+        public BoundStaticVariableStatement(StaticVarDecl variable)
         {
-            _variables = variables;
+            _variable = variable;
         }
 
         public override void Accept(OperationVisitor visitor)

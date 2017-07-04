@@ -214,6 +214,11 @@ namespace Pchp.CodeAnalysis.Semantics
             
         }
 
+        public virtual void VisitBlockStatement(Graph.BoundBlock x)
+        {
+            x.Statements.ForEach(Accept);
+        }
+
         public virtual void VisitExpressionStatement(BoundExpressionStatement x)
         {
             Accept(x.Expression);
