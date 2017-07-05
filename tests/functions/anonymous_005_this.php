@@ -12,4 +12,4 @@ class X
 
 (new X)->foo()();
 
-echo "Done."
+echo "Done.";
