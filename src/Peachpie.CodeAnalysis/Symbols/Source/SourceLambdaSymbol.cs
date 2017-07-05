@@ -56,7 +56,7 @@ namespace Pchp.CodeAnalysis.Symbols
             // System.Object @this
             if (_useThis)
             {
-                yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Object, SpecialParameterSymbol.ThisName, index++);
+                yield return new SpecialParameterSymbol(this, ContainingType, SpecialParameterSymbol.ThisName, index++);
             }
         }
 
@@ -68,7 +68,20 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override IList<Statement> Statements => _syntax.Body.Statements;
 
-        public override ParameterSymbol ThisParameter => null;
+        public override ParameterSymbol ThisParameter
+        {
+            get
+            {
+                if (UseThis)
+                {
+                    return ImplicitParameters.First(p => p.Name == SpecialParameterSymbol.ThisName);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        }
 
         internal override Signature SyntaxSignature => _syntax.Signature;
 

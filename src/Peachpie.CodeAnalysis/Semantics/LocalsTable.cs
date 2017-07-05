@@ -49,12 +49,12 @@ namespace Pchp.CodeAnalysis.Semantics
             _routine = routine;
 
             //
-            PopuplateParameters();
+            PopulateParameters();
         }
 
         #endregion
 
-        void PopuplateParameters()
+        void PopulateParameters()
         {
             // parameters
             foreach (var p in _routine.SourceParameters)
