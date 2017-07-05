@@ -84,3 +84,6 @@ echo "s:".$gen->send(100)."\n";
 
 echo "s:".$gen->send([2, 3, 4])."\n";
 
+echo "Done.";
+
+
