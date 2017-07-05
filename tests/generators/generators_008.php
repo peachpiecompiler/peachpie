@@ -39,3 +39,6 @@ echo "s:".$gen->send(100)."\n";
 echo "s:".$gen->send(100)."\n";
 echo "s:".$gen->send(400)."\n";
 
+echo "Done.";
+
+

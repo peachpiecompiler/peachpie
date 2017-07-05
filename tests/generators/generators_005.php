@@ -33,3 +33,6 @@ echo "s:".$gen->send(4)."\n";
 echo "k:".$gen->key()."v:".$gen->current()."\n";
 
 echo "r:".$gen->getReturn()."\n";
+
+echo "Done.";
+

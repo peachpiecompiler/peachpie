@@ -74,3 +74,6 @@ foreach($gen as $key => $value){
 
 echo "r:".$gen->getReturn()."\n";
 echo "k:".$gen->key()."v:".$gen->current()."c:".$gen->valid()."\n";
+
+echo "Done.";
+

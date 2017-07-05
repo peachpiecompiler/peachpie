@@ -99,5 +99,8 @@ echo "k:".$gen->key()."v:".$gen->current()."\n";
 echo "s:".$gen->send(0)."\n";
 echo "s:".$gen->send(1)."\n";
 
+echo "Done.";
+
+
 
 

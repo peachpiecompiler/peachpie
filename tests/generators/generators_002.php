@@ -67,3 +67,5 @@ foreach(bar() as $value){
     echo "v:".$value."\n";
 }
 
+echo "Done.";
+
