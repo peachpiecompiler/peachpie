@@ -13,30 +13,30 @@
 <p align="center">
 <a href="http://www.nuget.org/profiles/peachpie"><img src="https://img.shields.io/nuget/v/Peachpie.App.svg?style=flat"></a>
 <a href="https://gitter.im/iolevel/peachpie"><img src="https://badges.gitter.im/iolevel/peachpie.svg"></a>
-<a href="https://github.com/iolevel/peachpie/blob/master/LICENSE.txt"><img src="https://img.shields.io/hexpm/l/plug.svg"></a>
+<a href="https://github.com/peachpiecompiler/peachpie/blob/master/LICENSE.txt"><img src="https://img.shields.io/hexpm/l/plug.svg"></a>
 <a href="http://www.peachpie.io"><img src="https://img.shields.io/badge/Web-peachpie.io-orange.svg"></a>
 <a href="https://twitter.com/pchpcompiler"><img src="https://img.shields.io/badge/Twitter-%40pchpcompiler-blue.svg"></a>
 <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=BY2V98VY57K2E" target="_blank"><img src="https://img.shields.io/badge/$-donate-ff69b4.svg?maxAge=2592000&amp;style=flat"></a>
 </p>
 
-- [Getting Started](https://github.com/iolevel/peachpie/wiki/Getting-Started)  
-- [Documentation](https://github.com/iolevel/peachpie/wiki)
+- [Getting Started](https://github.com/peachpiecompiler/peachpie/wiki/Getting-Started)  
+- [Documentation](https://github.com/peachpiecompiler/peachpie/wiki)
 
 
 ## Continuous Integration
 
 | Service  | Platform  | Build Status  |
 |---|---|---|
-| Travis CI | Ubuntu  | [![Build status](https://api.travis-ci.org/iolevel/peachpie.svg?branch=master)](https://travis-ci.org/iolevel/peachpie)  |
+| Travis CI | Ubuntu  | [![Build status](https://api.travis-ci.org/peachpiecompiler/peachpie.svg?branch=master)](https://travis-ci.org/peachpiecompiler/peachpie)  |
 | MyGet Build Services  | Windows  | [![peachpie MyGet Build Status](https://www.myget.org/BuildSource/Badge/peachpie?identifier=14586f8c-2600-412f-b9b0-39db8e930806)](https://www.myget.org/gallery/peachpie)    |
 
 ## What is Peachpie?
 Peachpie is a modern PHP compiler based on the Microsoft Roslyn compiler platform and drawing from our popular Phalanger project. It allows PHP to be executed within the .NET framework, thereby opening the door for PHP developers into the world of .NET – and vice versa.
 
 ## Status and Compatibility
-You can find an up-to-date status of the project in our [Roadmap](https://github.com/iolevel/peachpie/wiki/Peachpie-Roadmap) section. Please note that the status is dynamic; Peachpie is a work in progress, which means that the list of finished and planned features frequently changes and will be updated on a regular basis.
+You can find an up-to-date status of the project in our [Roadmap](https://github.com/peachpiecompiler/peachpie/wiki/Peachpie-Roadmap) section. Please note that the status is dynamic; Peachpie is a work in progress, which means that the list of finished and planned features frequently changes and will be updated on a regular basis.
 
-The Wiki also includes a [Compatibility matrix](https://github.com/iolevel/peachpie/wiki/Compatibility) for a quick overview of which frameworks Peachpie is compatible with and which features are already supported. 
+The Wiki also includes a [Compatibility matrix](https://github.com/peachpiecompiler/peachpie/wiki/Compatibility) for a quick overview of which frameworks Peachpie is compatible with and which features are already supported. 
 
 ## Project goals
 - **Increased performance**: Peachpie's extensive type analysis and the influence of Microsoft Roslyn should provide an improved performance of PHP applications and components. 
@@ -57,7 +57,7 @@ There are currently two ways of using Peachpie through `msbuild`: in your favori
 We have a custom [VSCode extension](https://marketplace.visualstudio.com/items?itemName=iolevel.peachpie-vscode) to make working with Peachpie compiler as comfortable as possible. The extension automatically installs all required dependencies, enables the `Peachpie: Create project` command, syntax error underlining and Peachpie analytics:
 
 <p align="center">
-<a href="https://marketplace.visualstudio.com/items?itemName=iolevel.peachpie-vscode" target="_blank"><img src="https://raw.githubusercontent.com/iolevel/peachpie-vscode/master/src/Peachpie.VSCode/images/tEDLQt.gif" 
+<a href="https://marketplace.visualstudio.com/items?itemName=iolevel.peachpie-vscode" target="_blank"><img src="https://raw.githubusercontent.com/peachpiecompiler/peachpie-vscode/master/src/Peachpie.VSCode/images/tEDLQt.gif" 
 alt="Peachpie Extension" border="10" /></a> 
 </p>
 
@@ -69,12 +69,12 @@ alt="Peachpie Introduction" border="10" /></a>
 </p>
 
 ### Command line building
-Alternatively, you can also work with Peachpie on the command line. Please refer to our [short introduction video](https://www.youtube.com/watch?v=GVWVInYiYLY) to see how to run the compiler on the command line and to our [Getting Started](https://github.com/iolevel/peachpie/wiki/Getting-Started) section. 
+Alternatively, you can also work with Peachpie on the command line. Please refer to our [short introduction video](https://www.youtube.com/watch?v=GVWVInYiYLY) to see how to run the compiler on the command line and to our [Getting Started](https://github.com/peachpiecompiler/peachpie/wiki/Getting-Started) section. 
 
 ## How to contribute?
 We can use all the help we can get. You can contribute to our repository, spread the word about this project, or give us a small donation to help fund the development. If you believe you have valuable knowledge and experience to add to this project, please do not hesitate to contribute to our repo – your help is much appreciated. 
 
-However, please read the [Contribution Guidelines](https://github.com/iolevel/peachpie/blob/master/CONTRIBUTING.md) first and ensure you are following them. Also, we kindly ask you to respect our [Code of Conduct](https://github.com/iolevel/peachpie/blob/master/CODE_OF_CONDUCT.md) when posting or interacting with other users. 
+However, please read the [Contribution Guidelines](https://github.com/peachpiecompiler/peachpie/blob/master/CONTRIBUTING.md) first and ensure you are following them. Also, we kindly ask you to respect our [Code of Conduct](https://github.com/peachpiecompiler/peachpie/blob/master/CODE_OF_CONDUCT.md) when posting or interacting with other users. 
 
 ## Providing feedback
 If you found a bug, the easiest way of providing feedback is to post it on [Gitter](https://gitter.im/iolevel/peachpie). We will enable the posting of issues on GitHub once the compiler will be in version 1.0.
