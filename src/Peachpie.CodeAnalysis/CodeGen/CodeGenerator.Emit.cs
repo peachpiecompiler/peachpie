@@ -2353,7 +2353,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                             case SpecialType.System_Char:
                                 if (str != null && str.Length == 1)
                                 {
-                                    Builder.EmitIntConstant(unchecked((int)str[0]));
+                                    Builder.EmitCharConstant(str[0]);
                                     return DeclaringCompilation.GetSpecialType(SpecialType.System_Char);
                                 }
                                 break;
@@ -2418,7 +2418,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         }
                     }
 
-                    Builder.EmitIntConstant(unchecked((int)(char)value));
+                    Builder.EmitCharConstant((char)value);
                     return DeclaringCompilation.GetSpecialType(SpecialType.System_Char);
                 }
                 else
@@ -2450,6 +2450,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                     break;
                 case SpecialType.System_String:
                     _il.EmitStringConstant(string.Empty);
+                    break;
+                case SpecialType.System_Char:
+                    _il.EmitCharConstant('\0');
                     break;
                 default:
                     if (type == CoreTypes.PhpAlias)
@@ -2770,6 +2773,11 @@ namespace Pchp.CodeAnalysis.CodeGen
             il.EmitOpCode(code, stack);
             il.EmitToken(module.Translate(method, diagnostics, false), null, diagnostics);
             return (code == ILOpCode.Newobj) ? method.ContainingType : method.ReturnType;
+        }
+
+        public static void EmitCharConstant(this ILBuilder il, char value)
+        {
+            il.EmitIntConstant(unchecked((int)value));
         }
     }
 }

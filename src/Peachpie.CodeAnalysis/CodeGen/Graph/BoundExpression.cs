@@ -421,7 +421,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     else
                     {
                         ytype = cg.EmitConvertToPhpValue(ytype, 0);
-                        // i8 - value : value
+                        // i8 - value : number
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Subtract_long_value)
                             .Expect(cg.CoreTypes.PhpNumber);
                     }
@@ -434,7 +434,10 @@ namespace Pchp.CodeAnalysis.Semantics
                         il.EmitOpCode(ILOpCode.Sub);
                         return cg.CoreTypes.Double;
                     }
-                    throw new NotImplementedException($"Sub(double, {ytype.Name})");
+                    ytype = cg.EmitConvertToPhpValue(ytype, 0);
+                    // r8 - value : double
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Subtract_double_value)
+                            .Expect(cg.CoreTypes.Double);
 
                 case SpecialType.System_String:
                     xtype = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.ToNumber_String)
