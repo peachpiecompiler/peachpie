@@ -66,7 +66,8 @@ namespace Peachpie.NETCore.Compiler.Tools
                     var opt = ParseOption(arg);
                     if (opt.HasValue)
                     {
-                        var value = opt.Value.Value.ToLowerInvariant();
+                        var rspvalue = opt.Value.Value;
+                        var value = rspvalue?.ToLowerInvariant();
 
                         switch (opt.Value.Key.ToLowerInvariant())
                         {
@@ -101,12 +102,21 @@ namespace Peachpie.NETCore.Compiler.Tools
                         }
 
                         //
-                        var rspvalue = opt.Value.Value;
-                        if (rspvalue.IndexOfAny(new[] { ' ', '\t' }) >= 0)
-                            rspvalue = "\"" + rspvalue + "\"";  // enclose into quotes so 'ParseResponseLines' won't split it into words
+                        if (rspvalue != null)
+                        {
+                            if (rspvalue.IndexOfAny(new[] { ' ', '\t' }) >= 0)
+                            {
+                                rspvalue = "\"" + rspvalue + "\"";  // enclose into quotes so 'ParseResponseLines' won't split it into words
+                            }
 
-                        //
-                        newargs.Add($"--{opt.Value.Key}:{rspvalue}");
+                            //
+                            newargs.Add($"--{opt.Value.Key}:{rspvalue}");
+                        }
+                        else
+                        {
+                            //
+                            newargs.Add("--" + opt.Value.Key);
+                        }
                     }
                     else
                     {
