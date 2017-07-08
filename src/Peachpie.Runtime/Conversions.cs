@@ -114,6 +114,30 @@ namespace Pchp.Core
 
         #endregion
 
+        #region ToChar
+
+        /// <summary>
+		/// Converts string to a single character.
+		/// </summary>
+		/// <param name="str">The string to convert.</param>
+		/// <returns>The first character of the string.</returns>
+		/// <exception cref="PhpException"><paramref name="str"/> doesn't consist of a single character. (Warning)</exception>
+		public static char ToChar(string str)
+        {
+            if (str == null || str.Length != 1)
+            {
+                PhpException.Throw(PhpError.Warning, Resources.ErrResources.string_should_be_single_character);
+                if (string.IsNullOrEmpty(str))
+                {
+                    return '\0';
+                }
+            }
+
+            return str[0];
+        }
+
+        #endregion
+
         #region ToBoolean
 
         /// <summary>
