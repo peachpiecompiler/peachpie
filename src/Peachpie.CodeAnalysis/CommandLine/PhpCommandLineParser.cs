@@ -433,6 +433,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 mainTypeName: mainTypeName,
                 scriptClassName: WellKnownMemberNames.DefaultScriptClassName,
                 phpdocTypes: phpdocTypes,
+                parseOptions: parseOptions,
                 //usings: usings,
                 optimizationLevel: optimize ? OptimizationLevel.Release : OptimizationLevel.Debug,
                 checkOverflow: false, // checkOverflow,

@@ -62,6 +62,11 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public PhpDocTypes PhpDocTypes { get; private set; }
 
+        /// <summary>
+        /// Source language options.
+        /// </summary>
+        public PhpParseOptions ParseOptions { get; private set; }
+
         ///// <summary>
         ///// Flags applied to the top-level binder created for each syntax tree in the compilation 
         ///// as well as for the binder of global imports.
@@ -96,7 +101,8 @@ namespace Pchp.CodeAnalysis
             AssemblyIdentityComparer assemblyIdentityComparer = null,
             StrongNameProvider strongNameProvider = null,
             bool publicSign = false,
-            PhpDocTypes phpdocTypes = PhpDocTypes.None)
+            PhpDocTypes phpdocTypes = PhpDocTypes.None,
+            PhpParseOptions parseOptions = null)
             : this(outputKind, baseDirectory, sdkDirectory,
                    reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
                    optimizationLevel, checkOverflow,
@@ -112,7 +118,8 @@ namespace Pchp.CodeAnalysis
                    strongNameProvider: strongNameProvider,
                    metadataImportOptions: MetadataImportOptions.Public,
                    publicSign: publicSign,
-                   phpdocTypes : phpdocTypes)
+                   phpdocTypes : phpdocTypes,
+                   parseOptions: parseOptions)
         {
         }
 
@@ -146,7 +153,8 @@ namespace Pchp.CodeAnalysis
             StrongNameProvider strongNameProvider,
             MetadataImportOptions metadataImportOptions,
             bool publicSign,
-            PhpDocTypes phpdocTypes)
+            PhpDocTypes phpdocTypes,
+            PhpParseOptions parseOptions)
             : base(outputKind, reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
                    cryptoKeyContainer, cryptoKeyFile, cryptoPublicKey, delaySign, publicSign, optimizationLevel, checkOverflow,
                    platform, generalDiagnosticOption, warningLevel, specificDiagnosticOptions.ToImmutableDictionaryOrEmpty(),
@@ -157,6 +165,7 @@ namespace Pchp.CodeAnalysis
             this.BaseDirectory = baseDirectory;
             this.SdkDirectory = sdkDirectory;
             this.PhpDocTypes = phpdocTypes;
+            this.ParseOptions = parseOptions;
         }
 
         private PhpCompilationOptions(PhpCompilationOptions other) : this(
@@ -188,7 +197,8 @@ namespace Pchp.CodeAnalysis
             metadataImportOptions: other.MetadataImportOptions,
             reportSuppressedDiagnostics: other.ReportSuppressedDiagnostics,
             publicSign: other.PublicSign,
-            phpdocTypes: other.PhpDocTypes)
+            phpdocTypes: other.PhpDocTypes,
+            parseOptions: other.ParseOptions)
         {
         }
 
