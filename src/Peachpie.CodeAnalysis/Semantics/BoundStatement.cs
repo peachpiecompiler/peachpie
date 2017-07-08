@@ -216,15 +216,17 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         public override OperationKind Kind => OperationKind.VariableDeclarationStatement;
 
-        ImmutableArray<IVariable> IVariableDeclarationStatement.Variables => ImmutableArray.Create((IVariable)_variable);
+        ImmutableArray<IVariable> IVariableDeclarationStatement.Variables => (_variable.Variable != null)
+            ? ImmutableArray.Create((IVariable)_variable.Variable)
+            : ImmutableArray<IVariable>.Empty;  // unbound yet
 
         /// <summary>
         /// The variable that will be referenced to a global variable.
         /// </summary>
-        public BoundVariable Variable => _variable;
-        readonly BoundVariable _variable;
+        public BoundVariableRef Variable => _variable;
+        readonly BoundVariableRef _variable;
 
-        public BoundGlobalVariableStatement(BoundVariable variable)
+        public BoundGlobalVariableStatement(BoundVariableRef variable)
         {
             _variable = variable;
         }

@@ -196,7 +196,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // Template: <local> = $GLOBALS.EnsureItemAlias("name")
 
-            var local = this.Variable.BindPlace(cg.Builder, BoundAccess.Write.WithWriteRef(TypeRefMask.AnyType), 0);
+            var local = this.Variable.BindPlace(cg);
             local.EmitStorePrepare(cg);
 
             // <ctx>.Globals : PhpArray
@@ -204,7 +204,7 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Context.Globals.Getter);
 
             // PhpArray.EnsureItemAlias( name ) : PhpAlias
-            cg.EmitIntStringKey(this.Variable.Name);
+            this.Variable.Name.EmitIntStringKey(cg);
             var t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.EnsureItemAlias_IntStringKey)
                 .Expect(cg.CoreTypes.PhpAlias);
 
