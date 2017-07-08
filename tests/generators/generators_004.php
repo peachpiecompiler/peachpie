@@ -27,3 +27,5 @@ foreach (gr() as &$val2) {
     echo (--$val2).' ';
 }
 
+echo "Done.";
+

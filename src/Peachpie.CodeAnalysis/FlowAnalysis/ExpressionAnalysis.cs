@@ -162,17 +162,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return false;
         }
 
-        /// <summary>
-        /// Updates the expression access and visits it.
-        /// </summary>
-        /// <param name="x">The expression.</param>
-        /// <param name="access">New access.</param>
-        void Visit(BoundExpression x, BoundAccess access)
-        {
-            x.Access = access;
-            Accept(x);
-        }
-
         internal TypeSymbol ResolveType(INamedTypeRef dtype)
         {
             return (TypeSymbol)_model.GetType(dtype.ClassName);

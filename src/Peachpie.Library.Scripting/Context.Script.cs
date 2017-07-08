@@ -169,8 +169,23 @@ namespace Peachpie.Library.Scripting
         /// <returns>New script reepresenting the compiled code.</returns>
         public static Script Create(Context.ScriptOptions options, string code, PhpCompilationFactory builder, IEnumerable<Script> previousSubmissions)
         {
+            // use the language version of the requesting context
+            Version languageVersion = null;
+            bool shortOpenTags = false;
+
+            var language = options.Context.TargetPhpLanguage;
+            if (language != null)
+            {
+                shortOpenTags = language.ShortOpenTag;
+                Version.TryParse(language.LanguageVersion, out languageVersion);
+            }
+
+            // parse the source code
             var tree = PhpSyntaxTree.ParseCode(code,
-                new PhpParseOptions(kind: options.IsSubmission ? SourceCodeKind.Script : SourceCodeKind.Regular),
+                new PhpParseOptions(
+                    kind: options.IsSubmission ? SourceCodeKind.Script : SourceCodeKind.Regular,
+                    languageVersion: languageVersion,
+                    shortOpenTags: shortOpenTags),
                 PhpParseOptions.Default,
                 options.Location.Path);
 

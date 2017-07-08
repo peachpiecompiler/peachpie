@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace Pchp.Core
 {
@@ -57,6 +58,32 @@ namespace Pchp.Core
         public override string ToString()
         {
             return $"Extension: {string.Join(", ", this.Extensions)}";
+        }
+    }
+
+    /// <summary>
+    /// Assembly attribute specifying language option used to compile the assembly.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+    public class TargetPhpLanguageAttribute : Attribute
+    {
+        /// <summary>
+        /// Whether short open tags were enabled to compile the sources.
+        /// </summary>
+        public bool ShortOpenTag { get; set; }
+
+        /// <summary>
+        /// The language version of compiled sources.
+        /// </summary>
+        public string LanguageVersion { get; set; }
+
+        /// <summary>
+        /// Construct the attribute.
+        /// </summary>
+        public TargetPhpLanguageAttribute(string langVersion, bool shortOpenTag)
+        {
+            this.ShortOpenTag = shortOpenTag;
+            this.LanguageVersion = langVersion;
         }
     }
 

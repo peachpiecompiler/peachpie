@@ -56,7 +56,11 @@ namespace Pchp.CodeAnalysis.Symbols
             // System.Object @this
             if (_useThis)
             {
-                yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Object, SpecialParameterSymbol.ThisName, index++);
+                yield return new SpecialParameterSymbol(
+                    this,
+                    (ContainingType is SourceTypeSymbol) ? ContainingType : DeclaringCompilation.CoreTypes.Object,  // Jakub: this is not correct according to PHP; $this may be anything and changed to anything in runtime, therefore there should be always `System.Object`. Since we cannot change the closure scope in runtime and I don't like changing scopes in runtime in general, we allow $this strongly typed to `ContainingType` 
+                    SpecialParameterSymbol.ThisName,
+                    index++);
             }
         }
 
@@ -68,7 +72,20 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override IList<Statement> Statements => _syntax.Body.Statements;
 
-        public override ParameterSymbol ThisParameter => null;
+        public override ParameterSymbol ThisParameter
+        {
+            get
+            {
+                if (UseThis)
+                {
+                    return ImplicitParameters.First(p => p.Name == SpecialParameterSymbol.ThisName);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        }
 
         internal override Signature SyntaxSignature => _syntax.Signature;
 

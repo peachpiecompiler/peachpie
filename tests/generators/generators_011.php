@@ -24,6 +24,9 @@ echo "s:".$gen->send(20)."\n";
 echo "s:".$gen->send(30)."\n";
 echo "s:".$gen->send(40)."\n";
 
+echo "Done.";
+
+
 
 
 

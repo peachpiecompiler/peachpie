@@ -47,6 +47,8 @@ namespace Pchp.CodeAnalysis
                 throw new ArgumentOutOfRangeException(nameof(kind));
             }
 
+            PhpSyntaxTree.ParseLanguageVersion(ref languageVersion);    // throws if value not supported
+
             _languageVersion = languageVersion;
             _allowShortOpenTags = shortOpenTags;
         }

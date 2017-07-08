@@ -140,6 +140,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             bool emitPdb = true, debugPlus = false;
             string mainTypeName = null, pdbPath = null;
             Version languageVersion = null;
+            bool shortOpenTags = false;
             DebugInformationFormat debugInformationFormat = DebugInformationFormat.Pdb;
             List<string> referencePaths = new List<string>();
             if (sdkDirectoryOpt != null) referencePaths.Add(sdkDirectoryOpt);
@@ -259,8 +260,18 @@ namespace Pchp.CodeAnalysis.CommandLine
                             //AddDiagnostic(diagnostics, ErrorCode.ERR_BadCompatMode, value);
                         }
 
-                        PhpSyntaxTree.ParseLanguageVersion(languageVersion);    // throws if value not supported
+                        continue;
 
+                    case "shortopentag":
+                        shortOpenTags = string.IsNullOrEmpty(value) || (RemoveQuotesAndSlashes(value).ToLowerInvariant() == "true");
+                        continue;
+
+                    case "shortopentag+":
+                        shortOpenTags = true;
+                        continue;
+
+                    case "shortopentag-":
+                        shortOpenTags = false;
                         continue;
 
                     case "nologo":
@@ -398,6 +409,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             var parseOptions = new PhpParseOptions
             (
                 languageVersion: languageVersion,
+                shortOpenTags: shortOpenTags,
                 //preprocessorSymbols: defines.ToImmutableAndFree(),
                 documentationMode: DocumentationMode.Diagnose, // always diagnose
                 kind: SourceCodeKind.Regular//,
@@ -419,6 +431,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 mainTypeName: mainTypeName,
                 scriptClassName: WellKnownMemberNames.DefaultScriptClassName,
                 phpdocTypes: phpdocTypes,
+                parseOptions: parseOptions,
                 //usings: usings,
                 optimizationLevel: optimize ? OptimizationLevel.Release : OptimizationLevel.Debug,
                 checkOverflow: false, // checkOverflow,

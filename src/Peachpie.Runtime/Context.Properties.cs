@@ -88,5 +88,12 @@ namespace Pchp.Core
         /// Set of include paths to be used to resolve full file path.
         /// </summary>
         public virtual string[] IncludePaths => this.Configuration.Core.IncludePathsArray;
+
+        /// <summary>
+        /// Gets target PHP language specification.
+        /// By default, this is reflected from the compiled PHP script.
+        /// </summary>
+        public virtual TargetPhpLanguageAttribute TargetPhpLanguage { get => _targetPhpLanguageAttribute; }
+        static TargetPhpLanguageAttribute _targetPhpLanguageAttribute;
     }
 }

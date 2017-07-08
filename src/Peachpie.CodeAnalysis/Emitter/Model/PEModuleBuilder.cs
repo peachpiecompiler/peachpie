@@ -33,7 +33,7 @@ namespace Pchp.CodeAnalysis.Emit
         public SynthesizedManager SynthesizedManager => _synthesized;
         readonly SynthesizedManager _synthesized;
 
-        Cci.ICustomAttribute _debuggableAttribute, _phpextensionAttribute;
+        Cci.ICustomAttribute _debuggableAttribute, _phpextensionAttribute, _targetphpversionAttribute;
 
         protected readonly ConcurrentDictionary<Symbol, Cci.IModuleReference> AssemblyOrModuleSymbolToModuleRefMap = new ConcurrentDictionary<Symbol, Cci.IModuleReference>();
         readonly ConcurrentDictionary<Symbol, object> _genericInstanceMap = new ConcurrentDictionary<Symbol, object>();
@@ -149,7 +149,7 @@ namespace Pchp.CodeAnalysis.Emit
                         var debuggableAttrCtor = (MethodSymbol)this.Compilation.GetWellKnownTypeMember(WellKnownMember.System_Diagnostics_DebuggableAttribute__ctorDebuggingModes);
                         _debuggableAttribute = new SynthesizedAttributeData(debuggableAttrCtor,
                             ImmutableArray.Create(new TypedConstant(Compilation.CoreTypes.Int32.Symbol, TypedConstantKind.Primitive, DebuggableAttribute.DebuggingModes.Default | DebuggableAttribute.DebuggingModes.DisableOptimizations)),
-                            ImmutableArray< KeyValuePair<string, TypedConstant>>.Empty);
+                            ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
                     }
 
                     yield return _debuggableAttribute;
@@ -165,7 +165,7 @@ namespace Pchp.CodeAnalysis.Emit
 
                 //yield return targetfr;
 
-                // [assembly: Pchp.Core.PhpExtension(new string[0])]
+                // [assembly: PhpExtension(new string[0])]
                 if (_phpextensionAttribute == null)
                 {
                     var phpextensionAttributeCtor = this.Compilation.PhpCorLibrary.GetTypeByMetadataName(CoreTypes.PhpExtensionAttributeFullName).InstanceConstructors.First();
@@ -174,6 +174,26 @@ namespace Pchp.CodeAnalysis.Emit
                         ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
                 }
                 yield return _phpextensionAttribute;
+
+                // [assembly: TargetPhpLanguage(LanguageVersion : "7.0", ShortOpenTag : false)]
+                if (_targetphpversionAttribute == null)
+                {
+                    var targetphpversionAttribute = this.Compilation.PhpCorLibrary.GetTypeByMetadataName(CoreTypes.TargetPhpLanguageAttributeFullName);
+                    if (targetphpversionAttribute.IsErrorTypeOrNull() == false)
+                    {
+                        var parseOptions = this.Compilation.Options.ParseOptions ?? PhpParseOptions.Default;
+                        var targetphpversionAttributeCtor = this.Compilation.PhpCorLibrary.GetTypeByMetadataName(CoreTypes.TargetPhpLanguageAttributeFullName).InstanceConstructors.First();
+                        _targetphpversionAttribute = new SynthesizedAttributeData(targetphpversionAttributeCtor,
+                            ImmutableArray.Create(
+                                new TypedConstant(Compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, parseOptions.LanguageVersion?.ToString(2)),
+                                new TypedConstant(Compilation.CoreTypes.Boolean.Symbol, TypedConstantKind.Primitive, parseOptions.AllowShortOpenTags)),
+                            ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                    }
+                }
+                if (_targetphpversionAttribute != null)
+                {
+                    yield return _targetphpversionAttribute;
+                }
 
                 //
                 yield break;
@@ -557,7 +577,7 @@ namespace Pchp.CodeAnalysis.Emit
         {
             return _stringsInILMap.GetItem(token);
         }
-        
+
         public IEnumerable<string> GetStrings() => _stringsInILMap.GetAllItems();
 
         public MultiDictionary<Cci.DebugSourceDocument, Cci.DefinitionWithLocation> GetSymbolToLocationMap()

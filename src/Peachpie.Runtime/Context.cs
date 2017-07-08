@@ -124,6 +124,19 @@ namespace Pchp.Core
 
             tscriptinfo.GetDeclaredMethod("EnumerateConstants")
                 .Invoke(null, new object[] { new Action<string, PhpValue, bool>(ConstsMap.DefineAppConstant) });
+
+            //
+            ScriptAdded(tscriptinfo);
+        }
+
+        static void ScriptAdded(TypeInfo tscript)
+        {
+            Debug.Assert(tscript != null);
+
+            if (_targetPhpLanguageAttribute == null)
+            {
+                _targetPhpLanguageAttribute = tscript.Assembly.GetCustomAttribute<TargetPhpLanguageAttribute>();
+            }
         }
 
         /// <summary>
