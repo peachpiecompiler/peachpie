@@ -1213,9 +1213,17 @@ namespace Pchp.CodeAnalysis.CodeGen
                 case SpecialType.System_String:
                     EmitConvertToString(from, fromHint);
                     return;
+
+                case SpecialType.System_Char:
+                    // Template: Convert.ToChar( (string)from )
+                    EmitConvertToString(from, fromHint);
+                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToChar_String);
+                    return;
+
                 case SpecialType.System_Object:
                     EmitConvertToClass(from, fromHint, to);
                     return;
+
                 default:
                     if (to == CoreTypes.PhpValue)
                     {

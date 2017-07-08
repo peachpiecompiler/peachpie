@@ -401,6 +401,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToString_Long = ct.Convert.Method("ToString", ct.Long);
                 ToString_Double_Context = ct.Convert.Method("ToString", ct.Double, ct.Context);
                 Long_ToString = ct.Long.Method("ToString");
+                ToChar_String = ct.Convert.Method("ToChar", ct.String);
                 ToBoolean_String = ct.Convert.Method("ToBoolean", ct.String);
                 ToBoolean_PhpValue = new CoreExplicitCast(ct.PhpValue, ct.Boolean);
                 ToBoolean_Object = ct.Convert.Method("ToBoolean", ct.Object);
@@ -498,6 +499,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 EnsureItemObject_IPhpArray_PhpValue,
                 IsSet_PhpValue, IsEmpty_PhpValue, IsNullOrEmpty_String, Concat_String_String,
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
+                ToChar_String,
                 ToBoolean_String, ToBoolean_PhpValue, ToBoolean_Object, ToBoolean_IPhpConvertible,
                 ToLong_PhpValue, ToDouble_PhpValue, ToLong_String, ToDouble_String,
                 ToNumber_PhpValue, ToNumber_String,
