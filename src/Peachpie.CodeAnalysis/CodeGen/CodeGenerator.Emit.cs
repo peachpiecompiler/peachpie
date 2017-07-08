@@ -2345,7 +2345,22 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (value is string)
                 {
-                    Builder.EmitStringConstant((string)value);
+                    var str = (string)value;
+                    if (targetOpt != null)
+                    {
+                        switch (targetOpt.SpecialType)
+                        {
+                            case SpecialType.System_Char:
+                                if (str != null && str.Length == 1)
+                                {
+                                    Builder.EmitIntConstant(unchecked((int)str[0]));
+                                    return DeclaringCompilation.GetSpecialType(SpecialType.System_Char);
+                                }
+                                break;
+                        }
+                    }
+
+                    Builder.EmitStringConstant(str);
                     return CoreTypes.String;
                 }
                 else if (value is bool)
@@ -2390,6 +2405,21 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     Builder.EmitIntConstant(unchecked((int)(uint)value));
                     return DeclaringCompilation.GetSpecialType(SpecialType.System_UInt32);
+                }
+                else if (value is char)
+                {
+                    if (targetOpt != null)
+                    {
+                        switch (targetOpt.SpecialType)
+                        {
+                            case SpecialType.System_String:
+                                Builder.EmitStringConstant(value.ToString());
+                                return CoreTypes.String;
+                        }
+                    }
+
+                    Builder.EmitIntConstant(unchecked((int)(char)value));
+                    return DeclaringCompilation.GetSpecialType(SpecialType.System_Char);
                 }
                 else
                 {
