@@ -129,6 +129,7 @@
       <RspLine Include="--output-name:%(IntermediateAssembly.Filename)" />
       <RspLine Include="--optimize:$(Optimize)" />
       <RspLine Include="--langversion:$(LangVersion)" Condition=" '$(LangVersion)' != '' " />
+      <RspLine Include="--shortopentag+" Condition=" '$(ShortOpenTag)' == 'true' " />
       <RspLine Include="--debug-type:$(DebugType)" />
       <RspLine Include="--define:DEBUG" Condition=" '$(Configuration)' == 'Debug' " />
       <RspLine Include="--emit-entry-point:$(EmitEntryPoint)" />
