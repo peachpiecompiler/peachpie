@@ -233,9 +233,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void VisitGlobalStatement(BoundGlobalVariableStatement x)
         {
-            var local = State.GetLocalHandle(x.Variable.Name);
-            State.SetVarKind(local, VariableKind.GlobalVariable);
-            State.SetLocalType(local, TypeRefMask.AnyType.WithRefFlag);
+            base.VisitGlobalStatement(x);   // Accept(x.Variable)
         }
 
         #endregion

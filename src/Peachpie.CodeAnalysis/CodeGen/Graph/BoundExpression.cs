@@ -2105,6 +2105,39 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundVariableName
+    {
+        /// <summary>
+        /// Emits the name of variable leaving <c>string</c> on top of evaluation stack.
+        /// </summary>
+        internal TypeSymbol EmitVariableName(CodeGenerator cg)
+        {
+            if (this.IsDirect)
+            {
+                cg.Builder.EmitStringConstant(this.NameValue.Value);
+            }
+            else
+            {
+                cg.EmitConvert(this.NameExpression, cg.CoreTypes.String);
+            }
+
+            //
+            return cg.CoreTypes.String;
+        }
+
+        internal void EmitIntStringKey(CodeGenerator cg)
+        {
+            if (this.IsDirect)
+            {
+                cg.EmitIntStringKey(this.NameValue.Value);
+            }
+            else
+            {
+                cg.EmitIntStringKey(this.NameExpression);
+            }
+        }
+    }
+
     partial class BoundVariableRef
     {
         internal override IBoundReference BindPlace(CodeGenerator cg) => this.Variable.BindPlace(cg.Builder, this.Access, this.TypeRefMask);

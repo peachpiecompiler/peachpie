@@ -246,7 +246,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual void VisitGlobalStatement(BoundGlobalVariableStatement x)
         {
-            
+            Accept(x.Variable);
         }
 
         public virtual void VisitStaticStatement(BoundStaticVariableStatement x)

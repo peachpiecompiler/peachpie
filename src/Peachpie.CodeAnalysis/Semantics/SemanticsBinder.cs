@@ -223,22 +223,24 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundEmptyStatement(stmt.Span.ToTextSpan());
         }
 
-        BoundStatement BindGlobalStmt(AST.DirectVarUse varuse)
+        BoundStatement BindGlobalStmt(AST.SimpleVarUse varuse)
         {
-            return new BoundGlobalVariableStatement(_locals.BindVariable(varuse.VarName, varuse.Span.ToTextSpan()));
+            return new BoundGlobalVariableStatement(
+                new BoundVariableRef(BindVariableName(varuse)) { PhpSyntax = varuse }
+                .WithAccess(BoundAccess.Write.WithWriteRef(FlowAnalysis.TypeRefMask.AnyType)))
+            { PhpSyntax = varuse };
         }
 
         protected BoundStatement BindGlobalStmt(AST.GlobalStmt stmt)
         {
             if (stmt.VarList.Count == 1)
             {
-                return BindGlobalStmt((AST.DirectVarUse)stmt.VarList[0]);
+                return BindGlobalStmt(stmt.VarList[0]);
             }
             else
             {
                 return new BoundBlock(
                     stmt.VarList
-                        .Cast<AST.DirectVarUse>()
                         .Select(BindGlobalStmt)
                         .ToList()
                     );
@@ -607,16 +609,21 @@ namespace Pchp.CodeAnalysis.Semantics
                 .WithAccess(access);
         }
 
-        protected BoundExpression BindSimpleVarUse(AST.SimpleVarUse expr, BoundAccess access)
+        protected BoundVariableName BindVariableName(AST.SimpleVarUse varuse)
         {
-            var dexpr = expr as AST.DirectVarUse;
-            var iexpr = expr as AST.IndirectVarUse;
+            var dexpr = varuse as AST.DirectVarUse;
+            var iexpr = varuse as AST.IndirectVarUse;
 
             Debug.Assert(dexpr != null || iexpr != null);
 
-            var varname = (dexpr != null)
+            return (dexpr != null)
                 ? new BoundVariableName(dexpr.VarName)
                 : new BoundVariableName(BindExpression(iexpr.VarNameEx));
+        }
+
+        protected BoundExpression BindSimpleVarUse(AST.SimpleVarUse expr, BoundAccess access)
+        {
+            var varname = BindVariableName(expr);
 
             if (expr.IsMemberOf == null)
             {
