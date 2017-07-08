@@ -52,7 +52,7 @@ namespace Pchp.CodeAnalysis
             _source = source;
         }
 
-        internal static LanguageFeatures ParseLanguageVersion(Version languageVersion)
+        internal static LanguageFeatures ParseLanguageVersion(ref Version languageVersion)
         {
             if (languageVersion != null)
             {
@@ -78,13 +78,16 @@ namespace Pchp.CodeAnalysis
             }
             else
             {
-                return LanguageFeatures.Basic; // latest
+                // latest
+                languageVersion = new Version(7, 1);
+                return LanguageFeatures.Basic;
             }
         }
 
         static LanguageFeatures GetLanguageFeatures(PhpParseOptions options)
         {
-            var features = ParseLanguageVersion(options.LanguageVersion);
+            var version = options.LanguageVersion;
+            var features = ParseLanguageVersion(ref version);
 
             //
             if (options.AllowShortOpenTags)

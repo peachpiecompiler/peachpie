@@ -260,8 +260,6 @@ namespace Pchp.CodeAnalysis.CommandLine
                             //AddDiagnostic(diagnostics, ErrorCode.ERR_BadCompatMode, value);
                         }
 
-                        PhpSyntaxTree.ParseLanguageVersion(languageVersion);    // throws if value not supported
-
                         continue;
 
                     case "shortopentag":
