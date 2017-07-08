@@ -181,7 +181,7 @@ namespace Pchp.CodeAnalysis.Emit
                     var targetphpversionAttribute = this.Compilation.PhpCorLibrary.GetTypeByMetadataName(CoreTypes.TargetPhpLanguageAttributeFullName);
                     if (targetphpversionAttribute.IsErrorTypeOrNull() == false)
                     {
-                        var parseOptions = this.Compilation.Options.ParseOptions;
+                        var parseOptions = this.Compilation.Options.ParseOptions ?? PhpParseOptions.Default;
                         var targetphpversionAttributeCtor = this.Compilation.PhpCorLibrary.GetTypeByMetadataName(CoreTypes.TargetPhpLanguageAttributeFullName).InstanceConstructors.First();
                         _targetphpversionAttribute = new SynthesizedAttributeData(targetphpversionAttributeCtor,
                             ImmutableArray.Create(
