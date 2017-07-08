@@ -82,8 +82,6 @@ namespace Pchp.Core
         /// </summary>
         public TargetPhpLanguageAttribute(string langVersion, bool shortOpenTag)
         {
-            Debug.Assert(langVersion != null);
-            
             this.ShortOpenTag = shortOpenTag;
             this.LanguageVersion = langVersion;
         }
