@@ -635,15 +635,21 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             TypeSymbol arrtype;
 
-            var ps = routine.Parameters;
-            var last = ps.LastOrDefault();
-            var variadic = (last != null && last.IsParams && last.Type.IsSZArray()) ? last : null;  // optional params
+            var ps = routine.SourceParameters;
+            var variadic = routine.GetParamsParameter();  // optional params
             var variadic_element = (variadic?.Type as ArrayTypeSymbol)?.ElementType;
             var variadic_place = variadic != null ? new ParamPlace(variadic) : null;
 
-            ps = ps.Where(p => !p.IsImplicitlyDeclared && !p.IsParams).ToImmutableArray();  // parameters without implicitly declared parameters
+            var useparams = (routine is SourceLambdaSymbol) ? ((SourceLambdaSymbol)routine).UseParams.Count : 0;    // lambda function 'use' parameters
 
-            if (ps.Length == 0 && variadic_element == elementType)
+            ps = ps.Skip(useparams).Where(p => !p.IsParams).ToArray();  // parameters without implicitly declared parameters
+
+            if (ps.Length == 0 && variadic == null)
+            {
+                // empty array
+                return Emit_EmptyArray(elementType);
+            }
+            else if (ps.Length == 0 && variadic_element == elementType)
             {
                 // == params
                 arrtype = variadic_place.EmitLoad(_il);
