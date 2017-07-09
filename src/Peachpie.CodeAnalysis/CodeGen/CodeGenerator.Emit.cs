@@ -1883,6 +1883,36 @@ namespace Pchp.CodeAnalysis.CodeGen
             EmitSymbolToken(type, null);
         }
 
+        /// <summary>
+        /// Emits <c>PhpString.Append</c> expecting <c>PhpString</c> and <paramref name="t"/> on top of evaluation stack.
+        /// </summary>
+        /// <param name="ytype">Type of argument loaded on stack.</param>
+        internal void Emit_PhpString_Append(TypeSymbol ytype)
+        {
+            if (ytype == CoreTypes.PhpAlias)
+            {
+                ytype = Emit_PhpAlias_GetValue();
+            }
+
+            if (ytype == CoreTypes.PhpString)
+            {
+                // Append(PhpString)
+                EmitCall(ILOpCode.Callvirt, CoreMethods.PhpString.Append_PhpString);
+            }
+            else if (ytype == CoreTypes.PhpValue)
+            {
+                // Append(PhpValue, Context)
+                EmitLoadContext();
+                EmitCall(ILOpCode.Callvirt, CoreMethods.PhpString.Append_PhpValue_Context);
+            }
+            else
+            {
+                // Append(string)
+                EmitConvertToString(ytype, 0);
+                EmitCall(ILOpCode.Callvirt, CoreMethods.PhpString.Append_String);
+            }
+        }
+
         public void EmitEcho(BoundExpression expr)
         {
             Contract.ThrowIfNull(expr);
