@@ -720,9 +720,10 @@ namespace Pchp.Core
             _blob = from._blob.AddRef();
         }
 
-        public PhpString(string x, string y)
+        public PhpString(PhpValue x, Context ctx)
         {
-            _blob = new Blob(x, y);
+            _blob = new Blob();
+            Append(x, ctx);
         }
 
         public PhpString(string value)
@@ -733,6 +734,11 @@ namespace Pchp.Core
         public PhpString(byte[] value)
         {
             _blob = new Blob(value);
+        }
+
+        public PhpString(string x, string y)
+        {
+            _blob = new Blob(x, y);
         }
 
         public void Append(string value) => EnsureWritable().Append(value);

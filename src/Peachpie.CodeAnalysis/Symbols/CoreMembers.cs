@@ -800,13 +800,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Append_String = ct.PhpString.Method("Append", ct.String);
                 Append_PhpString = ct.PhpString.Method("Append", ct.PhpString);
+                Append_PhpValue_Context = ct.PhpString.Method("Append", ct.PhpValue, ct.Context);
 
                 DeepCopy = ct.PhpString.Method("DeepCopy");
             }
 
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToNumber, ToBytes_Context,
-                Append_String, Append_PhpString,
+                Append_String, Append_PhpString, Append_PhpValue_Context,
                 DeepCopy;
         }
 
@@ -905,6 +906,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 PhpString = ct.PhpString.Ctor();
                 PhpString_string = ct.PhpString.Ctor(ct.String);
                 PhpString_string_string = ct.PhpString.Ctor(ct.String, ct.String);
+                PhpString_PhpValue_Context = ct.PhpString.Ctor(ct.PhpValue, ct.Context);
+                PhpString_PhpString = ct.PhpString.Ctor(ct.PhpString);
                 PhpArray = ct.PhpArray.Ctor();
                 PhpArray_int = ct.PhpArray.Ctor(ct.Int32);
                 IntStringKey_int = ct.IntStringKey.Ctor(ct.Int32);
@@ -922,7 +925,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreConstructor
                 PhpAlias_PhpValue_int,
                 PhpArray, PhpArray_int,
-                PhpString, PhpString_string, PhpString_string_string,
+                PhpString, PhpString_string, PhpString_PhpString, PhpString_string_string, PhpString_PhpValue_Context,
                 IntStringKey_int, IntStringKey_string,
                 ScriptAttribute_string, PhpTraitAttribute, PhpTypeAttribute_string, PhpFieldsOnlyCtorAttribute,
                 ScriptDiedException, ScriptDiedException_Long, ScriptDiedException_PhpValue;
