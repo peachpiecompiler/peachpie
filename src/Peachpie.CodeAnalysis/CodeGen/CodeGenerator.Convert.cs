@@ -857,6 +857,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             Contract.ThrowIfNull(to);
             Debug.Assert(to.IsReferenceType);   // TODO: structs other than primitive types
             Debug.Assert(to != CoreTypes.PhpAlias);
+            Debug.Assert(!to.IsErrorType(), "Trying to convert to an ErrorType");
 
             // dereference
             if (from == CoreTypes.PhpAlias)
