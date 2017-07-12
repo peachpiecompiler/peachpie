@@ -129,7 +129,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        bool RequiresLateStaticBoundParam => (this.Flags & RoutineFlags.UsesLateStatic) != 0 && !this.HasThis && (this is SourceMethodSymbol);
+        internal bool RequiresLateStaticBoundParam => (this.Flags & RoutineFlags.UsesLateStatic) != 0 && !this.HasThis && (this is SourceMethodSymbol);
 
         /// <summary>
         /// Constructs routine source parameters.
@@ -198,7 +198,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 // declare implicit [... varargs] parameter if needed and not defined as source parameter
 
-                if ((Flags & RoutineFlags.RequiresParams) != 0 && _varargParam == null && (this is SourceFunctionSymbol || this is SourceMethodSymbol))
+                if ((Flags & RoutineFlags.RequiresParams) != 0 && _varargParam == null && (this is SourceFunctionSymbol || this is SourceMethodSymbol || this is SourceLambdaSymbol))
                 {
                     var srcparams = this.SourceParameters;
                     if (srcparams.Length == 0 || !srcparams.Last().IsParams)
@@ -219,6 +219,27 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 return _varargParam;
             }
+        }
+
+        /// <summary>
+        /// Gets params parameter or null.
+        /// </summary>
+        internal ParameterSymbol GetParamsParameter()
+        {
+            var srcparams = this.SourceParameters;
+            if (srcparams.Length != 0)
+            {
+                // explicitly declared via '...'
+                var last = srcparams[srcparams.Length - 1];
+                if (last.IsParams)
+                {
+                    Debug.Assert(last.Type.IsSZArray());
+                    return last;
+                }
+            }
+
+            // implicitly declared when needed by routine code
+            return VarargsParam;
         }
 
         public override bool IsExtern => false;

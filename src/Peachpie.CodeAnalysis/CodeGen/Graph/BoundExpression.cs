@@ -421,7 +421,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     else
                     {
                         ytype = cg.EmitConvertToPhpValue(ytype, 0);
-                        // i8 - value : value
+                        // i8 - value : number
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Subtract_long_value)
                             .Expect(cg.CoreTypes.PhpNumber);
                     }
@@ -434,7 +434,10 @@ namespace Pchp.CodeAnalysis.Semantics
                         il.EmitOpCode(ILOpCode.Sub);
                         return cg.CoreTypes.Double;
                     }
-                    throw new NotImplementedException($"Sub(double, {ytype.Name})");
+                    ytype = cg.EmitConvertToPhpValue(ytype, 0);
+                    // r8 - value : double
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Subtract_double_value)
+                            .Expect(cg.CoreTypes.Double);
 
                 case SpecialType.System_String:
                     xtype = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.ToNumber_String)
@@ -2598,19 +2601,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 //
                 cg.Builder.EmitOpCode(ILOpCode.Dup);    // PhpString
-
-                var t = cg.Emit(expr);
-                if (t == cg.CoreTypes.PhpString)
-                {
-                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpString.Append_PhpString);
-                }
-                else
-                {
-                    // TODO: PhpValue -> PhpString (instead of String)
-
-                    cg.EmitConvert(t, 0, cg.CoreTypes.String);
-                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpString.Append_String);
-                }
+                cg.Emit_PhpString_Append(cg.Emit(expr));
 
                 //
                 cg.Builder.EmitOpCode(ILOpCode.Nop);
@@ -3080,25 +3071,47 @@ namespace Pchp.CodeAnalysis.Semantics
 
         static TypeSymbol EmitAppend(CodeGenerator cg, TypeSymbol xtype, BoundExpression y)
         {
+            // LOAD PhpString (X)
+            
+            // dereference
+            if (xtype == cg.CoreTypes.PhpAlias)
+            {
+                xtype = cg.Emit_PhpAlias_GetValue();
+            }
+
             if (xtype == cg.CoreTypes.PhpString)
             {
-                // x.Append(y); return x;
-                cg.Builder.EmitOpCode(ILOpCode.Dup);
-
-                cg.EmitConvert(y, cg.CoreTypes.String);
-                cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpString.Append_String);
-
-                //
-                return xtype;
+                // keep PhpString on STACK
             }
+            else if (xtype.SpecialType == SpecialType.System_String ||
+                xtype.SpecialType == SpecialType.System_Double ||
+                xtype.SpecialType == SpecialType.System_Boolean ||
+                xtype.SpecialType == SpecialType.System_Int64 ||
+                xtype.SpecialType == SpecialType.System_Object)
+            {
+                // new PhpString(string)
+                cg.EmitConvertToString(xtype, 0);
+                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpString_string);
+            }
+            //else if (xtype == cg.CoreTypes.PhpString)
+            //{
+            //    // new PhpString(phpstring)
+            //    cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpString_PhpString);
+            //}
             else
             {
-                // concat(x, y)
-                cg.EmitConvert(xtype, 0, cg.CoreTypes.String);
-                cg.EmitConvert(y, cg.CoreTypes.String);
-
-                return cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpString_string_string);
+                // new PhpString(value, Context)
+                cg.EmitConvertToPhpValue(xtype, 0);
+                cg.EmitLoadContext();
+                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpString_PhpValue_Context);
             }
+
+            // <STACK>.Append (Y)
+            cg.Builder.EmitOpCode(ILOpCode.Dup);
+            cg.Emit_PhpString_Append(cg.Emit(y));
+
+            //
+            return cg.CoreTypes.PhpString;
         }
     }
 
@@ -3217,7 +3230,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 cg.EmitConvert(this.IfFalse, result_type);
                 cg.Builder.EmitBranch(ILOpCode.Br, endLbl);
                 cg.Builder.AdjustStack(-1); // workarounds assert in ILBuilder.MarkLabel, we're doing something wrong with ILBuilder
-                // trueLbl:
+                                            // trueLbl:
                 cg.Builder.MarkLabel(trueLbl);
                 cg.EmitConvert(this.IfTrue, result_type);
 

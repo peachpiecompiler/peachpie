@@ -596,5 +596,24 @@ namespace Pchp.Library
         /// </summary>
         /// <returns>Always <c>false</c>.</returns>
         public static bool get_magic_quotes_gpc() => false;
+
+        /// <summary>
+        /// Returns the current active configuration setting of <c>magic_quotes_runtime</c>.
+        /// Always <c>false</c>.
+        /// </summary>
+        /// <returns>Always <c>false</c>.</returns>
+        public static bool get_magic_quotes_runtime() => false;
+
+        /// <summary>
+        /// Set the current active configuration setting of <c>magic_quotes_runtime</c>.
+        /// Deprecated and ignored.
+        /// </summary>
+        /// <param name="value">Ignored.</param>
+        /// <returns>Always <c>false</c>.</returns>
+        public static bool set_magic_quotes_runtime(bool value)
+        {
+            PhpException.FunctionDeprecated("set_magic_quotes_runtime");
+            return false;
+        }
     }
 }

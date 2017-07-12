@@ -857,6 +857,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             Contract.ThrowIfNull(to);
             Debug.Assert(to.IsReferenceType);   // TODO: structs other than primitive types
             Debug.Assert(to != CoreTypes.PhpAlias);
+            Debug.Assert(!to.IsErrorType(), "Trying to convert to an ErrorType");
 
             // dereference
             if (from == CoreTypes.PhpAlias)
@@ -931,7 +932,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else
                     {
-                        throw new ArgumentException($"{from.Name} cannot be converted to a class of type {to.Name}!");  // TODO: ErrCode
+                        break;
                     }
                 default:
                     if (from == CoreTypes.PhpValue)
@@ -984,8 +985,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                         EmitCastClass(from, to);
                         return;
                     }
-                    throw new NotImplementedException();
+
+                    //
+                    break;
             }
+
+            //
+            throw new NotImplementedException($"Conversion from {from.Name} to {to.Name} is not implemented.");
         }
 
         public void EmitConvert(BoundExpression expr, TypeSymbol to)

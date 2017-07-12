@@ -635,15 +635,21 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             TypeSymbol arrtype;
 
-            var ps = routine.Parameters;
-            var last = ps.LastOrDefault();
-            var variadic = (last != null && last.IsParams && last.Type.IsSZArray()) ? last : null;  // optional params
+            var ps = routine.SourceParameters;
+            var variadic = routine.GetParamsParameter();  // optional params
             var variadic_element = (variadic?.Type as ArrayTypeSymbol)?.ElementType;
             var variadic_place = variadic != null ? new ParamPlace(variadic) : null;
 
-            ps = ps.Where(p => !p.IsImplicitlyDeclared && !p.IsParams).ToImmutableArray();  // parameters without implicitly declared parameters
+            var useparams = (routine is SourceLambdaSymbol) ? ((SourceLambdaSymbol)routine).UseParams.Count : 0;    // lambda function 'use' parameters
 
-            if (ps.Length == 0 && variadic_element == elementType)
+            ps = ps.Skip(useparams).Where(p => !p.IsParams).ToArray();  // parameters without implicitly declared parameters
+
+            if (ps.Length == 0 && variadic == null)
+            {
+                // empty array
+                return Emit_EmptyArray(elementType);
+            }
+            else if (ps.Length == 0 && variadic_element == elementType)
             {
                 // == params
                 arrtype = variadic_place.EmitLoad(_il);
@@ -1052,7 +1058,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     // POP <thisExpr>
                     EmitPop(Emit(thisExpr));
-                    return null;
+
+                    // We need to remember the type for late static binding, e.g.: $instance->staticMethodUsingLSB()
+                    // TODO: Resolve from $instance dynamically (it may be its subclass)
+                    return (method as SourceRoutineSymbol)?.RequiresLateStaticBoundParam == true ? containingType : null;
                 }
             }
             else
@@ -1877,6 +1886,36 @@ namespace Pchp.CodeAnalysis.CodeGen
             EmitSymbolToken(type, null);
         }
 
+        /// <summary>
+        /// Emits <c>PhpString.Append</c> expecting <c>PhpString</c> and <paramref name="t"/> on top of evaluation stack.
+        /// </summary>
+        /// <param name="ytype">Type of argument loaded on stack.</param>
+        internal void Emit_PhpString_Append(TypeSymbol ytype)
+        {
+            if (ytype == CoreTypes.PhpAlias)
+            {
+                ytype = Emit_PhpAlias_GetValue();
+            }
+
+            if (ytype == CoreTypes.PhpString)
+            {
+                // Append(PhpString)
+                EmitCall(ILOpCode.Callvirt, CoreMethods.PhpString.Append_PhpString);
+            }
+            else if (ytype == CoreTypes.PhpValue)
+            {
+                // Append(PhpValue, Context)
+                EmitLoadContext();
+                EmitCall(ILOpCode.Callvirt, CoreMethods.PhpString.Append_PhpValue_Context);
+            }
+            else
+            {
+                // Append(string)
+                EmitConvertToString(ytype, 0);
+                EmitCall(ILOpCode.Callvirt, CoreMethods.PhpString.Append_String);
+            }
+        }
+
         public void EmitEcho(BoundExpression expr)
         {
             Contract.ThrowIfNull(expr);
@@ -2345,7 +2384,22 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (value is string)
                 {
-                    Builder.EmitStringConstant((string)value);
+                    var str = (string)value;
+                    if (targetOpt != null)
+                    {
+                        switch (targetOpt.SpecialType)
+                        {
+                            case SpecialType.System_Char:
+                                if (str != null && str.Length == 1)
+                                {
+                                    Builder.EmitCharConstant(str[0]);
+                                    return DeclaringCompilation.GetSpecialType(SpecialType.System_Char);
+                                }
+                                break;
+                        }
+                    }
+
+                    Builder.EmitStringConstant(str);
                     return CoreTypes.String;
                 }
                 else if (value is bool)
@@ -2391,6 +2445,21 @@ namespace Pchp.CodeAnalysis.CodeGen
                     Builder.EmitIntConstant(unchecked((int)(uint)value));
                     return DeclaringCompilation.GetSpecialType(SpecialType.System_UInt32);
                 }
+                else if (value is char)
+                {
+                    if (targetOpt != null)
+                    {
+                        switch (targetOpt.SpecialType)
+                        {
+                            case SpecialType.System_String:
+                                Builder.EmitStringConstant(value.ToString());
+                                return CoreTypes.String;
+                        }
+                    }
+
+                    Builder.EmitCharConstant((char)value);
+                    return DeclaringCompilation.GetSpecialType(SpecialType.System_Char);
+                }
                 else
                 {
                     throw ExceptionUtilities.UnexpectedValue(value);
@@ -2420,6 +2489,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                     break;
                 case SpecialType.System_String:
                     _il.EmitStringConstant(string.Empty);
+                    break;
+                case SpecialType.System_Char:
+                    _il.EmitCharConstant('\0');
                     break;
                 default:
                     if (type == CoreTypes.PhpAlias)
@@ -2740,6 +2812,11 @@ namespace Pchp.CodeAnalysis.CodeGen
             il.EmitOpCode(code, stack);
             il.EmitToken(module.Translate(method, diagnostics, false), null, diagnostics);
             return (code == ILOpCode.Newobj) ? method.ContainingType : method.ReturnType;
+        }
+
+        public static void EmitCharConstant(this ILBuilder il, char value)
+        {
+            il.EmitIntConstant(unchecked((int)value));
         }
     }
 }

@@ -690,6 +690,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Subtract_value_number = ct.PhpNumber.Method("Sub", ct.PhpValue, ct.PhpNumber);
                 Subtract_number_value = ct.PhpNumber.Method("Sub", ct.PhpNumber, ct.PhpValue);
                 Subtract_long_value = ct.PhpNumber.Method("Sub", ct.Long, ct.PhpValue);
+                Subtract_double_value = ct.PhpNumber.Method("Sub", ct.Double, ct.PhpValue);
 
                 Negation = ct.PhpNumber.Operator(WellKnownMemberNames.UnaryNegationOperatorName, ct.PhpNumber);
                 Negation_long = ct.PhpNumber.Method("Minus", ct.Long);
@@ -742,7 +743,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToClass,
                 CompareTo_number, CompareTo_long, CompareTo_double,
                 Add_long_long, Add_long_double, Add_value_long, Add_value_double, Add_long_value, Add_double_value, Add_value_value, Add_value_array, Add_array_value,
-                Subtract_long_long, Subtract_number_double, Subtract_long_double, Subtract_value_value, Subtract_value_long, Subtract_value_double, Subtract_value_number, Subtract_number_value, Subtract_long_value,
+                Subtract_long_long, Subtract_number_double, Subtract_long_double, Subtract_value_value, Subtract_value_long, Subtract_value_double, Subtract_value_number, Subtract_number_value, Subtract_long_value, Subtract_double_value,
                 Negation_long,
                 get_Long, get_Double,
                 Mul_long_long, Mul_long_double, Mul_long_value, Mul_double_value, Mul_value_value, Mul_value_long, Mul_value_double,
@@ -799,13 +800,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Append_String = ct.PhpString.Method("Append", ct.String);
                 Append_PhpString = ct.PhpString.Method("Append", ct.PhpString);
+                Append_PhpValue_Context = ct.PhpString.Method("Append", ct.PhpValue, ct.Context);
 
                 DeepCopy = ct.PhpString.Method("DeepCopy");
             }
 
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToNumber, ToBytes_Context,
-                Append_String, Append_PhpString,
+                Append_String, Append_PhpString, Append_PhpValue_Context,
                 DeepCopy;
         }
 
@@ -904,6 +906,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 PhpString = ct.PhpString.Ctor();
                 PhpString_string = ct.PhpString.Ctor(ct.String);
                 PhpString_string_string = ct.PhpString.Ctor(ct.String, ct.String);
+                PhpString_PhpValue_Context = ct.PhpString.Ctor(ct.PhpValue, ct.Context);
+                PhpString_PhpString = ct.PhpString.Ctor(ct.PhpString);
                 PhpArray = ct.PhpArray.Ctor();
                 PhpArray_int = ct.PhpArray.Ctor(ct.Int32);
                 IntStringKey_int = ct.IntStringKey.Ctor(ct.Int32);
@@ -921,7 +925,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreConstructor
                 PhpAlias_PhpValue_int,
                 PhpArray, PhpArray_int,
-                PhpString, PhpString_string, PhpString_string_string,
+                PhpString, PhpString_string, PhpString_PhpString, PhpString_string_string, PhpString_PhpValue_Context,
                 IntStringKey_int, IntStringKey_string,
                 ScriptAttribute_string, PhpTraitAttribute, PhpTypeAttribute_string, PhpFieldsOnlyCtorAttribute,
                 ScriptDiedException, ScriptDiedException_Long, ScriptDiedException_PhpValue;

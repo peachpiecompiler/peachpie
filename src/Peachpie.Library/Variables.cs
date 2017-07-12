@@ -726,6 +726,18 @@ namespace Pchp.Library
 
         #endregion
 
+        #region get_defined_vars
+
+        /// <summary>
+        /// This function returns a multidimensional array containing a list of all defined variables,
+        /// be them environment, server or user-defined variables, within the scope that get_defined_vars() is called.
+        /// </summary>
+        /// <param name="locals">The table of defined variables.</param>
+        /// <returns></returns>
+        public static PhpArray get_defined_vars([ImportLocals]PhpArray locals) => locals.DeepCopy();
+
+        #endregion
+
         #region print_r, var_export, var_dump
 
         abstract class FormatterVisitor : PhpVariableVisitor, IPhpVariableFormatter
