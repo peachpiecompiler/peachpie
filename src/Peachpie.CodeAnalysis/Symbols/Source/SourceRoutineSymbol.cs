@@ -129,7 +129,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        bool RequiresLateStaticBoundParam => (this.Flags & RoutineFlags.UsesLateStatic) != 0 && !this.HasThis && (this is SourceMethodSymbol);
+        internal bool RequiresLateStaticBoundParam => (this.Flags & RoutineFlags.UsesLateStatic) != 0 && !this.HasThis && (this is SourceMethodSymbol);
 
         /// <summary>
         /// Constructs routine source parameters.

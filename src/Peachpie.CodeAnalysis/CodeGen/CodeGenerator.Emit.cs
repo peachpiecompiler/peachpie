@@ -1058,7 +1058,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     // POP <thisExpr>
                     EmitPop(Emit(thisExpr));
-                    return null;
+
+                    // We need to remember the type for late static binding, e.g.: $instance->staticMethodUsingLSB()
+                    // TODO: Resolve from $instance dynamically (it may be its subclass)
+                    return (method as SourceRoutineSymbol)?.RequiresLateStaticBoundParam == true ? containingType : null;
                 }
             }
             else
