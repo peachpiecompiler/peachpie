@@ -335,10 +335,9 @@ namespace Pchp.Library
 		/// Verifies whether a property has been defined for the given object object or class. 
 		/// </summary>
         /// <remarks>
-		/// This function has different semantics than <see cref="method_exists"/>, which ignores visibility.
 		/// If an object is passed in the first parameter, the property is searched among runtime fields as well.
 		/// </remarks>
-		public static bool property_exists(Context ctx, [ImportCallerClass]RuntimeTypeHandle caller, PhpValue classNameOrObject, string propertyName)
+		public static bool property_exists(Context ctx, PhpValue classNameOrObject, string propertyName)
         {
             var tinfo = TypeNameOrObjectToType(ctx, classNameOrObject);
             if (tinfo == null)
@@ -346,20 +345,21 @@ namespace Pchp.Library
                 return false;
             }
 
-            //DPropertyDesc property;
-            //if (type.GetProperty(new VariableName(propertyName), caller, out property) == GetMemberResult.OK)
-            //{
-            //    // CT property was found
-            //    return true;
-            //}
-            //else
-            //{
-            //    // search RT fields, if possible
-            //    DObject obj = classNameOrObject as DObject;
-            //    return (obj != null && obj.RuntimeFields != null && obj.RuntimeFields.ContainsKey(propertyName));
-            //}
+            if (tinfo.GetDeclaredProperty(propertyName) != null)
+            {
+                // CT property found
+                return true;
+            }
 
-            throw new NotImplementedException();
+            var instance = classNameOrObject.AsObject();
+            if (instance != null && tinfo.GetRuntimeProperty(propertyName, instance) != null)
+            {
+                // RT property found
+                return true;
+            }
+
+            //
+            return false;
         }
 
         /// <summary>
