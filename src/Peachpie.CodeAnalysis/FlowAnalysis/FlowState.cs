@@ -215,7 +215,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public TypeRefMask GetLocalType(VariableHandle handle)
         {
             handle.ThrowIfInvalid();
-            return (handle < _varsType.Length) ? _varsType[handle] : 0;
+            return (handle < _varsType.Length) ? _varsType[handle] : GetUnknownLocalType(handle);
+        }
+
+        TypeRefMask GetUnknownLocalType(VariableHandle handle)
+        {
+            return IsLocalSet(handle)
+                ? TypeRefMask.AnyType.WithRefFlag   // <= SetAllUnknown() called
+                : 0;                                // variable was not initialized in the state yet
         }
 
         /// <summary>
