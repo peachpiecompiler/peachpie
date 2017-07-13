@@ -737,6 +737,34 @@ namespace Peachpie.Library.MySql
 
         #endregion
 
+        #region mysql_field_seek, mysql_data_seek
+
+        /// <summary>
+        /// Sets the result resource's current column (field) offset.
+        /// </summary>
+        /// <param name="resultHandle">Query result resource.</param>
+        /// <param name="fieldOffset">New column offset.</param>
+        /// <returns><B>true</B> on success, <B>false</B> on failure (invalid resource or column offset).</returns>
+        public static bool mysql_field_seek(PhpResource resultHandle, int fieldOffset)
+        {
+            var result = MySqlResultResource.ValidResult(resultHandle);
+            return result != null && result.SeekField(fieldOffset);
+        }
+
+        /// <summary>
+        /// Sets the result resource's current row index.
+        /// </summary>
+        /// <param name="resultHandle">Query result resource.</param>
+        /// <param name="rowIndex">New row index.</param>
+        /// <returns><B>true</B> on success, <B>false</B> on failure (invalid resource or row index).</returns>
+        public static bool mysql_data_seek(PhpResource resultHandle, int rowIndex)
+        {
+            var result = MySqlResultResource.ValidResult(resultHandle);
+            return result != null && result.SeekRow(rowIndex);
+        }
+
+        #endregion
+
         #region mysql_get_client_info, mysql_get_server_info
 
         /// <summary>
