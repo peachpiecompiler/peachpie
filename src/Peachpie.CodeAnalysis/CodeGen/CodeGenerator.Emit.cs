@@ -1887,7 +1887,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
-        /// Emits <c>PhpString.Append</c> expecting <c>PhpString</c> and <paramref name="t"/> on top of evaluation stack.
+        /// Emits <c>PhpString.Append</c> expecting <c>PhpString</c> and <paramref name="ytype"/> on top of evaluation stack.
         /// </summary>
         /// <param name="ytype">Type of argument loaded on stack.</param>
         internal void Emit_PhpString_Append(TypeSymbol ytype)
