@@ -1457,7 +1457,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     {
                         // TODO: visibility and resolution (model)
                         var fldname = x.FieldName.NameValue.Value;
-                        var member = resolvedtype.ResolveInstanceProperty(fldname) ?? resolvedtype.ResolveStaticField(fldname);
+                        var member = resolvedtype.ResolveInstanceProperty(fldname);
                         if (member != null && member.IsAccessible(this.TypeCtx.ContainingType))
                         {
                             Debug.Assert(member is FieldSymbol || member is PropertySymbol);

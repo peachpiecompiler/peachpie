@@ -61,7 +61,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             for (var t = type; t != null; t = t.BaseType)
             {
-                candidate = t.GetMembers(name).OfType<FieldSymbol>().Where(f => !f.IsConst).SingleOrDefault();  // we do accepts static fields called on instances
+                candidate = t.GetMembers(name).OfType<FieldSymbol>().Where(f => !f.IsConst && !f.IsPhpStatic()).SingleOrDefault();
                 if (candidate != null)
                 {
                     return candidate;
