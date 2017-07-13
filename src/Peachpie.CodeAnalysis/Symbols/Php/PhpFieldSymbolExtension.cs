@@ -40,5 +40,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
             return null;
         }
+
+        /// <summary>
+        /// Determines if given field is declared as static.
+        /// Note: actual CLI metadata might be confusing since static PHP fields are represented as instance .NET fields in a class that lives within a PHP context.
+        /// </summary>
+        public static bool IsPhpStatic(this FieldSymbol f)
+        {
+            return f.IsStatic || (f is SourceFieldSymbol sf && sf.FieldKind == SourceFieldSymbol.KindEnum.StaticField);
+        }
     }
 }
