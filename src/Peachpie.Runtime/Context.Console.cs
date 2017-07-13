@@ -29,7 +29,7 @@ namespace Pchp.Core
             }
         }
 
-        /// <summary>Initializes global $argv and $argc variables.</summary>
+        /// <summary>Initializes global $argv and $argc variables and corresponding $_SERVER entries.</summary>
         protected void IntializeArgvArgc(params string[] args)
         {
             Debug.Assert(args != null);
@@ -45,6 +45,9 @@ namespace Pchp.Core
 
             this.Globals["argv"] = PhpValue.Create(argv);
             this.Globals["argc"] = PhpValue.Create(args.Length);
+
+            this._superglobals.server["argv"] = PhpValue.Create(argv.DeepCopy());
+            this._superglobals.server["argc"] = PhpValue.Create(args.Length);
         }
 
         /// <summary>
