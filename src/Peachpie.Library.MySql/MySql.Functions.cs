@@ -737,6 +737,56 @@ namespace Peachpie.Library.MySql
 
         #endregion
 
+        #region mysql_field_name, mysql_field_type, mysql_field_len
+
+        /// <summary>
+        /// Gets a name of a specified column (field) in a result. 
+        /// </summary>
+        /// <param name="resultHandle">Query result resource.</param>
+        /// <param name="fieldIndex">Column (field) index.</param>
+        /// <returns>Name of the column or a <B>null</B> reference on failure (invalid resource or column index).</returns>
+        public static string mysql_field_name(PhpResource resultHandle, int fieldIndex)
+        {
+            var result = MySqlResultResource.ValidResult(resultHandle);
+            if (result == null) return null;
+
+            return result.GetFieldName(fieldIndex);
+        }
+
+        /// <summary>
+        /// Gets a type of a specified column (field) in a result. 
+        /// </summary>
+        /// <param name="resultHandle">Query result resource.</param>
+        /// <param name="fieldIndex">Column index.</param>
+        /// <returns>MySQL type translated to PHP terminology.</returns>
+        /// <remarks>
+        /// Possible values are: "string", "int", "real", "year", "date", "timestamp", "datetime", "time", 
+        /// "set", "enum", "blob", "bit" (Phalanger specific), "NULL", and "unknown".
+        /// </remarks>
+        public static string mysql_field_type(PhpResource resultHandle, int fieldIndex)
+        {
+            var result = MySqlResultResource.ValidResult(resultHandle);
+            if (result == null) return null;
+
+            return result.GetPhpFieldType(fieldIndex);
+        }
+
+        /// <summary>
+        /// Gets a length of a specified column (field) in a result. 
+        /// </summary>
+        /// <param name="resultHandle">Query result resource.</param>
+        /// <param name="fieldIndex">Column index.</param>
+        /// <returns>Length of the column or a -1 on failure (invalid resource or column index).</returns>
+        public static int mysql_field_len(PhpResource resultHandle, int fieldIndex)
+        {
+            var result = MySqlResultResource.ValidResult(resultHandle);
+            if (result == null) return -1;
+
+            return result.GetFieldLength(fieldIndex);
+        }
+
+        #endregion
+
         #region mysql_field_seek, mysql_data_seek
 
         /// <summary>
@@ -761,6 +811,185 @@ namespace Peachpie.Library.MySql
         {
             var result = MySqlResultResource.ValidResult(resultHandle);
             return result != null && result.SeekRow(rowIndex);
+        }
+
+        #endregion
+
+        #region mysql_field_table, mysql_field_flags, mysql_fetch_field, mysql_fetch_lengths
+
+        /// <summary>
+        /// Gets a base table of a specified field.
+        /// </summary>
+        /// <param name="resultHandle">Query result resource.</param>
+        /// <param name="fieldIndex">Field index.</param>
+        /// <returns>Name of the base table of the field.</returns>
+        public static string mysql_field_table(PhpResource resultHandle, int fieldIndex)
+        {
+            var result = MySqlResultResource.ValidResult(resultHandle);
+            if (result == null) return null;
+
+            //var info = result.GetSchemaRowInfo(fieldIndex);
+            //if (info == null) return null;
+
+            //return (string)info["BaseTableName"];
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Gets flags of a specified field.
+        /// </summary>
+        /// <param name="resultHandle">Query result resource.</param>
+        /// <param name="fieldIndex">Field index.</param>
+        /// <returns>Flags of the field.</returns>
+        public static string mysql_field_flags(PhpResource resultHandle, int fieldIndex)
+        {
+            var result = MySqlResultResource.ValidResult(resultHandle);
+            if (result == null) return null;
+
+            throw new NotImplementedException();
+
+            //ColumnFlags flags = result.GetFieldFlags(fieldIndex);
+            //string type_name = result.GetPhpFieldType(fieldIndex);
+
+            //StringBuilder str_fields = new StringBuilder();
+
+            //if ((flags & ColumnFlags.NOT_NULL) != 0)
+            //    str_fields.Append("not_null ");
+
+            //if ((flags & ColumnFlags.PRIMARY_KEY) != 0)
+            //    str_fields.Append("primary_key ");
+
+            //if ((flags & ColumnFlags.UNIQUE_KEY) != 0)
+            //    str_fields.Append("unique_key ");
+
+            //if ((flags & ColumnFlags.MULTIPLE_KEY) != 0)
+            //    str_fields.Append("multiple_key ");
+
+            //if ((flags & ColumnFlags.BLOB) != 0)
+            //    str_fields.Append("blob ");
+
+            //if ((flags & ColumnFlags.UNSIGNED) != 0)
+            //    str_fields.Append("unsigned ");
+
+            //if ((flags & ColumnFlags.ZERO_FILL) != 0)
+            //    str_fields.Append("zerofill ");
+
+            //if ((flags & ColumnFlags.BINARY) != 0)
+            //    str_fields.Append("binary ");
+
+            //if ((flags & ColumnFlags.ENUM) != 0)
+            //    str_fields.Append("enum ");
+
+            //if ((flags & ColumnFlags.SET) != 0)
+            //    str_fields.Append("set ");
+
+            //if ((flags & ColumnFlags.AUTO_INCREMENT) != 0)
+            //    str_fields.Append("auto_increment ");
+
+            //if ((flags & ColumnFlags.TIMESTAMP) != 0)
+            //    str_fields.Append("timestamp ");
+
+            //if (str_fields.Length > 0)
+            //    str_fields.Length = str_fields.Length - 1;
+
+            //return str_fields.ToString();
+        }
+
+        /// <summary>
+        /// Gets a PHP object whose properties describes the last fetched field.
+        /// </summary>
+        /// <param name="resultHandle">Query result resource.</param>
+        /// <returns>The PHP object.</returns>
+        public static object mysql_fetch_field(PhpResource resultHandle)
+        {
+            var result = MySqlResultResource.ValidResult(resultHandle);
+            if (result == null) return null;
+
+            return FetchFieldInternal(result, result.FetchNextField());
+        }
+
+        /// <summary>
+        /// Gets a PHP object whose properties describes a specified field.
+        /// </summary>
+        /// <param name="resultHandle">Query result resource.</param>
+        /// <param name="fieldIndex">Field index.</param>
+        /// <returns>The PHP object.</returns>
+        public static stdClass mysql_fetch_field(PhpResource resultHandle, int fieldIndex)
+        {
+            var result = MySqlResultResource.ValidResult(resultHandle);
+            if (result == null) return null;
+
+            return FetchFieldInternal(result, fieldIndex);
+        }
+
+        static stdClass FetchFieldInternal(MySqlResultResource/*!*/ result, int fieldIndex)
+        {
+            if (!result.CheckFieldIndex(fieldIndex))
+                return null;
+
+            //DataRow info = result.GetSchemaRowInfo(fieldIndex);
+            //if (info == null) return null;
+
+            Debug.Assert(result.GetRowCustomData() != null);
+
+            string php_type = result.GetPhpFieldType(fieldIndex);
+            //PhpMyDbResult.FieldCustomData data = ((PhpMyDbResult.FieldCustomData[])result.GetRowCustomData())[fieldIndex];
+            //ColumnFlags flags = data.Flags;//result.GetFieldFlags(fieldIndex);
+
+            // create an array of runtime fields with specified capacity:
+            var objFields = new PhpArray(13);
+
+            // add fields into the hastable directly:
+            // no duplicity check, since array is already valid
+            objFields.Add("name", result.GetFieldName(fieldIndex));
+            //objFields.Add("table", (/*info["BaseTableName"] as string*/data.RealTableName) ?? string.Empty);
+            //objFields.Add("def", ""); // TODO
+            //objFields.Add("max_length", /*result.GetFieldLength(fieldIndex)*/data.ColumnSize);
+
+            //objFields.Add("not_null", ((flags & ColumnFlags.NOT_NULL) != 0) /*(!(bool)info["AllowDBNull"])*/ ? 1 : 0);
+            //objFields.Add("primary_key", ((flags & ColumnFlags.PRIMARY_KEY) != 0) /*((bool)info["IsKey"])*/ ? 1 : 0);
+            //objFields.Add("multiple_key", ((flags & ColumnFlags.MULTIPLE_KEY) != 0) /*((bool)info["IsMultipleKey"])*/ ? 1 : 0);
+            //objFields.Add("unique_key", ((flags & ColumnFlags.UNIQUE_KEY) != 0) /*((bool)info["IsUnique"])*/ ? 1 : 0);
+            //objFields.Add("numeric", result.IsNumericType(php_type) ? 1 : 0);
+            //objFields.Add("blob", ((flags & ColumnFlags.BLOB) != 0) /*((bool)info["IsBlob"])*/ ? 1 : 0);
+
+            //objFields.Add("type", php_type);
+            //objFields.Add("unsigned", ((flags & ColumnFlags.UNSIGNED) != 0) /*((bool)info["IsUnsigned"])*/ ? 1 : 0);
+            //objFields.Add("zerofill", ((flags & ColumnFlags.ZERO_FILL) != 0) /*((bool)info["ZeroFill"])*/ ? 1 : 0);
+
+            // create new stdClass with runtime fields initialized above:
+            return (stdClass)objFields.ToClass();
+        }
+
+        /// <summary>
+        /// Gets an array of lengths of the values of the current row.
+        /// </summary>
+        /// <param name="resultHandle">Query result resource.</param>
+        /// <returns>An array containing a length of each value of the current row.</returns>
+        [return: CastToFalse]
+        public static PhpArray mysql_fetch_lengths(PhpResource resultHandle)
+        {
+            var result = MySqlResultResource.ValidResult(resultHandle);
+            if (result == null) return null;
+
+            int row_index = result.CurrentRowIndex;
+            if (row_index < 0) return null;
+
+            var array = new PhpArray(result.FieldCount);
+
+            for (int i = 0; i < result.FieldCount; i++)
+            {
+                object value = result.GetFieldValue(row_index, i);
+
+                if (value is PhpString phpstr)
+                    array.Add(phpstr.Length);
+                else if (value != null)
+                    array.Add(value.ToString().Length);
+                else
+                    array.Add(0);
+            }
+
+            return array;
         }
 
         #endregion
