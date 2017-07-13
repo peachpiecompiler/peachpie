@@ -1,15 +1,84 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core;
+using static Pchp.Library.StandardPhpOptions;
 
 namespace Pchp.Library
 {
-    [PhpExtension("mbstring")]
+    [PhpExtension("mbstring", Registrator = typeof(MultiByteString.Registrator))]
     public static class MultiByteString
     {
+        #region IconvConfig, Options
+
+        sealed class MbConfig : IPhpConfiguration
+        {
+            public Encoding InternalEncoding { get; set; }
+
+            public IPhpConfiguration Copy() => (MbConfig)this.MemberwiseClone();
+
+            public string ExtensionName => "mbstring";
+
+            /// <summary>
+            /// Gets or sets a value of a legacy configuration option.
+            /// </summary>
+            private static PhpValue GetSet(IPhpConfigurationService config, string option, PhpValue value, IniAction action)
+            {
+                var local = config.Get<MbConfig>();
+                if (local == null)
+                {
+                    return PhpValue.Null;
+                }
+
+                switch (option)
+                {
+                    //mbstring.language   "neutral"   PHP_INI_ALL Available since PHP 4.3.0.PHP_INI_PERDIR in PHP <= 5.2.6
+                    //mbstring.detect_order NULL    PHP_INI_ALL Available since PHP 4.0.6.
+                    //mbstring.http_input "pass"  PHP_INI_ALL Available since PHP 4.0.6.Deprecated in PHP 5.6.0.
+                    //mbstring.http_output    "pass"  PHP_INI_ALL Available since PHP 4.0.6.Deprecated in PHP 5.6.0.
+                    //mbstring.script_encoding    NULL PHP_INI_ALL Available since PHP 4.3.0.Removed in PHP 5.4.0.Use zend.script_encoding instead.
+                    //mbstring.substitute_character NULL    PHP_INI_ALL Available since PHP 4.0.6.
+                    //mbstring.func_overload  "0" PHP_INI_SYSTEM PHP_INI_PERDIR from PHP 4.3 to 5.2.6, otherwise PHP_INI_SYSTEM. Available since PHP 4.2.0.Deprecated in PHP 7.2.0.
+                    //mbstring.encoding_translation   "0" PHP_INI_PERDIR Available since PHP 4.3.0.
+                    //mbstring.strict_detection   "0" PHP_INI_ALL Available since PHP 5.1.2.
+                    //mbstring.internal_encoding  NULL PHP_INI_ALL Available since PHP 4.0.6.Deprecated in PHP 5.6.0.
+
+                    default:
+                        break;
+                }
+
+                Debug.Fail("Option '" + option + "' is not currently supported.");
+                return PhpValue.Null;
+            }
+
+            /// <summary>
+            /// Registers legacy ini-options.
+            /// </summary>
+            internal static void RegisterLegacyOptions()
+            {
+                //const string s = "mbstring";
+                //GetSetDelegate d = new GetSetDelegate(GetSet);
+
+                //Register("mbstring.internal_encoding", IniFlags.Supported | IniFlags.Local, d, s);
+            }
+        }
+
+        static MbConfig GetConfig(Context ctx) => ctx.Configuration.Get<MbConfig>();
+
+        internal class Registrator
+        {
+            public Registrator()
+            {
+                Context.RegisterConfiguration(new MbConfig());
+                MbConfig.RegisterLegacyOptions();
+            }
+        }
+
+        #endregion
+
         #region Constants
 
         [Flags, PhpHidden]
@@ -185,6 +254,63 @@ namespace Pchp.Library
 
         #endregion
 
+        #region mb_internal_encoding, mb_preferred_mime_name
+
+        /// <summary>
+        /// Get encoding used by default in the extension.
+        /// </summary>
+        public static string mb_internal_encoding(Context ctx)
+        {
+            return (ctx.Configuration.Get<MbConfig>().InternalEncoding ?? ctx.StringEncoding).WebName;
+        }
+
+        /// <summary>
+        /// Set the encoding used by the extension.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="encodingName"></param>
+        /// <returns>True is encoding was set, otherwise false.</returns>
+        public static bool mb_internal_encoding(Context ctx, string encodingName)
+        {
+            Encoding enc = GetEncoding(encodingName);
+
+            if (enc != null)
+            {
+                ctx.Configuration.Get<MbConfig>().InternalEncoding = enc;
+
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+
+        }
+
+        /// <summary>
+        /// Get a MIME charset string for a specific encoding. 
+        /// </summary>
+        /// <param name="encoding_name">The encoding being checked. Its WebName or PHP/Phalanger name.</param>
+        /// <returns>The MIME charset string for given character encoding.</returns>
+        public static string mb_preferred_mime_name(string encoding_name)
+        {
+            Encoding encoding;
+
+            if (
+                (encoding = Encoding.GetEncoding(encoding_name)) == null && // .NET encodings (by their WebName)
+                (encoding = GetEncoding(encoding_name)) == null //try PHP internal encodings too (by PHP/Phalanger name)
+                )
+            {
+                PhpException.ArgumentValueNotSupported(nameof(encoding_name), encoding);
+                return null;
+            }
+
+            //return encoding.BodyName;   // it seems to return right MIME
+            return encoding.WebName;
+        }
+
+        #endregion
+
         #region mb_substr, mb_strcut
 
         [return: CastToFalse]
@@ -204,7 +330,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static string mb_strcut(Context ctx, PhpValue str, int start, int length = -1, string encoding = null)
             => SubString(ctx, str, start, length, encoding);
-        
+
         static string SubString(Context ctx, PhpValue str, int start, int length, string encoding)
         {
             // get the Unicode representation of the string
@@ -239,14 +365,14 @@ namespace Pchp.Library
         {
             return Strings.substr_count(haystack, needle);
         }
-        
+
         #endregion
 
         #region mb_strtoupper, mb_strtolower
 
         public static string mb_strtoupper(Context ctx, PhpValue str, string encoding = null)
             => ToString(ctx, str, encoding).ToUpperInvariant();
-        
+
         public static string mb_strtolower(Context ctx, PhpValue str, string encoding = null)
             => ToString(ctx, str, encoding).ToLowerInvariant();
 
@@ -296,7 +422,7 @@ namespace Pchp.Library
         /// It is either an array, or a comma separated enumerated list. If from_encoding is not specified, the internal encoding will be used.
         /// </param>
         /// <returns>Converted string.</returns>
-        public static string mb_convert_encoding(Context ctx, PhpString str , string to_encoding, PhpValue from_encoding)
+        public static string mb_convert_encoding(Context ctx, PhpString str, string to_encoding, PhpValue from_encoding)
         {
             PhpException.FunctionNotSupported("mb_convert_encoding");
 
