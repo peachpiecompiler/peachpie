@@ -22,6 +22,7 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using Pchp.Core;
 using System.Xml;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Library.DateTime
 {
@@ -32,6 +33,7 @@ namespace Pchp.Library.DateTime
     {
         private const string EnvVariableName = "TZ";
 
+        [DebuggerDisplay("{PhpName} - {Info}")]
         private struct TimeZoneInfoItem
         {
             /// <summary>
@@ -100,9 +102,7 @@ namespace Pchp.Library.DateTime
         private static TimeZoneInfoItem[]/*!!*/InitializeTimeZones()
         {
             // read list of initial timezones
-            var sortedTZ = new SortedSet<TimeZoneInfoItem>(
-                // TODO: EnvironmentUtils.IsWindows ? InitialTimeZones_Windows() : InitialTimeZones_Mono(),
-                new TimeZoneInfoItem.Comparer());
+            var sortedTZ = new SortedSet<TimeZoneInfoItem>(InitialTimeZones(), new TimeZoneInfoItem.Comparer());
 
             // add additional time zones:
             sortedTZ.Add(new TimeZoneInfoItem("UTC", TimeZoneInfo.Utc, null, false));
@@ -131,7 +131,7 @@ namespace Pchp.Library.DateTime
             return sortedTZ.ToArray();
         }
 
-        private static IEnumerable<TimeZoneInfoItem>/*!!*/InitialTimeZones_Windows()
+        private static IEnumerable<TimeZoneInfoItem>/*!!*/InitialTimeZones()
         {
             // time zone cache:
             var tzcache = new Dictionary<string, TimeZoneInfo>(128, StringComparer.OrdinalIgnoreCase);
@@ -143,7 +143,7 @@ namespace Pchp.Library.DateTime
                     TimeZoneInfo winTZ = null;
                     try
                     {
-                        // TODO: winTZ = TimeZoneInfo.FindSystemTimeZoneById(id);
+                        winTZ = TimeZoneInfo.FindSystemTimeZoneById(id);
                     }
                     catch { }
 
@@ -153,9 +153,20 @@ namespace Pchp.Library.DateTime
                 return tz;
             };
 
+            // system timezones:
+            var tzns = TimeZoneInfo.GetSystemTimeZones();
+            if (tzns != null)
+            {
+                foreach (var x in tzns)
+                {
+                    bool isAlias = !x.Id.Contains('/') || x.Id.Contains("GMT");   // whether to display such tz within timezone_identifiers_list()                    
+                    yield return new TimeZoneInfoItem(x.Id, x, null, isAlias);
+                }
+            }
+
             //// collect php time zone names and match them with Windows TZ IDs:
             //var tzdoc = new XmlDocument();
-            //tzdoc.LoadXml(Resources.WindowsTZ);
+            //tzdoc.LoadXml(Resources.Resources.WindowsTZ);
             //foreach (var tz in tzdoc.DocumentElement.SelectNodes(@"//windowsZones/mapTimezones/mapZone"))
             //{
             //    // <mapZone other="Dateline Standard Time" type="Etc/GMT+12"/>
@@ -190,20 +201,6 @@ namespace Pchp.Library.DateTime
             //{ "US/Pacific"       
             //{ "US/Pacific-New"   
             //{ "US/Samoa"   
-        }
-
-        private static IEnumerable<TimeZoneInfoItem>/*!!*/InitialTimeZones_Mono()
-        {
-            //var tzns = TimeZoneInfo.GetSystemTimeZones();
-            //if (tzns == null)
-            //    yield break;
-
-            //foreach (var x in tzns)
-            //{
-            //    bool isAlias = !x.Id.Contains('/') || x.Id.Contains("GMT");   // whether to display such tz within timezone_identifiers_list()                    
-            //    yield return new TimeZoneInfoItem(x.Id, x, null, isAlias);
-            //}
-            throw new NotImplementedException();
         }
 
         #endregion
