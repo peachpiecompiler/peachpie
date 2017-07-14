@@ -655,8 +655,10 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 // [PhpTypeAttribute(FullName)]
                 attrs = attrs.Add(new SynthesizedAttributeData(
-                        DeclaringCompilation.CoreMethods.Ctors.PhpTypeAttribute_string,
-                        ImmutableArray.Create(new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, FullName.ToString())),
+                        DeclaringCompilation.CoreMethods.Ctors.PhpTypeAttribute_string_string,
+                        ImmutableArray.Create(
+                            new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, FullName.ToString()),
+                            new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, ContainingFile.RelativeFilePath.ToString())),
                         ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
             }
 
