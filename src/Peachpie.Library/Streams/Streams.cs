@@ -916,5 +916,26 @@ namespace Pchp.Library.Streams
         }
 
         #endregion
+
+        #region stream_resolve_include_path
+
+        /// <summary>Resolve filename against the include path</summary>
+        /// <param name="ctx">Current runtime context.</param>
+        /// <param name="filename">The filename to resolve.</param>
+        /// <returns>Returns a string containing the resolved absolute filename, or FALSE on failure.</returns>
+        [return: CastToFalse]
+        public static string stream_resolve_include_path(Context ctx, string filename)
+        {
+            if (PhpStream.ResolvePath(ctx, ref filename, out var wrapper, CheckAccessMode.FileExists, CheckAccessOptions.Quiet | CheckAccessOptions.UseIncludePath))
+            {
+                return filename;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        #endregion
     }
 }

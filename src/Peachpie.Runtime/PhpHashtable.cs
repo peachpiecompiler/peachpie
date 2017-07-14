@@ -189,7 +189,9 @@ namespace Pchp.Core
             if (end > max) end = max;
 
             for (int i = index; i < end; i++)
+            {
                 Add(i, PhpValue.FromClr(values.GetValue(i)));
+            }
         }
 
         /// <summary>
@@ -1011,7 +1013,7 @@ namespace Pchp.Core
 
         object IList.this[int index]
         {
-            get { return  this[index].ToClr(); }
+            get { return this[index].ToClr(); }
             set { this[index] = PhpValue.FromClr(value); }
         }
 
@@ -1095,7 +1097,7 @@ namespace Pchp.Core
 
         #endregion
 
-        #region Specific Members: Add, Prepend, this[], Remove, RemoveLast, RemoveFirst, AddRange
+        #region Specific Members: Add, AddRange, Prepend, this[], Remove, RemoveLast, RemoveFirst, AddRange
 
         /// <summary>
         /// Simple wrapper to allow call KeyAdded without ref.
@@ -1156,7 +1158,7 @@ namespace Pchp.Core
 
         #endregion
 
-        #region Add, AddToEnd
+        #region Add, AddToEnd, AddRange
 
         /// <summary>
         /// Add an item onto the end of this array.
@@ -1201,6 +1203,42 @@ namespace Pchp.Core
 
             table.Add(new IntStringKey(key), value);
             KeyAdded(key);
+        }
+
+        /// <summary>
+        /// Adds range of values at the end of the hashtable.
+        /// </summary>
+        /// <param name="enumeration">The value enumeration.Cannot be <c>null</c>.</param>
+        public void AddRange(IEnumerable enumeration)
+        {
+            foreach (var value in enumeration)
+            {
+                AddToEnd(PhpValue.FromClr(value));
+            }
+        }
+
+        /// <summary>
+        /// Adds range of values at the end of the hashtable.
+        /// </summary>
+        /// <param name="enumeration">The value enumeration.Cannot be <c>null</c>.</param>
+        public void AddRange(IEnumerable<PhpValue> enumeration)
+        {
+            foreach (var value in enumeration)
+            {
+                AddToEnd(value);
+            }
+        }
+
+        /// <summary>
+        /// Adds range of values at the end of the hashtable.
+        /// </summary>
+        /// <param name="enumeration">The value enumeration.Cannot be <c>null</c>.</param>
+        public void AddRange(IEnumerable<string> enumeration)
+        {
+            foreach (var value in enumeration)
+            {
+                AddToEnd((PhpValue)value);
+            }
         }
 
         #endregion

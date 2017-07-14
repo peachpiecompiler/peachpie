@@ -625,12 +625,14 @@ namespace Pchp.Core.Dynamic
                  * }
                  */
 
-                int subkey = access.Write() ? 1 : access.Unset() ? 2 : access.Isset() ? 3 : 4;  // recursion prevention scope
+                // recursion prevention key ~ do not invoke getter twice for the same field
+                int subkey1 = access.Write() ? 1 : access.Unset() ? 2 : access.Isset() ? 3 : 4;
+                int subkey = field.GetHashCode() ^ (1 << subkey1);
 
                 // Template: RecursionCheckToken token;
                 var tokenvar = Expression.Variable(typeof(Context.RecursionCheckToken), "token");
 
-                // Template: token = new RecursionCheckToken(_ctx, (object)target, (int)access))
+                // Template: token = new RecursionCheckToken(_ctx, (object)target, (int)subkey))
                 var tokenassign = Expression.Assign(tokenvar, Expression.New(Cache.RecursionCheckToken.ctor_ctx_object_int,
                     ctx, Expression.Convert(target, Cache.Types.Object[0]), Expression.Constant(subkey)));
 

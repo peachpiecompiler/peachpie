@@ -1,3 +1,4 @@
+
 This folder contains test files that we compile and run using Peachpie. Eventually the output is compared with what regular PHP returns.
 
 ## How to run
@@ -24,3 +25,11 @@ In case an older version of PHP is installed on your system, some PHP7 specific 
 1. avoid UTF-8 BOM in test files
 2. use print_r instead of var_dump
 3. avoid displaying warnings and errors; there are known and intended differences in error handling
+
+## Skipped tests
+Tests whose name starts with either `skip_*` or `skip(*)_*` are skipped. If possible please use the second variant and specify a reason why the test is skipped inside the parentheses.
+- E.g.: `skip(late_static_binding_forwarding_not_supported)_static_004.php`
+> `*` is a wildcard for arbitrary string.
+
+
+

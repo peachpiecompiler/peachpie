@@ -24,7 +24,7 @@ namespace ScriptsTest
         [ScriptsListData]
         public void ScriptRunTest(string dir, string fname)
         {
-            var isSkipTest = new Regex(@"^skip(_)|(\([^)]*\)).*$"); // matches either skip_<smth>.php or skip(reason)<smth>.php
+            var isSkipTest = new Regex(@"^skip(\([^)]*\))?_.*$"); // matches either skip_<smth>.php or skip(<reason>)_<smth>.php
             Skip.If(isSkipTest.IsMatch(fname));           
 
             var path = Path.Combine(dir, fname);
