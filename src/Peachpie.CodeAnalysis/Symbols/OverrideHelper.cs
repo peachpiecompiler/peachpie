@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Devsense.PHP.Syntax;
 using Microsoft.CodeAnalysis;
 
@@ -73,7 +74,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         /// <param name="method">The override.</param>
         /// <returns>Candidate to be overriden by given <paramref name="method"/>.</returns>
-        public static MethodSymbol ResolveOverride(this SourceMethodSymbol method)
+        public static MethodSymbol ResolveOverride(this MethodSymbol method)
         {
             Contract.ThrowIfNull(method);
 
@@ -95,7 +96,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             foreach (var t in EnumerateOverridableTypes(method.ContainingType))
             {
-                foreach (var m in t.GetMembers(method.Name).OfType<MethodSymbol>())
+                foreach (var m in t.GetMembers(method.Name).OfType<MethodSymbol>().Where(IsOverrideable))
                 {
                     if (overriden.Contains(m))
                     {
@@ -127,13 +128,61 @@ namespace Pchp.CodeAnalysis.Symbols
             return bestCandidate;
         }
 
+        public static MethodSymbol ResolveMethodImplementation(this MethodSymbol method, IEnumerable<MethodSymbol> overridecandidates)
+        {
+            if (overridecandidates == null)
+            {
+                return null;
+            }
+
+            var bestCost = ConversionCost.Error;
+            MethodSymbol bestCandidate = null;
+
+            foreach (var c in overridecandidates)
+            {
+                var cost = OverrideCost(c, method);
+                if (cost < bestCost)
+                {
+                    bestCost = cost;
+                    bestCandidate = c;
+
+                    if (cost == ConversionCost.Pass)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            //
+            return bestCandidate;
+        }
+
+        public static MethodSymbol ResolveMethodImplementation(MethodSymbol method, NamedTypeSymbol type)
+        {
+            while (type != null)
+            {
+                var candidates = type.GetMembers(method.RoutineName).OfType<MethodSymbol>().Where(CanOverride);
+                var resolved = ResolveMethodImplementation(method, candidates);
+                if (resolved != null)
+                {
+                    return resolved;
+                }
+
+                //
+                type = type.BaseType;
+            }
+
+            //
+            return null;
+        }
+
         /// <summary>
         /// Enumerates base types and interfaces of given type (i.e. types that can contain methods that can be overriden).
         /// </summary>
         static IEnumerable<NamedTypeSymbol> EnumerateOverridableTypes(NamedTypeSymbol type)
         {
             Debug.Assert(type != null);
-            
+
             for (var t = type.BaseType; t != null; t = t.BaseType)
             {
                 yield return t;
@@ -146,6 +195,16 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public static bool IsOverrideable(this MethodSymbol method)
+        {
+            return !method.IsStatic && !method.IsSealed && method.DeclaredAccessibility != Accessibility.Private && (method.IsVirtual || method.IsAbstract);
+        }
+
+        public static bool CanOverride(this MethodSymbol method)
+        {
+            return !method.IsStatic && method.DeclaredAccessibility != Accessibility.Private;
+        }
+
         static bool IsAllowedCost(ConversionCost cost) => cost < ConversionCost.NoConversion;
 
         /// <summary>
@@ -155,16 +214,15 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <param name="method">Source method.</param>
         /// <param name="basemethod">A hypothetical base method.</param>
         /// <returns></returns>
-        static ConversionCost OverrideCost(SourceMethodSymbol method, MethodSymbol basemethod)
+        static ConversionCost OverrideCost(MethodSymbol method, MethodSymbol basemethod)
         {
             Contract.ThrowIfNull(method);
             Contract.ThrowIfNull(basemethod);
 
             //
-            if (method.IsStatic || basemethod.IsStatic || basemethod.IsSealed ||
-                (!basemethod.IsVirtual && !basemethod.IsAbstract) ||    // not abstract or virtual
-                method.Name.EqualsOrdinalIgnoreCase(basemethod.Name) == false ||
-                method.DeclaredAccessibility == Accessibility.Private || basemethod.DeclaredAccessibility == Accessibility.Private)
+            if (method.Name.EqualsOrdinalIgnoreCase(basemethod.Name) == false ||
+                basemethod.IsOverrideable() == false ||
+                method.CanOverride() == false)
             {
                 return ConversionCost.NoConversion;
             }
@@ -192,7 +250,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     if (p.Type != pbase.Type)
                     {
-                        if (p.Type.IsOfType(pbase.Type))
+                        if (p.Type.IsOfType(pbase.Type) || p.Type.Is_PhpValue() || p.Type.Is_PhpAlias())
                         {
                             result |= ConversionCost.ImplicitCast;
                         }
