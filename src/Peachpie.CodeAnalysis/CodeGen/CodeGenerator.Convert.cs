@@ -912,9 +912,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                             .Expect(to);  // ToBytes()
                         return;
                     }
+
+                    throw new NotImplementedException($"Conversion from {from.Name} to {arrt.ElementType.Name}[] is not implemented.");
                 }
 
-                throw new NotImplementedException($"Conversion from {from.Name} to {to.Name} is not implemented.");
+                throw new NotImplementedException($"Conversion from {from.Name} to array {to.Name} is not implemented.");
             }
 
             // dereference

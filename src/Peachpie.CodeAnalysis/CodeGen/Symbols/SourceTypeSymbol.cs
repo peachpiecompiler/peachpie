@@ -286,9 +286,19 @@ namespace Pchp.CodeAnalysis.Symbols
                          */
 
                         // override method with a ghost that calls the override
-                        (info.Override ?? info.OverrideCandidate).CreateGhostOverload(
-                            this, module, diagnostics,
-                            info.Method.ReturnType, info.Method.Parameters, info.Method);
+                        try
+                        {
+                            (info.Override ?? info.OverrideCandidate).CreateGhostOverload(
+                                this, module, diagnostics,
+                                info.Method.ReturnType, info.Method.Parameters, info.Method);
+                        }
+                        catch (NotImplementedException na)
+                        {
+                            if (string.IsNullOrEmpty(na.Message)) throw;
+
+                            var o = info.Override ?? info.OverrideCandidate;
+                            throw new NotImplementedException($"{na.Message} when emitting ghost stub of {o.ContainingType.Name}::{o.RoutineName}() overriding {info.Method.ContainingType.Name}::{info.Method.RoutineName} within type {this.Name}.", na);
+                        }
                     }
                 }
             }
