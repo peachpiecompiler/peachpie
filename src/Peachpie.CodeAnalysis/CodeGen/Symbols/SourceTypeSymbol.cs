@@ -268,8 +268,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 // is a ghost stub needed?
 
-                if (ReferenceEquals(info.OverrideCandidate?.ContainingType, this) ||
-                    info.ImplementsInterface)
+                if (ReferenceEquals(info.OverrideCandidate?.ContainingType, this) ||    // candidate not matching exactly the signature in this type -> create ghost stub
+                    info.ImplementsInterface)   // explicitly implement the interface -> ghost stub
                 {
                     if (info.HasOverride)
                     {
