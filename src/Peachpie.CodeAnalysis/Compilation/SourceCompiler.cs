@@ -193,8 +193,9 @@ namespace Pchp.CodeAnalysis
         {
             // TODO: Visit every symbol with Synthesize() method and call it instead of followin
 
-            // ghost stubs
-            this.WalkMethods(f => f.SynthesizeGhostStubs(_moduleBuilder, _diagnostics));
+            // ghost stubs, overrides
+            this.WalkMethods(f => f.SynthesizeStubs(_moduleBuilder, _diagnostics));
+            this.WalkTypes(t => t.FinalizeMethodTable(_moduleBuilder, _diagnostics));
 
             // initialize RoutineInfo
             _compilation.SourceSymbolCollection.GetFunctions()
