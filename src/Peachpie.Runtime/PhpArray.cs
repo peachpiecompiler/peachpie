@@ -77,6 +77,18 @@ namespace Pchp.Core
         public PhpArray(Array values) : base(values) { }
 
         /// <summary>
+        /// Creates a new instance of <see cref="PhpArray"/> initialized with all values from <see cref="System.Array"/>.
+        /// </summary>
+        public PhpArray(string[] values)
+            : base(values.Length)
+        {
+            for (int i = 0; i < values.Length; i++)
+            {
+                Add(values[i]);
+            }
+        }
+
+        /// <summary>
         /// Creates a new instance of <see cref="PhpArray"/> initialized with a portion of <see cref="System.Array"/>.
         /// </summary>
         /// <param name="values"></param>
@@ -117,10 +129,7 @@ namespace Pchp.Core
         {
             if (data != null)
             {
-                foreach (object value in data)
-                {
-                    AddToEnd(PhpValue.FromClr(value));
-                }
+                AddRange(data);
             }
         }
 
@@ -133,10 +142,16 @@ namespace Pchp.Core
         {
             if (data != null)
             {
-                foreach (var value in data)
-                {
-                    AddToEnd(value);
-                }
+                AddRange(data);
+            }
+        }
+
+        public PhpArray(IEnumerable<string> data)
+            : base((data is ICollection) ? ((ICollection)data).Count : 0)
+        {
+            if (data != null)
+            {
+                AddRange(data);
             }
         }
 

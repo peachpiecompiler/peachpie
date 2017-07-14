@@ -35,19 +35,11 @@ namespace Pchp.Core
             Debug.Assert(args != null);
 
             // command line argc, argv:
-            var argv = new PhpArray(args.Length);
-
             // adds all arguments to the array (the 0-th argument is not '-' as in PHP but the program file):
-            for (int i = 0; i < args.Length; i++)
-            {
-                argv.Add(i, PhpValue.Create(args[i]));
-            }
+            var argv = new PhpArray(args);
 
-            this.Globals["argv"] = PhpValue.Create(argv);
-            this.Globals["argc"] = PhpValue.Create(args.Length);
-
-            this._superglobals.server["argv"] = PhpValue.Create(argv.DeepCopy());
-            this._superglobals.server["argc"] = PhpValue.Create(args.Length);
+            this.Globals["argv"] = (this.Server["argv"] = (PhpValue)argv).DeepCopy();
+            this.Globals["argc"] = this.Server["argc"] = (PhpValue)args.Length;
         }
 
         /// <summary>
