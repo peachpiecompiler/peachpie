@@ -19,7 +19,7 @@ dotnet restore $TOOL_DIR
 for PHP_FILE in $(find $PWD/tests -name *.php)
 do
   echo -n "Testing $PHP_FILE..."
-  echo "$PHP_FILE" | grep -Eq ".*skip(_)|(\\([^)/]*\\))[^/]*$"
+  echo "$PHP_FILE" | grep -Eq ".*skip(\\([^)/]*\\))?_[^/]*$"
   if [ $? -eq 0 ];then
     echo -e $COLOR_YELLOW"SKIPPED"$COLOR_RESET
     continue;
