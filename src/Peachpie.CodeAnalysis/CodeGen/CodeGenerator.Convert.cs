@@ -1245,9 +1245,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else if (to.IsReferenceType)
                     {
-                        if (to == CoreTypes.PhpArray || to == CoreTypes.IPhpArray || to == CoreTypes.IPhpEnumerable)
+                        if (to == CoreTypes.PhpArray || to == CoreTypes.IPhpArray || to == CoreTypes.IPhpEnumerable || to == CoreTypes.PhpHashtable)
                         {
                             // -> PhpArray
+                            // TODO: try unwrap "value.Object as T"
                             EmitConvertToPhpArray(from, fromHint);
                         }
                         else if (to == CoreTypes.PhpString)
