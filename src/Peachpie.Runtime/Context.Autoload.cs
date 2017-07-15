@@ -37,7 +37,7 @@ namespace Pchp.Core
                 }
             }
 
-            using (var token = new RecursionCheckToken(this, fullName))
+            using (var token = new RecursionCheckToken(this, fullName.ToLowerInvariant()))
             {
                 if (!token.IsInRecursion)
                 {
