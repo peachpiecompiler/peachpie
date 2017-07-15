@@ -108,6 +108,11 @@ namespace Pchp.Core
         readonly string _typename;
 
         /// <summary>
+        /// Optional. Relative path to the file where the type is defined.
+        /// </summary>
+        public string FileName { get; }
+
+        /// <summary>
         /// <see cref="ExplicitTypeName"/> value stating that the type name is inherited from the CLR name excluding its namespace part.
         /// It causes CLR type <c>A.B.C.X</c> to appear in PHP as <c>X</c>.
         /// </summary>
@@ -118,9 +123,11 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="phpTypeName">Optional parameter overriding the default CLR name.
         /// Special value of <c>[name]</c> denotates, the name of the PHP type will be the same as in CLR without leading namespace.</param>
-        public PhpTypeAttribute(string phpTypeName = null)
+        /// <param name="fileName">Optional relative path to the file where the type is defined.</param>
+        public PhpTypeAttribute(string phpTypeName = null, string fileName = null)
         {
             _typename = phpTypeName;
+            FileName = fileName;
         }
     }
 
