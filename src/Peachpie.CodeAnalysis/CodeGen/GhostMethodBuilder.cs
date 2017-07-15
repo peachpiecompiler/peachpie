@@ -15,7 +15,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Creates ghost stub that calls method.
         /// </summary>
-        public static void CreateGhostOverload(this MethodSymbol method, SourceTypeSymbol containingtype, PEModuleBuilder module, DiagnosticBag diagnostic,
+        public static void CreateGhostOverload(this MethodSymbol method, NamedTypeSymbol containingtype, PEModuleBuilder module, DiagnosticBag diagnostic,
             TypeSymbol ghostreturn, IEnumerable<ParameterSymbol> ghostparams,
             MethodSymbol explicitOverride = null)
         {
@@ -40,15 +40,18 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         static void GenerateGhostBody(PEModuleBuilder module, DiagnosticBag diagnostic, MethodSymbol method, SynthesizedMethodSymbol ghost)
         {
-            var containingtype = (SourceTypeSymbol)ghost.ContainingType;
+            var containingtype = ghost.ContainingType;
 
             var body = MethodGenerator.GenerateMethodBody(module, ghost,
                 (il) =>
                 {
+                    // $this
                     var thisPlace = ghost.HasThis ? new ArgPlace(containingtype, 0) : null;
-                    var ctxPlace = ghost.IsStatic
-                        ? (IPlace)new ArgPlace(module.Compilation.CoreTypes.Context, 0)
-                        : new FieldPlace(thisPlace, containingtype.ContextStore);
+
+                    // Context
+                    var ctxPlace = thisPlace != null && ghost.ContainingType is SourceTypeSymbol sourcetype
+                        ? new FieldPlace(thisPlace, sourcetype.ContextStore)
+                        : (IPlace)new ArgPlace(module.Compilation.CoreTypes.Context, 0);
 
                     var cg = new CodeGenerator(il, module, diagnostic, module.Compilation.Options.OptimizationLevel, false, containingtype, ctxPlace, thisPlace);
 

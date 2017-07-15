@@ -1841,8 +1841,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case Operations.ObjectCast:
                     //Template: "(object)x"
-                    cg.EmitConvert(this.Operand, cg.CoreTypes.Object);
-                    returned_type = cg.CoreTypes.Object;
+                    returned_type = cg.EmitCastToObject(this.Operand);
                     break;
 
                 case Operations.Print:

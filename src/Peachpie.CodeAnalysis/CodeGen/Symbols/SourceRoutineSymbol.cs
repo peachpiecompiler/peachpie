@@ -111,7 +111,7 @@ namespace Pchp.CodeAnalysis.Symbols
         void CreateGhostOverload(PEModuleBuilder module, DiagnosticBag diagnostic, int pcount)
         {
             Debug.Assert(this.Parameters.Length > pcount);
-            GhostMethodBuilder.CreateGhostOverload(this, (SourceTypeSymbol)this.ContainingType, module, diagnostic, this.ReturnType, this.Parameters.Take(pcount), null);
+            GhostMethodBuilder.CreateGhostOverload(this, this.ContainingType, module, diagnostic, this.ReturnType, this.Parameters.Take(pcount), null);
         }
 
         public virtual void Generate(CodeGenerator cg)

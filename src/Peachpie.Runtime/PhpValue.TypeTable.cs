@@ -411,7 +411,7 @@ namespace Pchp.Core
             public override PhpTypeCode Type => PhpTypeCode.Object;
             public override bool IsNull(ref PhpValue me) => false;
             public override bool IsEmpty(ref PhpValue me) => false;
-            public override object ToClass(ref PhpValue me) => me.Object;
+            public override object ToClass(ref PhpValue me) => (me.Object is IPhpConvertible conv) ? conv.ToClass() : me.Object;
             public override string ToStringQuiet(ref PhpValue me) => me.Object.ToString();
             public override string ToString(ref PhpValue me, Context ctx) => ToStringOrThrow(ref me, ctx);
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => Convert.ToStringOrThrow(me.Object, ctx);
