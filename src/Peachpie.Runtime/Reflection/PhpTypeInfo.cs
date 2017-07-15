@@ -234,7 +234,7 @@ namespace Pchp.Core.Reflection
             }
         }
 
-        private static string ResolveRelativePath(PhpTypeAttribute attr) => attr.FileName;
+        private static string ResolveRelativePath(PhpTypeAttribute attr) => attr?.FileName;
 
         /// <summary>
         /// Resolves PHP-like type name.
