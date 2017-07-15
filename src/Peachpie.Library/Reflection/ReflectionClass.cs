@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace Pchp.Library.Reflection
 {
@@ -133,7 +134,24 @@ namespace Pchp.Library.Reflection
         public int getEndLine() { throw new NotImplementedException(); }
         //public ReflectionExtension getExtension() { throw new NotImplementedException(); }
         public string getExtensionName() { throw new NotImplementedException(); }
-        public string getFileName() { throw new NotImplementedException(); }
+
+        /// <summary>Gets the filename of the file in which the class has been defined</summary>
+        /// <param name="ctx">Current runtime context</param>
+        /// <returns>Returns the filename of the file in which the class has been defined.
+        /// If the class is defined in the PHP core or in a PHP extension, FALSE is returned.</returns>
+        [return: CastToFalse]
+        public string getFileName(Context ctx)
+        {
+            if (_tinfo.RelativePath != null)
+            {
+                return Path.Combine(ctx.RootPath, _tinfo.RelativePath);
+            }
+            else
+            {
+                return null;
+            }
+        }
+
         public PhpArray getInterfaceNames()
         {
             var result = new PhpArray();
