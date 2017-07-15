@@ -28,7 +28,7 @@ namespace Pchp.Core
                 _subkey = subkey;
             }
 
-            public bool Equals(RecursionCheckKey other) => _subkey == other._subkey && ReferenceEquals(_key, other._key);
+            public bool Equals(RecursionCheckKey other) => _subkey == other._subkey && _key.Equals(other._key);
             public override int GetHashCode() => _key.GetHashCode() ^ _subkey;
             public override bool Equals(object obj) => obj is RecursionCheckKey && Equals((RecursionCheckKey)obj);
         }
