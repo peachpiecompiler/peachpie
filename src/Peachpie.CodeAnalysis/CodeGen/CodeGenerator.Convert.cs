@@ -1245,7 +1245,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else if (to.IsReferenceType)
                     {
-                        if (to == CoreTypes.PhpArray || to == CoreTypes.IPhpArray)
+                        if (to == CoreTypes.PhpArray || to == CoreTypes.IPhpArray || to == CoreTypes.IPhpEnumerable)
                         {
                             // -> PhpArray
                             EmitConvertToPhpArray(from, fromHint);
