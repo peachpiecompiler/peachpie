@@ -26,7 +26,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             };
 
             ghost.SetParameters(ghostparams.Select(p =>
-                new SynthesizedParameterSymbol(ghost, p.Type, p.Ordinal, p.RefKind, p.Name)).ToArray());
+                new SynthesizedParameterSymbol(ghost, p.Type, p.Ordinal, p.RefKind, p.Name, p.IsParams)).ToArray());
 
             // save method symbol to module
             module.SynthesizedManager.AddMethod(containingtype, ghost);
@@ -56,7 +56,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     var cg = new CodeGenerator(il, module, diagnostic, module.Compilation.Options.OptimizationLevel, false, containingtype, ctxPlace, thisPlace);
 
                     // return (T){routine}(p0, ..., pN);
-                    cg.EmitConvert(cg.EmitThisCall(method, ghost), 0, ghost.ReturnType);
+                    cg.EmitConvert(cg.EmitForwardCall(method, ghost), 0, ghost.ReturnType);
                     cg.EmitRet(ghost.ReturnType);
                 },
                 null, diagnostic, false);

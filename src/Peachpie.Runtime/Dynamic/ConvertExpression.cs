@@ -391,6 +391,11 @@ namespace Pchp.Core.Dynamic
                 return Expression.Constant(ConversionCost.Pass);
             }
 
+            if (target == typeof(PhpAlias) || target == typeof(PhpValue))
+            {
+                return Expression.Constant(ConversionCost.PassCostly);
+            }
+
             if (t == typeof(PhpValue)) return BindCostFromValue(arg, target);
             if (t == typeof(double)) return Expression.Constant(BindCostFromDouble(arg, target));
             if (t == typeof(long) || t == typeof(int)) return Expression.Constant(BindCostFromLong(arg, target));
@@ -400,9 +405,6 @@ namespace Pchp.Core.Dynamic
 
             // other types
             if (t.GetTypeInfo().IsAssignableFrom(target.GetTypeInfo())) return Expression.Constant(ConversionCost.Pass);
-
-            // anything -> PhpValue 
-            if (target == typeof(PhpValue)) return Expression.Constant(ConversionCost.PassCostly);
 
             //
             throw new NotImplementedException($"costof({t} -> {target})");
@@ -461,7 +463,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(string) || target == typeof(PhpString)) return (ConversionCost.ImplicitCast);
             if (target == typeof(PhpArray)) return (ConversionCost.Warning);
             if (target == typeof(object)) return ConversionCost.PassCostly;    // TODO: Error when passing to a PHP function
-
+            
             throw new NotImplementedException($"costof(long -> {target})");
         }
 

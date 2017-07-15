@@ -1243,17 +1243,24 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         EmitConvertToPhpNumber(from, fromHint);
                     }
-                    else if (CoreTypes.PhpArray.Symbol.IsOfType(to))
-                    {
-                        EmitConvertToPhpArray(from, fromHint);
-                    }
-                    else if (to == CoreTypes.PhpString)
-                    {
-                        EmitConvertToPhpString(from, fromHint);
-                    }
                     else if (to.IsReferenceType)
                     {
-                        EmitConvertToClass(from, fromHint, to);
+                        if (to == CoreTypes.PhpArray || to == CoreTypes.IPhpArray || to == CoreTypes.IPhpEnumerable || to == CoreTypes.PhpHashtable)
+                        {
+                            // -> PhpArray
+                            // TODO: try unwrap "value.Object as T"
+                            EmitConvertToPhpArray(from, fromHint);
+                        }
+                        else if (to == CoreTypes.PhpString)
+                        {
+                            // -> PhpString
+                            EmitConvertToPhpString(from, fromHint);
+                        }
+                        else
+                        {
+                            // -> Object, PhpResource
+                            EmitConvertToClass(from, fromHint, to);
+                        }
                     }
                     else if (to.IsEnumType())
                     {

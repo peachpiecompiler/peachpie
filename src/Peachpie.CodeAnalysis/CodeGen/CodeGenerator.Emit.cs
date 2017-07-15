@@ -1364,81 +1364,59 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
-        /// Emits .call to <paramref name="target"/> assuming it takes the same arguments as passed to the caller method (<paramref name="thismethod"/>).
+        /// Emits .call to <paramref name="target"/> with the same arguments the caller method parameters (<paramref name="thismethod"/>) including reference to <c>this</c>.
         /// </summary>
         /// <param name="target">Method to be called.</param>
         /// <param name="thismethod">Current method.</param>
         /// <returns>Return of <paramref name="target"/>.</returns>
-        internal TypeSymbol EmitThisCall(MethodSymbol target, MethodSymbol thismethod)
+        internal TypeSymbol EmitForwardCall(MethodSymbol target, MethodSymbol thismethod)
         {
             if (target == null)
             {
                 return CoreTypes.Void;
             }
+            // bind "this" expression if needed
+            BoundExpression thisExpr;
 
             if (target.HasThis)
             {
-                Debug.Assert(thismethod.HasThis);
-                Debug.Assert(this.ThisPlaceOpt != null);
-                Debug.Assert(this.ThisPlaceOpt.TypeOpt.IsEqualToOrDerivedFrom(target.ContainingType));
-                this.EmitThis();
+                thisExpr = new BoundVariableRef(new BoundVariableName(VariableName.ThisVariableName))
+                {
+                    Variable = BoundLocal.CreateFromPlace(this.ThisPlaceOpt),
+                    Access = BoundAccess.Read
+                };
+            }
+            else
+            {
+                thisExpr = null;
             }
 
-            var targetps = target.Parameters;
+            // bind arguments
             var givenps = thismethod.Parameters;
-            var writebacks = new List<WriteBackInfo>();
-
-            int srcp = 0;
-            while (srcp < givenps.Length && givenps[srcp].IsImplicitlyDeclared && !givenps[srcp].IsParams)
+            var arguments = new List<BoundArgument>(givenps.Length);
+            for (int i = 0; i < givenps.Length; i++)
             {
-                srcp++;
+                var p = givenps[i];
+                if (p.IsImplicitlyDeclared && !p.IsParams) continue;
+
+                var expr = new BoundVariableRef(new BoundVariableName(new VariableName(p.MetadataName)))
+                {
+                    Variable = new BoundParameter(p, null),
+                    Access = BoundAccess.Read
+                };
+
+                var arg = p.IsParams
+                    ? BoundArgument.CreateUnpacking(expr)
+                    : BoundArgument.Create(expr);
+
+                arguments.Add(arg);
             }
 
-            for (int i = 0; i < targetps.Length; i++)
-            {
-                var targetp = targetps[i];
-                if (targetp.IsImplicitlyDeclared && !targetp.IsParams)
-                {
-                    if (SpecialParameterSymbol.IsContextParameter(targetp))
-                    {
-                        this.EmitLoadContext();
-                    }
-                    else
-                    {
-                        throw new NotImplementedException();
-                    }
-                }
-                else
-                {
-                    if (srcp < givenps.Length)
-                    {
-                        var p = givenps[srcp];
-                        EmitLoadArgument(
-                            targetp,
-                            new BoundVariableRef(new BoundVariableName(new VariableName(p.MetadataName)))
-                            {
-                                Variable = new BoundParameter(p, null),
-                                Access = BoundAccess.Read
-                            },
-                            writebacks);
-                    }
-                    else
-                    {
-                        EmitParameterDefaultValue(targetp);
-                    }
 
-                    srcp++;
-                }
-            }
-
-            //
-            var result = this.EmitCall(ILOpCode.Call, target);
-
-            //
-            WriteBackInfo.WriteBackAndFree(this, writebacks);
-
-            //
-            return result;
+            // emit call of target
+            return arguments.Any(arg => arg.IsUnpacking)
+                ? EmitCall_UnpackingArgs(ILOpCode.Call, target, thisExpr, arguments.AsImmutableOrEmpty(), null)
+                : EmitCall(ILOpCode.Call, target, thisExpr, arguments.AsImmutableOrEmpty(), null);
         }
 
         /// <summary>
