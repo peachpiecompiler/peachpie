@@ -746,10 +746,14 @@ namespace Pchp.Core
                     break;
 
                 case PhpTypeCode.Object:
-                    var traversable = argument.Object as Traversable;
-                    if (traversable != null)
+                    if (argument.Object is Traversable traversable)
                     {
                         Unpack(stack, traversable, byrefs);
+                        break;
+                    }
+                    else if (argument.Object is Array array)
+                    {
+                        Unpack(stack, array, byrefs);
                         break;
                     }
                     else
@@ -767,6 +771,7 @@ namespace Pchp.Core
                     break;
             }
         }
+   
 
         /// <summary>
         /// The method implements <c>...</c> unpack operator.
@@ -798,6 +803,21 @@ namespace Pchp.Core
                     // pass by reference
                     stack.Add(PhpValue.Create(enumerator.CurrentValueAliased));
                 }
+            }
+        }
+
+        /// <summary>
+        /// The method implements <c>...</c> unpack operator.
+        /// Unpacks <paramref name="array"/> into <paramref name="stack"/>.
+        /// </summary>
+        /// <param name="stack">The list with unpacked arguments.</param>
+        /// <param name="array">Value to be unpacked.</param>
+        /// <param name="byrefs">Bit mask of parameters that are passed by reference. Arguments corresponding to <c>1</c>-bit are aliased.</param>
+        static void Unpack(List<PhpValue> stack, Array array, ulong byrefs)
+        {
+            for (int i = 0; i < array.Length; i++)
+            {
+                stack.Add(PhpValue.FromClr(array.GetValue(i)));
             }
         }
 

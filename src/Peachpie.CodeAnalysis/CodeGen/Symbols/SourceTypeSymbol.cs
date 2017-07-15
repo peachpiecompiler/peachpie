@@ -173,7 +173,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     Debug.Assert(ctor.BaseCtor != null);
 
                     // base..ctor or this..ctor
-                    cg.EmitPop(cg.EmitThisCall(ctor.BaseCtor, ctor));
+                    cg.EmitPop(cg.EmitForwardCall(ctor.BaseCtor, ctor));
 
                     if (ctor.PhpConstructor == null)
                     {
@@ -203,7 +203,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         Debug.Assert(ctor.BaseCtor.ContainingType == this);
 
                         // this.__construct
-                        cg.EmitPop(cg.EmitThisCall(ctor.PhpConstructor, ctor));
+                        cg.EmitPop(cg.EmitForwardCall(ctor.PhpConstructor, ctor));
                     }
 
                     // ret
@@ -239,7 +239,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     if (__tostring != null)
                     {
                         // __tostring().ToString()
-                        cg.EmitConvert(cg.EmitThisCall(__tostring, tostring), 0, tostring.ReturnType);
+                        cg.EmitConvert(cg.EmitForwardCall(__tostring, tostring), 0, tostring.ReturnType);
                     }
                     else
                     {
