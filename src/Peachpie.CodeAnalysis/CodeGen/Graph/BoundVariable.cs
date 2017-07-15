@@ -85,6 +85,15 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override IPlace Place(ILBuilder il) => LocalPlace(il);
 
         private IPlace LocalPlace(ILBuilder il) => _place;
+
+        /// <summary>
+        /// Creates local bound to a place.
+        /// </summary>
+        internal static BoundLocal CreateFromPlace(IPlace place)
+        {
+            Contract.ThrowIfNull(place);
+            return new BoundLocal(null) { _place = place };
+        }
     }
 
     partial class BoundIndirectLocal
