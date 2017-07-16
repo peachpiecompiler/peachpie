@@ -1924,9 +1924,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     method = CoreMethods.Operators.Echo_Long.Symbol;
                     break;
                 case SpecialType.System_Boolean:
-                    // TODO: if (VALUE) echo("1");
-                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToString_Bool).Expect(SpecialType.System_String);
-                    method = CoreMethods.Operators.Echo_String.Symbol;
+                    method = CoreMethods.Operators.Echo_Bool.Symbol;
                     break;
                 default:
                     if (type == CoreTypes.PhpString)

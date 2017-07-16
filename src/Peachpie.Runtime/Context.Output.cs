@@ -183,6 +183,14 @@ namespace Pchp.Core
             Output.Write(value);
         }
 
+        public void Echo(bool value)
+        {
+            if (value)
+            {
+                Output.Write('1');
+            }
+        }
+
         #endregion
     }
 }
