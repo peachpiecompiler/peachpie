@@ -181,14 +181,12 @@ namespace Pchp.Core
                 PhpTypeInfo tinfo;
                 object target = null;
 
-                if (_item1.IsObject)
+                if ((target = _item1.AsObject()) != null)
                 {
-                    target = _item1.Object;
                     tinfo = target.GetType().GetPhpTypeInfo();
                 }
                 else
                 {
-                    target = null;
                     tinfo = ctx.GetDeclaredType(_item1.ToString(ctx));
                 }
 
@@ -296,7 +294,7 @@ namespace Pchp.Core
             return CreateInvalid();
         }
 
-        public static PhpCallback Create(PhpValue item1, PhpValue item2) => new ArrayCallback(item1, item2);
+        public static PhpCallback Create(PhpValue item1, PhpValue item2) => new ArrayCallback(item1.GetValue(), item2.GetValue());  // creates callback to an array, array entries must be dereferenced so they cannot be changed gainst
 
         public static PhpCallback Create(object targetInstance, string methodName) => new ArrayCallback(PhpValue.FromClass(targetInstance), (PhpValue)methodName);
 
