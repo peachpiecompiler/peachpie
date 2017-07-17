@@ -254,15 +254,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             Debug.Assert(x.Target.Access.IsWrite);
             Debug.Assert(x.Value.Access.IsRead);
 
+            //
             Accept(x.Value);
 
             // keep WriteRef flag
-            var targetaccess = BoundAccess.Write;
+            var targetaccess = BoundAccess.None.WithWrite(x.Value.TypeRefMask);
             if (x.Target.Access.IsWriteRef)
+            {
                 targetaccess = targetaccess.WithWriteRef(0);
+            }
 
             // new target access with resolved target type
-            Visit(x.Target, targetaccess.WithWrite(x.Value.TypeRefMask));
+            Visit(x.Target, targetaccess);
 
             //
             x.TypeRefMask = x.Value.TypeRefMask;
@@ -316,6 +319,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // direct variable access:
                 var local = State.GetLocalHandle(x.Name.NameValue.Value);
                 var previoustype = State.GetLocalType(local);    // type of the variable in the previous state
+
+                // remember the initial state of variable at this point
+                x.BeforeTypeRef = previoustype;
 
                 // bind variable place either with a PHPSyntax span (from source) or with an emepty one (for non-source variables)
                 Debug.Assert(x is BoundSynthesizedVariableRef || x.PhpSyntax != null);
@@ -377,22 +383,30 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         }
                     }
 
+                    // resulting type of the expression
                     x.TypeRefMask = vartype;
                 }
 
                 if (x.Access.IsWrite)
                 {
-                    x.TypeRefMask = x.Access.WriteMask;
+                    var vartype = x.Access.WriteMask;
 
-                    if (x.Access.IsWriteRef || previoustype.IsRef)    // <x> can be a referenced value
+                    if (x.Access.IsWriteRef || previoustype.IsRef)    // keep the ref flag of local
                     {
+                        vartype.IsRef = true;
                         State.MarkLocalByRef(local);
-                        x.TypeRefMask = x.TypeRefMask.WithRefFlag;
+                    }
+                    else if (vartype.IsRef)
+                    {
+                        // // we can't be sure about the type
+                        vartype = TypeRefMask.AnyType; // anything, not ref
+                        //vartype.IsRef = false;  // the variable won't be a reference from this point
                     }
 
                     //
-                    State.SetLocalType(local, x.TypeRefMask);
+                    State.SetLocalType(local, vartype);
                     State.LTInt64Max(local, false);
+                    x.TypeRefMask = vartype;
                 }
 
                 if (x.Access.IsUnset)
@@ -403,23 +417,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     State.SetVarUninitialized(local);
                 }
 
-                // static variable -> restart flow analysis with new possible initial state
-                if (x.Variable.VariableKind == VariableKind.StaticVariable && x.Access.MightChange)
-                {
-                    // analysis has to be started over
-                    var startBlock = Routine.ControlFlowGraph.Start;    // TODO: start from the block which declares the static local variable
-                    var startState = startBlock.FlowState;
+                //// static variable -> restart flow analysis with new possible initial state
+                //if (x.Variable.VariableKind == VariableKind.StaticVariable && x.Access.MightChange)
+                //{
+                //    // analysis has to be started over
+                //    var startBlock = Routine.ControlFlowGraph.Start;    // TODO: start from the block which declares the static local variable
+                //    var startState = startBlock.FlowState;
 
-                    var oldtype = previoustype | x.TypeRefMask;
-                    if (oldtype != x.TypeRefMask)
-                    {
-                        startState.SetLocalType(local, oldtype);
-                        this.Worklist.Enqueue(startBlock);
-                    }
-                }
+                //    var oldtype = previoustype | x.TypeRefMask;
+                //    if (oldtype != x.TypeRefMask)
+                //    {
+                //        startState.SetLocalType(local, oldtype);
+                //        this.Worklist.Enqueue(startBlock);
+                //    }
+                //}
             }
             else
             {
+                x.BeforeTypeRef = TypeRefMask.AnyType;
+
                 // indirect variable access:
                 Routine.Flags |= RoutineFlags.HasIndirectVar;
 
