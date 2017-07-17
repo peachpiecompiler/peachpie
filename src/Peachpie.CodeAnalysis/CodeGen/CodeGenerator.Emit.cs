@@ -1438,7 +1438,19 @@ namespace Pchp.CodeAnalysis.CodeGen
             else if (access.IsReadCopy)
             {
                 // copy the value
-                stack = EmitDeepCopy(stack);
+                if (stack == CoreTypes.PhpAlias)
+                {
+                    // dereference & deep copy
+                    // Template: <PhpAlias>.Value.DeepCopy()
+                    Emit_PhpAlias_GetValueAddr();
+                    stack = EmitCall(ILOpCode.Call, CoreMethods.PhpValue.DeepCopy);
+                }
+                else
+                {
+                    // deep copy
+                    // note: functions return refs only if their return type is PhpAlias, see above
+                    stack = EmitDeepCopy(stack);
+                }
             }
 
             //
