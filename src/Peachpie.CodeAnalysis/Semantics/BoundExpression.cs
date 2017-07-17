@@ -1090,6 +1090,11 @@ namespace Pchp.CodeAnalysis.Semantics
         public override OperationKind Kind => OperationKind.LocalReferenceExpression;
 
         /// <summary>
+        /// The type of variable before it gets accessed by this expression.
+        /// </summary>
+        internal TypeRefMask BeforeTypeRef { get; set; }
+
+        /// <summary>
         /// Local in case of the variable is resolved local variable.
         /// </summary>
         ILocalSymbol ILocalReferenceExpression.Local => this.Variable?.Symbol as ILocalSymbol;
