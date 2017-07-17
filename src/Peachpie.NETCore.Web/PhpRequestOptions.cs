@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core;
 
 namespace Peachpie.Web
 {
@@ -23,6 +24,13 @@ namespace Peachpie.Web
         /// </summary>
         public Encoding StringEncoding { get; set; } = Encoding.UTF8;
 
+        /// <summary>
+        /// Event raised before processing the request within newly created <see cref="Context"/>.
+        /// </summary>
+        public event Action<Context> BeforeRequest;
+
+        internal void InvokeBeforeRequest(Context ctx) => BeforeRequest?.Invoke(ctx);
+        
         public PhpRequestOptions() { }
 
         public PhpRequestOptions(

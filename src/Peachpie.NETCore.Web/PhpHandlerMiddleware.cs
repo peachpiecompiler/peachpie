@@ -86,6 +86,7 @@ namespace Peachpie.Web
                 {
                     using (var phpctx = new RequestContextCore(context, _rootPath, _options.StringEncoding))
                     {
+                        _options.InvokeBeforeRequest(phpctx);
                         phpctx.ProcessScript(script);
                     }
                 });
