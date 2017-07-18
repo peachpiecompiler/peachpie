@@ -274,13 +274,6 @@ namespace Peachpie.Web
             //    }
             //}
 
-            //// adds argv, argc variables:
-            //if (RegisterArgcArgv)
-            //{
-            //    array["argv"] = PhpValue.Create(new PhpArray(1) { request.QueryString });
-            //    array["argc"] = PhpValue.Create(0);
-            //}
-
             // variables defined in PHP manual
             // order as it is by builtin PHP server
             array["DOCUMENT_ROOT"] = (PhpValue)RootPath;    // string, backslashes, no trailing slash
@@ -307,7 +300,7 @@ namespace Peachpie.Web
             array["HTTP_ACCEPT_ENCODING"] = (PhpValue)request.Headers["Accept-Encoding"].ToString();
             array["HTTP_ACCEPT_LANGUAGE"] = (PhpValue)request.Headers["Accept-Language"].ToString();
             array["HTTP_REFERER"] = (PhpValue)request.Headers["Referer"].ToString();
-            //array["REQUEST_URI"] = (PhpValue)request.RawUrl;
+            array["REQUEST_URI"] = (PhpValue)_httpctx.Features.Get<IHttpRequestFeature>()?.RawTarget;
             array["REQUEST_TIME_FLOAT"] = (PhpValue)DateTimeUtils.UtcToUnixTimeStampFloat(DateTime.UtcNow);
             array["REQUEST_TIME"] = (PhpValue)DateTimeUtils.UtcToUnixTimeStamp(DateTime.UtcNow);
             array["HTTPS"] = PhpValue.Create(request.IsHttps);
