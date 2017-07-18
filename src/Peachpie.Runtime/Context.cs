@@ -203,13 +203,13 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Gets runtime type information, or <c>null</c> if type with given is not declared.
+        /// Gets runtime type information, or <c>null</c> if type with given is name not declared.
         /// </summary>
         public PhpTypeInfo GetDeclaredType(string name, bool autoload = false)
             => _types.GetDeclaredType(name) ?? (autoload ? this.AutoloadService.AutoloadTypeByName(name) : null);
 
         /// <summary>
-        /// Gets runtime type information, or <c>null</c> if type with given is not declared.
+        /// Gets runtime type information, or throws if type with given name is not declared.
         /// </summary>
         public PhpTypeInfo GetDeclaredTypeOrThrow(string name, bool autoload = false)
         {
@@ -220,6 +220,44 @@ namespace Pchp.Core
             }
 
             return tinfo;
+        }
+
+        /// <summary>
+        /// Gets runtime type information of given type by its name.
+        /// Resolves reserved type names according to current caller context.
+        /// Returns <c>null</c> if type was not resolved.
+        /// </summary>
+        public PhpTypeInfo ResolveType(string name, RuntimeTypeHandle callerCtx, bool autoload = false)
+        {
+            Debug.Assert(name != null);
+
+            // reserved type names: parent, self, static
+            if (name.Length == 6)
+            {
+                if (name.EqualsOrdinalIgnoreCase("parent"))
+                {
+                    if (!callerCtx.Equals(default(RuntimeTypeHandle)))
+                    {
+                        return Type.GetTypeFromHandle(callerCtx).GetPhpTypeInfo().BaseType;
+                    }
+                    return null;
+                }
+                else if (name.EqualsOrdinalIgnoreCase("static"))
+                {
+                    throw new NotImplementedException();
+                }
+            }
+            else if (name.Length == 4 && name.EqualsOrdinalIgnoreCase("self"))
+            {
+                if (!callerCtx.Equals(default(RuntimeTypeHandle)))
+                {
+                    return Type.GetTypeFromHandle(callerCtx).GetPhpTypeInfo();
+                }
+                return null;
+            }
+
+            //
+            return GetDeclaredType(name, autoload);
         }
 
         /// <summary>

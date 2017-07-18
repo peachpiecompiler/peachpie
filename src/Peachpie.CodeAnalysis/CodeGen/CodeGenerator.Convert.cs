@@ -858,7 +858,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (from.SpecialType == SpecialType.System_String)
                 {
-                    EmitCall(ILOpCode.Call, CoreMethods.Operators.AsCallable_String);
+                    EmitLoadToken(this.CallerType, null);
+                    EmitCall(ILOpCode.Call, CoreMethods.Operators.AsCallable_String_RuntimeTypeHandle);
                 }
                 else if (
                     from.SpecialType == SpecialType.System_Int64 ||
@@ -870,7 +871,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 else
                 {
                     EmitConvertToPhpValue(from, fromHint);
-                    EmitCall(ILOpCode.Call, CoreMethods.Operators.AsCallable_PhpValue);
+                    EmitLoadToken(this.CallerType, null);
+                    EmitCall(ILOpCode.Call, CoreMethods.Operators.AsCallable_PhpValue_RuntimeTypeHandle);
                 }
             }
         }

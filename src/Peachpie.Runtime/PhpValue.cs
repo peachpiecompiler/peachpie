@@ -361,7 +361,7 @@ namespace Pchp.Core
         /// Gets callable wrapper for the object dynamic invocation.
         /// </summary>
         /// <returns></returns>
-        public IPhpCallable AsCallable() => _type.AsCallable(ref this);
+        public IPhpCallable AsCallable(RuntimeTypeHandle callerCtx) => _type.AsCallable(ref this, callerCtx);
 
         public object EnsureObject() => _type.EnsureObject(ref this);
 

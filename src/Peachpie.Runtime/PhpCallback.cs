@@ -123,13 +123,12 @@ namespace Pchp.Core
         sealed class MethodCallback : PhpCallback
         {
             readonly string _class, _method;
+            readonly RuntimeTypeHandle _callerCtx;
 
-            // TODO: caller (to resolve accessibility)
-
-            public MethodCallback(string @class, string method)
+            public MethodCallback(string @class, string method, RuntimeTypeHandle callerCtx)
             {
                 _class = @class;
-                // TODO: reserved types: self, parent, static - needs caller
+                _callerCtx = callerCtx;
                 _method = method;
             }
 
@@ -137,7 +136,7 @@ namespace Pchp.Core
 
             protected override PhpCallable BindCore(Context ctx)
             {
-                var tinfo = ctx.GetDeclaredType(_class);
+                var tinfo = ctx.ResolveType(_class, _callerCtx, true);
                 var routine = (PhpMethodInfo)tinfo?.RuntimeMethods[_method];
                 if (routine != null)
                 {
@@ -165,13 +164,13 @@ namespace Pchp.Core
             string DebuggerDisplay => $"[{_item1.DisplayString}, {_item2.DisplayString}]()";
 
             readonly PhpValue _item1, _item2;
+            readonly RuntimeTypeHandle _callerCtx;
 
-            // TODO: caller (to resolve accessibility)
-
-            public ArrayCallback(PhpValue item1, PhpValue item2)
+            public ArrayCallback(PhpValue item1, PhpValue item2, RuntimeTypeHandle callerCtx)
             {
                 _item1 = item1;
                 _item2 = item2;
+                _callerCtx = callerCtx;
             }
 
             public override PhpValue ToPhpValue() => PhpValue.Create(new PhpArray(2) { _item1, _item2 });
@@ -183,11 +182,11 @@ namespace Pchp.Core
 
                 if ((target = _item1.AsObject()) != null)
                 {
-                    tinfo = target.GetType().GetPhpTypeInfo();
+                    tinfo = target.GetPhpTypeInfo();
                 }
                 else
                 {
-                    tinfo = ctx.GetDeclaredType(_item1.ToString(ctx));
+                    tinfo = ctx.ResolveType(_item1.ToString(ctx), _callerCtx, true);
                 }
 
                 if (tinfo != null)
@@ -211,7 +210,7 @@ namespace Pchp.Core
                             {
                                 // consider: compiler (and this binder) creates dummy instance of self;
                                 // can we create a special singleton instance marked as "null" so use of $this inside the method will fail ?
-                                // TODO: warning - calling instance method statically
+                                // TODO: use caller instance or warning (calling instance method statically)
                                 return routine.PhpInvokable.Bind(tinfo.GetUninitializedInstance(ctx));
                             }
                         }
@@ -281,22 +280,22 @@ namespace Pchp.Core
 
         public static PhpCallback Create(PhpCallable callable) => new CallableCallback(callable);
 
-        public static PhpCallback Create(string function)
+        public static PhpCallback Create(string function, RuntimeTypeHandle callerCtx)
         {
             if (function != null)
             {
                 var idx = function.IndexOf("::", StringComparison.Ordinal);
                 return (idx < 0)
                     ? (PhpCallback)new FunctionCallback(function)
-                    : new MethodCallback(function.Remove(idx), function.Substring(idx + 2));
+                    : new MethodCallback(function.Remove(idx), function.Substring(idx + 2), callerCtx);
             }
 
             return CreateInvalid();
         }
 
-        public static PhpCallback Create(PhpValue item1, PhpValue item2) => new ArrayCallback(item1.GetValue(), item2.GetValue());  // creates callback to an array, array entries must be dereferenced so they cannot be changed gainst
+        public static PhpCallback Create(PhpValue item1, PhpValue item2, RuntimeTypeHandle callerCtx) => new ArrayCallback(item1.GetValue(), item2.GetValue(), callerCtx);  // creates callback to an array, array entries must be dereferenced so they cannot be changed gainst
 
-        public static PhpCallback Create(object targetInstance, string methodName) => new ArrayCallback(PhpValue.FromClass(targetInstance), (PhpValue)methodName);
+        public static PhpCallback Create(object targetInstance, string methodName, RuntimeTypeHandle callerCtx) => new ArrayCallback(PhpValue.FromClass(targetInstance), (PhpValue)methodName, callerCtx);
 
         public static PhpCallback CreateInvalid() => new InvalidCallback();
 

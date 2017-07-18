@@ -22,7 +22,7 @@ namespace Pchp.Core
         /// <param name="function">Function name valid within current runtime context.</param>
         /// <param name="arguments">Arguments to be passed to the function call.</param>
         /// <returns>Returns value given from the function call.</returns>
-        public PhpValue Call(string function, params PhpValue[] arguments) => PhpCallback.Create(function).Invoke(this, arguments);
+        public PhpValue Call(string function, params PhpValue[] arguments) => PhpCallback.Create(function, default(RuntimeTypeHandle)).Invoke(this, arguments);
 
         /// <summary>
         /// Call a function by its name dynamically.
@@ -30,7 +30,7 @@ namespace Pchp.Core
         /// <param name="function">Function name valid within current runtime context.</param>
         /// <param name="arguments">Arguments to be passed to the function call.</param>
         /// <returns>Returns value given from the function call.</returns>
-        public PhpValue Call(string function, params object[] arguments) => PhpCallback.Create(function).Invoke(this, PhpValue.FromClr(arguments));
+        public PhpValue Call(string function, params object[] arguments) => PhpCallback.Create(function, default(RuntimeTypeHandle)).Invoke(this, PhpValue.FromClr(arguments));
 
         /// <summary>
         /// Creates an instance of a type dynamically with constructor overload resolution.

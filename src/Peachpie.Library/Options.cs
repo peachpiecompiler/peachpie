@@ -472,7 +472,7 @@ namespace Pchp.Library
 
             if (action == IniAction.Set)
             {
-                option = newValue.AsCallable();
+                option = newValue.AsCallable(default(RuntimeTypeHandle));
             }
 
             return oldValue;

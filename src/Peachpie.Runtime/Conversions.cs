@@ -289,12 +289,12 @@ namespace Pchp.Core
         /// <summary>
         /// Gets value as a callable object that can be invoked dynamically.
         /// </summary>
-        public static IPhpCallable AsCallable(PhpValue value) => value.AsCallable();
+        public static IPhpCallable AsCallable(PhpValue value, RuntimeTypeHandle callerCtx) => value.AsCallable(callerCtx);
 
         /// <summary>
         /// Creates a callable object from string value.
         /// </summary>
-        public static IPhpCallable AsCallable(string value) => PhpCallback.Create(value);
+        public static IPhpCallable AsCallable(string value, RuntimeTypeHandle callerCtx) => PhpCallback.Create(value, callerCtx);
 
         /// <summary>
         /// Resolves whether given instance <paramref name="obj"/> is of given type <paramref name="tinfo"/>.
