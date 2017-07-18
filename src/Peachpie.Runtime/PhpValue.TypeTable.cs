@@ -121,6 +121,7 @@ namespace Pchp.Core
             /// Gets callable wrapper for dynamic object invocation.
             /// </summary>
             /// <param name="me"></param>
+            /// <param name="callerCtx">Current caller type.</param>
             /// <returns>Instance of a callable object, cannot be <c>null</c>, can be invalid.</returns>
             public virtual IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx) => PhpCallback.CreateInvalid();
 
