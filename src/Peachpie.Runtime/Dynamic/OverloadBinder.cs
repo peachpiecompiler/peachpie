@@ -861,7 +861,7 @@ namespace Pchp.Core.Dynamic
 
                     if (list.All(c => c.ResolvedCost.HasValue))
                     {
-                        for (int i = 1; i < list.Count; i++)
+                        for (int i = 0; i < list.Count; i++)
                         {
                             if (list[i].ResolvedCost.Value == minresolved)
                             {
