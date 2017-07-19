@@ -144,15 +144,17 @@ namespace Pchp.CodeAnalysis.Symbols
                 cg.Builder.EmitLoad(generatorsLocals);
                 cg.ReturnTemporaryLocal(generatorsLocals);
 
+                // new PhpArray for generator's synthesizedLocals
+                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray);
+
                 // new GeneratorStateMachineDelegate(<genSymbol>) delegate for generator
                 cg.Builder.EmitNullConstant(); // null
                 cg.EmitOpCode(ILOpCode.Ldftn); // method
                 cg.EmitSymbolToken(genSymbol, null);
                 cg.EmitCall(ILOpCode.Newobj, cg.CoreTypes.GeneratorStateMachineDelegate.Ctor(cg.CoreTypes.Object, cg.CoreTypes.IntPtr)); // GeneratorStateMachineDelegate(object @object, IntPtr method)
 
-
                 // create generator object via Operators factory method
-                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildGenerator_Context_Object_PhpArray_GeneratorStateMachineDelegate);
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate);
 
                 // Convert to return type (Generator or PhpValue, depends on analysis)
                 cg.EmitConvert(cg.CoreTypes.Generator, 0, this.ReturnType);
@@ -213,7 +215,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 thisPlace: new ParamPlace(genSymbol.Parameters[1]),
                 routine: this,
                 locals: new ParamPlace(genSymbol.Parameters[2]),
-                localsInitialized: true
+                localsInitialized: true,
+                synthLocals: new ParamPlace(genSymbol.Parameters[3])
                     ))
             {
                 stateMachineNextCg.GenerateScope(this.ControlFlowGraph.Start, int.MaxValue);

@@ -1100,6 +1100,23 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
     }
 
+    internal class BoundIndirectSynthesizedVariablePlace : BoundIndirectVariablePlace
+    {
+        public BoundIndirectSynthesizedVariablePlace(BoundExpression nameExpr, BoundAccess access)
+            : base(nameExpr, access)
+        {
+        }
+
+        protected override TypeSymbol LoadVariablesArray(CodeGenerator cg)
+        {
+            Debug.Assert(cg.SynthezidedLocalsPlace != null, $"Method with synthesized variables must have {nameof(cg.SynthezidedLocalsPlace)} set.");
+
+            return cg.SynthezidedLocalsPlace.EmitLoad(cg.Builder)
+                .Expect(cg.CoreTypes.PhpArray);
+        }
+
+    }
+
     #endregion
 
     #region BoundFieldPlace, BoundIndirectFieldPlace, BoundPropertyPlace

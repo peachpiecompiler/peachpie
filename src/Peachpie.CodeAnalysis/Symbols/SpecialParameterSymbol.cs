@@ -28,6 +28,12 @@ namespace Pchp.CodeAnalysis.Symbols
         public const string LocalsName = "<locals>";
 
         /// <summary>
+        /// Name of special locals parameter.
+        /// Is of type <c>PhpArray</c>.
+        /// </summary>
+        public const string SynthesizedLocalsName = "<synthLocals>";
+
+        /// <summary>
         /// Synthesized params parameter.
         /// </summary>
         public const string ParamsName = "<arguments>";

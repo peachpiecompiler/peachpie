@@ -320,13 +320,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var local = State.GetLocalHandle(x.Name.NameValue.Value);
                 var previoustype = State.GetLocalType(local);    // type of the variable in the previous state
 
+
                 // remember the initial state of variable at this point
                 x.BeforeTypeRef = previoustype;
 
-                // bind variable place either with a PHPSyntax span (from source) or with an emepty one (for non-source variables)
-                Debug.Assert(x is BoundSynthesizedVariableRef || x.PhpSyntax != null);
-                var varSpan = (x.PhpSyntax != null) ? x.PhpSyntax.Span.ToTextSpan() : default(Microsoft.CodeAnalysis.Text.TextSpan);
-                x.Variable = Routine.LocalsTable.BindVariable(local.Name, varSpan);
+                // bind variable place
+                if(x is BoundSynthesizedVariableRef syntVar)
+                {
+                    // Synthesized variables have empty span
+                    x.Variable = Routine.LocalsTable.BindVariable(local.Name, default(Microsoft.CodeAnalysis.Text.TextSpan), synthesized: true);
+                }
+                else
+                {
+                    Debug.Assert(x.PhpSyntax != null);
+                    x.Variable = Routine.LocalsTable.BindVariable(local.Name, x.PhpSyntax.Span.ToTextSpan());
+                }
 
                 //
                 State.VisitLocal(local);
@@ -373,7 +381,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             // - may be a reference
                             // - is a (super)global variable
                             // - is in a global scope
-                            if (x.Variable.VariableKind != VariableKind.GlobalVariable && !vartype.IsRef && !Routine.IsGlobalScope)
+                            // - is synthesized
+                            if (x.Variable.VariableKind != VariableKind.GlobalVariable && 
+                                !vartype.IsRef && 
+                                !Routine.IsGlobalScope &&
+                                x.Variable.VariableKind != VariableKind.LocalSynthesizedVariable)
                             {
                                 x.MaybeUninitialized = true;
                             }
