@@ -197,12 +197,12 @@ namespace Pchp.Library
                     var name = value.ToStringOrNull();
                     if (name != null)
                     {
-                        return PhpCallback.Create(this.HandlerObject, name);
+                        return PhpCallback.Create(this.HandlerObject, name, default(RuntimeTypeHandle));
                     }
                 }
 
                 // default PHP callback:
-                return value.AsCallable();
+                return value.AsCallable(default(RuntimeTypeHandle));
             }
 
             #endregion

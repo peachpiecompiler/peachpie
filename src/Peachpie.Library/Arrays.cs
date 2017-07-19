@@ -1663,13 +1663,13 @@ namespace Pchp.Library
             }
 
             // the first callback:
-            cmp1 = vars[vars.Length - comparerCount].AsCallable();
+            cmp1 = vars[vars.Length - comparerCount].AsCallable(default(RuntimeTypeHandle));
             if (PhpVariable.IsValidCallback(cmp1)) return false;
 
             // the second callback:
             if (comparerCount > 1)
             {
-                cmp2 = vars[vars.Length - 1].AsCallable();
+                cmp2 = vars[vars.Length - 1].AsCallable(default(RuntimeTypeHandle));
                 if (!PhpVariable.IsValidCallback(cmp2)) return false;
             }
 

@@ -327,7 +327,7 @@ namespace Pchp.Core.Dynamic
 
             if (typeof(IPhpCallable).GetTypeInfo().IsAssignableFrom(source.GetTypeInfo())) return expr;
 
-            return Expression.Call(BindToValue(expr), Cache.Operators.PhpValue_AsCallable);
+            return Expression.Call(BindToValue(expr), Cache.Operators.PhpValue_AsCallable_RuntimeTypeHandle, Expression.Default(typeof(RuntimeTypeHandle)));    // TODO: call context instead of default()
         }
 
         private static Expression BindToVoid(Expression expr)
