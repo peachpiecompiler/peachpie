@@ -14,7 +14,7 @@ namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
     /// Synthesized method representing the generator state machine's next function.
-    /// Signature: <code>static &lt;&gt;sm_(Context &lt;ctx&gt;, T @this, PhpArray &lt;locals&gt;, Generator generator)</code>
+    /// Signature: <code>static &lt;&gt;sm_(Context &lt;ctx&gt;, T @this, PhpArray &lt;locals&gt;, PhpArray &lt;tmpLocals&gt;, Generator generator)</code>
     /// </summary>
     internal sealed partial class SourceGeneratorSymbol : SynthesizedMethodSymbol
     {
@@ -26,13 +26,13 @@ namespace Pchp.CodeAnalysis.Symbols
             Debug.Assert(originalRoutine.IsGeneratorMethod());
 
             // Need to postpone settings the params because I can't access 'this' in base constructor call
-            base.SetParameters(getParams(originalRoutine));
+            base.SetParameters(CreateParameters(originalRoutine));
         }
 
         /// <summary>
         /// Parameters for <see cref="SourceGeneratorSymbol"/> method are defined by <c>GeneratorStateMachineDelegate</c>.
         /// </summary>
-        ParameterSymbol[] getParams(SourceRoutineSymbol originalRoutine)
+        ParameterSymbol[] CreateParameters(SourceRoutineSymbol originalRoutine)
         {
             // resolve type of $this
             TypeSymbol thisType = originalRoutine.ThisParameter?.Type ?? (TypeSymbol)originalRoutine.DeclaringCompilation.ObjectType;
@@ -43,14 +43,18 @@ namespace Pchp.CodeAnalysis.Symbols
             var index = 0;
             return new[]
             {
-                new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++),
-                new SpecialParameterSymbol(this, thisType, SpecialParameterSymbol.ThisName, index++),
-                new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpArray, SpecialParameterSymbol.LocalsName, index++),
-                new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpArray, SpecialParameterSymbol.SynthesizedLocalsName, index++),
-                new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Generator, "generator", index++),
+                ContextParameter = new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++),
+                ThisParameter = new SpecialParameterSymbol(this, thisType, SpecialParameterSymbol.ThisName, index++),
+                LocalsParameter = new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpArray, SpecialParameterSymbol.LocalsName, index++),
+                TmpLocalsParameter = new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpArray, SpecialParameterSymbol.TemporaryLocalsName, index++),
+                GeneratorParameter = new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Generator, "generator", index++),
             };
-
         }
 
+        public ParameterSymbol ContextParameter { get; private set; }
+        public ParameterSymbol ThisParameter { get; private set; }
+        public ParameterSymbol LocalsParameter { get; private set; }
+        public ParameterSymbol TmpLocalsParameter { get; private set; }
+        public ParameterSymbol GeneratorParameter { get; private set; }
     }
 }

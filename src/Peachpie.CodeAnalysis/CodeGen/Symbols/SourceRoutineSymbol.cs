@@ -140,7 +140,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 cg.Builder.EmitLocalStore(generatorsLocals);
 
                 // initialize parameters (set their _isOptimized and copy them to locals array)
-                initializeParametersForGeneratorMethod(cg, il, generatorsLocals);
+                InitializeParametersForGeneratorMethod(cg, il, generatorsLocals);
                 cg.Builder.EmitLoad(generatorsLocals);
                 cg.ReturnTemporaryLocal(generatorsLocals);
 
@@ -161,11 +161,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 il.EmitRet(false);
 
                 // Generate SM method. Must be generated after EmitInit of parameters (it sets their _isUnoptimized field).
-                createStateMachineNextMethod(cg, genSymbol);
+                CreateStateMachineNextMethod(cg, genSymbol);
             }
         }
 
-        private void initializeParametersForGeneratorMethod(CodeGenerator cg, Microsoft.CodeAnalysis.CodeGen.ILBuilder il, Microsoft.CodeAnalysis.CodeGen.LocalDefinition generatorsLocals)
+        private void InitializeParametersForGeneratorMethod(CodeGenerator cg, Microsoft.CodeAnalysis.CodeGen.ILBuilder il, Microsoft.CodeAnalysis.CodeGen.LocalDefinition generatorsLocals)
         {
             // Emit init of unoptimized BoundParameters using separate CodeGenerator that has locals place pointing to our generator's locals array
             using (var localsArrayCg = new CodeGenerator(
@@ -185,14 +185,14 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        private void createStateMachineNextMethod(CodeGenerator cg, SourceGeneratorSymbol genSymbol)
+        private void CreateStateMachineNextMethod(CodeGenerator cg, SourceGeneratorSymbol genSymbol)
         {
             cg.Module.SynthesizedManager.AddMethod(ContainingType, genSymbol); // save method symbol to module
 
             // generate generator's next method body
             var genMethodBody = MethodGenerator.GenerateMethodBody(cg.Module, genSymbol, (_il) =>
             {
-                generateStateMachinesNextMethod(cg, _il, genSymbol);
+                GenerateStateMachinesNextMethod(cg, _il, genSymbol);
             }
             , null, cg.Diagnostics, cg.EmitPdbSequencePoints);
 
@@ -200,10 +200,10 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         //Initialized a new CodeGenerator for generation of SourceGeneratorSymbol (state machine's next method)
-        private void generateStateMachinesNextMethod(CodeGenerator cg, Microsoft.CodeAnalysis.CodeGen.ILBuilder _il, SourceGeneratorSymbol genSymbol)
+        private void GenerateStateMachinesNextMethod(CodeGenerator cg, Microsoft.CodeAnalysis.CodeGen.ILBuilder _il, SourceGeneratorSymbol genSymbol)
         {
-            // TODO: Pass SourceGeneratorSymbol to CG instead of this to get correct ThisPlace, ReturnType etc. resolution & binding out of the box without GN_SGS hacks
-            // ..can't do that easily beacuse CodeGenerator accepts only SourceRoutineSymbol and SGS derives from SynthesizedMethodSymbol (shim over too general MethodSymbol) 
+            // TODO: get correct ThisPlace, ReturnType etc. resolution & binding out of the box without GN_SGS hacks
+            // using SourceGeneratorSymbol
 
             //Refactor parameters references to proper fields
             using (var stateMachineNextCg = new CodeGenerator(
@@ -211,13 +211,16 @@ namespace Pchp.CodeAnalysis.Symbols
                 cg.DeclaringCompilation.Options.OptimizationLevel,
                 cg.EmitPdbSequencePoints,
                 this.ContainingType,
-                contextPlace: new ParamPlace(genSymbol.Parameters[0]),
-                thisPlace: new ParamPlace(genSymbol.Parameters[1]),
+                contextPlace: new ParamPlace(genSymbol.ContextParameter),
+                thisPlace: new ParamPlace(genSymbol.ThisParameter),
                 routine: this,
-                locals: new ParamPlace(genSymbol.Parameters[2]),
+                locals: new ParamPlace(genSymbol.LocalsParameter),
                 localsInitialized: true,
-                tempLocals: new ParamPlace(genSymbol.Parameters[3])
-                    ))
+                tempLocals: new ParamPlace(genSymbol.TmpLocalsParameter)
+                    )
+            {
+                GeneratorStateMachineMethod = genSymbol,    // Pass SourceGeneratorSymbol to CG for additional yield and StartBlock emit 
+            })
             {
                 stateMachineNextCg.GenerateScope(this.ControlFlowGraph.Start, int.MaxValue);
             }

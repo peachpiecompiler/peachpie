@@ -122,7 +122,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         private static void EmitStateMachineMethodStart(CodeGenerator cg)
         {
             // local <state> = g._state that is switched on (can't switch on remote field)
-            cg.Builder.EmitLoadArgumentOpcode(4);
+            cg.EmitGeneratorInstance();
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorState_Generator);
 
             var stateTmpLocal = cg.GetTemporaryLocal(cg.CoreTypes.Int32);
@@ -130,8 +130,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
 
             // g._state = -1 : running
-            cg.Builder.EmitLoadArgumentOpcode(4);
-            cg.EmitLoadConstant(-1, cg.CoreTypes.Int32);
+            cg.EmitGeneratorInstance();
+            cg.Builder.EmitIntConstant(-1);
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
 
 
@@ -207,8 +207,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             if (cg.Routine.IsGeneratorMethod())
             {
                 // g._state = -2 (closed): got to the end of the generator method
-                cg.Builder.EmitLoadArgumentOpcode(4);
-                cg.EmitLoadConstant(-2, cg.CoreTypes.Int32);
+                cg.EmitGeneratorInstance();
+                cg.Builder.EmitIntConstant(-2);
                 cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
 
                 cg.Builder.EmitRet(true);

@@ -28,10 +28,10 @@ namespace Pchp.CodeAnalysis.Symbols
         public const string LocalsName = "<locals>";
 
         /// <summary>
-        /// Name of special locals parameter.
+        /// Name of special locals parameter used for temporary variables used by compiler.
         /// Is of type <c>PhpArray</c>.
         /// </summary>
-        public const string SynthesizedLocalsName = "<synthLocals>";
+        public const string TemporaryLocalsName = "<tmpLocals>";
 
         /// <summary>
         /// Synthesized params parameter.

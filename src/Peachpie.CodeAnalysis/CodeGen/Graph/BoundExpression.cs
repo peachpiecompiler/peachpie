@@ -4166,10 +4166,13 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
+            Debug.Assert(cg.GeneratorStateMachineMethod != null);
+
             var il = cg.Builder;
 
             // leave result of yield expr. (sent value) on eval stack
-            il.EmitLoadArgumentOpcode(4);
+
+            cg.EmitGeneratorInstance();
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorSentItem_Generator);
 
             // type of expression result is PHP value (sent value)

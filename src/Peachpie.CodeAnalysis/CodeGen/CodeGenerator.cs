@@ -213,6 +213,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         readonly IPlace _thisPlace;
 
         /// <summary>
+        /// In case code generator emits body of a generator SM method,
+        /// gets reference to synthesized method symbol with additional information.
+        /// </summary>
+        internal SourceGeneratorSymbol GeneratorStateMachineMethod { get => _smmethod; set => _smmethod = value; }
+        SourceGeneratorSymbol _smmethod;
+
+        /// <summary>
         /// BoundBlock.Tag value indicating the block was emitted.
         /// </summary>
         readonly int _emmittedTag;

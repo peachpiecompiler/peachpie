@@ -104,6 +104,13 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        public TypeSymbol EmitGeneratorInstance()
+        {
+            Contract.ThrowIfNull(this.GeneratorStateMachineMethod);
+            // .ldarg <generator>
+            return new ParamPlace(this.GeneratorStateMachineMethod.GeneratorParameter).EmitLoad(_il);
+        }
+
         /// <summary>
         /// If possible, based on type analysis, unwraps most specific type from give variable without a runtime type check.
         /// </summary>
