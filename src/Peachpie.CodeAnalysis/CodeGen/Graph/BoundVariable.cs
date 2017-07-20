@@ -41,9 +41,9 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override void EmitInit(CodeGenerator cg)
         {
 
-            if (VariableKind == VariableKind.LocalSynthesizedVariable || cg.HasUnoptimizedLocals)
+            if (VariableKind == VariableKind.LocalTemporalVariable || cg.HasUnoptimizedLocals)
             {
-                // synthesized variables must be indirect
+                // temporal variables must be indirect
                 return;
             }
 
@@ -73,10 +73,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)
         {
-            if (VariableKind == VariableKind.LocalSynthesizedVariable)
+            if (VariableKind == VariableKind.LocalTemporalVariable)
             {
-                // Synthesized variables must be indirect
-                return new BoundIndirectSynthesizedVariablePlace(new BoundLiteral(this.Name), access);
+                // Temporal variables must be indirect
+                return new BoundIndirectTemporalVariablePlace(new BoundLiteral(this.Name), access);
             }
 
             if (_place == null)

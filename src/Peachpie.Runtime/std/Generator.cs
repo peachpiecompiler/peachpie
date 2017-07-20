@@ -31,7 +31,7 @@ public class Generator : Iterator
     /// <summary>
     /// Temporal locals of the state machine function.
     /// </summary>
-    readonly PhpArray _synthLocals;
+    readonly PhpArray _tmpLocals;
     #endregion
 
     #region StateVariables
@@ -73,7 +73,7 @@ public class Generator : Iterator
     #endregion  
 
     #region Constructors
-    internal Generator(Context ctx, object @this, PhpArray locals, PhpArray synthLocals, GeneratorStateMachineDelegate method)
+    internal Generator(Context ctx, object @this, PhpArray locals, PhpArray tmpLocals, GeneratorStateMachineDelegate method)
     {
         Debug.Assert(ctx != null);
         Debug.Assert(method != null);
@@ -81,7 +81,7 @@ public class Generator : Iterator
         _stateMachineMethod = method;
         _ctx = ctx;
         _locals = locals;
-        _synthLocals = synthLocals;
+        _tmpLocals = tmpLocals;
         _this = @this;
 
         _currValue = PhpValue.Null;
@@ -200,7 +200,7 @@ public class Generator : Iterator
         if (!isInValidState) { return; }
         checkIfMovingFromFirstYeild();
 
-        _stateMachineMethod.Invoke(_ctx, _this, _locals, _synthLocals, gen: this);
+        _stateMachineMethod.Invoke(_ctx, _this, _locals, _tmpLocals, gen: this);
 
         if (!_userKeyReturned) { _currKey = PhpValue.Create(_nextNumericalKey); }
         if (_currKey.IsInteger()) { _nextNumericalKey = (_currKey.ToLong() + 1); }

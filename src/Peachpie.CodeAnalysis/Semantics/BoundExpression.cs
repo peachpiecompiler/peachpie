@@ -1122,7 +1122,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// <remarks>
     /// Inheriting from <c>BoundVariableRef</c> is just a temporary measure. Do NOT take dependencies on anything but <c>IReferenceExpression</c>.
     /// </remarks>
-    public partial class BoundSynthesizedVariableRef : BoundVariableRef
+    public partial class BoundTemporalVariableRef : BoundVariableRef
     {
 
         // TODO: Maybe change to visitor.VisitSyntheticLocalReferenceExpression
@@ -1136,7 +1136,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
         public override void Accept(PhpOperationVisitor visitor) => visitor.VisitSynthesizedVariableRef(this);
 
-        public BoundSynthesizedVariableRef(string name) : base(new BoundVariableName(new VariableName(name))) { }
+        public BoundTemporalVariableRef(string name) : base(new BoundVariableName(new VariableName(name))) { }
 
         // TODO: Change to new dotnet's System.ValueType
         internal static Roslyn.Utilities.ValueTuple<BoundReferenceExpression, BoundAssignEx> CreateAndAssignSynthesizedVariable(BoundExpression expr, BoundAccess access, string name)
@@ -1145,7 +1145,7 @@ namespace Pchp.CodeAnalysis.Semantics
             var refAccess = (access.IsReadRef || access.IsWrite);
 
             // bind assigment target variable with appropriate access
-            var targetVariable = new BoundSynthesizedVariableRef(name);
+            var targetVariable = new BoundTemporalVariableRef(name);
             targetVariable.Access = (refAccess) ? targetVariable.Access.WithWriteRef(0) : targetVariable.Access.WithWrite(0);
 
             // set appropriate access of the original value expression
@@ -1153,7 +1153,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // bind assigment and reference to the created synthesized variable
             var assigment = new BoundAssignEx(targetVariable, valueBeingMoved);
-            var boundExpr = new BoundSynthesizedVariableRef(name).WithAccess(access);
+            var boundExpr = new BoundTemporalVariableRef(name).WithAccess(access);
 
             return new Roslyn.Utilities.ValueTuple<BoundReferenceExpression, BoundAssignEx>(boundExpr, assigment);
         }

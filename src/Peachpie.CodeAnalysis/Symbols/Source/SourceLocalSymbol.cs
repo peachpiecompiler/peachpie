@@ -43,7 +43,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Variable is a local synthesized variable, must be indirect.
         /// </summary>
-        LocalSynthesizedVariable,
+        LocalTemporalVariable,
     }
 
     internal class SourceLocalSymbol : Symbol, ILocalSymbol, ILocalSymbolInternal

@@ -194,12 +194,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         readonly IPlace _localsPlaceOpt;
 
         /// <summary>
-        /// Place referring array to synthesized local variables.
+        /// Place referring array to temporal local variables.
         /// </summary>
         /// <remarks>
-        /// Must not be null if method contains any synthesized local variables
+        /// Must not be null if method contains any synthesized temporal local variables as they need to be indirect.
         /// </remarks>
-        readonly IPlace _synthLocalsPlace;
+        readonly IPlace _tmpLocalsPlace;
 
         /// <summary>
         /// Are locals initilized externally.
@@ -290,7 +290,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         #region Construction
 
         public CodeGenerator(ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, OptimizationLevel optimizations, bool emittingPdb,
-            NamedTypeSymbol container, IPlace contextPlace, IPlace thisPlace, SourceRoutineSymbol routine = null, IPlace locals = null, bool localsInitialized = false, IPlace synthLocals = null)
+            NamedTypeSymbol container, IPlace contextPlace, IPlace thisPlace, SourceRoutineSymbol routine = null, IPlace locals = null, bool localsInitialized = false, IPlace tempLocals = null)
         {
             Contract.ThrowIfNull(il);
             Contract.ThrowIfNull(moduleBuilder);
@@ -303,7 +303,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _diagnostics = diagnostics;
 
             _localsPlaceOpt = locals;
-            _synthLocalsPlace = synthLocals;
+            _tmpLocalsPlace = tempLocals;
             _localsInitialized = localsInitialized;
 
             _emmittedTag = 0;

@@ -1076,7 +1076,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (boundExpr.IsConstant()) { return boundExpr; }
 
             var tmpVarName = $"<yieldRewriter>{_rewriterVariableIndex++}";
-            var assignVarTouple = BoundSynthesizedVariableRef.CreateAndAssignSynthesizedVariable(boundExpr, access, tmpVarName);
+            var assignVarTouple = BoundTemporalVariableRef.CreateAndAssignSynthesizedVariable(boundExpr, access, tmpVarName);
 
             CurrentPreBoundBlock.Add(new BoundExpressionStatement(assignVarTouple.Item2)); // assigment
             return assignVarTouple.Item1; // temp variable ref

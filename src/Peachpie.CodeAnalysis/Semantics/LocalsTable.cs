@@ -69,17 +69,17 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        BoundVariable CreateVariable(VariableName name, TextSpan span, bool synthesized = false)
+        BoundVariable CreateVariable(VariableName name, TextSpan span, bool isTemporal = false)
         {
             if (name.IsAutoGlobal)
             {
-                Debug.Assert(!synthesized);
+                Debug.Assert(!isTemporal);
                 return new BoundSuperGlobalVariable(name);
             }
             else
             {
-                return (synthesized)
-                    ? new BoundLocal(new SourceLocalSymbol(_routine, name.Value, span), VariableKind.LocalSynthesizedVariable)
+                return (isTemporal)
+                    ? new BoundLocal(new SourceLocalSymbol(_routine, name.Value, span), VariableKind.LocalTemporalVariable)
                     : new BoundLocal(new SourceLocalSymbol(_routine, name.Value, span));
             }
         }
@@ -112,17 +112,17 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Gets local variable or create local if not yet.
         /// </summary>
-        public BoundVariable BindVariable(VariableName varname, TextSpan span, bool synthesized = false)
+        public BoundVariable BindVariable(VariableName varname, TextSpan span, bool isTemporal = false)
         {
             BoundVariable value;
 
             if (!_dict.TryGetValue(varname, out value))
             {
-                _dict[varname] = value = CreateVariable(varname, span, synthesized);
+                _dict[varname] = value = CreateVariable(varname, span, isTemporal);
             }
 
             //
-            Debug.Assert(synthesized ^ value.VariableKind != VariableKind.LocalSynthesizedVariable);
+            Debug.Assert(isTemporal ^ value.VariableKind != VariableKind.LocalTemporalVariable);
             Debug.Assert(value != null);
             return value;
         }

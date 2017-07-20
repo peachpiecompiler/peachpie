@@ -62,12 +62,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         public IPlace LocalsPlaceOpt => _localsPlaceOpt;
 
         /// <summary>
-        /// Gets place referring to synthesized variables.
+        /// Gets place referring to compiler generated temporal variables.
         /// </summary>
         /// <remarks>
         /// Must not be null for methods that contain any synthesized variables.
         /// </remarks>
-        public IPlace SynthezidedLocalsPlace => _synthLocalsPlace;
+        public IPlace TemporalLocalsPlace => _tmpLocalsPlace;
 
         /// <summary>
         /// Gets value indicating the routine uses unoptimized locals access.

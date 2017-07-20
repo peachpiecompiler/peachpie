@@ -216,7 +216,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 routine: this,
                 locals: new ParamPlace(genSymbol.Parameters[2]),
                 localsInitialized: true,
-                synthLocals: new ParamPlace(genSymbol.Parameters[3])
+                tempLocals: new ParamPlace(genSymbol.Parameters[3])
                     ))
             {
                 stateMachineNextCg.GenerateScope(this.ControlFlowGraph.Start, int.MaxValue);

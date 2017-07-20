@@ -325,10 +325,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 x.BeforeTypeRef = previoustype;
 
                 // bind variable place
-                if(x is BoundSynthesizedVariableRef syntVar)
+                if(x is BoundTemporalVariableRef syntVar)
                 {
-                    // Synthesized variables have empty span
-                    x.Variable = Routine.LocalsTable.BindVariable(local.Name, default(Microsoft.CodeAnalysis.Text.TextSpan), synthesized: true);
+                    // Temporal variables have empty span
+                    x.Variable = Routine.LocalsTable.BindVariable(local.Name, default(Microsoft.CodeAnalysis.Text.TextSpan), isTemporal: true);
                 }
                 else
                 {
@@ -381,11 +381,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             // - may be a reference
                             // - is a (super)global variable
                             // - is in a global scope
-                            // - is synthesized
+                            // - is a temporal variable
                             if (x.Variable.VariableKind != VariableKind.GlobalVariable && 
                                 !vartype.IsRef && 
                                 !Routine.IsGlobalScope &&
-                                x.Variable.VariableKind != VariableKind.LocalSynthesizedVariable)
+                                x.Variable.VariableKind != VariableKind.LocalTemporalVariable)
                             {
                                 x.MaybeUninitialized = true;
                             }

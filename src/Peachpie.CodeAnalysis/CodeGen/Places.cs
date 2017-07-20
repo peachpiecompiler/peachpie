@@ -1100,18 +1100,18 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
     }
 
-    internal class BoundIndirectSynthesizedVariablePlace : BoundIndirectVariablePlace
+    internal class BoundIndirectTemporalVariablePlace : BoundIndirectVariablePlace
     {
-        public BoundIndirectSynthesizedVariablePlace(BoundExpression nameExpr, BoundAccess access)
+        public BoundIndirectTemporalVariablePlace(BoundExpression nameExpr, BoundAccess access)
             : base(nameExpr, access)
         {
         }
 
         protected override TypeSymbol LoadVariablesArray(CodeGenerator cg)
         {
-            Debug.Assert(cg.SynthezidedLocalsPlace != null, $"Method with synthesized variables must have {nameof(cg.SynthezidedLocalsPlace)} set.");
+            Debug.Assert(cg.TemporalLocalsPlace != null, $"Method with temporal variables must have {nameof(cg.TemporalLocalsPlace)} set.");
 
-            return cg.SynthezidedLocalsPlace.EmitLoad(cg.Builder)
+            return cg.TemporalLocalsPlace.EmitLoad(cg.Builder)
                 .Expect(cg.CoreTypes.PhpArray);
         }
 

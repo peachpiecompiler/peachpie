@@ -63,7 +63,7 @@ namespace Pchp.CodeAnalysis.Semantics
         internal BoundLocal(SourceLocalSymbol symbol, VariableKind kind = VariableKind.LocalVariable)
             : base(kind)
         {
-            Debug.Assert(kind == VariableKind.LocalVariable || kind == VariableKind.LocalSynthesizedVariable);
+            Debug.Assert(kind == VariableKind.LocalVariable || kind == VariableKind.LocalTemporalVariable);
             _symbol = symbol;
         }
 
