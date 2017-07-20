@@ -274,6 +274,13 @@ namespace Peachpie.Web
             //    }
             //}
 
+            //// adds argv, argc variables:
+            //if (RegisterArgcArgv)
+            //{
+            //    array["argv"] = PhpValue.Create(new PhpArray(1) { request.QueryString });
+            //    array["argc"] = PhpValue.Create(0);
+            //}
+
             // variables defined in PHP manual
             // order as it is by builtin PHP server
             array["DOCUMENT_ROOT"] = (PhpValue)RootPath;    // string, backslashes, no trailing slash

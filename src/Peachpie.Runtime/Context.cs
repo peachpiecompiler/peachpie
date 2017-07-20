@@ -471,17 +471,32 @@ namespace Pchp.Core
             }
         }
 
+        /// <summary>
+        /// Closes current web session if opened.
+        /// </summary>
+        void ShutdownSessionHandler()
+        {
+            var webctx = HttpPhpContext;
+            if (webctx != null && webctx.SessionState == PhpSessionState.Started)
+            {
+                webctx.SessionHandler.CloseSession(this, webctx, false);
+            }
+        }
+
         #endregion
 
         #region IDisposable
 
+        bool _disposed;
+
         public virtual void Dispose()
         {
-            //if (!disposed)
+            if (!_disposed)
             {
                 try
                 {
                     ProcessShutdownCallbacks();
+                    ShutdownSessionHandler();
                     //this.GuardedCall<object, object>(this.FinalizePhpObjects, null, false);
                     FinalizeBufferedOutput();
 
@@ -495,8 +510,8 @@ namespace Pchp.Core
                     //if (this.FinallyDispose != null)
                     //    this.FinallyDispose();
 
-                    ////
-                    //this.disposed = true;
+                    //
+                    _disposed = true;
                 }
             }
         }
