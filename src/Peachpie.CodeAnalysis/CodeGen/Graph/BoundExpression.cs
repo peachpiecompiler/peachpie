@@ -2327,17 +2327,24 @@ namespace Pchp.CodeAnalysis.Semantics
         /// In case of instance function call, it is the instance expression,
         /// in case of static method, it is reference to <c>$this</c> which may be needed in some cases.
         /// </summary>
-        /// <returns>Type left on stack. Can be <c>null</c> if no target was emitted.</returns>
+        /// <returns>Type left on stack. Can be <c>null</c> if callsite does not expect a target.</returns>
         internal virtual TypeSymbol EmitTarget(CodeGenerator cg)
         {
+            TypeSymbol t = null;
             if (Instance != null)
             {
-                return cg.Emit(Instance);
+                t = cg.Emit(Instance);
+
+                if (t.SpecialType == SpecialType.System_Void)
+                {
+                    // void: invalid code, should be reported in DiagnosingVisitor
+                    cg.Builder.EmitNullConstant();
+                    t = cg.CoreTypes.Object;
+                }
             }
-            else
-            {
-                return null;
-            }
+
+            //
+            return t;
         }
 
         internal TypeSymbol EmitCallsiteCall(CodeGenerator cg)
@@ -3071,7 +3078,7 @@ namespace Pchp.CodeAnalysis.Semantics
         static TypeSymbol EmitAppend(CodeGenerator cg, TypeSymbol xtype, BoundExpression y)
         {
             // LOAD PhpString (X)
-            
+
             // dereference
             if (xtype == cg.CoreTypes.PhpAlias)
             {
