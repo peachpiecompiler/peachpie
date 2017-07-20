@@ -1134,29 +1134,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitSynthesizedVariableRef(this);
+        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitTemporalVariableRef(this);
 
         public BoundTemporalVariableRef(string name) : base(new BoundVariableName(new VariableName(name))) { }
-
-        // TODO: Change to new dotnet's System.ValueType
-        internal static Roslyn.Utilities.ValueTuple<BoundReferenceExpression, BoundAssignEx> CreateAndAssignSynthesizedVariable(BoundExpression expr, BoundAccess access, string name)
-        {
-            // determine whether the synthesized variable should be by ref (for readRef and writes) or a normal PHP copy
-            var refAccess = (access.IsReadRef || access.IsWrite);
-
-            // bind assigment target variable with appropriate access
-            var targetVariable = new BoundTemporalVariableRef(name);
-            targetVariable.Access = (refAccess) ? targetVariable.Access.WithWriteRef(0) : targetVariable.Access.WithWrite(0);
-
-            // set appropriate access of the original value expression
-            var valueBeingMoved = (refAccess) ? expr.WithAccess(BoundAccess.ReadRef) : expr.WithAccess(BoundAccess.Read);
-
-            // bind assigment and reference to the created synthesized variable
-            var assigment = new BoundAssignEx(targetVariable, valueBeingMoved);
-            var boundExpr = new BoundTemporalVariableRef(name).WithAccess(access);
-
-            return new Roslyn.Utilities.ValueTuple<BoundReferenceExpression, BoundAssignEx>(boundExpr, assigment);
-        }
     }
 
     #endregion

@@ -20,6 +20,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         private readonly DiagnosticBag _diagnostics;
         private SourceRoutineSymbol _routine;
 
+        PhpCompilation DeclaringCompilation => _routine.DeclaringCompilation;
+
         int inTryLevel = 0;
         int inCatchLevel = 0;
         int inFinallyLevel = 0;
@@ -68,6 +70,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void VisitInstanceFunctionCall(BoundInstanceFunctionCall call)
         {
+            // check target type
+            CheckMethodCallTargetInstance(call.Instance, call.Name.NameValue.Name.Value);
+
             // TODO: Enable the diagnostic when several problems are solved (such as __call())
             //CheckUndefinedMethodCall(call, call.Instance?.ResultType, call.Name);
             base.VisitInstanceFunctionCall(call);
@@ -86,7 +91,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitVariableRef(x);
         }
 
-        public override void VisitSynthesizedVariableRef(BoundTemporalVariableRef x)
+        public override void VisitTemporalVariableRef(BoundTemporalVariableRef x)
         {
             // do not make diagnostics on syntesized variables
         }
@@ -100,6 +105,56 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 "Declare construct");
 
             base.VisitDeclareStatement(x);
+        }
+
+        void CheckMethodCallTargetInstance(BoundExpression target, string methodName)
+        {
+            if (target == null)
+            {
+                // syntax error (?)
+                return;
+            }
+
+            string nonobjtype = null;
+
+            if (target.ResultType != null)
+            {
+                switch (target.ResultType.SpecialType)
+                {
+                    case SpecialType.System_Void:
+                    case SpecialType.System_Int32:
+                    case SpecialType.System_Int64:
+                    case SpecialType.System_String:
+                    case SpecialType.System_Boolean:
+                        nonobjtype = target.ResultType.GetPhpTypeNameOrNull();
+                        break;
+                    default:
+                        if (target.ResultType == DeclaringCompilation.CoreTypes.PhpString ||
+                            target.ResultType == DeclaringCompilation.CoreTypes.PhpArray ||
+                            target.ResultType == DeclaringCompilation.CoreTypes.PhpNumber ||
+                            target.ResultType == DeclaringCompilation.CoreTypes.PhpResource ||
+                            target.ResultType == DeclaringCompilation.CoreTypes.IPhpArray ||
+                            target.ResultType == DeclaringCompilation.CoreTypes.IPhpCallable)
+                        {
+                            nonobjtype = target.ResultType.GetPhpTypeNameOrNull();
+                        }
+                        break;
+                }
+            }
+            else
+            {
+                var tmask = target.TypeRefMask;
+                if (!tmask.IsAnyType && !tmask.IsRef && !_routine.TypeRefContext.IsObject(tmask))
+                {
+                    nonobjtype = _routine.TypeRefContext.ToString(tmask);
+                }
+            }
+
+            //
+            if (nonobjtype != null)
+            {
+                _diagnostics.Add(_routine, target.PhpSyntax, ErrorCode.ERR_MethodCalledOnNonObject, methodName ?? "{}", nonobjtype);
+            }
         }
 
         private void CheckUndefinedFunctionCall(BoundGlobalFunctionCall x)
@@ -150,7 +205,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 else
                 {
                     var name = typeRef.TypeRef.QualifiedName?.ToString();
-                    _diagnostics.Add(this._routine, typeRef.TypeRef, ErrorCode.WRN_UndefinedType, name);
+                    _diagnostics.Add(_routine, typeRef.TypeRef, ErrorCode.WRN_UndefinedType, name);
                 }
             }
         }

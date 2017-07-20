@@ -134,6 +134,73 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             Accept(x);
         }
 
+        /// <summary>
+        /// Gets value indicating the given type represents a double and nothing else.
+        /// </summary>
+        protected bool IsDoubleOnly(TypeRefMask tmask)
+        {
+            return tmask.IsSingleType && this.TypeCtx.IsDouble(tmask);
+        }
+
+        /// <summary>
+        /// Gets value indicating the given type represents a double and nothing else.
+        /// </summary>
+        protected bool IsDoubleOnly(BoundExpression x) => IsDoubleOnly(x.TypeRefMask);
+
+        /// <summary>
+        /// Gets value indicating the given type represents a long and nothing else.
+        /// </summary>
+        protected bool IsLongOnly(TypeRefMask tmask)
+        {
+            return tmask.IsSingleType && this.TypeCtx.IsLong(tmask);
+        }
+
+        /// <summary>
+        /// Gets value indicating the given type represents a long and nothing else.
+        /// </summary>
+        protected bool IsLongOnly(BoundExpression x) => IsLongOnly(x.TypeRefMask);
+
+        /// <summary>
+        /// Gets value indicating the given type is long or double or both but nothing else.
+        /// </summary>
+        /// <param name="tmask"></param>
+        /// <returns></returns>
+        protected bool IsNumberOnly(TypeRefMask tmask)
+        {
+            if (TypeCtx.IsLong(tmask) || TypeCtx.IsDouble(tmask))
+            {
+                if (tmask.IsSingleType)
+                {
+                    return true;
+                }
+
+                return !tmask.IsAnyType && TypeCtx.GetTypes(tmask).All(TypeHelpers.IsNumber);
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Gets value indicating the given type represents only class types.
+        /// </summary>
+        protected bool IsClassOnly(TypeRefMask tmask)
+        {
+            return !tmask.IsVoid && !tmask.IsAnyType && TypeCtx.GetTypes(tmask).All(x => x.IsObject);
+        }
+
+        /// <summary>
+        /// Gets value indicating the given type represents only array types.
+        /// </summary>
+        protected bool IsArrayOnly(TypeRefMask tmask)
+        {
+            return !tmask.IsVoid && !tmask.IsAnyType && TypeCtx.GetTypes(tmask).All(x => x.IsArray);
+        }
+
+        /// <summary>
+        /// Gets value indicating the given type is long or double or both but nothing else.
+        /// </summary>
+        protected bool IsNumberOnly(BoundExpression x) => IsNumberOnly(x.TypeRefMask);
+
         #endregion
 
         #region Short-Circuit Evaluation

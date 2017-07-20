@@ -1076,11 +1076,31 @@ namespace Pchp.CodeAnalysis.Semantics
             if (boundExpr.IsConstant()) { return boundExpr; }
 
             var tmpVarName = $"<yieldRewriter>{_rewriterVariableIndex++}";
-            var assignVarTouple = BoundTemporalVariableRef.CreateAndAssignSynthesizedVariable(boundExpr, access, tmpVarName);
+            var assignVarTouple = CreateAndAssignSynthesizedVariable(boundExpr, access, tmpVarName);
 
             CurrentPreBoundBlock.Add(new BoundExpressionStatement(assignVarTouple.Item2)); // assigment
             return assignVarTouple.Item1; // temp variable ref
 
+        }
+
+        // TODO: Change to new dotnet's System.ValueType
+        internal static ValueTuple<BoundReferenceExpression, BoundAssignEx> CreateAndAssignSynthesizedVariable(BoundExpression expr, BoundAccess access, string name)
+        {
+            // determine whether the synthesized variable should be by ref (for readRef and writes) or a normal PHP copy
+            var refAccess = (access.IsReadRef || access.IsWrite);
+
+            // bind assigment target variable with appropriate access
+            var targetVariable = new BoundTemporalVariableRef(name);
+            targetVariable.Access = (refAccess) ? targetVariable.Access.WithWriteRef(0) : targetVariable.Access.WithWrite(0);
+
+            // set appropriate access of the original value expression
+            var valueBeingMoved = (refAccess) ? expr.WithAccess(BoundAccess.ReadRef) : expr.WithAccess(BoundAccess.Read);
+
+            // bind assigment and reference to the created synthesized variable
+            var assigment = new BoundAssignEx(targetVariable, valueBeingMoved);
+            var boundExpr = new BoundTemporalVariableRef(name).WithAccess(access);
+
+            return new ValueTuple<BoundReferenceExpression, BoundAssignEx>(boundExpr, assigment);
         }
 
         /// <summary>

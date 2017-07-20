@@ -70,6 +70,8 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_CircularBase,
         ERR_TypeNameCannotBeResolved,
         ERR_PositionalArgAfterUnpacking,    // Cannot use positional argument after argument unpacking
+        /// <summary>Call to a member function {0} on {1}</summary>
+        ERR_MethodCalledOnNonObject,
 
         //
         // Warnings

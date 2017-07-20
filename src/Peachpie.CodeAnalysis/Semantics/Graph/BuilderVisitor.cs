@@ -715,7 +715,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             // -> the switch value might get evaluated multiple times (see SwitchEdge.Generate) -> preemptively evaluate and cache it
             if (!switchValue.IsConstant() && !cases.All(c => c.CaseValue.IsOnlyBoundElement))
             {
-                var result = BoundTemporalVariableRef.CreateAndAssignSynthesizedVariable(switchValue, BoundAccess.Read, $"<switchValueCacher>{x.Span}");
+                var result = GeneratorSemanticsBinder.CreateAndAssignSynthesizedVariable(switchValue, BoundAccess.Read, $"<switchValueCacher>{x.Span}");
                 switchValue = result.Item1;
                 _current.Add(new BoundExpressionStatement(result.Item2));
             }

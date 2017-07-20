@@ -47,7 +47,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 field = t.GetMembers(name).OfType<FieldSymbol>().Where(f => f.IsConst).SingleOrDefault();
             }
-            
+
             //
             return field;
         }
@@ -78,7 +78,7 @@ namespace Pchp.CodeAnalysis.Symbols
             foreach (var i in type.AllInterfaces)
             {
                 candidate = i.GetMembers(name).OfType<PropertySymbol>().SingleOrDefault();
-                if(candidate != null)
+                if (candidate != null)
                 {
                     return candidate;
                 }
@@ -95,7 +95,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public static FieldSymbol ResolveStaticField(this INamedTypeSymbol t, string name)
         {
-            for (;t != null; t = t.BaseType)
+            for (; t != null; t = t.BaseType)
             {
                 var f = GetStaticField(t, name);
                 if (f != null)
@@ -158,6 +158,37 @@ namespace Pchp.CodeAnalysis.Symbols
             if (ifaces.Length != 0) list.AddRange(ifaces.Where(x => x is SourceTypeSymbol));
 
             return list;
+        }
+
+        /// <summary>
+        /// For known types, gets their PHP type name.
+        /// Used for diagnostic reasons.
+        /// </summary>
+        public static string GetPhpTypeNameOrNull(this TypeSymbol t)
+        {
+            switch (t.SpecialType)
+            {
+                case SpecialType.System_Void: return "void";
+                case SpecialType.System_Int32:
+                case SpecialType.System_Int64: return "integer";
+                case SpecialType.System_String: return "string";
+                case SpecialType.System_Single:
+                case SpecialType.System_Double: return "double";
+                case SpecialType.System_Boolean: return "boolean";
+                default:
+                    var containing = t.ContainingAssembly;
+                    if (containing != null && containing.IsPchpCorLibrary)
+                    {
+                        if (t.Name == "PhpNumber") return "number";
+                        if (t.Name == "PhpString") return "string";
+                        if (t.Name == "PhpArray" || t.Name == "IPhpArray") return "array";
+                        if (t.Name == "IPhpCallable") return "callable";
+                        if (t.Name == "PhpResource") return "resource";
+                    }
+                    break;
+            }
+
+            return null;
         }
     }
 }
