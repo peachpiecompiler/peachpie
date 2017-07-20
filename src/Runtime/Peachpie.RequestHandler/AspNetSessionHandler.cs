@@ -12,8 +12,7 @@ namespace Peachpie.RequestHandler
         public static readonly PhpSessionHandler Default = new AspNetSessionHandler();
 
         const string PhpNetSessionVars = "Peachpie.SessionVars";
-        const string DummySessionItem = "Peachpie_DummySessionKeepAliveItem(\uffff)";
-
+        
         static PhpSerialization.Serializer Serializer => PhpSerialization.PhpSerializer.Instance;
 
         private AspNetSessionHandler() { }

@@ -67,6 +67,9 @@ namespace Peachpie.Web
             }
         }
 
+        /// <summary>
+        /// Called when sessions are started.
+        /// </summary>
         public override PhpArray Load(IHttpPhpContext webctx)
         {
             var ctx = (RequestContextCore)webctx;
@@ -80,9 +83,17 @@ namespace Peachpie.Web
                     if (isession.TryGetValue(key, out byte[] bytes))
                     {
                         // try to deserialize bytes using php serializer
-                        // gets FALSE if bhytes are in incorrect format
+                        // gets FALSE if bytes are in incorrect format
                         result[key] = Serializer.Deserialize(ctx, new PhpString(bytes), default(RuntimeTypeHandle));
                     }
+                }
+
+                if (result.Count == 0)
+                {
+                    // store/remove a dummy item to invoke `TryEstablishSession()`
+                    // causing session cookies to be posted at the right time
+                    isession.Set(DummySessionItem, Array.Empty<byte>());
+                    isession.Remove(DummySessionItem);
                 }
 
                 return result;

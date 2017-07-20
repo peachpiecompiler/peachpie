@@ -38,6 +38,12 @@ namespace Pchp.Core
     public abstract class PhpSessionHandler
     {
         /// <summary>
+        /// Dummy session item keeping .NET session object alive.
+        /// Used by derived class.
+        /// </summary>
+        protected const string DummySessionItem = "Peachpie_DummySessionKeepAliveItem(\uffff)";
+
+        /// <summary>
         /// Name of PHP <c>SID</c> constant to be set when starting session.
         /// </summary>
         public const string SID_Constant = "SID";
