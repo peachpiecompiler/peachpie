@@ -69,15 +69,18 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        BoundVariable CreateVariable(VariableName name, TextSpan span)
+        BoundVariable CreateVariable(VariableName name, TextSpan span, bool isTemporal = false)
         {
             if (name.IsAutoGlobal)
             {
+                Debug.Assert(!isTemporal);
                 return new BoundSuperGlobalVariable(name);
             }
             else
             {
-                return new BoundLocal(new SourceLocalSymbol(_routine, name.Value, span));
+                return (isTemporal)
+                    ? new BoundLocal(new SourceLocalSymbol(_routine, name.Value, span), VariableKind.LocalTemporalVariable)
+                    : new BoundLocal(new SourceLocalSymbol(_routine, name.Value, span));
             }
         }
 
@@ -109,16 +112,17 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Gets local variable or create local if not yet.
         /// </summary>
-        public BoundVariable BindVariable(VariableName varname, TextSpan span)
+        public BoundVariable BindVariable(VariableName varname, TextSpan span, bool isTemporal = false)
         {
             BoundVariable value;
 
             if (!_dict.TryGetValue(varname, out value))
             {
-                _dict[varname] = value = CreateVariable(varname, span);
+                _dict[varname] = value = CreateVariable(varname, span, isTemporal);
             }
 
             //
+            Debug.Assert(isTemporal ^ value.VariableKind != VariableKind.LocalTemporalVariable);
             Debug.Assert(value != null);
             return value;
         }

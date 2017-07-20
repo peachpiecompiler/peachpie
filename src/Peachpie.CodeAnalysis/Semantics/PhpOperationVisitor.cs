@@ -120,7 +120,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         }
 
-        public virtual void VisitSynthesizedVariableRef(BoundSynthesizedVariableRef x)
+        public virtual void VisitSynthesizedVariableRef(BoundTemporalVariableRef x)
         {
             // BoundSynthesizedVariableRef is based solely on BoundVariableRef so far 
             VisitVariableRef(x);

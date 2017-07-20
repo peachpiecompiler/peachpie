@@ -864,7 +864,7 @@ namespace Pchp.Core
         /// <summary>
         /// Create <see cref="Generator"/> with specified state machine function and parameters.
         /// </summary>
-        public static Generator BuildGenerator(Context ctx, object @this, PhpArray locals, GeneratorStateMachineDelegate method) => new Generator(ctx, @this, locals, method);
+        public static Generator BuildGenerator(Context ctx, object @this, PhpArray locals, PhpArray tmpLocals, GeneratorStateMachineDelegate method) => new Generator(ctx, @this, locals, tmpLocals, method);
 
         public static int GetGeneratorState(Generator g) => g._state;
 

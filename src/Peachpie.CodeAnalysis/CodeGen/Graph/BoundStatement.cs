@@ -66,7 +66,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 // g._returnValue = <returned expression>
                 if (this.Returned != null)
                 {
-                    cg.Builder.EmitLoadArgumentOpcode(3);
+                    cg.Builder.EmitLoadArgumentOpcode(4);
                     var t = cg.Emit(this.Returned);
                     cg.EmitConvertToPhpValue(t, 0);
                     cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorReturnedValue_Generator_PhpValue);
@@ -74,7 +74,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
 
                 // g._state = -2 (closed): got to the end of the generator method
-                cg.Builder.EmitLoadArgumentOpcode(3);
+                cg.Builder.EmitLoadArgumentOpcode(4);
                 cg.EmitLoadConstant(-2, cg.CoreTypes.Int32);
                 cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
 
@@ -333,13 +333,13 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // generator._userKeyReturned = (YieldedKey != null)
             var userKeyReturned = (YieldedKey != null);
-            il.EmitLoadArgumentOpcode(3);
+            il.EmitLoadArgumentOpcode(4);
             cg.EmitLoadConstant(userKeyReturned, cg.CoreTypes.Boolean);
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorReturnedUserKey_Generator_bool);
 
 
             //generator._state = yieldIndex
-            il.EmitLoadArgumentOpcode(3);
+            il.EmitLoadArgumentOpcode(4);
             cg.EmitLoadConstant(yieldIndex, cg.CoreTypes.Int32);
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
 
@@ -349,18 +349,18 @@ namespace Pchp.CodeAnalysis.Semantics
             il.MarkLabel(this);
 
             // if(generator._currException != null) throw ex;
-            il.EmitLoadArgumentOpcode(3);
+            il.EmitLoadArgumentOpcode(4);
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorThrownException_Generator);
 
             var excNotNull = new NamedLabel("generator._currException == null");
             il.EmitBranch(ILOpCode.Brfalse, excNotNull);
 
             // load the exception to be thrown on stack (so it can be nulled)
-            il.EmitLoadArgumentOpcode(3);
+            il.EmitLoadArgumentOpcode(4);
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorThrownException_Generator);
 
             //g._curException = null : clear the field after throwing the exception
-            il.EmitLoadArgumentOpcode(3);
+            il.EmitLoadArgumentOpcode(4);
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.NullGeneratorThrownException_Generator);
 
             il.EmitThrow(false);
@@ -372,7 +372,7 @@ namespace Pchp.CodeAnalysis.Semantics
         private void setAsPhpValueOnGenerator(CodeGenerator cg, BoundExpression valueExpr, CoreMethod setMethod)
         {
             var il = cg.Builder;
-            il.EmitLoadArgumentOpcode(3);
+            il.EmitLoadArgumentOpcode(4);
 
             if (valueExpr == null) { cg.Emit_PhpValue_Null(); }
             else

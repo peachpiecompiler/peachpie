@@ -2147,11 +2147,6 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override IPlace Place(ILBuilder il) => this.Variable.Place(il);
     }
 
-    partial class BoundSynthesizedVariableRef
-    {
-        // Empty because everything is ihnerited from BoundVariableRef at the moment
-    }
-
     partial class BoundListEx : IBoundReference
     {
         internal override IBoundReference BindPlace(CodeGenerator cg) => this;
@@ -4174,7 +4169,7 @@ namespace Pchp.CodeAnalysis.Semantics
             var il = cg.Builder;
 
             // leave result of yield expr. (sent value) on eval stack
-            il.EmitLoadArgumentOpcode(3);
+            il.EmitLoadArgumentOpcode(4);
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorSentItem_Generator);
 
             // type of expression result is PHP value (sent value)

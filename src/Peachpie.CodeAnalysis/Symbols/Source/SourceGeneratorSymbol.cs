@@ -46,6 +46,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++),
                 new SpecialParameterSymbol(this, thisType, SpecialParameterSymbol.ThisName, index++),
                 new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpArray, SpecialParameterSymbol.LocalsName, index++),
+                new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpArray, SpecialParameterSymbol.SynthesizedLocalsName, index++),
                 new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Generator, "generator", index++),
             };
 

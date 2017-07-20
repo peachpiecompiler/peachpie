@@ -62,6 +62,14 @@ namespace Pchp.CodeAnalysis.CodeGen
         public IPlace LocalsPlaceOpt => _localsPlaceOpt;
 
         /// <summary>
+        /// Gets place referring to compiler generated temporal variables.
+        /// </summary>
+        /// <remarks>
+        /// Must not be null for methods that contain any synthesized variables.
+        /// </remarks>
+        public IPlace TemporalLocalsPlace => _tmpLocalsPlace;
+
+        /// <summary>
         /// Gets value indicating the routine uses unoptimized locals access.
         /// This means, all the local variables are stored within an associative array instead of local slots.
         /// This value implicates, <see cref="LocalsPlaceOpt"/> is not <c>null</c>.

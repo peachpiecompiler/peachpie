@@ -86,7 +86,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitVariableRef(x);
         }
 
-        public override void VisitSynthesizedVariableRef(BoundSynthesizedVariableRef x)
+        public override void VisitSynthesizedVariableRef(BoundTemporalVariableRef x)
         {
             // do not make diagnostics on syntesized variables
         }

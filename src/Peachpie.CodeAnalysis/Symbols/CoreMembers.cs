@@ -442,7 +442,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetName_PhpTypeInfo = ct.PhpTypeInfo.Property("Name");
                 GetTypeHandle_PhpTypeInfo = ct.PhpTypeInfo.Property("TypeHandle");
 
-                BuildGenerator_Context_Object_PhpArray_GeneratorStateMachineDelegate = ct.Operators.Method("BuildGenerator", ct.Context, ct.Object, ct.PhpArray, ct.GeneratorStateMachineDelegate);
+                BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate = ct.Operators.Method("BuildGenerator", ct.Context, ct.Object, ct.PhpArray, ct.PhpArray, ct.GeneratorStateMachineDelegate);
                 GetGeneratorState_Generator = ct.Operators.Method("GetGeneratorState", ct.Generator);
                 SetGeneratorState_Generator_int = ct.Operators.Method("SetGeneratorState", ct.Generator, ct.Int32);
                 NullGeneratorThrownException_Generator = ct.Operators.Method("NullGeneratorThrownException", ct.Generator);
@@ -515,7 +515,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 BuildClosure_RoutineInfo_PhpArray_PhpArray,
                 Eval_Context_PhpArray_object_string_string_int_int,
 
-                BuildGenerator_Context_Object_PhpArray_GeneratorStateMachineDelegate,
+                BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate,
                 GetGeneratorState_Generator, SetGeneratorState_Generator_int, NullGeneratorThrownException_Generator, GetGeneratorThrownException_Generator, SetGeneratorCurrValue_Generator_PhpValue,
                 SetGeneratorCurrKey_Generator_PhpValue, SetGeneratorReturnedUserKey_Generator_bool, GetGeneratorSentItem_Generator, SetGeneratorReturnedValue_Generator_PhpValue,
 

@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Devsense.PHP.Syntax;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -59,9 +60,10 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         private SourceLocalSymbol _symbol;
 
-        internal BoundLocal(SourceLocalSymbol symbol)
-            : base(VariableKind.LocalVariable)
+        internal BoundLocal(SourceLocalSymbol symbol, VariableKind kind = VariableKind.LocalVariable)
+            : base(kind)
         {
+            Debug.Assert(kind == VariableKind.LocalVariable || kind == VariableKind.LocalTemporalVariable);
             _symbol = symbol;
         }
 

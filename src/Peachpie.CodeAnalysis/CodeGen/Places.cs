@@ -1100,6 +1100,23 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
     }
 
+    internal class BoundIndirectTemporalVariablePlace : BoundIndirectVariablePlace
+    {
+        public BoundIndirectTemporalVariablePlace(BoundExpression nameExpr, BoundAccess access)
+            : base(nameExpr, access)
+        {
+        }
+
+        protected override TypeSymbol LoadVariablesArray(CodeGenerator cg)
+        {
+            Debug.Assert(cg.TemporalLocalsPlace != null, $"Method with temporal variables must have {nameof(cg.TemporalLocalsPlace)} set.");
+
+            return cg.TemporalLocalsPlace.EmitLoad(cg.Builder)
+                .Expect(cg.CoreTypes.PhpArray);
+        }
+
+    }
+
     #endregion
 
     #region BoundFieldPlace, BoundIndirectFieldPlace, BoundPropertyPlace

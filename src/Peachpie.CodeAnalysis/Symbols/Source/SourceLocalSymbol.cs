@@ -39,6 +39,11 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Variable was introduced with <c>static</c> declaration.
         /// </summary>
         StaticVariable,
+
+        /// <summary>
+        /// Variable is a local synthesized variable, must be indirect.
+        /// </summary>
+        LocalTemporalVariable,
     }
 
     internal class SourceLocalSymbol : Symbol, ILocalSymbol, ILocalSymbolInternal
