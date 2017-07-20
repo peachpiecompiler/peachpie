@@ -67,6 +67,11 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public PhpParseOptions ParseOptions { get; private set; }
 
+        /// <summary>
+        /// Options diagnostics.
+        /// </summary>
+        public ImmutableArray<Diagnostic> Diagnostics { get; private set; }
+
         ///// <summary>
         ///// Flags applied to the top-level binder created for each syntax tree in the compilation 
         ///// as well as for the binder of global imports.
@@ -102,6 +107,7 @@ namespace Pchp.CodeAnalysis
             StrongNameProvider strongNameProvider = null,
             bool publicSign = false,
             PhpDocTypes phpdocTypes = PhpDocTypes.None,
+            ImmutableArray<Diagnostic> diagnostics = default(ImmutableArray<Diagnostic>),
             PhpParseOptions parseOptions = null)
             : this(outputKind, baseDirectory, sdkDirectory,
                    reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
@@ -118,7 +124,8 @@ namespace Pchp.CodeAnalysis
                    strongNameProvider: strongNameProvider,
                    metadataImportOptions: MetadataImportOptions.Public,
                    publicSign: publicSign,
-                   phpdocTypes : phpdocTypes,
+                   phpdocTypes: phpdocTypes,
+                   diagnostics: diagnostics,
                    parseOptions: parseOptions)
         {
         }
@@ -154,6 +161,7 @@ namespace Pchp.CodeAnalysis
             MetadataImportOptions metadataImportOptions,
             bool publicSign,
             PhpDocTypes phpdocTypes,
+            ImmutableArray<Diagnostic> diagnostics,
             PhpParseOptions parseOptions)
             : base(outputKind, reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
                    cryptoKeyContainer, cryptoKeyFile, cryptoPublicKey, delaySign, publicSign, optimizationLevel, checkOverflow,
@@ -166,6 +174,7 @@ namespace Pchp.CodeAnalysis
             this.SdkDirectory = sdkDirectory;
             this.PhpDocTypes = phpdocTypes;
             this.ParseOptions = parseOptions;
+            this.Diagnostics = diagnostics;
         }
 
         private PhpCompilationOptions(PhpCompilationOptions other) : this(
@@ -198,6 +207,7 @@ namespace Pchp.CodeAnalysis
             reportSuppressedDiagnostics: other.ReportSuppressedDiagnostics,
             publicSign: other.PublicSign,
             phpdocTypes: other.PhpDocTypes,
+            diagnostics: other.Diagnostics,
             parseOptions: other.ParseOptions)
         {
         }

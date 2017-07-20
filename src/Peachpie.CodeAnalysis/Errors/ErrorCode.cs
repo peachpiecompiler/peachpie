@@ -56,6 +56,7 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_MetadataNameTooLong,
         ERR_MetadataReferencesNotSupported,
         ERR_NoSourceFile,
+        ERR_StartupObjectNotFound,
         ERR_OpenResponseFile,
         ERR_OutputWriteFailed,
         ERR_PdbWritingFailed,
@@ -91,6 +92,7 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_AmbiguousDeclaration,
         WRN_UnreachableCode,
         WRN_NotYetImplementedIgnored,
+        WRN_NoSourceFiles,
 
         //
         // Visible information

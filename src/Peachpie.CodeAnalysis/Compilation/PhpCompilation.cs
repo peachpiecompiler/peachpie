@@ -416,6 +416,7 @@ namespace Pchp.CodeAnalysis
             {
                 // CheckAssemblyName(builder);
                 builder.AddRange(Options.Errors);
+                builder.AddRange(Options.Diagnostics);
 
                 cancellationToken.ThrowIfCancellationRequested();
 
@@ -437,6 +438,10 @@ namespace Pchp.CodeAnalysis
 
                 cancellationToken.ThrowIfCancellationRequested();
 
+                // resolve entry point
+                this.GetEntryPoint(cancellationToken);
+
+                //
                 builder.AddRange(_lazyDeclarationDiagnostics?.AsEnumerable() ?? Enumerable.Empty<Diagnostic>());
             }
 
@@ -552,8 +557,14 @@ namespace Pchp.CodeAnalysis
         {
             if (_lazyMainMethod == null && this.Options.OutputKind.IsApplication())
             {
-                _lazyMainMethod = FindEntryPoint(cancellationToken);
-                Debug.Assert(_lazyMainMethod != null);  // TODO: ErrorCode
+                var method = FindEntryPoint(cancellationToken);
+                if (method == null)
+                {
+                    DeclarationDiagnostics.Add(Location.None, Errors.ErrorCode.ERR_StartupObjectNotFound, Options.MainTypeName);
+                    method = new MissingMethodSymbol(); // dummy symbol
+                }
+
+                _lazyMainMethod = method;
             }
             return _lazyMainMethod;
         }
@@ -587,13 +598,13 @@ namespace Pchp.CodeAnalysis
                 if (ddot == -1)
                 {
                     // "Class"::Main
-                    qname = NameUtils.MakeQualifiedName(methodname, true);
+                    qname = NameUtils.MakeQualifiedName(maintype, true);
                 }
                 else
                 {
                     // "Class::Method"
-                    qname = NameUtils.MakeQualifiedName(methodname.Remove(ddot), true);
-                    methodname = methodname.Substring(ddot + Name.ClassMemberSeparator.Length);
+                    qname = NameUtils.MakeQualifiedName(maintype.Remove(ddot), true);
+                    methodname = maintype.Substring(ddot + Name.ClassMemberSeparator.Length);
                 }
 
                 var type = this.SourceSymbolCollection.GetType(qname);

@@ -232,7 +232,7 @@ namespace Pchp.CodeAnalysis
             if (_compilation.Options.OutputKind.IsApplication() && _moduleBuilder != null)
             {
                 var entryPoint = _compilation.GetEntryPoint(_cancellationToken);
-                if (entryPoint != null)
+                if (entryPoint != null && !(entryPoint is ErrorMethodSymbol))
                 {
                     // wrap call to entryPoint within real <Script>.EntryPointSymbol
                     _moduleBuilder.CreateEntryPoint((MethodSymbol)entryPoint, _diagnostics);
@@ -293,9 +293,9 @@ namespace Pchp.CodeAnalysis
             var declarationDiagnostics = compilation.GetDeclarationDiagnostics(cancellationToken);
             diagnostics.AddRange(declarationDiagnostics);
 
+            // cancel the operation if there are errors
             if (hasDeclarationErrors |= declarationDiagnostics.HasAnyErrors() || cancellationToken.IsCancellationRequested)
             {
-                // cancel the operation if there are errors
                 return;
             }
 
