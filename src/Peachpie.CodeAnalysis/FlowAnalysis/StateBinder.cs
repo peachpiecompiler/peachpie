@@ -35,7 +35,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var parameters = routine.SourceParameters;
             foreach (var p in parameters)
             {
-                var local = state.GetLocalHandle(p.Name);
+                var local = state.GetLocalHandle(new VariableName(p.Name));
                 state.SetLocalType(local, p.GetResultType(typeCtx));
 
                 if (p.Syntax.PassedByRef && !p.Syntax.IsVariadic)

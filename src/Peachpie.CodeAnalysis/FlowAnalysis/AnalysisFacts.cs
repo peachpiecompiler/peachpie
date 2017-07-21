@@ -389,7 +389,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     boundvar.VariableKind == VariableKind.Parameter || 
                     boundvar.VariableKind == VariableKind.LocalTemporalVariable)
                 {
-                    varHandle = state.GetLocalHandle(boundvar.Name);
+                    varHandle = state.GetLocalHandle(new VariableName(boundvar.Name));
                     return true;
                 }
             }

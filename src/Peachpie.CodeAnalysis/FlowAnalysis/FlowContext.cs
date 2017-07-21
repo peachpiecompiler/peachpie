@@ -86,7 +86,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public VariableHandle GetVarIndex(VariableName name)
         {
-            Debug.Assert(!name.IsEmpty());
+            Debug.Assert(name.IsValid());
 
             int index;
             if (!_varsIndex.TryGetValue(name, out index))

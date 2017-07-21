@@ -182,9 +182,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets variable handle use for other variable operations.
         /// </summary>
-        public VariableHandle/*!*/GetLocalHandle(string varname)
+        public VariableHandle/*!*/GetLocalHandle(VariableName varname)
         {
-            return _flowCtx.GetVarIndex(new VariableName(varname));
+            return _flowCtx.GetVarIndex(varname);
         }
 
         /// <summary>

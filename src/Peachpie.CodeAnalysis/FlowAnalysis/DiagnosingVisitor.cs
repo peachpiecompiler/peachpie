@@ -179,7 +179,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         private void CheckUninitializedVariableUse(BoundVariableRef x)
         {
-            if (x.MaybeUninitialized && !x.Access.IsQuiet)
+            if (x.MaybeUninitialized && !x.Access.IsQuiet && x.PhpSyntax != null)
             {
                 _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_UninitializedVariableUse, x.Name.NameValue.ToString());
             }

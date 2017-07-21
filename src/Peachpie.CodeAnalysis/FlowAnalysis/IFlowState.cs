@@ -25,7 +25,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets variable handle use for other variable operations.
         /// </summary>
-        VariableHandle GetLocalHandle(string varname);
+        VariableHandle GetLocalHandle(VariableName varname);
 
         /// <summary>
         /// Sets variable type in this state.

@@ -69,19 +69,21 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        BoundVariable CreateVariable(VariableName name, TextSpan span, bool isTemporal = false)
+        BoundVariable CreateGlobal(VariableName name, TextSpan span)
         {
-            if (name.IsAutoGlobal)
-            {
-                Debug.Assert(!isTemporal);
-                return new BoundSuperGlobalVariable(name);
-            }
-            else
-            {
-                return (isTemporal)
-                    ? new BoundLocal(new SourceLocalSymbol(_routine, name.Value, span), VariableKind.LocalTemporalVariable)
-                    : new BoundLocal(new SourceLocalSymbol(_routine, name.Value, span));
-            }
+            Debug.Assert(name.IsAutoGlobal);
+            return new BoundSuperGlobalVariable(name);
+        }
+
+        BoundVariable CreateLocal(VariableName name, TextSpan span)
+        {
+            Debug.Assert(!name.IsAutoGlobal);
+            return new BoundLocal(new SourceLocalSymbol(_routine, name.Value, span));
+        }
+
+        BoundVariable CreateTemporal(VariableName name, TextSpan span)
+        {
+            return new BoundLocal(new SourceLocalSymbol(_routine, name.Value, span), VariableKind.LocalTemporalVariable);
         }
 
         #region Public methods
@@ -109,23 +111,28 @@ namespace Pchp.CodeAnalysis.Semantics
             return Variables;
         }
 
-        /// <summary>
-        /// Gets local variable or create local if not yet.
-        /// </summary>
-        public BoundVariable BindVariable(VariableName varname, TextSpan span, bool isTemporal = false)
+        BoundVariable BindVariable(VariableName varname, TextSpan span, Func<VariableName, TextSpan, BoundVariable> factory)
         {
             BoundVariable value;
 
             if (!_dict.TryGetValue(varname, out value))
             {
-                _dict[varname] = value = CreateVariable(varname, span, isTemporal);
+                _dict[varname] = value = factory(varname, span);
             }
 
             //
-            Debug.Assert(isTemporal ^ value.VariableKind != VariableKind.LocalTemporalVariable);
             Debug.Assert(value != null);
             return value;
         }
+
+        /// <summary>
+        /// Gets local variable or create local if not yet.
+        /// </summary>
+        public BoundVariable BindLocalVariable(VariableName varname, TextSpan span) => BindVariable(varname, span, CreateLocal);
+
+        public BoundVariable BindTemporalVariable(VariableName varname) => BindVariable(varname, default(TextSpan), CreateTemporal);
+
+        public BoundVariable BindGlobal(VariableName varname) => BindVariable(varname, default(TextSpan), CreateGlobal);
 
         #endregion
     }

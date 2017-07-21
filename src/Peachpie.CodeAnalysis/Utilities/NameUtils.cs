@@ -197,6 +197,11 @@ namespace Pchp.CodeAnalysis
         public static bool IsEmpty(this VariableName name) => string.IsNullOrEmpty(name.Value);
 
         /// <summary>
+        /// Gets value indicating whether given name was not set.
+        /// </summary>
+        public static bool IsValid(this VariableName name) => !IsEmpty(name);
+
+        /// <summary>
         /// Gets variable name without leading <c>$</c>.
         /// </summary>
         /// <param name="varname">String in form of <c>$varname</c> or <c>$GLOBALS['varname']</c> or <c>'varname'</c></param>

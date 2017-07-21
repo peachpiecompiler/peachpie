@@ -251,7 +251,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             return new BoundStaticVariableStatement(new BoundStaticVariableStatement.StaticVarDecl()
             {
-                Variable = _locals.BindVariable(decl.Variable, decl.Span.ToTextSpan()),
+                Variable = _locals.BindLocalVariable(decl.Variable, decl.Span.ToTextSpan()),
                 InitialValue = (decl.Initializer != null) ? BindExpression(decl.Initializer) : null,
             });
         }
