@@ -69,7 +69,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        BoundVariable CreateGlobal(VariableName name, TextSpan span)
+        BoundVariable CreateAutoGlobal(VariableName name, TextSpan span)
         {
             Debug.Assert(name.IsAutoGlobal);
             return new BoundSuperGlobalVariable(name);
@@ -132,7 +132,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundVariable BindTemporalVariable(VariableName varname) => BindVariable(varname, default(TextSpan), CreateTemporal);
 
-        public BoundVariable BindGlobal(VariableName varname) => BindVariable(varname, default(TextSpan), CreateGlobal);
+        public BoundVariable BindAutoGlobalVariable(VariableName varname) => BindVariable(varname, default(TextSpan), CreateAutoGlobal);
 
         #endregion
     }

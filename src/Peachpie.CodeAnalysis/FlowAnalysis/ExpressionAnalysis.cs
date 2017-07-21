@@ -255,7 +255,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             x.BeforeTypeRef = TypeRefMask.AnyType;
 
             // bind variable place
-            x.Variable = Routine.LocalsTable.BindGlobal(x.Name.NameValue);
+            x.Variable = Routine.LocalsTable.BindAutoGlobalVariable(x.Name.NameValue);
 
             // update state
             if (x.Access.IsRead)
@@ -295,9 +295,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             x.BeforeTypeRef = previoustype;
 
             // bind variable place
-            x.Variable = (x is BoundTemporalVariableRef)     // synthesized variable constructed by semantic binder
-                ? Routine.LocalsTable.BindTemporalVariable(local.Name)
-                : Routine.LocalsTable.BindLocalVariable(local.Name, x.PhpSyntax.Span.ToTextSpan());
+            if (x.Variable == null)
+            {
+                x.Variable = (x is BoundTemporalVariableRef)     // synthesized variable constructed by semantic binder
+                    ? Routine.LocalsTable.BindTemporalVariable(local.Name)
+                    : Routine.LocalsTable.BindLocalVariable(local.Name, x.PhpSyntax.Span.ToTextSpan());
+            }
 
             //
             State.VisitLocal(local);
