@@ -897,6 +897,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public TypeSymbol EmitLoad(CodeGenerator cg)
         {
+            TypeSymbol result;
+
             if (_access.IsReadRef)
             {
                 // TODO: update Context
@@ -905,15 +907,24 @@ namespace Pchp.CodeAnalysis.CodeGen
                 cg.EmitLoadContext();
                 cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Context.Globals.Getter);
                 cg.EmitIntStringKey(_name.Value);
-                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.EnsureItemAlias_IntStringKey);
+                result = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.EnsureItemAlias_IntStringKey)
+                    .Expect(cg.CoreTypes.PhpAlias);
             }
             else
             {
                 Debug.Assert(_access.IsRead);
                 var p = ResolveSuperglobalProperty(cg);
                 cg.EmitLoadContext();
-                return cg.EmitCall(p.GetMethod.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, p.GetMethod);
+                result = cg.EmitCall(p.GetMethod.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, p.GetMethod);
+
+                //
+                if (_access.IsReadCopy)
+                {
+                    result = cg.EmitDeepCopy(result, false);
+                }
             }
+
+            return result;
         }
 
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
