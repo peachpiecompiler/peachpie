@@ -116,6 +116,7 @@
       <TempOutputDir>%(IntermediateAssembly.RelativeDir)</TempOutputDir>
       <EmitEntryPoint>false</EmitEntryPoint>
       <EmitEntryPoint Condition=" '$(OutputType.ToLower())' == 'exe' ">true</EmitEntryPoint>
+      <DocumentationFile Condition=" '$(DocumentationFile)'=='' and '$(GenerateDocumentation)'=='true' ">%(IntermediateAssembly.Filename).xml</DocumentationFile>
     </PropertyGroup>
 
     <!-- If compiling for full .NET, MSBuild is expected to run on it (e.g. in Visual Studio) so that it can obtain the runtime directory -->
@@ -130,8 +131,7 @@
       <RspLine Include="--optimize:$(Optimize)" />
       <RspLine Include="--langversion:$(LangVersion)" Condition=" '$(LangVersion)' != '' " />
       <RspLine Include="--shortopentag+" Condition=" '$(ShortOpenTag)' == 'true' " />
-      <RspLine Include="--xmldoc" Condition=" '$(GenerateDocumentation)' == 'true' " />
-      <RspLine Include="--xmldoc:$(DocumentationFile)" Condition=" '$(DocumentationFile)' != '' and '$(GenerateDocumentation)' != 'false'" />
+      <RspLine Include="--xmldoc:$(DocumentationFile)" Condition=" '$(GenerateDocumentation)' == 'true'" />
       <RspLine Include="--debug-type:$(DebugType)" />
       <RspLine Include="--define:DEBUG" Condition=" '$(Configuration)' == 'Debug' " />
       <RspLine Include="--emit-entry-point:$(EmitEntryPoint)" />
@@ -145,7 +145,8 @@
 
     <WriteLinesToFile File="$(TempOutputDir)compile-php-args.rsp" Lines="@(RspLine)" Overwrite="true" />
     <Exec Command="dotnet compile-php @$(TempOutputDir)compile-php-args.rsp" />
-
+    
+    <Copy SourceFiles="$(TempOutputDir)$(DocumentationFile)" DestinationFolder="$(OutputPath)" Condition=" '$(GenerateDocumentation)'=='true' " />
   </Target>
 
   <!--End Required Task by .Common.target-->
