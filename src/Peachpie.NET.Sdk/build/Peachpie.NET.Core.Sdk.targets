@@ -130,6 +130,8 @@
       <RspLine Include="--optimize:$(Optimize)" />
       <RspLine Include="--langversion:$(LangVersion)" Condition=" '$(LangVersion)' != '' " />
       <RspLine Include="--shortopentag+" Condition=" '$(ShortOpenTag)' == 'true' " />
+      <RspLine Include="--xmldoc" Condition=" '$(GenerateDocumentation)' == 'true' " />
+      <RspLine Include="--xmldoc:$(DocumentationFile)" Condition=" '$(DocumentationFile)' != '' and '$(GenerateDocumentation)' != 'false'" />
       <RspLine Include="--debug-type:$(DebugType)" />
       <RspLine Include="--define:DEBUG" Condition=" '$(Configuration)' == 'Debug' " />
       <RspLine Include="--emit-entry-point:$(EmitEntryPoint)" />
