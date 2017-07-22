@@ -11,8 +11,8 @@
     <Description>Peachpie PHP language library functions for image processing.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="ImageSharp" Version="1.0.0-alpha5-00054" />
-    <PackageReference Include="ImageSharp.Drawing" Version="1.0.0-alpha5-00048" />
+    <PackageReference Include="ImageSharp" Version="1.0.0-alpha9-00173" />
+    <PackageReference Include="ImageSharp.Drawing" Version="1.0.0-alpha9-00168" />
   </ItemGroup>
 
   <ItemGroup>

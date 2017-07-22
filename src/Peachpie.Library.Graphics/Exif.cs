@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using ImageSharp;
+using ImageSharp.Formats;
 using Pchp.Core;
 
 namespace Peachpie.Library.Graphics
@@ -81,7 +82,7 @@ namespace Peachpie.Library.Graphics
             //array.Add("FileDateTime", (int)File.GetCreationTime(filename).ToOADate());
             array.Add("FileSize", (int)bytes.Length);
 
-            Image image;
+            Image<Rgba32> image;
 
             using (var ms = new MemoryStream(bytes))
             {
@@ -308,7 +309,8 @@ namespace Peachpie.Library.Graphics
                 return null;
             }
 
-            Image<Color> thumbnail = null;
+            Image<Rgba32> thumbnail = null;
+            IImageFormat format = null;
             byte[] result;
 
             var bytes = Utils.ReadPhpBytes(ctx, filename);
@@ -321,10 +323,10 @@ namespace Peachpie.Library.Graphics
             {
                 try
                 {
-                    using (var image = Image.Load(ms))
+                    using (var image = Image.Load(ms, out format))
                     {
                         // return byte[] ~ image.MetaData.ExifProfile{ this.data, this.thumbnailOffset, this.thumbnailLength }
-                        thumbnail = image.MetaData.ExifProfile.CreateThumbnail<Color>();
+                        thumbnail = image.MetaData.ExifProfile.CreateThumbnail<Rgba32>();
                     }
                 }
                 catch
@@ -345,9 +347,8 @@ namespace Peachpie.Library.Graphics
             if (height != null)
                 height.Value = (PhpValue)thumbnail.Height;
 
-            if (imagetype != null)
-                imagetype.Value = (PhpValue)((thumbnail.CurrentImageFormat.Decoder is ImageSharp.Formats.JpegDecoder)
-                    ? PhpImage.IMAGETYPE_JPEG : PhpImage.IMAGETYPE_TIFF_II);
+            if (imagetype != null)  // TODO: get thumbnail image format
+                imagetype.Value = (PhpValue)(format == ImageFormats.Jpeg ? PhpImage.IMAGETYPE_JPEG : PhpImage.IMAGETYPE_TIFF_II);
 
             using (var ms2 = new MemoryStream())
             {

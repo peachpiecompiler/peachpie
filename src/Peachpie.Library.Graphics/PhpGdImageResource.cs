@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using ImageSharp;
 using ImageSharp.Formats;
 using Pchp.Core;
+using TImage = ImageSharp.Image<ImageSharp.Rgba32>;
 
 namespace Peachpie.Library.Graphics
 {
@@ -18,7 +19,7 @@ namespace Peachpie.Library.Graphics
         /// Underlaying <see cref="Image"/> object.
         /// Cannot be <c>null</c> reference until it is not disposed.
         /// </summary>
-        public Image/*!*/Image
+        public TImage/*!*/Image
         {
             get
             {
@@ -29,20 +30,21 @@ namespace Peachpie.Library.Graphics
                 _image = value ?? throw new ArgumentNullException();
             }
         }
-        private Image/*!*/_image;
+        TImage/*!*/_image;
+        IImageFormat _format;
 
         /// <summary>
         /// Determine if the pixel format is indexed.
         /// </summary>
         public bool IsIndexed =>
-            _image.CurrentImageFormat.Decoder is JpegDecoder ||
-            _image.CurrentImageFormat.Decoder is PngDecoder;
-
+            _format == ImageFormats.Gif ||
+            _format == ImageFormats.Bitmap;
+        
         internal bool AlphaBlending = false;
         internal bool SaveAlpha = false;
         internal bool AntiAlias = false;
 
-        internal Color transparentColor;
+        //internal Rgba32 transparentColor;
         internal bool IsTransparentColSet = false;
 
         //internal TextureBrush styled;
@@ -58,19 +60,20 @@ namespace Peachpie.Library.Graphics
         {
         }
 
-        internal PhpGdImageResource(int x, int y, IImageFormat format)
-            : this(new Image(x, y, new Configuration(format)))
+        internal PhpGdImageResource(int x, int y, IConfigurationModule configuration, IImageFormat format)
+            : this(new TImage(new Configuration(configuration), x, y), format)
         {
         }
 
         /// <summary>
         ///  Creates PhpGdImageResource without creating internal image
         /// </summary>
-        internal PhpGdImageResource(Image/*!*/image)
+        internal PhpGdImageResource(TImage/*!*/image, IImageFormat format)
             : this()
         {
             Debug.Assert(image != null);
             _image = image;
+            _format = format;
         }
 
         /// <summary>

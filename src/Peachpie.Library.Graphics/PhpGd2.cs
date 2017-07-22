@@ -311,9 +311,9 @@ namespace Peachpie.Library.Graphics
         [return: CastToFalse]
         public static PhpResource imagecreate(int x_size, int y_size)
         {
-            var img = imagecreatecommon(x_size, y_size, new BmpFormat());
+            var img = imagecreatecommon(x_size, y_size, new BmpConfigurationModule(), ImageFormats.Bitmap);
 
-            img.Image.BackgroundColor(Color.White);
+            img.Image.BackgroundColor(Rgba32.White);
             img.AlphaBlending = true;
 
             return img;
@@ -325,15 +325,15 @@ namespace Peachpie.Library.Graphics
         [return: CastToFalse]
         public static PhpResource imagecreatetruecolor(int x_size, int y_size)
         {
-            var img = imagecreatecommon(x_size, y_size, new PngFormat());
+            var img = imagecreatecommon(x_size, y_size, new PngConfigurationModule(), ImageFormats.Png);
 
-            img.Image.BackgroundColor(Color.Black);
+            img.Image.BackgroundColor(Rgba32.Black);
             img.AlphaBlending = true;
 
             return img;
         }
 
-        static PhpGdImageResource imagecreatecommon(int x_size, int y_size, IImageFormat format)
+        static PhpGdImageResource imagecreatecommon(int x_size, int y_size, IConfigurationModule configuration, IImageFormat format)
         {
             if (x_size <= 0 || y_size <= 0)
             {
@@ -341,7 +341,7 @@ namespace Peachpie.Library.Graphics
                 return null;
             }
 
-            return new PhpGdImageResource(x_size, y_size, format);
+            return new PhpGdImageResource(x_size, y_size, configuration, format);
         }
 
         /// <summary>
@@ -358,7 +358,7 @@ namespace Peachpie.Library.Graphics
 
             try
             {
-                return new PhpGdImageResource(Image.Load(image));
+                return new PhpGdImageResource(Image.Load(image, out IImageFormat format), format);
             }
             catch
             {
@@ -400,7 +400,7 @@ namespace Peachpie.Library.Graphics
         [return: CastToFalse]
         public static PhpResource imagecreatefromgif(Context ctx, string filename)
         {
-            return imagercreatefromfile(ctx, filename, new GifFormat());
+            return imagercreatefromfile(ctx, filename, new GifConfigurationModule());
         }
 
         /// <summary>
@@ -409,7 +409,7 @@ namespace Peachpie.Library.Graphics
         [return: CastToFalse]
         public static PhpResource imagecreatefromjpeg(Context ctx, string filename)
         {
-            return imagercreatefromfile(ctx, filename, new JpegFormat());
+            return imagercreatefromfile(ctx, filename, new JpegConfigurationModule());
         }
 
         /// <summary>
@@ -418,7 +418,7 @@ namespace Peachpie.Library.Graphics
         [return: CastToFalse]
         public static PhpResource imagecreatefrompng(Context ctx, string filename)
         {
-            return imagercreatefromfile(ctx, filename, new PngFormat());
+            return imagercreatefromfile(ctx, filename, new PngConfigurationModule());
         }
 
         /// <summary>
@@ -448,7 +448,7 @@ namespace Peachpie.Library.Graphics
             return imagercreatefromfile(ctx, filename);
         }
 
-        static PhpGdImageResource imagercreatefromfile(Context ctx, string filename, IImageFormat formatOpt = null)
+        static PhpGdImageResource imagercreatefromfile(Context ctx, string filename, IConfigurationModule formatOpt = null)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -460,19 +460,20 @@ namespace Peachpie.Library.Graphics
                 ? Configuration.Default
                 : new Configuration(formatOpt);
 
-            Image img = null;
+            Image<Rgba32> img = null;
+            IImageFormat format = null;
 
             using (var stream = Utils.OpenStream(ctx, filename))
             {
                 if (stream != null)
                 {
-                    try { img = Image.Load(configuration, stream); }
+                    try { img = Image.Load(configuration, stream, out format); }
                     catch { }
                 }
             }
 
             return (img != null)
-                ? new PhpGdImageResource(img)
+                ? new PhpGdImageResource(img, format)
                 : null;
         }
 
@@ -569,7 +570,7 @@ namespace Peachpie.Library.Graphics
         /// </summary> 
         public static bool imagejpeg(Context ctx, PhpResource im, PhpValue to, int quality = 75)
         {
-            var jpegoptions = new JpegEncoderOptions() { Quality = Math.Min(Math.Max(quality, 0), 100) };
+            var jpegoptions = new JpegEncoder() { Quality = Math.Min(Math.Max(quality, 0), 100) };
             return imagesave(ctx, im, to, (img, stream) => img.SaveAsJpeg(stream, jpegoptions));
         }
 
@@ -598,7 +599,7 @@ namespace Peachpie.Library.Graphics
         {
             return imagesave(ctx, im, to, (img, stream) =>
             {
-                img.BackgroundColor(Color.Transparent);
+                img.BackgroundColor(Rgba32.Transparent);
                 img.SaveAsGif(stream);
             });            
         }
@@ -614,7 +615,7 @@ namespace Peachpie.Library.Graphics
 
             return imagesave(ctx, im, to, (img, stream) =>
             {
-                img.SaveAsPng(stream, new PngEncoderOptions() { CompressionLevel = quality });
+                img.SaveAsPng(stream, new PngEncoder(){ CompressionLevel = quality });
             });
         }
 
@@ -628,7 +629,7 @@ namespace Peachpie.Library.Graphics
         /// <param name="to">Optional. Filename or stream. If not specified the functiona saves the image to output stream.</param>
         /// <param name="saveaction">Callback that actually save the image to given stream. Called when all checks pass.</param>
         /// <returns>True if save succeeded.</returns>
-        static bool imagesave(Context ctx, PhpResource im, PhpValue to/* = null*/, Action<Image, Stream> saveaction)
+        static bool imagesave(Context ctx, PhpResource im, PhpValue to/* = null*/, Action<Image<Rgba32>, Stream> saveaction)
         {
             Debug.Assert(saveaction != null);
 
