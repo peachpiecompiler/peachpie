@@ -1013,20 +1013,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             ReturnTemporaryLocal(tmpi);
         }
 
-        public void EmitUnset(BoundReferenceExpression expr)
-        {
-            Debug.Assert(expr != null);
-
-            if (!expr.Access.IsUnset)
-                throw new ArgumentException();
-
-            var place = expr.BindPlace(this);
-            Debug.Assert(place != null);
-
-            place.EmitStorePrepare(this);
-            place.EmitStore(this, null);
-        }
-
         /// <summary>
         /// Emits <c>Array.Length</c> call expecting an array instance on top of the stack, returning <c>int</c>.
         /// </summary>
@@ -1540,6 +1526,24 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             //
             return CoreTypes.PhpValue;
+        }
+
+        /// <summary>
+        /// Emits <c>??</c> operation against the value on top of the evaluation stack.
+        /// </summary>
+        /// <param name="nullemitter">Routine that emits the FALSE branch of the operator.</param>
+        internal void EmitNullCoalescing(Action<CodeGenerator> nullemitter)
+        {
+            Debug.Assert(nullemitter != null);
+
+            var lbl_notnull = new NamedLabel("NotNull");
+            _il.EmitOpCode(ILOpCode.Dup);
+            _il.EmitBranch(ILOpCode.Brtrue, lbl_notnull);
+
+            _il.EmitOpCode(ILOpCode.Pop);
+            nullemitter(this);
+
+            _il.MarkLabel(lbl_notnull);
         }
 
         /// <summary>

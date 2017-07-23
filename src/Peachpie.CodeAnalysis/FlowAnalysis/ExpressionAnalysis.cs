@@ -1636,7 +1636,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void VisitUnset(BoundUnset x)
         {
-            x.VarReferences.ForEach(Accept);
+            base.VisitUnset(x);
         }
 
         public override void VisitList(BoundListEx x)

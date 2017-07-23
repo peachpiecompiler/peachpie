@@ -210,10 +210,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt is AST.TypeDecl) return new BoundTypeDeclStatement(stmt.GetProperty<SourceTypeSymbol>());
             if (stmt is AST.GlobalStmt glStmt) return BindGlobalStmt(glStmt);
             if (stmt is AST.StaticStmt staticStm) return BindStaticStmt(staticStm);
-            if (stmt is AST.UnsetStmt unsetStm) return new BoundUnset(
-                unsetStm.VarList
-                    .Select(v => (BoundReferenceExpression)BindExpression(v, BoundAccess.Unset))
-                    .ToImmutableArray());
+            if (stmt is AST.UnsetStmt unsetStm) return BindUnsetStmt(unsetStm);
             if (stmt is AST.ThrowStmt throwStm) return new BoundThrowStatement(BindExpression(throwStm.Expression, BoundAccess.Read));
             if (stmt is AST.PHPDocStmt) return new BoundEmptyStatement();
             if (stmt is AST.DeclareStmt declareStm) return new BoundDeclareStatement();
@@ -221,6 +218,28 @@ namespace Pchp.CodeAnalysis.Semantics
             //
             _diagnostics.Add(_locals.Routine, stmt, Errors.ErrorCode.ERR_NotYetImplemented, $"Statement of type '{stmt.GetType().Name}'");
             return new BoundEmptyStatement(stmt.Span.ToTextSpan());
+        }
+
+        BoundStatement BindUnsetStmt(AST.UnsetStmt stmt)
+        {
+            if (stmt.VarList.Count == 1)
+            {
+                return BindUnsetStmt(stmt.VarList[0]);
+            }
+            else
+            {
+                return new BoundBlock(
+                    stmt.VarList
+                        .Select(BindUnsetStmt)
+                        .ToList()
+                    );
+            }
+        }
+
+        BoundStatement BindUnsetStmt(AST.VariableUse varuse)
+        {
+            Debug.Assert(varuse != null);
+            return new BoundUnset((BoundReferenceExpression)BindExpression(varuse, BoundAccess.Unset));
         }
 
         BoundStatement BindGlobalStmt(AST.SimpleVarUse varuse)

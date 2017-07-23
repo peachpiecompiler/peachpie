@@ -3498,14 +3498,10 @@ namespace Pchp.CodeAnalysis.Semantics
                 // ?? PhpArray.Empty
                 if (cg.CoreTypes.PhpArray.Symbol.IsOfType(tArray))
                 {
-                    var lbl_notnull = new NamedLabel("NotNull");
-                    cg.Builder.EmitOpCode(ILOpCode.Dup);
-                    cg.Builder.EmitBranch(ILOpCode.Brtrue, lbl_notnull);
-
-                    cg.Builder.EmitOpCode(ILOpCode.Pop);
-                    cg.EmitCastClass(cg.Emit_PhpArray_Empty(), tArray);
-
-                    cg.Builder.MarkLabel(lbl_notnull);
+                    cg.EmitNullCoalescing((_cg) =>
+                    {
+                        _cg.EmitCastClass(_cg.Emit_PhpArray_Empty(), tArray);
+                    });
                 }
             }
 
@@ -3748,6 +3744,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         void IBoundReference.EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
         {
+            //Debug.Assert(this.Array.Access.EnsureArray || this.Array.Access.IsQuiet);
+
             // Template: array[index]
 
             bool safeToUseIntStringKey = false;
@@ -3757,40 +3755,67 @@ namespace Pchp.CodeAnalysis.Semantics
             //
 
             var tArray = InstanceCacheHolder.EmitInstance(instanceOpt, cg, Array);
-
-            if (tArray.IsOfType(cg.CoreTypes.IPhpArray))
+            if (tArray.IsOfType(cg.CoreTypes.IPhpArray))    // PhpArray, PhpString
             {
                 // ok
                 safeToUseIntStringKey = true;
             }
-            else if (tArray == cg.CoreTypes.PhpAlias)
-            {
-                // PhpAlias.EnsureArray
-                tArray = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpAlias.EnsureArray);
-            }
             else if (this.Array.Access.EnsureArray)
             {
-                // Array had to be ensured already
-                throw new NotImplementedException($"(ensure) STORE {tArray.Name}[]");
+                if (tArray == cg.CoreTypes.PhpAlias)
+                {
+                    // PhpAlias.EnsureArray
+                    tArray = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpAlias.EnsureArray);
+                }
+                else
+                {
+                    // Array should be ensured already
+                    throw new NotImplementedException($"(ensure) STORE {tArray.Name}[]");
+                }
             }
-            else if (this.Array.Access.IsQuiet) // semantics of isempty, unset; otherwise in store operation we should EnsureArray
+            else if (this.Array.Access.IsQuiet)
             {
                 // WRITE semantics, without need of ensuring the underlaying value
+                // isempty, unset; otherwise in store operation we should EnsureArray already
+
+                if (tArray == cg.CoreTypes.PhpAlias)
+                {
+                    // dereference
+                    tArray = cg.Emit_PhpAlias_GetValue();
+                }
 
                 if (tArray == cg.CoreTypes.PhpValue)
                 {
-                    tArray = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.ToArray_PhpValue);
+                    tArray = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetArrayAccess_PhpValue)
+                        .Expect(cg.CoreTypes.IPhpArray);
+
+                    // Template: <STACK> ?? (IPhpArray)PhpArray.Empty
+                    cg.EmitNullCoalescing((_cg) =>
+                    {
+                        _cg.EmitCastClass(_cg.Emit_PhpArray_Empty(), _cg.CoreTypes.IPhpArray);
+                    });
                 }
                 else if (tArray == cg.CoreTypes.String)
                 {
-                    // new PhpString(string)
+                    // Template: new PhpString(string)
                     tArray = cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpString_string);
                 }
-                else if (tArray == cg.CoreTypes.Void)
+                else if (
+                    tArray == cg.CoreTypes.Void ||
+                    tArray == cg.CoreTypes.Boolean ||
+                    tArray == cg.CoreTypes.Long ||
+                    tArray == cg.CoreTypes.Double ||
+                    tArray.IsOfType(cg.CoreTypes.PhpResource))
                 {
-                    // TODO: uninitialized value, report error
-                    Debug.WriteLine("Use of uninitialized value.");
-                    tArray = cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpString);
+                    // TODO: WRN: use value of type '...' as array
+                    cg.EmitPop(tArray);
+                    tArray = cg.Emit_PhpArray_Empty();
+                }
+                else if (tArray.IsReferenceType)
+                {
+                    // TODO: null -> PhpArray.Empty
+                    tArray = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_Object)
+                        .Expect(cg.CoreTypes.IPhpArray);
                 }
                 else
                 {
