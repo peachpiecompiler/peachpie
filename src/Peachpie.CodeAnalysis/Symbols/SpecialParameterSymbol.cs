@@ -47,7 +47,12 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Name of special <c>this</c> parameter.
         /// </summary>
-        public static string ThisName => VariableName.ThisVariableName.Value;
+        public const string ThisName = "this";
+
+        /// <summary>
+        /// Name of special <c>self</c> parameter.
+        /// </summary>
+        public const string SelfName = "<self>";
 
         readonly MethodSymbol _symbol;
         readonly int _index;

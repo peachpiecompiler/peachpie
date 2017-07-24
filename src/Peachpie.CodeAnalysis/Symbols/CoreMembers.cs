@@ -949,7 +949,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 CheckIncludeOnce_TScript = ct.Context.Method("CheckIncludeOnce");
                 OnInclude_TScript = ct.Context.Method("OnInclude");
-                Include_string_string_PhpArray_object_bool_bool = ct.Context.Method("Include", ct.String, ct.String, ct.PhpArray, ct.Object, ct.Boolean, ct.Boolean);
+                Include_string_string_PhpArray_object_RuntimeTypeHandle_bool_bool = ct.Context.Method("Include", ct.String, ct.String, ct.PhpArray, ct.Object, ct.RuntimeTypeHandle, ct.Boolean, ct.Boolean);
 
                 ExpectTypeDeclared_T = ct.Context.Method("ExpectTypeDeclared");
 
@@ -977,7 +977,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 AddScriptReference_TScript,
                 DeclareFunction_RoutineInfo, DeclareType_T,
                 DisableErrorReporting, EnableErrorReporting,
-                CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_string_PhpArray_object_bool_bool,
+                CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_string_PhpArray_object_RuntimeTypeHandle_bool_bool,
                 ExpectTypeDeclared_T,
                 GetConstant_string_int32,
                 GetStatic_T,

@@ -283,7 +283,7 @@ namespace Peachpie.RequestHandler
             if (script.IsValid)
             {
                 this.MainScriptFile = script;
-                script.Evaluate(this, this.Globals, null);
+                script.Evaluate(this, this.Globals, null, default(RuntimeTypeHandle));
                 return true;
             }
             else

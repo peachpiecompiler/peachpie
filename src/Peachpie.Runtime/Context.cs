@@ -305,7 +305,9 @@ namespace Pchp.Core
         /// <param name="throwOnError">Whether to include according to require semantics.</param>
         /// <returns>Inclusion result value.</returns>
         public PhpValue Include(string dir, string path, bool once = false, bool throwOnError = false)
-            => Include(dir, path, Globals, null, once, throwOnError);
+            => Include(dir, path, Globals,
+                once: once,
+                throwOnError: throwOnError);
 
         /// <summary>
         /// Resolves path according to PHP semantics, lookups the file in runtime tables and calls its Main method.
@@ -314,10 +316,11 @@ namespace Pchp.Core
         /// <param name="path">The relative or absolute path to resolve and include.</param>
         /// <param name="locals">Variables scope for the included script.</param>
         /// <param name="this">Reference to <c>this</c> variable.</param>
+        /// <param name="self">Reference to current class context.</param>
         /// <param name="once">Whether to include according to include once semantics.</param>
         /// <param name="throwOnError">Whether to include according to require semantics.</param>
         /// <returns>Inclusion result value.</returns>
-        public PhpValue Include(string cd, string path, PhpArray locals, object @this = null, bool once = false, bool throwOnError = false)
+        public PhpValue Include(string cd, string path, PhpArray locals, object @this = null, RuntimeTypeHandle self = default(RuntimeTypeHandle), bool once = false, bool throwOnError = false)
         {
             var script = ScriptsMap.ResolveInclude(path, RootPath, IncludePaths, WorkingDirectory, cd);
             if (script.IsValid)
@@ -328,7 +331,7 @@ namespace Pchp.Core
                 }
                 else
                 {
-                    return script.Evaluate(this, locals, @this);
+                    return script.Evaluate(this, locals, @this, self);
                 }
             }
             else

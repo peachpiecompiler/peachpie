@@ -76,7 +76,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (!this.ResolvedType.IsErrorTypeOrNull())
             {
-                t = (TypeSymbol)EmitLoadPhpTypeInfo(cg, this.ResolvedType);
+                t = EmitLoadPhpTypeInfo(cg, this.ResolvedType);
             }
             else if (_typeRef is ReservedTypeRef) // late static bound
             {

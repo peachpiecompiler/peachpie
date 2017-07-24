@@ -2712,15 +2712,16 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 Debug.Assert(cg.LocalsPlaceOpt != null);
 
-                // Template: <ctx>.Include(dir, path, locals, @this, bool once = false, bool throwOnError = false)
+                // Template: <ctx>.Include(dir, path, locals, @this, self, bool once = false, bool throwOnError = false)
                 cg.EmitLoadContext();
                 cg.Builder.EmitStringConstant(cg.Routine.ContainingFile.DirectoryRelativePath);
                 cg.EmitConvert(_arguments[0].Value, cg.CoreTypes.String);
                 cg.LocalsPlaceOpt.EmitLoad(cg.Builder); // scope of local variables, corresponds to $GLOBALS in global scope.
                 cg.EmitThisOrNull();    // $this
+                cg.EmitCallerRuntimeTypeHandle();    // self : RuntimeTypeHandle
                 cg.Builder.EmitBoolConstant(IsOnceSemantic);
                 cg.Builder.EmitBoolConstant(IsRequireSemantic);
-                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.Include_string_string_PhpArray_object_bool_bool);
+                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.Include_string_string_PhpArray_object_RuntimeTypeHandle_bool_bool);
             }
 
             //

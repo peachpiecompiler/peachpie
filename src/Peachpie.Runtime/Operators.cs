@@ -926,7 +926,7 @@ namespace Pchp.Core
                 code);
 
             //
-            return script.Evaluate(ctx, locals, @this);
+            return script.Evaluate(ctx, locals, @this); // TODO: TypeContext (self)
         }
 
         #endregion

@@ -75,26 +75,29 @@ namespace Pchp.CodeAnalysis.Emit
                             // params
                             foreach (var p in method.Parameters)
                             {
-                                if (p.Type == types.Context && p.Name == SpecialParameterSymbol.ContextName)
+                                switch (p.Name)
                                 {
-                                    // <ctx>
-                                    il.EmitLocalLoad(ctx_loc);
-                                }
-                                else if (p.Type == types.PhpArray && p.Name == SpecialParameterSymbol.LocalsName)
-                                {
-                                    // <ctx>.Globals
-                                    il.EmitLocalLoad(ctx_loc);
-                                    il.EmitCall(this, diagnostic, ILOpCode.Call, methods.Context.Globals.Getter)
-                                        .Expect(p.Type);
-                                }
-                                else if (p.Type == types.Object && p.Name == SpecialParameterSymbol.ThisName)
-                                {
-                                    // null
-                                    il.EmitNullConstant();
-                                }
-                                else
-                                {
-                                    throw new NotImplementedException();    // TODO: default parameter
+                                    case SpecialParameterSymbol.ContextName:
+                                        // <ctx>
+                                        il.EmitLocalLoad(ctx_loc);
+                                        break;
+                                    case SpecialParameterSymbol.LocalsName:
+                                        // <ctx>.Globals
+                                        il.EmitLocalLoad(ctx_loc);
+                                        il.EmitCall(this, diagnostic, ILOpCode.Call, methods.Context.Globals.Getter)
+                                            .Expect(p.Type);
+                                        break;
+                                    case SpecialParameterSymbol.ThisName:
+                                        // null
+                                        il.EmitNullConstant();
+                                        break;
+                                    case SpecialParameterSymbol.SelfName:
+                                        // default(RuntimeTypeHandle)
+                                        var runtimetypehandle_loc = il.LocalSlotManager.AllocateSlot(types.RuntimeTypeHandle.Symbol, LocalSlotConstraints.None);
+                                        il.EmitValueDefault(this, diagnostic, runtimetypehandle_loc);
+                                        break;
+                                    default:
+                                        throw new ArgumentException(p.Name);
                                 }
                             }
 
