@@ -2840,17 +2840,18 @@ namespace Pchp.CodeAnalysis.Semantics
             var unit = this.PhpSyntax.ContainingSourceUnit;
             unit.GetLineColumnFromPosition(this.CodeExpression.PhpSyntax.Span.Start, out line, out col);
 
-            // Template: Operators.Eval(ctx, locals, @this, code, currentpath, line, column)
+            // Template: Operators.Eval(ctx, locals, @this, self, code, currentpath, line, column)
             cg.EmitLoadContext();
             cg.LocalsPlaceOpt.EmitLoad(cg.Builder);
             cg.EmitThisOrNull();
+            cg.EmitCallerRuntimeTypeHandle();           // self : RuntimeTypeHandle
             cg.EmitConvert(this.CodeExpression, cg.CoreTypes.String);   // (string)code
             cg.Builder.EmitStringConstant(filepath);    // currentpath
             cg.Builder.EmitIntConstant(line);           // line
             cg.Builder.EmitIntConstant(col);            // column
 
             // Eval( ... )
-            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Eval_Context_PhpArray_object_string_string_int_int);
+            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Eval_Context_PhpArray_object_RuntimeTypeHandle_string_string_int_int);
         }
     }
 

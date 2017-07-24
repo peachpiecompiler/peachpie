@@ -905,7 +905,7 @@ namespace Pchp.Core
         /// Performs dynamic code evaluation in given context.
         /// </summary>
         /// <returns>Evaluated code return value.</returns>
-        public static PhpValue Eval(Context ctx, PhpArray locals, object @this, string code, string currentpath, int line, int column)
+        public static PhpValue Eval(Context ctx, PhpArray locals, object @this, RuntimeTypeHandle self, string code, string currentpath, int line, int column)
         {
             Debug.Assert(ctx != null);
             Debug.Assert(locals != null);
@@ -926,7 +926,7 @@ namespace Pchp.Core
                 code);
 
             //
-            return script.Evaluate(ctx, locals, @this); // TODO: TypeContext (self)
+            return script.Evaluate(ctx, locals, @this, self);
         }
 
         #endregion
