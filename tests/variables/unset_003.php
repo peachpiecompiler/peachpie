@@ -38,7 +38,7 @@ f(new X);
 function q()
 {
     $a = [1,2,3];
-    //$n = null;
+    $n = null;
     $i = 123;
     $d = 123.456;
     $b = true;

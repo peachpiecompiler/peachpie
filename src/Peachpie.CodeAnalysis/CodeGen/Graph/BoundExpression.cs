@@ -3813,7 +3813,19 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
                 else if (tArray.IsReferenceType)
                 {
-                    // TODO: null -> PhpArray.Empty
+                    // null -> PhpArray.Empty
+                    if (cg.CanBeNull(Array.TypeRefMask))
+                    {
+                        // Template: (object)<STACK> ?? PhpArray.Empty
+                        cg.EmitCastClass(tArray, cg.CoreTypes.Object);
+                        cg.EmitNullCoalescing((_cg) =>
+                        {
+                            _cg.EmitCastClass(_cg.Emit_PhpArray_Empty(), _cg.CoreTypes.Object);
+                        });
+                        tArray = cg.CoreTypes.Object;
+                    }
+
+                    // EnsureArray(<STACK>) or throw
                     tArray = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_Object)
                         .Expect(cg.CoreTypes.IPhpArray);
                 }
