@@ -86,6 +86,14 @@ namespace Pchp.CodeAnalysis.Semantics
                         t = EmitLoadStaticPhpTypeInfo(cg);
                         break;
 
+                    case ReservedTypeRef.ReservedType.self:
+                        t = EmitLoadSelf(cg);
+                        break;
+
+                    case ReservedTypeRef.ReservedType.parent:
+                        t = EmitLoadParent(cg);
+                        break;
+
                     default:
                         throw Roslyn.Utilities.ExceptionUtilities.Unreachable;
                 }
@@ -121,6 +129,18 @@ namespace Pchp.CodeAnalysis.Semantics
                 return new ParamPlace(cg.Routine.ImplicitParameters.First(SpecialParameterSymbol.IsLateStaticParameter))
                     .EmitLoad(cg.Builder);
             }
+        }
+
+        TypeSymbol EmitLoadSelf(CodeGenerator cg)
+        {
+            cg.EmitCallerRuntimeTypeHandle();
+            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetSelf_RuntimeTypeHandle);
+        }
+
+        TypeSymbol EmitLoadParent(CodeGenerator cg)
+        {
+            cg.EmitCallerRuntimeTypeHandle();
+            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetParent_RuntimeTypeHandle);
         }
 
         internal static TypeSymbol EmitLoadPhpTypeInfo(CodeGenerator cg, ITypeSymbol t)

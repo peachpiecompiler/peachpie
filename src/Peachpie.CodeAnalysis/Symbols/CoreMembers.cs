@@ -438,6 +438,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle = ct.Operators.Method("GetForeachEnumerator", ct.PhpValue, ct.Boolean, ct.RuntimeTypeHandle);
 
+                GetSelf_RuntimeTypeHandle = ct.Operators.Method("GetSelf", ct.RuntimeTypeHandle);
+                GetParent_RuntimeTypeHandle = ct.Operators.Method("GetParent", ct.RuntimeTypeHandle);
+
                 Clone_Context_Object = ct.Operators.Method("Clone", ct.Context, ct.Object);
                 BuildClosure_RoutineInfo_PhpArray_PhpArray = ct.Operators.Method("BuildClosure", ct.RoutineInfo, ct.PhpArray, ct.PhpArray);
                 Eval_Context_PhpArray_object_RuntimeTypeHandle_string_string_int_int = ct.Operators.Method("Eval", ct.Context, ct.PhpArray, ct.Object, ct.RuntimeTypeHandle, ct.String, ct.String, ct.Int32, ct.Int32);
@@ -512,6 +515,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32, Echo_Bool,
 
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle,
+
+                GetSelf_RuntimeTypeHandle, GetParent_RuntimeTypeHandle,
 
                 Clone_Context_Object,
                 BuildClosure_RoutineInfo_PhpArray_PhpArray,
@@ -1002,6 +1007,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 GetPhpTypeInfo_T = ct.PhpTypeInfoExtension.Method("GetPhpTypeInfo");
                 GetPhpTypeInfo_Object = ct.PhpTypeInfoExtension.Method("GetPhpTypeInfo", ct.Object);
+                GetPhpTypeInfo_RuntimeTypeHandle = ct.PhpTypeInfoExtension.Method("GetPhpTypeInfo", ct.RuntimeTypeHandle);
             }
 
             public readonly CoreConstructor
@@ -1010,7 +1016,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreMethod
                 CallBinderFactory_Function, CallBinderFactory_InstanceFunction, CallBinderFactory_StaticFunction,
-                GetPhpTypeInfo_T, GetPhpTypeInfo_Object;
+                GetPhpTypeInfo_T, GetPhpTypeInfo_Object, GetPhpTypeInfo_RuntimeTypeHandle;
         }
 
         public struct ReflectionHolder

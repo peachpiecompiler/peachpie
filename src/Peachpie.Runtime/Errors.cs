@@ -267,6 +267,12 @@ namespace Pchp.Core
             if (exceptionMessage == null) throw new ArgumentNullException("exceptionMessage");
             return exceptionMessage.TrimEnd(new char[] { '.' });
         }
+
+        internal static void ThrowSelfOutOfClass()
+        {
+            Throw(PhpError.Error, ErrResources.self_used_out_of_class);
+            throw new ArgumentException(ErrResources.self_used_out_of_class);
+        }
     }
 
     #endregion
