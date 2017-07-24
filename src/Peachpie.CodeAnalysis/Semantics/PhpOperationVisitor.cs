@@ -206,7 +206,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual void VisitUnset(BoundUnset x)
         {
-            x.VarReferences.ForEach(Accept);
+            Accept(x.Variable);
         }
 
         public virtual void VisitEmptyStatement(BoundEmptyStatement x)

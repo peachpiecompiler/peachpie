@@ -308,8 +308,19 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override void Emit(CodeGenerator cg)
         {
             cg.EmitSequencePoint(this.PhpSyntax);
+            EmitUnset(cg, Variable);
+        }
 
-            this.VarReferences.ForEach(cg.EmitUnset);
+        static void EmitUnset(CodeGenerator cg, BoundReferenceExpression expr)
+        {
+            if (!expr.Access.IsUnset)
+                throw new ArgumentException();
+
+            var place = expr.BindPlace(cg);
+            Debug.Assert(place != null);
+
+            place.EmitStorePrepare(cg);
+            place.EmitStore(cg, null);
         }
     }
 

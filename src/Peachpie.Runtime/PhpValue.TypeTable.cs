@@ -96,6 +96,12 @@ namespace Pchp.Core
             }
 
             /// <summary>
+            /// Gets <see cref="IPhpArray"/> instance providing access to the value with array operators.
+            /// Returns <c>null</c> if underlaying value does provide array access.
+            /// </summary>
+            public virtual IPhpArray GetArrayAccess(ref PhpValue me) => null;
+
+            /// <summary>
             /// Accesses the value as an array and gets item at given index.
             /// Gets <c>void</c> value in case the key is not found.
             /// </summary>
@@ -351,6 +357,7 @@ namespace Pchp.Core
 
                 return arr;
             }
+            public override IPhpArray GetArrayAccess(ref PhpValue me) => new PhpString(me.String);
             public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => PhpValue.Create(Operators.GetItemValue(me.String, index, quiet));
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) { throw new NotSupportedException(); } // TODO: Err
             public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me);
@@ -397,6 +404,7 @@ namespace Pchp.Core
                 throw new NotImplementedException();
             }
             public override IPhpArray EnsureArray(ref PhpValue me) => me.WritableString;
+            public override IPhpArray GetArrayAccess(ref PhpValue me) => me.WritableString;
             public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => ((IPhpArray)me.WritableString).GetItemValue(index); // quiet);
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) { throw new NotSupportedException(); } // TODO: Err
             public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.WritableString.DeepCopy());
@@ -460,6 +468,7 @@ namespace Pchp.Core
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Object && right.Object == me.Object;
             public override object EnsureObject(ref PhpValue me) => me.Object;
             public override IPhpArray EnsureArray(ref PhpValue me) => Operators.EnsureArray(me.Object);
+            public override IPhpArray GetArrayAccess(ref PhpValue me) => Operators.EnsureArray(me.Object);
             public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet)
             {
                 // IPhpArray.GetItemValue
@@ -524,6 +533,7 @@ namespace Pchp.Core
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => me.Array.StrictCompareEq(right.ArrayOrNull());
             public override object EnsureObject(ref PhpValue me) => ToClass(ref me);    // me is not modified
             public override IPhpArray EnsureArray(ref PhpValue me) => me.Array;
+            public override IPhpArray GetArrayAccess(ref PhpValue me) => me.Array;
             public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => me.Array.GetItemValue(index); // , quiet);
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) => Operators.EnsureItemAlias(me.Array, index, quiet);
             public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.Array.DeepCopy());
@@ -572,6 +582,7 @@ namespace Pchp.Core
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => me.Alias.Value.StrictEquals(right);
             public override object EnsureObject(ref PhpValue me) => me.Alias.Value.EnsureObject();
             public override IPhpArray EnsureArray(ref PhpValue me) => me.Alias.Value.EnsureArray();
+            public override IPhpArray GetArrayAccess(ref PhpValue me) => me.Alias.Value.GetArrayAccess();
             public override PhpAlias EnsureAlias(ref PhpValue me) => me.Alias;
             public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => me.Alias.Value.GetArrayItem(index, quiet);
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) => me.Alias.Value.EnsureItemAlias(index, quiet);

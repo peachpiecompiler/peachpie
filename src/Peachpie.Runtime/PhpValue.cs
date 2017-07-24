@@ -374,6 +374,12 @@ namespace Pchp.Core
         public PhpAlias EnsureAlias() => _type.EnsureAlias(ref this);
 
         /// <summary>
+        /// Gets <see cref="IPhpArray"/> instance providing access to the value with array operators.
+        /// Returns <c>null</c> if underlaying value does provide array access.
+        /// </summary>
+        public IPhpArray GetArrayAccess() => _type.GetArrayAccess(ref this);
+
+        /// <summary>
         /// Dereferences in case of an alias.
         /// </summary>
         /// <returns>Not aliased value.</returns>

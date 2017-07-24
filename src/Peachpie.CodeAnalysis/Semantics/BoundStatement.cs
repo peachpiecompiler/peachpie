@@ -285,11 +285,11 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Reference to be unset.
         /// </summary>
-        public ImmutableArray<BoundReferenceExpression> VarReferences { get; set; }
+        public BoundReferenceExpression Variable { get; set; }
 
-        public BoundUnset(ImmutableArray<BoundReferenceExpression> vars)
+        public BoundUnset(BoundReferenceExpression variable)
         {
-            this.VarReferences = vars;
+            this.Variable = variable;
         }
 
         public override void Accept(OperationVisitor visitor)

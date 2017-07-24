@@ -296,10 +296,15 @@ namespace Pchp.Core
         {
             // ArrayAccess
             if (obj is ArrayAccess) return EnsureArray((ArrayAccess)obj);
+            
+            // IPhpArray
+            if (obj is IPhpArray) return (IPhpArray)obj;
 
             // TODO: Fatal error: Uncaught Error: Cannot use object of type {0} as array
             throw new InvalidOperationException(string.Format(Resources.ErrResources.object_used_as_array, obj.GetType().FullName));
         }
+
+        public static IPhpArray GetArrayAccess(PhpValue value) => value.GetArrayAccess();
 
         /// <summary>
         /// Implements <c>[]</c> operator on <see cref="string"/>.
