@@ -40,6 +40,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public IPlace ContextPlaceOpt => _contextPlace;
 
+        /// <summary>
+        /// Emits <c>RuntimeTypeHandle</c> of current class context.
+        /// </summary>
         public void EmitCallerRuntimeTypeHandle()
         {
             var caller = this.CallerType;
@@ -47,6 +50,11 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 // RuntimeTypeHandle
                 EmitLoadToken(caller, null);
+            }
+            else if (this.Routine is SourceGlobalMethodSymbol global)
+            {
+                global.SelfParameter.EmitLoad(_il)
+                    .Expect(CoreTypes.RuntimeTypeHandle);
             }
             else
             {
@@ -2316,12 +2324,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                         Debug.Assert(LocalsPlaceOpt != null);
                         LocalsPlaceOpt.EmitLoad(_il);
                         break;
+                    case SpecialParameterSymbol.ThisName:
+                        EmitThisOrNull();
+                        break;
+                    case SpecialParameterSymbol.SelfName:
+                        this.EmitCallerRuntimeTypeHandle();
+                        break;
                     default:
-                        if (p.Name == SpecialParameterSymbol.ThisName)
-                        {
-                            EmitThisOrNull();
-                            break;
-                        }
                         throw ExceptionUtilities.UnexpectedValue(p.Name);
                 }
             }
@@ -2590,16 +2599,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             else
             {
                 // default(T)
-
-                var loc = this.GetTemporaryLocal(valuetype, true);
-
-                // ldloca <loc>
-                // .initobj <type>
-                Builder.EmitLocalAddress(loc);
-                Builder.EmitOpCode(ILOpCode.Initobj);
-                EmitSymbolToken(valuetype, null);
-                // ldloc <loc>
-                Builder.EmitLocalLoad(loc);
+                _il.EmitValueDefault(this.Module, this.Diagnostics, this.GetTemporaryLocal(valuetype, true));
             }
         }
 
@@ -2801,6 +2801,16 @@ namespace Pchp.CodeAnalysis.CodeGen
             il.EmitToken(symbol, syntaxNode, diagnostics);
         }
 
+        public static void EmitValueDefault(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics, LocalDefinition tmp)
+        {
+            Debug.Assert(tmp.Type.IsValueType);
+            il.EmitLocalAddress(tmp);
+            il.EmitOpCode(ILOpCode.Initobj);
+            il.EmitSymbolToken(module, diagnostics, (TypeSymbol)tmp.Type, null);
+            // ldloc <loc>
+            il.EmitLocalLoad(tmp);
+        }
+
         /// <summary>
         /// Emits call to given method.
         /// </summary>
@@ -2824,6 +2834,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         public static void EmitCharConstant(this ILBuilder il, char value)
         {
             il.EmitIntConstant(unchecked((int)value));
+        }
+
+        public static TypeSymbol EmitLoad(this ParameterSymbol p, ILBuilder il)
+        {
+            Debug.Assert(p != null, nameof(p));
+            return new ParamPlace(p).EmitLoad(il);
         }
     }
 }

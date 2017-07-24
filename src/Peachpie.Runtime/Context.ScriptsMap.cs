@@ -32,8 +32,9 @@ namespace Pchp.Core
         /// <param name="ctx">Reference to current context. Cannot be <c>null</c>.</param>
         /// <param name="locals">Reference to variables scope. Cannot be <c>null</c>. Can refer to either globals or new array locals.</param>
         /// <param name="this">Reference to self in case the script is called within an instance method.</param>
+        /// <param name="self">Reference to current class context.</param>
         /// <returns>Result of the main method call.</returns>
-        public delegate PhpValue MainDelegate(Context ctx, PhpArray locals, object @this);
+        public delegate PhpValue MainDelegate(Context ctx, PhpArray locals, object @this, RuntimeTypeHandle self);
 
         /// <summary>
         /// Script descriptor.
@@ -75,10 +76,10 @@ namespace Pchp.Core
             /// <summary>
             /// Runs the script.
             /// </summary>
-            public PhpValue Evaluate(Context ctx, PhpArray locals, object @this)
+            public PhpValue Evaluate(Context ctx, PhpArray locals, object @this, RuntimeTypeHandle self = default(RuntimeTypeHandle))
             {
                 if (!IsValid) throw new InvalidOperationException();
-                return this.MainMethod(ctx, locals, @this);
+                return this.MainMethod(ctx, locals, @this, self);
             }
 
             /// <summary>

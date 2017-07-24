@@ -42,10 +42,11 @@ namespace Pchp.CodeAnalysis.Symbols
             // PhpArray <locals>
             yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpArray, SpecialParameterSymbol.LocalsName, index++);
 
-            // object this
+            // object @this
             yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Object, SpecialParameterSymbol.ThisName, index++);
 
-            // TODO: RuntimeTypeHandle <TypeContext>
+            // RuntimeTypeHandle <self>
+            yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.RuntimeTypeHandle, SpecialParameterSymbol.SelfName, index++);
         }
 
         protected override IEnumerable<SourceParameterSymbol> BuildSrcParams(Signature signature, PHPDocBlock phpdocOpt = null)
@@ -53,18 +54,9 @@ namespace Pchp.CodeAnalysis.Symbols
             return Array.Empty<SourceParameterSymbol>();
         }
 
-        public override ParameterSymbol ThisParameter
-        {
-            get
-            {
-                var ps = this.Parameters;
-                return ps.First(p =>
-                {
-                    Debug.Assert(p.Type != null);
-                    return (p.Name == SpecialParameterSymbol.ThisName && p.Type.SpecialType == SpecialType.System_Object);
-                });
-            }
-        }
+        public override ParameterSymbol ThisParameter => this.ImplicitParameters.First(p => p.Name == SpecialParameterSymbol.ThisName);
+
+        public ParameterSymbol SelfParameter => this.ImplicitParameters.First(p => p.Name == SpecialParameterSymbol.SelfName);
 
         public override string Name => WellKnownPchpNames.GlobalRoutineName;
 

@@ -249,7 +249,7 @@ namespace Peachpie.Library.Scripting
         /// <returns></returns>
         private static Script CreateInvalid(IEnumerable<Diagnostic> diagnostics)
         {
-            return new Script((ctx, locals, @this) =>
+            return new Script((ctx, locals, @this, self) =>
             {
                 foreach (var d in diagnostics)
                 {
@@ -273,9 +273,9 @@ namespace Peachpie.Library.Scripting
 
         #region Context.IScript
 
-        public PhpValue Evaluate(Context ctx, PhpArray locals, object @this)
+        public PhpValue Evaluate(Context ctx, PhpArray locals, object @this, RuntimeTypeHandle self)
         {
-            return _entryPoint(ctx, locals, @this);
+            return _entryPoint(ctx, locals, @this, self);
         }
 
         /// <summary>

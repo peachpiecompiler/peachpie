@@ -460,6 +460,52 @@ namespace Pchp.Core
 
         #endregion
 
+        #region self, parent
+
+        /// <summary>
+        /// Gets <see cref="PhpTypeInfo"/> of self.
+        /// Throws in case of self being used out of class context.
+        /// </summary>
+        public static PhpTypeInfo GetSelf(RuntimeTypeHandle self)
+        {
+            if (self.Equals(default(RuntimeTypeHandle)))
+            {
+                PhpException.ThrowSelfOutOfClass();
+            }
+
+            //
+            return self.GetPhpTypeInfo();
+        }
+
+        /// <summary>
+        /// Gets <see cref="PhpTypeInfo"/> of parent.
+        /// Throws in case of parent being used out of class context or within a parentless class.
+        /// </summary>
+        public static PhpTypeInfo GetParent(RuntimeTypeHandle self)
+        {
+            if (self.Equals(default(RuntimeTypeHandle)))
+            {
+                PhpException.Throw(PhpError.Error, Resources.ErrResources.parent_used_out_of_class);
+            }
+            else
+            {
+                var t = self.GetPhpTypeInfo().BaseType;
+                if (t != null)
+                {
+                    return t;
+                }
+                else
+                {
+                    PhpException.Throw(PhpError.Error, Resources.ErrResources.parent_accessed_in_parentless_class);
+                }
+            }
+
+            //
+            throw new ArgumentException(nameof(self));
+        }
+
+        #endregion
+
         #region GetForeachEnumerator
 
         /// <summary>
@@ -905,7 +951,7 @@ namespace Pchp.Core
         /// Performs dynamic code evaluation in given context.
         /// </summary>
         /// <returns>Evaluated code return value.</returns>
-        public static PhpValue Eval(Context ctx, PhpArray locals, object @this, string code, string currentpath, int line, int column)
+        public static PhpValue Eval(Context ctx, PhpArray locals, object @this, RuntimeTypeHandle self, string code, string currentpath, int line, int column)
         {
             Debug.Assert(ctx != null);
             Debug.Assert(locals != null);
@@ -926,7 +972,7 @@ namespace Pchp.Core
                 code);
 
             //
-            return script.Evaluate(ctx, locals, @this);
+            return script.Evaluate(ctx, locals, @this, self);
         }
 
         #endregion

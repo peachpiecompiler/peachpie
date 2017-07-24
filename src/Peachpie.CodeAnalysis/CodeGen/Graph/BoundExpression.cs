@@ -2712,15 +2712,16 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 Debug.Assert(cg.LocalsPlaceOpt != null);
 
-                // Template: <ctx>.Include(dir, path, locals, @this, bool once = false, bool throwOnError = false)
+                // Template: <ctx>.Include(dir, path, locals, @this, self, bool once = false, bool throwOnError = false)
                 cg.EmitLoadContext();
                 cg.Builder.EmitStringConstant(cg.Routine.ContainingFile.DirectoryRelativePath);
                 cg.EmitConvert(_arguments[0].Value, cg.CoreTypes.String);
                 cg.LocalsPlaceOpt.EmitLoad(cg.Builder); // scope of local variables, corresponds to $GLOBALS in global scope.
                 cg.EmitThisOrNull();    // $this
+                cg.EmitCallerRuntimeTypeHandle();    // self : RuntimeTypeHandle
                 cg.Builder.EmitBoolConstant(IsOnceSemantic);
                 cg.Builder.EmitBoolConstant(IsRequireSemantic);
-                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.Include_string_string_PhpArray_object_bool_bool);
+                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.Include_string_string_PhpArray_object_RuntimeTypeHandle_bool_bool);
             }
 
             //
@@ -2839,17 +2840,18 @@ namespace Pchp.CodeAnalysis.Semantics
             var unit = this.PhpSyntax.ContainingSourceUnit;
             unit.GetLineColumnFromPosition(this.CodeExpression.PhpSyntax.Span.Start, out line, out col);
 
-            // Template: Operators.Eval(ctx, locals, @this, code, currentpath, line, column)
+            // Template: Operators.Eval(ctx, locals, @this, self, code, currentpath, line, column)
             cg.EmitLoadContext();
             cg.LocalsPlaceOpt.EmitLoad(cg.Builder);
             cg.EmitThisOrNull();
+            cg.EmitCallerRuntimeTypeHandle();           // self : RuntimeTypeHandle
             cg.EmitConvert(this.CodeExpression, cg.CoreTypes.String);   // (string)code
             cg.Builder.EmitStringConstant(filepath);    // currentpath
             cg.Builder.EmitIntConstant(line);           // line
             cg.Builder.EmitIntConstant(col);            // column
 
             // Eval( ... )
-            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Eval_Context_PhpArray_object_string_string_int_int);
+            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Eval_Context_PhpArray_object_RuntimeTypeHandle_string_string_int_int);
         }
     }
 
