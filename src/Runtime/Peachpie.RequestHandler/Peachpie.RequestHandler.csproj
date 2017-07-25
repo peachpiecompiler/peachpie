@@ -2,14 +2,13 @@
 
   <Import Project="..\..\..\build\Targets\Settings.props" />
   <PropertyGroup>
-    <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
-    <TargetFrameworkProfile />
+    <TargetFrameworks>net46</TargetFrameworks>
     <NoWarn>$(NoWarn);1591</NoWarn>
     <AssemblyName>Peachpie.RequestHandler</AssemblyName>
     <PackageId>Peachpie.RequestHandler</PackageId>
     <PackageTags>peachpie</PackageTags>
-    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Description>Implementation of IHttpHandler (request handler) for ASP.NET Integrated Pipeline.</Description>
   </PropertyGroup>
 
   <ItemGroup>
