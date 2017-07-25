@@ -27,7 +27,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             // .ctor
             EmitPhpCtors(this.InstanceConstructors, module, diagnostics);
-            
+
             // System.ToString
             EmitToString(module);
         }
@@ -266,13 +266,29 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 // note: unresolved abstracts already reported by ResolveOverrides
 
-                // is a ghost stub needed?
+                // is ghost stub needed?
 
-                if (ReferenceEquals(info.OverrideCandidate?.ContainingType, this) ||    // candidate not matching exactly the signature in this type -> create ghost stub
-                    info.ImplementsInterface)   // explicitly implement the interface -> ghost stub
+                if (ReferenceEquals(info.OverrideCandidate?.ContainingType, this) ||    // candidate not matching exactly the signature in this type
+                    info.ImplementsInterface)                                           // explicitly implement the interface
                 {
                     if (info.HasOverride)
                     {
+                        if (info.ImplementsInterface && info.Override != null)
+                        {
+                            // create explicit override only if the interface method is implemented with a class method that does not implement the interface
+                            /*
+                             * interface I { foo }  // METHOD
+                             * class X { foo }      // OVERRIDE
+                             * class Y : X, I { explicit I.foo override }   // GHOST
+                             */
+                            if (info.Override.ContainingType.ImplementsInterface(info.Method.ContainingType))
+                            {
+                                /* => X implements I */
+                                // explicit method override is not needed
+                                continue;
+                            }
+                        }
+
                         /* 
                          * class A {
                          *    TReturn1 foo(A, B);
@@ -286,19 +302,9 @@ namespace Pchp.CodeAnalysis.Symbols
                          */
 
                         // override method with a ghost that calls the override
-                        try
-                        {
-                            (info.Override ?? info.OverrideCandidate).CreateGhostOverload(
-                                this, module, diagnostics,
-                                info.Method.ReturnType, info.Method.Parameters, info.Method);
-                        }
-                        catch (NotImplementedException na)
-                        {
-                            if (string.IsNullOrEmpty(na.Message)) throw;
-
-                            var o = info.Override ?? info.OverrideCandidate;
-                            throw new NotImplementedException($"{na.Message} when emitting ghost stub of {o.ContainingType.Name}::{o.RoutineName}() overriding {info.Method.ContainingType.Name}::{info.Method.RoutineName} within type {this.Name}.", na);
-                        }
+                        (info.Override ?? info.OverrideCandidate).CreateGhostOverload(
+                            this, module, diagnostics,
+                            info.Method.ReturnType, info.Method.Parameters, info.Method);
                     }
                 }
             }

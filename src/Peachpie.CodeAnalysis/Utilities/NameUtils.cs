@@ -169,6 +169,14 @@ namespace Pchp.CodeAnalysis
         }
 
         /// <summary>
+        /// Gets full CLR name including the namespace part.
+        /// </summary>
+        public static string GetFullName(this NamedTypeSymbol t)
+        {
+            return Microsoft.CodeAnalysis.MetadataHelpers.BuildQualifiedName(t.NamespaceName, t.MetadataName);
+        }
+
+        /// <summary>
         /// Compares two arrays.
         /// </summary>
         public static bool NamesEquals(this Name[] names1, Name[] names2)

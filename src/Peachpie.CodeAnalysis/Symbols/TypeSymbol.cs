@@ -42,25 +42,34 @@ namespace Pchp.CodeAnalysis.Symbols
             return result;
         }
 
-        public virtual NamedTypeSymbol BaseType
-        {
-            get
-            {
-                return null;
-            }
-        }
+        public virtual NamedTypeSymbol BaseType => null;
 
         public virtual ImmutableArray<NamedTypeSymbol> AllInterfaces
         {
             get
             {
-                if (Interfaces.Length == 0)
+                if (Interfaces.IsEmpty)
                 {
-                    return ImmutableArray<NamedTypeSymbol>.Empty;
+                    // get interfaces of base type
+                    return BaseType != null
+                        ? BaseType.AllInterfaces
+                        : ImmutableArray<NamedTypeSymbol>.Empty;
                 }
 
+                // collect all interfaces from this and base types
+
+                var todo = new Queue<NamedTypeSymbol>();
+
+                for (var b = this; b != null; b = b.BaseType)
+                {
+                    b.Interfaces.ForEach(todo.Enqueue);
+                }
+
+                // collect all interfaces and their interfaces,
+                // ignore duplicit items, handle cyclic dependencies
+
                 var result = new HashSet<NamedTypeSymbol>();
-                var todo = new Queue<NamedTypeSymbol>(Interfaces);
+
                 while (todo.Count != 0)
                 {
                     var t = todo.Dequeue();
@@ -74,13 +83,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public virtual ImmutableArray<NamedTypeSymbol> Interfaces
-        {
-            get
-            {
-                return ImmutableArray<NamedTypeSymbol>.Empty;
-            }
-        }
+        public virtual ImmutableArray<NamedTypeSymbol> Interfaces => ImmutableArray<NamedTypeSymbol>.Empty;
 
         public virtual bool IsAnonymousType => false;
 
