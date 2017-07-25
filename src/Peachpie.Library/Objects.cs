@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Pchp.Library.Resources;
+using Pchp.Library.Reflection;
 
 namespace Pchp.Library
 {
@@ -167,6 +168,30 @@ namespace Pchp.Library
                 while ((tinfo = tinfo.BaseType) != null)
                 {
                     result.Add(tinfo.Name, tinfo.Name);
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// This function returns an array with the names of the interfaces that the given class and its parents implement.
+        /// </summary>
+        [return: CastToFalse]
+        public static PhpArray class_implements(Context ctx, [ImportCallerClass]RuntimeTypeHandle caller, PhpValue classNameOrObject, bool useAutoload = true)
+        {
+            PhpArray result = null;
+
+            var tinfo = TypeNameOrObjectToType(ctx, classNameOrObject, caller, useAutoload);
+            if (tinfo != null)
+            {
+                result = new PhpArray();
+                foreach (var iface in tinfo.Type.ImplementedInterfaces)
+                {
+                    if (!iface.IsHiddenType())
+                    {
+                        result.Add(iface.Name, iface.Name);
+                    }
                 }
             }
 

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.Core.Reflection
 {
-    internal static class ReflectionUtils
+    public static class ReflectionUtils
     {
         readonly static char[] _disallowedNameChars = new char[] { '`', '<', '>', '.', '\'', '"', '#', '!' };
 
@@ -61,5 +61,17 @@ namespace Pchp.Core.Reflection
             var t = tinfo.AsType();
             return !tinfo.IsValueType && t != typeof(PhpArray) && t != typeof(string) && t != typeof(PhpString);
         }
+
+        readonly static HashSet<Type> s_hiddenTypes = new HashSet<Type>()
+        {
+            typeof(object),
+            typeof(IPhpCallable),
+            typeof(PhpResource),
+        };
+
+        /// <summary>
+        /// Determines if given type is not visible to PHP runtime.
+        /// </summary>
+        public static bool IsHiddenType(this Type t) => s_hiddenTypes.Contains(t);
     }
 }
