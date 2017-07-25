@@ -58,6 +58,20 @@ namespace Pchp.Library
         }
 
         /// <summary>
+		/// Tests whether a given trait is defined.
+		/// </summary>
+        /// <param name="ctx">Current runtime context.</param>
+        /// <param name="traitname">The name of the trait.</param>
+		/// <param name="autoload">Whether to attempt to call <c>__autoload</c>.</param>
+		/// <returns><B>true</B> if the trait given by <paramref name="traitname"/> has been defined,
+		/// <B>false</B> otherwise.</returns>
+		public static bool trait_exists(Context ctx, string traitname, bool autoload = true)
+        {
+            var info = ctx.GetDeclaredType(traitname, autoload);
+            return info != null && info.IsTrait;
+        }
+
+        /// <summary>
         /// Returns the name of the callers class context.
         /// </summary>
         /// <param name="tctx">Current class context.</param>
@@ -102,13 +116,14 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="ctx">Runtime context with declared types.</param>
         /// <param name="interfaces">Whether to list interfaces or classes.</param>
-        static PhpArray get_declared_types(Context ctx, bool interfaces)
+        /// <param name="traits">Whether to list traits.</param>
+        static PhpArray get_declared_types(Context ctx, bool interfaces, bool traits)
         {
             var result = new PhpArray();
 
             foreach (var t in ctx.GetDeclaredTypes())
             {
-                if (t.IsInterface == interfaces)
+                if (t.IsInterface == interfaces && t.IsTrait == traits)
                 {
                     result.Add(t.Name);
                 }
@@ -121,13 +136,19 @@ namespace Pchp.Library
 		/// Returns a <see cref="PhpArray"/> with names of all defined classes (system and user).
 		/// </summary>
 		/// <returns><see cref="PhpArray"/> of class names.</returns>
-		public static PhpArray get_declared_classes(Context ctx) => get_declared_types(ctx, false);
+		public static PhpArray get_declared_classes(Context ctx) => get_declared_types(ctx, false, false);
 
         /// <summary>
         /// Returns a <see cref="PhpArray"/> with names of all defined interfaces (system and user).
         /// </summary>
         /// <returns><see cref="PhpArray"/> of interface names.</returns>
-        public static PhpArray get_declared_interfaces(Context ctx) => get_declared_types(ctx, true);
+        public static PhpArray get_declared_interfaces(Context ctx) => get_declared_types(ctx, true, false);
+
+        /// <summary>
+        /// Returns a <see cref="PhpArray"/> with names of all defined traits (system and user).
+        /// </summary>
+        /// <returns><see cref="PhpArray"/> of traits names.</returns>
+        public static PhpArray get_declared_traits(Context ctx) => get_declared_types(ctx, false, true);
 
         /// <summary>
 		/// Gets the name of the class from which class given by <paramref name="classNameOrObject"/>
