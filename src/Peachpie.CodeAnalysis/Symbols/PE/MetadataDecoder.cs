@@ -351,7 +351,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 HashSet<DiagnosticInfo> useSiteDiagnostics = null;
                 if (scope != targetTypeSymbol &&
                     !(targetTypeSymbol.IsInterfaceType()
-                        ? scope./*AllInterfacesNoUseSiteDiagnostics*/AllInterfaces.Contains((NamedTypeSymbol)targetTypeSymbol)
+                        ? scope.AllInterfaces.Contains((NamedTypeSymbol)targetTypeSymbol)
                         : scope.IsDerivedFrom(targetTypeSymbol, ignoreDynamic: false, useSiteDiagnostics: ref useSiteDiagnostics)))
                 {
                     return null;

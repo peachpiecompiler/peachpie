@@ -107,7 +107,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        OverrideInfo[] _overrides;
+        OverrideInfo[] _lazyOverrides;
 
         /// <summary>
         /// Matches all methods that can be overriden (non-static, public or protected, abstract or virtual)
@@ -118,10 +118,10 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <param name="diagnostics"></param>
         internal OverrideInfo[] ResolveOverrides(DiagnosticBag diagnostics)
         {
-            if (_overrides != null)
+            if (_lazyOverrides != null)
             {
                 // already resolved
-                return _overrides;
+                return _lazyOverrides;
             }
 
             // TODO: ignore System.Object ?
@@ -188,7 +188,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // cache & return
-            return (_overrides = overrides.ToArray());
+            return (_lazyOverrides = overrides.ToArray());
         }
     }
 }

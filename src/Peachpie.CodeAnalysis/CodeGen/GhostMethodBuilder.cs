@@ -19,8 +19,12 @@ namespace Pchp.CodeAnalysis.CodeGen
             TypeSymbol ghostreturn, IEnumerable<ParameterSymbol> ghostparams,
             MethodSymbol explicitOverride = null)
         {
+            string prefix = (explicitOverride != null && explicitOverride.ContainingType.IsInterface)
+                ? (explicitOverride.ContainingType.GetFullName() + ".")   // explicit interface override
+                : null;
+
             var ghost = new SynthesizedMethodSymbol(
-                containingtype, method.Name, method.IsStatic, explicitOverride != null, ghostreturn, method.DeclaredAccessibility)
+                containingtype, prefix + method.Name, method.IsStatic, explicitOverride != null, ghostreturn, method.DeclaredAccessibility)
             {
                 ExplicitOverride = explicitOverride,
             };

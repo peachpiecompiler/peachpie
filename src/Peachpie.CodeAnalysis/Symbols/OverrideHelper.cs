@@ -159,7 +159,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public static MethodSymbol ResolveMethodImplementation(MethodSymbol method, NamedTypeSymbol type)
         {
-            while (type != null)
+            for (; type != null; type = type.BaseType)
             {
                 var candidates = type.GetMembers(method.RoutineName).OfType<MethodSymbol>().Where(CanOverride);
                 var resolved = ResolveMethodImplementation(method, candidates);
@@ -167,9 +167,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     return resolved;
                 }
-
-                //
-                type = type.BaseType;
             }
 
             //

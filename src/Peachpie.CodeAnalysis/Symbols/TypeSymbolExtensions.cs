@@ -76,12 +76,22 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             if (oftype != null)
             {
-                HashSet<DiagnosticInfo> set = new HashSet<DiagnosticInfo>();
-                if (t.IsEqualToOrDerivedFrom(oftype, true, ref set))
+                if (t.Equals(oftype, ignoreDynamic: true))
+                {
                     return true;
+                }
 
-                if (oftype.IsInterfaceType() && t.AllInterfaces.Contains(oftype))
-                    return true;
+                if (oftype.IsClassType())
+                {
+                    HashSet<DiagnosticInfo> set = null;
+                    if (t.IsDerivedFrom(oftype, true, ref set))
+                        return true;
+                }
+
+                if (oftype.IsInterfaceType())
+                {
+                    return t.ImplementsInterface(oftype);
+                }
             }
 
             //
