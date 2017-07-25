@@ -264,7 +264,24 @@ namespace Pchp.Library.Reflection
         public bool isInterface() => _tinfo.IsInterface;
         public bool isInternal() => !isUserDefined();
         public bool isIterateable() => _tinfo.Type.IsSubclassOf(typeof(Iterator)) || _tinfo.Type.IsSubclassOf(typeof(IteratorAggregate)) || _tinfo.Type.IsSubclassOf(typeof(System.Collections.IEnumerable));
-        public bool isSubclassOf(string @class) { throw new NotImplementedException(); }
+
+        /// <summary>
+        /// Checks if the class is a subclass of a specified class or implements a specified interface.
+        /// </summary>
+        /// <param name="ctx">Current runtime context</param>
+        /// <param name="class">The class name being checked against.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public bool isSubclassOf(Context ctx, string @class)
+        {
+            var type = ctx.GetDeclaredType(@class, true);
+            if (type == null)
+            {
+                throw new ReflectionException();
+            }
+
+            return _tinfo.Type.IsSubclassOf(type.Type.AsType());
+        }
+
         public bool isTrait() => _tinfo.IsTrait;
         public bool isUserDefined() => _tinfo.IsUserType;
         public object newInstance(Context ctx, params PhpValue[] args) => _tinfo.Creator(ctx, args);
