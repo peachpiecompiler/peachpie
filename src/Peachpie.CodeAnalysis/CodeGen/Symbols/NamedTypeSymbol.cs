@@ -155,8 +155,15 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // resolve overrides of interface methods
-            foreach (var iface in this.Interfaces)
+            foreach (var iface in Interfaces)
             {
+                if (BaseType != null && BaseType.ImplementsInterface(iface))
+                {
+                    // iface is already handled within overrides => skip
+                    // note: iface can be ignored in metadata at all actually
+                    continue;
+                }
+
                 var iface_abstracts = iface.ResolveOverrides(diagnostics);
                 foreach (var m in iface_abstracts)
                 {
