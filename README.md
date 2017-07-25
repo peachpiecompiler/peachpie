@@ -22,6 +22,8 @@
 - [Getting Started](https://github.com/peachpiecompiler/peachpie/wiki/Getting-Started)  
 - [Documentation](https://github.com/peachpiecompiler/peachpie/wiki)
 
+[<img align="right" src="https://dotnetfoundation.org/Themes/DotNetFoundation.Theme/Images/logo-small.png" width="100" />](https://www.dotnetfoundation.org/)
+We are now a member of the [.NET Foundation](https://www.dotnetfoundation.org/about)!
 
 ## Continuous Integration
 
@@ -79,6 +81,10 @@ However, please read the [Contribution Guidelines](https://github.com/peachpieco
 
 ## Providing feedback
 If you found a bug, the easiest way of providing feedback is to post it on [Gitter](https://gitter.im/iolevel/peachpie). We will enable the posting of issues on GitHub once the compiler will be in version 1.0.
+
+
+## .NET Foundation
+This project is supported by the [.NET Foundation](http://www.dotnetfoundation.org).
 
 ## How to get in touch?
 We kindly ask you to be patient with your queries; you can follow us on [Twitter](https://twitter.com/pchpcompiler) or on [Facebook](https://www.facebook.com/pchpcompiler/). You can contact us there regarding your questions or ask the community for support on [Gitter](https://gitter.im/iolevel/peachpie), but please understand that we do not provide support at this point.
