@@ -273,13 +273,14 @@ namespace Pchp.Library.Reflection
         /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public bool isSubclassOf(Context ctx, string @class)
         {
-            var type = ctx.GetDeclaredType(@class, true);
-            if (type == null)
+            // Look for the class, use autoload and throw an error if it doesn't exist
+            var base_tinfo = ctx.GetDeclaredType(@class, true);
+            if (base_tinfo == null)
             {
                 throw new ReflectionException();
             }
 
-            return _tinfo.Type.IsSubclassOf(type.Type.AsType());
+            return base_tinfo.Type.IsAssignableFrom(_tinfo.Type);
         }
 
         public bool isTrait() => _tinfo.IsTrait;
