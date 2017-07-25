@@ -83,7 +83,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 if (oftype.IsClassType())
                 {
-                    HashSet<DiagnosticInfo> set = new HashSet<DiagnosticInfo>();
+                    HashSet<DiagnosticInfo> set = null;
                     if (t.IsDerivedFrom(oftype, true, ref set))
                         return true;
                 }
