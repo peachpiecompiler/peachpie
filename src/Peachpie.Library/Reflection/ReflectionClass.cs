@@ -144,7 +144,7 @@ namespace Pchp.Library.Reflection
         {
             if (_tinfo.RelativePath != null)
             {
-                return Path.Combine(ctx.RootPath, _tinfo.RelativePath);
+                return Path.GetFullPath(Path.Combine(ctx.RootPath, _tinfo.RelativePath));
             }
             else
             {
