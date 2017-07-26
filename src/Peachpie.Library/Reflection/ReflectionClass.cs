@@ -270,7 +270,11 @@ namespace Pchp.Library.Reflection
         public PhpValue getStaticPropertyValue(string name, PhpAlias def_value) { throw new NotImplementedException(); }
         public PhpArray getTraitAliases() { throw new NotImplementedException(); }
         public PhpArray getTraitNames() { throw new NotImplementedException(); }
-        public PhpArray getTraits() { throw new NotImplementedException(); }
+        public PhpArray getTraits()
+        {
+            // TODO: Retrieve from PhpTypeInfo when traits are supported
+            return PhpArray.NewEmpty();
+        }
         public bool hasConstant(string name) { throw new NotImplementedException(); }
         public bool hasMethod(string name) => _tinfo.RuntimeMethods[name] != null;
         public bool hasProperty(string name) { throw new NotImplementedException(); }
