@@ -285,39 +285,39 @@ namespace Pchp.Library
             return $"{system} {host} {release} {version} {machine}";
         }
 
-        ///// <summary>
-        ///// Retrieves the size of the current process working set in bytes.
-        ///// </summary>
-        ///// <param name="real_usage">
-        ///// "Set this to TRUE to get the real size of memory allocated from system.
-        ///// If not set or FALSE only the memory used by emalloc() is reported."</param>
-        ///// <returns>The size.</returns>
-        //public static long memory_get_usage(bool real_usage = false)
-        //{
-        //    //if (real_usage == false)// TODO: real_usage = false
-        //    //    PhpException.ArgumentValueNotSupported("real_usage");
+        /// <summary>
+        /// Retrieves the size of the current process working set in bytes.
+        /// </summary>
+        /// <param name="real_usage">
+        /// "Set this to TRUE to get the real size of memory allocated from system.
+        /// If not set or FALSE only the memory used by emalloc() is reported."</param>
+        /// <returns>The size.</returns>
+        public static long memory_get_usage(bool real_usage = false)
+        {
+            //if (real_usage == false)// TODO: real_usage = false
+            //    PhpException.ArgumentValueNotSupported("real_usage");
 
-        //    long ws = System.Diagnostics.Process.GetCurrentProcess().WorkingSet64;
-        //    if (ws > Int32.MaxValue) return Int32.MaxValue;
-        //    return (int)ws;
-        //}
+            long ws = System.Diagnostics.Process.GetCurrentProcess().WorkingSet64;
+            if (ws > int.MaxValue) return int.MaxValue;
+            return (int)ws;
+        }
 
-        ///// <summary>
-        ///// Returns the peak of memory, in bytes, that's been allocated to the PHP script.
-        ///// </summary>
-        ///// <param name="real_usage">
-        ///// Set this to TRUE to get the real size of memory allocated from system.
-        ///// If not set or FALSE only the memory used by emalloc() is reported.</param>
-        ///// <returns>The size.</returns>
-        //public static long memory_get_peak_usage(bool real_usage = false)
-        //{
-        //    //if (real_usage == false)// TODO: real_usage = false
-        //    //    PhpException.ArgumentValueNotSupported("real_usage");
+        /// <summary>
+        /// Returns the peak of memory, in bytes, that's been allocated to the PHP script.
+        /// </summary>
+        /// <param name="real_usage">
+        /// Set this to TRUE to get the real size of memory allocated from system.
+        /// If not set or FALSE only the memory used by emalloc() is reported.</param>
+        /// <returns>The size.</returns>
+        public static long memory_get_peak_usage(bool real_usage = false)
+        {
+            //if (real_usage == false)// TODO: real_usage = false
+            //    PhpException.ArgumentValueNotSupported("real_usage");
 
-        //    long ws = System.Diagnostics.Process.GetCurrentProcess().NonpagedSystemMemorySize64;    // can't get current thread's memory
-        //    if (ws > Int32.MaxValue) return Int32.MaxValue;
-        //    return (int)ws;
-        //}
+            long ws = System.Diagnostics.Process.GetCurrentProcess().NonpagedSystemMemorySize64;    // can't get current thread's memory
+            if (ws > int.MaxValue) return int.MaxValue;
+            return (int)ws;
+        }
 
         /// <summary>
         /// Returns the type of web server interface.
