@@ -1409,11 +1409,17 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Constant name.
         /// </summary>
-        public string Name { get; private set; }
+        public QualifiedName Name { get; private set; }
 
-        public BoundGlobalConst(string name)
+        /// <summary>
+        /// Alternative constant name if <see cref="Name"/> is not resolved.
+        /// </summary>
+        public QualifiedName? FallbackName { get; private set; }
+
+        public BoundGlobalConst(QualifiedName name, QualifiedName? fallbackName)
         {
             this.Name = name;
+            this.FallbackName = fallbackName;
         }
 
         /// <summary>

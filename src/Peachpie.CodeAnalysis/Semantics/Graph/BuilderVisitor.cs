@@ -392,6 +392,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             base.VisitNamespaceDecl(x);
         }
 
+        public override void VisitGlobalConstDeclList(GlobalConstDeclList x)
+        {
+            Add(x);
+        }
+
         #endregion
 
         #region Flow-Thru Statements

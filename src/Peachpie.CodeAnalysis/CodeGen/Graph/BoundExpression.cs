@@ -4080,26 +4080,45 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.CoreTypes.Void;
             }
 
+            // resolved constant value
             if (this.ConstantValue.HasValue)
             {
                 return cg.EmitLoadConstant(this.ConstantValue.Value, this.Access.TargetType);
             }
 
+            // resolved constant symbol
             if (_boundExpressionOpt != null)
             {
                 _boundExpressionOpt.EmitLoadPrepare(cg);
                 return _boundExpressionOpt.EmitLoad(cg);
             }
 
-            var idxfield = cg.Module.SynthesizedManager
-                .GetOrCreateSynthesizedField(cg.Module.ScriptType, cg.CoreTypes.Int32, $"[const]{this.Name}", Accessibility.Internal, true, false);
+            // the constant has to be resolved in runtime,
+            // make it easier by caching its internal ID for fast lookup
 
-            // <ctx>.GetConstant(<name>, ref <Index of constant>)
+            // Template: internal static int <const>Name;
+            var idxfield = cg.Module.SynthesizedManager.GetGlobalConstantIndexField(Name.ToString());
+
+            Debug.Assert(FallbackName.HasValue == false || Name != FallbackName.Value);
+
+            // Template: Operators.ReadConstant(ctx, name, ref <idxfield> [, fallbackname])
             cg.EmitLoadContext();
-            cg.Builder.EmitStringConstant(this.Name);
+            cg.Builder.EmitStringConstant(this.Name.ToString());
             cg.EmitFieldAddress(idxfield);
-            return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.GetConstant_string_int32)
-                .Expect(cg.CoreTypes.PhpValue);
+
+            if (FallbackName.HasValue)
+            {
+                // we have to try two possible constant names:
+                cg.Builder.EmitStringConstant(this.FallbackName.Value.ToString());
+                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.ReadConstant_Context_String_Int_String)
+                    .Expect(cg.CoreTypes.PhpValue);
+            }
+            else
+            {
+                // Operators.ReadConstant(ctx, name, ref <idxfield>)
+                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.ReadConstant_Context_String_Int)
+                    .Expect(cg.CoreTypes.PhpValue);
+            }
         }
     }
 

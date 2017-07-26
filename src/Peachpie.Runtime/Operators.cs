@@ -901,6 +901,56 @@ namespace Pchp.Core
 
         #endregion
 
+        #region ReadConstant
+
+        /// <summary>
+        /// Gets constant value, throws <c>notice</c> if constant is not defined.
+        /// </summary>
+        public static PhpValue ReadConstant(Context ctx, string name, ref int idx)
+        {
+            Debug.Assert(name != null, nameof(name));
+
+            PhpValue value;
+            if (ctx.TryGetConstant(name, out value, ref idx) == false)
+            {
+                // Warning: undefined constant
+                PhpException.Throw(PhpError.Notice, Resources.ErrResources.undefined_constant, name);
+                value = (PhpValue)name;
+            }
+
+            return value;
+        }
+
+        /// <summary>
+        /// Gets constant value, throws <c>notice</c> if constant is not defined.
+        /// </summary>
+        public static PhpValue ReadConstant(Context ctx, string name, ref int idx, string fallbackName)
+        {
+            Debug.Assert(name != null, nameof(name));
+            Debug.Assert(fallbackName != null, nameof(fallbackName));
+
+            PhpValue value;
+            if (ctx.TryGetConstant(name, out value, ref idx) == false && 
+                ctx.TryGetConstant(fallbackName, out value) == false)
+            {
+                // Warning: undefined constant
+                PhpException.Throw(PhpError.Notice, Resources.ErrResources.undefined_constant, fallbackName);
+                value = (PhpValue)fallbackName;
+            }
+
+            return value;
+        }
+
+        /// <summary>
+        /// Constant declaration.
+        /// </summary>
+        public static void DeclareConstant(Context ctx, string name, ref int idx, PhpValue value)
+        {
+            ctx.DefineConstant(name, value, ref idx, ignorecase: false);
+        }
+
+        #endregion
+
         #region BuildClosure
 
         /// <summary>

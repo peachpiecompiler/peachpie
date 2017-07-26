@@ -303,6 +303,23 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundGlobalConstDeclStatement
+    {
+        internal override void Emit(CodeGenerator cg)
+        {
+            // Template: internal static int <const>Name;
+            var idxfield = cg.Module.SynthesizedManager.GetGlobalConstantIndexField(Name.ToString());
+
+            // Template: Operators.DeclareConstant(ctx, Name, ref idx, Value)
+            cg.EmitLoadContext();
+            cg.Builder.EmitStringConstant(Name.ToString());
+            cg.EmitFieldAddress(idxfield);
+            cg.EmitConvert(Value, cg.CoreTypes.PhpValue);
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.DeclareConstant_Context_string_int_PhpValue)
+                .Expect(SpecialType.System_Void);
+        }
+    }
+
     partial class BoundUnset
     {
         internal override void Emit(CodeGenerator cg)

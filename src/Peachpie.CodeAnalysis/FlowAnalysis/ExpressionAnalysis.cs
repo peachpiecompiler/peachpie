@@ -1728,7 +1728,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // TODO: check constant name
 
             // bind to app-wide constant if possible
-            var constant = (FieldSymbol)_model.ResolveConstant(x.Name);
+            var constant = (FieldSymbol)_model.ResolveConstant(x.Name.ToString());
             if (!BindConstantValue(x, constant))
             {
                 if (constant != null && constant.IsStatic && constant.IsReadOnly)

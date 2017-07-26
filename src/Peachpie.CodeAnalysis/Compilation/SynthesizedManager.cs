@@ -148,6 +148,19 @@ namespace Pchp.CodeAnalysis.Emit
             }
         }
 
+        /// <summary>
+        /// Gets or creates internal static int field as index holder for a global constant.
+        /// </summary>
+        public SynthesizedFieldSymbol/*!*/GetGlobalConstantIndexField(string cname)
+        {
+            return GetOrCreateSynthesizedField(
+                    _module.ScriptType,
+                    DeclaringCompilation.CoreTypes.Int32,
+                    "<const>" + cname,
+                    Accessibility.Internal, true, false,
+                    autoincrement: false);
+        }
+
         #endregion
     }
 }

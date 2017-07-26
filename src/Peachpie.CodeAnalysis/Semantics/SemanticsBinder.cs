@@ -214,6 +214,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt is AST.ThrowStmt throwStm) return new BoundThrowStatement(BindExpression(throwStm.Expression, BoundAccess.Read));
             if (stmt is AST.PHPDocStmt) return new BoundEmptyStatement();
             if (stmt is AST.DeclareStmt declareStm) return new BoundDeclareStatement();
+            if (stmt is AST.GlobalConstDeclList constDeclStm) return BindConstDecl(constDeclStm);
 
             //
             _diagnostics.Add(_locals.Routine, stmt, Errors.ErrorCode.ERR_NotYetImplemented, $"Statement of type '{stmt.GetType().Name}'");
@@ -695,7 +696,25 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr.Name == QualifiedName.Null) return new BoundLiteral(null);
 
             // bind constant
-            return new BoundGlobalConst(expr.Name.ToString());
+            return new BoundGlobalConst(expr.FullName.Name, expr.FullName.FallbackName);
+        }
+
+        protected BoundStatement BindConstDecl(AST.GlobalConstDeclList decl)
+        {
+            if (decl.Constants.Count == 1)
+            {
+                return BindConstDecl(decl.Constants[0]);
+            }
+            else
+            {
+                return new BoundBlock(decl.Constants.Select(BindConstDecl).ToList());
+            }
+        }
+
+        BoundStatement BindConstDecl(AST.GlobalConstantDecl decl)
+        {
+            var qname = NameUtils.MakeQualifiedName(new Name(decl.Name.Name.Value), decl.ContainingNamespace);
+            return new BoundGlobalConstDeclStatement(qname, BindExpression(decl.Initializer, BoundAccess.Read));
         }
 
         protected virtual BoundExpression BindBinaryEx(AST.BinaryEx expr)

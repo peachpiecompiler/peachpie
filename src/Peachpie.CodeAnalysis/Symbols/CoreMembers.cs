@@ -460,6 +460,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 offsetGet_ArrayAccess_PhpValue = ct.ArrayAccess.Method("offsetGet", ct.PhpValue);
 
+                ReadConstant_Context_String_Int = ct.Operators.Method("ReadConstant", ct.Context, ct.String, ct.Int32);
+                ReadConstant_Context_String_Int_String = ct.Operators.Method("ReadConstant", ct.Context, ct.String, ct.Int32, ct.String);
+                DeclareConstant_Context_string_int_PhpValue = ct.Operators.Method("DeclareConstant", ct.Context, ct.String, ct.Int32, ct.PhpValue);
+
                 Ceq_long_double = ct.Comparison.Method("Ceq", ct.Long, ct.Double);
                 Ceq_long_bool = ct.Comparison.Method("Ceq", ct.Long, ct.Boolean);
                 Ceq_long_string = ct.Comparison.Method("Ceq", ct.Long, ct.String);
@@ -527,6 +531,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 SetGeneratorCurrKey_Generator_PhpValue, SetGeneratorReturnedUserKey_Generator_bool, GetGeneratorSentItem_Generator, SetGeneratorReturnedValue_Generator_PhpValue,
 
                 offsetGet_ArrayAccess_PhpValue,
+
+                ReadConstant_Context_String_Int,
+                ReadConstant_Context_String_Int_String,
+                DeclareConstant_Context_string_int_PhpValue,
 
                 Ceq_long_double, Ceq_long_bool, Ceq_long_string, Ceq_double_string, Ceq_string_long, Ceq_string_double, Ceq_string_bool, CeqNull_value,
                 Clt_long_double, Cgt_long_double,
@@ -958,8 +966,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 ExpectTypeDeclared_T = ct.Context.Method("ExpectTypeDeclared");
 
-                GetConstant_string_int32 = ct.Context.Method("GetConstant", ct.String, ct.Int32);
-
                 GetStatic_T = ct.Context.Method("GetStatic");
                 GetDeclaredType_string_bool = ct.Context.Method("GetDeclaredType", ct.String, ct.Boolean);
                 GetDeclaredTypeOrThrow_string_bool = ct.Context.Method("GetDeclaredTypeOrThrow", ct.String, ct.Boolean);
@@ -984,7 +990,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 DisableErrorReporting, EnableErrorReporting,
                 CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_string_PhpArray_object_RuntimeTypeHandle_bool_bool,
                 ExpectTypeDeclared_T,
-                GetConstant_string_int32,
                 GetStatic_T,
                 GetDeclaredType_string_bool, GetDeclaredTypeOrThrow_string_bool,
                 Dispose;

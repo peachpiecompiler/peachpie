@@ -149,10 +149,19 @@ namespace Pchp.Core
 
             public bool DefineConstant(string name, PhpValue value, bool ignorecase = false)
             {
+                int idx = 0;
+                return DefineConstant(name, value, ref idx, ignorecase);
+            }
+
+            public bool DefineConstant(string name, PhpValue value, ref int idx, bool ignorecase = false)
+            {
                 Debug.Assert(value.IsScalar);
 
-                var idx = RegisterConstantId(name, ignorecase, false);
-                Debug.Assert(idx != 0);
+                if (idx == 0)
+                {
+                    idx = RegisterConstantId(name, ignorecase, false);
+                    Debug.Assert(idx != 0);
+                }
 
                 if (idx < 0)
                     throw new ArgumentException("app_constant_redefinition");   // app-wide constant with this name was already defined

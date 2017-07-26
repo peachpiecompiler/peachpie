@@ -164,6 +164,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
         }
 
+        public virtual void VisitGlobalConstDecl(BoundGlobalConstDeclStatement x)
+        {
+            Accept(x.Value);
+        }
+
         public virtual void VisitPseudoConstUse(BoundPseudoConst x)
         {
 

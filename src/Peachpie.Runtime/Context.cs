@@ -381,36 +381,19 @@ namespace Pchp.Core
         #region Constants
 
         /// <summary>
-        /// Gets a constant value.
-        /// </summary>
-        public PhpValue GetConstant(string name)
-        {
-            int idx = 0;
-            return GetConstant(name, ref idx);
-        }
-
-        /// <summary>
-        /// Gets a constant value.
-        /// </summary>
-        public PhpValue GetConstant(string name, ref int idx)
-        {
-            PhpValue value;
-            if (TryGetConstant(name, out value) == false)
-            {
-                // Warning: undefined constant
-                PhpException.Throw(PhpError.Warning, Resources.ErrResources.undefined_constant, name);
-                value = (PhpValue)name;
-            }
-
-            return value;
-        }
-
-        /// <summary>
         /// Tries to get a global constant from current context.
         /// </summary>
         public bool TryGetConstant(string name, out PhpValue value)
         {
             int idx = 0;
+            return TryGetConstant(name, out value, ref idx);
+        }
+
+        /// <summary>
+        /// Tries to get a global constant from current context.
+        /// </summary>
+        internal bool TryGetConstant(string name, out PhpValue value, ref int idx)
+        {
             value = _constants.GetConstant(name, ref idx);
             return value.IsSet;
         }
@@ -419,6 +402,11 @@ namespace Pchp.Core
         /// Defines a runtime constant.
         /// </summary>
         public bool DefineConstant(string name, PhpValue value, bool ignorecase = false) => _constants.DefineConstant(name, value, ignorecase);
+
+        /// <summary>
+        /// Defines a runtime constant.
+        /// </summary>
+        internal bool DefineConstant(string name, PhpValue value, ref int idx, bool ignorecase = false) => _constants.DefineConstant(name, value, ref idx, ignorecase);
 
         /// <summary>
         /// Determines whether a constant with given name is defined.

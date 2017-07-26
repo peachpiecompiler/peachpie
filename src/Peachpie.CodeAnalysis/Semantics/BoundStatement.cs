@@ -9,6 +9,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis.Text;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -240,6 +241,32 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
         public override void Accept(PhpOperationVisitor visitor) => visitor.VisitGlobalStatement(this);
+    }
+
+    public sealed partial class BoundGlobalConstDeclStatement : BoundStatement
+    {
+        public override OperationKind Kind => OperationKind.VariableDeclarationStatement;
+
+        public QualifiedName Name { get; private set; }
+        public BoundExpression Value { get; private set; }
+
+        public BoundGlobalConstDeclStatement(QualifiedName name, BoundExpression value)
+        {
+            Debug.Assert(value.Access.IsRead);
+
+            this.Name = name;
+            this.Value = value;
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.DefaultVisit(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.DefaultVisit(this, argument);
+
+        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
+        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
+        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitGlobalConstDecl(this);
     }
 
     public sealed partial class BoundStaticVariableStatement : BoundStatement, IVariableDeclarationStatement
