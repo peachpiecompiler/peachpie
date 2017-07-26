@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core.Dynamic;
 
 namespace Pchp.Core.Reflection
 {
@@ -78,5 +79,10 @@ namespace Pchp.Core.Reflection
         /// Determines if given type is not visible to PHP runtime.
         /// </summary>
         public static bool IsHiddenType(this Type t) => s_hiddenTypes.Contains(t);
+
+        /// <summary>
+        /// Determines the parameter is considered as implicitly passed by runtime.
+        /// </summary>
+        public static bool IsImplicitParameter(ParameterInfo p) => BinderHelpers.IsImplicitParameter(p);
     }
 }
