@@ -10,6 +10,11 @@ namespace Pchp.Core.Reflection
 {
     public static class ReflectionUtils
     {
+        /// <summary>
+        /// Well-known name of the PHP constructor.
+        /// </summary>
+        public const string PhpConstructorName = "__construct";
+
         readonly static char[] _disallowedNameChars = new char[] { '`', '<', '>', '.', '\'', '"', '#', '!' };
 
         /// <summary>

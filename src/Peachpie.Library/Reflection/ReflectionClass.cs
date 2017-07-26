@@ -128,7 +128,20 @@ namespace Pchp.Library.Reflection
             }
             return result;
         }
-        public ReflectionMethod getConstructor() { throw new NotImplementedException(); }
+
+        /// <summary>
+        /// Gets the constructor of the class.
+        /// </summary>
+        /// <returns>A <see cref="ReflectionMethod"/> object reflecting the class' constructor,
+        /// or NULL if the class has no constructor.</returns>
+        public ReflectionMethod getConstructor()
+        {
+            var routine = _tinfo.RuntimeMethods[Pchp.Core.Reflection.ReflectionUtils.PhpConstructorName];
+            return (routine != null)
+                ? new ReflectionMethod(_tinfo, routine)
+                : null;
+        }
+
         public PhpArray getDefaultProperties() { throw new NotImplementedException(); }
         public string getDocComment() { throw new NotImplementedException(); }
         public int getEndLine() { throw new NotImplementedException(); }
