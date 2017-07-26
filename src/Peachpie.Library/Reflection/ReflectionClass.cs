@@ -188,14 +188,22 @@ namespace Pchp.Library.Reflection
 
             return result;
         }
-        [return: CastToFalse]
+
+        /// <summary>
+        /// Gets a <see cref="ReflectionMethod"/> for a class method.
+        /// </summary>
+        /// <param name="name">The method name to reflect, throws <see cref="ReflectionException"/>
+        /// if the method doesn't exist.</param>
+        /// <returns>A <see cref="ReflectionMethod"/>.</returns>
+        /// <exception cref="ReflectionException"/>
         public ReflectionMethod getMethod(string name)
         {
             var routine = _tinfo.RuntimeMethods[name];
             return (routine != null)
                 ? new ReflectionMethod(_tinfo, routine)
-                : null;
+                : throw new ReflectionException();
         }
+
         public PhpArray getMethods(long filter = -1)
         {
             var result = new PhpArray();
