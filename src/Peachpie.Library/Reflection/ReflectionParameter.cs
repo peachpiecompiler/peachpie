@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Reflection;
 using System.Text;
 using Pchp.Core;
 
@@ -15,10 +17,46 @@ namespace Pchp.Library.Reflection
     [PhpType("[name]"), PhpExtension(ReflectionUtils.ExtensionName)]
     public class ReflectionParameter : Reflector
     {
-        public string name
+        #region Fields & Properties
+
+        public string name => _param.Name;
+
+        /// <summary>
+        /// Underlaying parameter information.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        internal ParameterInfo _param;
+
+        /// <summary>
+        /// Whether is there an overload that doesn't need this parameter - it effectively makes it optional.
+        /// </summary>
+        internal bool _forceOptional;
+
+        #endregion
+
+        #region Construction
+
+        [PhpFieldsOnlyCtor]
+        protected ReflectionParameter() { }
+
+        internal ReflectionParameter(ParameterInfo param, bool forceOptional)
         {
-            get { throw new NotImplementedException(); }
+            Debug.Assert(param != null);
+            _param = param;
+            _forceOptional = forceOptional;
         }
+
+        public ReflectionParameter(Context ctx, string function, string parameter)
+        {
+            __construct(ctx, function, parameter);
+        }
+
+        public virtual void __construct(Context ctx, string function, string parameter)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
 
         public bool allowsNull() { throw new NotImplementedException(); }
 
@@ -40,7 +78,7 @@ namespace Pchp.Library.Reflection
 
         public string getDefaultValueConstantName() { throw new NotImplementedException(); }
 
-        public string getName() { throw new NotImplementedException(); }
+        public string getName() => name;
 
         public int getPosition() { throw new NotImplementedException(); }
 
@@ -56,7 +94,7 @@ namespace Pchp.Library.Reflection
 
         public bool isDefaultValueConstant() { throw new NotImplementedException(); }
 
-        public bool isOptional() { throw new NotImplementedException(); }
+        public bool isOptional() => _forceOptional || _param.IsOptional;
 
         public bool isPassedByReference() { throw new NotImplementedException(); }
 
