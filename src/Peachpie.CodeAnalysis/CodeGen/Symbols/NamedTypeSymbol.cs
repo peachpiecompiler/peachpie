@@ -167,6 +167,12 @@ namespace Pchp.CodeAnalysis.Symbols
                 var iface_abstracts = iface.ResolveOverrides(diagnostics);
                 foreach (var m in iface_abstracts)
                 {
+                    if (BaseType != null && m.Method.ContainingType != iface && BaseType.ImplementsInterface(m.Method.ContainingType))
+                    {
+                        // iface {m.Method.ContainingType} already handled within overrides => skip
+                        continue;
+                    }
+
                     // add interface member,
                     // resolve its override
                     overrides.Add(new OverrideInfo(m.Method, OverrideHelper.ResolveMethodImplementation(m.Method, this)) { ImplementsInterface = true });
