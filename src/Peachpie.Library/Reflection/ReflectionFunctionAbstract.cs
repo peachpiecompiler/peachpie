@@ -128,7 +128,7 @@ namespace Pchp.Library.Reflection
 
         private static int CountImplicitParameters(ParameterInfo[] parameters)
         {
-            return parameters.TakeWhile(p => Pchp.Core.Reflection.ReflectionUtils.IsImplicitParameter(p)).Count();
+            return parameters.TakeWhile(Pchp.Core.Reflection.ReflectionUtils.IsImplicitParameter).Count();
         }
 
         //public ReflectionType getReturnType() { throw new NotImplementedException(); }
