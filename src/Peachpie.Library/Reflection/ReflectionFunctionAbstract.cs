@@ -40,7 +40,8 @@ namespace Pchp.Library.Reflection
         //private void __clone(void ) { throw new NotImplementedException(); }
         public ReflectionClass getClosureScopeClass() { throw new NotImplementedException(); }
         public object getClosureThis() { throw new NotImplementedException(); }
-        public string getDocComment() { throw new NotImplementedException(); }
+        [return: CastToFalse]
+        public string getDocComment() => null;
         public long getEndLine() { throw new NotImplementedException(); }
         //public ReflectionExtension getExtension() { throw new NotImplementedException(); }
         public string getExtensionName() { throw new NotImplementedException(); }

@@ -121,7 +121,8 @@ namespace Pchp.Library.Reflection
         }
         public static string export(PhpValue @class, string name, bool @return = false) { throw new NotImplementedException(); }
         public virtual ReflectionClass getDeclaringClass() => new ReflectionClass(_pinfo.ContainingType);
-        public virtual string getDocComment() { throw new NotImplementedException(); }
+        [return: CastToFalse]
+        public string getDocComment() => null;
         public virtual long getModifiers()
         {
             long flags = 0;

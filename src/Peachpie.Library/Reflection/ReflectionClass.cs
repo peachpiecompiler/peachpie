@@ -143,7 +143,8 @@ namespace Pchp.Library.Reflection
         }
 
         public PhpArray getDefaultProperties() { throw new NotImplementedException(); }
-        public string getDocComment() { throw new NotImplementedException(); }
+        [return: CastToFalse]
+        public string getDocComment() => null;
         public int getEndLine() { throw new NotImplementedException(); }
         //public ReflectionExtension getExtension() { throw new NotImplementedException(); }
         public string getExtensionName() { throw new NotImplementedException(); }
