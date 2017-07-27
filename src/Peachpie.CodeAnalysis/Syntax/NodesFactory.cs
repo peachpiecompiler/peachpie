@@ -101,6 +101,12 @@ namespace Peachpie.CodeAnalysis.Syntax
             return AddAndReturn(ref _yieldNodes, base.YieldFrom(span, fromExpr));
         }
 
+        public override LangElement ParenthesisExpression(Span span, LangElement expression)
+        {
+            // ignore parenthesis
+            return expression;
+        }
+
         public NodesFactory(SourceUnit sourceUnit) : base(sourceUnit)
         {
         }
