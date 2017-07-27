@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using Devsense.PHP.Syntax.Ast;
+using Ast = Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis.Text;
 using Devsense.PHP.Syntax;
 
@@ -24,7 +24,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public SyntaxNode Syntax => null;
 
-        public LangElement PhpSyntax { get; set; }
+        public Ast.LangElement PhpSyntax { get; set; }
 
         public abstract void Accept(OperationVisitor visitor);
 
@@ -155,7 +155,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         public override OperationKind Kind => OperationKind.LocalFunctionStatement;
 
-        internal FunctionDecl FunctionDecl => (FunctionDecl)PhpSyntax;
+        internal Ast.FunctionDecl FunctionDecl => (Ast.FunctionDecl)PhpSyntax;
 
         internal Symbols.SourceFunctionSymbol Function => _function;
         readonly Symbols.SourceFunctionSymbol _function;
@@ -165,7 +165,7 @@ namespace Pchp.CodeAnalysis.Semantics
             Contract.ThrowIfNull(function);
 
             _function = function;
-            this.PhpSyntax = (FunctionDecl)function.Syntax;
+            this.PhpSyntax = (Ast.FunctionDecl)function.Syntax;
         }
 
         public override void Accept(OperationVisitor visitor)
@@ -186,7 +186,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         public override OperationKind Kind => OperationKind.LocalFunctionStatement;
 
-        internal TypeDecl TypeDecl => (TypeDecl)PhpSyntax;
+        internal Ast.TypeDecl TypeDecl => (Ast.TypeDecl)PhpSyntax;
 
         internal Symbols.SourceTypeSymbol Type => _type;
         readonly Symbols.SourceTypeSymbol _type;

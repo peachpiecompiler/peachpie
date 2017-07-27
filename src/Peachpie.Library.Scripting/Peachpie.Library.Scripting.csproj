@@ -16,7 +16,7 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="Devsense.Php.Parser" Version="1.2.6" />
+    <PackageReference Include="Devsense.Php.Parser" Version="1.3.48" />
     <PackageReference Include="Peachpie.Microsoft.CodeAnalysis" Version="0.6.0" />
   </ItemGroup>
 

@@ -12,7 +12,7 @@ using Pchp.CodeAnalysis.Symbols;
 using Pchp.CodeAnalysis.CodeGen;
 using Microsoft.CodeAnalysis.CodeGen;
 using Devsense.PHP.Syntax;
-using Devsense.PHP.Syntax.Ast;
+using Ast = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -310,7 +310,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public SyntaxNode Syntax => null;
 
-        public LangElement PhpSyntax { get; set; }
+        public Ast.LangElement PhpSyntax { get; set; }
 
         /// <summary>
         /// Whether the expression needs current <c>Pchp.Core.Context</c> to be evaluated.
@@ -809,7 +809,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override bool RequiresContext => Left.RequiresContext || Right.RequiresContext;
 
-        public Operations Operation { get; private set; }
+        public Ast.Operations Operation { get; private set; }
 
         public BoundExpression Left { get; private set; }
         public BoundExpression Right { get; private set; }
@@ -828,7 +828,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitBinaryOperatorExpression(this, argument);
 
-        internal BoundBinaryEx(BoundExpression left, BoundExpression right, Operations op)
+        internal BoundBinaryEx(BoundExpression left, BoundExpression right, Ast.Operations op)
         {
             this.Left = left;
             this.Right = right;
@@ -846,13 +846,13 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public partial class BoundUnaryEx : BoundExpression, IUnaryOperatorExpression
     {
-        public Operations Operation { get; private set; }
+        public Ast.Operations Operation { get; private set; }
 
         public BoundExpression Operand { get; set; }
 
         public override OperationKind Kind => OperationKind.UnaryOperatorExpression;
 
-        public override bool RequiresContext => Operation == Operations.StringCast || Operation == Operations.Print || Operand.RequiresContext;
+        public override bool RequiresContext => Operation == Ast.Operations.StringCast || Operation == Ast.Operations.Print || Operand.RequiresContext;
 
         IExpression IUnaryOperatorExpression.Operand => Operand;
 
@@ -862,7 +862,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public UnaryOperationKind UnaryOperationKind { get { throw new NotSupportedException(); } }
 
-        public BoundUnaryEx(BoundExpression operand, Operations op)
+        public BoundUnaryEx(BoundExpression operand, Ast.Operations op)
         {
             Contract.ThrowIfNull(operand);
             this.Operand = operand;
@@ -891,7 +891,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public override OperationKind Kind => OperationKind.IncrementExpression;
 
         public BoundIncDecEx(BoundReferenceExpression target, UnaryOperationKind kind)
-            : base(target, new BoundLiteral(1L).WithAccess(BoundAccess.Read), Operations.IncDec)
+            : base(target, new BoundLiteral(1L).WithAccess(BoundAccess.Read), Ast.Operations.IncDec)
         {
             Debug.Assert(
                 kind == UnaryOperationKind.OperatorPostfixDecrement ||
@@ -1000,9 +1000,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public bool UsesOperatorMethod => this.Operator != null;
 
-        public Operations Operation { get; private set; }
+        public Ast.Operations Operation { get; private set; }
 
-        public BoundCompoundAssignEx(BoundReferenceExpression target, BoundExpression value, Operations op)
+        public BoundCompoundAssignEx(BoundReferenceExpression target, BoundExpression value, Ast.Operations op)
             : base(target, value)
         {
             this.Operation = op;
@@ -1446,9 +1446,9 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         public override OperationKind Kind => OperationKind.None;
 
-        public PseudoConstUse.Types Type { get; private set; }
+        public Ast.PseudoConstUse.Types Type { get; private set; }
 
-        public BoundPseudoConst(PseudoConstUse.Types type)
+        public BoundPseudoConst(Ast.PseudoConstUse.Types type)
         {
             this.Type = type;
         }
@@ -1470,13 +1470,13 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public partial class BoundPseudoClassConst : BoundExpression
     {
-        public PseudoClassConstUse.Types Type { get; private set; }
+        public Ast.PseudoClassConstUse.Types Type { get; private set; }
 
         public override OperationKind Kind => OperationKind.None;
 
         public BoundTypeRef TargetType { get; private set; }
 
-        public BoundPseudoClassConst(BoundTypeRef targetType, PseudoClassConstUse.Types type)
+        public BoundPseudoClassConst(BoundTypeRef targetType, Ast.PseudoClassConstUse.Types type)
         {
             this.TargetType = targetType;
             this.Type = type;

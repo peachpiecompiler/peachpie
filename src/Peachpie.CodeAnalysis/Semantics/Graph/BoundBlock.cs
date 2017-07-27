@@ -1,16 +1,10 @@
-﻿using Microsoft.CodeAnalysis.Semantics;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.CodeAnalysis;
-using System;
-using System.Collections.Immutable;
-using Pchp.CodeAnalysis.FlowAnalysis;
-using Pchp.CodeAnalysis.Symbols;
-using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Syntax;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
@@ -131,7 +125,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         #region IBlockStatement
 
-        ImmutableArray<IStatement> IBlockStatement.Statements => _statements.AsImmutable<IStatement>();
+        ImmutableArray<IStatement> IBlockStatement.Statements => _statements.Cast<IStatement>().AsImmutable();
 
         ImmutableArray<ILocalSymbol> IBlockStatement.Locals => Locals;
         protected virtual ImmutableArray<ILocalSymbol> Locals => ImmutableArray<ILocalSymbol>.Empty;

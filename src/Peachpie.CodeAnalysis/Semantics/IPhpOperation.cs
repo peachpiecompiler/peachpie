@@ -1,6 +1,6 @@
-﻿using Devsense.PHP.Syntax.Ast;
-using Microsoft.CodeAnalysis.Semantics;
+﻿using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.FlowAnalysis;
+using Ast = Devsense.PHP.Syntax.Ast;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +13,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Corresponding syntax node.
         /// </summary>
-        LangElement PhpSyntax { get; }
+        Ast.LangElement PhpSyntax { get; }
 
         /// <summary>
         /// Visitor implementation.
