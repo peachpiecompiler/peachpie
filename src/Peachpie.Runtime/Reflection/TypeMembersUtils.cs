@@ -80,7 +80,7 @@ namespace Pchp.Core.Reflection
         }
 
         /// <summary>
-        /// Enumerates visible instance fields of given object, transforms field names according to <c>print_r</c> notation.
+        /// Enumerates instance fields of given object, transforms field names according to <c>print_r</c> notation.
         /// </summary>
         /// <param name="instance">Object which fields will be enumerated.</param>
         /// <returns>Enumeration of fields and their values, including runtime fields.</returns>
@@ -97,6 +97,27 @@ namespace Pchp.Core.Reflection
             if (f.IsPublic) return f.Name;
             if (f.IsPrivate) return $"{f.Name}:{declarer.Name}:private";
             return $"{f.Name}:protected";
+        }
+
+        /// <summary>
+        /// Enumerates instance fields of given object, transforms field names according to <c>var_dump</c> notation.
+        /// </summary>
+        /// <param name="instance">Object which fields will be enumerated.</param>
+        /// <returns>Enumeration of fields and their values, including runtime fields.</returns>
+        public static IEnumerable<KeyValuePair<string, PhpValue>> EnumerateInstanceFieldsForDump(object instance)
+        {
+            return EnumerateInstanceFields(instance,
+                (f, d) => FormatPropertyNameForDump(f, d),
+                (k) => k.ToString(),
+                (f) => (f.Attributes & (FieldAttributes.Assembly)) != FieldAttributes.Assembly); // ignore "internal" fields
+        }
+
+        static string FormatPropertyNameForDump(FieldInfo f, PhpTypeInfo declarer)
+        {
+            var name = "\"" + f.Name + "\"";
+            if (f.IsPublic) return name;
+            if (f.IsPrivate) return name + $":\"{declarer.Name}\":private";
+            return name + ":protected";
         }
 
         /// <summary>

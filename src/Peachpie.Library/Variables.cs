@@ -1145,10 +1145,33 @@ namespace Pchp.Library
             {
                 if (Enter(obj))
                 {
-                    throw new NotImplementedException();
+                    var flds = TypeMembersUtils.EnumerateInstanceFieldsForDump(obj).ToList();
 
-                    ////
-                    //Leave(obj);
+                    // Template: object(NAME)#ID (COUNT) {
+                    _output.Append($"object({obj.GetPhpTypeInfo().Name})#{unchecked((uint)obj.GetHashCode())} ({flds.Count}) {{");
+                    _indent++;
+                    
+                    // object members
+                    foreach (var fld in flds)
+                    {
+                        // [key]=>
+                        // value
+
+                        NewLine();
+                        OutputIndent();
+                        _output.Append("[" + fld.Key + "]=>");
+                        NewLine();
+                        OutputIndent();
+                        Accept(fld.Value);
+                    }
+
+                    // }
+                    _indent--;
+                    NewLine();
+                    _output.Append("}");
+
+                    //
+                    Leave(obj);
                 }
                 else
                 {
