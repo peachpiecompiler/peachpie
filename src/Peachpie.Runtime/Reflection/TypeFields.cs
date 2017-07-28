@@ -56,7 +56,7 @@ namespace Pchp.Core.Reflection
                 _staticsFields = staticscontainer.DeclaredFields.ToDictionary(_FieldName, StringComparer.Ordinal);
             }
 
-            _properties = tinfo.DeclaredProperties.ToDictionary(_PropertyName, StringComparer.Ordinal);
+            _properties = tinfo.DeclaredProperties.Where(_IsAllowedProperty).ToDictionary(_PropertyName, StringComparer.Ordinal);
             if (_properties.Count == 0)
                 _properties = null;
         }
@@ -77,6 +77,7 @@ namespace Pchp.Core.Reflection
         static readonly Func<FieldInfo, bool> _IsAllowedField = f => ReflectionUtils.IsAllowedPhpName(f.Name) && !ReflectionUtils.IsRuntimeFields(f) && !ReflectionUtils.IsContextField(f);
         static readonly Func<FieldInfo, string> _FieldName = f => f.Name;
         static readonly Func<PropertyInfo, string> _PropertyName = p => p.Name;
+        static readonly Func<PropertyInfo, bool> _IsAllowedProperty = p => ReflectionUtils.IsAllowedPhpName(p.Name) && p.GetIndexParameters().Length == 0;
 
         static Func<Context, object> CreateStaticsGetter(Type _statics)
         {
