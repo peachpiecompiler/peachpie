@@ -1168,6 +1168,7 @@ namespace Pchp.Library
                     // }
                     _indent--;
                     NewLine();
+                    OutputIndent();
                     _output.Append("}");
 
                     //

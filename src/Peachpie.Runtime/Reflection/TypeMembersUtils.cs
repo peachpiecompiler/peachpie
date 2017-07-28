@@ -87,8 +87,8 @@ namespace Pchp.Core.Reflection
         public static IEnumerable<KeyValuePair<string, PhpValue>> EnumerateInstanceFieldsForPrint(object instance)
         {
             return EnumerateInstanceFields(instance,
-                (f, d) => FormatPropertyNameForPrint(f, d),
-                (k) => k.ToString(),
+                FormatPropertyNameForPrint,
+                IntStringKey.ToString,
                 (f) => (f.Attributes & (FieldAttributes.Assembly)) != FieldAttributes.Assembly); // ignore "internal" fields
         }
 
@@ -107,8 +107,8 @@ namespace Pchp.Core.Reflection
         public static IEnumerable<KeyValuePair<string, PhpValue>> EnumerateInstanceFieldsForDump(object instance)
         {
             return EnumerateInstanceFields(instance,
-                (f, d) => FormatPropertyNameForDump(f, d),
-                (k) => k.ToString(),
+                FormatPropertyNameForDump,
+                IntStringKey.ToString,
                 (f) => (f.Attributes & (FieldAttributes.Assembly)) != FieldAttributes.Assembly); // ignore "internal" fields
         }
 
