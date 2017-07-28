@@ -103,7 +103,7 @@ namespace Pchp.Core.Reflection
         {
             if (f.IsPublic) return f.Name;
             if (f.IsPrivate) return string.Concat(f.Name, ":", declarer.Name, ":private");
-            return $"{f.Name}:protected";
+            return f.Name + ":protected";
         });
 
         /// <summary>

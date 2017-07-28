@@ -271,7 +271,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public bool IsLocalSet(VariableHandle handle)
         {
             handle.ThrowIfInvalid();
-            return handle.Slot >= FlowContext.BitsCount || (_initializedMask & (1u << handle)) != 0;
+            return handle.Slot >= FlowContext.BitsCount || (_initializedMask & (1ul << handle)) != 0;
         }
 
         public void FlowThroughReturn(TypeRefMask type)
@@ -289,7 +289,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             int varindex = handle.Slot;
             if (varindex >= 0 && varindex < FlowContext.BitsCount)
             {
-                _initializedMask |= 1u << varindex;
+                _initializedMask |= 1ul << varindex;
             }
         }
 
@@ -298,7 +298,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var varindex = handle.Slot;
             if (varindex >= 0 && varindex < FlowContext.BitsCount)
             {
-                _initializedMask &= ~(1u << varindex);
+                _initializedMask &= ~(1ul << varindex);
             }
         }
 
