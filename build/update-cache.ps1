@@ -13,7 +13,7 @@ $defaultArgs = "/p:VersionPrefix=$version,VersionSuffix=$suffix"
 
 ## Delete old nuget packages
 Write-Host -f green "Deleting '$version-$suffix' packages from '$packagesSource' ..."
-@("Peachpie.Runtime", "Peachpie.Library", "Peachpie.Library.Scripting", "Peachpie.Library.MySql", "Peachpie.Library.MsSql", "Peachpie.App", "Peachpie.CodeAnalysis", "Peachpie.NETCore.Web", "Peachpie.Compiler.Tools", "Peachpie.NET.Sdk") | % {
+@("Peachpie.Runtime", "Peachpie.Library", "Peachpie.Library.Scripting", "Peachpie.Library.MySql", "Peachpie.Library.MsSql", "Peachpie.Library.PDO", "Peachpie.App", "Peachpie.CodeAnalysis", "Peachpie.NETCore.Web", "Peachpie.Compiler.Tools", "Peachpie.NET.Sdk") | % {
 	$installedFolder = "$packagesSource/$_/$version-$suffix"
     if (Test-Path $installedFolder) {
         Remove-Item -Recurse -Force $installedFolder
