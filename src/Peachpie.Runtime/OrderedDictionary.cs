@@ -111,8 +111,6 @@ namespace Pchp.Core
             return _ikey == ikey && _skey == null;
         }
 
-        internal static string ToString(IntStringKey key) => key.ToString();
-
         public override string ToString() => _skey ?? _ikey.ToString();
 
         public int CompareTo(IntStringKey other)

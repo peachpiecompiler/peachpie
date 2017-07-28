@@ -73,10 +73,10 @@ namespace Pchp.Core.Reflection
             return getter;
         }
 
-        static Func<FieldInfo, bool> _isInstanceField = f => !f.IsStatic;
-        static Func<FieldInfo, bool> _IsAllowedField = f => ReflectionUtils.IsAllowedPhpName(f.Name) && !ReflectionUtils.IsRuntimeFields(f) && !ReflectionUtils.IsContextField(f);
-        static Func<FieldInfo, string> _FieldName = f => f.Name;
-        static Func<PropertyInfo, string> _PropertyName = p => p.Name;
+        static readonly Func<FieldInfo, bool> _isInstanceField = f => !f.IsStatic;
+        static readonly Func<FieldInfo, bool> _IsAllowedField = f => ReflectionUtils.IsAllowedPhpName(f.Name) && !ReflectionUtils.IsRuntimeFields(f) && !ReflectionUtils.IsContextField(f);
+        static readonly Func<FieldInfo, string> _FieldName = f => f.Name;
+        static readonly Func<PropertyInfo, string> _PropertyName = p => p.Name;
 
         static Func<Context, object> CreateStaticsGetter(Type _statics)
         {
