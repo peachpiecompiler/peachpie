@@ -25,7 +25,10 @@ namespace Peachpie.RequestHandler
         {
             try
             {
-                return Assembly.LoadFile(fname);
+                // LoadFrom() correctly loads the assembly while respecting shadow copying,
+                // by default ASP.NET AppDomain has shadow copying enabled so all the assemblies will be loaded from cache location.
+                // This avoids locking the DLLs in Bin folder.
+                return Assembly.LoadFrom(fname);
             }
             catch
             {
