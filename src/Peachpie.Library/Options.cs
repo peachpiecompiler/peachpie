@@ -113,7 +113,7 @@ namespace Pchp.Library
         {
             switch (option.ToLowerInvariant())
             {
-                case "SMTP":
+                case "smtp":
                     return (PhpValue)GetSet(ref config.Core.SmtpServer, null, value, action);
 
                 case "smtp_port":

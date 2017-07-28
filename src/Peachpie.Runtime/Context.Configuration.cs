@@ -245,7 +245,7 @@ namespace Pchp.Core
             {
                 // clone parent configuration
                 _configs = new Dictionary<Type, IPhpConfiguration>(_defaultConfigs.Count);
-                _core = new PhpCoreConfiguration(); // TODO: RegisterConfiguration<PhpCoreConfiguration>
+                _configs[typeof(PhpCoreConfiguration)] = _core = new PhpCoreConfiguration();    // core options used always
             }
 
             public PhpCoreConfiguration Core => _core;
@@ -304,17 +304,15 @@ namespace Pchp.Core
         /// This instance is intended to be cloned for new <see cref="Context"/> instances.</param>
         public static void RegisterConfiguration<TOptions>(TOptions defaults) where TOptions : class, IPhpConfiguration
         {
-            if (defaults == null)
-            {
-                throw new ArgumentNullException(nameof(defaults));
-            }
-
-            _defaultConfigs[typeof(TOptions)] = defaults;
+            _defaultConfigs[typeof(TOptions)] = defaults ?? throw new ArgumentNullException(nameof(defaults));
         }
 
         /// <summary>
         /// Set of registered configurations and their default values.
         /// </summary>
-        static readonly Dictionary<Type, IPhpConfiguration> _defaultConfigs = new Dictionary<Type, IPhpConfiguration>();
+        static readonly Dictionary<Type, IPhpConfiguration> _defaultConfigs = new Dictionary<Type, IPhpConfiguration>()
+        {
+            {typeof(PhpCoreConfiguration), new PhpCoreConfiguration()},
+        };
     }
 }
