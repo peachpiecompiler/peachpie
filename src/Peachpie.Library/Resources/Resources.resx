@@ -622,4 +622,10 @@
   <data name="not_parsed_data_left" xml:space="preserve">
     <value>XML Parser contains not parsed data. Ensure to call "xml_parse" with is_final parameter set to "true".</value>
   </data>
+  <data name="class_does_not_exist" xml:space="preserve">
+    <value>Class {0} does not exist</value>
+  </data>
+  <data name="method_does_not_exist" xml:space="preserve">
+    <value>Method {0}::{1}() does not exist</value>
+  </data>
 </root>

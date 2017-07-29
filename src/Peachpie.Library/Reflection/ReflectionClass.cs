@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.IO;
+using Pchp.Core.Resources;
 
 namespace Pchp.Library.Reflection
 {
@@ -78,13 +79,14 @@ namespace Pchp.Library.Reflection
             Debug.Assert(_tinfo == null, "Subsequent call not allowed.");
 
             _tinfo = ResolvePhpTypeInfo(ctx, @class);
-
-            if (_tinfo == null)
-            {
-                throw new ArgumentException();  // TODO: ReflectionException
-            }
         }
 
+        /// <summary>
+        /// Resolves type of <paramref name="class"/>.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="class">Either string or class instance. Otherwise an exception is thrown.</param>
+        /// <returns>Type info. Cannot get <c>null</c>.</returns>
         internal static PhpTypeInfo ResolvePhpTypeInfo(Context ctx, PhpValue @class)
         {
             object instance;
@@ -92,7 +94,8 @@ namespace Pchp.Library.Reflection
             var classname = @class.ToStringOrNull();
             if (classname != null)
             {
-                return ctx.GetDeclaredType(classname, true);
+                return ctx.GetDeclaredType(classname, true)
+                    ?? throw new ReflectionException(string.Format(Resources.Resources.class_does_not_exist, classname));
             }
             else if ((instance = @class.AsObject()) != null)
             {
@@ -100,10 +103,8 @@ namespace Pchp.Library.Reflection
             }
             else
             {
-                // argument type exception
+                throw new ReflectionException(string.Format(ErrResources.invalid_argument_type, nameof(@class), "string or object"));
             }
-
-            return null;
         }
 
         #endregion
