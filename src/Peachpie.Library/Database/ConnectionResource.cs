@@ -37,8 +37,8 @@ namespace Pchp.Library.Database
         /// Gets an exception thrown by last performed operation or a <B>null</B> reference 
         /// if that operation succeeded.
         /// </summary>
-        public System.Exception LastException => _lastException;
-        protected System.Exception _lastException;
+        public Exception LastException => _lastException;
+        protected Exception _lastException;
 
         /// <summary>
         /// Gets the number of rows affected by the last query executed on this connection.
@@ -88,10 +88,10 @@ namespace Pchp.Library.Database
                 ActiveConnection.Open();  // TODO: Async
                 _lastException = null;
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 _lastException = e;
-                PhpException.Throw(PhpError.Warning, Resources.LibResources.cannot_open_connection, GetExceptionMessage(e));
+                PhpException.Throw(PhpError.Warning, LibResources.cannot_open_connection, GetExceptionMessage(e));
                 return false;
             }
 
@@ -115,7 +115,7 @@ namespace Pchp.Library.Database
 
                 _lastException = null;
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 _lastException = e;
                 PhpException.Throw(PhpError.Warning, LibResources.error_closing_connection, GetExceptionMessage(e));
@@ -267,10 +267,10 @@ namespace Pchp.Library.Database
 
                 _lastException = null;
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 _lastException = e;
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("command_execution_failed", GetExceptionMessage(e))); // TODO: ERR
+                PhpException.Throw(PhpError.Warning, LibResources.command_execution_failed, GetExceptionMessage(e));
             }
 
             //
@@ -291,12 +291,10 @@ namespace Pchp.Library.Database
             {
                 result.Reader = _pendingReader = result.Command.ExecuteReader(CommandBehavior.KeyInfo | CommandBehavior.SchemaOnly);
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 _lastException = e;
-                throw new NotImplementedException(); // ERR
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("command_execution_failed",
-                //    GetExceptionMessage(e)));
+                PhpException.Throw(PhpError.Warning, LibResources.command_execution_failed, GetExceptionMessage(e));
             }
         }
 
@@ -319,12 +317,10 @@ namespace Pchp.Library.Database
                     return true;
                 }
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 _lastException = e;
-                throw new NotImplementedException();     // ERR
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("database_selection_failed",
-                //  GetExceptionMessage(e)));
+                PhpException.Throw(PhpError.Warning, LibResources.database_selection_failed, GetExceptionMessage(e));
             }
 
             return false;
