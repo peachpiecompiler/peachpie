@@ -128,9 +128,23 @@ namespace Pchp.Library.Reflection
             }
             return result;
         }
-        public ReflectionMethod getConstructor() { throw new NotImplementedException(); }
+
+        /// <summary>
+        /// Gets the constructor of the class.
+        /// </summary>
+        /// <returns>A <see cref="ReflectionMethod"/> object reflecting the class' constructor,
+        /// or NULL if the class has no constructor.</returns>
+        public ReflectionMethod getConstructor()
+        {
+            var routine = _tinfo.RuntimeMethods[Pchp.Core.Reflection.ReflectionUtils.PhpConstructorName];
+            return (routine != null)
+                ? new ReflectionMethod(_tinfo, routine)
+                : null;
+        }
+
         public PhpArray getDefaultProperties() { throw new NotImplementedException(); }
-        public string getDocComment() { throw new NotImplementedException(); }
+        [return: CastToFalse]
+        public string getDocComment() => null;
         public int getEndLine() { throw new NotImplementedException(); }
         //public ReflectionExtension getExtension() { throw new NotImplementedException(); }
         public string getExtensionName() { throw new NotImplementedException(); }
@@ -175,14 +189,22 @@ namespace Pchp.Library.Reflection
 
             return result;
         }
-        [return: CastToFalse]
+
+        /// <summary>
+        /// Gets a <see cref="ReflectionMethod"/> for a class method.
+        /// </summary>
+        /// <param name="name">The method name to reflect, throws <see cref="ReflectionException"/>
+        /// if the method doesn't exist.</param>
+        /// <returns>A <see cref="ReflectionMethod"/>.</returns>
+        /// <exception cref="ReflectionException"/>
         public ReflectionMethod getMethod(string name)
         {
             var routine = _tinfo.RuntimeMethods[name];
             return (routine != null)
                 ? new ReflectionMethod(_tinfo, routine)
-                : null;
+                : throw new ReflectionException();
         }
+
         public PhpArray getMethods(long filter = -1)
         {
             var result = new PhpArray();
@@ -249,7 +271,11 @@ namespace Pchp.Library.Reflection
         public PhpValue getStaticPropertyValue(string name, PhpAlias def_value) { throw new NotImplementedException(); }
         public PhpArray getTraitAliases() { throw new NotImplementedException(); }
         public PhpArray getTraitNames() { throw new NotImplementedException(); }
-        public PhpArray getTraits() { throw new NotImplementedException(); }
+        public PhpArray getTraits()
+        {
+            // TODO: Retrieve from PhpTypeInfo when traits are supported
+            return PhpArray.NewEmpty();
+        }
         public bool hasConstant(string name) { throw new NotImplementedException(); }
         public bool hasMethod(string name) => _tinfo.RuntimeMethods[name] != null;
         public bool hasProperty(string name) { throw new NotImplementedException(); }
