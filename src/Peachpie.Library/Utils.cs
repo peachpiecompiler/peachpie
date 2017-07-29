@@ -225,6 +225,11 @@ namespace Pchp.Library
 
             return count;
         }
+
+        /// <summary>
+        /// Determines whether two strings are equal while ignoring casing.
+        /// </summary>
+        public static bool EqualsOrdinalIgnoreCase(this string str1, string str2) => string.Equals(str1, str2, StringComparison.OrdinalIgnoreCase);
     }
 
     internal static class ArrayExtensions

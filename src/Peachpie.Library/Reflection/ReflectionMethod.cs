@@ -109,8 +109,8 @@ namespace Pchp.Library.Reflection
         public PhpValue invoke(Context ctx, object @object, params PhpValue[] args) => _routine.Invoke(ctx, @object, args);
         public PhpValue invokeArgs(Context ctx, object @object, PhpArray args) => _routine.Invoke(ctx, @object, args.GetValues());
         public bool isAbstract() => _routine.Methods.Any(m => m.IsAbstract);
-        public bool isConstructor() => name == Pchp.Core.Reflection.ReflectionUtils.PhpConstructorName;
-        public bool isDestructor() { throw new NotImplementedException(); }
+        public bool isConstructor() => name.EqualsOrdinalIgnoreCase(Core.Reflection.ReflectionUtils.PhpConstructorName);
+        public bool isDestructor() => name.EqualsOrdinalIgnoreCase(Core.Reflection.ReflectionUtils.PhpDestructorName);
         public bool isFinal() => _routine.Methods.All(m => m.IsFinal);
         public bool isPrivate() { throw new NotImplementedException(); }
         public bool isProtected() { throw new NotImplementedException(); }

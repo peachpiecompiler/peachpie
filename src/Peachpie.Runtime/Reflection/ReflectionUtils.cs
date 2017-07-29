@@ -16,6 +16,11 @@ namespace Pchp.Core.Reflection
         /// </summary>
         public const string PhpConstructorName = "__construct";
 
+        /// <summary>
+        /// Well-known name of the PHP destructor.
+        /// </summary>
+        public const string PhpDestructorName = "__destruct";
+
         readonly static char[] _disallowedNameChars = new char[] { '`', '<', '>', '.', '\'', '"', '#', '!' };
 
         /// <summary>
@@ -84,5 +89,11 @@ namespace Pchp.Core.Reflection
         /// Determines the parameter is considered as implicitly passed by runtime.
         /// </summary>
         public static bool IsImplicitParameter(ParameterInfo p) => BinderHelpers.IsImplicitParameter(p);
+
+        /// <summary>
+        /// Gets count of implicit parameters.
+        /// Such parameters are passed by runtime automatically and not read from given arguments.
+        /// </summary>
+        public static int ImplicitParametersCount(ParameterInfo[] ps) => ps.TakeWhile(IsImplicitParameter).Count();
     }
 }
