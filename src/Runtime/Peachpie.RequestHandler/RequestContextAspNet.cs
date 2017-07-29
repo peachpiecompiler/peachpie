@@ -21,14 +21,42 @@ namespace Peachpie.RequestHandler
             LoadScriptReferences();
         }
 
+        /// <summary>
+        /// It is not necessary to load (and shadow copy) all the assemblies from /Bin.
+        /// This method gets <c>false</c> for well known assemblies that won't be loaded.
+        /// </summary>
+        static bool IsAllowedScriptAssembly(AssemblyName assname)
+        {
+            var token = assname.GetPublicKeyToken();
+            if (token != null)
+            {
+                var tokenstr = string.Join(null, token.Select(b => b.ToString("x2")));   // readable public key token, lowercased
+                if (tokenstr == "5b4bee2bf1f98593" || // Peachpie
+                    tokenstr == "a7d26565bac4d604" || // Google.Protobuf
+                    tokenstr == "840d8b321fee7061" || // Devsense
+                    tokenstr == "adb9793829ddae60" || // Microsoft
+                    tokenstr == "b03f5f7f11d50a3a" || // System
+                    tokenstr == "b77a5c561934e089")   // .NET
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         static Assembly TryLoadAssemblyFromFile(string fname)
         {
             try
             {
+                // First quickly get the full assembly name without loading the assembly into App Domain.
+                // This will be used to check whether the assembly isn't a known dependency that we don't have to load
+                var name = AssemblyName.GetAssemblyName(fname);
+
                 // LoadFrom() correctly loads the assembly while respecting shadow copying,
                 // by default ASP.NET AppDomain has shadow copying enabled so all the assemblies will be loaded from cache location.
                 // This avoids locking the DLLs in Bin folder.
-                return Assembly.LoadFrom(fname);
+                return IsAllowedScriptAssembly(name) ? Assembly.LoadFrom(fname) : null;
             }
             catch
             {
@@ -47,7 +75,6 @@ namespace Peachpie.RequestHandler
         static void LoadScriptReferences()
         {
             // try to load DLL files from /Bin folder containing PHP scripts
-            //var loaded = AppDomain.CurrentDomain.GetAssemblies();   // ?? // asp.net should load assemblies in /Bin folder by itself or by proper configuration
             var scriptTypes = Directory.GetFiles(HttpRuntime.BinDirectory, "*.dll", SearchOption.TopDirectoryOnly)
                 .Select(TryLoadAssemblyFromFile)
                 .Select(TryGetScriptType)
