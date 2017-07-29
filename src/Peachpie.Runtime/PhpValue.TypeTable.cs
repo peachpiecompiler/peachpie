@@ -586,7 +586,7 @@ namespace Pchp.Core
             public override PhpAlias EnsureAlias(ref PhpValue me) => me.Alias;
             public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => me.Alias.Value.GetArrayItem(index, quiet);
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) => me.Alias.Value.EnsureItemAlias(index, quiet);
-            public override PhpArray ToArray(ref PhpValue me) => me.Alias.Value.AsArray();
+            public override PhpArray ToArray(ref PhpValue me) => me.Alias.Value.ToArray();
             public override object AsObject(ref PhpValue me) => me.Alias.Value.AsObject();
             public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx) => me.Alias.Value.AsCallable(callerCtx);
             public override string DisplayString(ref PhpValue me) => "&" + me.Alias.Value.DisplayString;
