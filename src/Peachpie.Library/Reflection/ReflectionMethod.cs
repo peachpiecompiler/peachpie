@@ -63,7 +63,7 @@ namespace Pchp.Library.Reflection
 
         public void __construct(Context ctx, PhpValue @class, string name)
         {
-            _tinfo = ReflectionClass.ResolvePhpTypeInfo(ctx, @class);
+            _tinfo = ReflectionUtils.ResolvePhpTypeInfo(ctx, @class);
             _routine = _tinfo.RuntimeMethods[name] ?? throw new ReflectionException(string.Format(Resources.Resources.method_does_not_exist, _tinfo.Name, name));
         }
 

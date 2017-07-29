@@ -78,33 +78,7 @@ namespace Pchp.Library.Reflection
         {
             Debug.Assert(_tinfo == null, "Subsequent call not allowed.");
 
-            _tinfo = ResolvePhpTypeInfo(ctx, @class);
-        }
-
-        /// <summary>
-        /// Resolves type of <paramref name="class"/>.
-        /// </summary>
-        /// <param name="ctx">Context.</param>
-        /// <param name="class">Either string or class instance. Otherwise an exception is thrown.</param>
-        /// <returns>Type info. Cannot get <c>null</c>.</returns>
-        internal static PhpTypeInfo ResolvePhpTypeInfo(Context ctx, PhpValue @class)
-        {
-            object instance;
-
-            var classname = @class.ToStringOrNull();
-            if (classname != null)
-            {
-                return ctx.GetDeclaredType(classname, true)
-                    ?? throw new ReflectionException(string.Format(Resources.Resources.class_does_not_exist, classname));
-            }
-            else if ((instance = @class.AsObject()) != null)
-            {
-                return instance.GetPhpTypeInfo();
-            }
-            else
-            {
-                throw new ReflectionException(string.Format(ErrResources.invalid_argument_type, nameof(@class), "string or object"));
-            }
+            _tinfo = ReflectionUtils.ResolvePhpTypeInfo(ctx, @class);
         }
 
         #endregion

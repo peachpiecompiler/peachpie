@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Pchp.Core;
 using Pchp.Core.Reflection;
+using Pchp.Core.Resources;
 
 namespace Pchp.Library.Reflection
 {
@@ -12,6 +14,33 @@ namespace Pchp.Library.Reflection
         public const char NameSeparator = '\\';
 
         public const string ExtensionName = "Reflection";
+
+        /// <summary>
+        /// Resolves type of <paramref name="class"/>.
+        /// </summary>
+        /// <param name="ctx">Context.</param>
+        /// <param name="class">Either string or class instance. Otherwise an exception is thrown.</param>
+        /// <returns>Type info. Cannot get <c>null</c>.</returns>
+        /// <exception cref="ReflectionException">In case <paramref name="class"/> does not exist or <paramref name="class"/> is not a string or object.</exception>
+        public static PhpTypeInfo ResolvePhpTypeInfo(Context ctx, PhpValue @class)
+        {
+            object instance;
+
+            var classname = @class.ToStringOrNull();
+            if (classname != null)
+            {
+                return ctx.GetDeclaredType(classname, true)
+                    ?? throw new ReflectionException(string.Format(Resources.Resources.class_does_not_exist, classname));
+            }
+            else if ((instance = @class.AsObject()) != null)
+            {
+                return instance.GetPhpTypeInfo();
+            }
+            else
+            {
+                throw new ReflectionException(string.Format(ErrResources.invalid_argument_type, nameof(@class), "string or object"));
+            }
+        }
 
         /// <summary>
         /// Analyses all the overloads, selects one as the canonical for the reflection purposes
