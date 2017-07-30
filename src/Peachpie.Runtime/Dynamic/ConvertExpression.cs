@@ -240,6 +240,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(void)) return VoidAsConstant(expr, PhpNumber.Default, typeof(PhpNumber));
             if (source == typeof(PhpNumber)) return expr;
             if (source == typeof(PhpValue)) return Expression.Convert(expr, typeof(PhpNumber));
+            if (source == typeof(string)) return Expression.Call(Cache.Operators.ToPhpNumber_String, expr);
 
             throw new NotImplementedException(source.FullName);
         }
