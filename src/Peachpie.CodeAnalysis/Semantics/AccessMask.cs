@@ -62,6 +62,11 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         Unset = 256,
 
+        /// <summary>
+        /// The variable will be checked whether it is set.
+        /// </summary>
+        Isset = 512 | ReadQuiet | Read,
+
         // NOTE: WriteAndReadRef has to be constructed by semantic binder as bound expression with Write and another bound expression with ReadRef
         // NOTE: ReadAndWriteAndReadRef has to be constructed by semantic binder as bound expression with Read|Write and another bound expression with ReadRef
 
@@ -81,6 +86,6 @@ namespace Pchp.CodeAnalysis.Semantics
         public static bool WriteAlias(this AccessMask flags) => (flags & AccessMask.WriteRef) == AccessMask.WriteRef;
         public static bool Write(this AccessMask flags) => (flags & AccessMask.Write) != 0;
         public static bool Unset(this AccessMask flags) => (flags & AccessMask.Unset) == AccessMask.Unset;
-        public static bool Isset(this AccessMask flags) => Quiet(flags) && Read(flags);
+        public static bool Isset(this AccessMask flags) => (flags & AccessMask.Isset) == AccessMask.Isset;
     }
 }

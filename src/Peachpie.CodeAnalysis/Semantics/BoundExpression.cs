@@ -210,6 +210,11 @@ namespace Pchp.CodeAnalysis.Semantics
         public static BoundAccess Unset => new BoundAccess(AccessMask.Unset | AccessMask.ReadQuiet, null, 0);
 
         /// <summary>
+        /// Check for isset.
+        /// </summary>
+        public static BoundAccess Isset => new BoundAccess(AccessMask.Isset, null, 0);
+
+        /// <summary>
         /// Expression won't be read or written to.
         /// </summary>
         public static BoundAccess None => new BoundAccess(AccessMask.None, null, 0);

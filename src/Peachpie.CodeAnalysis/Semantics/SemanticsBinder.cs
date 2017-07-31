@@ -411,7 +411,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             for (int i = varlist.Count - 1; i >= 0; i--)
             {
-                var expr = new BoundIsSetEx((BoundReferenceExpression)BindExpression(varlist[i], BoundAccess.Read.WithQuiet()));
+                var expr = new BoundIsSetEx((BoundReferenceExpression)BindExpression(varlist[i], BoundAccess.Isset));
 
                 if (result == null)
                 {
