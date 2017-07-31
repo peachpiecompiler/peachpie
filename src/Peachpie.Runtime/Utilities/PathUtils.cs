@@ -49,12 +49,14 @@ namespace Pchp.Core.Utilities
                 DirectorySeparator = '\\';
                 AltDirectorySeparator = '/';
                 PathSeparator = ';';
+                PathComparer = StringComparer.OrdinalIgnoreCase;
             }
             else
             {
                 DirectorySeparator = '/';
                 AltDirectorySeparator = '\\';
                 PathSeparator = ':';
+                PathComparer = StringComparer.Ordinal;
             }
         }
 
@@ -78,6 +80,12 @@ namespace Pchp.Core.Utilities
         public static readonly char AltDirectorySeparator;
 
         public static readonly char PathSeparator;
+
+        /// <summary>
+        /// Gets string comparer for path comparison on current platform.
+        /// </summary>
+        /// <remarks>Ignore case on Windows, otherwise case-sensitive.</remarks>
+        public static readonly StringComparer PathComparer;
 
         /// <summary>
         /// Replaces <see cref="AltDirectorySeparator"/> to <see cref="DirectorySeparator"/>.

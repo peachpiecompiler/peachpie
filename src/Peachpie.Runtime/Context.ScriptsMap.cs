@@ -108,7 +108,7 @@ namespace Pchp.Core
             /// <summary>
             /// Maps script paths to their id.
             /// </summary>
-            static Dictionary<string, int> _scriptsMap = new Dictionary<string, int>(64, StringComparer.OrdinalIgnoreCase);  // TODO: Ordinal comparer on Unix
+            static Dictionary<string, int> _scriptsMap = new Dictionary<string, int>(64, CurrentPlatform.PathComparer);
 
             /// <summary>
             /// Scripts descriptors corresponding to id.
