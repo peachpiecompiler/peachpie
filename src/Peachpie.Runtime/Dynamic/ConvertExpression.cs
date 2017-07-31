@@ -124,7 +124,7 @@ namespace Pchp.Core.Dynamic
             throw new NotImplementedException(source.FullName);
         }
 
-        private static Expression BindToBool(Expression expr)
+        public static Expression BindToBool(Expression expr)
         {
             var source = expr.Type;
 

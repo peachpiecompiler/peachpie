@@ -80,7 +80,7 @@ namespace Pchp.Core.Dynamic
 
             if (target_value == null)
             {
-                restrictions =  restrictions.Merge(BindingRestrictions.GetInstanceRestriction(target.Expression, Expression.Constant(null)));
+                restrictions = restrictions.Merge(BindingRestrictions.GetInstanceRestriction(target.Expression, Expression.Constant(null)));
                 return;
             }
 
@@ -558,10 +558,12 @@ namespace Pchp.Core.Dynamic
 
                     var __isset = BindMagicMethod(type, classCtx, target, ctx, TypeMethods.MagicMethods.__isset, field, null);
 
-                    // Template: TryGetField(result) ? result : (__isset(key) ?? null)
-                    result = Expression.Condition(trygetfield,
-                        resultvar,
-                        InvokeHandler(ctx, target, field, __isset, access));
+                    // Template: (TryGetField(result) || (bool)__isset(key)) ? true : void
+                    result = Expression.Condition(Expression.OrElse(
+                            trygetfield,
+                            ConvertExpression.BindToBool(InvokeHandler(ctx, target, field, __isset, access))),
+                        Expression.Property(null, Cache.Properties.PhpValue_True),
+                        Expression.Field(null, Cache.Properties.PhpValue_Void));
                 }
                 else
                 {
@@ -638,7 +640,7 @@ namespace Pchp.Core.Dynamic
 
                 //
                 return Expression.Block(resultType,
-                    new[] { tokenvar},
+                    new[] { tokenvar },
                     Expression.TryFinally(
                         Expression.Condition(Expression.Property(tokenassign, Cache.RecursionCheckToken.IsInRecursion),
                             @default,
