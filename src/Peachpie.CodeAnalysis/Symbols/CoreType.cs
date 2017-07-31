@@ -165,7 +165,7 @@ namespace Pchp.CodeAnalysis.Symbols
             GetClassConstBinder = Create("Dynamic.GetClassConstBinder");
             GetFieldBinder = Create("Dynamic.GetFieldBinder");
             SetFieldBinder = Create("Dynamic.SetFieldBinder");
-            AccessMask = Create("Dynamic.AccessMask");
+            AccessMask = CreateFromFullName("Pchp.CodeAnalysis.Semantics.AccessMask");
 
             PhpTypeInfoExtension = Create("Reflection.PhpTypeInfoExtension");
             PhpTypeInfo = Create("Reflection.PhpTypeInfo");
