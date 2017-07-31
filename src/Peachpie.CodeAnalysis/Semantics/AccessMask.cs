@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Pchp.Core.Dynamic
+namespace Pchp.CodeAnalysis.Semantics
 {
     [Flags]
     public enum AccessMask
@@ -9,7 +9,6 @@ namespace Pchp.Core.Dynamic
         /// Serves for case when Expression is body of a ExpressionStmt.
         /// It is useless to push its value on the stack in that case.
         /// </summary>
-        /// <remarks>Values must match the ones in <c>CodeAnalysis</c>, AccessMask.</remarks>
         None = 0,
 
         /// <summary>
@@ -68,7 +67,7 @@ namespace Pchp.Core.Dynamic
 
         //
         ReadMask = EnsureObject | EnsureArray | ReadRef | ReadCopy | ReadQuiet,
-        WriteMask = Write | WriteRef| Unset,
+        WriteMask = Write | WriteRef | Unset,
     }
 
     internal static class AccessMaskExtensions
