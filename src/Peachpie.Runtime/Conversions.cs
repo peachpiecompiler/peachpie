@@ -302,7 +302,7 @@ namespace Pchp.Core
         /// <param name="obj">Value to be checked.</param>
         /// <param name="tinfo">Type descriptor.</param>
         /// <returns>Whether <paramref name="obj"/> is of type <paramref name="tinfo"/>.</returns>
-        public static bool IsInstanceOf(object obj, Reflection.PhpTypeInfo tinfo)
+        public static bool IsInstanceOf(object obj, PhpTypeInfo tinfo)
         {
             // note: if tinfo is null =>
             // type was not declared =>

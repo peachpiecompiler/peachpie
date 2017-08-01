@@ -150,10 +150,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // close Finally scope
                 cg.Builder.CloseLocalScope();
             }
-            
+
             // close the whole try statement scope
             cg.Builder.CloseLocalScope();
-            
+
             if (!emitCatchesOnly)
             {
                 //
@@ -165,39 +165,71 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             // handle ScriptDiedException (caused by die or exit) separately and rethrow the exception
 
+            var il = cg.Builder;
+
             // Template: catch (ScriptDiedException) { rethrow; }
 
-            cg.Builder.OpenLocalScope(ScopeType.Catch, cg.CoreTypes.ScriptDiedException.Symbol);
-            cg.Builder.EmitThrow(true);
-            cg.Builder.CloseLocalScope();
+            il.OpenLocalScope(ScopeType.Catch, cg.CoreTypes.ScriptDiedException.Symbol);
+            il.EmitThrow(true);
+            il.CloseLocalScope();
         }
 
         void EmitCatchBlock(CodeGenerator cg, CatchBlock catchBlock)
         {
             Debug.Assert(catchBlock.Variable.Variable != null);
 
-            if (catchBlock.TypeRef.ResolvedType.IsErrorTypeOrNull())
+            var il = cg.Builder;
+            Microsoft.Cci.ITypeReference extype;
+
+            il.AdjustStack(1); // Account for exception on the stack.
+
+            if (catchBlock.TypeRef.ResolvedType.IsErrorTypeOrNull() || catchBlock.TypeRef.ResolvedType.IsInterfaceType())
             {
-                Debug.WriteLine("Handle unknown exception types dynamically."); // TODO: if (ex is ctx.ResolveType(ExceptionTypeName)) { ... }
-                return;
+                // Template: catch when
+                il.OpenLocalScope(ScopeType.Filter);
+
+                if (catchBlock.TypeRef.ResolvedType.IsErrorTypeOrNull())
+                {
+                    extype = cg.CoreTypes.Object.Symbol;
+
+                    // Template: filter(Operators.IsInstanceOf(<stack>, type))
+                    il.EmitOpCode(ILOpCode.Dup);
+                    catchBlock.TypeRef.EmitLoadTypeInfo(cg, false);
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.IsInstanceOf_Object_PhpTypeInfo)
+                        .Expect(SpecialType.System_Boolean);
+                }
+                else
+                {
+                    extype = (Microsoft.Cci.ITypeReference)catchBlock.TypeRef.ResolvedType;
+
+                    // Template: filter (<stack> is Interface)
+                    il.EmitOpCode(ILOpCode.Isinst);
+                    il.EmitToken(extype, null, cg.Diagnostics);
+                    il.EmitOpCode(ILOpCode.Dup);
+                    il.EmitNullConstant();
+                    il.EmitOpCode(ILOpCode.Cgt_un); // value > null : bool
+                }
+
+                il.MarkFilterConditionEnd();
+            }
+            else
+            {
+                // Template: catch (TypeRef)
+                extype = cg.Module.Translate(catchBlock.TypeRef.ResolvedType, null, cg.Diagnostics);
+                il.OpenLocalScope(ScopeType.Catch, extype);
             }
 
-            var extype = catchBlock.TypeRef.ResolvedType;
-
-            cg.Builder.AdjustStack(1); // Account for exception on the stack.
-
-            cg.Builder.OpenLocalScope(ScopeType.Catch, (Microsoft.Cci.ITypeReference)extype);
-
             // <tmp> = <ex>
-            var tmploc = cg.GetTemporaryLocal(extype);
-            cg.Builder.EmitLocalStore(tmploc);
+            cg.EmitSequencePoint(catchBlock.Variable.PhpSyntax);
+            var tmploc = cg.GetTemporaryLocal((TypeSymbol)extype);
+            il.EmitLocalStore(tmploc);
 
             var varplace = catchBlock.Variable.BindPlace(cg);
             Debug.Assert(varplace != null);
 
             // $x = <tmp>
             varplace.EmitStorePrepare(cg);
-            cg.Builder.EmitLocalLoad(tmploc);
+            il.EmitLocalLoad(tmploc);
             varplace.EmitStore(cg, (TypeSymbol)tmploc.Type);
 
             //
@@ -208,7 +240,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             cg.GenerateScope(catchBlock, NextBlock.Ordinal);
 
             //
-            cg.Builder.CloseLocalScope();
+            il.CloseLocalScope();
         }
     }
 
@@ -217,7 +249,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         LocalDefinition _enumeratorLoc;
         MethodSymbol _moveNextMethod, _disposeMethod;
         PropertySymbol _currentValue, _currentKey, _current;
-        
+
         static ILOpCode CallOpCode(MethodSymbol method, TypeSymbol declaringtype)
         {
             return method.IsMetadataVirtual() ? ILOpCode.Callvirt : ILOpCode.Call;
@@ -343,7 +375,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             if (enumereeType.IsOfType(cg.CoreTypes.PhpArray))
             {
                 cg.Builder.EmitBoolConstant(_aliasedValues);
-                
+
                 // PhpArray.GetForeachtEnumerator(bool)
                 enumeratorType = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetForeachEnumerator_Boolean);  // TODO: IPhpArray
             }
@@ -523,7 +555,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                     cg.Builder.EmitLocalStore(switch_loc);
 
                     //
-                    foreach(var this_block in this.CaseBlocks)
+                    foreach (var this_block in this.CaseBlocks)
                     {
                         var caseValueBag = this_block.CaseValue;
                         if (caseValueBag.IsEmpty) { continue; }
