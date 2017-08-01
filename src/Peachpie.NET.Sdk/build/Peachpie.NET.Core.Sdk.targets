@@ -130,6 +130,7 @@
       <RspLine Include="--output-name:%(IntermediateAssembly.Filename)" />
       <RspLine Include="--optimize:$(Optimize)" />
       <RspLine Include="--langversion:$(LangVersion)" Condition=" '$(LangVersion)' != '' " />
+      <RspLine Include="--phpdoctypes:$(PhpDocTypes)" Condition=" '$(PhpDocTypes)' != '' " />
       <RspLine Include="--shortopentag+" Condition=" '$(ShortOpenTag)' == 'true' " />
       <RspLine Include="--xmldoc:$(DocumentationFile)" Condition=" '$(GenerateDocumentation)' == 'true'" />
       <RspLine Include="--debug-type:$(DebugType)" />
