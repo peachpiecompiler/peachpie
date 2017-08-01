@@ -37,15 +37,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             return GenerateMethodBody(moduleBuilder, routine, (builder) =>
             {
-                DiagnosticBag diagnosticsForThisMethod = DiagnosticBag.GetInstance();
                 var optimization = moduleBuilder.Compilation.Options.OptimizationLevel;
-                var codeGen = new CodeGenerator(routine, builder, moduleBuilder, diagnosticsForThisMethod, optimization, emittingPdb);
-
-                //if (diagnosticsForThisMethod.HasAnyErrors())
-                //{
-                //    // we are done here. Since there were errors we should not emit anything.
-                //    return null;
-                //}
+                var codeGen = new CodeGenerator(routine, builder, moduleBuilder, diagnostics, optimization, emittingPdb);
 
                 // We need to save additional debugging information for MoveNext of an async state machine.
                 //var stateMachineMethod = method as SynthesizedStateMachineMethod;

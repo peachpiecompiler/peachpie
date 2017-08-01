@@ -144,6 +144,9 @@
   <data name="ERR_UnknownTypeDependencies" xml:space="preserve">
     <value>Type '{0}' cannot be declared.</value>
   </data>
+  <data name="ERR_ValueOfTypeCannotBeAliased" xml:space="preserve">
+    <value>Value of type '{0}' cannot be passed by reference</value>
+  </data>
   <data name="WRN_AmbiguousDeclaration" xml:space="preserve">
     <value>The declaration of '{0}' is ambiguous resulting in multiple versions to be compiled. Fix this issue by ensuring every base type is declared just once unconditionally.</value>
   </data>

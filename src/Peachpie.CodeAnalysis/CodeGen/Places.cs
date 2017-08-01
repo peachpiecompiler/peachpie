@@ -1406,8 +1406,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else
                 {
-                    Debug.Assert(false, "value cannot be aliased");
-
+                    cg.Diagnostics.Add(cg.Routine, _boundref.PhpSyntax, Errors.ErrorCode.ERR_ValueOfTypeCannotBeAliased, type.Name);
+                    
                     // new PhpAlias((PhpValue)<place>, 1)
                     EmitOpCode_Load(cg);
                     cg.EmitConvertToPhpValue(type, 0);
