@@ -473,6 +473,12 @@ namespace Pchp.Core
             return _type.ToStringQuiet(ref this);
         }
 
+        /// <summary>
+        /// Implements <c>foreach</c> over <see cref="PhpValue"/>.
+        /// Gets the enumerator object allowing to iterate through PHP values, arrays and iterators.
+        /// </summary>
+        public IEnumerator<KeyValuePair<PhpValue, PhpValue>> GetEnumerator() => this.GetForeachEnumerator(false, default(RuntimeTypeHandle));
+
         #endregion
 
         #region IEquatable<PhpValue>

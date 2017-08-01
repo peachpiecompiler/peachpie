@@ -25,5 +25,36 @@ namespace Peachpie.Runtime.Tests
                 Assert.AreEqual(objects[i], values[i].ToClr());
             }
         }
+
+        class PhpIterator : Iterator
+        {
+            int idx = 0;
+            string[] items = new string[] { "Hello", " ", "World" };
+
+            public PhpValue current() => (PhpValue)items[idx];
+
+            public PhpValue key() => (PhpValue)idx;
+
+            public void next() => idx++;
+
+            public void rewind() => idx = 0;
+
+            public bool valid() => idx >= 0 && idx < items.Length;
+        }
+
+        [TestMethod]
+        public void ClrEnumerator()
+        {
+            var value = PhpValue.FromClass(new PhpIterator());
+
+            string result = null;
+
+            foreach (var pair in value)
+            {
+                result += pair.Value.String;
+            }
+
+            Assert.AreEqual("Hello World", result);
+        }
     }
 }
