@@ -179,49 +179,57 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Debug.Assert(catchBlock.Variable.Variable != null);
 
             var il = cg.Builder;
-            Microsoft.Cci.ITypeReference extype;
+            TypeSymbol extype;
 
             il.AdjustStack(1); // Account for exception on the stack.
 
-            if (catchBlock.TypeRef.ResolvedType.IsErrorTypeOrNull() || catchBlock.TypeRef.ResolvedType.IsInterfaceType())
+            if (catchBlock.TypeRef.ResolvedType.IsErrorTypeOrNull() || !catchBlock.TypeRef.ResolvedType.IsOfType(cg.CoreTypes.Exception))
             {
                 // Template: catch when
                 il.OpenLocalScope(ScopeType.Filter);
+
+                // STACK : object
 
                 if (catchBlock.TypeRef.ResolvedType.IsErrorTypeOrNull())
                 {
                     extype = cg.CoreTypes.Object.Symbol;
 
                     // Template: filter(Operators.IsInstanceOf(<stack>, type))
-                    il.EmitOpCode(ILOpCode.Dup);
                     catchBlock.TypeRef.EmitLoadTypeInfo(cg, false);
                     cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.IsInstanceOf_Object_PhpTypeInfo)
                         .Expect(SpecialType.System_Boolean);
                 }
                 else
                 {
-                    extype = (Microsoft.Cci.ITypeReference)catchBlock.TypeRef.ResolvedType;
+                    extype = catchBlock.TypeRef.ResolvedType;
 
                     // Template: filter (<stack> is Interface)
                     il.EmitOpCode(ILOpCode.Isinst);
-                    il.EmitToken(extype, null, cg.Diagnostics);
-                    il.EmitOpCode(ILOpCode.Dup);
+                    cg.EmitSymbolToken(extype, null);
                     il.EmitNullConstant();
                     il.EmitOpCode(ILOpCode.Cgt_un); // value > null : bool
                 }
 
+                // STACK : i4 ? handle : continue
+
                 il.MarkFilterConditionEnd();
+
+                // STACK : object
+                cg.EmitCastClass(cg.CoreTypes.Exception);   // has to be casted to System.Exception in order to generate valid IL
+                cg.EmitCastClass(extype);
             }
             else
             {
                 // Template: catch (TypeRef)
-                extype = cg.Module.Translate(catchBlock.TypeRef.ResolvedType, null, cg.Diagnostics);
-                il.OpenLocalScope(ScopeType.Catch, extype);
+                extype = catchBlock.TypeRef.ResolvedType;
+                il.OpenLocalScope(ScopeType.Catch, cg.Module.Translate(extype, null, cg.Diagnostics));
             }
+
+            // STACK : extype
 
             // <tmp> = <ex>
             cg.EmitSequencePoint(catchBlock.Variable.PhpSyntax);
-            var tmploc = cg.GetTemporaryLocal((TypeSymbol)extype);
+            var tmploc = cg.GetTemporaryLocal(extype);
             il.EmitLocalStore(tmploc);
 
             var varplace = catchBlock.Variable.BindPlace(cg);
