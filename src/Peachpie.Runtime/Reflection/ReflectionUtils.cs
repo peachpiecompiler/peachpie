@@ -78,10 +78,13 @@ namespace Pchp.Core.Reflection
             typeof(object),
             typeof(IPhpCallable),
             typeof(PhpResource),
+            typeof(System.Exception),
+            typeof(System.Dynamic.IDynamicMetaObjectProvider),
         };
 
         /// <summary>
         /// Determines if given type is not visible to PHP runtime.
+        /// We implement these types implicitly in compile time, so we should ignore them at proper places.
         /// </summary>
         public static bool IsHiddenType(this Type t) => s_hiddenTypes.Contains(t);
 

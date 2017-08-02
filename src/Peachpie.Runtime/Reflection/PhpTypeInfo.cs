@@ -129,7 +129,7 @@ namespace Pchp.Core.Reflection
                 if ((_flags & Flags.BaseTypePopulated) == 0)
                 {
                     var binfo = _type.BaseType;
-                    _lazyBaseType = (binfo != null && binfo != typeof(object)) ? binfo.GetPhpTypeInfo() : null;
+                    _lazyBaseType = (binfo != null && !binfo.IsHiddenType()) ? binfo.GetPhpTypeInfo() : null;
                     _flags |= Flags.BaseTypePopulated;
                 }
                 return _lazyBaseType;
