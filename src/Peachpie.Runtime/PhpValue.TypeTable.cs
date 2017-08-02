@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using Pchp.Core.Reflection;
 
 namespace Pchp.Core
 {
@@ -485,8 +486,13 @@ namespace Pchp.Core
                     return arracces.offsetGet(index);
                 }
 
-                // TODO: ERR
-                throw new NotImplementedException();
+                if (!quiet)
+                {
+                    PhpException.Throw(PhpError.Error, Resources.ErrResources.object_used_as_array, me.Object.GetPhpTypeInfo().Name);
+                }
+                 
+                //
+                return PhpValue.Void;
             }
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet)
             {
@@ -496,10 +502,14 @@ namespace Pchp.Core
                     return Operators.EnsureItemAlias(arr, index, quiet);
                 }
 
-                // TODO: Err
-                throw new NotSupportedException();
+                if (!quiet) // NOTE: PHP does not report this error (?)
+                {
+                    PhpException.Throw(PhpError.Error, Resources.ErrResources.object_used_as_array, me.Object.GetPhpTypeInfo().Name);
+                }
+
+                return new PhpAlias(PhpValue.Null);
             }
-            public override PhpArray ToArray(ref PhpValue me) => Core.Convert.ClassToArray(me.Object);
+            public override PhpArray ToArray(ref PhpValue me) => Convert.ClassToArray(me.Object);
             public override object AsObject(ref PhpValue me) => me.Object;
             public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx)
             {

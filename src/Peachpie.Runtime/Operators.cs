@@ -300,8 +300,9 @@ namespace Pchp.Core
             // IPhpArray
             if (obj is IPhpArray) return (IPhpArray)obj;
 
-            // TODO: Fatal error: Uncaught Error: Cannot use object of type {0} as array
-            throw new InvalidOperationException(string.Format(Resources.ErrResources.object_used_as_array, obj.GetType().FullName));
+            // Fatal error: Uncaught Error: Cannot use object of type {0} as array
+            PhpException.Throw(PhpError.Error, Resources.ErrResources.object_used_as_array, obj.GetPhpTypeInfo().Name);
+            throw new ArgumentException(nameof(obj));
         }
 
         public static IPhpArray GetArrayAccess(PhpValue value) => value.GetArrayAccess();
