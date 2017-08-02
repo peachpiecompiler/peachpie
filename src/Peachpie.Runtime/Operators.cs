@@ -286,6 +286,72 @@ namespace Pchp.Core
             public void SetItemValue(PhpValue index, PhpValue value) => _array.offsetSet(index, value);
         }
 
+        sealed class ListAsPhpArray : IPhpArray
+        {
+            readonly IList _array;
+
+            public ListAsPhpArray(IList array)
+            {
+                Debug.Assert(array != null);
+                _array = array;
+            }
+
+            object ToObject(PhpValue value) => value.ToClr();    // TODO, type conversion
+
+            public int Count => _array.Count;
+
+            public void AddValue(PhpValue value)
+            {
+                _array.Add(ToObject(value));
+            }
+
+            public PhpAlias EnsureItemAlias(IntStringKey key) => GetItemValue(key).EnsureAlias();
+
+            public IPhpArray EnsureItemArray(IntStringKey key) => GetItemValue(key).EnsureArray();
+
+            public object EnsureItemObject(IntStringKey key) => GetItemValue(key).EnsureObject();
+
+            public PhpValue GetItemValue(IntStringKey key)
+            {
+                if (key.IsInteger)
+                    return PhpValue.FromClr(_array[key.Integer]);
+                else
+                    throw new ArgumentException(nameof(key));
+            }
+
+            public PhpValue GetItemValue(PhpValue index) => GetItemValue(index.ToIntStringKey());
+
+            public void RemoveKey(IntStringKey key)
+            {
+                if (key.IsInteger)
+                    _array.RemoveAt(key.Integer);
+                else
+                    throw new ArgumentException(nameof(key));
+            }
+
+            public void RemoveKey(PhpValue index) => RemoveKey(index.ToIntStringKey());
+
+            public void SetItemAlias(IntStringKey key, PhpAlias alias)
+            {
+                if (key.IsInteger)
+                    _array[key.Integer] = ToObject(alias.Value);
+                else
+                    throw new ArgumentException(nameof(key));
+            }
+
+            public void SetItemAlias(PhpValue index, PhpAlias alias) => SetItemAlias(index.ToIntStringKey(), alias);
+
+            public void SetItemValue(IntStringKey key, PhpValue value)
+            {
+                if (key.IsInteger)
+                    _array[key.Integer] = ToObject(value);
+                else
+                    throw new ArgumentException(nameof(key));
+            }
+
+            public void SetItemValue(PhpValue index, PhpValue value) => SetItemValue(index.ToIntStringKey(), value);
+        }
+
         public static IPhpArray EnsureArray(ArrayAccess obj)
         {
             Debug.Assert(obj != null);
@@ -296,9 +362,12 @@ namespace Pchp.Core
         {
             // ArrayAccess
             if (obj is ArrayAccess) return EnsureArray((ArrayAccess)obj);
-            
+
             // IPhpArray
             if (obj is IPhpArray) return (IPhpArray)obj;
+
+            // IList
+            if (obj is IList) return new ListAsPhpArray((IList)obj);
 
             // Fatal error: Uncaught Error: Cannot use object of type {0} as array
             PhpException.Throw(PhpError.Error, Resources.ErrResources.object_used_as_array, obj.GetPhpTypeInfo().Name);
@@ -823,7 +892,7 @@ namespace Pchp.Core
                     break;
             }
         }
-   
+
 
         /// <summary>
         /// The method implements <c>...</c> unpack operator.
@@ -931,7 +1000,7 @@ namespace Pchp.Core
             Debug.Assert(fallbackName != null, nameof(fallbackName));
 
             PhpValue value;
-            if (ctx.TryGetConstant(name, out value, ref idx) == false && 
+            if (ctx.TryGetConstant(name, out value, ref idx) == false &&
                 ctx.TryGetConstant(fallbackName, out value) == false)
             {
                 // Warning: undefined constant

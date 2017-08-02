@@ -473,31 +473,34 @@ namespace Pchp.Core
             public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet)
             {
                 // IPhpArray.GetItemValue
-                var arr = me.Object as IPhpArray;
-                if (arr != null)
+                if (me.Object is IPhpArray arr)
                 {
                     return arr.GetItemValue(index); // , quiet);
                 }
 
                 // ArrayAccess.offsetGet()
-                var arracces = me.Object as ArrayAccess;
-                if (arracces != null)
+                if (me.Object is ArrayAccess arracces)
                 {
                     return arracces.offsetGet(index);
+                }
+
+                // IList[]
+                if (me.Object is System.Collections.IList list)
+                {
+                    return PhpValue.FromClr(list[index.ToIntStringKey().Integer]);
                 }
 
                 if (!quiet)
                 {
                     PhpException.Throw(PhpError.Error, Resources.ErrResources.object_used_as_array, me.Object.GetPhpTypeInfo().Name);
                 }
-                 
+
                 //
                 return PhpValue.Void;
             }
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet)
             {
-                var arr = me.Object as IPhpArray;
-                if (arr != null)
+                if (me.Object is IPhpArray arr)
                 {
                     return Operators.EnsureItemAlias(arr, index, quiet);
                 }
