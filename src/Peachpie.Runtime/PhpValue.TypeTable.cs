@@ -487,9 +487,27 @@ namespace Pchp.Core
                 // IList[]
                 if (me.Object is System.Collections.IList list)
                 {
-                    return PhpValue.FromClr(list[index.ToIntStringKey().Integer]);
+                    var key = index.ToIntStringKey();
+                    if (key.IsInteger)
+                    {
+                        if (key.Integer >= 0 && key.Integer < list.Count)
+                        {
+                            return PhpValue.FromClr(list[index.ToIntStringKey().Integer]);
+                        }
+                        else if (!quiet)
+                        {
+                            PhpException.Throw(PhpError.Error, Resources.ErrResources.undefined_offset, key.Integer.ToString());
+                        }
+                    }
+                    else if (!quiet)
+                    {
+                        PhpException.Throw(PhpError.Warning, Resources.ErrResources.illegal_offset_type);
+                    }
+
+                    return PhpValue.Void;
                 }
 
+                //
                 if (!quiet)
                 {
                     PhpException.Throw(PhpError.Error, Resources.ErrResources.object_used_as_array, me.Object.GetPhpTypeInfo().Name);
