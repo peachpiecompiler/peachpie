@@ -13,9 +13,19 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName)]
     public class SplObjectStorage : Countable, Iterator, Serializable, ArrayAccess
     {
-        private readonly Dictionary<object, PhpValue> _storage = new Dictionary<object, PhpValue>();
-        private IEnumerator<KeyValuePair<object, PhpValue>> _enumerator;
-        private int _index = -1;
+        struct Keys
+        {
+            public static readonly IntStringKey Object = new IntStringKey("obj");
+            public static readonly IntStringKey Info = new IntStringKey("inf");
+            public static IntStringKey MakeKey(object obj) => new IntStringKey(SplObjects.object_hash_internal(obj));
+        }
+
+        /// <summary>
+        /// Storage array "storage" as it is in PHP.
+        /// <code>{ hash_i => [object_i, info_i] }</code>
+        /// </summary>
+        private readonly PhpArray storage = new PhpArray();
+        private int _index = 0;
 
         protected readonly Context _ctx;
 
@@ -28,147 +38,129 @@ namespace Pchp.Library.Spl
 
         public SplObjectStorage(Context ctx) { _ctx = ctx; }
 
-        public void addAll(SplObjectStorage storage)
+        public virtual void addAll(SplObjectStorage storage)
         {
-            foreach (var pair in storage._storage)
-            {
-                _storage[pair.Key] = pair.Value.DeepCopy();
-            }
-            // TODO: reset _enumerator to previous position
+            using (var e = storage.storage.GetFastEnumerator())
+                while (e.MoveNext())
+                {
+                    this.storage[e.CurrentKey] = e.CurrentValue.DeepCopy();
+                }
         }
-        public void attach(object @object, PhpValue data = default(PhpValue))
+        public virtual void attach(object @object, PhpValue data = default(PhpValue))
         {
-            _storage[@object] = data.IsSet ? data.DeepCopy() : PhpValue.Void;
-            // TODO: reset _enumerator to previous position
-        }
-        public virtual bool contains(object @object) => _storage.ContainsValue(PhpValue.FromClass(@object));
-        public void detach(object @object)
-        {
-            _storage.Remove(@object);
-            // TODO: reset _enumerator to previous position
-        }
-        public string getHash(object @object) => (@object != null) ? @object.GetHashCode().ToString("x32") : string.Empty;   // see spl_object_hash()
-        public PhpValue getInfo()
-        {
-            EnsureEnumerator();
-            return (_index >= 0) ? _enumerator.Current.Value : PhpValue.Null;
-        }
-        public void setInfo(PhpValue data)
-        {
-            EnsureEnumerator();
-            if (_index >= 0)
-            {
-                _storage[_enumerator.Current.Key] = data.DeepCopy();
-                // TODO: reset _enumerator to previous position
-            }
-            else
-            {
-                throw new InvalidOperationException();  // TODO: Err
-            }
-        }
-        public void removeAll(SplObjectStorage storage)
-        {
-            foreach (var obj in storage._storage.Keys)
-            {
-                _storage.Remove(obj);
-            }
-            // TODO: reset _enumerator to previous position
-        }
-        public void removeAllExcept(SplObjectStorage storage)
-        {
-            var set = new HashSet<object>(this._storage.Keys);
-            set.ExceptWith(storage._storage.Keys);
+            // hash => { "obj" => object, "inf" => data }
 
-            foreach (var obj in set)
+            this.storage[Keys.MakeKey(@object)] = (PhpValue)new PhpArray(2)
             {
-                _storage.Remove(obj);
+                {Keys.Object,  PhpValue.FromClass(@object)},
+                {Keys.Info,  data.IsSet ? data : PhpValue.Null}
+            };
+        }
+        public virtual bool contains(object @object) => storage.ContainsKey(Keys.MakeKey(@object));
+        public virtual void detach(object @object)
+        {
+            storage.RemoveKey(Keys.MakeKey(@object));
+        }
+        public virtual string getHash(object @object) => (@object != null) ? SplObjects.object_hash_internal_string(@object) : string.Empty;   // see spl_object_hash()
+        public virtual PhpValue getInfo()
+        {
+            return storage.IntrinsicEnumerator.AtEnd
+                ? PhpValue.Null
+                : storage.IntrinsicEnumerator.CurrentValue.Array[Keys.Info];
+        }
+        public virtual void setInfo(PhpValue data)
+        {
+            if (!storage.IntrinsicEnumerator.AtEnd)
+            {
+                storage.IntrinsicEnumerator.CurrentValue.Array[Keys.Info] = data.DeepCopy();
             }
-            // TODO: reset _enumerator to previous position
+        }
+        public virtual void removeAll(SplObjectStorage storage)
+        {
+            using (var e = storage.storage.GetFastEnumerator())
+                while (e.MoveNext())
+                {
+                    this.storage.RemoveKey(e.CurrentKey);
+                }
+        }
+        public virtual void removeAllExcept(SplObjectStorage storage)
+        {
+            using (var e = this.storage.GetFastEnumerator())
+                while (e.MoveNext())
+                {
+                    if (!storage.storage.ContainsKey(e.CurrentKey))
+                    {
+                        this.storage.RemoveKey(e.CurrentKey);
+                    }
+                }
         }
 
         #region Countable
 
-        public long count() => _storage.Count;
+        public virtual long count() => storage.Count;
 
         #endregion
 
         #region Iterator
 
-        private void EnsureEnumerator()
+        public virtual PhpValue current()
         {
-            if (_enumerator == null)
-            {
-                _enumerator = _storage.GetEnumerator();
-                _index = _enumerator.MoveNext() ? 0 : -1;
-            }
+            return storage.IntrinsicEnumerator.AtEnd
+                ? PhpValue.Null
+                : storage.IntrinsicEnumerator.CurrentValue.Array[Keys.Object];
         }
 
-        public PhpValue current()
+        public virtual PhpValue key()
         {
-            EnsureEnumerator();
-            return (_index >= 0) ? PhpValue.FromClass(_enumerator.Current.Key) : PhpValue.Null;
+            return PhpValue.Create(_index);
         }
 
-        public PhpValue key()
+        public virtual void next()
         {
-            EnsureEnumerator();
-            return (_index >= 0) ? PhpValue.Create(_index) : PhpValue.Null;
+            _index++;   // PHP behavior, increasing key even if the enumerater reached the end of storage
+            storage.IntrinsicEnumerator.MoveNext();
         }
 
-        public void next()
+        public virtual void rewind()
         {
-            EnsureEnumerator();
-            if (_index >= 0 && _enumerator.MoveNext())
-            {
-                _index++;
-            }
-            else
-            {
-                _index = -1;
-            }
+            _index = 0;
+            storage.IntrinsicEnumerator.MoveFirst();
         }
 
-        public void rewind()
+        public virtual bool valid()
         {
-            _enumerator = null;
-        }
-
-        public bool valid()
-        {
-            EnsureEnumerator();
-            return _index >= 0;
+            return !storage.IntrinsicEnumerator.AtEnd;
         }
 
         #endregion
 
         #region ArrayAccess
 
-        public bool offsetExists(PhpValue offset)
-        {
-            return _storage.ContainsKey(offset.AsObject());
-        }
-
-        public PhpValue offsetGet(PhpValue offset)
+        public virtual bool offsetExists(PhpValue offset)
         {
             var obj = offset.AsObject();
-            if (obj != null && _storage.TryGetValue(obj, out PhpValue value))
+            return obj != null && storage.ContainsKey(Keys.MakeKey(obj));
+        }
+
+        public virtual PhpValue offsetGet(PhpValue offset)
+        {
+            var obj = offset.AsObject();
+            if (obj != null && this.storage.TryGetValue(Keys.MakeKey(obj), out PhpValue value))
             {
-                return value;
+                return value.Array[Keys.Info];
             }
             else
             {
-                // TODO: Err
-                return PhpValue.Null;
+                throw new UnexpectedValueException();
             }
         }
 
-        public void offsetSet(PhpValue offset, PhpValue value)
+        public virtual void offsetSet(PhpValue offset, PhpValue value)
         {
             var obj = offset.AsObject();
             if (obj != null)
             {
-                _storage[obj] = value.DeepCopy();
-                // TODO: reset _enumerator to previous position
+                attach(obj, value);
             }
             else
             {
@@ -176,12 +168,12 @@ namespace Pchp.Library.Spl
             }
         }
 
-        public void offsetUnset(PhpValue offset)
+        public virtual void offsetUnset(PhpValue offset)
         {
             var obj = offset.AsObject();
             if (obj != null)
             {
-                _storage.Remove(obj);
+                this.storage.Remove(Keys.MakeKey(obj));
             }
         }
 
@@ -189,7 +181,7 @@ namespace Pchp.Library.Spl
 
         #region Serializable
 
-        public PhpString serialize()
+        public virtual PhpString serialize()
         {
             // x:{count_int};{item0},{value0};;...;;m:{members_array}
 
@@ -198,16 +190,17 @@ namespace Pchp.Library.Spl
 
             // x:i:{count};
             result.Append("x:");
-            result.Append(serializer.Serialize(_ctx, (PhpValue)_storage.Count, default(RuntimeTypeHandle)));
+            result.Append(serializer.Serialize(_ctx, (PhpValue)storage.Count, default(RuntimeTypeHandle)));
 
             // {item},{value};
-            foreach (var pair in _storage)
-            {
-                result.Append(serializer.Serialize(_ctx, PhpValue.FromClass(pair.Key), default(RuntimeTypeHandle)));
-                result.Append(",");
-                result.Append(serializer.Serialize(_ctx, pair.Value, default(RuntimeTypeHandle)));
-                result.Append(";");
-            }
+            using (var e = storage.GetFastEnumerator())
+                while (e.MoveNext())
+                {
+                    result.Append(serializer.Serialize(_ctx, e.CurrentValue.Array[Keys.Object], default(RuntimeTypeHandle)));
+                    result.Append(",");
+                    result.Append(serializer.Serialize(_ctx, e.CurrentValue.Array[Keys.Info], default(RuntimeTypeHandle)));
+                    result.Append(";");
+                }
 
             // m:{array of runtime members}
             result.Append("m:");
@@ -217,7 +210,7 @@ namespace Pchp.Library.Spl
             return result;
         }
 
-        public void unserialize(PhpString serialized)
+        public virtual void unserialize(PhpString serialized)
         {
             // x:{count_int};{item0},{value0};...;m:{members_array}
             if (serialized.Length < 12) throw new ArgumentException(nameof(serialized)); // quick check
@@ -256,7 +249,7 @@ namespace Pchp.Library.Spl
                     }
 
                     //
-                    _storage[obj.AsObject()] = data;
+                    attach(obj.AsObject(), data);
                 }
 
                 // ;
