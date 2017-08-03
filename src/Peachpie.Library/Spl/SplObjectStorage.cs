@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using Pchp.Core;
@@ -18,6 +19,18 @@ namespace Pchp.Library.Spl
             public static readonly IntStringKey Object = new IntStringKey("obj");
             public static readonly IntStringKey Info = new IntStringKey("inf");
             public static IntStringKey MakeKey(object obj) => new IntStringKey(SplObjects.object_hash_internal(obj));
+            public static void AttachImpl(PhpArray storage, object @object, PhpValue data)
+            {
+                Debug.Assert(@object != null);
+
+                // hash => { "obj" => object, "inf" => data }
+
+                storage[MakeKey(@object)] = (PhpValue)new PhpArray(2)
+                {
+                    { Object, PhpValue.FromClass(@object) },
+                    { Info, data.IsSet ? data : PhpValue.Null },
+                };
+            }
         }
 
         /// <summary>
@@ -53,16 +66,7 @@ namespace Pchp.Library.Spl
         /// <summary>
         /// Adds an object inside the storage, and optionally associate it to some data.
         /// </summary>
-        public virtual void attach(object @object, PhpValue data = default(PhpValue))
-        {
-            // hash => { "obj" => object, "inf" => data }
-
-            this.storage[Keys.MakeKey(@object)] = (PhpValue)new PhpArray(2)
-            {
-                {Keys.Object,  PhpValue.FromClass(@object)},
-                {Keys.Info,  data.IsSet ? data : PhpValue.Null}
-            };
-        }
+        public virtual void attach(object @object, PhpValue data = default(PhpValue)) => Keys.AttachImpl(storage, @object, data);
 
         /// <summary>
         /// Checks if the storage contains the object provided.
@@ -224,7 +228,7 @@ namespace Pchp.Library.Spl
             var obj = offset.AsObject();
             if (obj != null)
             {
-                attach(obj, value);
+                Keys.AttachImpl(storage, obj, value);
             }
             else
             {
@@ -324,7 +328,7 @@ namespace Pchp.Library.Spl
                     }
 
                     //
-                    attach(obj.AsObject(), data);
+                    Keys.AttachImpl(storage, obj.AsObject(), data);
                 }
 
                 // ;
