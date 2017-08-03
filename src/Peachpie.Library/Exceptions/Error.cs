@@ -71,4 +71,19 @@ namespace Pchp.Library.Spl
             throw new NotImplementedException();
         }
     }
+
+    /// <summary>
+    /// Thrown when <c>assert()</c> fails.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName)]
+    public class AssertionError : Error
+    {
+        [PhpFieldsOnlyCtor]
+        protected AssertionError() { }
+
+        public AssertionError(string message = "", long code = 0, Throwable previous = null)
+            : base(message, code, previous)
+        {
+        }
+    }
 }
