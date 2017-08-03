@@ -38,6 +38,9 @@ namespace Pchp.Library.Spl
 
         public SplObjectStorage(Context ctx) { _ctx = ctx; }
 
+        /// <summary>
+        /// Adds all objects-data pairs from a different storage in the current storage.
+        /// </summary>
         public virtual void addAll(SplObjectStorage storage)
         {
             using (var e = storage.storage.GetFastEnumerator())
@@ -46,6 +49,10 @@ namespace Pchp.Library.Spl
                     this.storage[e.CurrentKey] = e.CurrentValue.DeepCopy();
                 }
         }
+
+        /// <summary>
+        /// Adds an object inside the storage, and optionally associate it to some data.
+        /// </summary>
         public virtual void attach(object @object, PhpValue data = default(PhpValue))
         {
             // hash => { "obj" => object, "inf" => data }
@@ -56,18 +63,45 @@ namespace Pchp.Library.Spl
                 {Keys.Info,  data.IsSet ? data : PhpValue.Null}
             };
         }
-        public virtual bool contains(object @object) => storage.ContainsKey(Keys.MakeKey(@object));
+
+        /// <summary>
+        /// Checks if the storage contains the object provided.
+        /// </summary>
+        public virtual bool contains(object @object) => @object != null && storage.ContainsKey(Keys.MakeKey(@object));
+
+        /// <summary>
+        /// Removes the object from the storage.
+        /// </summary>
         public virtual void detach(object @object)
         {
             storage.RemoveKey(Keys.MakeKey(@object));
         }
+
+        /// <summary>
+        /// This method calculates an identifier for the objects added to an SplObjectStorage object.
+        /// </summary>
+        /// <remarks>
+        /// The implementation in SplObjectStorage returns the same value as spl_object_hash().
+        /// 
+        /// The storage object will never contain more than one object with the same identifier.
+        /// As such, it can be used to implement a set(a collection of unique values) where
+        /// the quality of an object being unique is determined by the value returned by this function being unique.
+        /// </remarks>
         public virtual string getHash(object @object) => (@object != null) ? SplObjects.object_hash_internal_string(@object) : string.Empty;   // see spl_object_hash()
+
+        /// <summary>
+        /// Returns the data, or info, associated with the object pointed by the current iterator position.
+        /// </summary>
         public virtual PhpValue getInfo()
         {
             return storage.IntrinsicEnumerator.AtEnd
                 ? PhpValue.Null
                 : storage.IntrinsicEnumerator.CurrentValue.Array[Keys.Info];
         }
+
+        /// <summary>
+        /// Associates data, or info, with the object currently pointed to by the iterator.
+        /// </summary>
         public virtual void setInfo(PhpValue data)
         {
             if (!storage.IntrinsicEnumerator.AtEnd)
@@ -75,6 +109,10 @@ namespace Pchp.Library.Spl
                 storage.IntrinsicEnumerator.CurrentValue.Array[Keys.Info] = data.DeepCopy();
             }
         }
+
+        /// <summary>
+        /// Removes objects contained in another storage from the current storage.
+        /// </summary>
         public virtual void removeAll(SplObjectStorage storage)
         {
             using (var e = storage.storage.GetFastEnumerator())
@@ -83,6 +121,10 @@ namespace Pchp.Library.Spl
                     this.storage.RemoveKey(e.CurrentKey);
                 }
         }
+
+        /// <summary>
+        /// Removes all objects except for those contained in another storage from the current storage.
+        /// </summary>
         public virtual void removeAllExcept(SplObjectStorage storage)
         {
             using (var e = this.storage.GetFastEnumerator())
@@ -90,6 +132,7 @@ namespace Pchp.Library.Spl
                 {
                     if (!storage.storage.ContainsKey(e.CurrentKey))
                     {
+                        // NOTE: deleting element under the enumerator current entry, FastEnumerator survives
                         this.storage.RemoveKey(e.CurrentKey);
                     }
                 }
@@ -97,12 +140,18 @@ namespace Pchp.Library.Spl
 
         #region Countable
 
+        /// <summary>
+        /// Counts the number of objects in the storage.
+        /// </summary>
         public virtual long count() => storage.Count;
 
         #endregion
 
         #region Iterator
 
+        /// <summary>
+        /// Returns the current storage entry.
+        /// </summary>
         public virtual PhpValue current()
         {
             return storage.IntrinsicEnumerator.AtEnd
@@ -115,18 +164,27 @@ namespace Pchp.Library.Spl
             return PhpValue.Create(_index);
         }
 
+        /// <summary>
+        /// Moves the iterator to the next object in the storage.
+        /// </summary>
         public virtual void next()
         {
             _index++;   // PHP behavior, increasing key even if the enumerater reached the end of storage
             storage.IntrinsicEnumerator.MoveNext();
         }
 
+        /// <summary>
+        /// Rewind the iterator to the first storage element.
+        /// </summary>
         public virtual void rewind()
         {
             _index = 0;
             storage.IntrinsicEnumerator.MoveFirst();
         }
 
+        /// <summary>
+        /// Returns if the current iterator entry is valid.
+        /// </summary>
         public virtual bool valid()
         {
             return !storage.IntrinsicEnumerator.AtEnd;
@@ -136,12 +194,15 @@ namespace Pchp.Library.Spl
 
         #region ArrayAccess
 
-        public virtual bool offsetExists(PhpValue offset)
-        {
-            var obj = offset.AsObject();
-            return obj != null && storage.ContainsKey(Keys.MakeKey(obj));
-        }
+        /// <summary>
+        /// Checks whether an object exists in the storage.
+        /// </summary>
+        /// <remarks>Alias for <see cref="contains(object)"/>.</remarks>
+        public virtual bool offsetExists(PhpValue offset) => contains(offset.AsObject());
 
+        /// <summary>
+        /// Returns the data associated with an object in the storage.
+        /// </summary>
         public virtual PhpValue offsetGet(PhpValue offset)
         {
             var obj = offset.AsObject();
@@ -155,7 +216,10 @@ namespace Pchp.Library.Spl
             }
         }
 
-        public virtual void offsetSet(PhpValue offset, PhpValue value)
+        /// <summary>
+        /// Associate data to an object in the storage.
+        /// </summary>
+        public virtual void offsetSet(PhpValue offset, PhpValue value = default(PhpValue))
         {
             var obj = offset.AsObject();
             if (obj != null)
@@ -168,6 +232,9 @@ namespace Pchp.Library.Spl
             }
         }
 
+        /// <summary>
+        /// Removes an object from the storage.
+        /// </summary>
         public virtual void offsetUnset(PhpValue offset)
         {
             var obj = offset.AsObject();
@@ -181,6 +248,9 @@ namespace Pchp.Library.Spl
 
         #region Serializable
 
+        /// <summary>
+        /// Returns a string representation of the storage.
+        /// </summary>
         public virtual PhpString serialize()
         {
             // x:{count_int};{item0},{value0};;...;;m:{members_array}
@@ -210,6 +280,9 @@ namespace Pchp.Library.Spl
             return result;
         }
 
+        /// <summary>
+        /// Unserializes storage entries and attach them to the current storage.
+        /// </summary>
         public virtual void unserialize(PhpString serialized)
         {
             // x:{count_int};{item0},{value0};...;m:{members_array}
@@ -245,7 +318,9 @@ namespace Pchp.Library.Spl
                     }
                     else
                     {
+                        // backward compatibility with data created with old PHP SplObjectStorage
                         data = PhpValue.Void;
+                        stream.Seek(-1, SeekOrigin.Current);    // back to `;`
                     }
 
                     //
