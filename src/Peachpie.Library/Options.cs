@@ -591,6 +591,24 @@ namespace Pchp.Library
         #endregion
 
         /// <summary>
+        /// Gets the current include_path configuration option value.
+        /// </summary>
+        public static string get_include_path(Context ctx) => ctx.Configuration.Core.IncludePaths;
+
+        /// <summary>
+        /// Sets the include_path configuration option for the duration of the script.
+        /// </summary>
+        public static string set_include_path(Context ctx, string new_include_path)
+        {
+            var config = ctx.Configuration.Core;
+            var old_value = config.IncludePaths;
+
+            config.IncludePaths = new_include_path;
+
+            return old_value;
+        }
+
+        /// <summary>
         /// Gets the current configuration setting of magic_quotes_gpc.
         /// Always returns <c>false</c>.
         /// </summary>
