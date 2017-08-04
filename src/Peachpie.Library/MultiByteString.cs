@@ -74,6 +74,7 @@ namespace Pchp.Library
             {
                 Context.RegisterConfiguration(new MbConfig());
                 MbConfig.RegisterLegacyOptions();
+                Encoding.RegisterProvider(new PhpEncodingProvider());
             }
         }
 
@@ -113,95 +114,87 @@ namespace Pchp.Library
 
         #region Encodings
 
-        private static Dictionary<string, Encoding> _encodings = null;
-        public static Dictionary<string, Encoding>/*!*/Encodings
+        sealed class PhpEncodingProvider : EncodingProvider
         {
-            get
+            public override Encoding GetEncoding(int codepage)
             {
-                if (_encodings == null)
-                {
-                    var enc = new Dictionary<string, Encoding>(180, StringComparer.OrdinalIgnoreCase);
+                return null;
+            }
 
-                    // encoding names used in PHP
+            public override Encoding GetEncoding(string name)
+            {
+                // encoding names used in PHP
 
-                    //enc["pass"] = Encoding.Default; // TODO: "pass" encoding
-                    enc["auto"] = Encoding.UTF8; // Configuration.Application.Globalization.PageEncoding;
-                    enc["wchar"] = Encoding.Unicode;
-                    //byte2be
-                    //byte2le
-                    //byte4be
-                    //byte4le
-                    //BASE64
-                    //UUENCODE
-                    //HTML-ENTITIES
-                    //Quoted-Printable
-                    //7bit
-                    //8bit
-                    //UCS-4
-                    //UCS-4BE
-                    //UCS-4LE
-                    //UCS-2
-                    //UCS-2BE
-                    //UCS-2LE
-                    //UTF-32
-                    //UTF-32BE
-                    //UTF-32LE
-                    //UTF-16
-                    //UTF-16BE
-                    enc["UTF-16LE"] = Encoding.Unicode; // alias UTF-16
-                    enc["UTF-8"] = Encoding.UTF8; // alias UTF8
-                    //UTF-7
-                    //UTF7-IMAP
-                    enc["ASCII"] = Encoding.ASCII;  // alias us-ascii
-                    //EUC-JP
-                    //SJIS
-                    //eucJP-win
-                    //SJIS-win
-                    //CP51932
-                    //JIS
-                    //ISO-2022-JP
-                    //ISO-2022-JP-MS
-                    //Windows-1252
-                    //Windows-1254
-                    //ISO-8859-1
-                    //ISO-8859-2
-                    //ISO-8859-3
-                    //ISO-8859-4
-                    //ISO-8859-5
-                    //ISO-8859-6
-                    //ISO-8859-7
-                    //ISO-8859-8
-                    //ISO-8859-9
-                    //ISO-8859-10
-                    //ISO-8859-13
-                    //ISO-8859-14
-                    //ISO-8859-15
-                    //ISO-8859-16
-                    //EUC-CN
-                    //CP936
-                    //HZ
-                    //EUC-TW
-                    //BIG-5
-                    //EUC-KR
-                    //UHC
-                    //ISO-2022-KR
-                    //Windows-1251
-                    //CP866
-                    //KOI8-R
-                    //KOI8-U
-                    //ArmSCII-8
-                    //CP850
+                //enc["pass"] = Encoding.Default; // TODO: "pass" encoding
+                if (name.EqualsOrdinalIgnoreCase("auto")) return Encoding.UTF8;
+                if (name.EqualsOrdinalIgnoreCase("wchar")) return Encoding.Unicode;
+                //byte2be
+                //byte2le
+                //byte4be
+                //byte4le
+                //BASE64
+                //UUENCODE
+                //HTML-ENTITIES
+                //Quoted-Printable
+                //7bit
+                //8bit
+                //UCS-4
+                //UCS-4BE
+                //UCS-4LE
+                //UCS-2
+                //UCS-2BE
+                //UCS-2LE
+                //UTF-32
+                //UTF-32BE
+                //UTF-32LE
+                //UTF-16
+                //UTF-16BE
+                if (name.EqualsOrdinalIgnoreCase("UTF-16LE")) return Encoding.Unicode;// alias UTF-16
+                if (name.EqualsOrdinalIgnoreCase("UTF-8")) return Encoding.UTF8;// alias UTF8
+                //UTF-7
+                //UTF7-IMAP
+                if (name.EqualsOrdinalIgnoreCase("ASCII")) return Encoding.ASCII;  // alias us-ascii
+                //EUC-JP
+                //SJIS
+                //eucJP-win
+                //SJIS-win
+                //CP51932
+                //JIS
+                //ISO-2022-JP
+                //ISO-2022-JP-MS
+                //Windows-1252
+                //Windows-1254
+                //ISO-8859-1
+                //ISO-8859-2
+                //ISO-8859-3
+                //ISO-8859-4
+                //ISO-8859-5
+                //ISO-8859-6
+                //ISO-8859-7
+                //ISO-8859-8
+                //ISO-8859-9
+                //ISO-8859-10
+                //ISO-8859-13
+                //ISO-8859-14
+                //ISO-8859-15
+                //ISO-8859-16
+                //EUC-CN
+                //CP936
+                //HZ
+                //EUC-TW
+                //BIG-5
+                //EUC-KR
+                //UHC
+                //ISO-2022-KR
+                //Windows-1251
+                //CP866
+                //KOI8-R
+                //KOI8-U
+                //ArmSCII-8
+                //CP850
 
-                    //// .NET encodings
-                    //foreach (var encoding in Encoding.GetEncodings())
-                    //{
-                    //    enc[encoding.Name] = encoding.GetEncoding();
-                    //}
-
-                    _encodings = enc;
-                }
-
-                return _encodings;
+                //
+                return null;
             }
         }
 
@@ -212,12 +205,8 @@ namespace Pchp.Library
         /// <returns></returns>
         internal static Encoding GetEncoding(string encodingName)
         {
-            Encoding encoding;
-            if (encodingName == null)
-            {
-                encoding = null;
-            }
-            else if (!Encodings.TryGetValue(encodingName, out encoding))
+            Encoding encoding = null;
+            if (encodingName != null)
             {
                 try
                 {
