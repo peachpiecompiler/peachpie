@@ -149,7 +149,7 @@ namespace Pchp.Library
                     //UTF-16
                     //UTF-16BE
                     enc["UTF-16LE"] = Encoding.Unicode; // alias UTF-16
-                    //UTF-8
+                    enc["UTF-8"] = Encoding.UTF8; // alias UTF8
                     //UTF-7
                     //UTF7-IMAP
                     enc["ASCII"] = Encoding.ASCII;  // alias us-ascii
