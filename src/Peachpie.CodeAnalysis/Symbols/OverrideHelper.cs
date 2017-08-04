@@ -194,7 +194,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public static bool IsOverrideable(this MethodSymbol method)
         {
-            return !method.IsStatic && !method.IsSealed && method.DeclaredAccessibility != Accessibility.Private && (method.IsVirtual || method.IsAbstract);
+            return !method.IsStatic && !method.IsSealed && method.DeclaredAccessibility != Accessibility.Private && (method.IsVirtual || method.IsAbstract || method.IsOverride);
         }
 
         public static bool CanOverride(this MethodSymbol method)
