@@ -424,7 +424,7 @@ namespace Pchp.Library.Spl
             else
             {
                 // We create an instance of the current type, if used from a subclass
-                return (RecursiveArrayIterator)_ctx.Create(default(RuntimeTypeHandle), type.GetPhpTypeInfo(), elem); 
+                return (RecursiveArrayIterator)_ctx.Create(default(RuntimeTypeHandle), type.GetPhpTypeInfo(), elem);
             }
         }
 
@@ -493,7 +493,7 @@ namespace Pchp.Library.Spl
         /// <summary>
         /// Object to iterate on.
         /// </summary>
-        private Traversable _iterator;
+        internal protected Traversable _iterator;
 
         /// <summary>
         /// Enumerator over the <see cref="iterator"/>.
@@ -675,6 +675,96 @@ namespace Pchp.Library.Spl
     }
 
     /// <summary>
+    /// This abstract iterator filters out unwanted values.
+    /// This class should be extended to implement custom iterator filters.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName)]
+    public class LimitIterator : IteratorIterator
+    {
+        internal protected long _position, _offset, _max;
+
+        [PhpFieldsOnlyCtor]
+        protected LimitIterator() { }
+
+        public LimitIterator(Traversable iterator, long offset = 0, long count = -1) => __construct(iterator, offset, count);
+
+        public override sealed void __construct(Traversable iterator, string classname = null) => __construct(iterator, 0, -1);
+
+        public virtual void __construct(Traversable iterator, long offset = 0, long count = -1)
+        {
+            base.__construct(iterator);
+
+            if (offset < 0) throw new OutOfRangeException();
+
+            _offset = offset;
+            _max = count >= 0 ? offset + count : long.MaxValue;
+        }
+
+        public override void rewind()
+        {
+            base.rewind();
+
+            // skips offset
+            for (var n = _offset; n > 0 && _valid; n--)
+            {
+                base.next();
+            }
+
+            _position = _offset;
+        }
+
+        public override void next()
+        {
+            if (++_position < _max && _valid)
+            {
+                base.next();
+            }
+            else
+            {
+                _valid = false;
+            }
+        }
+
+        public virtual long getPosition() => _position;
+
+        public virtual long seek(long position)
+        {
+            if (position < _offset || position >= _max)
+            {
+                throw new OutOfBoundsException();
+            }
+
+            //
+            if (position != _position)
+            {
+                //if (_iterator is SeekableIterator seekable)  // undocumented PHP behavior
+                //{
+                //    seekable.seek(position);  // TODO: this would not move our _enumerator
+                //    _position = position;
+                //    _valid = seekable.valid();
+                //}
+                //else
+                {
+                    // rewind & forward
+                    if (position < _position)
+                    {
+                        rewind();
+                    }
+
+                    // forward
+                    while (position > _position && _valid)
+                    {
+                        next();
+                    }
+                }
+            }
+
+            //
+            return _position;
+        }
+    }
+
+    /// <summary>
     /// This abstract iterator filters out unwanted values for a RecursiveIterator.
     /// This class should be extended to implement custom filters.
     /// </summary>
@@ -689,7 +779,7 @@ namespace Pchp.Library.Spl
             _ctx = ctx;
         }
 
-        public RecursiveFilterIterator(Context ctx, RecursiveIterator iterator) : this (ctx)
+        public RecursiveFilterIterator(Context ctx, RecursiveIterator iterator) : this(ctx)
         {
             __construct(iterator);
         }
