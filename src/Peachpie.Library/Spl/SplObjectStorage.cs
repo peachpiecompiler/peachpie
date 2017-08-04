@@ -35,10 +35,10 @@ namespace Pchp.Library.Spl
 
         /// <summary>
         /// Storage array "storage" as it is in PHP.
-        /// <code>{ hash_i => [object_i, info_i] }</code>
+        /// <code>{ hash_i => ["obj" => object_i, "inf" => info_i] }</code>
         /// </summary>
         private readonly PhpArray storage = new PhpArray();
-        private int _index = 0;
+        internal int _index = 0;
 
         protected readonly Context _ctx;
 
