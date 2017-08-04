@@ -503,7 +503,7 @@ namespace Pchp.Library.Spl
         /// <summary>
         /// Wheter the <see cref="_enumerator"/> is in valid state (initialized and not at the end).
         /// </summary>
-        protected bool _valid = false;
+        internal protected bool _valid = false;
 
         [PhpFieldsOnlyCtor]
         protected IteratorIterator() { }
@@ -539,7 +539,7 @@ namespace Pchp.Library.Spl
             return (Iterator)_iterator;
         }
 
-        public virtual void rewind()
+        internal protected void rewindImpl()
         {
             if (_iterator != null)
             {
@@ -549,6 +549,11 @@ namespace Pchp.Library.Spl
                 //
                 _valid = _enumerator.MoveNext();
             }
+        }
+
+        public virtual void rewind()
+        {
+            rewindImpl();
         }
 
         public virtual void next()
@@ -595,6 +600,34 @@ namespace Pchp.Library.Spl
         //    context.Stack.AddFrame((ICollection)argsarr.Values);
         //    return this.iterator.InvokeMethod(methodname, null, context);
         //}
+    }
+
+    /// <summary>
+    /// The InfiniteIterator allows one to infinitely iterate over an iterator without having to manually rewind the iterator upon reaching its end.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName)]
+    public class InfiniteIterator : IteratorIterator
+    {
+        [PhpFieldsOnlyCtor]
+        protected InfiniteIterator() { }
+
+        public InfiniteIterator(Traversable iterator) : base(iterator)
+        {
+        }
+
+        /// <summary>
+        /// Moves the inner Iterator forward and rewinds it if underlaying iterator reached the end.
+        /// </summary>
+        public override void next()
+        {
+            base.next();
+
+            if (!_valid)
+            {
+                // as it is in PHP, calls non-overridable implementation of rewind()
+                rewindImpl();
+            }
+        }
     }
 
     /// <summary>
