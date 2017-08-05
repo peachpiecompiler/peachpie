@@ -1116,13 +1116,12 @@ namespace Pchp.CodeAnalysis.Semantics
             var tmpVarName = $"<yieldRewriter>{_rewriterVariableIndex++}";
             var assignVarTouple = CreateAndAssignSynthesizedVariable(boundExpr, access, tmpVarName);
 
-            CurrentPreBoundBlock.Add(new BoundExpressionStatement(assignVarTouple.Item2)); // assigment
-            return assignVarTouple.Item1; // temp variable ref
+            CurrentPreBoundBlock.Add(new BoundExpressionStatement(assignVarTouple.Assignment)); // assigment
+            return assignVarTouple.BoundExpr; // temp variable ref
 
         }
 
-        // TODO: Change to new dotnet's System.ValueType
-        internal static Roslyn.Utilities.ValueTuple<BoundReferenceExpression, BoundAssignEx> CreateAndAssignSynthesizedVariable(BoundExpression expr, BoundAccess access, string name)
+        internal static (BoundReferenceExpression BoundExpr, BoundAssignEx Assignment) CreateAndAssignSynthesizedVariable(BoundExpression expr, BoundAccess access, string name)
         {
             // determine whether the synthesized variable should be by ref (for readRef and writes) or a normal PHP copy
             var refAccess = (access.IsReadRef || access.IsWrite);
@@ -1138,7 +1137,7 @@ namespace Pchp.CodeAnalysis.Semantics
             var assigment = new BoundAssignEx(targetVariable, valueBeingMoved);
             var boundExpr = new BoundTemporalVariableRef(name).WithAccess(access);
 
-            return new Roslyn.Utilities.ValueTuple<BoundReferenceExpression, BoundAssignEx>(boundExpr, assigment);
+            return (boundExpr, assigment);
         }
 
         /// <summary>
