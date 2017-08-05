@@ -1122,7 +1122,7 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         // TODO: Change to new dotnet's System.ValueType
-        internal static ValueTuple<BoundReferenceExpression, BoundAssignEx> CreateAndAssignSynthesizedVariable(BoundExpression expr, BoundAccess access, string name)
+        internal static Roslyn.Utilities.ValueTuple<BoundReferenceExpression, BoundAssignEx> CreateAndAssignSynthesizedVariable(BoundExpression expr, BoundAccess access, string name)
         {
             // determine whether the synthesized variable should be by ref (for readRef and writes) or a normal PHP copy
             var refAccess = (access.IsReadRef || access.IsWrite);
@@ -1138,7 +1138,7 @@ namespace Pchp.CodeAnalysis.Semantics
             var assigment = new BoundAssignEx(targetVariable, valueBeingMoved);
             var boundExpr = new BoundTemporalVariableRef(name).WithAccess(access);
 
-            return new ValueTuple<BoundReferenceExpression, BoundAssignEx>(boundExpr, assigment);
+            return new Roslyn.Utilities.ValueTuple<BoundReferenceExpression, BoundAssignEx>(boundExpr, assigment);
         }
 
         /// <summary>
