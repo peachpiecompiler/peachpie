@@ -66,8 +66,8 @@ namespace Pchp.Library.Spl
 
         readonly protected Context _ctx;
 
-        PhpArray _array;
-        OrderedDictionary.Enumerator _arrayEnumerator;    // lazily instantiated so we can rewind() once when needed
+        PhpArray _array;// PHP compatibility: private PhpArray storage;
+        internal protected OrderedDictionary.Enumerator _arrayEnumerator;    // lazily instantiated so we can rewind() once when needed
         bool isArrayIterator => _array != null;
 
         object _dobj = null;
@@ -230,10 +230,15 @@ namespace Pchp.Library.Spl
 
         private void EnsureEnumeratorsHelper()
         {
-            if (isObjectIterator && _dobjEnumerator == null)
-                InitObjectIteratorHelper();
-
-            // arrayEnumerator initialized in __construct()
+            if (isArrayIterator)
+            {
+                // arrayEnumerator initialized in __construct()
+            }
+            else
+            {
+                if (isObjectIterator && _dobjEnumerator == null)
+                    InitObjectIteratorHelper();
+            }
         }
 
         public virtual void next()
@@ -521,6 +526,8 @@ namespace Pchp.Library.Spl
             }
 
             _iterator = iterator;
+            _valid = false;
+            _enumerator = null;
 
             if (iterator is Iterator)
             {
@@ -762,6 +769,114 @@ namespace Pchp.Library.Spl
             //
             return _position;
         }
+    }
+
+    /// <summary>
+    /// An Iterator that iterates over several iterators one after the other.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName)]
+    public class AppendIterator : IteratorIterator, OuterIterator
+    {
+        /// <summary>
+        /// Current item in <see cref="_array"/>;
+        /// </summary>
+        protected internal KeyValuePair<IntStringKey, Iterator> _index;
+
+        [PhpFieldsOnlyCtor]
+        protected AppendIterator() { }
+
+        public AppendIterator(Context ctx) => __construct(ctx);
+
+        /// <summary>
+        /// Wrapped <see cref="_array"/> into PHP iterator.
+        /// Compatibility with <see cref="getArrayIterator"/>.
+        /// </summary>
+        protected internal ArrayIterator ArrayIterator => (ArrayIterator)_iterator;
+        protected internal Iterator InnerIterator => isValidImpl() ? _index.Value : null;
+
+        protected internal void EnsureInitialized()
+        {
+            if (_index.Value == null && ArrayIterator.valid())
+            {
+                _index = new KeyValuePair<IntStringKey, Iterator>(ArrayIterator.key().ToIntStringKey(), (Iterator)ArrayIterator.current().AsObject());
+            }
+        }
+
+        protected internal bool isValidImpl()
+        {
+            EnsureInitialized();
+            return _index.Value != null;
+        }
+
+        /// <summary>
+        /// Array of appended iterators.
+        /// </summary>
+        protected internal PhpArray _array;
+
+        //public sealed override void __construct(Traversable iterator, string classname = null)
+        //{
+        //    throw new InvalidOperationException();
+        //}
+
+        public virtual void __construct(Context ctx)
+        {
+            base.__construct(new ArrayIterator(ctx, (PhpValue)(_array = PhpArray.NewEmpty())));
+        }
+
+        public virtual void append(Iterator iterator)
+        {
+            _array.Add(PhpValue.FromClass(iterator ?? throw new ArgumentNullException(nameof(iterator))));
+
+            if (_array.Count == 1) { rewindImpl(); }
+        }
+
+        /// <summary>
+        /// This method gets the ArrayIterator that is used to store the iterators added with <see cref="append"/>.
+        /// </summary>
+        public virtual ArrayIterator getArrayIterator() => ArrayIterator;
+
+        public virtual int getIteratorIndex() => isValidImpl() ? _index.Key.Integer : 0/*should be NULL*/;
+
+        public override Iterator getInnerIterator() => InnerIterator;
+
+        public override void rewind()
+        {
+            rewindImpl();
+            _index = default(KeyValuePair<IntStringKey, Iterator>);
+        }
+
+        public override void next()
+        {
+            if (isValidImpl())
+            {
+                InnerIterator.next();
+            }
+            else
+            {
+                return;
+            }
+
+            while (isValidImpl() && InnerIterator.valid() == false)
+            {
+                // next iterator
+                base.next();
+
+                // reset index
+                _index = default(KeyValuePair<IntStringKey, Iterator>);
+            }
+        }
+
+        public override PhpValue current()
+        {
+            return isValidImpl() ? _index.Value.current() : PhpValue.Void;
+        }
+
+        public override PhpValue key()
+        {
+            return isValidImpl() ? _index.Value.key() : PhpValue.Void;
+        }
+
+        public override bool valid() => isValidImpl();
     }
 
     /// <summary>
