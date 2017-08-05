@@ -71,7 +71,7 @@ namespace Pchp.CodeAnalysis
 
             internal override IEnumerable<KeyValuePair<MetadataReference, IAssemblySymbol>> GetReferencedAssemblies() => _referencesMap;
 
-            internal override IEnumerable<ValueTuple<IAssemblySymbol, ImmutableArray<string>>> GetReferencedAssemblyAliases()
+            internal override IEnumerable<Roslyn.Utilities.ValueTuple<IAssemblySymbol, ImmutableArray<string>>> GetReferencedAssemblyAliases()
             {
                 yield break;
             }
