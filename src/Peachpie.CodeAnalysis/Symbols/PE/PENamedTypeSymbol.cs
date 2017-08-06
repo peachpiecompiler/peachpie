@@ -484,7 +484,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         NamedTypeSymbol _lazyUnderlayingType;
 
-        private Tuple<CultureInfo, string> _lazyDocComment;
+        private (CultureInfo Culture, string Xmltext) _lazyDocComment;
 
         private NamedTypeSymbol _lazyDeclaredBaseType = ErrorTypeSymbol.UnknownResultType;
         private ImmutableArray<NamedTypeSymbol> _lazyDeclaredInterfaces = default(ImmutableArray<NamedTypeSymbol>);

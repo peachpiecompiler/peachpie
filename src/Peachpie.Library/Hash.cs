@@ -121,7 +121,7 @@ namespace Pchp.Library
             /// <param name="newData">New pack of data to be appended to the buffered ones.</param>
             /// <param name="blockSize">Block size, when buffered data fits this, they are returned.</param>
             /// <returns>Packs of block, as a pair of byte array and index of first element.</returns>
-            internal IEnumerable<Tuple<byte[], int>> ProcessBlocked(byte[]/*!*/newData, int blockSize)
+            internal IEnumerable<(byte[] Block, int ElementIndex)> ProcessBlocked(byte[]/*!*/newData, int blockSize)
             {
                 Debug.Assert(newData != null);
                 Debug.Assert(blockSize > 0);
@@ -144,7 +144,7 @@ namespace Pchp.Library
                     }
 
                     Array.Copy(newData, 0, buffer, bufferUsage, bytesToFitBuffer);
-                    yield return new Tuple<byte[], int>(buffer, 0); // use the data from buffer
+                    yield return (buffer, 0); // use the data from buffer
 
                     bufferUsage = 0;            // buffer is empty now
                     index += bytesToFitBuffer;  // part of newData was used
@@ -153,7 +153,7 @@ namespace Pchp.Library
                 // returns blocks from the newData
                 while (index + blockSize <= newData.Length)
                 {
-                    yield return new Tuple<byte[], int>(newData, index);
+                    yield return (newData, index);
                     index += blockSize;
                 }
 
@@ -638,7 +638,7 @@ namespace Pchp.Library
                 public override bool Update(byte[] data)
                 {
                     foreach (var block in ProcessBlocked(data, 16))
-                        TransformBlock(block.Item1, block.Item2);
+                        TransformBlock(block.Block, block.ElementIndex);
 
                     return true;
                 }
@@ -821,7 +821,7 @@ namespace Pchp.Library
                     count[1] += ((uint)data.Length >> 29);
 
                     foreach (var block in ProcessBlocked(data, 64))
-                        MD4Transform(block.Item1, block.Item2);
+                        MD4Transform(block.Block, block.ElementIndex);
 
                     return true;
                 }
@@ -1107,7 +1107,7 @@ namespace Pchp.Library
 
                     // Transform blocks of 64 bytes
                     foreach (var block in ProcessBlocked(data, 64))
-                        MD5Transform(block.Item1, block.Item2);
+                        MD5Transform(block.Block, block.ElementIndex);
 
                     return true;
                 }

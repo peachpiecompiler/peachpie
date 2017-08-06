@@ -71,7 +71,7 @@ namespace Pchp.Library.Streams
                 return null;
             }
 
-            List<Tuple<byte[], int>> subchunks = null;
+            List<(byte[] Data, int Length)> subchunks = null;
             int status = zlibConst.Z_OK;
 
             // initialize if necessary
@@ -126,10 +126,10 @@ namespace Pchp.Library.Streams
                     {
                         // if the list was not initialize, do so
                         if (subchunks == null)
-                            subchunks = new List<Tuple<byte[], int>>();
+                            subchunks = new List<(byte[], int)>();
 
                         // add the subchunk to the list only when it contains some data
-                        subchunks.Add(new Tuple<byte[], int>(_stream.next_out, (int)(_stream.total_out - previous_total_out)));
+                        subchunks.Add((_stream.next_out, (int)(_stream.total_out - previous_total_out)));
                     }
                 }
                 // we continue only when progress was made and there is input available
@@ -169,13 +169,13 @@ namespace Pchp.Library.Streams
                     for (int i = 0; i < subchunks.Count; i++)
                     {
                         Buffer.BlockCopy(
-                            subchunks[i].Item1,
+                            subchunks[i].Data,
                             0,
                             result,
                             (int)resultPos,
-                            (int)Math.Min(subchunks[i].Item2, _stream.total_out - resultPos));
+                            (int)Math.Min(subchunks[i].Length, _stream.total_out - resultPos));
 
-                        resultPos += subchunks[i].Item2;
+                        resultPos += subchunks[i].Length;
                     }
 
                     return result;
