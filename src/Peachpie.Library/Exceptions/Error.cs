@@ -25,6 +25,11 @@ namespace Pchp.Library.Spl
             __construct(message, code, previous);
         }
 
+        /// <summary>
+        /// Exception message in CLR.
+        /// </summary>
+        public override string Message => this.message;
+
         public void __construct(string message = "", long code = 0, Throwable previous = null)
         {
             this.message = message;
