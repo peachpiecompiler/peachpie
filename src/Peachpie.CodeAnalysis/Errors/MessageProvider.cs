@@ -129,7 +129,13 @@ namespace Pchp.CodeAnalysis.Errors
 
         public override string ConvertSymbolToString(int errorCode, ISymbol symbol)
         {
-            throw new NotImplementedException();
+            // show extra info for assembly if possible such as version, public key token etc.
+            if (symbol.Kind == SymbolKind.Assembly || symbol.Kind == SymbolKind.Namespace)
+            {
+                return symbol.ToString();
+            }
+
+            return symbol.ToDisplayString(SymbolDisplayFormat.CSharpShortErrorMessageFormat);
         }
 
         public override Diagnostic CreateDiagnostic(int code, Location location, params object[] args)
