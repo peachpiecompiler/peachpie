@@ -80,6 +80,8 @@ namespace Pchp.Core.Reflection
             typeof(PhpResource),
             typeof(System.Exception),
             typeof(System.Dynamic.IDynamicMetaObjectProvider),
+            typeof(IPhpConvertible),
+            typeof(IPhpComparable),
         };
 
         /// <summary>

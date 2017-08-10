@@ -196,6 +196,8 @@ namespace Pchp.Core
 
         object IPhpConvertible.ToClass() => new stdClass(PhpValue.FromClass(this));
 
+        PhpArray IPhpConvertible.ToArray() => PhpArray.New(PhpValue.FromClass(this));
+
         #endregion
     }
 }

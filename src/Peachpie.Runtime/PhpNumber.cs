@@ -1370,6 +1370,8 @@ namespace Pchp.Core
             return new stdClass(PhpValue.Create(this));
         }
 
+        public PhpArray ToArray() => PhpArray.New(PhpValue.Create(this));
+
         #endregion
     }
 }

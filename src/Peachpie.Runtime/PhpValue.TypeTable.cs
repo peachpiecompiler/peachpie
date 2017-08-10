@@ -409,7 +409,7 @@ namespace Pchp.Core
             public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => ((IPhpArray)me.WritableString).GetItemValue(index); // quiet);
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) { throw new NotSupportedException(); } // TODO: Err
             public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.WritableString.DeepCopy());
-            public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me.DeepCopy());
+            public override PhpArray ToArray(ref PhpValue me) => me.WritableString.ToArray();
             public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx) => PhpCallback.Create(me.WritableString.ToString(), callerCtx);
             public override string DisplayString(ref PhpValue me) => $"'{me.WritableString.ToString()}'";
             public override void Output(ref PhpValue me, Context ctx) => me.WritableString.Output(ctx);

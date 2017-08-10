@@ -813,6 +813,8 @@ namespace Pchp.Core
             return new stdClass(PhpValue.Create(ToString()));
         }
 
+        public PhpArray ToArray() => PhpArray.New(PhpValue.Create(this.DeepCopy()));
+
         #endregion
 
         #region IPhpArray
