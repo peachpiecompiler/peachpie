@@ -10,6 +10,10 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Description>Peachpie PHP language library functions for XML processing.</Description>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Xml.XmlDocument" Version="4.3.0" />
+    <PackageReference Include="System.Xml.XPath.XmlDocument" Version="4.3.0" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
