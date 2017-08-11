@@ -222,7 +222,7 @@ namespace Peachpie.Library.XmlDom
             {
                 // TODO: Enable each class when it is implemented
 
-                //case XmlNodeType.Attribute: return new DOMAttr((XmlAttribute)xmlNode);
+                case XmlNodeType.Attribute: return new DOMAttr((XmlAttribute)xmlNode);
                 //case XmlNodeType.SignificantWhitespace:
                 //case XmlNodeType.Whitespace: return null;// TODO: new DOMText((XmlCharacterData)xmlNode); // also see XmlDocument.PreserveWhitespace
                 //case XmlNodeType.CDATA: return new DOMCdataSection((XmlCDataSection)xmlNode);
