@@ -13,7 +13,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Corresponding syntax node.
         /// </summary>
-        Ast.LangElement PhpSyntax { get; }
+        Ast.LangElement PhpSyntax { get; set; }
 
         /// <summary>
         /// Visitor implementation.
