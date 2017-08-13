@@ -2325,54 +2325,45 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <returns>Type left on stack. Can be <c>null</c> if callsite does not expect a target.</returns>
         internal virtual TypeSymbol EmitTarget(CodeGenerator cg)
         {
-            TypeSymbol t = null;
             if (Instance != null)
             {
-                t = cg.Emit(Instance);
+                cg.Emit(Instance);
 
-                if (t.SpecialType == SpecialType.System_Void)
+                if (Instance.ResultType.SpecialType == SpecialType.System_Void)
                 {
                     // void: invalid code, should be reported in DiagnosingVisitor
                     cg.Builder.EmitNullConstant();
-                    t = cg.CoreTypes.Object;
+                    return cg.CoreTypes.Object;
                 }
-            }
 
-            //
-            return t;
+                return Instance.ResultType;
+            }
+            else
+            {
+                return null;
+            }
         }
 
         internal TypeSymbol EmitCallsiteCall(CodeGenerator cg)
         {
             // callsite
 
-            var nameOpt = this.CallsiteName;
-            var callsite = cg.Factory.StartCallSite("call_" + nameOpt);
-
+            var callsite = cg.Factory.StartCallSite("call_" + this.CallsiteName);
             var callsiteargs = new List<TypeSymbol>(_arguments.Length);
-            var return_type = this.Access.IsRead
-                    ? this.Access.IsReadRef
-                        ? cg.CoreTypes.PhpAlias.Symbol
-                        : (this.Access.TargetType ?? cg.CoreTypes.PhpValue.Symbol)
-                    : cg.CoreTypes.Void.Symbol;
-
-            // callsite
-            var fldPlace = callsite.Place;
-
+            
             // LOAD callsite.Target
             callsite.EmitLoadTarget(cg.Builder);
 
             // LOAD callsite arguments
 
             // (callsite, [target], ctx, [name], ...)
-            fldPlace.EmitLoad(cg.Builder);
+            callsite.Place.EmitLoad(cg.Builder);
 
             callsiteargs.Add(cg.EmitLoadContext());     // ctx
 
-            var t = EmitTarget(cg);
-            if (t != null)
+            if (Instance != null)
             {
-                callsiteargs.Add(t);   // instance
+                callsiteargs.Add(EmitTarget(cg));   // instance
             }
 
             if (RoutineTypeRef != null)
@@ -2394,6 +2385,13 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 callsiteargs.Add(cg.Emit(a.Value));
             }
+
+            // RETURN TYPE:
+            var return_type = this.Access.IsRead
+                    ? this.Access.IsReadRef
+                        ? cg.CoreTypes.PhpAlias.Symbol
+                        : (this.Access.TargetType ?? cg.CoreTypes.PhpValue.Symbol)
+                    : cg.CoreTypes.Void.Symbol;
 
             // Target()
             var functype = cg.Factory.GetCallSiteDelegateType(
