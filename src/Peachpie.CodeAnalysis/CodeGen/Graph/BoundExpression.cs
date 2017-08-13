@@ -2361,9 +2361,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
             callsiteargs.Add(cg.EmitLoadContext());     // ctx
 
-            if (Instance != null)
+            var target = EmitTarget(cg);
+            if (target != null)
             {
-                callsiteargs.Add(EmitTarget(cg));   // instance
+                callsiteargs.Add(target);   // instance
             }
 
             if (RoutineTypeRef != null)
