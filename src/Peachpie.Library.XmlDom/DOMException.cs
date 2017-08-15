@@ -7,8 +7,6 @@ using Pchp.Library.Spl;
 
 namespace Peachpie.Library.XmlDom
 {
-	#region ExceptionCode and constants
-
 	/// <summary>
 	/// Enumerates <see cref="DOMException"/> codes.
 	/// </summary>
@@ -98,28 +96,6 @@ namespace Peachpie.Library.XmlDom
 		/// </summary>
 		ValidationError = 16
 	}
-
-    public static class ExceptionConstants
-    {
-        public const int DOM_INDEX_SIZE_ERR = (int)ExceptionCode.IndexOutOfBounds;
-        public const int DOMSTRING_SIZE_ERR = (int)ExceptionCode.StringTooLong;
-        public const int DOM_HIERARCHY_REQUEST_ERR = (int)ExceptionCode.BadHierarchy;
-        public const int DOM_WRONG_DOCUMENT_ERR = (int)ExceptionCode.WrongDocument;
-        public const int DOM_INVALID_CHARACTER_ERR = (int)ExceptionCode.InvalidCharacter;
-        public const int DOM_NO_DATA_ALLOWED_ERR = (int)ExceptionCode.DataNotAllowed;
-        public const int DOM_NO_MODIFICATION_ALLOWED_ERR = (int)ExceptionCode.DomModificationNotAllowed;
-        public const int DOM_NOT_FOUND_ERR = (int)ExceptionCode.NotFound;
-        public const int DOM_NOT_SUPPORTED_ERR = (int)ExceptionCode.NotSupported;
-        public const int DOM_INUSE_ATTRIBUTE_ERR = (int)ExceptionCode.AttributeInUse;
-        public const int DOM_INVALID_STATE_ERR = (int)ExceptionCode.InvalidState;
-        public const int DOM_SYNTAX_ERR = (int)ExceptionCode.SyntaxError;
-        public const int DOM_INVALID_MODIFICATION_ERR = (int)ExceptionCode.ModificationNotAllowed;
-        public const int DOM_NAMESPACE_ERR = (int)ExceptionCode.NamespaceError;
-        public const int DOM_INVALID_ACCESS_ERR = (int)ExceptionCode.InvalidAccess;
-        public const int DOM_VALIDATION_ERR = (int)ExceptionCode.ValidationError;
-    }
-
-	#endregion
 
 	/// <summary>
 	/// The exception thrown by the DOM extension.
