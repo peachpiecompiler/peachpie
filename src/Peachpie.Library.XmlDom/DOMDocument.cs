@@ -298,11 +298,11 @@ namespace Peachpie.Library.XmlDom
         /// Creates a new document fragment.
         /// </summary>
         /// <returns>A new <see cref="DOMDocumentFragment"/>.</returns>
-        //public DOMDocumentFragment createDocumentFragment()
-        //{
-        //    XmlDocumentFragment fragment = XmlDocument.CreateDocumentFragment();
-        //    return new DOMDocumentFragment(fragment);
-        //}
+        public DOMDocumentFragment createDocumentFragment()
+        {
+            XmlDocumentFragment fragment = XmlDocument.CreateDocumentFragment();
+            return new DOMDocumentFragment(fragment);
+        }
 
         /// <summary>
         /// Creates a new text node with the specified text.
