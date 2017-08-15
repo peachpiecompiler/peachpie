@@ -1052,10 +1052,10 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
 		/// Return a well-formed XML string based on this <see cref="SimpleXMLElement"/>.
 		/// </summary>
-        public PhpValue asXML(string fileName = null)
+        public PhpValue asXML(Context ctx, string fileName = null)
         {
             // determine output encoding
-            var encoding = XmlDom.GetNodeEncoding(_ctx, XmlElement);
+            var encoding = Utils.GetNodeEncoding(ctx, XmlElement);
 
             if (fileName == null)
             {
