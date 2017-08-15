@@ -309,33 +309,33 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         /// <param name="data">The text for the text node.</param>
         /// <returns>A new <see cref="DOMText"/>.</returns>
-        //public DOMText createTextNode(string data)
-        //{
-        //    XmlText text = XmlDocument.CreateTextNode(data);
-        //    return new DOMText(text);
-        //}
+        public DOMText createTextNode(string data)
+        {
+            XmlText text = XmlDocument.CreateTextNode(data);
+            return new DOMText(text);
+        }
 
         /// <summary>
         /// Creates a comment node containing the specified data.
         /// </summary>
         /// <param name="data">The comment data.</param>
         /// <returns>A new <see cref="DOMComment"/>.</returns>
-        //public DOMComment createComment(string data)
-        //{
-        //    XmlComment comment = XmlDocument.CreateComment(data);
-        //    return new DOMComment(comment);
-        //}
+        public DOMComment createComment(string data)
+        {
+            XmlComment comment = XmlDocument.CreateComment(data);
+            return new DOMComment(comment);
+        }
 
         /// <summary>
         /// Creates a CDATA section containing the specified data.
         /// </summary>
         /// <param name="data">The content of the new CDATA section.</param>
         /// <returns>A new <see cref="DOMCdataSection"/>.</returns>
-        //public DOMCdataSection createCDATASection(string data)
-        //{
-        //    XmlCDataSection cdata = XmlDocument.CreateCDataSection(data);
-        //    return new DOMCdataSection(cdata);
-        //}
+        public DOMCdataSection createCDATASection(string data)
+        {
+            XmlCDataSection cdata = XmlDocument.CreateCDataSection(data);
+            return new DOMCdataSection(cdata);
+        }
 
         /// <summary>
         /// Creates a processing instruction with the specified name and data.
