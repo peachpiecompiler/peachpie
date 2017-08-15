@@ -42,6 +42,7 @@ namespace Peachpie.Library.Scripting
                 typeof(Pchp.Core.Context),      // Peachpie.Runtime
                 typeof(Pchp.Library.Strings),   // Peachpie.Library
                 typeof(ScriptingProvider),      // Peachpie.Library.Scripting
+                typeof(XmlDom.XmlDom),          // Peachpie.Library.XmlDom
             };
 
             var list = types.Distinct().Select(ass => ass.GetTypeInfo().Assembly).ToList();
