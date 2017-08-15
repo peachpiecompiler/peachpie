@@ -519,23 +519,14 @@ namespace Peachpie.Library.XmlDom
         /// Loads the XML document from the specified URL.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
-        /// <param name="instance">The <see cref="DOMDocument"/> instance or <B>null</B>.</param>
         /// <param name="fileName">URL for the file containing the XML document to load.</param>
         /// <param name="options">Undocumented.</param>
-        /// <returns>A new <see cref="DOMDocument"/> or <B>false</B> if <paramref name="instance"/>p
-        /// is <B>null</B>, <B>true</B> or <B>false</B> otherwise.</returns>
-        public static object load(Context ctx, /*[This]*/ DOMDocument instance, string fileName, int options = 0)
+        /// <returns><b>True</b> on success or <b>false</b> on failure.</returns>
+        public bool load(Context ctx, string fileName, int options = 0)
         {
             // TODO: this method can be called both statically and via an instance
-            bool static_call;
-            if (instance == null)
-            {
-                static_call = true;
-                instance = new DOMDocument();
-            }
-            else static_call = false;
 
-            instance._isHtmlDocument = false;
+            _isHtmlDocument = false;
 
             using (PhpStream stream = PhpStream.Open(ctx, fileName, "rt"))
             {
@@ -543,7 +534,7 @@ namespace Peachpie.Library.XmlDom
 
                 try
                 {
-                    if (instance._validateOnParse)
+                    if (_validateOnParse)
                     {
                         // create a validating XML reader
                         XmlReaderSettings settings = new XmlReaderSettings();
@@ -551,9 +542,9 @@ namespace Peachpie.Library.XmlDom
 //                        settings.ValidationType = ValidationType.Auto;
 //#pragma warning restore 618
 
-                        instance.XmlDocument.Load(XmlReader.Create(stream.RawStream, settings));
+                        XmlDocument.Load(XmlReader.Create(stream.RawStream, settings));
                     }
-                    else instance.XmlDocument.Load(stream.RawStream);
+                    else XmlDocument.Load(stream.RawStream);
                 }
                 catch (XmlException e)
                 {
@@ -567,30 +558,20 @@ namespace Peachpie.Library.XmlDom
                 }
             }
 
-            return (static_call ? instance : (object)true);
+            return true;
         }
 
         /// <summary>
         /// Loads the XML document from the specified string.
         /// </summary>
-        /// <param name="instance">The <see cref="DOMDocument"/> instance or <B>null</B>.</param>
         /// <param name="xmlString">The XML string.</param>
         /// <param name="options">Undocumented.</param>
-        /// <returns>A new <see cref="DOMDocument"/> or <B>false</B> if <paramref name="instance"/>p
-        /// is <B>null</B>, <B>true</B> or <B>false</B> otherwise.</returns>
-        public static object loadXML(/*[This]*/ DOMDocument instance, string xmlString, int options = 0)
+        /// <returns><b>True</b> on success or <b>false</b> on failure.</returns>
+        public bool loadXML(string xmlString, int options = 0)
         {
-            // this method can be called both statically and via an instance
-            bool static_call;
-            if (instance == null)
-            {
-                static_call = true;
-                instance = new DOMDocument();
-            }
-            else static_call = false;
+            // TODO: this method can be called both statically and via an instance
 
-            var result = instance.loadXMLInternal(xmlString, options, false);
-            return static_call ? instance : (object)result;
+            return loadXMLInternal(xmlString, options, false);
         }
 
         /// <summary>
