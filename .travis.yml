@@ -9,6 +9,7 @@ install:
   - dotnet restore ./Peachpie.sln /p:TargetFrameworks=netcoreapp1.0
   - dotnet build ./src/Peachpie.Runtime/ /p:TargetFrameworks=netcoreapp1.0
   - dotnet build ./src/Peachpie.Library/ /p:TargetFrameworks=netcoreapp1.0
+  - dotnet build ./src/Peachpie.Library.Graphics/ /p:TargetFrameworks=netcoreapp1.0
   - dotnet build ./src/Peachpie.Library.Scripting/ /p:TargetFrameworks=netcoreapp1.0
   - dotnet build ./src/Peachpie.Library.MsSql/ /p:TargetFrameworks=netcoreapp1.0
   - dotnet build ./src/Peachpie.Library.MySql/ /p:TargetFrameworks=netcoreapp1.0
@@ -19,7 +20,7 @@ install:
   - dotnet build ./src/Peachpie.Compiler.Tools/ /p:TargetFrameworks=netcoreapp1.0
   - dotnet build ./src/Peachpie.NETCore.Web/ /p:TargetFrameworks=netcoreapp1.0
   - dotnet build ./src/Peachpie.NET.Sdk/ /p:TargetFrameworks=netcoreapp1.0
-  - powershell -File ./build/update-cache.ps1 0.7.0
+  - powershell -File ./build/update-cache.ps1 0.8.0
   - dotnet restore ./src/Tests/Peachpie.DiagnosticTests/
 
 script:

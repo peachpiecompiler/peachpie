@@ -326,6 +326,8 @@ namespace Pchp.Core
             };
         }
 
+        public PhpArray ToArray() => this;
+
         #endregion
 
         #region IPhpComparable

@@ -15,22 +15,19 @@ namespace Pchp.CodeAnalysis.DocumentationComments
             PEModuleSymbol containingPEModule,
             CultureInfo preferredCulture,
             CancellationToken cancellationToken,
-            ref Tuple<CultureInfo, string> lazyDocComment)
+            ref (CultureInfo Culture, string XmlText) lazyDocComment)
         {
             // Have we cached anything?
-            if (lazyDocComment == null)
+            if (lazyDocComment.XmlText == null)
             {
-                Interlocked.CompareExchange(
-                    ref lazyDocComment,
-                    Tuple.Create(
-                        preferredCulture,
-                        containingPEModule.DocumentationProvider.GetDocumentationForSymbol(
-                            symbol.GetDocumentationCommentId(), preferredCulture, cancellationToken)),
-                    null);
+                lazyDocComment = (
+                    Culture: preferredCulture,
+                    XmlText: containingPEModule.DocumentationProvider.GetDocumentationForSymbol(
+                            symbol.GetDocumentationCommentId(), preferredCulture, cancellationToken));
             }
 
             // Does the cached version match the culture we asked for?
-            if (object.Equals(lazyDocComment.Item1, preferredCulture))
+            if (Equals(lazyDocComment.Culture, preferredCulture))
             {
                 return lazyDocComment.Item2;
             }

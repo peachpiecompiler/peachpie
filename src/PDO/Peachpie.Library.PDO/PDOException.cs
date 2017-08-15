@@ -1,5 +1,6 @@
 ﻿using Pchp.Library.Spl;
 using System;
+using Pchp.Core;
 
 namespace Peachpie.Library.PDO
 {
@@ -7,15 +8,19 @@ namespace Peachpie.Library.PDO
     /// Exception raised by PDO objects
     /// </summary>
     /// <seealso cref="Pchp.Library.Spl.Exception" />
-    public class PDOException : Pchp.Library.Spl.Exception
+    [PhpType(PhpTypeAttribute.InheritName)]
+    public class PDOException : RuntimeException
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="PDOException"/> class.
+        /// Corresponds to <see cref="PDO.errorInfo"/> or <see cref="PDOStatement.errorInfo"/>.
         /// </summary>
-        /// <param name="message">Message décrivant l'erreur.</param>
-        public PDOException(string message) : base(message)
-        {
-        }
+        public PhpArray errorInfo = PhpArray.NewEmpty();    // TODO
+        
+        /// <summary>
+        /// Empty constructor used when overriding class in PHP.
+        /// </summary>
+        [PhpFieldsOnlyCtor]
+        protected PDOException() { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PDOException"/> class.
@@ -23,7 +28,8 @@ namespace Peachpie.Library.PDO
         /// <param name="message">The message.</param>
         /// <param name="code">The code.</param>
         /// <param name="previous">The previous.</param>
-        public PDOException(string message, long code, Throwable previous) : base(message, code, previous)
+        public PDOException(string message = "", long code = 0, Throwable previous = null)
+            : base(message, code, previous)
         {
         }
     }

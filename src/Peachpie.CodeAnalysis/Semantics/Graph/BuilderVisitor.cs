@@ -721,8 +721,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             if (!switchValue.IsConstant() && !cases.All(c => c.CaseValue.IsOnlyBoundElement))
             {
                 var result = GeneratorSemanticsBinder.CreateAndAssignSynthesizedVariable(switchValue, BoundAccess.Read, $"<switchValueCacher>{x.Span}");
-                switchValue = result.Item1;
-                _current.Add(new BoundExpressionStatement(result.Item2));
+                switchValue = result.BoundExpr;
+                _current.Add(new BoundExpressionStatement(result.Assignment));
             }
 
             // SwitchEdge // Connects _current to cases

@@ -322,7 +322,8 @@ namespace Pchp.Core
                 return iskey;
             }
 
-            throw new ArgumentException();
+            PhpException.Throw(PhpError.Warning, Resources.ErrResources.illegal_offset_type);
+            return IntStringKey.EmptyStringKey;
         }
 
         /// <summary>

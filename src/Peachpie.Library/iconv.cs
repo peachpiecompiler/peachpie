@@ -641,14 +641,12 @@ namespace Pchp.Library
                 enc_fallback = new IgnoreEncoderFallback();    // ignore character and continue
             else
                 enc_fallback = new StopEncoderFallback(out_result);    // throw notice and discard all remaining characters
-
-
+            
             //// out_encoding.Clone() ensures it is NOT readOnly
             //// then set EncoderFallback to catch handle unconvertable characters
 
             //out_encoding = (Encoding)out_encoding.Clone();
-
-            out_encoding = Encoding.GetEncoding(out_encoding.EncodingName, enc_fallback, DecoderFallback.ExceptionFallback);
+            out_encoding = Encoding.GetEncoding(out_encoding.CodePage, enc_fallback, DecoderFallback.ExceptionFallback);
 
             try
             {

@@ -137,6 +137,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Undefined:
                 case PhpTypeCode.Null: return 1;
                 case PhpTypeCode.Boolean: return y.Boolean ? 0 : 1;
+                case PhpTypeCode.Alias: return Compare(x, y.Alias.Value);
                 case PhpTypeCode.Object:
                     if (y.Object == null) goto case PhpTypeCode.Null;
                     bool incomparable;

@@ -61,6 +61,11 @@ namespace Pchp.Core
         /// In case of a non class object, boxes value to an object.
         /// </summary>
         object ToClass();
+
+        /// <summary>
+        /// Converts the object to array.
+        /// </summary>
+        PhpArray ToArray();
     }
 
     #endregion
@@ -224,7 +229,11 @@ namespace Pchp.Core
             }
             else
             {
-                if (obj is Array)
+                if (obj is IPhpConvertible conv)
+                {
+                    return conv.ToArray();
+                }
+                else if (obj is Array)
                 {
                     // [] -> array
                     return new PhpArray((Array)obj);

@@ -100,6 +100,8 @@ namespace Pchp.Core
 
         public object ToClass() => Value.ToClass();
 
+        public PhpArray ToArray() => Value.ToArray();
+
         #endregion
     }
 }

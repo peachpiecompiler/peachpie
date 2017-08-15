@@ -84,7 +84,10 @@ If you found a bug, the easiest way of providing feedback is to post it on [Gitt
 
 
 ## .NET Foundation
+<a href="https://dotnetfoundation.org"><img src="https://dotnetfoundation.org/Themes/DotNetFoundation.Theme/Images/logo-small.png" width="150" alt=".NET Foundation"></a>
+  <br>
 This project is supported by the [.NET Foundation](http://www.dotnetfoundation.org).
+
 
 ## How to get in touch?
 We kindly ask you to be patient with your queries; you can follow us on [Twitter](https://twitter.com/pchpcompiler) or on [Facebook](https://www.facebook.com/pchpcompiler/). You can contact us there regarding your questions or ask the community for support on [Gitter](https://gitter.im/iolevel/peachpie), but please understand that we do not provide support at this point.

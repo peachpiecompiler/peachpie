@@ -190,7 +190,7 @@ namespace Pchp.Core
         /// <param name="functionName">The name of the function called.</param>
         public static void InvalidImplicitCast(string argument, string targetType, string functionName)
         {
-            Throw(PhpError.Warning, string.Format(ErrResources.invalid_implicit_cast, argument, targetType, functionName));
+            Throw(PhpError.Warning, ErrResources.invalid_implicit_cast, argument, targetType, functionName);
         }
 
         /// <summary>

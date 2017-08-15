@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Text;
 using System.ComponentModel;
 using System.Collections.Generic;
@@ -139,9 +139,8 @@ namespace Peachpie.Library.XmlDom
         #region Construction
 
         public DOMException(string message = "", long code = 0, Throwable previous = null)
-        {
-            __construct(message, code, previous);
-        }
+            : base(message, code, previous)
+        { }
 
         #endregion
 
@@ -152,7 +151,7 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         /// <param name="code">The exception code.</param>
         /// <exception cref="DOMException"/>
-        /// <exception cref="InvalidOperationException">If the <paramref name="code"/> is invalid.</exception>
+        /// <exception cref="ArgumentException">If the <paramref name="code"/> is invalid.</exception>
         internal static void Throw(ExceptionCode code)
 		{
 			string msg;
@@ -177,7 +176,7 @@ namespace Peachpie.Library.XmlDom
 				case ExceptionCode.ValidationError: msg = Resources.ErrorValidationError; break;
 
 				default:
-					throw new InvalidOperationException();
+					throw new ArgumentException(nameof(code));
 			}
 
 			Throw(code, msg);
@@ -191,7 +190,7 @@ namespace Peachpie.Library.XmlDom
         /// <exception cref="DOMException"/>
         internal static void Throw(ExceptionCode code, string message)
 		{
-			throw new DOMException(message, (int)code);
+			throw new DOMException(message, (long)code);
 		}
 
 		#endregion

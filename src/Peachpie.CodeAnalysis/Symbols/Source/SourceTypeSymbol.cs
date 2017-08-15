@@ -212,27 +212,26 @@ namespace Pchp.CodeAnalysis.Symbols
 
             // get possible type signature [ BaseType?, Interface1, ..., InterfaceN ]
             // Single slots may refer to a MissingTypeSymbol or an ambiguous type symbol
-            var tsignature = ResolveTypeSignature(_syntax, this.DeclaringCompilation).ToArray();
+            var tsignature = ResolveTypeSignature(this, this.DeclaringCompilation).ToArray();
             Debug.Assert(tsignature.Length >= 1);   // [0] is base class
 
             // check all types are supported
             foreach (var t in tsignature)
             {
-                if (t == null) continue;
-
-                Debug.Assert(t.Item2 != null);
-
-                if (t.Item2.Arity != 0) diagnostics.Add(CreateLocation(t.Item1.Span.ToTextSpan()), Errors.ErrorCode.ERR_NotYetImplemented, "Using generic types.");
-                if (t.Item2.IsErrorType() && ((ErrorTypeSymbol)t.Item2).CandidateReason != CandidateReason.Ambiguous)
+                if (t.Symbol != null)
                 {
-                    diagnostics.Add(CreateLocation(t.Item1.Span.ToTextSpan()), Errors.ErrorCode.ERR_TypeNameCannotBeResolved, t.Item1.ClassName.ToString());
+                    if (t.Symbol.Arity != 0) diagnostics.Add(CreateLocation(t.TypeRef.Span.ToTextSpan()), Errors.ErrorCode.ERR_NotYetImplemented, "Using generic types.");
+                    if (t.Symbol is ErrorTypeSymbol err && err.CandidateReason != CandidateReason.Ambiguous)
+                    {
+                        diagnostics.Add(CreateLocation(t.TypeRef.Span.ToTextSpan()), Errors.ErrorCode.ERR_TypeNameCannotBeResolved, t.TypeRef.ClassName.ToString());
+                    }
                 }
             }
 
             if (!diagnostics.HasAnyErrors())
             {
                 // collect variations of possible base types
-                var variations = Variations<NamedTypeSymbol>(tsignature.Select(t => t?.Item2).AsImmutable(), this.ContainingFile);
+                var variations = Variations(tsignature.Select(t => t.Symbol).AsImmutable(), this.ContainingFile);
 
                 // instantiate versions
                 bool self = true;
@@ -274,12 +273,28 @@ namespace Pchp.CodeAnalysis.Symbols
             else
             {
                 // default:
-                _lazyBaseType = tsignature[0]?.Item2;
+                _lazyBaseType = tsignature[0].Symbol;
                 _lazyInterfacesType = tsignature.Skip(1).Select(t => t.Item2).AsImmutable();
             }
 
-            // check for circular dependencies
-            // ...
+            // check for circular bases in all versions
+            for (var t = this; t != null; t = t.NextVersion)
+            {
+                CheckForCircularBase(t, diagnostics);
+            }
+        }
+
+        void CheckForCircularBase(SourceTypeSymbol t, DiagnosticBag diagnostics)
+        {
+            var set = new HashSet<SourceTypeSymbol>();  // only care about source symbols
+            for (var b = t; b != null; b = b.BaseType as SourceTypeSymbol)
+            {
+                if (set.Add(b) == false)
+                {
+                    diagnostics.Add(CreateLocation(_syntax.HeadingSpan.ToTextSpan()), Errors.ErrorCode.ERR_CircularBase, t.BaseType, t);
+                    break;
+                }
+            }
         }
 
         static IEnumerable<ImmutableArray<T>> Variations<T>(ImmutableArray<T> types, SourceFileSymbol containingFile) where T : NamedTypeSymbol
@@ -341,22 +356,24 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets type signature of the type [BaseType or NULL, Interface1, ..., InterfaceN]
         /// </summary>
-        private static IEnumerable<Tuple<INamedTypeRef, NamedTypeSymbol>> ResolveTypeSignature(TypeDecl syntax, PhpCompilation compilation)
+        private static IEnumerable<(INamedTypeRef TypeRef, NamedTypeSymbol Symbol)> ResolveTypeSignature(SourceTypeSymbol type, PhpCompilation compilation)
         {
+            var syntax = type.Syntax;
+
             // base type or NULL
             if (syntax.BaseClass != null)   // a class with base
             {
                 var baseTypeName = syntax.BaseClass.ClassName;
 
-                yield return new Tuple<INamedTypeRef, NamedTypeSymbol>(syntax.BaseClass, (NamedTypeSymbol)compilation.GlobalSemantics.GetType(baseTypeName));
+                yield return (syntax.BaseClass, (baseTypeName == type.FullName) ? type : (NamedTypeSymbol)compilation.GlobalSemantics.GetType(baseTypeName));
             }
             else if ((syntax.MemberAttributes & (PhpMemberAttributes.Static | PhpMemberAttributes.Interface)) != 0) // a static class or an interface
             {
-                yield return null;
+                yield return (null, null);  // nothing
             }
             else // a class without base
             {
-                yield return new Tuple<INamedTypeRef, NamedTypeSymbol>(null, compilation.CoreTypes.Object.Symbol);
+                yield return (null, compilation.CoreTypes.Object.Symbol);
             }
 
             // base interfaces
@@ -366,7 +383,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 var qname = i.ClassName;
                 if (visited.Add(qname))
                 {
-                    yield return new Tuple<INamedTypeRef, NamedTypeSymbol>(i, (NamedTypeSymbol)compilation.GlobalSemantics.GetType(qname));
+                    yield return (i, (qname == type.FullName) ? type : (NamedTypeSymbol)compilation.GlobalSemantics.GetType(qname));
                 }
             }
         }

@@ -301,7 +301,7 @@ namespace Pchp.CodeAnalysis
 
         internal override CommonMessageProvider MessageProvider => Errors.MessageProvider.Instance;
 
-        internal override IDictionary<ValueTuple<string, string>, MetadataReference> ReferenceDirectiveMap
+        internal override IDictionary<Roslyn.Utilities.ValueTuple<string, string>, MetadataReference> ReferenceDirectiveMap
         {
             get
             {

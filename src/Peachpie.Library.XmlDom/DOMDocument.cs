@@ -641,7 +641,7 @@ namespace Peachpie.Library.XmlDom
                     {
                         var settings = new XmlWriterSettings()
                         {
-                            Encoding = Utils.GetNodeEncoding(XmlNode)
+                            Encoding = Utils.GetNodeEncoding(ctx, XmlNode)
                         };
 
                         using (XmlWriter writer = XmlWriter.Create(stream.RawStream, settings))
@@ -669,10 +669,11 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Returns the string representation of this document.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="node">The node to dump (the entire document if <B>null</B>).</param>
         /// <returns>The string representation of the document / the specified node or <B>false</B>.</returns>
         [return: CastToFalse]
-        public PhpString saveXML(DOMNode node = null)
+        public PhpString saveXML(Context ctx, DOMNode node = null)
         {
             XmlNode xml_node;
 
@@ -689,7 +690,7 @@ namespace Peachpie.Library.XmlDom
 
             var settings = new XmlWriterSettings()
             {
-                Encoding = Utils.GetNodeEncoding(xml_node),
+                Encoding = Utils.GetNodeEncoding(ctx, xml_node),
                 Indent = _formatOutput
             };
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Pchp.Core;
 
 namespace Peachpie.Library.XmlDom
 {
@@ -33,7 +34,7 @@ namespace Peachpie.Library.XmlDom
     }
 
     /// <summary>
-    /// Enumerates who-knows-what.
+    /// Enumerates who-knows-what. (TODO)
     /// </summary>
     public enum AttributeType
     {
@@ -55,6 +56,8 @@ namespace Peachpie.Library.XmlDom
     /// </summary>
     public static class XmlDom
     {
+        #region Constants
+
         public const int XML_ELEMENT_NODE = (int)NodeType.Element;
         public const int XML_ATTRIBUTE_NODE = (int)NodeType.Attribute;
         public const int XML_TEXT_NODE = (int)NodeType.Text;
@@ -86,8 +89,96 @@ namespace Peachpie.Library.XmlDom
         public const int XML_ATTRIBUTE_NOTATION = (int)AttributeType.Notation;
 
         /// <summary>
+        /// Index or size is negative, or greater than the allowed value. 
+        /// </summary>
+        public const int DOM_INDEX_SIZE_ERR = (int)ExceptionCode.IndexOutOfBounds;
+
+        /// <summary>
+        /// The specified range of text does not fit into a string.
+        /// </summary>
+        public const int DOMSTRING_SIZE_ERR = (int)ExceptionCode.StringTooLong;
+
+        /// <summary>
+        /// A node is inserted somewhere it doesn't belong.
+        /// </summary>
+        public const int DOM_HIERARCHY_REQUEST_ERR = (int)ExceptionCode.BadHierarchy;
+
+        /// <summary>
+        /// A node is used in a different document than the one that created it.
+        /// </summary>
+        public const int DOM_WRONG_DOCUMENT_ERR = (int)ExceptionCode.WrongDocument;
+
+        /// <summary>
+        /// An invalid or illegal character is specified, such as in a name.
+        /// </summary>
+        public const int DOM_INVALID_CHARACTER_ERR = (int)ExceptionCode.InvalidCharacter;
+
+        /// <summary>
+        /// Data is specified for a node which does not support data.
+        /// </summary>
+        public const int DOM_NO_DATA_ALLOWED_ERR = (int)ExceptionCode.DataNotAllowed;
+
+        /// <summary>
+        /// An attempt is made to modify an object where modifications are not allowed.
+        /// </summary>
+        public const int DOM_NO_MODIFICATION_ALLOWED_ERR = (int)ExceptionCode.DomModificationNotAllowed;
+
+        /// <summary>
+        /// An attempt is made to reference a node in a context where it does not exist.
+        /// </summary>
+        public const int DOM_NOT_FOUND_ERR = (int)ExceptionCode.NotFound;
+
+        /// <summary>
+        /// The implementation does not support the requested type of object or operation.
+        /// </summary>
+        public const int DOM_NOT_SUPPORTED_ERR = (int)ExceptionCode.NotSupported;
+
+        /// <summary>
+        /// An attempt is made to add an attribute that is already in use elsewhere.
+        /// </summary>
+        public const int DOM_INUSE_ATTRIBUTE_ERR = (int)ExceptionCode.AttributeInUse;
+
+        /// <summary>
+        /// An attempt is made to use an object that is not, or is no longer, usable.
+        /// </summary>
+        public const int DOM_INVALID_STATE_ERR = (int)ExceptionCode.InvalidState;
+
+        /// <summary>
+        /// An invalid or illegal string is specified.
+        /// </summary>
+        public const int DOM_SYNTAX_ERR = (int)ExceptionCode.SyntaxError;
+
+        /// <summary>
+        /// An attempt is made to modify the type of the underlying object.
+        /// </summary>
+        public const int DOM_INVALID_MODIFICATION_ERR = (int)ExceptionCode.ModificationNotAllowed;
+
+        /// <summary>
+        /// An attempt is made to create or change an object in a way which is incorrect with
+        /// regard to namespaces.
+        /// </summary>
+        public const int DOM_NAMESPACE_ERR = (int)ExceptionCode.NamespaceError;
+
+        /// <summary>
+        /// A parameter or an operation is not supported by the underlying object.
+        /// </summary>
+        public const int DOM_INVALID_ACCESS_ERR = (int)ExceptionCode.InvalidAccess;
+
+        /// <summary>
+        /// A call to a method such as <B>insertBefore</B> or <B>removeChild</B> would make the
+        /// node invalid with respect to &quot;partial validity&quot;, this exception would be
+        /// raised and the operation would not be done. 
+        /// </summary>
+        public const int DOM_VALIDATION_ERR = (int)ExceptionCode.ValidationError;
+
+        #endregion
+
+        /// <summary>
         /// Converts a <see cref="SimpleXMLElement"/> object to a <see cref="DOMElement"/>.
         /// </summary>
-        //public static DOMElement dom_import_simplexml(SimpleXMLElement node) => DOMNode.Create(node.XmlElement);
+        /// <param name="node">The <see cref="SimpleXMLElement"/> node.</param>
+        /// <returns>The DOMElement node added or FALSE if any errors occur.</returns>
+        [return: CastToFalse]
+        public static DOMElement dom_import_simplexml(SimpleXMLElement node) => (DOMElement)DOMNode.Create(node.XmlElement);
     }
 }

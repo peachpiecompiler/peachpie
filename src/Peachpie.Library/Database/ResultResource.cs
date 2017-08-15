@@ -333,7 +333,7 @@ namespace Pchp.Library.Database
 
             for (int i = 0; i < FieldCount; i++)
             {
-                var quoted = (PhpValue)oa[i].ToString(); //  Core.Utilities.StringUtils.AddDbSlashes(oa[i].ToString());
+                var quoted = PhpValue.FromClr(oa[i]); //  Core.Utilities.StringUtils.AddDbSlashes(oa[i].ToString());
                 if (intKeys) row[i] = quoted;
                 if (stringKeys) row[CurrentSet.Names[i]] = quoted;
             }

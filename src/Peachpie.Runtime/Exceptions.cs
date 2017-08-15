@@ -44,6 +44,8 @@ namespace Pchp.Core
         {
         }
 
+        public override string Message => _status.DisplayString;
+        
         /// <summary>
         /// Status of a different type than integer is printed,
         /// exit code according to PHP semantic is returned.

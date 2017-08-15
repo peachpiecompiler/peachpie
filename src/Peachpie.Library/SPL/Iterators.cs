@@ -66,8 +66,8 @@ namespace Pchp.Library.Spl
 
         readonly protected Context _ctx;
 
-        PhpArray _array;
-        OrderedDictionary.Enumerator _arrayEnumerator;    // lazily instantiated so we can rewind() once when needed
+        PhpArray _array;// PHP compatibility: private PhpArray storage;
+        internal protected OrderedDictionary.Enumerator _arrayEnumerator;    // lazily instantiated so we can rewind() once when needed
         bool isArrayIterator => _array != null;
 
         object _dobj = null;
@@ -230,10 +230,15 @@ namespace Pchp.Library.Spl
 
         private void EnsureEnumeratorsHelper()
         {
-            if (isObjectIterator && _dobjEnumerator == null)
-                InitObjectIteratorHelper();
-
-            // arrayEnumerator initialized in __construct()
+            if (isArrayIterator)
+            {
+                // arrayEnumerator initialized in __construct()
+            }
+            else
+            {
+                if (isObjectIterator && _dobjEnumerator == null)
+                    InitObjectIteratorHelper();
+            }
         }
 
         public virtual void next()
@@ -424,7 +429,7 @@ namespace Pchp.Library.Spl
             else
             {
                 // We create an instance of the current type, if used from a subclass
-                return (RecursiveArrayIterator)_ctx.Create(default(RuntimeTypeHandle), type.GetPhpTypeInfo(), elem); 
+                return (RecursiveArrayIterator)_ctx.Create(default(RuntimeTypeHandle), type.GetPhpTypeInfo(), elem);
             }
         }
 
@@ -493,7 +498,7 @@ namespace Pchp.Library.Spl
         /// <summary>
         /// Object to iterate on.
         /// </summary>
-        private Traversable _iterator;
+        internal protected Traversable _iterator;
 
         /// <summary>
         /// Enumerator over the <see cref="iterator"/>.
@@ -503,7 +508,7 @@ namespace Pchp.Library.Spl
         /// <summary>
         /// Wheter the <see cref="_enumerator"/> is in valid state (initialized and not at the end).
         /// </summary>
-        protected bool _valid = false;
+        internal protected bool _valid = false;
 
         [PhpFieldsOnlyCtor]
         protected IteratorIterator() { }
@@ -521,6 +526,8 @@ namespace Pchp.Library.Spl
             }
 
             _iterator = iterator;
+            _valid = false;
+            _enumerator = null;
 
             if (iterator is Iterator)
             {
@@ -539,7 +546,7 @@ namespace Pchp.Library.Spl
             return (Iterator)_iterator;
         }
 
-        public virtual void rewind()
+        internal protected void rewindImpl()
         {
             if (_iterator != null)
             {
@@ -549,6 +556,11 @@ namespace Pchp.Library.Spl
                 //
                 _valid = _enumerator.MoveNext();
             }
+        }
+
+        public virtual void rewind()
+        {
+            rewindImpl();
         }
 
         public virtual void next()
@@ -598,6 +610,34 @@ namespace Pchp.Library.Spl
     }
 
     /// <summary>
+    /// The InfiniteIterator allows one to infinitely iterate over an iterator without having to manually rewind the iterator upon reaching its end.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName)]
+    public class InfiniteIterator : IteratorIterator
+    {
+        [PhpFieldsOnlyCtor]
+        protected InfiniteIterator() { }
+
+        public InfiniteIterator(Traversable iterator) : base(iterator)
+        {
+        }
+
+        /// <summary>
+        /// Moves the inner Iterator forward and rewinds it if underlaying iterator reached the end.
+        /// </summary>
+        public override void next()
+        {
+            base.next();
+
+            if (!_valid)
+            {
+                // as it is in PHP, calls non-overridable implementation of rewind()
+                rewindImpl();
+            }
+        }
+    }
+
+    /// <summary>
     /// This abstract iterator filters out unwanted values.
     /// This class should be extended to implement custom iterator filters.
     /// </summary>
@@ -642,6 +682,204 @@ namespace Pchp.Library.Spl
     }
 
     /// <summary>
+    /// This abstract iterator filters out unwanted values.
+    /// This class should be extended to implement custom iterator filters.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName)]
+    public class LimitIterator : IteratorIterator
+    {
+        internal protected long _position, _offset, _max;
+
+        [PhpFieldsOnlyCtor]
+        protected LimitIterator() { }
+
+        public LimitIterator(Traversable iterator, long offset = 0, long count = -1) => __construct(iterator, offset, count);
+
+        public override sealed void __construct(Traversable iterator, string classname = null) => __construct(iterator, 0, -1);
+
+        public virtual void __construct(Traversable iterator, long offset = 0, long count = -1)
+        {
+            base.__construct(iterator);
+
+            if (offset < 0) throw new OutOfRangeException();
+
+            _offset = offset;
+            _max = count >= 0 ? offset + count : long.MaxValue;
+        }
+
+        public override void rewind()
+        {
+            base.rewind();
+
+            // skips offset
+            for (var n = _offset; n > 0 && _valid; n--)
+            {
+                base.next();
+            }
+
+            _position = _offset;
+        }
+
+        public override void next()
+        {
+            if (++_position < _max && _valid)
+            {
+                base.next();
+            }
+            else
+            {
+                _valid = false;
+            }
+        }
+
+        public virtual long getPosition() => _position;
+
+        public virtual long seek(long position)
+        {
+            if (position < _offset || position >= _max)
+            {
+                throw new OutOfBoundsException();
+            }
+
+            //
+            if (position != _position)
+            {
+                //if (_iterator is SeekableIterator seekable)  // undocumented PHP behavior
+                //{
+                //    seekable.seek(position);  // TODO: this would not move our _enumerator
+                //    _position = position;
+                //    _valid = seekable.valid();
+                //}
+                //else
+                {
+                    // rewind & forward
+                    if (position < _position)
+                    {
+                        rewind();
+                    }
+
+                    // forward
+                    while (position > _position && _valid)
+                    {
+                        next();
+                    }
+                }
+            }
+
+            //
+            return _position;
+        }
+    }
+
+    /// <summary>
+    /// An Iterator that iterates over several iterators one after the other.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName)]
+    public class AppendIterator : IteratorIterator, OuterIterator
+    {
+        /// <summary>
+        /// Current item in <see cref="_array"/>;
+        /// </summary>
+        protected internal KeyValuePair<IntStringKey, Iterator> _index;
+
+        [PhpFieldsOnlyCtor]
+        protected AppendIterator() { }
+
+        public AppendIterator(Context ctx) => __construct(ctx);
+
+        /// <summary>
+        /// Wrapped <see cref="_array"/> into PHP iterator.
+        /// Compatibility with <see cref="getArrayIterator"/>.
+        /// </summary>
+        protected internal ArrayIterator ArrayIterator => (ArrayIterator)_iterator;
+        protected internal Iterator InnerIterator => isValidImpl() ? _index.Value : null;
+
+        protected internal void EnsureInitialized()
+        {
+            if (_index.Value == null && ArrayIterator.valid())
+            {
+                _index = new KeyValuePair<IntStringKey, Iterator>(ArrayIterator.key().ToIntStringKey(), (Iterator)ArrayIterator.current().AsObject());
+            }
+        }
+
+        protected internal bool isValidImpl()
+        {
+            EnsureInitialized();
+            return _index.Value != null;
+        }
+
+        /// <summary>
+        /// Array of appended iterators.
+        /// </summary>
+        protected internal PhpArray _array;
+
+        //public sealed override void __construct(Traversable iterator, string classname = null)
+        //{
+        //    throw new InvalidOperationException();
+        //}
+
+        public virtual void __construct(Context ctx)
+        {
+            base.__construct(new ArrayIterator(ctx, (PhpValue)(_array = PhpArray.NewEmpty())));
+        }
+
+        public virtual void append(Iterator iterator)
+        {
+            _array.Add(PhpValue.FromClass(iterator ?? throw new ArgumentNullException(nameof(iterator))));
+
+            if (_array.Count == 1) { rewindImpl(); }
+        }
+
+        /// <summary>
+        /// This method gets the ArrayIterator that is used to store the iterators added with <see cref="append"/>.
+        /// </summary>
+        public virtual ArrayIterator getArrayIterator() => ArrayIterator;
+
+        public virtual int getIteratorIndex() => isValidImpl() ? _index.Key.Integer : 0/*should be NULL*/;
+
+        public override Iterator getInnerIterator() => InnerIterator;
+
+        public override void rewind()
+        {
+            rewindImpl();
+            _index = default(KeyValuePair<IntStringKey, Iterator>);
+        }
+
+        public override void next()
+        {
+            if (isValidImpl())
+            {
+                InnerIterator.next();
+            }
+            else
+            {
+                return;
+            }
+
+            while (isValidImpl() && InnerIterator.valid() == false)
+            {
+                // next iterator
+                base.next();
+
+                // reset index
+                _index = default(KeyValuePair<IntStringKey, Iterator>);
+            }
+        }
+
+        public override PhpValue current()
+        {
+            return isValidImpl() ? _index.Value.current() : PhpValue.Void;
+        }
+
+        public override PhpValue key()
+        {
+            return isValidImpl() ? _index.Value.key() : PhpValue.Void;
+        }
+
+        public override bool valid() => isValidImpl();
+    }
+
+    /// <summary>
     /// This abstract iterator filters out unwanted values for a RecursiveIterator.
     /// This class should be extended to implement custom filters.
     /// </summary>
@@ -656,7 +894,7 @@ namespace Pchp.Library.Spl
             _ctx = ctx;
         }
 
-        public RecursiveFilterIterator(Context ctx, RecursiveIterator iterator) : this (ctx)
+        public RecursiveFilterIterator(Context ctx, RecursiveIterator iterator) : this(ctx)
         {
             __construct(iterator);
         }

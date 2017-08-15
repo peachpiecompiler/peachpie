@@ -47,7 +47,7 @@ namespace Pchp.Library
                 }
                 catch (Exception e)
                 {
-                    PhpException.Throw(PhpError.Notice, LibResources.GetString("serialization_failed", e.Message));
+                    PhpException.Throw(PhpError.Notice, LibResources.serialization_failed, e.Message);
                     return null;
                 }
             }
@@ -71,7 +71,7 @@ namespace Pchp.Library
                 }
                 catch (Exception e)
                 {
-                    PhpException.Throw(PhpError.Notice, LibResources.GetString("deserialization_failed", e.Message, stream.Position, stream.Length));
+                    PhpException.Throw(PhpError.Notice, LibResources.deserialization_failed, e.Message, stream.Position.ToString(), stream.Length.ToString());
                     return PhpValue.False;
                 }
             }
@@ -564,7 +564,7 @@ namespace Pchp.Library
 
             #region ObjectReader
 
-            sealed class ObjectReader
+            internal sealed class ObjectReader
             {
                 readonly Context _ctx;
                 readonly Stream _stream;
