@@ -4,7 +4,7 @@ $xml = <<<HERE
 <?xml version="1.0" encoding="ISO-8859-1" ?>
 <foo xmlns="http://www.example.com/ns/foo"
      xmlns:fubar="http://www.example.com/ns/fubar">
-  <bar>Lorem Ipsum</bar>
+  <bar fubar:first="lorem" second="ipsum" first="bla">Lorem Ipsum</bar>
   <!-- A comment -->
   <bar><test2><![CDATA[Within this Character Data block I can use --, <, &, ', and " as much as I want]]></test2></bar>
   <fubar:bar><test3 /></fubar:bar>
@@ -18,6 +18,10 @@ function dump($elems) {
 
     if ($elem instanceof DOMCharacterData) {
       echo "'". $elem->data ."' ";
+    } else if (!is_null($elem->attributes)) {
+      foreach ($elem->attributes as $name => $attr) {
+        echo "{$name}='{$attr->value}' ";
+      }
     }
 
     if ($elem->hasChildNodes()) {

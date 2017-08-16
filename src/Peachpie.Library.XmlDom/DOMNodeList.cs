@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Text;
 using Pchp.Core;
 
+// TODO: Enable multiple simultaneous iterations
+
 namespace Peachpie.Library.XmlDom
 {
     [PhpType(PhpTypeAttribute.InheritName)]
