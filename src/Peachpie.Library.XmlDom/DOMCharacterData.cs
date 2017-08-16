@@ -141,12 +141,6 @@ namespace Peachpie.Library.XmlDom
     {
         #region Fields and Properties
 
-        internal XmlText XmlText
-        {
-            get { return (XmlText)XmlNode; }
-            set { XmlNode = value; }
-        }
-
         private string _value;
 
         internal override string dataImpl
@@ -218,9 +212,13 @@ namespace Peachpie.Library.XmlDom
             __construct(value);
         }
 
-        internal DOMText(XmlText/*!*/ xmlText)
+        /// <summary>
+        /// This constructor can be used either with proper <see cref="XmlText"/> or with <see cref="XmlWhitespace"/>
+        /// or <see cref="XmlSignificantWhitespace"/>. PHP uses <see cref="DOMText"/> for all these cases.
+        /// </summary>
+        internal DOMText(XmlCharacterData/*!*/ xmlCharacterData)
         {
-            this.XmlText = xmlText;
+            this.XmlCharacterData = xmlCharacterData;
         }
 
         internal static DOMText CreateDOMText(string value)
@@ -232,7 +230,7 @@ namespace Peachpie.Library.XmlDom
 
         protected override DOMNode CloneObjectInternal(bool deepCopyFields)
         {
-            if (IsAssociated) return new DOMText(XmlText);
+            if (IsAssociated) return new DOMText(XmlCharacterData);
             else
             {
                 return CreateDOMText(_value);
@@ -252,7 +250,7 @@ namespace Peachpie.Library.XmlDom
         {
             if (!IsAssociated)
             {
-                XmlText = document.CreateTextNode(_value);
+                XmlCharacterData = document.CreateTextNode(_value);
             }
         }
 
@@ -270,10 +268,24 @@ namespace Peachpie.Library.XmlDom
         {
             if (offset < 0 || offset > this.dataLengthImpl) return null;
 
-            if (IsAssociated)
-                return (DOMText)Create(XmlText.SplitText(offset));
-            else
+            if (!IsAssociated)
+            {
                 return CreateDOMText(dataImpl.Substring(offset));
+            }
+            else if (XmlCharacterData is XmlText xmlText)
+            {
+                return (DOMText)Create(xmlText.SplitText(offset));
+            }
+            else
+            {
+                // In case of XmlWhitespace and XmlSignificantWhitespace
+                int count = this.dataLengthImpl - offset;
+                string splitData = XmlCharacterData.Substring(offset, count);
+                XmlCharacterData.DeleteData(offset, count);
+                XmlText newTextNode = XmlCharacterData.OwnerDocument.CreateTextNode(splitData);
+                XmlCharacterData.ParentNode.InsertAfter(newTextNode, XmlCharacterData);
+                return (DOMText)Create(newTextNode);
+            }
         }
 
         /// <summary>
