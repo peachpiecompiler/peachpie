@@ -7,7 +7,7 @@ $xml = <<<HERE
   <bar fubar:first="lorem" second="ipsum" first="bla">Lorem Ipsum</bar>
   <!-- A comment -->
   <bar><test2><![CDATA[Within this Character Data block I can use --, <, &, ', and " as much as I want]]></test2></bar>
-  <fubar:bar><test3 /></fubar:bar>
+  <fubar:bar><test3 /><?xml-stylesheet type="text/xsl" href="styl.xsl"?></fubar:bar>
   <fubar:bar><test4 /></fubar:bar>
 </foo>
 HERE;
@@ -16,7 +16,7 @@ function dump($elems) {
 	foreach ($elems as $elem) {
 		echo $elem->nodeName ." ";
 
-    if ($elem instanceof DOMCharacterData) {
+    if ($elem instanceof DOMCharacterData || $elem instanceof DOMProcessingInstruction) {
       echo "'". $elem->data ."' ";
     } else if (!is_null($elem->attributes)) {
       foreach ($elem->attributes as $name => $attr) {

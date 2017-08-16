@@ -343,11 +343,11 @@ namespace Peachpie.Library.XmlDom
         /// <param name="target">The name of the processing instruction.</param>
         /// <param name="data">The data for the processing instruction.</param>
         /// <returns>A new <see cref="DOMProcessingInstruction"/>.</returns>
-        //public DOMProcessingInstruction createProcessingInstruction(string target, string data)
-        //{
-        //    XmlProcessingInstruction pi = XmlDocument.CreateProcessingInstruction(target, data);
-        //    return new DOMProcessingInstruction(pi);
-        //}
+        public DOMProcessingInstruction createProcessingInstruction(string target, string data)
+        {
+            XmlProcessingInstruction pi = XmlDocument.CreateProcessingInstruction(target, data);
+            return new DOMProcessingInstruction(pi);
+        }
 
         /// <summary>
         /// Creates an attribute with the specified name.
