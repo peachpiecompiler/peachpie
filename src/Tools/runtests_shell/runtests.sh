@@ -30,7 +30,7 @@ do
     echo "$COMPILE_OUTPUT"
     FAILURE="FAILURE"
   else
-    PHP_OUTPUT="$(php $PHP_FILE)"
+    PHP_OUTPUT="$(php -d display_errors=0 $PHP_FILE)"
     PEACH_OUTPUT="$(dotnet $OUTPUT_DIR/Test.dll)"
 
     if [ "$PHP_OUTPUT" = "$PEACH_OUTPUT" ] ; then
