@@ -7,7 +7,7 @@ using Pchp.Core;
 namespace Peachpie.Library.XmlDom
 {
     /// <summary>
-    /// DOM character data.
+    /// Represents nodes with character data. No nodes directly correspond to this class, but other nodes do inherit from it.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
     public partial class DOMCharacterData : DOMNode
@@ -134,7 +134,8 @@ namespace Peachpie.Library.XmlDom
     }
 
     /// <summary>
-    /// DOM text.
+    /// Inherits from <see cref="DOMCharacterData"/> and represents the textual content of a
+    /// <see cref="DOMElement"/> or <see cref="DOMAttr"/>. 
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
     public partial class DOMText : DOMCharacterData
@@ -308,7 +309,7 @@ namespace Peachpie.Library.XmlDom
     }
 
     /// <summary>
-    /// DOM character data section.
+    /// Inherits from <see cref="DOMText"/> for textural representation of CData constructs. 
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
     public partial class DOMCdataSection : DOMText
@@ -381,7 +382,7 @@ namespace Peachpie.Library.XmlDom
     }
 
     /// <summary>
-    /// DOM comment.
+    /// Represents comment nodes, characters delimited by <!-- and -->.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
     public partial class DOMComment : DOMCharacterData

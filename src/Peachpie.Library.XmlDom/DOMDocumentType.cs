@@ -8,6 +8,10 @@ using Pchp.Core;
 
 namespace Peachpie.Library.XmlDom
 {
+    /// <summary>
+    /// Each <see cref="DOMDocument"/> has a doctype attribute whose value is either NULL
+    /// or a <see cref="DOMDocumentType"/> object.
+    /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
     public class DOMDocumentType : DOMNode
     {

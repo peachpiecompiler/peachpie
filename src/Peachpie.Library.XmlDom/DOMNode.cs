@@ -142,7 +142,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// This function returns the document the current node belongs to.
         /// </summary>
-        public object ownerDocument => Create(XmlNode.OwnerDocument);
+        public DOMDocument ownerDocument => (DOMDocument)Create(XmlNode.OwnerDocument);
 
         /// <summary>
         /// Returns the namespace URI of the node.

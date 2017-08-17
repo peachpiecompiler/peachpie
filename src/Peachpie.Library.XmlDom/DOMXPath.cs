@@ -7,6 +7,9 @@ using Pchp.Core;
 
 namespace Peachpie.Library.XmlDom
 {
+    /// <summary>
+    /// Supports XPath 1.0.
+    /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
     public class DOMXPath
     {
