@@ -283,19 +283,17 @@ namespace Pchp.Library
         /// <returns>The MIME charset string for given character encoding.</returns>
         public static string mb_preferred_mime_name(string encoding_name)
         {
-            Encoding encoding;
+            var enc = GetEncoding(encoding_name);
 
-            if (
-                (encoding = Encoding.GetEncoding(encoding_name)) == null && // .NET encodings (by their WebName)
-                (encoding = GetEncoding(encoding_name)) == null //try PHP internal encodings too (by PHP/Phalanger name)
-                )
+            // try PHP internal encodings (by PHP name) and .NET encodings name
+            if (enc == null)
             {
-                PhpException.ArgumentValueNotSupported(nameof(encoding_name), encoding);
+                PhpException.ArgumentValueNotSupported(nameof(encoding_name), encoding_name);
                 return null;
             }
 
             //return encoding.BodyName;   // it seems to return right MIME
-            return encoding.WebName;
+            return enc.WebName;
         }
 
         #endregion
