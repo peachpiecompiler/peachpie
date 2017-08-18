@@ -97,9 +97,10 @@ namespace Peachpie.Library.XmlDom
 		ValidationError = 16
 	}
 
-	/// <summary>
-	/// The exception thrown by the DOM extension.
-	/// </summary>
+    /// <summary>
+    /// DOM operations raise exceptions under particular circumstances, i.e., when an operation
+    /// is impossible to perform for logical reasons.
+    /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
 	public sealed partial class DOMException : Pchp.Library.Spl.Exception
     {

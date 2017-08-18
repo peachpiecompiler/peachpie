@@ -6,6 +6,9 @@ using Pchp.Core;
 
 namespace Peachpie.Library.XmlDom
 {
+    /// <summary>
+    /// Represents an attribute in the <see cref="DOMElement"/> object. 
+    /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
     public class DOMAttr : DOMNode
     {

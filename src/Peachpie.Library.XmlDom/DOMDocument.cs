@@ -9,8 +9,13 @@ using System.Xml.XPath;
 using Pchp.Core;
 using Pchp.Library.Streams;
 
+// TODO: Enable DTD and XML Schema related logic when it's available in System.XML (netstandard2.0)
+
 namespace Peachpie.Library.XmlDom
 {
+    /// <summary>
+    /// Represents an entire HTML or XML document; serves as the root of the document tree.
+    /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
     public class DOMDocument : DOMNode
     {
@@ -48,14 +53,15 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Returns the node containing the DOCTYPE declaration.
         /// </summary>
-        //public DOMDocumentType doctype
-        //{
-        //    get
-        //    {
-        //        XmlDocumentType doc_type = XmlDocument.DocumentType;
-        //        return (doc_type == null ? null : DOMNode.Create(doc_type));
-        //    }
-        //}
+        public DOMDocumentType doctype
+        {
+            get
+            {
+                //XmlDocumentType doc_type = XmlDocument.DocumentType;
+                //return (doc_type == null ? null : DOMNode.Create(doc_type));
+                throw new NotImplementedException();
+            }
+        }
 
         /// <summary>
         /// Returns the DOM implementation.
@@ -257,10 +263,12 @@ namespace Peachpie.Library.XmlDom
 
         #region Construction
 
-        public DOMDocument()
+        public DOMDocument(string version = null, string encoding = null)
         {
             this.XmlDocument = new XmlDocument();
             this.XmlDocument.PreserveWhitespace = true;
+
+            __construct(version, encoding);
         }
 
         internal DOMDocument(XmlDocument xmlDocument)
@@ -272,9 +280,15 @@ namespace Peachpie.Library.XmlDom
 
         public virtual void __construct(string version = null, string encoding = null)
         {
+            // To prevent problems from subsequent calls
+            if (XmlDocument.HasChildNodes)
+            {
+                return;
+            }
+
             // append the corresponding XML declaration to the document
             if (version == null) version = "1.0";
-            XmlDocument.AppendChild(XmlDocument.CreateXmlDeclaration("1.0", encoding, String.Empty));
+            XmlDocument.AppendChild(XmlDocument.CreateXmlDeclaration(version, encoding, String.Empty));
         }
 
         #endregion
@@ -287,7 +301,7 @@ namespace Peachpie.Library.XmlDom
         /// <param name="tagName">The qualified name of the element.</param>
         /// <param name="value">The inner text (value) of the element.</param>
         /// <returns>A new <see cref="DOMElement"/>.</returns>
-        public DOMElement createElement(string tagName, string value = null)
+        public virtual DOMElement createElement(string tagName, string value = null)
         {
             XmlElement element = XmlDocument.CreateElement(tagName);
             if (value != null) element.InnerText = value;
@@ -298,44 +312,44 @@ namespace Peachpie.Library.XmlDom
         /// Creates a new document fragment.
         /// </summary>
         /// <returns>A new <see cref="DOMDocumentFragment"/>.</returns>
-        //public DOMDocumentFragment createDocumentFragment()
-        //{
-        //    XmlDocumentFragment fragment = XmlDocument.CreateDocumentFragment();
-        //    return new DOMDocumentFragment(fragment);
-        //}
+        public virtual DOMDocumentFragment createDocumentFragment()
+        {
+            XmlDocumentFragment fragment = XmlDocument.CreateDocumentFragment();
+            return new DOMDocumentFragment(fragment);
+        }
 
         /// <summary>
         /// Creates a new text node with the specified text.
         /// </summary>
         /// <param name="data">The text for the text node.</param>
         /// <returns>A new <see cref="DOMText"/>.</returns>
-        //public DOMText createTextNode(string data)
-        //{
-        //    XmlText text = XmlDocument.CreateTextNode(data);
-        //    return new DOMText(text);
-        //}
+        public virtual DOMText createTextNode(string data)
+        {
+            XmlText text = XmlDocument.CreateTextNode(data);
+            return new DOMText(text);
+        }
 
         /// <summary>
         /// Creates a comment node containing the specified data.
         /// </summary>
         /// <param name="data">The comment data.</param>
         /// <returns>A new <see cref="DOMComment"/>.</returns>
-        //public DOMComment createComment(string data)
-        //{
-        //    XmlComment comment = XmlDocument.CreateComment(data);
-        //    return new DOMComment(comment);
-        //}
+        public virtual DOMComment createComment(string data)
+        {
+            XmlComment comment = XmlDocument.CreateComment(data);
+            return new DOMComment(comment);
+        }
 
         /// <summary>
         /// Creates a CDATA section containing the specified data.
         /// </summary>
         /// <param name="data">The content of the new CDATA section.</param>
         /// <returns>A new <see cref="DOMCdataSection"/>.</returns>
-        //public DOMCdataSection createCDATASection(string data)
-        //{
-        //    XmlCDataSection cdata = XmlDocument.CreateCDataSection(data);
-        //    return new DOMCdataSection(cdata);
-        //}
+        public virtual DOMCdataSection createCDATASection(string data)
+        {
+            XmlCDataSection cdata = XmlDocument.CreateCDataSection(data);
+            return new DOMCdataSection(cdata);
+        }
 
         /// <summary>
         /// Creates a processing instruction with the specified name and data.
@@ -343,18 +357,18 @@ namespace Peachpie.Library.XmlDom
         /// <param name="target">The name of the processing instruction.</param>
         /// <param name="data">The data for the processing instruction.</param>
         /// <returns>A new <see cref="DOMProcessingInstruction"/>.</returns>
-        //public DOMProcessingInstruction createProcessingInstruction(string target, string data)
-        //{
-        //    XmlProcessingInstruction pi = XmlDocument.CreateProcessingInstruction(target, data);
-        //    return new DOMProcessingInstruction(pi);
-        //}
+        public virtual DOMProcessingInstruction createProcessingInstruction(string target, string data = null)
+        {
+            XmlProcessingInstruction pi = XmlDocument.CreateProcessingInstruction(target, data);
+            return new DOMProcessingInstruction(pi);
+        }
 
         /// <summary>
         /// Creates an attribute with the specified name.
         /// </summary>
         /// <param name="name">The qualified name of the attribute.</param>
         /// <returns>A new <see cref="DOMAttr"/>.</returns>
-        public DOMAttr createAttribute(string name)
+        public virtual DOMAttr createAttribute(string name)
         {
             XmlAttribute attribute = XmlDocument.CreateAttribute(name);
             return new DOMAttr(attribute);
@@ -378,12 +392,12 @@ namespace Peachpie.Library.XmlDom
         /// <param name="qualifiedName">The qualified name of the element.</param>
         /// <param name="value">The inner text (value) of the element.</param>
         /// <returns>A new <see cref="DOMElement"/>.</returns>
-        //public DOMElement createElementNS(string namespaceUri, string qualifiedName, [Optional] string value)
-        //{
-        //    XmlElement element = XmlDocument.CreateElement(qualifiedName, namespaceUri);
-        //    if (value != null) element.InnerText = value;
-        //    return new DOMElement(element);
-        //}
+        public virtual DOMElement createElementNS(string namespaceUri, string qualifiedName, string value = null)
+        {
+            XmlElement element = XmlDocument.CreateElement(qualifiedName, namespaceUri);
+            if (value != null) element.InnerText = value;
+            return new DOMElement(element);
+        }
 
         /// <summary>
         /// Creates an attribute with the specified namespace URI and qualified name.
@@ -391,11 +405,11 @@ namespace Peachpie.Library.XmlDom
         /// <param name="namespaceUri">The namespace URI of the attribute.</param>
         /// <param name="qualifiedName">The qualified name of the attribute.</param>
         /// <returns>A new <see cref="DOMAttr"/>.</returns>
-        //public DOMAttr createAttributeNS(string namespaceUri, string qualifiedName)
-        //{
-        //    XmlAttribute attribute = XmlDocument.CreateAttribute(qualifiedName, namespaceUri);
-        //    return new DOMAttr(attribute);
-        //}
+        public virtual DOMAttr createAttributeNS(string namespaceUri, string qualifiedName)
+        {
+            XmlAttribute attribute = XmlDocument.CreateAttribute(qualifiedName, namespaceUri);
+            return new DOMAttr(attribute);
+        }
 
         #endregion
 
@@ -406,7 +420,7 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         /// <param name="name">The tag name. Use <B>*</B> to return all elements within the element tree.</param>
         /// <returns>A <see cref="DOMNodeList"/>.</returns>
-        public DOMNodeList getElementsByTagName(string name)
+        public virtual DOMNodeList getElementsByTagName(string name)
         {
             DOMNodeList list = new DOMNodeList();
 
@@ -444,7 +458,7 @@ namespace Peachpie.Library.XmlDom
         /// <param name="namespaceUri">The namespace URI.</param>
         /// <param name="localName">The local name. Use <B>*</B> to return all elements within the element tree.</param>
         /// <returns>A <see cref="DOMNodeList"/>.</returns>
-        public DOMNodeList getElementsByTagNameNS(string namespaceUri, string localName)
+        public virtual DOMNodeList getElementsByTagNameNS(string namespaceUri, string localName)
         {
             DOMNodeList list = new DOMNodeList();
 
@@ -460,7 +474,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Not yet implemented.
         /// </summary>
-        public DOMElement getElementById(string elementId)
+        public virtual DOMElement getElementById(string elementId)
         {
             throw new NotImplementedException();
         }
@@ -475,7 +489,7 @@ namespace Peachpie.Library.XmlDom
         /// <param name="importedNode">The node being imported.</param>
         /// <param name="deep"><B>True</B> to perform deep clone; otheriwse <B>false</B>.</param>
         /// <returns>The imported <see cref="DOMNode"/>.</returns>
-        public DOMNode importNode(DOMNode importedNode, bool deep)
+        public virtual DOMNode importNode(DOMNode importedNode, bool deep = false)
         {
             if (importedNode.IsAssociated)
             {
@@ -491,7 +505,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Not implemented in PHP 5.1.6.
         /// </summary>
-        public DOMNode adoptNode(DOMNode source)
+        public virtual DOMNode adoptNode(DOMNode source)
         {
             throw new NotImplementedException();
         }
@@ -499,17 +513,29 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Puts the entire XML document into a &quot;normal&quot; form.
         /// </summary>
-        public void normalizeDocument() => XmlDocument.Normalize();
+        public virtual void normalizeDocument() => XmlDocument.Normalize();
 
         /// <summary>
         /// Not implemented in PHP 5.1.6.
         /// </summary>
-        public void renameNode(DOMNode node, string namespaceUri, string qualifiedName)
+        public virtual void renameNode(DOMNode node, string namespaceUri, string qualifiedName)
         {
             throw new NotImplementedException();
         }
 
         private XmlDeclaration GetXmlDeclaration() => (XmlNode.FirstChild as XmlDeclaration);
+
+        /// <summary>
+        /// Register extended class used to create base node type.
+        /// </summary>
+        /// <param name="baseclass">The DOM class that you want to extend.</param>
+        /// <param name="extendedclass">Your extended class name. If NULL is provided, any previously
+        /// registered class extending <paramref name="baseclass"/> will be removed.</param>
+        /// <returns>Returns <b>true</b> on success or <b>false</b> on failure.</returns>
+        public virtual bool registerNodeClass(string baseclass, string extendedclass)
+        {
+            throw new NotImplementedException();
+        }
 
         #endregion
 
@@ -522,7 +548,7 @@ namespace Peachpie.Library.XmlDom
         /// <param name="fileName">URL for the file containing the XML document to load.</param>
         /// <param name="options">Undocumented.</param>
         /// <returns><b>True</b> on success or <b>false</b> on failure.</returns>
-        public bool load(Context ctx, string fileName, int options = 0)
+        public virtual bool load(Context ctx, string fileName, int options = 0)
         {
             // TODO: this method can be called both statically and via an instance
 
@@ -567,7 +593,7 @@ namespace Peachpie.Library.XmlDom
         /// <param name="xmlString">The XML string.</param>
         /// <param name="options">Undocumented.</param>
         /// <returns><b>True</b> on success or <b>false</b> on failure.</returns>
-        public bool loadXML(string xmlString, int options = 0)
+        public virtual bool loadXML(string xmlString, int options = 0)
         {
             // TODO: this method can be called both statically and via an instance
 
@@ -627,7 +653,7 @@ namespace Peachpie.Library.XmlDom
         /// <param name="fileName">The location of the file where the document should be saved.</param>
         /// <param name="options">Unsupported.</param>
         /// <returns>The number of bytes written or <B>false</B> on error.</returns>
-        public object save(Context ctx, string fileName, int options = 0)
+        public virtual object save(Context ctx, string fileName, int options = 0)
         {
             using (PhpStream stream = PhpStream.Open(ctx, fileName, "wt"))
             {
@@ -671,9 +697,10 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="node">The node to dump (the entire document if <B>null</B>).</param>
+        /// <param name="options">Unsupported.</param>
         /// <returns>The string representation of the document / the specified node or <B>false</B>.</returns>
         [return: CastToFalse]
-        public PhpString saveXML(Context ctx, DOMNode node = null)
+        public virtual PhpString saveXML(Context ctx, DOMNode node = null, int options = 0)
         {
             XmlNode xml_node;
 
@@ -691,7 +718,7 @@ namespace Peachpie.Library.XmlDom
             var settings = new XmlWriterSettings()
             {
                 Encoding = Utils.GetNodeEncoding(ctx, xml_node),
-                Indent = _formatOutput
+                Indent = _formatOutput,
             };
 
             using (MemoryStream stream = new MemoryStream())
@@ -733,8 +760,9 @@ namespace Peachpie.Library.XmlDom
         /// Loads HTML from a string.
         /// </summary>
         /// <param name="source">String containing HTML document.</param>
+        /// <param name="options">Unsupported.</param>
         /// <returns>TRUE on success or FALSE on failure.</returns>
-        public bool loadHTML(string source)
+        public virtual bool loadHTML(string source, int options = 0)
         {
             if (string.IsNullOrEmpty(source))
                 return false;
@@ -747,7 +775,8 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="sourceFile">Path to a file containing HTML document.</param>
-        public bool loadHTMLFile(Context ctx, string sourceFile)
+        /// <param name="options">Unsupported.</param>
+        public virtual bool loadHTMLFile(Context ctx, string sourceFile, int options = 0)
         {
             using (PhpStream stream = PhpStream.Open(ctx, sourceFile, "rt"))
             {
@@ -760,7 +789,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Load HTML DOM from given <paramref name="stream"/>.
         /// </summary>
-        private bool loadHTML(TextReader stream, string filename)
+        private bool loadHTML(TextReader stream, string filename, int options = 0)
         {
             HtmlAgilityPack.HtmlDocument htmlDoc = new HtmlAgilityPack.HtmlDocument();
 
@@ -788,9 +817,20 @@ namespace Peachpie.Library.XmlDom
         }
 
         /// <summary>
-        /// Not implemented (TODO: need an HTML parser for this).
+        /// Dumps the internal document into a string using HTML formatting.
         /// </summary>
-        public object saveHTMLFile(Context ctx, string file = null)
+        /// <param name="node">Optional parameter to output a subset of the document. </param>
+        /// <returns>Returns the HTML, or FALSE if an error occurred.</returns>
+        [return: CastToFalse]
+        public virtual string saveHTML(DOMNode node = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Not implemented properly (TODO: need an HTML parser for this).
+        /// </summary>
+        public virtual object saveHTMLFile(Context ctx, string file)
         {
             //TODO: use the HTML parse to same HTML
             return save(ctx, file, 0);
@@ -803,7 +843,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Not implemented (TODO: need a XInclude implementation for this).
         /// </summary>
-        public void xinclude(int options = 0)
+        public virtual void xinclude(int options = 0)
         {
             throw new NotImplementedException();
         }
@@ -815,7 +855,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Not implemented (System.Xml does not support post-load DTD validation).
         /// </summary>
-        public bool validate()
+        public virtual bool validate()
         {
             //PhpException.Throw(PhpError.Warning, Resources.PostLoadDtdUnsupported);
             throw new DOMException(Resources.PostLoadDtdUnsupported);
@@ -826,86 +866,90 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="schemaFile">URL for the file containing the XML schema to load.</param>
+        /// <param name="flags">Unsupported.</param>
         /// <returns><B>True</B> or <B>false</B>.</returns>
-        //public bool schemaValidate(Context ctx, string schemaFile)
-        //{
-        //    XmlSchema schema;
+        public virtual bool schemaValidate(Context ctx, string schemaFile, int flags = 0)
+        {
+            //XmlSchema schema;
 
-        //    using (PhpStream stream = PhpStream.Open(ctx, schemaFile, "rt"))
-        //    {
-        //        if (stream == null) return false;
+            //using (PhpStream stream = PhpStream.Open(ctx, schemaFile, "rt"))
+            //{
+            //    if (stream == null) return false;
 
-        //        try
-        //        {
-        //            schema = XmlSchema.Read(stream.RawStream, null);
-        //        }
-        //        catch (XmlException e)
-        //        {
-        //            PhpLibXml.IssueXmlError(PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, e.Message, schemaFile);
-        //            return false;
-        //        }
-        //        catch (IOException e)
-        //        {
-        //            PhpLibXml.IssueXmlError(PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, schemaFile);
-        //            return false;
-        //        }
-        //    }
+            //    try
+            //    {
+            //        schema = XmlSchema.Read(stream.RawStream, null);
+            //    }
+            //    catch (XmlException e)
+            //    {
+            //        PhpLibXml.IssueXmlError(PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, e.Message, schemaFile);
+            //        return false;
+            //    }
+            //    catch (IOException e)
+            //    {
+            //        PhpLibXml.IssueXmlError(PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, schemaFile);
+            //        return false;
+            //    }
+            //}
 
-        //    XmlDocument.Schemas.Add(schema);
-        //    try
-        //    {
-        //        XmlDocument.Validate(null);
-        //    }
-        //    catch (XmlException)
-        //    {
-        //        return false;
-        //    }
-        //    finally
-        //    {
-        //        XmlDocument.Schemas.Remove(schema);
-        //    }
-        //    return true;
-        //}
+            //XmlDocument.Schemas.Add(schema);
+            //try
+            //{
+            //    XmlDocument.Validate(null);
+            //}
+            //catch (XmlException)
+            //{
+            //    return false;
+            //}
+            //finally
+            //{
+            //    XmlDocument.Schemas.Remove(schema);
+            //}
+            //return true;
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// Validates the document against the specified XML schema.
         /// </summary>
         /// <param name="schemaString">The XML schema string.</param>
+        /// <param name="flags">Unsupported.</param>
         /// <returns><B>True</B> or <B>false</B>.</returns>
-        //public bool schemaValidateSource(string schemaString)
-        //{
-        //    XmlSchema schema;
+        public virtual bool schemaValidateSource(string schemaString, int flags = 0)
+        {
+            //XmlSchema schema;
 
-        //    try
-        //    {
-        //        schema = XmlSchema.Read(new System.IO.StringReader(schemaString), null);
-        //    }
-        //    catch (XmlException e)
-        //    {
-        //        PhpLibXml.IssueXmlError(PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, e.Message, null);
-        //        return false;
-        //    }
+            //try
+            //{
+            //    schema = XmlSchema.Read(new System.IO.StringReader(schemaString), null);
+            //}
+            //catch (XmlException e)
+            //{
+            //    PhpLibXml.IssueXmlError(PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, e.Message, null);
+            //    return false;
+            //}
 
-        //    XmlDocument.Schemas.Add(schema);
-        //    try
-        //    {
-        //        XmlDocument.Validate(null);
-        //    }
-        //    catch (XmlException)
-        //    {
-        //        return false;
-        //    }
-        //    finally
-        //    {
-        //        XmlDocument.Schemas.Remove(schema);
-        //    }
-        //    return true;
-        //}
+            //XmlDocument.Schemas.Add(schema);
+            //try
+            //{
+            //    XmlDocument.Validate(null);
+            //}
+            //catch (XmlException)
+            //{
+            //    return false;
+            //}
+            //finally
+            //{
+            //    XmlDocument.Schemas.Remove(schema);
+            //}
+            //return true;
+            throw new NotImplementedException();
+        }
 
         /// <summary>
         /// Not implemented (TODO: will need a Relax NG validator for this).
         /// </summary>
-        public bool relaxNGValidate(string schemaFile)
+        public virtual bool relaxNGValidate(string schemaFile)
         {
             PhpException.Throw(PhpError.Warning, Resources.RelaxNGUnsupported);
             return true;
@@ -914,7 +958,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Not implemented (TODO: will need a Relax NG validator for this).
         /// </summary>
-        public bool relaxNGValidateSource(string schema)
+        public virtual bool relaxNGValidateSource(string schema)
         {
             PhpException.Throw(PhpError.Warning, Resources.RelaxNGUnsupported);
             return true;

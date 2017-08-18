@@ -60,17 +60,16 @@ namespace Peachpie.Library.XmlDom
         {
             get
             {
-                //DOMNamedNodeMap map = new DOMNamedNodeMap();
-                //if (IsAssociated)
-                //{
-                //    foreach (XmlAttribute attr in XmlNode.Attributes)
-                //    {
-                //        var node = Create(attr);
-                //        if (node != null) map.AddNode(node);
-                //    }
-                //}
-                //return map;
-                throw new NotImplementedException();
+                DOMNamedNodeMap map = new DOMNamedNodeMap();
+                if (IsAssociated)
+                {
+                    foreach (XmlAttribute attr in XmlNode.Attributes)
+                    {
+                        var node = Create(attr);
+                        if (node != null) map.AddNode(node);
+                    }
+                }
+                return map;
             }
         }
 

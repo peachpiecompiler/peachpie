@@ -142,7 +142,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// This function returns the document the current node belongs to.
         /// </summary>
-        public object ownerDocument => Create(XmlNode.OwnerDocument);
+        public DOMDocument ownerDocument => (DOMDocument)Create(XmlNode.OwnerDocument);
 
         /// <summary>
         /// Returns the namespace URI of the node.
@@ -223,19 +223,19 @@ namespace Peachpie.Library.XmlDom
                 // TODO: Enable each class when it is implemented
 
                 case XmlNodeType.Attribute: return new DOMAttr((XmlAttribute)xmlNode);
-                //case XmlNodeType.SignificantWhitespace:
-                //case XmlNodeType.Whitespace: return null;// TODO: new DOMText((XmlCharacterData)xmlNode); // also see XmlDocument.PreserveWhitespace
-                //case XmlNodeType.CDATA: return new DOMCdataSection((XmlCDataSection)xmlNode);
-                //case XmlNodeType.Comment: return new DOMComment((XmlComment)xmlNode);
-                //case XmlNodeType.Document: return new DOMDocument((XmlDocument)xmlNode);
-                //case XmlNodeType.DocumentFragment: return new DOMDocumentFragment((XmlDocumentFragment)xmlNode);
+                case XmlNodeType.SignificantWhitespace:
+                case XmlNodeType.Whitespace: return new DOMText((XmlCharacterData)xmlNode); // also see XmlDocument.PreserveWhitespace
+                case XmlNodeType.CDATA: return new DOMCdataSection((XmlCDataSection)xmlNode);
+                case XmlNodeType.Comment: return new DOMComment((XmlComment)xmlNode);
+                case XmlNodeType.Document: return new DOMDocument((XmlDocument)xmlNode);
+                case XmlNodeType.DocumentFragment: return new DOMDocumentFragment((XmlDocumentFragment)xmlNode);
                 //case XmlNodeType.DocumentType: return new DOMDocumentType((XmlDocumentType)xmlNode);
                 case XmlNodeType.Element: return new DOMElement((XmlElement)xmlNode);
                 //case XmlNodeType.Entity: return new DOMEntity((XmlEntity)xmlNode);
                 //case XmlNodeType.EntityReference: return new DOMEntityReference((XmlEntityReference)xmlNode);
                 //case XmlNodeType.Notation: return new DOMNotation((XmlNotation)xmlNode);
-                //case XmlNodeType.ProcessingInstruction: return new DOMProcessingInstruction((XmlProcessingInstruction)xmlNode);
-                //case XmlNodeType.Text: return new DOMText((XmlText)xmlNode);
+                case XmlNodeType.ProcessingInstruction: return new DOMProcessingInstruction((XmlProcessingInstruction)xmlNode);
+                case XmlNodeType.Text: return new DOMText((XmlText)xmlNode);
 
                 case XmlNodeType.XmlDeclaration:
                 default:
