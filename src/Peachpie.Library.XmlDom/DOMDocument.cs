@@ -374,11 +374,11 @@ namespace Peachpie.Library.XmlDom
             return new DOMAttr(attribute);
         }
 
-        /// <summary>
-        /// Creates an entity reference with the specified name.
-        /// </summary>
-        /// <param name="name">The name of the entity reference.</param>
-        /// <returns>A new <see cref="DOMEntityReference"/>.</returns>
+        ///// <summary>
+        ///// Creates an entity reference with the specified name.
+        ///// </summary>
+        ///// <param name="name">The name of the entity reference.</param>
+        ///// <returns>A new <see cref="DOMEntityReference"/>.</returns>
         //public DOMEntityReference createEntityReference(string name)
         //{
         //    XmlEntityReference entref = XmlDocument.CreateEntityReference(name);
@@ -574,12 +574,12 @@ namespace Peachpie.Library.XmlDom
                 }
                 catch (XmlException e)
                 {
-                    PhpLibXml.IssueXmlError(PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, fileName);
+                    PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, fileName);
                     return false;
                 }
                 catch (IOException e)
                 {
-                    PhpLibXml.IssueXmlError(PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, fileName);
+                    PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, fileName);
                     return false;
                 }
             }
@@ -590,24 +590,26 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Loads the XML document from the specified string.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="xmlString">The XML string.</param>
         /// <param name="options">Undocumented.</param>
         /// <returns><b>True</b> on success or <b>false</b> on failure.</returns>
-        public virtual bool loadXML(string xmlString, int options = 0)
+        public virtual bool loadXML(Context ctx, string xmlString, int options = 0)
         {
             // TODO: this method can be called both statically and via an instance
 
-            return loadXMLInternal(xmlString, options, false);
+            return loadXMLInternal(ctx, xmlString, options, false);
         }
 
         /// <summary>
         /// Loads provided XML string into this <see cref="DOMDocument"/>.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="xmlString">String representing XML document.</param>
         /// <param name="options">PHP options.</param>
         /// <param name="isHtml">Whether the <paramref name="xmlString"/> represents XML generated from HTML document (then it may contain some invalid XML characters).</param>
         /// <returns></returns>
-        private bool loadXMLInternal(string xmlString, int options, bool isHtml)
+        private bool loadXMLInternal(Context ctx, string xmlString, int options, bool isHtml)
         {
             this._isHtmlDocument = isHtml;
 
@@ -636,12 +638,12 @@ namespace Peachpie.Library.XmlDom
             }
             catch (XmlException e)
             {
-                PhpLibXml.IssueXmlError(PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, null);
+                PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, null);
                 return false;
             }
             catch (IOException e)
             {
-                PhpLibXml.IssueXmlError(PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, null);
+                PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, null);
                 return false;
             }
         }
@@ -678,12 +680,12 @@ namespace Peachpie.Library.XmlDom
                 }
                 catch (XmlException e)
                 {
-                    PhpLibXml.IssueXmlError(PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, fileName);
+                    PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, fileName);
                     return null;
                 }
                 catch (IOException e)
                 {
-                    PhpLibXml.IssueXmlError(PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, fileName);
+                    PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, fileName);
                     return false;
                 }
 
@@ -736,9 +738,10 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Processes HTML errors, if any.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="htmlDoc"><see cref="HtmlAgilityPack.HtmlDocument"/> instance to process errors from.</param>
         /// <param name="filename">HTML file name or <c>null</c> if HTML has been loaded from a string.</param>
-        private void CheckHtmlErrors(HtmlAgilityPack.HtmlDocument htmlDoc, string filename)
+        private void CheckHtmlErrors(Context ctx, HtmlAgilityPack.HtmlDocument htmlDoc, string filename)
         {
             Debug.Assert(htmlDoc != null);
 
@@ -750,7 +753,7 @@ namespace Peachpie.Library.XmlDom
                     case HtmlAgilityPack.HtmlParseErrorCode.TagNotOpened:
                         break;
                     default:
-                        PhpLibXml.IssueXmlError(PhpLibXml.LIBXML_ERR_ERROR, 0, error.Line, error.LinePosition, "(" + error.Code.ToString() + ")" + error.Reason, filename);
+                        PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, error.Line, error.LinePosition, "(" + error.Code.ToString() + ")" + error.Reason, filename);
                         break;
                 }
             }
@@ -759,15 +762,16 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Loads HTML from a string.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="source">String containing HTML document.</param>
         /// <param name="options">Unsupported.</param>
         /// <returns>TRUE on success or FALSE on failure.</returns>
-        public virtual bool loadHTML(string source, int options = 0)
+        public virtual bool loadHTML(Context ctx, string source, int options = 0)
         {
             if (string.IsNullOrEmpty(source))
                 return false;
 
-            return loadHTML(new StringReader(source), null);
+            return loadHTML(ctx, new StringReader(source), null);
         }
 
         /// <summary>
@@ -782,14 +786,14 @@ namespace Peachpie.Library.XmlDom
             {
                 if (stream == null) return false;
     
-                return loadHTML(new StreamReader(stream.RawStream), sourceFile);
+                return loadHTML(ctx, new StreamReader(stream.RawStream), sourceFile);
             }
         }
 
         /// <summary>
         /// Load HTML DOM from given <paramref name="stream"/>.
         /// </summary>
-        private bool loadHTML(TextReader stream, string filename, int options = 0)
+        private bool loadHTML(Context ctx, TextReader stream, string filename, int options = 0)
         {
             HtmlAgilityPack.HtmlDocument htmlDoc = new HtmlAgilityPack.HtmlDocument();
 
@@ -804,15 +808,15 @@ namespace Peachpie.Library.XmlDom
             // load HTML (from string or a stream)
             htmlDoc.Load(stream);
 
-            CheckHtmlErrors(htmlDoc, filename);
+            CheckHtmlErrors(ctx, htmlDoc, filename);
 
             // save to string as XML
-            using (StringWriter sw = new StringWriter())
+            using (var sw = new StringWriter())
             {
                 htmlDoc.Save(sw);
 
                 // load as XML
-                return this.loadXMLInternal(sw.ToString(), 0, true);
+                return loadXMLInternal(ctx, sw.ToString(), 0, true);
             }
         }
 

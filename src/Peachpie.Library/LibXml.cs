@@ -11,14 +11,13 @@ namespace Peachpie.Library
     /// Contains various information about errors thrown by libxml.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
-    public class LibXMLError
+    public sealed class LibXMLError
     {
         public readonly int level, code, line, column;
         public readonly string message, file;
 
-        public string LevelString
+        internal string LevelString
         {
-            [PhpHidden]
             get
             {
                 switch (this.level)
@@ -32,7 +31,7 @@ namespace Peachpie.Library
                 }
             }
         }
-        
+
         internal LibXMLError(int level, int code, int line, int column, string message, string file)
         {
             this.level = level;
@@ -170,31 +169,19 @@ namespace Peachpie.Library
 
         #endregion
 
-        #region Fields
+        sealed class State
+        {
+            public List<LibXMLError> error_list;
 
-        [ThreadStatic]
-        private static List<LibXMLError> error_list;
+            public Action<LibXMLError> error_handler;
+        }
 
-        [ThreadStatic]
-        private static Action<LibXMLError> error_handler;
-
-        #endregion
-
-        #region Initialization
-
-        // TODO: Achieve this in Peachpie
-        //static PhpLibXml()
-        //{
-        //    // restores libxml at the request end,
-        //    // clears error list and handlers:
-        //    RequestContext.RequestEnd += () =>
-        //    {
-        //        error_list = null;
-        //        error_handler = null;
-        //    };
-        //}
-
-        #endregion
+        /// <summary>
+        /// Gets <see cref="State"/> containing lib XML errors information for given context.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <returns></returns>
+        static State GetState(Context ctx) => ctx.GetStatic<State>();
 
         #region IssueXmlError
 
@@ -203,13 +190,14 @@ namespace Peachpie.Library
         /// the error to common error handler.
         /// </summary>
         [PhpHidden]
-        public static void IssueXmlError(int level, int code, int line, int column, string message, string file)
+        public static void IssueXmlError(Context ctx, int level, int code, int line, int column, string message, string file)
         {
             var err = new LibXMLError(level, code, line, column, message, file);
 
-            if (error_handler != null)
+            var state = GetState(ctx);
+            if (state.error_handler != null)
             {
-                error_handler(err);
+                state.error_handler(err);
             }
             else
             {
@@ -221,27 +209,29 @@ namespace Peachpie.Library
 
         #region libxml
 
-        public static void libxml_clear_errors()
+        public static void libxml_clear_errors(Context ctx)
         {
-            error_list = null;
+            GetState(ctx).error_list = null;
         }
 
         public static bool libxml_disable_entity_loader(bool disable = true)
         {
+            PhpException.FunctionNotSupported("libxml_disable_entity_loader");
             return false;
         }
 
-        public static PhpArray/*!*/libxml_get_errors()
+        public static PhpArray/*!*/libxml_get_errors(Context ctx)
         {
-            if (error_list == null)
-                return new PhpArray();
-
-            return new PhpArray(error_list);
+            var error_list = GetState(ctx).error_list;
+            return error_list == null
+                ? PhpArray.NewEmpty()
+                : new PhpArray(error_list);
         }
 
         [return: CastToFalse]
-        public static LibXMLError libxml_get_last_error()
+        public static LibXMLError libxml_get_last_error(Context ctx)
         {
+            var error_list = GetState(ctx).error_list;
             if (error_list == null || error_list.Count == 0)
                 return null;
 
@@ -250,32 +240,35 @@ namespace Peachpie.Library
 
         public static void libxml_set_streams_context(PhpResource streams_context)
         {
+            PhpException.FunctionNotSupported("libxml_set_streams_context");
         }
 
         /// <summary>
         /// Disable libxml errors and allow user to fetch error information as needed.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="use_errors">Enable (TRUE) user error handling or disable (FALSE) user error handling. Disabling will also clear any existing libxml errors.</param>
         /// <returns>This function returns the previous value of <paramref name="use_errors"/>.</returns>
-        public static bool libxml_use_internal_errors(bool use_errors = false)
+        public static bool libxml_use_internal_errors(Context ctx, bool use_errors = false)
         {
-            bool previousvalue = error_handler != null;
+            var state = GetState(ctx);
+            bool previousvalue = state.error_handler != null;
 
             if (use_errors)
             {
-                error_handler = (err) =>
+                state.error_handler = (err) =>
                 {
-                    if (error_list == null)
-                        error_list = new List<LibXMLError>();
+                    if (state.error_list == null)
+                        state.error_list = new List<LibXMLError>();
 
-                    error_list.Add(err);
+                    state.error_list.Add(err);
                 };
                 //error_list = error_list;// keep error_list as it is
             }
             else
             {
-                error_handler = null;   // outputs xml errors
-                error_list = null;
+                state.error_handler = null;   // outputs xml errors
+                state.error_list = null;
             }
 
             return previousvalue;

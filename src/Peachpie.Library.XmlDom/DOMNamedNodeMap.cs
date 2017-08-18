@@ -37,7 +37,6 @@ namespace Peachpie.Library.XmlDom
 
             public bool Equals(MapKey other)
             {
-                System.Collections.ObjectModel.KeyedCollection<int, int> a;
                 return (NamespaceUri == other.NamespaceUri && LocalName == other.LocalName);
             }
 

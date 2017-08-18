@@ -141,10 +141,10 @@ namespace Peachpie.Library.XmlDom
 
         #region Validation
 
-        /// <summary>
-        /// Checks if attribute is a defined ID.
-        /// </summary>
-        /// <returns><B>True</B> or <B>false</B>.</returns>
+        ///// <summary>
+        ///// Checks if attribute is a defined ID.
+        ///// </summary>
+        ///// <returns><B>True</B> or <B>false</B>.</returns>
         //public bool isId()
         //{
         //    IXmlSchemaInfo schema_info = XmlNode.SchemaInfo;
