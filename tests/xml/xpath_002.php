@@ -35,7 +35,7 @@ $bar1 = $bars->item(0);
 dump($xpath->query('u', $bar1));
 dump($xpath->query('fubar:u', $bar1));
 dump($xpath->query('u', $bar1, false));
-dump($xpath->query('fubar:u', $bar1, false));
+dump(@$xpath->query('fubar:u', $bar1, false));
 
 $xpath->registerNamespace('fubar', 'http://www.example.com/ns/fubar');
 dump($xpath->query('fubar:u', $bar1, false));
