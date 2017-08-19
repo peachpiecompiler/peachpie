@@ -14,7 +14,7 @@ namespace Pchp.Library.DateTime
     /// Representation of date and time.
     /// </summary>
     [PhpType("DateTime")]
-    public class DateTime
+    public class DateTime : DateTimeInterface
     {
         #region Constants
 
@@ -140,13 +140,18 @@ namespace Pchp.Library.DateTime
             return DateTimeFunctions.FormatDate(format, this.Time, this.TimeZone);
         }
 
-        public virtual int getOffset()
+        public virtual long getOffset()
         {
             if (this.TimeZone == null)
                 //return false;
                 throw new InvalidOperationException();
 
-            return (int)this.TimeZone.BaseUtcOffset.TotalSeconds;
+            return (long)this.TimeZone.BaseUtcOffset.TotalSeconds;
+        }
+
+        public virtual DateTimeZone getTimezone()
+        {
+            return new DateTimeZone(_ctx, this.TimeZone);
         }
 
         public virtual DateTime modify(string modify)
@@ -275,6 +280,11 @@ namespace Pchp.Library.DateTime
         public virtual long getTimestamp()
         {
             return DateTimeUtils.UtcToUnixTimeStamp(Time);
+        }
+
+        public virtual void __wakeup()
+        {
+
         }
 
         // TODO: IPhpComparable
