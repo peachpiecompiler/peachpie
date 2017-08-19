@@ -318,5 +318,30 @@ namespace Pchp.CodeAnalysis.Symbols
             //
             return true;
         }
+
+        public static PropertySymbol ResolveOverridenMember(this PropertySymbol p)
+        {
+            // TODO: use implementation of OverriddenOrHiddenMembersHelpers
+
+            if (p.IsOverride)
+            {
+                for (var t = p.ContainingType.BaseType; t != null; t = t.BaseType)
+                {
+                    var candidates = t.GetMembers(p.Name).OfType<PropertySymbol>();
+                    foreach (var c in candidates)
+                    {
+                        if (!c.IsSealed && !c.IsStatic)
+                        {
+                            if (c.IsVirtual || c.IsAbstract || c.IsOverride)
+                            {
+                                return c;
+                            }
+                        }
+                    }
+                }
+            }
+            //
+            return null;
+        }
     }
 }
