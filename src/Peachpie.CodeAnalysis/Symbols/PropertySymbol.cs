@@ -171,17 +171,17 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                //if (this.IsOverride)
-                //{
-                //    if (IsDefinition)
-                //    {
-                //        return (PropertySymbol)OverriddenOrHiddenMembers.GetOverriddenMember();
-                //    }
+                if (this.IsOverride)
+                {
+                    if (IsDefinition)
+                    {
+                        //return (PropertySymbol)OverriddenOrHiddenMembers.GetOverriddenMember();
+                        return this.ResolveOverridenMember();
+                    }
 
-                //    return (PropertySymbol)OverriddenOrHiddenMembersResult.GetOverriddenMember(this, OriginalDefinition.OverriddenProperty);
-                //}
-                //return null;
-                throw new NotImplementedException();
+                    return (PropertySymbol)OverriddenOrHiddenMembersResult.GetOverriddenMember(this, OriginalDefinition.OverriddenProperty);
+                }
+                return null;
             }
         }
 
