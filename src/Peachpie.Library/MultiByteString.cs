@@ -374,6 +374,65 @@ namespace Pchp.Library
 
         #endregion
 
+        #region mb_strpos, mb_stripos
+
+        [return: CastToFalse]
+        public static int mb_strpos(Context ctx, PhpValue haystack, PhpValue needle, int offset, string encoding)
+        {
+            return strpos(ToString(ctx, haystack, encoding), ToString(ctx, needle, encoding), offset, StringComparison.Ordinal);            
+        }
+
+        [return: CastToFalse]
+        public static int mb_strpos(string haystack, string needle, int offset = 0)
+        {
+            return strpos(haystack, needle, offset, StringComparison.Ordinal);
+        }
+
+        [return: CastToFalse]
+        public static int mb_stripos(Context ctx, PhpValue haystack, PhpValue needle, int offset, string encoding)
+        {
+            return strpos(ToString(ctx, haystack, encoding), ToString(ctx, needle, encoding), offset, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [return: CastToFalse]
+        public static int mb_stripos(string haystack, string needle, int offset = 0)
+        {
+            return strpos(haystack, needle, offset, StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static int strpos(string haystack, string needle, int offset, StringComparison comparison)
+        {
+            if (string.IsNullOrEmpty(haystack))
+            {
+                return -1;
+            }
+
+            if (string.IsNullOrEmpty(needle))
+            {
+                PhpException.InvalidArgument(nameof(needle), Resources.LibResources.arg_empty);
+                return -1;
+            }
+
+            if (offset < 0)
+            {
+                offset += haystack.Length;
+            }
+
+            if (offset < 0 || offset >= haystack.Length)
+            {
+                if (offset != haystack.Length)
+                {
+                    PhpException.InvalidArgument("offset", Resources.LibResources.arg_out_of_bounds);
+                }
+
+                return -1;
+            }
+
+            return haystack.IndexOf(needle, offset, comparison);
+        }
+
+        #endregion
+
         #region mb_parse_str
 
         public static bool mb_parse_str(string encoded_string, out PhpArray array)
