@@ -45,11 +45,11 @@ class X extends RecursiveIteratorIterator
 		return parent::next();
 	}
 	
-	function valid()
-	{
-		echo __METHOD__ . "; ";
-		return parent::valid();
-	}
+	//function valid()
+	//{
+	//	echo __METHOD__ . "; ";
+	//	return parent::valid();
+	//}
 	
 	function rewind()
 	{
