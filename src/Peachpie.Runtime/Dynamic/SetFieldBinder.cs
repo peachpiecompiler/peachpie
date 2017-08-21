@@ -62,19 +62,15 @@ namespace Pchp.Core.Dynamic
             }
             else
             {
-                object target_value;
-                BinderHelpers.TargetAsObject(target, out target_expr, out target_value, ref restrictions);
-
-                var runtime_type = target_value.GetType();
-
-                // 
-                if (target_expr.Type != runtime_type)
+                var isobject = BinderHelpers.TryTargetAsObject(target, out DynamicMetaObject instance);
+                if (isobject == false)
                 {
-                    restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(target_expr, runtime_type));
-                    target_expr = Expression.Convert(target_expr, runtime_type);
+                    throw new NotSupportedException();
                 }
-
-                phptype = runtime_type.GetPhpTypeInfo();
+                
+                restrictions = restrictions.Merge(instance.Restrictions);
+                target_expr = Expression.Convert(instance.Expression, instance.RuntimeType);
+                phptype = instance.RuntimeType.GetPhpTypeInfo();
             }
 
             //
