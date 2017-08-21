@@ -156,10 +156,9 @@ namespace Pchp.Core.Reflection
         {
             Debug.Assert(type != null);
 
-            var extinfo = type.Type.GetCustomAttribute<PhpExtensionAttribute>(false);
-            if (extinfo != null)
+            var extensions = type.Extensions;
+            if (extensions != null)
             {
-                var extensions = extinfo.Extensions;
                 for (int i = 0; i < extensions.Length; i++)
                 {
                     EnsureExtension(extensions[i]).Types.Add(type);
