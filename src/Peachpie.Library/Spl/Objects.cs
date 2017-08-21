@@ -44,7 +44,17 @@ namespace Pchp.Library.Spl
         /// </summary>
         public static PhpArray spl_classes()
         {
-            throw new NotImplementedException();
+            var result = new PhpArray(64);
+            foreach (var t in Context.GetTypesByExtension(SplExtension.Name))
+            {
+                result.Add(t.Name, t.Name);
+            }
+
+            // classes are sorted by name
+            result.Sort(KeyComparer.ArrayKeys);
+
+            //
+            return result;
         }
     }
 }
