@@ -126,6 +126,16 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Gets types (classes, interfaces and traits) associated with specified extension.
+        /// </summary>
+        /// <param name="extension">Extension name.</param>
+        /// <returns>Enumeration of types associated with given extension.</returns>
+        public static IEnumerable<PhpTypeInfo> GetTypesByExtension(string extension)
+        {
+            return ExtensionsAppContext.ExtensionsTable.GetTypesByExtension(extension);
+        }
+
+        /// <summary>
         /// Gets enumeration of scripts that were included.
         /// </summary>
         public IEnumerable<ScriptInfo> GetIncludedScripts() => _scripts.GetIncludedScripts();

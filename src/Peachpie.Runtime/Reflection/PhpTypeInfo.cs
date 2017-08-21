@@ -232,6 +232,9 @@ namespace Pchp.Core.Reflection
             {
                 _name = _name.Remove(idx);
             }
+
+            // register type in extension tables
+            ExtensionsAppContext.ExtensionsTable.AddType(this);
         }
 
         private static string ResolveRelativePath(PhpTypeAttribute attr) => attr?.FileName;

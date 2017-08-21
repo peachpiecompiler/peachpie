@@ -18,10 +18,27 @@ namespace Pchp.Core.Reflection
     internal class ExtensionsTable
     {
         /// <summary>
-        /// Table of known extensions and their declared routines.
+        /// Reflected information about a single extensions.
+        /// </summary>
+        [DebuggerDisplay("{Name,nq} (Routines: {Routines.Count}, Types: {Types.Count}")]
+        sealed class ExtensionInfo
+        {
+            public readonly string Name;
+            public readonly ICollection<ClrRoutineInfo> Routines = new HashSet<ClrRoutineInfo>();
+            public readonly ICollection<PhpTypeInfo> Types = new HashSet<PhpTypeInfo>();
+
+            public ExtensionInfo(string name)
+            {
+                Debug.Assert(!string.IsNullOrEmpty(name));
+                this.Name = name;
+            }
+        }
+
+        /// <summary>
+        /// Table of known extensions and their declarations.
         /// Filled lazily. Cannot be <c>null</c>.
         /// </summary>
-        readonly Dictionary<string, ICollection<ClrRoutineInfo>>/*!*/_routinesByExtension = new Dictionary<string, ICollection<ClrRoutineInfo>>(StringComparer.Ordinal);
+        readonly Dictionary<string, ExtensionInfo>/*!*/_extensions = new Dictionary<string, ExtensionInfo>(StringComparer.Ordinal);
 
         /// <summary>
         /// Set of <see cref="PhpExtensionAttribute.Registrator"/> values being instantiated to avoid repetitious initializations.
@@ -37,7 +54,7 @@ namespace Pchp.Core.Reflection
         /// Gets known extension names.
         /// </summary>
         /// <returns>Collection of extensions. Cannot be <c>null</c>.</returns>
-        public ICollection<string> GetExtensions() => _routinesByExtension.Keys;
+        public ICollection<string> GetExtensions() => _extensions.Keys;
 
         /// <summary>
         /// Gets routines associated with specified extension.
@@ -46,10 +63,9 @@ namespace Pchp.Core.Reflection
         /// <returns>Enumeration of routines associated with given extension.</returns>
         public ICollection<ClrRoutineInfo> GetRoutinesByExtension(string extension)
         {
-            ICollection<ClrRoutineInfo> routines;
-            if (extension != null && _routinesByExtension.TryGetValue(extension, out routines))
+            if (extension != null && _extensions.TryGetValue(extension, out var info))
             {
-                return routines;
+                return info.Routines;
             }
             else
             {
@@ -58,11 +74,26 @@ namespace Pchp.Core.Reflection
         }
 
         /// <summary>
+        /// Gets enumeration of types associated with specified extension.
+        /// </summary>
+        public ICollection<PhpTypeInfo> GetTypesByExtension(string extension)
+        {
+            if (extension != null && _extensions.TryGetValue(extension, out var info))
+            {
+                return info.Types;
+            }
+            else
+            {
+                return Array.Empty<PhpTypeInfo>();
+            }
+        }
+
+        /// <summary>
         /// Gets value indicating that given extension was loaded.
         /// </summary>
         public bool ContainsExtension(string extension)
         {
-            return extension != null && _routinesByExtension.ContainsKey(extension);
+            return extension != null && _extensions.ContainsKey(extension);
         }
 
         bool AddAssembly(AssemblyName assname)
@@ -109,18 +140,30 @@ namespace Pchp.Core.Reflection
                 var tinfo = m.DeclaringType.GetTypeInfo();
 
                 //
-                var attrs = tinfo.GetCustomAttributes<PhpExtensionAttribute>();
-                if (attrs != null)
+                var extinfo = tinfo.GetCustomAttribute<PhpExtensionAttribute>();
+                if (extinfo != null)
                 {
-                    foreach (var attr in attrs)
-                    {
-                        AddRoutine(attr, routine);
-                        VisitExtensionAttribute(attr);
-                    }
+                    AddRoutine(extinfo, routine);
+                    VisitExtensionAttribute(extinfo);
                 }
 
                 //
                 AddAssembly(tinfo.Assembly);
+            }
+        }
+
+        public void AddType(PhpTypeInfo type)
+        {
+            Debug.Assert(type != null);
+
+            var extinfo = type.Type.GetCustomAttribute<PhpExtensionAttribute>(false);
+            if (extinfo != null)
+            {
+                var extensions = extinfo.Extensions;
+                for (int i = 0; i < extensions.Length; i++)
+                {
+                    EnsureExtension(extensions[i]).Types.Add(type);
+                }
             }
         }
 
@@ -129,7 +172,7 @@ namespace Pchp.Core.Reflection
             var extensions = extension.Extensions;
             for (int i = 0; i < extensions.Length; i++)
             {
-                EnsureExtension(extensions[i]).Add(routine);
+                EnsureExtension(extensions[i]).Routines.Add(routine);
             }
         }
 
@@ -140,32 +183,32 @@ namespace Pchp.Core.Reflection
                 return;
             }
 
-            lock (_routinesByExtension)
+            lock (_extensions)
             {
                 for (int i = 0; i < extensions.Length; i++)
                 {
                     var extension = extensions[i];
-                    if (!_routinesByExtension.ContainsKey(extension))
+                    if (!_extensions.ContainsKey(extension))
                     {
-                        _routinesByExtension[extension] = new HashSet<ClrRoutineInfo>();
+                        _extensions[extension] = new ExtensionInfo(extension);
                     }
                 }
             }
         }
 
-        ICollection<ClrRoutineInfo> EnsureExtension(string extension)
+        ExtensionInfo EnsureExtension(string extension)
         {
-            ICollection<ClrRoutineInfo> routines;
+            ExtensionInfo info;
 
-            lock (_routinesByExtension)
+            lock (_extensions)
             {
-                if (!_routinesByExtension.TryGetValue(extension, out routines))
+                if (!_extensions.TryGetValue(extension, out info))
                 {
-                    _routinesByExtension[extension] = routines = new HashSet<ClrRoutineInfo>();
+                    _extensions[extension] = info = new ExtensionInfo(extension);
                 }
             }
 
-            return routines;
+            return info;
         }
 
         void VisitExtensionAttribute(PhpExtensionAttribute attr)
