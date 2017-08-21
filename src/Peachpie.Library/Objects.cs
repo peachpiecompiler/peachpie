@@ -168,58 +168,6 @@ namespace Pchp.Library
         }
 
         /// <summary>
-		/// Returns a <see cref="PhpArray"/> with keys and values being names of a given class's
-		/// base classes.
-		/// </summary>
-        /// <param name="ctx">Runtime context.</param>
-        /// <param name="caller">The caller of the method used in case <paramref name="classNameOrObject"/> is NULL.</param>
-        /// <param name="classNameOrObject">The object or class name to get base classes of.</param>
-		/// <param name="useAutoload"><B>True</B> if autoloading should be used.</param>
-		/// <returns>The <see cref="PhpArray"/> with base class names.</returns>
-		[return: CastToFalse]
-        public static PhpArray class_parents(Context ctx, [ImportCallerClass]RuntimeTypeHandle caller, PhpValue classNameOrObject, bool useAutoload = true)
-        {
-            var tinfo = TypeNameOrObjectToType(ctx, classNameOrObject, caller, useAutoload);
-
-            PhpArray result = null;
-
-            if (tinfo != null)
-            {
-                result = new PhpArray();
-                while ((tinfo = tinfo.BaseType) != null)
-                {
-                    result.Add(tinfo.Name, tinfo.Name);
-                }
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// This function returns an array with the names of the interfaces that the given class and its parents implement.
-        /// </summary>
-        [return: CastToFalse]
-        public static PhpArray class_implements(Context ctx, [ImportCallerClass]RuntimeTypeHandle caller, PhpValue classNameOrObject, bool useAutoload = true)
-        {
-            PhpArray result = null;
-
-            var tinfo = TypeNameOrObjectToType(ctx, classNameOrObject, caller, useAutoload);
-            if (tinfo != null)
-            {
-                result = new PhpArray();
-                foreach (var iface in tinfo.Type.ImplementedInterfaces)
-                {
-                    if (!iface.IsHiddenType())
-                    {
-                        result.Add(iface.Name, iface.Name);
-                    }
-                }
-            }
-
-            return result;
-        }
-
-        /// <summary>
 		/// Tests whether <paramref name="obj"/>'s class is derived from a class given by <paramref name="class_name"/>.
 		/// </summary>
         /// <param name="ctx">Runtime context.</param>
@@ -294,7 +242,7 @@ namespace Pchp.Library
 		/// Get <see cref="PhpTypeInfo"/> from either a class name or a class instance.
         /// </summary>
         /// <returns>Type info instance if object is valid class reference, otherwise <c>null</c>.</returns>
-        static PhpTypeInfo TypeNameOrObjectToType(Context ctx, PhpValue @object, RuntimeTypeHandle selftype = default(RuntimeTypeHandle), bool autoload = true)
+        internal static PhpTypeInfo TypeNameOrObjectToType(Context ctx, PhpValue @object, RuntimeTypeHandle selftype = default(RuntimeTypeHandle), bool autoload = true)
         {
             object obj;
             string str;
@@ -462,6 +410,92 @@ namespace Pchp.Library
             }
 
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Container with SPL object functions.
+    /// (they are listed as a part of SPL extensions)
+    /// </summary>
+    [PhpExtension(Spl.SplExtension.Name)]
+    public static class ObjectsSpl
+    {
+        /// <summary>
+		/// Returns a <see cref="PhpArray"/> with keys and values being names of a given class's
+		/// base classes.
+		/// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="caller">The caller of the method used in case <paramref name="classNameOrObject"/> is NULL.</param>
+        /// <param name="classNameOrObject">The object or class name to get base classes of.</param>
+		/// <param name="useAutoload"><B>True</B> if autoloading should be used.</param>
+		/// <returns>The <see cref="PhpArray"/> with base class names.</returns>
+		[return: CastToFalse]
+        public static PhpArray class_parents(Context ctx, [ImportCallerClass]RuntimeTypeHandle caller, PhpValue classNameOrObject, bool useAutoload = true)
+        {
+            var tinfo = Objects.TypeNameOrObjectToType(ctx, classNameOrObject, caller, useAutoload);
+
+            PhpArray result = null;
+
+            if (tinfo != null)
+            {
+                result = new PhpArray();
+                while ((tinfo = tinfo.BaseType) != null)
+                {
+                    result.Add(tinfo.Name, tinfo.Name);
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// This function returns an array with the names of the interfaces that the given class and its parents implement.
+        /// </summary>
+        [return: CastToFalse]
+        public static PhpArray class_implements(Context ctx, [ImportCallerClass]RuntimeTypeHandle caller, PhpValue classNameOrObject, bool useAutoload = true)
+        {
+            PhpArray result = null;
+
+            var tinfo = Objects.TypeNameOrObjectToType(ctx, classNameOrObject, caller, useAutoload);
+            if (tinfo != null)
+            {
+                result = new PhpArray();
+                foreach (var iface in tinfo.Type.ImplementedInterfaces)
+                {
+                    if (!iface.IsHiddenType())
+                    {
+                        result.Add(iface.Name, iface.Name);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// This function returns an array with the names of the traits that the given class uses.
+        /// This does however not include any traits used by a parent class.
+        /// </summary>
+        [return: CastToFalse]
+        public static PhpArray class_uses(Context ctx, [ImportCallerClass]RuntimeTypeHandle caller, PhpValue classNameOrObject, bool useAutoload = true)
+        {
+            PhpArray result = null;
+
+            var tinfo = Objects.TypeNameOrObjectToType(ctx, classNameOrObject, caller, useAutoload);
+            if (tinfo != null)
+            {
+                result = new PhpArray();
+                //foreach (var trait in tinfo.Type.ImplementedTraits)
+                //{
+                //    if (!trait.IsHiddenType())
+                //    {
+                //        result.Add(trait.Name, trait.Name);
+                //    }
+                //}
+                throw new NotImplementedException();
+            }
+
+            return result;
         }
     }
 }

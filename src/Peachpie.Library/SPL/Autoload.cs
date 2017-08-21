@@ -8,6 +8,7 @@ using System.Diagnostics;
 
 namespace Pchp.Library.Spl
 {
+    [PhpExtension(SplExtension.Name)]
     public static class Autoload
     {
         #region SplAutoloadService
