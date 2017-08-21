@@ -14,7 +14,7 @@ namespace Pchp.Library.Reflection
     /// <see cref="ReflectionMethod"/> classes and then use their <see cref="ReflectionFunctionAbstract.getParameters()"/>
     /// method to retrieve an array of parameters. 
     /// </summary>
-    [PhpType("[name]"), PhpExtension(ReflectionUtils.ExtensionName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(ReflectionUtils.ExtensionName)]
     public class ReflectionParameter : Reflector
     {
         #region Fields & Properties

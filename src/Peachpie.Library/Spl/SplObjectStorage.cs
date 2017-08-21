@@ -11,7 +11,7 @@ namespace Pchp.Library.Spl
     /// The class provides a map from objects to data or, by ignoring data, an object set.
     /// This dual purpose can be useful in many cases involving the need to uniquely identify objects.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplObjectStorage : Countable, Iterator, Serializable, ArrayAccess
     {
         struct Keys

@@ -11,7 +11,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// The Seekable iterator.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public interface SeekableIterator : Iterator
     {
         /// <summary>
@@ -23,7 +23,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// Classes implementing OuterIterator can be used to iterate over iterators.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public interface OuterIterator : Iterator
     {
         /// <summary>
@@ -36,7 +36,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// Classes implementing RecursiveIterator can be used to iterate over iterators recursively.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public interface RecursiveIterator : Iterator
     {
         /// <summary>
@@ -59,7 +59,7 @@ namespace Pchp.Library.Spl
     /// and let it create ArrayIterator instances that refer to it either by using foreach or by calling
     /// its getIterator() method manually.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class ArrayIterator : Iterator, Traversable, ArrayAccess, SeekableIterator, Countable
     {
         #region Fields & Properties
@@ -397,7 +397,7 @@ namespace Pchp.Library.Spl
     /// This iterator allows to unset and modify values and keys while iterating over Arrays and Objects in the same way
     /// as the <see cref="ArrayIterator"/>. Additionally it is possible to iterate over the current iterator entry.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class RecursiveArrayIterator : ArrayIterator, RecursiveIterator
     {
         // TODO: Add and use the CHILD_ARRAYS_ONLY constant when flags are functional
@@ -445,7 +445,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// The EmptyIterator class for an empty iterator.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class EmptyIterator : Iterator, Traversable
     {
         public virtual void __construct()
@@ -492,7 +492,7 @@ namespace Pchp.Library.Spl
     /// It is important to understand that most classes that do not implement Iterators have reasons
     /// as most likely they do not allow the full Iterator feature set.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class IteratorIterator : OuterIterator
     {
         /// <summary>
@@ -612,7 +612,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// The InfiniteIterator allows one to infinitely iterate over an iterator without having to manually rewind the iterator upon reaching its end.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class InfiniteIterator : IteratorIterator
     {
         [PhpFieldsOnlyCtor]
@@ -641,7 +641,7 @@ namespace Pchp.Library.Spl
     /// This abstract iterator filters out unwanted values.
     /// This class should be extended to implement custom iterator filters.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public abstract class FilterIterator : IteratorIterator
     {
         [PhpFieldsOnlyCtor]
@@ -685,7 +685,7 @@ namespace Pchp.Library.Spl
     /// This abstract iterator filters out unwanted values.
     /// This class should be extended to implement custom iterator filters.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class LimitIterator : IteratorIterator
     {
         internal protected long _position, _offset, _max;
@@ -774,7 +774,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// An Iterator that iterates over several iterators one after the other.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class AppendIterator : IteratorIterator, OuterIterator
     {
         /// <summary>
@@ -883,7 +883,7 @@ namespace Pchp.Library.Spl
     /// This abstract iterator filters out unwanted values for a RecursiveIterator.
     /// This class should be extended to implement custom filters.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public abstract class RecursiveFilterIterator : FilterIterator, RecursiveIterator
     {
         readonly protected Context _ctx;

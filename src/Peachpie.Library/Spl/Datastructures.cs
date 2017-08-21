@@ -17,7 +17,7 @@ namespace Pchp.Library.Spl
     //SplPriorityQueue
     //SplObjectStorage
 
-    [PhpType("[name]")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplFixedArray : ArrayAccess, Iterator, Countable
     {
         /// <summary>

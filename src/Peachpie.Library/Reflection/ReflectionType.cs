@@ -8,7 +8,7 @@ namespace Pchp.Library.Reflection
     /// <summary>
     /// The <see cref="ReflectionType"/> class reports information about a function's return type.
     /// </summary>
-    [PhpType("[name]"), PhpExtension(ReflectionUtils.ExtensionName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(ReflectionUtils.ExtensionName)]
     public class ReflectionType
     {
         public bool allowsNull() { throw new NotImplementedException(); }

@@ -10,7 +10,7 @@ using Pchp.Core.Resources;
 
 namespace Pchp.Library.Reflection
 {
-    [PhpType("[name]"), PhpExtension(ReflectionUtils.ExtensionName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(ReflectionUtils.ExtensionName)]
     public class ReflectionClass : Reflector
     {
         #region Constants

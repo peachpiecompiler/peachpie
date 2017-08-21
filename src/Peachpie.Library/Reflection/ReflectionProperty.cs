@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.Library.Reflection
 {
-    [PhpType("[name]"), PhpExtension(ReflectionUtils.ExtensionName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(ReflectionUtils.ExtensionName)]
     public class ReflectionProperty : Reflector
     {
         /// <summary>

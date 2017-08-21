@@ -9,6 +9,7 @@ using System.Diagnostics;
 
 namespace Pchp.Library.Spl
 {
+    [PhpExtension(SplExtension.Name)]
     public static class SplObjects
     {
         /// <summary>Return hash id for given object.</summary>

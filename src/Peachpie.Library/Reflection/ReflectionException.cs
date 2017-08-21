@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.Library.Reflection
 {
-    [PhpType("[name]"), PhpExtension(ReflectionUtils.ExtensionName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(ReflectionUtils.ExtensionName)]
     public class ReflectionException : Spl.Exception
     {
         public ReflectionException(string message = "", long code = 0, Throwable previous = null)

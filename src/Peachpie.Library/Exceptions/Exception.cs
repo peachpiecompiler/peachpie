@@ -65,7 +65,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// Exception thrown if an error which can only be found on runtime occurs.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class RuntimeException : Spl.Exception
     {
         [PhpFieldsOnlyCtor]
@@ -128,7 +128,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// Exception thrown if a value is not a valid key. This represents errors that cannot be detected at compile time.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class OutOfBoundsException : RuntimeException
     {
         [PhpFieldsOnlyCtor]
@@ -143,7 +143,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// Exception thrown when an illegal index was requested. This represents errors that should be detected at compile time.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class OutOfRangeException : LogicException
     {
         [PhpFieldsOnlyCtor]

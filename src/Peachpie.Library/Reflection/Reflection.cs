@@ -9,7 +9,7 @@ namespace Pchp.Library.Reflection
     /// <summary>
     /// The reflection class.
     /// </summary>
-    [PhpType("[name]"), PhpExtension(ReflectionUtils.ExtensionName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(ReflectionUtils.ExtensionName)]
     public class Reflection
     {
         public static string export(Reflector reflector, bool @return = false)

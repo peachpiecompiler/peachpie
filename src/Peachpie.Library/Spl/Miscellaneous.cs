@@ -11,7 +11,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// The SplObserver interface is used alongside <see cref="SplSubject"/> to implement the Observer Design Pattern.
     /// </summary>
-    [PhpType("[name]"), PhpExtension("SPL")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public interface SplObserver
     {
         /// <summary>
@@ -23,7 +23,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// The SplSubject interface is used alongside <see cref="SplObserver"/> to implement the Observer Design Pattern.
     /// </summary>
-    [PhpType("[name]"), PhpExtension("SPL")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public interface SplSubject
     {
         /// <summary>
@@ -45,7 +45,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// This class allows objects to work as arrays.
     /// </summary>
-    [PhpType("[name]"), PhpExtension("SPL")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class ArrayObject : IteratorAggregate, ArrayAccess, Serializable, Countable, IPhpEnumerable
     {
         #region Constants

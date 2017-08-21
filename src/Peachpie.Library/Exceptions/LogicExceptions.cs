@@ -8,7 +8,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// Exception thrown if an argument is not of the expected type.
     /// </summary>
-    [PhpType("[name]")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class InvalidArgumentException : RuntimeException
     {
         [PhpFieldsOnlyCtor]
@@ -23,7 +23,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// Exception thrown if a callback refers to an undefined function or if some arguments are missing.
     /// </summary>
-    [PhpType("[name]")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class BadFunctionCallException : LogicException
     {
         [PhpFieldsOnlyCtor]
@@ -38,7 +38,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// Exception thrown if a callback refers to an undefined method or if some arguments are missing.
     /// </summary>
-    [PhpType("[name]")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class BadMethodCallException : BadFunctionCallException
     {
         [PhpFieldsOnlyCtor]
