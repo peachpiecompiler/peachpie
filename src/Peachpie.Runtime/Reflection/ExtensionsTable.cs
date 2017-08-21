@@ -20,7 +20,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Reflected information about a single extensions.
         /// </summary>
-        [DebuggerDisplay("{Name,nq} (Routines: {Routines.Count}, Types: {Types.Count}")]
+        [DebuggerDisplay("{Name} (functions: {Routines.Count}, types: {Types.Count})")]
         sealed class ExtensionInfo
         {
             public readonly string Name;
