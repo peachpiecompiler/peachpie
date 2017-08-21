@@ -62,11 +62,10 @@ namespace Pchp.Core.Dynamic
             }
             else
             {
-                // instance field
-                object target_value;
-                BinderHelpers.TargetAsObject(target, out target_expr, out target_value, ref restrictions);
+                var isobject = BinderHelpers.TryTargetAsObject(target, out DynamicMetaObject instance);
+                restrictions = restrictions.Merge(instance.Restrictions);
 
-                if (target_value == null)
+                if (isobject == false)
                 {
                     var defaultexpr = ConvertExpression.BindDefault(_returnType);
 
@@ -81,16 +80,8 @@ namespace Pchp.Core.Dynamic
                     return new DynamicMetaObject(defaultexpr, restrictions);
                 }
 
-                var runtime_type = target_value.GetType();
-
-                //
-                if (target_expr.Type != runtime_type)
-                {
-                    restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(target_expr, runtime_type));
-                    target_expr = Expression.Convert(target_expr, runtime_type);
-                }
-
-                phptype = runtime_type.GetPhpTypeInfo();
+                phptype = instance.RuntimeType.GetPhpTypeInfo();
+                target_expr = target_expr = Expression.Convert(instance.Expression, instance.RuntimeType);              
             }
 
             Debug.Assert(IsClassConst == (target_expr == null));

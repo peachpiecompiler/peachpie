@@ -15,7 +15,7 @@ namespace Pchp.Core
     /// <remarks>Optimized for concatenation and output.</remarks>
     [DebuggerDisplay("{ToString()}", Type = PhpVariable.TypeNameString)]
     [DebuggerNonUserCode]
-    public partial class PhpString : IPhpConvertible, IPhpArray
+    public sealed partial class PhpString : IPhpConvertible, IPhpArray
     {
         //[StructLayout(LayoutKind.Explicit)]
         //struct Chunk

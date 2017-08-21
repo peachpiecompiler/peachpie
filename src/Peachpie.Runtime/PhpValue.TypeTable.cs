@@ -158,7 +158,7 @@ namespace Pchp.Core
 
         class NullTable : TypeTable
         {
-            public override PhpTypeCode Type => PhpTypeCode.Object;
+            public override PhpTypeCode Type => PhpTypeCode.Null;
             public override bool IsNull(ref PhpValue me) => true;
             public override bool IsEmpty(ref PhpValue me) => true;
             public override object ToClass(ref PhpValue me) => new stdClass();
