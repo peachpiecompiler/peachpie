@@ -168,19 +168,19 @@ namespace Pchp.CodeAnalysis.Symbols
             // annotate routines that contain yield
             if (!tree.YieldNodes.IsDefaultOrEmpty)
             {
-
-                // TODO: Change YieldEx to a common ancestor of YieldEx and YieldFromEx to support the latter
-
-                var yieldsInRoutines = new Dictionary<LangElement, List<YieldEx>>();
+                var yieldsInRoutines = new Dictionary<LangElement, List<IYieldLikeEx>>();
                 foreach (var y in tree.YieldNodes)
                 {
-                    Debug.Assert(y is YieldEx);
-                    var yield = y as YieldEx;
+                    Debug.Assert(y is IYieldLikeEx);
+                    var yield = y as IYieldLikeEx;
 
                     var containingRoutine = y.GetContainingRoutine();
                     Debug.Assert(containingRoutine != null);
 
-                    if (!yieldsInRoutines.ContainsKey(containingRoutine)) { yieldsInRoutines.Add(containingRoutine, new List<YieldEx>()); }
+                    if (!yieldsInRoutines.ContainsKey(containingRoutine))
+                    {
+                        yieldsInRoutines.Add(containingRoutine, new List<IYieldLikeEx>());
+                    }
                     yieldsInRoutines[containingRoutine].Add(yield);
 
                 }
@@ -190,7 +190,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     var routine = yieldsInRoutine.Key;
                     var yields = yieldsInRoutine.Value;
 
-                    routine.Properties.SetProperty(typeof(ImmutableArray<YieldEx>), yields.ToImmutableArray());
+                    routine.Properties.SetProperty(typeof(ImmutableArray<IYieldLikeEx>), yields.ToImmutableArray());
                 }
             }
 
