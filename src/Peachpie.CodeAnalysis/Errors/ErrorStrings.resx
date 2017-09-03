@@ -177,4 +177,10 @@
   <data name="WRN_UnreachableCode" xml:space="preserve">
     <value>Unreachable code detected</value>
   </data>
+  <data name="ERR_FileNotFound" xml:space="preserve">
+    <value>Source file '{0}' could not be found.</value>
+  </data>
+  <data name="ERR_BadSwitch" xml:space="preserve">
+    <value>Unrecognized option: '{0}'</value>
+  </data>
 </root>
