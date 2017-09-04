@@ -1,7 +1,7 @@
 # Prepare the files needed to compile and run the tests
 
 TOOL_DIR="./src/Tools/runtests_shell"
-OUTPUT_DIR="$TOOL_DIR/bin/Debug/netcoreapp1.0"
+OUTPUT_DIR="$TOOL_DIR/bin/Debug/netcoreapp2.0"
 
 PHP_TMP_FILE=$OUTPUT_DIR/php.out
 PEACH_TMP_FILE=$OUTPUT_DIR/peach.out
