@@ -98,8 +98,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 {
                     if (i == parts.Length - 1)
                     {
-                        // file
-                        return ParseFileArgument(p, dir, diagnostics);
+                        return ParseFileArgumentWithoutFileNotFound(p, dir, diagnostics);
                     }
                     else
                     {
@@ -111,6 +110,19 @@ namespace Pchp.CodeAnalysis.CommandLine
 
             //return ParseFileArgument(path, baseDirectory, diagnostics);
             throw new ArgumentException();
+        }
+
+        /// <summary>
+        /// Enumerates files in the directory and ignores diagnostics about missing files.
+        /// <c>ERR_FileNotFound</c> is reported in case files are not found in the given directory, however,
+        /// since we call this function repetitiously for more directories this error makes no sense just for one of them.
+        /// </summary>
+        IEnumerable<CommandLineSourceFile> ParseFileArgumentWithoutFileNotFound(string path, string dir, IList<Diagnostic> errors)
+        {
+            // we don't care about empty folders reported as file not found,
+            // this error is ment for cases where no files are enumerated at all
+            
+            return ParseFileArgument(path, dir, new ConditionalList<Diagnostic>(errors, (err) => err.Code != MessageProvider.ERR_FileNotFound));
         }
 
         internal override CommandLineArguments CommonParse(IEnumerable<string> args, string baseDirectory, string sdkDirectoryOpt, string additionalReferenceDirectories)
