@@ -536,7 +536,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _current = WithNewOrdinal(end);
         }
 
-        private void BuildForLoop(List<Expression> initExpr, List<Expression> condExpr, List<Expression> actionExpr, Statement/*!*/bodyStmt)
+        private void BuildForLoop(IList<Expression> initExpr, IList<Expression> condExpr, IList<Expression> actionExpr, Statement/*!*/bodyStmt)
         {
             var end = NewBlock();
 

@@ -879,7 +879,7 @@ namespace Pchp.CodeAnalysis.Semantics
         #endregion
 
         #region Construction
-        public GeneratorSemanticsBinder(ImmutableArray<AST.YieldEx> yields, LocalsTable locals = null, DiagnosticBag diagnostics = null)
+        public GeneratorSemanticsBinder(ImmutableArray<AST.IYieldLikeEx> yields, LocalsTable locals = null, DiagnosticBag diagnostics = null)
             : base(locals, diagnostics)
         {
             _yields = new List<BoundYieldStatement>();
@@ -891,7 +891,8 @@ namespace Pchp.CodeAnalysis.Semantics
             //  - the ones to the right could be left alone but it's easier to move them as well; need to go after yieldLikeStatement
             foreach (var yieldLikeEx in yields)
             {
-                var parent = yieldLikeEx.ContainingElement;
+                Debug.Assert(yieldLikeEx is AST.LangElement);
+                var parent = ((AST.LangElement)yieldLikeEx).ContainingElement;
                 // add all parents until reaching the top of current statement tree
                 while (!(parent is AST.MethodDecl || parent is AST.FunctionDecl || parent is AST.ExpressionStmt))
                 {

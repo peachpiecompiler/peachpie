@@ -354,24 +354,15 @@ namespace Pchp.Core.Dynamic
         protected override MethodBase[] ResolveMethods(DynamicMetaObject ctx, PhpTypeInfo tinfo, DynamicMetaObject nameExpr, ref DynamicMetaObject target, IList<DynamicMetaObject> args, ref BindingRestrictions restrictions)
         {
             // resolve target expression:
-            Expression target_expr;
-            object target_value;
-            BinderHelpers.TargetAsObject(target, out target_expr, out target_value, ref restrictions);
+            var isobject = BinderHelpers.TryTargetAsObject(target, out DynamicMetaObject instance);
 
-            // (NULL)->
-            if (target_value == null)
+            restrictions = restrictions.Merge(instance.Restrictions);
+            target = new DynamicMetaObject(Expression.Convert(instance.Expression, instance.RuntimeType), target.Restrictions, instance.Value);
+
+            if (isobject == false)
             {
                 return null;    // no methods
             }
-
-            // target restrictions
-            if (target_value != null && !target_expr.Type.GetTypeInfo().IsSealed)
-            {
-                restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(target_expr, target_value.GetType()));
-                target_expr = Expression.Convert(target_expr, target_value.GetType());
-            }
-
-            target = new DynamicMetaObject(target_expr, target.Restrictions, target_value);
 
             string name = _name ?? (string)nameExpr.Value;
 
@@ -385,11 +376,10 @@ namespace Pchp.Core.Dynamic
             var name_expr = (_name != null) ? Expression.Constant(_name) : nameMeta?.Expression;
 
             // resolve target expression:
-            Expression target_expr;
-            object target_value;
-            BinderHelpers.TargetAsObject(target, out target_expr, out target_value, ref restrictions);
+            var isobject = BinderHelpers.TryTargetAsObject(target, out DynamicMetaObject instance);
+            restrictions = restrictions.Merge(instance.Restrictions);
 
-            if (target_value == null)
+            if (isobject == false)
             {
                 /* Template:
                  * PhpException.MethodOnNonObject(name_expr); // aka PhpException.Throw(Error, method_called_on_non_object, name_expr)
@@ -399,9 +389,9 @@ namespace Pchp.Core.Dynamic
                 return Expression.Block(throwcall, ConvertExpression.BindDefault(this.ReturnType));
             }
 
-            Debug.Assert(ReflectionUtils.IsClassType(target_value.GetType().GetTypeInfo()));
+            Debug.Assert(ReflectionUtils.IsClassType(instance.RuntimeType.GetTypeInfo()));
 
-            tinfo = target_value.GetPhpTypeInfo();
+            tinfo = instance.RuntimeType.GetPhpTypeInfo();
             
             var call = BinderHelpers.FindMagicMethod(tinfo, TypeMethods.MagicMethods.__call);
             if (call != null)

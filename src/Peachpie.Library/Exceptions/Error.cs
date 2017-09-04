@@ -9,7 +9,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// <see cref="Error"/> is the base class for all internal PHP errors.
     /// </summary>
-    [PhpType("[name]")]
+    [PhpType(PhpTypeAttribute.InheritName)]
     public class Error : System.Exception, Throwable
     {
         protected string message;

@@ -4,8 +4,9 @@ using System.Diagnostics;
 using System.Text;
 using Pchp.Core;
 
-namespace Peachpie.Library.Spl
+namespace Pchp.Library.Spl
 {
+    [PhpExtension(SplExtension.Name)]
     public static class IteratorFunctions
     {
         /// <summary>

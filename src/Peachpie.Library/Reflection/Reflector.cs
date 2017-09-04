@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.Library.Reflection
 {
-    [PhpType("[name]"), PhpExtension(ReflectionUtils.ExtensionName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(ReflectionUtils.ExtensionName)]
     public interface Reflector
     {
         // public static string export(void )

@@ -40,6 +40,11 @@ namespace Pchp.Core.Reflection
         public bool IsTrait => !IsInterface && _type.GetCustomAttribute<PhpTraitAttribute>(false) != null;
 
         /// <summary>
+        /// Gets list of PHP extensions associated with the current type.
+        /// </summary>
+        public string[] Extensions => _type.GetCustomAttribute<PhpExtensionAttribute>(false)?.Extensions ?? Array.Empty<string>();
+
+        /// <summary>
         /// Gets the full type name in PHP syntax, cannot be <c>null</c> or empty.
         /// </summary>
         public string Name => _name;
@@ -232,6 +237,9 @@ namespace Pchp.Core.Reflection
             {
                 _name = _name.Remove(idx);
             }
+
+            // register type in extension tables
+            ExtensionsAppContext.ExtensionsTable.AddType(this);
         }
 
         private static string ResolveRelativePath(PhpTypeAttribute attr) => attr?.FileName;

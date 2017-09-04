@@ -89,7 +89,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override Signature SyntaxSignature => _syntax.Signature;
 
-        internal List<FormalParam> UseParams => _syntax.UseParams;
+        internal IList<FormalParam> UseParams => _syntax.UseParams;
 
         internal override TypeRef SyntaxReturnType => _syntax.ReturnType;
 

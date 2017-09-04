@@ -5,7 +5,7 @@ using Pchp.Core;
 
 namespace Pchp.Library.Spl
 {
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class RecursiveIteratorIterator : OuterIterator
     {
         #region Fields

@@ -28,6 +28,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         Stack<BoundBlock> endOfTryBlocks = new Stack<BoundBlock>();
 
+        void CannotInstantiate(IPhpOperation op, string kind, BoundTypeRef t)
+        {
+            _diagnostics.Add(_routine, op.PhpSyntax, ErrorCode.ERR_CannotInstantiateType, kind, t.ResolvedType);
+        }
+
         public DiagnosingVisitor(DiagnosticBag diagnostics, SourceRoutineSymbol routine)
         {
             _diagnostics = diagnostics;
@@ -60,6 +65,27 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 CheckUndefinedType(typeRef);
                 base.VisitTypeRef(typeRef);
             }
+        }
+
+        public override void VisitNew(BoundNewEx x)
+        {
+            if (!x.TypeRef.ResolvedType.IsErrorTypeOrNull())
+            {
+                if (x.TypeRef.ResolvedType.IsInterfaceType())
+                {
+                    CannotInstantiate(x, "interface", x.TypeRef);
+                }
+                else if (x.TypeRef.ResolvedType.IsStatic)
+                {
+                    CannotInstantiate(x, "static", x.TypeRef);
+                }
+                else if (x.TypeRef.ResolvedType is IPhpTypeSymbol phpt && phpt.IsTrait)
+                {
+                    CannotInstantiate(x, "trait", x.TypeRef);
+                }
+            }
+
+            base.VisitNew(x);
         }
 
         public override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x)

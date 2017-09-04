@@ -50,10 +50,7 @@ namespace Pchp.Core
         /// <param name="reverse">Whether to compare reversly.</param>
         public KeyComparer(IComparer<PhpValue>/*!*/ comparer, bool reverse)
         {
-            if (comparer == null)
-                throw new ArgumentNullException("comparer");
-
-            this.comparer = comparer;
+            this.comparer = comparer ?? throw new ArgumentNullException("comparer");
             this.reverse = reverse ? -1 : +1;
         }
 

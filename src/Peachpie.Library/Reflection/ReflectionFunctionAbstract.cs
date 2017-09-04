@@ -8,7 +8,7 @@ using System.Reflection;
 
 namespace Pchp.Library.Reflection
 {
-    [PhpType("[name]"), PhpExtension(ReflectionUtils.ExtensionName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(ReflectionUtils.ExtensionName)]
     public abstract class ReflectionFunctionAbstract : Reflector
     {
         #region Fields & Properties

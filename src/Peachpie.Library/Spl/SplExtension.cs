@@ -5,8 +5,13 @@ using Pchp.Core;
 
 namespace Pchp.Library.Spl
 {
-    internal static class IteratorsExtension
+    internal static class SplExtension
     {
+        /// <summary>
+        /// Name of the SPL extension.
+        /// </summary>
+        public const string Name = "SPL";
+
         /// <summary>
         /// Gets key()/current() from the iterator.
         /// </summary>

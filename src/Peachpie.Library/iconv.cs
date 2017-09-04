@@ -246,20 +246,23 @@ namespace Pchp.Library
                     string line;
                     while ((line = translit.ReadLine()) != null)
                     {
-                        // remove comments:
-                        int cut_from = line.IndexOf('#');
-                        if (cut_from >= 0) line = line.Remove(cut_from);
+                        if (line.Length == 0 || line[0] == '#')
+                        {
+                            continue;
+                        }
 
-                        // skip empty lines:
-                        if (line.Length == 0) continue;
+                        // HEX\tTRANSLIT\t#comment
+                        var t1 = line.IndexOf('\t');
+                        Debug.Assert(t1 > 0);
+                        var t2 = line.IndexOf('\t', t1 + 1);
+                        Debug.Assert(t2 > 0);
 
-                        //
-                        string[] parts = line.Split('\t');  // HEX\tTRANSLIT\t
-                        Debug.Assert(parts != null && parts.Length == 3);
-
-                        int charNumber = int.Parse(parts[0], System.Globalization.NumberStyles.HexNumber);
-                        string str = parts[1];
-
+                        string
+                            strChar = line.Substring(0, t1),
+                            str = line.Substring(t1 + 1, t2 - t1);
+                        
+                        int charNumber = int.Parse(strChar, System.Globalization.NumberStyles.HexNumber);
+                        
                         if (transliterationsMaxCharCount < str.Length)
                             transliterationsMaxCharCount = str.Length;
 

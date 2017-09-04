@@ -40,15 +40,14 @@ namespace Pchp.CodeAnalysis.Symbols
                     // create initial flow state
                     var state = StateBinder.CreateInitialState(this);
 
-                    // TODO: Change YieldEx to a common ancestor of YieldEx and YieldFromEx
-
                     // try to get yields from current routine
-                    var yields = ImmutableArray<YieldEx>.Empty;
-                    if (Syntax.Properties.TryGetProperty(typeof(ImmutableArray<YieldEx>), out object tmpYields))
-                    { yields = (ImmutableArray<YieldEx>)tmpYields; }
+                    Syntax.Properties.TryGetProperty(out ImmutableArray<IYieldLikeEx> yields);
 
                     var isGeneratorMethod = !yields.IsDefaultOrEmpty;
-                    if (isGeneratorMethod) { this.Flags |= RoutineFlags.IsGenerator; }
+                    if (isGeneratorMethod)
+                    {
+                        this.Flags |= RoutineFlags.IsGenerator;
+                    }
 
                     //
                     var binder = isGeneratorMethod

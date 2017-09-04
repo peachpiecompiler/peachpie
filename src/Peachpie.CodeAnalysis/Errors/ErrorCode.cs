@@ -73,8 +73,10 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_PositionalArgAfterUnpacking,    // Cannot use positional argument after argument unpacking
         /// <summary>Call to a member function {0} on {1}</summary>
         ERR_MethodCalledOnNonObject,
-        /// <summary>Value of type {0} cannot be passed by reference.</summary>
+        /// <summary>Value of type {0} cannot be passed by reference</summary>
         ERR_ValueOfTypeCannotBeAliased,
+        /// <summary>"Cannot instantiate {0} {1}", e.g. "interface", the type name</summary>
+        ERR_CannotInstantiateType,
 
         //
         // Warnings

@@ -19,7 +19,7 @@ function Test([string]$projectpath) {
     if($LASTEXITCODE -ne 0) { Die("$projectpath failed.") }
 }
 
-.\build\build.ps1 -suffix "$env:PrereleaseTag"
+.\build\build.ps1 -suffix "$env:PrereleaseTag" -config "$env:Configuration"
 if($LASTEXITCODE -ne 0) { Die("Build failed.") }
 
 Test "Peachpie.ScriptTests"

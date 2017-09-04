@@ -74,70 +74,107 @@ namespace Pchp.Core.Dynamic
             return typeof(Context).GetMethod("GetStatic", Cache.Types.Empty).MakeGenericMethod(t);
         }
 
-        public static void TargetAsObject(DynamicMetaObject target, out Expression target_expr, out object target_value, ref BindingRestrictions restrictions)
+        /// <summary>
+        /// Access <paramref name="target"/> as object instance.
+        /// </summary>
+        /// <param name="target">Given target.</param>
+        /// <param name="instance">Resolved instance with restrictions.</param>
+        /// <returns>Whether <paramref name="target"/> contains an object instance.</returns>
+        /// <remarks>Necessary restriction are already resolved within returned <paramref name="instance"/>.</remarks>
+        public static bool TryTargetAsObject(DynamicMetaObject target, out DynamicMetaObject instance)
         {
-            target_expr = target.Expression;
-            target_value = target.Value;
-
-            if (target_value == null)
+            var value = target.Value;
+            if (value == null)
             {
-                restrictions = restrictions.Merge(BindingRestrictions.GetInstanceRestriction(target.Expression, Expression.Constant(null)));
-                return;
+                instance = new DynamicMetaObject(
+                    target.Expression,
+                    target.Restrictions.Merge(BindingRestrictions.GetInstanceRestriction(target.Expression, Expression.Constant(null))),
+                    null);
+
+                return false;
             }
 
-            for (;;)
+            var expr = target.Expression;
+
+            // dereference PhpAlias first:
+            if (target.LimitType == typeof(PhpAlias))
             {
-                if (target_expr.Type == typeof(PhpValue))
-                {
-                    // Template: target.Object // target.IsObject
-                    var value = (PhpValue)target_value;
-                    if (value.IsNull)
-                    {
-                        restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Property(target_expr, "IsNull")));
-
-                        target_value = null;
-                        target_expr = Expression.Constant(null, Cache.Types.Object[0]);
-                        break;
-                    }
-                    else if (value.IsObject)
-                    {
-                        restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Property(target_expr, "IsObject")));
-
-                        target_value = value.Object;
-                        target_expr = Expression.Property(target_expr, "Object");
-                        break;
-                    }
-                    else if (value.IsAlias)
-                    {
-                        restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Property(target_expr, "IsAlias")));
-
-                        target_value = value.Alias;
-                        target_expr = Expression.Property(target_expr, "Alias");
-                        continue;
-                    }
-                    else if (value.IsScalar)
-                    {
-                        restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Property(target_expr, "IsScalar")));
-
-                        target_value = null;
-                        target_expr = Expression.Constant(null, Cache.Types.Object[0]);
-                    }
-                    else
-                    {
-                        throw new NotImplementedException();
-                    }
-                }
-                else if (target_expr.Type == typeof(PhpAlias))
-                {
-                    // dereference
-                    target_value = ((PhpAlias)target_value).Value;
-                    target_expr = Expression.PropertyOrField(target_expr, "Value");
-                    continue;
-                }
-
-                //
-                break;
+                expr = Expression.Field(expr, "Value");
+                value = ((PhpAlias)value).Value;
+                target = new DynamicMetaObject(expr, target.Restrictions, value);
+                // continue
             }
+
+            // unwrap PhpValue
+            if (target.LimitType == typeof(PhpValue))
+            {
+                var phpvalue = (PhpValue)value;
+                if (phpvalue.IsAlias)
+                {
+                    // target of PhpValue.Alias when PhpValue.IsAlias
+                    return TryTargetAsObject(
+                        new DynamicMetaObject(
+                            Expression.Property(expr, "Alias"),
+                            target.Restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Property(expr, "IsAlias"))),
+                            phpvalue.Alias),
+                        out instance);
+                }
+
+                if (phpvalue.IsObject)
+                {
+                    expr = Expression.Property(expr, "Object");
+
+                    // PhpValue.Object when PhpValue.IsObject
+                    instance = new DynamicMetaObject(
+                        expr,     // PhpValue.Object
+                        target.Restrictions.Merge(BindingRestrictions.GetTypeRestriction(expr, phpvalue.Object.GetType())), // PhpValue.Object.GetType() == TYPE
+                        phpvalue.Object);
+
+                    // PhpResource is an exception, not acting like an object in PHP
+                    if (phpvalue.Object is PhpResource)
+                    {
+                        // "PhpValue.Object is PhpResource"
+                        // ignore the "PhpValue.IsObject" restriction (not needed)
+                        instance = new DynamicMetaObject(
+                            expr,    // PhpValue.Object
+                            target.Restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.TypeIs(expr, typeof(PhpResource)))),   // PhpValue.Object is PhpResource
+                            instance.Value);
+                        return false;
+                    }
+
+                    //
+                    return true;
+                }
+
+                // anything else is not an object, PhpValue.TypeCode == value.TypeCode
+                instance = new DynamicMetaObject(
+                    expr,
+                    target.Restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Equal(Expression.Property(expr, "TypeCode"), Expression.Constant(phpvalue.TypeCode)))),
+                    value);
+                return false;
+            }
+
+            //
+
+            var restrictions = target.Restrictions;
+            var lt = target.LimitType.GetTypeInfo();
+            if (!lt.IsValueType && !lt.IsSealed && !typeof(PhpArray).IsAssignableFrom(lt.AsType()) && !typeof(PhpResource).IsAssignableFrom(lt.AsType()))
+            {
+                // we need to set the type restriction
+                restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(expr, value.GetType()));
+            }
+
+            //
+            instance = new DynamicMetaObject(expr, restrictions, value);
+            return !(   // TODO: ReflectionUtils.IsClassType
+                value is PhpResource ||
+                value is PhpArray ||
+                value is bool ||
+                value is int ||
+                value is long ||
+                value is double ||
+                value is string ||
+                value is PhpString);
         }
 
         public static Expression EnsureNotNullPhpArray(Expression variable)

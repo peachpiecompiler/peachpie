@@ -10,7 +10,7 @@ namespace Pchp.Library.Spl
     /// another function and expects the return value to be of a certain type or value not including arithmetic or
     /// buffer related errors.
     /// </summary>
-    [PhpType("[name]")]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class UnexpectedValueException : RuntimeException
     {
         [PhpFieldsOnlyCtor]
