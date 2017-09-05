@@ -448,6 +448,18 @@ namespace Pchp.Library
         /// <returns>Whether <paramref name="variable"/> is a <B>null</B> reference.</returns>
         public static bool is_null(PhpValue variable) => variable.IsNull;
 
+        /// <summary>
+        /// Verifies that the contents of a variable is an iterable value.
+        /// </summary>
+        public static bool is_iterable(PhpValue variable)
+        {
+            var obj = variable.Object;
+            return
+                variable.IsArray ||
+                obj is Traversable ||
+                (obj is PhpAlias alias && is_iterable(alias.Value));
+        }
+
         #endregion
 
         #region is_scalar, is_numeric, is_callable, get_resource_type
