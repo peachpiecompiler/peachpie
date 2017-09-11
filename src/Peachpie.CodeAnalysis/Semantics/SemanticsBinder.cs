@@ -37,6 +37,10 @@ namespace Pchp.CodeAnalysis.Semantics
             PreBoundBlockLast = preBoundLast ?? preBoundFirst;
             BoundElement = bound;
         }
+
+        /// <summary>
+        /// An empty bag with no item and no pre-bound blocks.
+        /// </summary>
         public static BoundItemsBag<T> Empty => new BoundItemsBag<T>(null);
 
         /// <summary>
@@ -51,7 +55,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public static implicit operator BoundItemsBag<T>(T item) => new BoundItemsBag<T>(item);
 
         public bool IsEmpty => IsOnlyBoundElement && BoundElement == null;
-        public bool IsOnlyBoundElement => (PreBoundBlockFirst == null);
+        public bool IsOnlyBoundElement => PreBoundBlockFirst == null;
     }
 
     /// <summary>

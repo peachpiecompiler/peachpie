@@ -435,7 +435,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             foreach (var c in x.CaseBlocks)
             {
-                if (!c.CaseValue.IsOnlyBoundElement) { TraverseToBlock(x, state, c.CaseValue.PreBoundBlockFirst); }
+                if (!c.CaseValue.IsOnlyBoundElement)
+                {
+                    TraverseToBlock(x, state, c.CaseValue.PreBoundBlockFirst);
+                }
+
+                //
                 TraverseToBlock(x, state, c);
             }
         }
@@ -443,6 +448,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override void VisitCFGTryCatchEdge(TryCatchEdge x)
         {
             var state = _state;
+
+            // TODO: any expression inside try{} block can traverse to catch{} or finally{}.
 
             //
             TraverseToBlock(x, state, x.BodyBlock);

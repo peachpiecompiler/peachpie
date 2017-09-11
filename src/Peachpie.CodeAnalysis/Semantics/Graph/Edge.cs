@@ -209,6 +209,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         internal TryCatchEdge(BoundBlock source, BoundBlock body, CatchBlock[] catchBlocks, BoundBlock finallyBlock, BoundBlock endBlock)
             : base(source)
         {
+            Debug.Assert(catchBlocks != null);
+            Debug.Assert(catchBlocks.Length != 0 || finallyBlock != null);  // catch or finally or both
+
             _body = body;
             _catchBlocks = catchBlocks;
             _finallyBlock = finallyBlock;
@@ -223,14 +226,20 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             get
             {
-                var list = new List<BoundBlock>(_catchBlocks.Length + 2);
+                var size = _catchBlocks.Length + (_finallyBlock != null ? 2 : 1);
+                var arr = new BoundBlock[size];
 
-                list.Add(_body);
-                list.AddRange(_catchBlocks);
+                // [ body, ...catches, finally]
+
+                arr[0] = _body;
+                Array.Copy(_catchBlocks, 0, arr, 1, _catchBlocks.Length);
                 if (_finallyBlock != null)
-                    list.Add(_finallyBlock);
+                {
+                    arr[size - 1] = _finallyBlock;
+                }
 
-                return list;
+                //
+                return arr;
             }
         }
 
@@ -239,6 +248,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public override CatchBlock[] CatchBlocks => _catchBlocks;
 
         public override BoundBlock FinallyBlock => _finallyBlock;
+
+        /// <summary>
+        /// Ordinal of the block after the <c>try</c> scope.
+        /// </summary>
+        public int TryBlockScopeEnd => _catchBlocks.Length != 0 ? _catchBlocks[0].Ordinal : _finallyBlock.Ordinal;
 
         /// <summary>
         /// Visits the object by given visitor.

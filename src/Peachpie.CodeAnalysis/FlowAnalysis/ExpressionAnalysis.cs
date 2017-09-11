@@ -1761,7 +1761,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void VisitExpressionStatement(BoundExpressionStatement x)
         {
-            Accept(x.Expression);
+            base.VisitExpressionStatement(x);
         }
 
         public override void VisitReturn(BoundReturnStatement x)
