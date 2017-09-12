@@ -317,6 +317,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             switch (from.SpecialType)
             {
+                case SpecialType.System_Boolean:
                 case SpecialType.System_Int32:
                     _il.EmitOpCode(ILOpCode.Conv_i8);   // Int32 -> Int64
                     goto case SpecialType.System_Int64; // PhpValue.Create((long)<stack>)
