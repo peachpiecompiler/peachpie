@@ -26,5 +26,4 @@ rm -f powershell_6.0.0-alpha.11-1ubuntu1.14.04.1_amd64.deb
 
 sudo apt-get -y install python-pip
 pip -V
-pip install requests[security]
-pip install --upgrade icdiff
+sudo pip install --upgrade icdiff
