@@ -208,17 +208,13 @@ namespace Pchp.CodeAnalysis.Semantics
             var il = cg.Builder;
 
             xtype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(xtype));    // int|bool -> long, string -> number
-
-            if (xtype == cg.CoreTypes.PhpAlias)
-            {
-                // <PhpAlias>.Value
-                xtype = cg.Emit_PhpAlias_GetValue();
-            }
+            cg.EmitConvertAliasToValue(ref xtype); // alias -> value
 
             //
             if (xtype == cg.CoreTypes.PhpNumber)
             {
                 var ytype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(cg.Emit(Right)));  // int|bool -> long, string -> number
+                cg.EmitConvertAliasToValue(ref ytype); // alias -> value
 
                 if (ytype == cg.CoreTypes.PhpNumber)
                 {
@@ -271,6 +267,7 @@ namespace Pchp.CodeAnalysis.Semantics
             else if (xtype.SpecialType == SpecialType.System_Int64)
             {
                 var ytype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(cg.Emit(Right)));    // int|bool -> long, string -> number
+                cg.EmitConvertAliasToValue(ref ytype); // alias -> value
 
                 if (ytype.SpecialType == SpecialType.System_Int64)
                 {
@@ -313,6 +310,8 @@ namespace Pchp.CodeAnalysis.Semantics
             else if (xtype == cg.CoreTypes.PhpArray)
             {
                 var ytype = cg.Emit(Right);
+                cg.EmitConvertAliasToValue(ref ytype); // alias -> value
+
                 if (ytype == cg.CoreTypes.PhpArray)
                 {
                     // PhpArray.Union(array, array) : PhpArray
@@ -332,6 +331,7 @@ namespace Pchp.CodeAnalysis.Semantics
             else if (xtype == cg.CoreTypes.PhpValue)
             {
                 var ytype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(cg.Emit(Right)));    // int|bool -> long, string -> number
+                cg.EmitConvertAliasToValue(ref ytype); // alias -> value
 
                 if (ytype.SpecialType == SpecialType.System_Int64)
                 {
@@ -389,17 +389,14 @@ namespace Pchp.CodeAnalysis.Semantics
             xtype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(xtype));    // int|bool -> int64, string -> number
             TypeSymbol ytype;
 
-            if (xtype == cg.CoreTypes.PhpAlias)
-            {
-                // <PhpAlias>.Value
-                xtype = cg.Emit_PhpAlias_GetValue();
-            }
+            cg.EmitConvertAliasToValue(ref xtype); // alias -> value
 
             //
             switch (xtype.SpecialType)
             {
                 case SpecialType.System_Int64:
                     ytype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(cg.Emit(right)));
+                    cg.EmitConvertAliasToValue(ref ytype); // alias -> value
                     if (ytype.SpecialType == SpecialType.System_Int64)
                     {
                         // i8 - i8 : number
@@ -428,6 +425,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case SpecialType.System_Double:
                     ytype = cg.EmitConvertStringToNumber(cg.EmitConvertNumberToDouble(right)); // bool|int|long|number -> double, string -> number
+                    cg.EmitConvertAliasToValue(ref ytype); // alias -> value
                     if (ytype.SpecialType == SpecialType.System_Double)
                     {
                         // r8 - r8 : r8
@@ -448,6 +446,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     if (xtype == cg.CoreTypes.PhpNumber)
                     {
                         ytype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(cg.Emit(right)));
+                        cg.EmitConvertAliasToValue(ref ytype); // alias -> value
                         if (ytype.SpecialType == SpecialType.System_Int64)
                         {
                             // number - i8 : number
@@ -478,6 +477,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     else if (xtype == cg.CoreTypes.PhpValue)
                     {
                         ytype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(cg.Emit(right)));
+                        cg.EmitConvertAliasToValue(ref ytype); // alias -> value
 
                         if (ytype.SpecialType == SpecialType.System_Int64)
                         {
@@ -3013,9 +3013,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 case Operations.AssignDiv:
                     result_type = BoundBinaryEx.EmitDiv(cg, xtype, Value, target_place.TypeOpt);
                     break;
-                //case Operations.AssignMod:
-                //    binaryop = Operations.Mod;
-                //    break;
+                case Operations.AssignMod:
+                    result_type = BoundBinaryEx.EmitRemainder(cg, xtype, Value);
+                    break;
                 case Operations.AssignMul:
                     result_type = BoundBinaryEx.EmitMul(cg, xtype, Value, target_place.TypeOpt);
                     break;

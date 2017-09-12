@@ -288,12 +288,6 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitConvertToIntStringKey(TypeSymbol from, TypeRefMask fromHint)
         {
-            if (from == CoreTypes.PhpAlias)
-            {
-                Emit_PhpAlias_GetValue();
-                from = CoreTypes.PhpValue;
-            }
-
             switch (from.SpecialType)
             {
                 case SpecialType.System_Int64:
@@ -522,6 +516,16 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 _il.EmitOpCode(ILOpCode.Conv_i8);    // int|bool -> long
                 stack = this.CoreTypes.Long;
+            }
+
+            return stack;
+        }
+
+        internal TypeSymbol EmitConvertAliasToValue(ref TypeSymbol stack)
+        {
+            if (stack == CoreTypes.PhpAlias)
+            {
+                stack = Emit_PhpAlias_GetValue();
             }
 
             return stack;
