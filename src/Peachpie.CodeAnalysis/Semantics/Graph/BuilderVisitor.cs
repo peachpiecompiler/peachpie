@@ -189,8 +189,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         }
 
         private void Add(Statement stmt)
-           => Add(_binder.BindWholeStatement(stmt));
-
+        {
+            Add(_binder.BindWholeStatement(stmt));
+        }
 
         private void Add(BoundItemsBag<BoundStatement> stmtBag)
         {
@@ -199,7 +200,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         }
 
         private void ConnectBoundItemsBagBlocksToCurrentBlock<T>(BoundItemsBag<T> bag) where T : class, IPhpOperation
-            => _current = ConnectBoundItemsBagBlocks(bag, _current);
+        {
+            _current = ConnectBoundItemsBagBlocks(bag, _current);
+        }
 
         private BoundBlock ConnectBoundItemsBagBlocks<T>(BoundItemsBag<T> bag, BoundBlock block) where T : class, IPhpOperation
         {
