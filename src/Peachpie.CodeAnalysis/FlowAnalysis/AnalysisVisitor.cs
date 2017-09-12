@@ -454,6 +454,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             //
             TraverseToBlock(x, state, x.BodyBlock);
 
+            //
+            state.SetAllUnknown(true);  // TODO: traverse from all states in try{} instead of setting variables unknown here
+
             foreach (var c in x.CatchBlocks)
             {
                 TraverseToBlock(x, state, c);
