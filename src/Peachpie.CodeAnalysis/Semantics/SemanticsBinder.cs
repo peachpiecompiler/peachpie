@@ -446,11 +446,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindConcatEx(AST.ConcatEx x) => BindConcatEx(x.Expressions);
 
-        protected BoundExpression BindConcatEx(AST.Expression[] args)
-        {
-            // bind expressions to bound arguments
-            var boundargs = new List<BoundArgument>(BindArguments(args));
+        protected BoundExpression BindConcatEx(AST.Expression[] args) => BindConcatEx(new List<BoundArgument>(BindArguments(args)));
 
+        protected BoundExpression BindConcatEx(List<BoundArgument> boundargs)
+        {
             // flattern concat arguments
             for (int i = 0; i < boundargs.Count; i++)
             {
@@ -772,9 +771,30 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                target.Access = target.Access.WithRead();   // Read & Write on target
+                if (target is BoundArrayItemEx itemex && itemex.Index == null)
+                {
+                    // Special case:
+                    switch (expr.Operation)
+                    {
+                        // "ARRAY[] .= VALUE" => "ARRAY[] = (string)VALUE"
+                        case AST.Operations.AssignPrepend:
+                        case AST.Operations.AssignAppend:   // .=
+                            value = BindConcatEx(new List<BoundArgument>() { BoundArgument.Create(new BoundLiteral(null).WithAccess(BoundAccess.Read)), BoundArgument.Create(value) });
+                            break;
 
-                return new BoundCompoundAssignEx(target, value, expr.Operation).WithAccess(access);
+                        default:
+                            value = new BoundBinaryEx(new BoundLiteral(null).WithAccess(BoundAccess.Read), value, AstUtils.CompoundOpToBinaryOp(expr.Operation));
+                            break;
+                    }
+
+                    return new BoundAssignEx(target, value.WithAccess(BoundAccess.Read)).WithAccess(access);
+                }
+                else
+                {
+                    target.Access = target.Access.WithRead();   // Read & Write on target
+
+                    return new BoundCompoundAssignEx(target, value, expr.Operation).WithAccess(access);
+                }
             }
         }
 

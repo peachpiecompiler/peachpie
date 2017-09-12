@@ -13,6 +13,28 @@ namespace Pchp.CodeAnalysis
 {
     public static class AstUtils
     {
+        internal static Operations CompoundOpToBinaryOp(Operations op)
+        {
+            switch (op)
+            {
+                case Operations.AssignAdd: return Operations.Add;
+                case Operations.AssignAnd: return Operations.And;
+                case Operations.AssignAppend: return Operations.Concat;
+                case Operations.AssignDiv: return Operations.Div;
+                case Operations.AssignMod: return Operations.Mod;
+                case Operations.AssignMul: return Operations.Mul;
+                case Operations.AssignOr: return Operations.Or;
+                case Operations.AssignPow: return Operations.Pow;
+                case Operations.AssignPrepend: return Operations.Concat;
+                case Operations.AssignShiftLeft: return Operations.ShiftLeft;
+                case Operations.AssignShiftRight: return Operations.ShiftRight;
+                case Operations.AssignSub: return Operations.Sub;
+                case Operations.AssignXor: return Operations.Xor;
+                default:
+                    throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(op);
+            }
+        }
+
         /// <summary>
         /// Fixes <see cref="ItemUse"/> so it propagates correctly through our visitor.
         /// </summary>

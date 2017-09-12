@@ -205,35 +205,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             x.TypeRefMask = x.Value.TypeRefMask;
         }
 
-        static Operations CompoundOpToBinaryOp(Operations op)
-        {
-            switch (op)
-            {
-                case Operations.AssignAdd: return Operations.Add;
-                case Operations.AssignAnd: return Operations.And;
-                case Operations.AssignAppend: return Operations.Concat;
-                case Operations.AssignDiv: return Operations.Div;
-                case Operations.AssignMod: return Operations.Mod;
-                case Operations.AssignMul: return Operations.Mul;
-                case Operations.AssignOr: return Operations.Or;
-                case Operations.AssignPow: return Operations.Pow;
-                case Operations.AssignPrepend: return Operations.Concat;
-                case Operations.AssignShiftLeft: return Operations.ShiftLeft;
-                case Operations.AssignShiftRight: return Operations.ShiftRight;
-                case Operations.AssignSub: return Operations.Sub;
-                case Operations.AssignXor: return Operations.Xor;
-                default:
-                    throw ExceptionUtilities.UnexpectedValue(op);
-            }
-        }
-
         public override void VisitCompoundAssign(BoundCompoundAssignEx x)
         {
             Debug.Assert(x.Target.Access.IsRead && x.Target.Access.IsWrite);
             Debug.Assert(x.Value.Access.IsRead);
 
             // Target X Value
-            var tmp = new BoundBinaryEx(x.Target.WithAccess(BoundAccess.Read), x.Value, CompoundOpToBinaryOp(x.Operation));
+            var tmp = new BoundBinaryEx(x.Target.WithAccess(BoundAccess.Read), x.Value, AstUtils.CompoundOpToBinaryOp(x.Operation));
             Visit(tmp, ConditionBranch.AnyResult);
 
             // Target =
@@ -1108,7 +1086,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 if (refvar.Name.IsDirect)
                                 {
                                     var local = State.GetLocalHandle(refvar.Name.NameValue);
-                                    State.SetLocalType(local, expectedparams[i].Type);
+                                    State.SetLocalType(local, ep.Type);
                                     refvar.MaybeUninitialized = false;
                                     if (ep.IsAlias)
                                     {
@@ -1140,6 +1118,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 result_type |= target.GetResultType(TypeCtx);
 
                 x.TypeRefMask = result_type;
+            }
+            else
+            {
+
             }
 
             //

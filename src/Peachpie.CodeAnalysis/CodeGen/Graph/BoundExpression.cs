@@ -3491,7 +3491,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                throw new NotImplementedException($"LOAD {tArray.Name}[]");    // TODO: emit convert as PhpArray
+                throw new NotImplementedException($"LOAD {tArray.Name}[]");    // TODO: emit array access (IPhpArray)
             }
 
             if (this.Access.IsRead && this.Access.IsQuiet)  // TODO: analyse if Array can be NULL
