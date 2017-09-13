@@ -535,6 +535,26 @@ namespace Pchp.Library
 
         #endregion
 
+        #region header_register_callback
+
+        /// <summary>
+        /// Registers a function that will be called when PHP starts sending output.
+        /// </summary>
+        public static bool header_register_callback(Context ctx, IPhpCallable callback)
+        {
+            var webctx = ctx.HttpPhpContext;
+            if (webctx == null || callback == null)
+            {
+                return false;
+            }
+
+            webctx.HeadersSending += () => { callback.Invoke(ctx); };
+
+            return true;
+        }
+
+        #endregion
+
         #region http_build_query, get_browser
 
         /// <summary>

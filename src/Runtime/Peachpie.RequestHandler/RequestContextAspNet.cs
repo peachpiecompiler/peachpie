@@ -115,6 +115,27 @@ namespace Peachpie.RequestHandler
 
         public void RemoveHeaders() { _httpctx.Response.Headers.Clear(); }
 
+        public event Action HeadersSending
+        {
+            add
+            {
+                if (_headersSending == null)
+                {
+                    _httpctx.Response.AddOnSendingHeaders((httpctx) =>
+                    {
+                        _headersSending?.Invoke();
+                    });
+                }
+
+                _headersSending += value;
+            }
+            remove
+            {
+                _headersSending -= value;
+            }
+        }
+        Action _headersSending;
+
         /// <summary>
         /// Gets or sets HTTP response status code.
         /// </summary>
