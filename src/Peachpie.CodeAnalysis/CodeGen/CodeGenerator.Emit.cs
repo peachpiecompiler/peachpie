@@ -1119,7 +1119,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        TypeSymbol LoadMethodSpecialArgument(ParameterSymbol p, TypeSymbol thisType, BoundTypeRef staticType)
+        TypeSymbol LoadMethodSpecialArgument(ParameterSymbol p, IBoundTypeRef staticType)
         {
             // Context
             if (SpecialParameterSymbol.IsContextParameter(p))
@@ -1182,12 +1182,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 if (staticType != null)
                 {
                     // LOAD <statictype>
-                    return staticType.EmitLoadTypeInfo(this);
-                }
-                else if (thisType != null)
-                {
-                    // LOAD PhpTypeInfo<thisType>
-                    return BoundTypeRef.EmitLoadPhpTypeInfo(this, thisType);
+                    return (TypeSymbol)staticType.EmitLoadTypeInfo(this);
                 }
                 else
                 {
@@ -1204,7 +1199,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits known method call if arguments have to be unpacked before the call.
         /// </summary>
-        internal TypeSymbol EmitCall_UnpackingArgs(ILOpCode code, MethodSymbol method, BoundExpression thisExpr, ImmutableArray<BoundArgument> packedarguments, BoundTypeRef staticType = null)
+        internal TypeSymbol EmitCall_UnpackingArgs(ILOpCode code, MethodSymbol method, BoundExpression thisExpr, ImmutableArray<BoundArgument> packedarguments, IBoundTypeRef staticType = null)
         {
             Contract.ThrowIfNull(method);
             Debug.Assert(packedarguments.Any(a => a.IsUnpacking));
@@ -1241,7 +1236,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     p.IsImplicitlyDeclared &&   // implicitly declared parameter
                     !p.IsParams)
                 {
-                    LoadMethodSpecialArgument(p, thisType, staticType);
+                    LoadMethodSpecialArgument(p, staticType ?? BoundTypeRefFromSymbol.CreateOrNull(thisType));
                     continue;
                 }
 
@@ -1299,7 +1294,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             return result;
         }
 
-        internal TypeSymbol EmitCall(ILOpCode code, MethodSymbol method, BoundExpression thisExpr, ImmutableArray<BoundArgument> arguments, BoundTypeRef staticType = null)
+        internal TypeSymbol EmitCall(ILOpCode code, MethodSymbol method, BoundExpression thisExpr, ImmutableArray<BoundArgument> arguments, IBoundTypeRef staticType = null)
         {
             Contract.ThrowIfNull(method);
 
@@ -1330,7 +1325,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     p.IsImplicitlyDeclared &&   // implicitly declared parameter
                     !p.IsParams)
                 {
-                    LoadMethodSpecialArgument(p, thisType, staticType);
+                    LoadMethodSpecialArgument(p, staticType ?? BoundTypeRefFromSymbol.CreateOrNull(thisType));
                     continue;
                 }
 
@@ -1403,10 +1398,19 @@ namespace Pchp.CodeAnalysis.CodeGen
             // bind arguments
             var givenps = thismethod.Parameters;
             var arguments = new List<BoundArgument>(givenps.Length);
+            IBoundTypeRef staticTypeRef = null;
             for (int i = 0; i < givenps.Length; i++)
             {
                 var p = givenps[i];
-                if (p.IsImplicitlyDeclared && !p.IsParams) continue;
+                if (p.IsImplicitlyDeclared && !p.IsParams)
+                {
+                    if (SpecialParameterSymbol.IsLateStaticParameter(p))
+                    {
+                        staticTypeRef = new BoundTypeRefFromPlace(new ParamPlace(p));
+                    }
+
+                    continue;
+                }
 
                 var expr = new BoundVariableRef(new BoundVariableName(new VariableName(p.MetadataName)))
                 {
@@ -1424,8 +1428,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // emit call of target
             return arguments.Any(arg => arg.IsUnpacking)
-                ? EmitCall_UnpackingArgs(ILOpCode.Call, target, thisExpr, arguments.AsImmutableOrEmpty(), null)
-                : EmitCall(ILOpCode.Call, target, thisExpr, arguments.AsImmutableOrEmpty(), null);
+                ? EmitCall_UnpackingArgs(ILOpCode.Call, target, thisExpr, arguments.AsImmutableOrEmpty(), staticTypeRef)
+                : EmitCall(ILOpCode.Call, target, thisExpr, arguments.AsImmutableOrEmpty(), staticTypeRef);
         }
 
         /// <summary>
@@ -2048,21 +2052,25 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     EmitIntStringKey(string.Empty);
                 }
-                else if (constant.Value is string)
+                else if (constant.Value is string s)
                 {
-                    EmitIntStringKey((string)constant.Value);
+                    EmitIntStringKey(s);
                 }
-                else if (constant.Value is long)
+                else if (constant.Value is long l)
                 {
-                    EmitIntStringKey((int)(long)constant.Value);
+                    EmitIntStringKey((int)l);
                 }
-                else if (constant.Value is int)
+                else if (constant.Value is int i)
                 {
-                    EmitIntStringKey((int)constant.Value);
+                    EmitIntStringKey(i);
                 }
-                else if (constant.Value is double)
+                else if (constant.Value is double d)
                 {
-                    EmitIntStringKey((int)(double)constant.Value);
+                    EmitIntStringKey((int)d);
+                }
+                else if (constant.Value is bool b)
+                {
+                    EmitIntStringKey(b ? 1 : 0);
                 }
                 else
                 {
