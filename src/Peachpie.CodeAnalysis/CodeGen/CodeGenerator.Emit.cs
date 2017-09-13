@@ -487,7 +487,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             if (_emitPdbSequencePoints && span.Length > 0)
             {
-                _il.DefineSequencePoint(_routine.ContainingFile.SyntaxTree, span);
+                _il.DefineSequencePoint(ContainingFile.SyntaxTree, span);
             }
         }
 

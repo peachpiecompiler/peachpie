@@ -2713,7 +2713,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 // Template: <ctx>.Include(dir, path, locals, @this, self, bool once = false, bool throwOnError = false)
                 cg.EmitLoadContext();
-                cg.Builder.EmitStringConstant(cg.Routine.ContainingFile.DirectoryRelativePath);
+                cg.Builder.EmitStringConstant(cg.ContainingFile.DirectoryRelativePath);
                 cg.EmitConvert(_arguments[0].Value, cg.CoreTypes.String);
                 cg.LocalsPlaceOpt.EmitLoad(cg.Builder); // scope of local variables, corresponds to $GLOBALS in global scope.
                 cg.EmitThisOrNull();    // $this
@@ -2834,7 +2834,7 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(cg.LocalsPlaceOpt != null);
 
             // get location of evaluated code
-            var filepath = cg.Routine.ContainingFile.RelativeFilePath;
+            var filepath = cg.ContainingFile.RelativeFilePath;
             int line, col;
             var unit = this.PhpSyntax.ContainingSourceUnit;
             unit.GetLineColumnFromPosition(this.CodeExpression.PhpSyntax.Span.Start, out line, out col);
@@ -4015,6 +4015,8 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
+            var sourcefile = cg.ContainingFile;
+
             switch (this.Type)
             {
                 case PseudoConstUse.Types.File:
@@ -4023,7 +4025,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitLoadContext();
                     cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.RootPath.Getter);
 
-                    cg.Builder.EmitStringConstant("/" + cg.Routine.ContainingFile.RelativeFilePath);
+                    cg.Builder.EmitStringConstant("/" + sourcefile.RelativeFilePath);
 
                     // TODO: normalize slashes
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Concat_String_String)
@@ -4035,7 +4037,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitLoadContext();
                     cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.RootPath.Getter);
 
-                    var relative_dir = cg.Routine.ContainingFile.DirectoryRelativePath;
+                    var relative_dir = sourcefile.DirectoryRelativePath;
                     if (relative_dir.Length != 0) relative_dir = "/" + relative_dir;
 
                     cg.Builder.EmitStringConstant(relative_dir);

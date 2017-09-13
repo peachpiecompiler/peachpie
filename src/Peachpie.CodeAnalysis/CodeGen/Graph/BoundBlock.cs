@@ -79,11 +79,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.OnInclude_TScript.Symbol.Construct(cg.Routine.ContainingType));
 
                 // <ctx>.DeclareFunction()
-                cg.Routine.ContainingFile.Functions
+                cg.ContainingFile.Functions
                     .Where(f => !f.IsConditional)
                     .ForEach(cg.EmitDeclareFunction);
                 // <ctx>.DeclareType()
-                cg.Routine.ContainingFile.ContainedTypes
+                cg.ContainingFile.ContainedTypes
                     .Where(t => !t.IsConditional && !t.IsAnonymousType)   // non conditional declaration within this file
                     .ForEach(cg.EmitDeclareType);
             }

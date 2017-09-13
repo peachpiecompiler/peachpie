@@ -292,12 +292,15 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public TypeSymbol CallerType => (_routine is SourceMethodSymbol) ? _routine.ContainingType : null;
 
+        public SourceFileSymbol ContainingFile => _containingFile;
+        SourceFileSymbol _containingFile;
+
         #endregion
 
         #region Construction
 
         public CodeGenerator(ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, OptimizationLevel optimizations, bool emittingPdb,
-            NamedTypeSymbol container, IPlace contextPlace, IPlace thisPlace, SourceRoutineSymbol routine = null, IPlace locals = null, bool localsInitialized = false, IPlace tempLocals = null)
+            NamedTypeSymbol container, IPlace contextPlace, IPlace thisPlace, MethodSymbol routine = null, IPlace locals = null, bool localsInitialized = false, IPlace tempLocals = null)
         {
             Contract.ThrowIfNull(il);
             Contract.ThrowIfNull(moduleBuilder);
@@ -322,11 +325,12 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             _emitPdbSequencePoints = emittingPdb;
 
-            _routine = routine;
+            _routine = routine as SourceRoutineSymbol;
+            _containingFile = GetContainingFile(routine);
 
-            if (routine != null)
+            if (_containingFile != null)
             {
-                il.SetInitialDebugDocument(routine.ContainingFile.SyntaxTree);
+                il.SetInitialDebugDocument(_containingFile.SyntaxTree);
             }
         }
 
@@ -360,6 +364,20 @@ namespace Pchp.CodeAnalysis.CodeGen
             // 
             // This setting only affects generating PDB sequence points, it shall not affect generated IL in any way.
             _emitPdbSequencePoints = emittingPdb && true; // routine.GenerateDebugInfo;
+        }
+
+        static SourceFileSymbol GetContainingFile(MethodSymbol method)
+        {
+            if (ReferenceEquals(method, null)) return null;
+            if (method is SourceRoutineSymbol r) return r.ContainingFile;
+
+            for (var t = method.ContainingType; t != null; t = t.ContainingType)
+            {
+                if (t is SourceFileSymbol s) return s;
+                if (t is SourceTypeSymbol st) return st.ContainingFile;
+            }
+
+            return null;
         }
 
         //Gets appropriate locals place and whether it's inicialized externally or not.

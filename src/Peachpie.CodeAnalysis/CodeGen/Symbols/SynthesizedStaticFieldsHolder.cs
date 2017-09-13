@@ -71,7 +71,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             var body = MethodGenerator.GenerateMethodBody(module, initMethod, (il) =>
             {
-                var cg = new CodeGenerator(il, module, diagnostic, module.Compilation.Options.OptimizationLevel, false, this, new ArgPlace(tt.Context, 1), new ArgPlace(this, 0));
+                var cg = new CodeGenerator(il, module, diagnostic, module.Compilation.Options.OptimizationLevel, false, this, new ArgPlace(tt.Context, 1), new ArgPlace(this, 0), initMethod);
 
                 foreach (var fld in this.Fields)
                 {
