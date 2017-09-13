@@ -420,7 +420,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Debug.Assert(_moveNextMethod.ReturnType.SpecialType == SpecialType.System_Boolean);
             Debug.Assert(_moveNextMethod.IsStatic == false);
 
-            if (_disposeMethod != null)
+            if (_disposeMethod != null
+                && cg.GeneratorStateMachineMethod == null)  // Temporary workaround allowing "yield" inside foreach. Yield cannot be inside TRY block, so we don't generate TRY for state machines. Remove this condition once we manage to bind try/catch/yield somehow
             {
                 /* Template: try { body } finally { enumerator.Dispose }
                  */
