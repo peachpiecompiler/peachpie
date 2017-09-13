@@ -87,7 +87,7 @@ namespace Pchp.CodeAnalysis {
         }
         
         /// <summary>
-        ///    Looks up a localized string similar to A reference to the current runtime context..
+        ///    Looks up a localized string similar to Runtime context..
         /// </summary>
         public static string XmlDoc_ContextParamDescription {
             get {
