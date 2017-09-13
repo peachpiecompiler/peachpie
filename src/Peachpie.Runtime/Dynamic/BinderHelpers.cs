@@ -25,7 +25,7 @@ namespace Pchp.Core.Dynamic
         /// </summary>
         public static bool IsImplicitParameter(this ParameterInfo p)
         {
-            return p.IsContextParameter() || p.IsImportLocalsParameter() || p.IsImportCallerArgsParameter() || p.IsImportCallerClassParameter();
+            return p.IsContextParameter() || p.IsLateStaticParameter() || p.IsImportLocalsParameter() || p.IsImportCallerArgsParameter() || p.IsImportCallerClassParameter();
 
             // TODO: classCtx, <this>
         }
@@ -35,6 +35,11 @@ namespace Pchp.Core.Dynamic
             return p.Position == 0
                 && p.ParameterType == typeof(Context)
                 && (p.Name == "ctx" || p.Name == "<ctx>" || p.Name == "context" || p.Name == ".ctx");
+        }
+
+        public static bool IsLateStaticParameter(this ParameterInfo p)
+        {
+            return p.ParameterType == typeof(PhpTypeInfo) && p.Name == "<static>";
         }
 
         public static bool IsImportLocalsParameter(this ParameterInfo p)
@@ -688,7 +693,7 @@ namespace Pchp.Core.Dynamic
             }
         }
 
-        public static Expression BindToCall(Expression instance, MethodBase method, Expression ctx, OverloadBinder.ArgumentsBinder args)
+        public static Expression BindToCall(Expression instance, MethodBase method, Expression ctx, OverloadBinder.ArgumentsBinder args, PhpTypeInfo lateStaticType)
         {
             Debug.Assert(method is MethodInfo || method is ConstructorInfo);
 
@@ -705,6 +710,20 @@ namespace Pchp.Core.Dynamic
                     if (p.IsContextParameter())
                     {
                         boundargs[i] = ctx;
+                    }
+                    else if (p.IsLateStaticParameter())
+                    {
+                        if (lateStaticType != null)
+                        {
+                            // Template: PhpTypeInfoExtension.GetPhpTypeInfo<lateStaticType>()
+                            boundargs[i] = Expression.Call(
+                                null,
+                                typeof(PhpTypeInfoExtension).GetMethod("GetPhpTypeInfo", Cache.Types.Empty).MakeGenericMethod(lateStaticType.Type.AsType()));
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException("static context not available.");
+                        }
                     }
                     else if (p.IsImportLocalsParameter())
                     {
