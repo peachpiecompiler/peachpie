@@ -154,4 +154,19 @@ namespace Pchp.Library.Spl
         {
         }
     }
+
+    /// <summary>
+    /// Exception thrown when adding an element to a full container.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class OverflowException : RuntimeException
+    {
+        [PhpFieldsOnlyCtor]
+        protected OverflowException() { }
+
+        public OverflowException(string message = "", long code = 0, Throwable previous = null)
+            : base(message, code, previous)
+        {
+        }
+    }
 }
