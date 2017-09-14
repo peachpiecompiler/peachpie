@@ -191,19 +191,33 @@ namespace Pchp.Library
 		/// a class which is a subclass of <paramref name="class_name"/>, <B>false</B> otherwise.</returns>
         public static bool is_a(Context ctx, PhpValue value, string class_name, bool allow_string)
         {
+            // first load type of {value}
+            PhpTypeInfo tvalue;
             var obj = value.AsObject();
-
-            if (allow_string)
+            if (obj != null)
             {
-                // value can be a string specifying a class name
-                // autoload is allowed
-
-                throw new NotImplementedException();
+                tvalue = obj.GetPhpTypeInfo();
             }
             else
             {
-                return is_a(ctx, obj, class_name);
+                var tname = value.AsString();
+                if (tname != null && allow_string)
+                {
+                    // value can be a string specifying a class name
+                    tvalue = ctx.GetDeclaredType(tname, true);
+                }
+                else
+                {
+                    // invalid argument type ignored
+                    return false;
+                }
             }
+
+            // second, load type of {class_name}
+            var ctype = ctx.GetDeclaredType(class_name, true);
+
+            // check is_a
+            return tvalue != null && ctype != null && tvalue.Type.IsSubclassOf(ctype.Type.AsType());
         }
 
         /// <summary>
