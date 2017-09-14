@@ -2277,6 +2277,8 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
+            EmitBeforeCall(cg);
+
             if (!TargetMethod.IsErrorMethod())
             {
                 // the most preferred case when method is known,
@@ -2286,6 +2288,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
             //
             return EmitDynamicCall(cg);
+        }
+
+        internal virtual void EmitBeforeCall(CodeGenerator cg)
+        {
+
         }
 
         /// <summary>
@@ -2494,6 +2501,15 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.Builder.EmitIntConstant(0);                      // generic params count
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.CallBinderFactory_StaticFunction);
         }
+
+        internal override void EmitBeforeCall(CodeGenerator cg)
+        {
+            // ensure type is declared
+            if (!_typeRef.ResolvedType.IsErrorTypeOrNull())
+            {
+                cg.EmitExpectTypeDeclared(_typeRef.ResolvedType);
+            }
+        }
     }
 
     partial class BoundNewEx
@@ -2526,12 +2542,19 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if (!TargetMethod.IsErrorMethod())
             {
+                // ensure type is declared
+                cg.EmitExpectTypeDeclared(TargetMethod.ContainingType);
+
+                // Template: new T(args)
                 return EmitDirectCall(cg, ILOpCode.Newobj, TargetMethod);
             }
             else
             {
                 if (!_typeref.ResolvedType.IsErrorTypeOrNull())
                 {
+                    // ensure type is delcared
+                    cg.EmitExpectTypeDeclared(_typeref.ResolvedType);
+
                     // context.Create<T>(caller, params)
                     var create_t = cg.CoreTypes.Context.Symbol.GetMembers("Create")
                         .OfType<MethodSymbol>()
