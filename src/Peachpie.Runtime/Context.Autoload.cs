@@ -37,6 +37,13 @@ namespace Pchp.Core
                 }
             }
 
+            // remove leading \ from the type name
+            if (fullName.Length != 0 && fullName[0] == '\\')
+            {
+                fullName = fullName.Substring(1);
+            }
+
+            //
             using (var token = new RecursionCheckToken(this, fullName.ToLowerInvariant()))
             {
                 if (!token.IsInRecursion)
