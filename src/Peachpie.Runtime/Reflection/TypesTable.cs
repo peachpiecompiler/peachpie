@@ -210,6 +210,15 @@ namespace Pchp.Core.Reflection
         /// <returns><see cref="PhpTypeInfo"/> instance or <c>null</c> if type with given name is not declared.</returns>
         public PhpTypeInfo GetDeclaredType(string name)
         {
+            Debug.Assert(name != null);
+
+            if (name.Length != 0 && name[0] == '\\')
+            {
+                name = name.Substring(1);
+            }
+
+            //
+
             int index;
             TypesAppContext.RwLock.EnterReadLock();
             try
