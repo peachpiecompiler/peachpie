@@ -2145,6 +2145,12 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (d is NamedTypeSymbol ntype)
             {
+                if (d.IsAnonymousType)
+                {
+                    // anonymous classes are not declared
+                    return;
+                }
+
                 if (this.Routine != null && ReferenceEquals((d as SourceTypeSymbol)?.ContainingFile, this.Routine.ContainingFile) && !ntype.IsConditional)
                 {
                     // declared in same file unconditionally,
