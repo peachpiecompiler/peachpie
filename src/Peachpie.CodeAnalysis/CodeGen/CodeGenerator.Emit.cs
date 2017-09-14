@@ -2139,18 +2139,25 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// If necessary, emits autoload and check the given type is loaded into context.
         /// </summary>
-        void EmitExpectTypeDeclared(NamedTypeSymbol d)
+        public void EmitExpectTypeDeclared(TypeSymbol d)
         {
-            if (this.Routine != null && ReferenceEquals((d as SourceTypeSymbol)?.ContainingFile, this.Routine.ContainingFile) && !d.IsConditional)
-            {
-                // declared in same file unconditionally,
-                // we don't have to check anything
-                return;
-            }
+            Debug.Assert(!d.IsErrorTypeOrNull());
 
-            // Template: ctx.ExpectTypeDeclared<d>
-            EmitLoadContext();
-            EmitCall(ILOpCode.Call, CoreMethods.Context.ExpectTypeDeclared_T.Symbol.Construct(d));
+            if (d is NamedTypeSymbol ntype)
+            {
+                if (this.Routine != null && ReferenceEquals((d as SourceTypeSymbol)?.ContainingFile, this.Routine.ContainingFile) && !ntype.IsConditional)
+                {
+                    // declared in same file unconditionally,
+                    // we don't have to check anything
+                    return;
+                }
+
+                // TODO: skip for regular CLR types declared in app context
+
+                // Template: ctx.ExpectTypeDeclared<d>
+                EmitLoadContext();
+                EmitCall(ILOpCode.Call, CoreMethods.Context.ExpectTypeDeclared_T.Symbol.Construct(d));
+            }
         }
 
         /// <summary>
