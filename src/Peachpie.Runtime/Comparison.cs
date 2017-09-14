@@ -166,6 +166,12 @@ namespace Pchp.Core
         /// </param>
 		static int CompareObjects(object x, object y, PhpComparer comparer, out bool incomparable)
         {
+            HashSet<object> visited = null;
+            return CompareObjects(x, y, comparer, out incomparable, ref visited);
+        }
+
+        static int CompareObjects(object x, object y, PhpComparer comparer, out bool incomparable, ref HashSet<object> visited)
+        {
             Debug.Assert(x != null && y != null);
 
             incomparable = false;
@@ -185,11 +191,62 @@ namespace Pchp.Core
                 return 1; // they really are incomparable
             }
 
-            // check for different number of fields
-            int result = TypeMembersUtils.FieldsCount(x) - TypeMembersUtils.FieldsCount(y);
-            if (result != 0) return result;
+            // same type
+            var phpt = type_x.GetPhpTypeInfo();
 
-            throw new NotImplementedException();
+            // TODO: check PhpReference
+
+            // compare properties:
+            // the comparison operation stops and returns at the first unequal property found
+
+            //if (visited == null)
+            //{
+            //    visited = new HashSet<object>();
+            //}
+
+            //if (visited.Add(x) == false && visited.Add(y) == false)
+            //{
+            //    // both objects already visited, break the recursion
+            //    return 0;
+            //}
+
+            // TODO: infinite recursion prevention
+
+            foreach (var p in phpt.GetDeclaredProperties())
+            {
+                if (p.IsStatic)
+                {
+                    continue;
+                }
+
+                var val_x = p.GetValue(null, x);
+                var val_y = p.GetValue(null, y);
+
+                var result = comparer.Compare(val_x, val_y);
+                if (result != 0) return result;
+            }
+
+            // compare runtime properties:
+            var arr_x = phpt.GetRuntimeFields(x);
+            var arr_y = phpt.GetRuntimeFields(y);
+
+            var count_x = arr_x != null ? arr_x.Count : 0;
+            var count_y = arr_y != null ? arr_y.Count : 0;
+
+            if (count_x != 0)
+            {
+                if (count_y == 0) return count_x;
+                
+                var enumerator = arr_x.GetFastEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    // TODO: if (!arr_y.TryGetValue(...)) ...
+                    var result = comparer.Compare(enumerator.CurrentValue, arr_y[enumerator.CurrentKey]);
+                    if (result != 0) return result;
+                }
+            }
+
+            return count_x - count_y;
         }
 
         public static int CompareNull(PhpValue y)
