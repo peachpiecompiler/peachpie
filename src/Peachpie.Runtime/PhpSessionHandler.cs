@@ -56,7 +56,12 @@ namespace Pchp.Core
         /// <summary>
         /// Gets or sets the session name.
         /// </summary>
-        public abstract string SessionName { get; set; }
+        public abstract string GetSessionName(IHttpPhpContext webctx);
+
+        /// <summary>
+        /// Gets or sets the session name.
+        /// </summary>
+        public abstract bool SetSessionName(IHttpPhpContext webctx, string name);
 
         /// <summary>
         /// Gets this handler name.

@@ -45,7 +45,15 @@ namespace Peachpie.RequestHandler
             }
         }
 
-        public override string SessionName { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        /// <summary>
+        /// Gets the session name.
+        /// </summary>
+        public override string GetSessionName(IHttpPhpContext webctx) => "ASP.NET_SessionId";
+
+        /// <summary>
+        /// Sets the session name.
+        /// </summary>
+        public override bool SetSessionName(IHttpPhpContext webctx, string name) => false; // throw new NotSupportedException();
 
         public override string HandlerName => "AspNet";
 

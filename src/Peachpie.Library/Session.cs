@@ -193,11 +193,11 @@ namespace Pchp.Library
             var webctx = GetHttpPhpContext(ctx);
             if (webctx != null)
             {
-                name = webctx.SessionHandler.SessionName;
+                name = webctx.SessionHandler.GetSessionName(webctx);
 
-                if (newName != null)
+                if (newName != null && newName != name)
                 {
-                    webctx.SessionHandler.SessionName = newName;
+                    webctx.SessionHandler.SetSessionName(webctx, newName);
                 }
             }
 
