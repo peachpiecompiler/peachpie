@@ -2145,7 +2145,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (d is NamedTypeSymbol ntype)
             {
-                if (d.IsAnonymousType)
+                if (d.IsAnonymousType || !(d.ContainingAssembly is SourceAssemblySymbol))   // TODO: only user defined PHP types
                 {
                     // anonymous classes are not declared
                     return;
