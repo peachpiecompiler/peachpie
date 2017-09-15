@@ -4,8 +4,6 @@ using System.Text;
 using System.Xml;
 using Pchp.Core;
 
-// TODO: Enable XmlDocumentType and its usage when available (netstandard2.0)
-
 namespace Peachpie.Library.XmlDom
 {
     /// <summary>
@@ -17,11 +15,11 @@ namespace Peachpie.Library.XmlDom
     {
         #region Fields and Properties
 
-        //internal XmlDocumentType XmlDocumentType
-        //{
-        //    get { return (XmlDocumentType)XmlNode; }
-        //    set { XmlNode = value; }
-        //}
+        internal XmlDocumentType XmlDocumentType
+        {
+            get { return (XmlDocumentType)XmlNode; }
+            set { XmlNode = value; }
+        }
 
         private string _qualifiedName;
         private string _publicId;
@@ -44,16 +42,15 @@ namespace Peachpie.Library.XmlDom
         {
             get
             {
-                //DOMNamedNodeMap map = new DOMNamedNodeMap();
+                DOMNamedNodeMap map = new DOMNamedNodeMap();
 
-                //foreach (XmlNode entity in XmlDocumentType.Entities)
-                //{
-                //    var node = DOMNode.Create(entity);
-                //    if (node != null) map.AddNode(node);
-                //}
+                foreach (XmlNode entity in XmlDocumentType.Entities)
+                {
+                    var node = DOMNode.Create(entity);
+                    if (node != null) map.AddNode(node);
+                }
 
-                //return map;
-                throw new NotImplementedException();
+                return map;
             }
         }
 
@@ -64,33 +61,32 @@ namespace Peachpie.Library.XmlDom
         {
             get
             {
-                //DOMNamedNodeMap map = new DOMNamedNodeMap();
+                DOMNamedNodeMap map = new DOMNamedNodeMap();
 
-                //foreach (XmlNode notation in XmlDocumentType.Notations)
-                //{
-                //    var node = DOMNode.Create(notation);
-                //    if (node != null) map.AddNode(node);
-                //}
+                foreach (XmlNode notation in XmlDocumentType.Notations)
+                {
+                    var node = DOMNode.Create(notation);
+                    if (node != null) map.AddNode(node);
+                }
 
-                //return map;
-                throw new NotImplementedException();
+                return map;
             }
         }
 
         /// <summary>
         /// Returns the value of the public identifier of this document type.
         /// </summary>
-        public string publicId => throw new NotImplementedException(); //XmlDocumentType?.PublicId ?? _publicId;
+        public string publicId => XmlDocumentType?.PublicId ?? _publicId;
 
         /// <summary>
         /// Gets the value of the system identifier on this document type.
         /// </summary>
-        public string systemId => throw new NotImplementedException(); //XmlDocumentType?.SystemId ?? _systemId;
+        public string systemId => XmlDocumentType?.SystemId ?? _systemId;
 
         /// <summary>
         /// Gets the value of the DTD internal subset on this document type.
         /// </summary>
-        public string internalSubset => throw new NotImplementedException(); //XmlDocumentType?.InternalSubset;
+        public string internalSubset => XmlDocumentType?.InternalSubset;
 
         #endregion
 
@@ -99,10 +95,10 @@ namespace Peachpie.Library.XmlDom
         public DOMDocumentType()
         { }
 
-        //internal DOMDocumentType(XmlDocumentType/*!*/ xmlDocumentType)
-        //{
-        //    this.XmlDocumentType = xmlDocumentType;
-        //}
+        internal DOMDocumentType(XmlDocumentType/*!*/ xmlDocumentType)
+        {
+            this.XmlDocumentType = xmlDocumentType;
+        }
 
         internal DOMDocumentType(string qualifiedName, string publicId, string systemId)
         {
@@ -113,9 +109,8 @@ namespace Peachpie.Library.XmlDom
 
         protected override DOMNode CloneObjectInternal(bool deepCopyFields)
         {
-            //if (IsAssociated) return new DOMDocumentType(XmlDocumentType);
-            //else return new DOMDocumentType(this._qualifiedName, this._publicId, this._systemId);
-            throw new NotImplementedException();
+            if (IsAssociated) return new DOMDocumentType(XmlDocumentType);
+            else return new DOMDocumentType(this._qualifiedName, this._publicId, this._systemId);
         }
 
         #endregion
@@ -124,11 +119,10 @@ namespace Peachpie.Library.XmlDom
 
         internal override void Associate(XmlDocument document)
         {
-            //if (!IsAssociated)
-            //{
-            //    XmlDocumentType = document.CreateDocumentType(_qualifiedName, _publicId, _systemId, null);
-            //}
-            throw new NotImplementedException();
+            if (!IsAssociated)
+            {
+                XmlDocumentType = document.CreateDocumentType(_qualifiedName, _publicId, _systemId, null);
+            }
         }
 
         #endregion

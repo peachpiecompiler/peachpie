@@ -57,9 +57,8 @@ namespace Peachpie.Library.XmlDom
         {
             get
             {
-                //XmlDocumentType doc_type = XmlDocument.DocumentType;
-                //return (doc_type == null ? null : DOMNode.Create(doc_type));
-                throw new NotImplementedException();
+                XmlDocumentType doc_type = XmlDocument.DocumentType;
+                return (doc_type == null ? null : (DOMDocumentType)DOMNode.Create(doc_type));
             }
         }
 
