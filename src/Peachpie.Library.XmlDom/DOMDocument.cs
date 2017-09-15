@@ -374,16 +374,16 @@ namespace Peachpie.Library.XmlDom
             return new DOMAttr(attribute);
         }
 
-        ///// <summary>
-        ///// Creates an entity reference with the specified name.
-        ///// </summary>
-        ///// <param name="name">The name of the entity reference.</param>
-        ///// <returns>A new <see cref="DOMEntityReference"/>.</returns>
-        //public DOMEntityReference createEntityReference(string name)
-        //{
-        //    XmlEntityReference entref = XmlDocument.CreateEntityReference(name);
-        //    return new DOMEntityReference(entref);
-        //}
+        /// <summary>
+        /// Creates an entity reference with the specified name.
+        /// </summary>
+        /// <param name="name">The name of the entity reference.</param>
+        /// <returns>A new <see cref="DOMEntityReference"/>.</returns>
+        public DOMEntityReference createEntityReference(string name)
+        {
+            XmlEntityReference entref = XmlDocument.CreateEntityReference(name);
+            return new DOMEntityReference(entref);
+        }
 
         /// <summary>
         /// Creates an element with the specified namespace URI and qualified name.

@@ -231,9 +231,9 @@ namespace Peachpie.Library.XmlDom
                 case XmlNodeType.DocumentFragment: return new DOMDocumentFragment((XmlDocumentFragment)xmlNode);
                 //case XmlNodeType.DocumentType: return new DOMDocumentType((XmlDocumentType)xmlNode);
                 case XmlNodeType.Element: return new DOMElement((XmlElement)xmlNode);
-                //case XmlNodeType.Entity: return new DOMEntity((XmlEntity)xmlNode);
-                //case XmlNodeType.EntityReference: return new DOMEntityReference((XmlEntityReference)xmlNode);
-                //case XmlNodeType.Notation: return new DOMNotation((XmlNotation)xmlNode);
+                case XmlNodeType.Entity: return new DOMEntity((XmlEntity)xmlNode);
+                case XmlNodeType.EntityReference: return new DOMEntityReference((XmlEntityReference)xmlNode);
+                case XmlNodeType.Notation: return new DOMNotation((XmlNotation)xmlNode);
                 case XmlNodeType.ProcessingInstruction: return new DOMProcessingInstruction((XmlProcessingInstruction)xmlNode);
                 case XmlNodeType.Text: return new DOMText((XmlText)xmlNode);
 
