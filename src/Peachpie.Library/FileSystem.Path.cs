@@ -403,11 +403,7 @@ namespace Pchp.Library
         /// </summary>
         /// <returns>Returns the path of the temporary directory.</returns>
         /// <remarks>Path ends with "\"</remarks>
-        public static string sys_get_temp_dir()
-        {
-            //return Path.GetTempPath();
-            throw new NotImplementedException();
-        }
+        public static string sys_get_temp_dir() => Path.GetTempPath();
 
         ///// <summary>
         ///// A counter used to generate unique filenames for <see cref="tempnam(string, string)"/>.
