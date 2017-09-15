@@ -450,5 +450,64 @@ namespace Pchp.Core
         {
             return (value.IsAlias ? value.Alias.Value.Object : value.Object) as PhpArray;
         }
+
+        public static bool IsLong(this PhpValue value, out long l)
+        {
+            if (value.TypeCode == PhpTypeCode.Long)
+            {
+                l = value.Long;
+                return true;
+            }
+
+            if (value.TypeCode == PhpTypeCode.Int32)
+            {
+                l = value.ToLong();
+            }
+
+            if (value.TypeCode == PhpTypeCode.Alias)
+            {
+                return IsLong(value.Alias.Value, out l);
+            }
+
+            //
+            l = default(long);
+            return false;
+        }
+
+        public static bool IsDouble(this PhpValue value, out double d)
+        {
+            if (value.TypeCode == PhpTypeCode.Double)
+            {
+                d = value.Double;
+                return true;
+            }
+
+            if (value.TypeCode == PhpTypeCode.Alias)
+            {
+                return IsDouble(value.Alias.Value, out d);
+            }
+
+            //
+            d = default(double);
+            return false;
+        }
+
+        public static bool IsBoolean(this PhpValue value, out bool b)
+        {
+            if (value.TypeCode == PhpTypeCode.Boolean)
+            {
+                b = value.Boolean;
+                return true;
+            }
+
+            if (value.TypeCode == PhpTypeCode.Alias)
+            {
+                return IsBoolean(value.Alias.Value, out b);
+            }
+
+            //
+            b = default(bool);
+            return false;
+        }
     }
 }
