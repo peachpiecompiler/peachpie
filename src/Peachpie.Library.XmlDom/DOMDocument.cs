@@ -9,8 +9,6 @@ using System.Xml.XPath;
 using Pchp.Core;
 using Pchp.Library.Streams;
 
-// TODO: Enable DTD and XML Schema related logic when it's available in System.XML (netstandard2.0)
-
 namespace Peachpie.Library.XmlDom
 {
     /// <summary>
@@ -563,9 +561,9 @@ namespace Peachpie.Library.XmlDom
                     {
                         // create a validating XML reader
                         XmlReaderSettings settings = new XmlReaderSettings();
-                        //#pragma warning disable 618
-                        //                        settings.ValidationType = ValidationType.Auto;
-                        //#pragma warning restore 618
+#pragma warning disable 618
+                        settings.ValidationType = ValidationType.Auto;
+#pragma warning restore 618
 
                         XmlDocument.Load(XmlReader.Create(stream.RawStream, settings));
                     }
@@ -621,10 +619,7 @@ namespace Peachpie.Library.XmlDom
                 // validating XML reader
                 if (this._validateOnParse)
                 {
-                    // TODO: Enable when DtdProcessing.Parse is enabled in System.Xml.ReaderWriter package
-                    //#pragma warning disable 618
-                    //settings.DtdProcessing = DtdProcessing.Parse;
-                    //#pragma warning restore 618
+                    settings.DtdProcessing = DtdProcessing.Parse;
                 }
 
                 // do not check invalid characters in HTML (XML)
@@ -877,43 +872,42 @@ namespace Peachpie.Library.XmlDom
         /// <returns><B>True</B> or <B>false</B>.</returns>
         public virtual bool schemaValidate(Context ctx, string schemaFile, int flags = 0)
         {
-            //XmlSchema schema;
+            XmlSchema schema;
 
-            //using (PhpStream stream = PhpStream.Open(ctx, schemaFile, "rt"))
-            //{
-            //    if (stream == null) return false;
+            using (PhpStream stream = PhpStream.Open(ctx, schemaFile, "rt"))
+            {
+                if (stream == null) return false;
 
-            //    try
-            //    {
-            //        schema = XmlSchema.Read(stream.RawStream, null);
-            //    }
-            //    catch (XmlException e)
-            //    {
-            //        PhpLibXml.IssueXmlError(PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, e.Message, schemaFile);
-            //        return false;
-            //    }
-            //    catch (IOException e)
-            //    {
-            //        PhpLibXml.IssueXmlError(PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, schemaFile);
-            //        return false;
-            //    }
-            //}
+                try
+                {
+                    schema = XmlSchema.Read(stream.RawStream, null);
+                }
+                catch (XmlException e)
+                {
+                    PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, e.Message, schemaFile);
+                    return false;
+                }
+                catch (IOException e)
+                {
+                    PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, schemaFile);
+                    return false;
+                }
+            }
 
-            //XmlDocument.Schemas.Add(schema);
-            //try
-            //{
-            //    XmlDocument.Validate(null);
-            //}
-            //catch (XmlException)
-            //{
-            //    return false;
-            //}
-            //finally
-            //{
-            //    XmlDocument.Schemas.Remove(schema);
-            //}
-            //return true;
-            throw new NotImplementedException();
+            XmlDocument.Schemas.Add(schema);
+            try
+            {
+                XmlDocument.Validate(null);
+            }
+            catch (XmlException)
+            {
+                return false;
+            }
+            finally
+            {
+                XmlDocument.Schemas.Remove(schema);
+            }
+            return true;
         }
 
         /// <summary>
@@ -922,35 +916,34 @@ namespace Peachpie.Library.XmlDom
         /// <param name="schemaString">The XML schema string.</param>
         /// <param name="flags">Unsupported.</param>
         /// <returns><B>True</B> or <B>false</B>.</returns>
-        public virtual bool schemaValidateSource(string schemaString, int flags = 0)
+        public virtual bool schemaValidateSource(Context ctx, string schemaString, int flags = 0)
         {
-            //XmlSchema schema;
+            XmlSchema schema;
 
-            //try
-            //{
-            //    schema = XmlSchema.Read(new System.IO.StringReader(schemaString), null);
-            //}
-            //catch (XmlException e)
-            //{
-            //    PhpLibXml.IssueXmlError(PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, e.Message, null);
-            //    return false;
-            //}
+            try
+            {
+                schema = XmlSchema.Read(new System.IO.StringReader(schemaString), null);
+            }
+            catch (XmlException e)
+            {
+                PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, e.Message, null);
+                return false;
+            }
 
-            //XmlDocument.Schemas.Add(schema);
-            //try
-            //{
-            //    XmlDocument.Validate(null);
-            //}
-            //catch (XmlException)
-            //{
-            //    return false;
-            //}
-            //finally
-            //{
-            //    XmlDocument.Schemas.Remove(schema);
-            //}
-            //return true;
-            throw new NotImplementedException();
+            XmlDocument.Schemas.Add(schema);
+            try
+            {
+                XmlDocument.Validate(null);
+            }
+            catch (XmlException)
+            {
+                return false;
+            }
+            finally
+            {
+                XmlDocument.Schemas.Remove(schema);
+            }
+            return true;
         }
 
         /// <summary>
