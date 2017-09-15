@@ -348,7 +348,7 @@ namespace Pchp.Core.Reflection
                 return m.DeclaringType == classCtx;
             }
 
-            if (m.IsFamily)
+            if (m.IsFamily) // protected
             {
                 if (classCtx == null)
                 {
@@ -361,7 +361,7 @@ namespace Pchp.Core.Reflection
                 }
                 else
                 {
-                    var m_type = m.DeclaringType.GetTypeInfo();
+                    var m_type = ((MethodInfo)m).GetBaseDefinition().DeclaringType.GetTypeInfo();
                     var classCtx_type = classCtx.GetTypeInfo();
 
                     return classCtx_type.IsAssignableFrom(m_type) || m_type.IsAssignableFrom(classCtx_type);
