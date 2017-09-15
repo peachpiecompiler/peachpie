@@ -111,15 +111,6 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override bool Equals(object obj)
-        {
-            // Compare by the assembly identity to prevent false symbol ambiguity error
-            // TODO: Remove (together with GetHashCode) when different instances always represent different assemblies
-            return ReferenceEquals(this, obj) || (obj is AssemblySymbol symbol && this.Identity.Equals(symbol.Identity));
-        }
-
-        public override int GetHashCode() => Identity.GetHashCode();
-
         /// <summary>
         /// Lookup declaration for predefined CorLib type in this Assembly.
         /// </summary>
