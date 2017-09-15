@@ -789,7 +789,7 @@ namespace Pchp.Core
             }
             else
             {
-                // TODO: CLR enumerators: IDictionaryEnumerator, IEnumerable
+                // TODO: CLR enumerators: IDictionaryEnumerator, IEnumerable, IEnumerable<ValueTuple>, IEnumerable<KeyValuePair>
 
                 // PHP property enumeration
                 return new PhpFieldsEnumerator(obj, caller);

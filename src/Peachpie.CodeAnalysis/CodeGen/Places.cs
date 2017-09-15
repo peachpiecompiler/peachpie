@@ -195,10 +195,10 @@ namespace Pchp.CodeAnalysis.CodeGen
             Contract.ThrowIfNull(field);
 
             _holder = holder;
-            _field = ((FieldSymbol)field).OriginalDefinition;
+            _field = (FieldSymbol)field;
 
             Debug.Assert(holder != null || field.IsStatic);
-            Debug.Assert(holder == null || holder.TypeOpt.IsOfType(_field.ContainingType));
+            Debug.Assert(holder == null || holder.TypeOpt.IsOfType(_field.ContainingType) || _field.ContainingType.IsValueType);
         }
 
         void EmitHolder(ILBuilder il)
@@ -207,15 +207,22 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (_holder != null)
             {
-                var t = _holder.EmitLoad(il);
-                Debug.Assert(t.IsOfType(_field.ContainingType));
+                if (_holder.TypeOpt != null && _holder.TypeOpt.IsValueType)
+                {
+                    Debug.Assert(_holder.HasAddress);
+                    _holder.EmitLoadAddress(il);
+                }
+                else
+                {
+                    _holder.EmitLoad(il);
+                }
             }
         }
 
         void EmitOpCode(ILBuilder il, ILOpCode code)
         {
             il.EmitOpCode(code);
-            il.EmitToken(_field, null, DiagnosticBag.GetInstance());    // .{field}
+            il.EmitToken(_field.OriginalDefinition, null, DiagnosticBag.GetInstance());    // .{field}
         }
 
         public TypeSymbol TypeOpt => _field.Type;
@@ -1407,7 +1414,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 else
                 {
                     cg.Diagnostics.Add(cg.Routine, _boundref.PhpSyntax, Errors.ErrorCode.ERR_ValueOfTypeCannotBeAliased, type.Name);
-                    
+
                     // new PhpAlias((PhpValue)<place>, 1)
                     EmitOpCode_Load(cg);
                     cg.EmitConvertToPhpValue(type, 0);
