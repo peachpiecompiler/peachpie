@@ -310,17 +310,58 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             else
             {
                 Debug.Assert(_current != null);
+                Debug.Assert(_current.GetMethod != null);
 
-                if (keyVar != null)
+                var valuetype = _current.GetMethod.ReturnType;
+
+                // ValueTuple (key, value)
+                // TODO: KeyValuePair<key, value> // the same
+                if (valuetype.Name == "ValueTuple" && valuetype.IsValueType && ((NamedTypeSymbol)valuetype).Arity == 2)
                 {
-                    throw new InvalidOperationException();
-                }
+                    // tmp = current;
+                    var tmp = cg.GetTemporaryLocal(valuetype);
+                    cg.EmitGetProperty(enumeratorPlace, _current);
+                    cg.Builder.EmitLocalStore(tmp);
 
-                cg.EmitSequencePoint(valueVar.PhpSyntax);
-                var valueTarget = valueVar.BindPlace(cg);
-                valueTarget.EmitStorePrepare(cg);
-                var t = cg.EmitGetProperty(enumeratorPlace, _current);  // TOOD: PhpValue.FromClr
-                valueTarget.EmitStore(cg, t);
+                    // TODO: ValueTuple Helper
+                    var item1 = valuetype.GetMembers("Item1").Single() as FieldSymbol;
+                    var item2 = valuetype.GetMembers("Item2").Single() as FieldSymbol;
+
+                    var item1place = new FieldPlace(new LocalPlace(tmp), item1);
+                    var item2place = new FieldPlace(new LocalPlace(tmp), item2);
+
+                    // value = tmp.Item1;
+                    cg.EmitSequencePoint(valueVar.PhpSyntax);
+                    var valueTarget = valueVar.BindPlace(cg);
+                    valueTarget.EmitStorePrepare(cg);
+                    valueTarget.EmitStore(cg, item1place.EmitLoad(cg.Builder));
+
+                    // key = tmp.Item2;
+                    if (keyVar != null)
+                    {
+                        cg.EmitSequencePoint(keyVar.PhpSyntax);
+                        var keyTarget = keyVar.BindPlace(cg);
+                        keyTarget.EmitStorePrepare(cg);
+                        keyTarget.EmitStore(cg, item2place.EmitLoad(cg.Builder));
+                    }
+
+                    //
+                    cg.ReturnTemporaryLocal(tmp);
+                }
+                // just a value
+                else
+                {
+                    cg.EmitSequencePoint(valueVar.PhpSyntax);
+                    var valueTarget = valueVar.BindPlace(cg);
+                    valueTarget.EmitStorePrepare(cg);
+                    var t = cg.EmitGetProperty(enumeratorPlace, _current);  // TOOD: PhpValue.FromClr
+                    valueTarget.EmitStore(cg, t);
+
+                    if (keyVar != null)
+                    {
+                        throw new InvalidOperationException();
+                    }
+                }
             }
         }
 
@@ -387,7 +428,15 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // PhpArray.GetForeachtEnumerator(bool)
                 enumeratorType = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetForeachEnumerator_Boolean);  // TODO: IPhpArray
             }
-            // TODO: IPhpEnumerable
+            else if (enumereeType.IsOfType(cg.CoreTypes.IPhpEnumerable))
+            {
+                var GetForeachEnumerator_Bool_RuntimeTypeHandle = cg.CoreTypes.IPhpEnumerable.Method("GetForeachEnumerator", cg.CoreTypes.Boolean, cg.CoreTypes.RuntimeTypeHandle);
+
+                // enumeree.GetForeachEnumerator(bool aliasedValues, RuntimeTypeHandle caller)
+                cg.Builder.EmitBoolConstant(_aliasedValues);
+                cg.EmitCallerRuntimeTypeHandle();
+                enumeratorType = cg.EmitCall(ILOpCode.Callvirt, GetForeachEnumerator_Bool_RuntimeTypeHandle);
+            }
             // TODO: IPhpArray
             // TODO: Iterator
             else if (getEnumeratorMethod != null && getEnumeratorMethod.ParameterCount == 0 && enumereeType.IsReferenceType)
@@ -420,7 +469,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Debug.Assert(_moveNextMethod.ReturnType.SpecialType == SpecialType.System_Boolean);
             Debug.Assert(_moveNextMethod.IsStatic == false);
 
-            if (_disposeMethod != null)
+            if (_disposeMethod != null
+                && cg.GeneratorStateMachineMethod == null)  // Temporary workaround allowing "yield" inside foreach. Yield cannot be inside TRY block, so we don't generate TRY for state machines. Remove this condition once we manage to bind try/catch/yield somehow
             {
                 /* Template: try { body } finally { enumerator.Dispose }
                  */

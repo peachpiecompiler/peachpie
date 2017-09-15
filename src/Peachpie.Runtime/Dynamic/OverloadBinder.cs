@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Diagnostics;
+using Pchp.Core.Reflection;
 
 namespace Pchp.Core.Dynamic
 {
@@ -734,13 +735,13 @@ namespace Pchp.Core.Dynamic
             return result;
         }
 
-        public static Expression BindOverloadCall(Type treturn, Expression target, MethodBase[] methods, Expression ctx, Expression[] args)
+        public static Expression BindOverloadCall(Type treturn, Expression target, MethodBase[] methods, Expression ctx, Expression[] args, PhpTypeInfo lateStaticType = null)
         {
             Expression result = null;
 
             while (result == null)
             {
-                result = BindOverloadCall(treturn, target, ref methods, ctx, new ArgumentsBinder.ArgsBinder(ctx, args));
+                result = BindOverloadCall(treturn, target, ref methods, ctx, new ArgumentsBinder.ArgsBinder(ctx, args), lateStaticType);
             }
 
             return result;
@@ -784,8 +785,9 @@ namespace Pchp.Core.Dynamic
         /// <param name="methods">List of methods to resolve overload.</param>
         /// <param name="ctx">Expression of current runtime context.</param>
         /// <param name="args">Provides arguments.</param>
+        /// <param name="lateStaticType">Optional type used to statically invoke the method (late static type).</param>
         /// <returns>Expression representing overload call with resolution or <c>null</c> in case binding should be restarted with updated array of <paramref name="methods"/>.</returns>
-        static Expression BindOverloadCall(Type treturn, Expression target, ref MethodBase[] methods, Expression ctx, ArgumentsBinder args)
+        static Expression BindOverloadCall(Type treturn, Expression target, ref MethodBase[] methods, Expression ctx, ArgumentsBinder args, PhpTypeInfo lateStaticType = null)
         {
             if (methods == null || args == null)
                 throw new ArgumentNullException();
@@ -818,7 +820,7 @@ namespace Pchp.Core.Dynamic
             if (methods.Length == 1)
             {
                 // just this piece of code is enough:
-                invoke = ConvertExpression.Bind(BindCastToFalse(BinderHelpers.BindToCall(target, methods[0], ctx, args), DoCastToFalse(methods[0], treturn)), treturn, ctx);
+                invoke = ConvertExpression.Bind(BindCastToFalse(BinderHelpers.BindToCall(target, methods[0], ctx, args, lateStaticType), DoCastToFalse(methods[0], treturn)), treturn, ctx);
             }
             else
             {
@@ -915,7 +917,7 @@ namespace Pchp.Core.Dynamic
                     // (best == costI) mI(...) : ...
 
                     var m = list[i].Method;
-                    var mcall = ConvertExpression.Bind(BindCastToFalse(BinderHelpers.BindToCall(target, m, ctx, args), DoCastToFalse(m, treturn)), treturn, ctx);
+                    var mcall = ConvertExpression.Bind(BindCastToFalse(BinderHelpers.BindToCall(target, m, ctx, args, lateStaticType), DoCastToFalse(m, treturn)), treturn, ctx);
                     invoke = Expression.Condition(Expression.Equal(expr_best, list[i].CostExpr), mcall, invoke);
                 }
             }

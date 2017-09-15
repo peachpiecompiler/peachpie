@@ -12,7 +12,15 @@ using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
-    partial class BoundTypeRef
+    partial interface IBoundTypeRef
+    {
+        /// <summary>
+        /// Emits load of <c>PhpTypeInfo</c>.
+        /// </summary>
+        ITypeSymbol EmitLoadTypeInfo(CodeGenerator cg, bool throwOnError = false);
+    }
+
+    partial class BoundTypeRef : IBoundTypeRef
     {
         /// <summary>
         /// Emits name of bound type.
@@ -112,22 +120,29 @@ namespace Pchp.CodeAnalysis.Semantics
             return t;
         }
 
+        ITypeSymbol IBoundTypeRef.EmitLoadTypeInfo(CodeGenerator cg, bool throwOnError)
+            => EmitLoadTypeInfo(cg, throwOnError);
+
         /// <summary>
         /// Emits <c>PhpTypeInfo</c> of late static bound type.
         /// </summary>
         TypeSymbol  EmitLoadStaticPhpTypeInfo(CodeGenerator cg)
         {
-            if (cg.Routine.HasThis)
+            if (cg.ThisPlaceOpt != null)
             {
                 // Template: GetPhpTypeInfo(this)
                 cg.EmitThis();
                 return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.GetPhpTypeInfo_Object);
             }
-            else
+            else if (cg.Routine != null)
             {
                 // Template: LOAD @static   // ~ @static parameter passed by caller
                 return new ParamPlace(cg.Routine.ImplicitParameters.First(SpecialParameterSymbol.IsLateStaticParameter))
                     .EmitLoad(cg.Builder);
+            }
+            else
+            {
+                throw new InvalidOperationException();
             }
         }
 

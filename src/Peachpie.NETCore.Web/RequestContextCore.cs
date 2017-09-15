@@ -50,6 +50,28 @@ namespace Peachpie.Web
 
         public void RemoveHeaders() { _httpctx.Response.Headers.Clear(); }
 
+        public event Action HeadersSending
+        {
+            add
+            {
+                if (_headersSending == null)
+                {
+                    _httpctx.Response.OnStarting(() =>
+                    {
+                        _headersSending?.Invoke();
+                        return Task.CompletedTask;
+                    });
+                }
+
+                _headersSending += value;
+            }
+            remove
+            {
+                _headersSending -= value;
+            }
+        }
+        Action _headersSending;
+
         /// <summary>
         /// Gets or sets HTTP response status code.
         /// </summary>

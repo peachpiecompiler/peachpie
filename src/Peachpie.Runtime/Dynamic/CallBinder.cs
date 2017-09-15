@@ -147,7 +147,7 @@ namespace Pchp.Core.Dynamic
                 // TODO: visibility
 
                 var expr_args = argsList.Select(x => x.Expression).ToArray();
-                invocation = OverloadBinder.BindOverloadCall(_returnType, target?.Expression, methods, ctx.Expression, expr_args);
+                invocation = OverloadBinder.BindOverloadCall(_returnType, target?.Expression, methods, ctx.Expression, expr_args, tinfo);
             }
             else
             {

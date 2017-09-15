@@ -23,12 +23,17 @@ namespace Peachpie.Web
         static ISession GetSession(IHttpPhpContext webctx) => ((RequestContextCore)webctx).HttpContext.Session;
 
         static PhpSerialization.Serializer Serializer => PhpSerialization.PhpSerializer.Instance;
-        
-        public override string SessionName
-        {
-            get => SessionDefaults.CookieName;
-            set => throw new NotSupportedException();
-        }
+
+        /// <summary>
+        /// Gets the session name.
+        /// </summary>
+        public override string GetSessionName(IHttpPhpContext webctx) => SessionDefaults.CookieName;
+
+        /// <summary>
+        /// Sets the session name.
+        /// </summary>
+        public override bool SetSessionName(IHttpPhpContext webctx, string name) => false; // throw new NotSupportedException();
+
         public override string HandlerName => "AspNetCore";
 
         /// <summary>

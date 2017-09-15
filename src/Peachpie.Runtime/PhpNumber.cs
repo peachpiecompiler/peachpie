@@ -480,9 +480,12 @@ namespace Pchp.Core
         /// </summary>
         static PhpValue AddNonNumbers(ref PhpValue x, ref PhpValue y)
         {
-            if (x.IsArray && y.IsArray)
+            var arr_x = x.AsArray();
+            var arr_y = y.AsArray();
+
+            if (arr_x != null && arr_y != null)
             {
-                return (PhpValue)PhpArray.Union(x.Array, y.Array);
+                return (PhpValue)PhpArray.Union(arr_x, arr_y);
             }
 
             //PhpException.UnsupportedOperandTypes();
@@ -495,9 +498,10 @@ namespace Pchp.Core
         /// </summary>
         public static PhpArray Add(PhpValue x, PhpArray y)
         {
-            if (x.IsArray)
+            var arr = x.AsArray();  // array or &array
+            if (arr != null)
             {
-                return PhpArray.Union(x.Array, y);
+                return PhpArray.Union(arr, y);
             }
 
             //PhpException.UnsupportedOperandTypes();

@@ -22,6 +22,11 @@ namespace Pchp.Core
 
         void RemoveHeaders();
 
+        /// <summary>
+        /// Event fired before headers are sent.
+        /// </summary>
+        event Action HeadersSending;
+
         #endregion
 
         /// <summary>

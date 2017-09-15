@@ -5,6 +5,20 @@ using Pchp.Core;
 
 namespace Pchp.Library
 {
+    /// <summary>
+    /// Prototype for creating a custom session handler.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName)]
+    public interface SessionHandlerInterface
+    {
+        bool close();
+        bool destroy(string session_id);
+        bool gc(long maxlifetime);
+        bool open(string save_path, string session_name);
+        string read(string session_id);
+        bool write(string session_id, string session_data);
+    }
+
     [PhpExtension("session")]
     public static class Session
     {
@@ -179,11 +193,11 @@ namespace Pchp.Library
             var webctx = GetHttpPhpContext(ctx);
             if (webctx != null)
             {
-                name = webctx.SessionHandler.SessionName;
+                name = webctx.SessionHandler.GetSessionName(webctx);
 
-                if (newName != null)
+                if (newName != null && newName != name)
                 {
-                    webctx.SessionHandler.SessionName = newName;
+                    webctx.SessionHandler.SetSessionName(webctx, newName);
                 }
             }
 

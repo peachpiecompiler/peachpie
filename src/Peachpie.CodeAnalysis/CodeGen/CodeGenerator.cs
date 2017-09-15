@@ -27,7 +27,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             int IEqualityComparer<BoundBlock>.GetHashCode(BoundBlock obj) => obj.GetHashCode();
 
             bool IEqualityComparer<BoundBlock>.Equals(BoundBlock x, BoundBlock y) => object.ReferenceEquals(x, y);
-            
+
             int IComparer<BoundBlock>.Compare(BoundBlock x, BoundBlock y) => y.Ordinal - x.Ordinal;
         }
 
@@ -134,7 +134,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         return;
                     }
                 }
-                
+
                 // forward edge:
                 IL.EmitBranch(ILOpCode.Br, block);  // TODO: avoid branch instruction if block will follow immediately
                 this.Enqueue(block);
@@ -249,7 +249,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Type context of currently emitted expressions. Can be <c>null</c>.
         /// </summary>
         internal TypeRefContext TypeRefContext => this.Routine?.TypeRefContext;
-        
+
         public DiagnosticBag Diagnostics => _diagnostics;
 
         /// <summary>
@@ -292,18 +292,21 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public TypeSymbol CallerType => (_routine is SourceMethodSymbol) ? _routine.ContainingType : null;
 
+        public SourceFileSymbol ContainingFile => _containingFile;
+        SourceFileSymbol _containingFile;
+
         #endregion
 
         #region Construction
 
         public CodeGenerator(ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, OptimizationLevel optimizations, bool emittingPdb,
-            NamedTypeSymbol container, IPlace contextPlace, IPlace thisPlace, SourceRoutineSymbol routine = null, IPlace locals = null, bool localsInitialized = false, IPlace tempLocals = null)
+            NamedTypeSymbol container, IPlace contextPlace, IPlace thisPlace, MethodSymbol routine = null, IPlace locals = null, bool localsInitialized = false, IPlace tempLocals = null)
         {
             Contract.ThrowIfNull(il);
             Contract.ThrowIfNull(moduleBuilder);
 
-            if(localsInitialized) { Debug.Assert(locals != null); }
-            
+            if (localsInitialized) { Debug.Assert(locals != null); }
+
             _il = il;
             _moduleBuilder = moduleBuilder;
             _optimizations = optimizations;
@@ -322,11 +325,12 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             _emitPdbSequencePoints = emittingPdb;
 
-            _routine = routine;
+            _routine = routine as SourceRoutineSymbol;
+            _containingFile = GetContainingFile(routine);
 
-            if (routine != null)
+            if (_containingFile != null)
             {
-                il.SetInitialDebugDocument(routine.ContainingFile.SyntaxTree);
+                il.SetInitialDebugDocument(_containingFile.SyntaxTree);
             }
         }
 
@@ -335,14 +339,14 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Used for emitting in a context of a different routine (parameter initializer).
         /// </summary>
         public CodeGenerator(CodeGenerator cg, SourceRoutineSymbol routine)
-            :this(cg._il, cg._moduleBuilder, cg._diagnostics, cg._optimizations, cg._emitPdbSequencePoints, routine.ContainingType, cg.ContextPlaceOpt, cg.ThisPlaceOpt, routine, cg._localsPlaceOpt, cg.InitializedLocals)
+            : this(cg._il, cg._moduleBuilder, cg._diagnostics, cg._optimizations, cg._emitPdbSequencePoints, routine.ContainingType, cg.ContextPlaceOpt, cg.ThisPlaceOpt, routine, cg._localsPlaceOpt, cg.InitializedLocals)
         {
             Contract.ThrowIfNull(routine);
             _emmittedTag = cg._emmittedTag;
         }
 
         public CodeGenerator(SourceRoutineSymbol routine, ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, OptimizationLevel optimizations, bool emittingPdb)
-            :this(il, moduleBuilder, diagnostics, optimizations, emittingPdb, routine.ContainingType, routine.GetContextPlace(), routine.GetThisPlace(), routine)
+            : this(il, moduleBuilder, diagnostics, optimizations, emittingPdb, routine.ContainingType, routine.GetContextPlace(), routine.GetThisPlace(), routine)
         {
             Contract.ThrowIfNull(routine);
 
@@ -360,6 +364,20 @@ namespace Pchp.CodeAnalysis.CodeGen
             // 
             // This setting only affects generating PDB sequence points, it shall not affect generated IL in any way.
             _emitPdbSequencePoints = emittingPdb && true; // routine.GenerateDebugInfo;
+        }
+
+        static SourceFileSymbol GetContainingFile(MethodSymbol method)
+        {
+            if (ReferenceEquals(method, null)) return null;
+            if (method is SourceRoutineSymbol r) return r.ContainingFile;
+
+            for (var t = method.ContainingType; t != null; t = t.ContainingType)
+            {
+                if (t is SourceFileSymbol s) return s;
+                if (t is SourceTypeSymbol st) return st.ContainingFile;
+            }
+
+            return null;
         }
 
         //Gets appropriate locals place and whether it's inicialized externally or not.
@@ -409,7 +427,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         internal void GenerateScope(BoundBlock block, ScopeType type, int to)
         {
             Contract.ThrowIfNull(block);
-            
+
             // open scope
             _scope = new LocalScope(this, _scope, type, block.Ordinal, to);
             _scope.ContinueWith(block);
@@ -436,7 +454,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             // mark the block as emitted
             Debug.Assert(block.Tag != _emmittedTag);
             block.Tag = _emmittedTag;
-            
+
             // mark location as a label
             // to allow branching to the block
             _il.MarkLabel(block);

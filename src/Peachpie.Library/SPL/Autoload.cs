@@ -63,6 +63,13 @@ namespace Pchp.Library.Spl
             {
                 PhpTypeInfo resolved = null;
 
+                // remove leading \ from the type name
+                if (fullName.Length != 0 && fullName[0] == '\\')
+                {
+                    fullName = fullName.Substring(1);
+                }
+
+                //
                 using (var token = new Context.RecursionCheckToken(_ctx, fullName))
                 {
                     if (!token.IsInRecursion)

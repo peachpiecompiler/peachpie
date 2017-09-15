@@ -564,9 +564,9 @@ namespace Peachpie.Library.XmlDom
                     {
                         // create a validating XML reader
                         XmlReaderSettings settings = new XmlReaderSettings();
-//#pragma warning disable 618
-//                        settings.ValidationType = ValidationType.Auto;
-//#pragma warning restore 618
+                        //#pragma warning disable 618
+                        //                        settings.ValidationType = ValidationType.Auto;
+                        //#pragma warning restore 618
 
                         XmlDocument.Load(XmlReader.Create(stream.RawStream, settings));
                     }
@@ -617,18 +617,22 @@ namespace Peachpie.Library.XmlDom
 
             try
             {
-                XmlReaderSettings settings = new XmlReaderSettings();
+                XmlReaderSettings settings = new XmlReaderSettings() { DtdProcessing = DtdProcessing.Ignore };
 
-                // TODO: Enable when DtdProcessing.Parse is enabled in System.Xml.ReaderWriter package
                 // validating XML reader
                 if (this._validateOnParse)
-//#pragma warning disable 618
-//                    settings.DtdProcessing = DtdProcessing.Parse;
-//#pragma warning restore 618
+                {
+                    // TODO: Enable when DtdProcessing.Parse is enabled in System.Xml.ReaderWriter package
+                    //#pragma warning disable 618
+                    //settings.DtdProcessing = DtdProcessing.Parse;
+                    //#pragma warning restore 618
+                }
 
                 // do not check invalid characters in HTML (XML)
                 if (isHtml)
+                {
                     settings.CheckCharacters = false;
+                }
 
                 // load the document
                 this.XmlDocument.Load(XmlReader.Create(stream, settings));
@@ -638,7 +642,7 @@ namespace Peachpie.Library.XmlDom
             }
             catch (XmlException e)
             {
-                PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, null);
+                PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, e.LineNumber, e.LinePosition, e.Message, null);
                 return false;
             }
             catch (IOException e)
@@ -785,7 +789,7 @@ namespace Peachpie.Library.XmlDom
             using (PhpStream stream = PhpStream.Open(ctx, sourceFile, "rt"))
             {
                 if (stream == null) return false;
-    
+
                 return loadHTML(ctx, new StreamReader(stream.RawStream), sourceFile);
             }
         }

@@ -2073,5 +2073,30 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        #region hash_equals
+
+        /// <summary>
+        /// Compares two strings using the same time whether they're equal or not.
+        /// </summary>
+        public static bool hash_equals(string known_string , string user_string )
+        {
+            if (known_string == null)
+            {
+                PhpException.InvalidArgument(nameof(known_string));
+                return false;
+            }
+
+            if (user_string == null)
+            {
+                PhpException.InvalidArgument(nameof(user_string));
+                return false;
+            }
+
+            //
+            return string.Equals(known_string, user_string, StringComparison.Ordinal);
+        }
+
+        #endregion
     }
 }

@@ -259,7 +259,46 @@ namespace Pchp.Library
             }
 
             throw new NotImplementedException();
+        }
 
+        public static PhpValue preg_replace_callback_array(Context ctx, PhpArray patterns_and_callbacks , PhpValue subject, long limit = -1)
+        {
+            long count;
+            return preg_replace_callback_array(ctx, patterns_and_callbacks, subject, limit, out count);
+        }
+
+        /// <summary>
+        /// Perform a regular expression search and replace using callbacks.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="patterns_and_callbacks">An associative array mapping patterns (keys) to callbacks (values).</param>
+        /// <param name="subject">The string or an array with strings to search and replace.</param>
+        /// <param name="limit">The maximum possible replacements for each pattern in each subject string. Defaults to -1 (no limit).</param>
+        /// <param name="count">If specified, this variable will be filled with the number of replacements done.</param>
+        /// <returns>
+        /// preg_replace_callback_array() returns an array if the subject parameter is an array, or a string otherwise. On errors the return value is NULL.
+        /// If matches are found, the new subject will be returned, otherwise subject will be returned unchanged.
+        /// </returns>
+        public static PhpValue preg_replace_callback_array(Context ctx, PhpArray patterns_and_callbacks, PhpValue subject, long limit, out long count)
+        {
+            if (patterns_and_callbacks == null)
+            {
+                throw new ArgumentNullException(nameof(patterns_and_callbacks));
+            }
+
+            count = 0;
+
+            var enumerator = patterns_and_callbacks.GetFastEnumerator();
+            while (enumerator.MoveNext())
+            {
+                var pattern = enumerator.CurrentKey.String ?? throw new ArgumentException();
+                var callback = enumerator.CurrentValue.AsCallable();
+
+                subject = PregReplaceInternal(ctx, pattern, null, callback, subject, (int)limit, ref count);
+            }
+
+            //
+            return subject;
         }
 
         static PhpValue PregReplaceInternal(Context ctx, string pattern, string replacement, IPhpCallable callback, PhpValue subject, int limit, ref long count)

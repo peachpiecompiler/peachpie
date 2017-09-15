@@ -29,7 +29,7 @@ namespace Pchp.CodeAnalysis.DocumentationComments
 
         private DocumentationCommentCompiler(Stream xmlDocStream, DiagnosticBag xmlDiagnostics, CancellationToken cancellationToken)
         {
-            _writer = new StreamWriter(xmlDocStream);
+            _writer = new StreamWriter(xmlDocStream, Encoding.UTF8);
             _xmlDiagnostics = xmlDiagnostics;
             _cancellationToken = cancellationToken;
         }
@@ -69,7 +69,7 @@ namespace Pchp.CodeAnalysis.DocumentationComments
 
         DocumentationCommentCompiler WriteCompilation(PhpCompilation compilation, string assemblyName)
         {
-            _writer.WriteLine("<?xml version=\"1.0\"?>");
+            _writer.WriteLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
             _writer.WriteLine("<doc>");
             _writer.WriteLine("<assembly><name>{0}</name></assembly>", assemblyName);
             _writer.WriteLine("<members>");
@@ -99,7 +99,7 @@ namespace Pchp.CodeAnalysis.DocumentationComments
 
         void WriteSummary(string summary)
         {
-            if (summary == null) return;
+            if (string.IsNullOrWhiteSpace(summary)) return;
 
             summary = summary.Trim();
 
@@ -134,13 +134,13 @@ namespace Pchp.CodeAnalysis.DocumentationComments
                 {
                     // TODO: note the parameter type into Doc comment
 
-                    if (p.VariableName != null && !string.IsNullOrEmpty(p.Description))
+                    if (p.VariableName != null && !string.IsNullOrWhiteSpace(p.Description))
                     {
                         WriteParam(p.VariableName.TrimStart('$'), p.Description);
                     }
                 }
                 var rtag = phpdoc.Returns;
-                if (rtag != null && !string.IsNullOrEmpty(rtag.Description))
+                if (rtag != null && !string.IsNullOrWhiteSpace(rtag.Description))
                 {
                     _writer.WriteLine("<returns>{0}</returns>", XmlEncode(rtag.Description));
                 }

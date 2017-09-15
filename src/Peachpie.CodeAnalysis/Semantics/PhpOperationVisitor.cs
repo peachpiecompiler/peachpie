@@ -9,7 +9,7 @@ namespace Pchp.CodeAnalysis.Semantics
     public class PhpOperationVisitor // : OperationVisitor
     {
         /// <summary>Visits given operation.</summary>
-        protected virtual void Accept(IPhpOperation x) => x?.Accept(this);
+        protected void Accept(IPhpOperation x) => x?.Accept(this);
 
         #region Expressions
 
@@ -221,7 +221,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual void VisitBlockStatement(Graph.BoundBlock x)
         {
-            x.Statements.ForEach(Accept);
+            for (int i = 0; i < x.Statements.Count; i++)
+            {
+                Accept(x.Statements[i]);
+            }
         }
 
         public virtual void VisitExpressionStatement(BoundExpressionStatement x)

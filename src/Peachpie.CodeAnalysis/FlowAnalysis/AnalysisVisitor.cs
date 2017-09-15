@@ -435,7 +435,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             foreach (var c in x.CaseBlocks)
             {
-                if (!c.CaseValue.IsOnlyBoundElement) { TraverseToBlock(x, state, c.CaseValue.PreBoundBlockFirst); }
+                if (!c.CaseValue.IsOnlyBoundElement)
+                {
+                    TraverseToBlock(x, state, c.CaseValue.PreBoundBlockFirst);
+                }
+
+                //
                 TraverseToBlock(x, state, c);
             }
         }
@@ -444,8 +449,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             var state = _state;
 
+            // TODO: any expression inside try{} block can traverse to catch{} or finally{}.
+
             //
             TraverseToBlock(x, state, x.BodyBlock);
+
+            //
+            state.SetAllUnknown(true);  // TODO: traverse from all states in try{} instead of setting variables unknown here
 
             foreach (var c in x.CatchBlocks)
             {

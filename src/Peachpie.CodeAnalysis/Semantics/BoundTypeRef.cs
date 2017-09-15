@@ -7,14 +7,63 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.CodeAnalysis.CodeGen;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
     /// <summary>
+    /// Bound type reference.
+    /// </summary>
+    internal partial interface IBoundTypeRef
+    {
+        /// <summary>
+        /// Resolved symbol if possible.
+        /// Can be <c>null</c>.
+        /// </summary>
+        ITypeSymbol Symbol { get; }
+    }
+
+    sealed class BoundTypeRefFromSymbol : IBoundTypeRef
+    {
+        readonly ITypeSymbol _symbol;
+
+        public static IBoundTypeRef CreateOrNull(ITypeSymbol symbol) => symbol != null ? new BoundTypeRefFromSymbol(symbol) : null;
+
+        public BoundTypeRefFromSymbol(ITypeSymbol symbol)
+        {
+            Contract.ThrowIfNull(symbol);
+            _symbol = symbol;
+        }
+
+        public ITypeSymbol Symbol => _symbol;
+
+        public ITypeSymbol EmitLoadTypeInfo(CodeGenerator cg, bool throwOnError = false) => BoundTypeRef.EmitLoadPhpTypeInfo(cg, _symbol);
+    }
+
+    sealed class BoundTypeRefFromPlace : IBoundTypeRef
+    {
+        readonly IPlace _place;
+
+        public BoundTypeRefFromPlace(IPlace place)
+        {
+            Contract.ThrowIfNull(place);
+            _place = place;
+        }
+
+        public ITypeSymbol Symbol => null;
+
+        public ITypeSymbol EmitLoadTypeInfo(CodeGenerator cg, bool throwOnError = false)
+        {
+            return _place.EmitLoad(cg.Builder)
+                .Expect(cg.CoreTypes.PhpTypeInfo);
+        }
+    }
+
+    /// <summary>
     /// Bound <see cref="TypeRef"/>.
     /// </summary>
     [DebuggerDisplay("{DebugView,nq}")]
-    public partial class BoundTypeRef
+    public partial class BoundTypeRef : IBoundTypeRef
     {
         public TypeRef TypeRef => _typeRef;
         readonly TypeRef _typeRef;
@@ -49,6 +98,8 @@ namespace Pchp.CodeAnalysis.Semantics
         internal BoundExpression TypeExpression { get; set; }
 
         public bool IsDirect => TypeExpression == null;
+
+        ITypeSymbol IBoundTypeRef.Symbol => throw new NotImplementedException();
 
         public BoundTypeRef(TypeRef tref)
         {
