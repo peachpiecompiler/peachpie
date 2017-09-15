@@ -101,7 +101,8 @@ namespace Pchp.CodeAnalysis
                     foreach (var pair in _observedMetadata)
                     {
                         // TODO: _identityComparer
-                        if (pair.Key.Name.Equals(identity.Name, StringComparison.OrdinalIgnoreCase) && pair.Key.Version.Major == identity.Version.Major)
+                        if (pair.Key.Name.Equals(identity.Name, StringComparison.OrdinalIgnoreCase) &&
+                            (pair.Key.Version.Major == identity.Version.Major || identity.Version == new Version(0, 0, 0, 0)))
                         {
                             _observedMetadata[identity] = pair.Value;
                             return pair.Value;
