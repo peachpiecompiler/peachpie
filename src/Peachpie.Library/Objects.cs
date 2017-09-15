@@ -214,7 +214,7 @@ namespace Pchp.Library
             }
 
             // second, load type of {class_name}
-            var ctype = ctx.GetDeclaredType(class_name, true);
+            var ctype = ctx.GetDeclaredType(class_name, false);
 
             // check is_a
             return tvalue != null && ctype != null && tvalue.Type.IsSubclassOf(ctype.Type.AsType());
