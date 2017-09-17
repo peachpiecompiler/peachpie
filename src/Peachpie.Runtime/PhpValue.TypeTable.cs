@@ -355,9 +355,7 @@ namespace Pchp.Core
             {
                 var arr = new PhpString(me.String);
 
-                // me is changed if value is empty
-                if (string.IsNullOrEmpty(me.String))
-                    me = PhpValue.Create(arr);
+                me = PhpValue.Create(arr);
 
                 return arr;
             }
