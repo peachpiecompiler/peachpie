@@ -379,7 +379,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static int mb_strpos(Context ctx, PhpValue haystack, PhpValue needle, int offset, string encoding)
         {
-            return strpos(ToString(ctx, haystack, encoding), ToString(ctx, needle, encoding), offset, StringComparison.Ordinal);            
+            return strpos(ToString(ctx, haystack, encoding), ToString(ctx, needle, encoding), offset, StringComparison.Ordinal);
         }
 
         [return: CastToFalse]
@@ -480,6 +480,19 @@ namespace Pchp.Library
             var target_enc = GetEncoding(to_encoding) ?? ctx.StringEncoding;
             var bytes = ToBytes(ctx, str/*, from_encoding*/);   // TODO: try all encodings in {from_encoding}
             return target_enc.GetString(bytes);
+        }
+
+        #endregion
+
+        #region mb_check_encoding
+
+        /// <summary>
+        /// Check if the string is valid for the specified encoding
+        /// </summary>
+        public static bool mb_check_encoding(PhpString var = null, string encoding = null/*mb_internal_encoding()*/)
+        {
+            PhpException.FunctionNotSupported("mb_check_encoding");
+            return true;
         }
 
         #endregion
