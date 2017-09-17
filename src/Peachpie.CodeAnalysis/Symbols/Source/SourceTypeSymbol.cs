@@ -274,7 +274,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 // default:
                 _lazyBaseType = tsignature[0].Symbol;
-                _lazyInterfacesType = tsignature.Skip(1).Select(t => t.Item2).AsImmutable();
+                _lazyInterfacesType = tsignature.Skip(1).Select(t => t.Symbol).AsImmutable();
             }
 
             // check for circular bases in all versions
@@ -353,10 +353,16 @@ namespace Pchp.CodeAnalysis.Symbols
             });
         }
 
+        struct TypeRefSymbol
+        {
+            public INamedTypeRef TypeRef;
+            public NamedTypeSymbol Symbol;
+        }
+
         /// <summary>
         /// Gets type signature of the type [BaseType or NULL, Interface1, ..., InterfaceN]
         /// </summary>
-        private static IEnumerable<(INamedTypeRef TypeRef, NamedTypeSymbol Symbol)> ResolveTypeSignature(SourceTypeSymbol type, PhpCompilation compilation)
+        private static IEnumerable<TypeRefSymbol> ResolveTypeSignature(SourceTypeSymbol type, PhpCompilation compilation)
         {
             var syntax = type.Syntax;
 
@@ -365,15 +371,19 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 var baseTypeName = syntax.BaseClass.ClassName;
 
-                yield return (syntax.BaseClass, (baseTypeName == type.FullName) ? type : (NamedTypeSymbol)compilation.GlobalSemantics.GetType(baseTypeName));
+                yield return new TypeRefSymbol()
+                {
+                    TypeRef = syntax.BaseClass,
+                    Symbol = (baseTypeName == type.FullName) ? type : (NamedTypeSymbol)compilation.GlobalSemantics.GetType(baseTypeName)
+                };
             }
             else if ((syntax.MemberAttributes & (PhpMemberAttributes.Static | PhpMemberAttributes.Interface)) != 0) // a static class or an interface
             {
-                yield return (null, null);  // nothing
+                yield return default(TypeRefSymbol);  // nothing
             }
             else // a class without base
             {
-                yield return (null, compilation.CoreTypes.Object.Symbol);
+                yield return new TypeRefSymbol() { Symbol = compilation.CoreTypes.Object.Symbol };
             }
 
             // base interfaces
@@ -383,7 +393,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 var qname = i.ClassName;
                 if (visited.Add(qname))
                 {
-                    yield return (i, (qname == type.FullName) ? type : (NamedTypeSymbol)compilation.GlobalSemantics.GetType(qname));
+                    yield return new TypeRefSymbol()
+                    {
+                        TypeRef = i,
+                        Symbol = (qname == type.FullName) ? type : (NamedTypeSymbol)compilation.GlobalSemantics.GetType(qname)
+                    };
                 }
             }
         }

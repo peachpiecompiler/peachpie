@@ -178,7 +178,7 @@ namespace Pchp.CodeAnalysis.Symbols
         private ImmutableArray<TypeParameterSymbol> _lazyTypeParameters;
         private SignatureData _lazySignature;
         private ImmutableArray<MethodSymbol> _lazyExplicitMethodImplementations;
-        private (CultureInfo Culture, string XmlText) _lazyDocComment;
+        private KeyValuePair<CultureInfo, string> _lazyDocComment;
         private ImmutableArray<AttributeData> _lazyCustomAttributes;
 
         #endregion

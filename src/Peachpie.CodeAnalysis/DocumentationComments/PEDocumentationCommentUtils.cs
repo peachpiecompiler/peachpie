@@ -15,21 +15,21 @@ namespace Pchp.CodeAnalysis.DocumentationComments
             PEModuleSymbol containingPEModule,
             CultureInfo preferredCulture,
             CancellationToken cancellationToken,
-            ref (CultureInfo Culture, string XmlText) lazyDocComment)
+            ref KeyValuePair<CultureInfo, string> lazyDocComment)
         {
             // Have we cached anything?
-            if (lazyDocComment.XmlText == null)
+            if (lazyDocComment.Value == null)
             {
-                lazyDocComment = (
-                    Culture: preferredCulture,
-                    XmlText: containingPEModule.DocumentationProvider.GetDocumentationForSymbol(
+                lazyDocComment = new KeyValuePair<CultureInfo, string>(
+                    preferredCulture,
+                    containingPEModule.DocumentationProvider.GetDocumentationForSymbol(
                             symbol.GetDocumentationCommentId(), preferredCulture, cancellationToken));
             }
 
             // Does the cached version match the culture we asked for?
-            if (Equals(lazyDocComment.Culture, preferredCulture))
+            if (Equals(lazyDocComment.Key, preferredCulture))
             {
-                return lazyDocComment.Item2;
+                return lazyDocComment.Value;
             }
 
             // We've already cached a different culture - create a fresh version.

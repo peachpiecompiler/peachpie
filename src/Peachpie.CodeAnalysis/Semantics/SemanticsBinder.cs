@@ -1113,6 +1113,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #region Helpers
 
+        public struct BoundSynthesizedVariableInfo
+        {
+            public BoundReferenceExpression BoundExpr;
+            public BoundAssignEx Assignment;
+        }
+
         private void ClearPreBoundBlocks()
         {
             _preBoundBlockFirst = null;
@@ -1132,10 +1138,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
             CurrentPreBoundBlock.Add(new BoundExpressionStatement(assignVarTouple.Assignment)); // assigment
             return assignVarTouple.BoundExpr; // temp variable ref
-
         }
 
-        internal static (BoundReferenceExpression BoundExpr, BoundAssignEx Assignment) CreateAndAssignSynthesizedVariable(BoundExpression expr, BoundAccess access, string name)
+        internal static BoundSynthesizedVariableInfo CreateAndAssignSynthesizedVariable(BoundExpression expr, BoundAccess access, string name)
         {
             // determine whether the synthesized variable should be by ref (for readRef and writes) or a normal PHP copy
             var refAccess = (access.IsReadRef || access.IsWrite);
@@ -1151,7 +1156,7 @@ namespace Pchp.CodeAnalysis.Semantics
             var assigment = new BoundAssignEx(targetVariable, valueBeingMoved);
             var boundExpr = new BoundTemporalVariableRef(name).WithAccess(access);
 
-            return (boundExpr, assigment);
+            return new BoundSynthesizedVariableInfo() { BoundExpr = boundExpr, Assignment = assigment };
         }
 
         /// <summary>
