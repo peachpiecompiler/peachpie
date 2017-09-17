@@ -602,7 +602,7 @@ namespace Pchp.Library.PerlRegex
 
             _concatenation = new RegexNode(RegexNode.Concatenate, _options);
 
-            for (;;)
+            for (; ; )
             {
                 c = CharsRight();
                 if (c == 0)
@@ -877,7 +877,7 @@ namespace Pchp.Library.PerlRegex
                 MoveRight();    // skip 'P' in (?P<name>, continue as it would be (?<name>
             }
 
-            for (;;)
+            for (; ; )
             {
                 if (CharsRight() == 0)
                 {
@@ -1111,7 +1111,7 @@ namespace Pchp.Library.PerlRegex
         {
             if (UseOptionX())
             {
-                for (;;)
+                for (; ; )
                 {
                     while (CharsRight() > 0 && IsSpace(RightChar()))
                         MoveRight();
@@ -1139,7 +1139,7 @@ namespace Pchp.Library.PerlRegex
             }
             else
             {
-                for (;;)
+                for (; ; )
                 {
                     if (CharsRight() < 3 || RightChar(2) != '#' ||
                         RightChar(1) != '?' || RightChar() != '(')
@@ -1222,6 +1222,10 @@ namespace Pchp.Library.PerlRegex
                         cc.AddLowercase(_culture);
 
                     return new RegexNode(RegexNode.Set, _options, cc.ToStringClass());
+
+                case 'K':   // \K: reset the match start
+                    Debug.Fail("\\K is not implemented!");
+                    return new RegexNode(RegexNode.Nothing, _options);
 
                 default:
                     return ScanBasicBackslash();
