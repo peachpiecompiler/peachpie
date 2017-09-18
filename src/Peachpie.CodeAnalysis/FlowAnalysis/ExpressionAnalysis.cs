@@ -811,6 +811,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 Accept(x.Operand);
             }
 
+            // clear any previous resolved constant 
+            x.ConstantValue = default(Optional<object>);
+
             //
             switch (x.Operation)
             {
