@@ -1000,6 +1000,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             ? positivetype
                             : TypeCtx.GetNullTypeMask();
 
+                        // keep the ref flag!
+                        newtype.IsRef = currenttype.IsRef;
+
+                        //
                         State.SetLocalType(handle, newtype);
                     }
                 }
