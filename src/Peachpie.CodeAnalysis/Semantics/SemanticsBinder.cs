@@ -592,7 +592,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 var boundIndex = (x.Index != null) ? BindExpression(x.Index, BoundAccess.Read) : null;
                 var boundValue = (x is AST.RefItem refItem)
                     ? BindExpression(refItem.RefToGet, BoundAccess.ReadRef)
-                    : BindExpression(((AST.ValueItem)x).ValueExpr, BoundAccess.Read);
+                    : BindExpression(((AST.ValueItem)x).ValueExpr, BoundAccess.Read.WithReadCopy());
 
                 yield return new KeyValuePair<BoundExpression, BoundExpression>(boundIndex, boundValue);
             }
