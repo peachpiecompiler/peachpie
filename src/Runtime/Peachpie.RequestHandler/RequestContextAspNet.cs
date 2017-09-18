@@ -111,7 +111,42 @@ namespace Peachpie.RequestHandler
             }
         }
 
-        public void SetHeader(string name, string value) { _httpctx.Response.Headers.Add(name, value); }
+        public void SetHeader(string name, string value)
+        {
+            if (name.EqualsOrdinalIgnoreCase("content-length")) return; // ignore content-length header, it is set correctly by IIS. If set by the app, mostly it is not correct value (strlen() issue).
+
+            //
+            _httpctx.Response.Headers.Add(name, value);
+
+            // specific headers
+            //if (name.EqualsOrdinalIgnoreCase("location"))
+            //{
+            //    _httpctx.Response.RedirectLocation = location;
+            //}
+            if (name.EqualsOrdinalIgnoreCase("content-type"))
+            {
+                 _httpctx.Response.ContentType = value;
+                // _httpctx.Response.ContentEncoding = contentEncoding.Encoding;
+            }
+            //else if (name.EqualsOrdinalIgnoreCase("content-encoding"))
+            //{
+            //    if (_contentEncoding != null) _contentEncoding.SetEncoding(response);// on IntegratedPipeline, set immediately to Headers
+            //    else response.ContentEncoding = RequestContext.CurrentContext.DefaultResponseEncoding;
+            //}
+            else if (name.EqualsOrdinalIgnoreCase("expires"))
+            {
+                //SetExpires(response, value);
+            }
+            else if (name.EqualsOrdinalIgnoreCase("cache-control"))
+            {
+                //CacheLimiter(response, value, null);// ignore invalid cache limiter?
+            }
+            else if (name.EqualsOrdinalIgnoreCase("set-cookie"))
+            {
+                //if (value != null)
+                //    response.AddHeader(header, value);
+            }
+        }
 
         public void RemoveHeader(string name) { _httpctx.Response.Headers.Remove(name); }
 
