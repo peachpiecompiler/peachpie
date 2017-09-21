@@ -557,17 +557,17 @@ namespace Peachpie.Library.XmlDom
 
                 try
                 {
-                    if (_validateOnParse)
+                    XmlReaderSettings settings = new XmlReaderSettings() { DtdProcessing = DtdProcessing.Parse };
+
+                    // validating XML reader
+                    if (this._validateOnParse)
                     {
-                        // create a validating XML reader
-                        XmlReaderSettings settings = new XmlReaderSettings();
 #pragma warning disable 618
                         settings.ValidationType = ValidationType.Auto;
 #pragma warning restore 618
-
-                        XmlDocument.Load(XmlReader.Create(stream.RawStream, settings));
                     }
-                    else XmlDocument.Load(stream.RawStream);
+
+                    XmlDocument.Load(XmlReader.Create(stream.RawStream, settings));
                 }
                 catch (XmlException e)
                 {
@@ -614,12 +614,14 @@ namespace Peachpie.Library.XmlDom
 
             try
             {
-                XmlReaderSettings settings = new XmlReaderSettings() { DtdProcessing = DtdProcessing.Ignore };
+                XmlReaderSettings settings = new XmlReaderSettings() { DtdProcessing = DtdProcessing.Parse };
 
                 // validating XML reader
                 if (this._validateOnParse)
                 {
-                    settings.DtdProcessing = DtdProcessing.Parse;
+#pragma warning disable 618
+                    settings.ValidationType = ValidationType.Auto;
+#pragma warning restore 618
                 }
 
                 // do not check invalid characters in HTML (XML)
