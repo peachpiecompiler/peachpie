@@ -237,6 +237,10 @@ namespace Pchp.Core
 
         public static bool operator >(PhpValue left, PhpValue right) => left.Compare(right) > 0;
 
+        public static bool operator ==(PhpValue left, string right) => Comparison.Compare(right, left) == 0;
+
+        public static bool operator !=(PhpValue left, string right) => Comparison.Compare(right, left) != 0;
+
         public static PhpValue operator ~(PhpValue x) => Operators.BitNot(ref x);
 
         public static PhpValue operator &(PhpValue left, PhpValue right) => Operators.BitAnd(ref left, ref right);
@@ -442,7 +446,7 @@ namespace Pchp.Core
         {
             if (type == typeof(PhpValue)) return this;
             if (type == typeof(PhpAlias)) return this.EnsureAlias();
-            
+
             if (type == typeof(long)) return this.ToLong();
             if (type == typeof(int)) return (int)this.ToLong();
             if (type == typeof(double)) return this.ToDouble();
@@ -455,7 +459,7 @@ namespace Pchp.Core
             {
                 return this.Object;
             }
-            
+
             //
             throw new InvalidCastException($"{this.TypeCode} -> {type.FullName}");
         }
