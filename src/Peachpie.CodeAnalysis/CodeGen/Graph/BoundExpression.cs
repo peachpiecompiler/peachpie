@@ -1096,13 +1096,23 @@ namespace Pchp.CodeAnalysis.Semantics
 
                         xtype = cg.EmitConvertToPhpValue(xtype, 0);
 
-                        // TODO: overloads for type of <right>
+                        ytype = cg.Emit(right);
+                        switch (ytype.SpecialType)
+                        {
+                            case SpecialType.System_String:
+                                // value == string
+                                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Eq_PhpValue_String)
+                                    .Expect(SpecialType.System_Boolean);
 
-                        ytype = cg.EmitConvertToPhpValue(cg.Emit(right), right.TypeRefMask);
+                            // TODO: more types on right
 
-                        // value == value
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Eq_PhpValue_PhpValue)
-                            .Expect(SpecialType.System_Boolean);
+                            default:
+                                ytype = cg.EmitConvertToPhpValue(ytype, right.TypeRefMask);
+
+                                // value == value
+                                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Eq_PhpValue_PhpValue)
+                                    .Expect(SpecialType.System_Boolean);
+                        }
                     }
             }
         }
@@ -2357,7 +2367,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             var callsite = cg.Factory.StartCallSite("call_" + this.CallsiteName);
             var callsiteargs = new List<TypeSymbol>(_arguments.Length);
-            
+
             // LOAD callsite.Target
             callsite.EmitLoadTarget(cg.Builder);
 
