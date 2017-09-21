@@ -314,8 +314,14 @@ namespace Pchp.Library.Spl
         {
             if (isArrayIterator)
             {
-                if (index != null) _array.Add(index, value);
-                else _array.Add(value);
+                if (index.IsNull)
+                {
+                    _array.Add(value);
+                }
+                else
+                {
+                    _array.Add(index, value);
+                }
             }
             //else if (isObjectIterator)
             //{

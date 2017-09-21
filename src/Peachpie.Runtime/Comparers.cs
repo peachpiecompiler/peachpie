@@ -218,7 +218,7 @@ namespace Pchp.Core
 
         int IEqualityComparer<PhpValue>.GetHashCode(PhpValue obj)
         {
-            return (obj != null) ? obj.GetHashCode() : 0;
+            return obj.GetHashCode();
         }
 
         #endregion
