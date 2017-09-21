@@ -2890,7 +2890,7 @@ namespace Pchp.Library
             }
 
             // prepares an array of callback's arguments (no deep copying needed because it is done so in callback):
-            return (data != null)
+            return (Operators.IsSet(data))
                 ? new PhpValue[] { PhpValue.CreateAlias(), PhpValue.Null, data }
                 : new PhpValue[] { PhpValue.CreateAlias(), PhpValue.Null };
         }
