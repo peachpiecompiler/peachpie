@@ -109,7 +109,7 @@ function test() {
   echo "\ndiv:\n";
   print_node_r($d);
   echo "\nInserting fragment before t4\n";
-  $d->insertBefore($frag, $t4);
+  @$d->insertBefore($frag, $t4);
   print_node_r($d);
 
   echo "\np:\n";

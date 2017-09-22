@@ -12,7 +12,7 @@ namespace Peachpie.Library.XmlDom
     {
         #region Fields and Properties
 
-        protected internal XmlElement XmlElement
+        internal XmlElement XmlElement
         {
             get { return (XmlElement)XmlNode; }
             set { XmlNode = value; }
@@ -87,8 +87,14 @@ namespace Peachpie.Library.XmlDom
 
         #region Construction
 
-        public DOMElement()
+        [PhpFieldsOnlyCtor]
+        protected DOMElement()
         { }
+
+        public DOMElement(string name, string value = null, string namespaceUri = null)
+        {
+            __construct(name, value, namespaceUri);
+        }
 
         internal DOMElement(XmlElement/*!*/ xmlElement)
         {

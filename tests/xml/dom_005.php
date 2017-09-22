@@ -55,7 +55,7 @@ EOXML;
 
   echo "\n";
   $node = $nots->getNamedItem('xxx');
-  var_dump($node);
+  echo $node ?? "NULL";
 
   echo "\n";
 
@@ -78,9 +78,11 @@ EOXML;
   echo "\n";
 
   $node = $dtd->entities->item(3);
-  var_dump($node);
+  echo $node ?? "NULL";
+  echo "\n";
+  
   $node = $dtd->entities->getNamedItem('xxx');
-  var_dump($node);
+  echo $node ?? "NULL";
 }
 
 test();
