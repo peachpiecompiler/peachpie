@@ -48,6 +48,8 @@ public sealed class Closure : IPhpCallable
     /// </summary>
     public Closure bindTo(object newthis, string newscope = null)
     {
+        Debug.Assert(newscope == null, "newscope is not supported yet.");
+
         // create new Closure with updated "this" fixed argument
 
         PhpValue oldthis;

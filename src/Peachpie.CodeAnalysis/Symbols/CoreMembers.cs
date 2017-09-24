@@ -565,6 +565,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 EnsureAlias = ct.PhpValue.Method("EnsureAlias");
 
                 Eq_PhpValue_PhpValue = ct.PhpValue.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpValue, ct.PhpValue);
+                Eq_PhpValue_String = ct.PhpValue.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpValue, ct.String);
 
                 IsEmpty = ct.PhpValue.Property("IsEmpty");
 
@@ -601,7 +602,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToClass, EnsureObject, EnsureArray, EnsureAlias, ToArray,
                 AsObject,
                 DeepCopy, GetValue,
-                Eq_PhpValue_PhpValue,
+                Eq_PhpValue_PhpValue, Eq_PhpValue_String,
                 get_Long, get_Double, get_Boolean, get_String, get_Array,
                 Create_Boolean, Create_Long, Create_Double, Create_String, Create_PhpString, Create_PhpNumber, Create_PhpAlias, Create_PhpArray, Create_IntStringKey,
                 FromClr_Object, FromClass_Object;

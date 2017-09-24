@@ -811,6 +811,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 Accept(x.Operand);
             }
 
+            // clear any previous resolved constant 
+            x.ConstantValue = default(Optional<object>);
+
             //
             switch (x.Operation)
             {
@@ -997,6 +1000,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             ? positivetype
                             : TypeCtx.GetNullTypeMask();
 
+                        // keep the ref flag!
+                        newtype.IsRef = currenttype.IsRef;
+
+                        //
                         State.SetLocalType(handle, newtype);
                     }
                 }
@@ -1309,7 +1316,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var candidates = type.InstanceConstructors.ToArray();
 
                 //
-                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, null);
+                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, this.TypeCtx.ContainingType);
 
                 // reanalyse candidates
                 foreach (var c in candidates)

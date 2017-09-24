@@ -612,7 +612,7 @@ namespace Pchp.Library
         /// <returns>Returns a resource handle for the new XML parser.</returns>
         public static PhpResource xml_parser_create_ns(Context ctx, string encoding = null, string namespaceSeparator = ":")
         {
-            return new XmlParserResource(ctx, (encoding != null) ? Encoding.GetEncoding(encoding) : Encoding.UTF8, true, namespaceSeparator);
+            return new XmlParserResource(ctx, string.IsNullOrEmpty(encoding) ? Encoding.UTF8 : Encoding.GetEncoding(encoding), true, namespaceSeparator);
         }
 
         /// <summary>
@@ -630,7 +630,7 @@ namespace Pchp.Library
         /// encodings are ISO-8859-1, UTF-8 and US-ASCII. 
         /// </param>
         /// <returns>Returns a resource handle for the new XML parser.</returns>
-        public static PhpResource xml_parser_create(Context ctx, string encoding)
+        public static PhpResource xml_parser_create(Context ctx, string encoding = null)
         {
             return xml_parser_create_ns(ctx, encoding);
         }

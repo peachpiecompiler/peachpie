@@ -157,8 +157,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             if (scope.Kind == SymbolKind.ErrorType)
             {
-                throw new NotImplementedException();
-                //return new MissingMetadataTypeSymbol.Nested((NamedTypeSymbol)scope, ref emittedTypeName);
+                return new MissingMetadataTypeSymbol.Nested((NamedTypeSymbol)scope, ref emittedTypeName);
             }
 
             NamedTypeSymbol namedType = null;

@@ -227,7 +227,7 @@ namespace Pchp.Core
             public override bool TryToIntStringKey(ref PhpValue me, out IntStringKey key) { key = new IntStringKey((int)me.Long); return true; }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => Operators.GetEmptyForeachEnumerator();
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.Long, right);
-            public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Long && right.Long == me.Long;
+            public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.IsLong(out long l) && me.Long == l;
             public override object EnsureObject(ref PhpValue me) => PhpValue.FromClass(ToClass(ref me)); // me is not changed
             public override IPhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) => new PhpAlias(PhpValue.Null);
@@ -256,7 +256,7 @@ namespace Pchp.Core
             public override bool TryToIntStringKey(ref PhpValue me, out IntStringKey key) { key = new IntStringKey((int)me.Double); return true; }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => Operators.GetEmptyForeachEnumerator();
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.Double, right);
-            public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Double && right.Double == me.Double;
+            public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.IsDouble(out double d) && me.Double == d;
             public override object EnsureObject(ref PhpValue me) => PhpValue.FromClass(ToClass(ref me)); // me is not changed
             public override IPhpArray EnsureArray(ref PhpValue me) => new PhpArray(); // me is not changed
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) => new PhpAlias(PhpValue.Null);
@@ -285,7 +285,7 @@ namespace Pchp.Core
             public override bool TryToIntStringKey(ref PhpValue me, out IntStringKey key) { key = new IntStringKey(me.Boolean ? 1 : 0); return true; }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => Operators.GetEmptyForeachEnumerator();
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.Boolean, right);
-            public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Boolean && right.Boolean == me.Boolean;
+            public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.IsBoolean(out bool by) && me.Boolean == by;
             public override object EnsureObject(ref PhpValue me)
             {
                 var obj = new stdClass();   // empty class
@@ -336,6 +336,9 @@ namespace Pchp.Core
                 if (right.TypeCode == PhpTypeCode.WritableString)
                     return right.WritableString.ToString() == me.String;
 
+                if (right.TypeCode == PhpTypeCode.Alias)
+                    return StrictEquals(ref me, right.Alias.Value);
+
                 return false;
             }
             public override object EnsureObject(ref PhpValue me)
@@ -352,9 +355,7 @@ namespace Pchp.Core
             {
                 var arr = new PhpString(me.String);
 
-                // me is changed if value is empty
-                if (string.IsNullOrEmpty(me.String))
-                    me = PhpValue.Create(arr);
+                me = PhpValue.Create(arr);
 
                 return arr;
             }
@@ -390,6 +391,9 @@ namespace Pchp.Core
 
                 if (right.TypeCode == PhpTypeCode.WritableString)
                     return right.WritableString.ToString() == me.WritableString.ToString();
+
+                if (right.TypeCode == PhpTypeCode.Alias)
+                    return StrictEquals(ref me, right.Alias.Value);
 
                 return false;
             }
@@ -466,7 +470,12 @@ namespace Pchp.Core
             public override bool TryToIntStringKey(ref PhpValue me, out IntStringKey key) { key = default(IntStringKey); return false; }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => Operators.GetForeachEnumerator(me.Object, aliasedValues, caller);
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.Object, right);
-            public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.TypeCode == PhpTypeCode.Object && right.Object == me.Object;
+            public override bool StrictEquals(ref PhpValue me, PhpValue right)
+            {
+                if (right.TypeCode == PhpTypeCode.Object) return right.Object == me.Object;
+                if (right.TypeCode == PhpTypeCode.Alias) return right.Alias.Value.Object == me.Object;
+                return false;
+            }
             public override object EnsureObject(ref PhpValue me) => me.Object;
             public override IPhpArray EnsureArray(ref PhpValue me) => Operators.EnsureArray(me.Object);
             public override IPhpArray GetArrayAccess(ref PhpValue me) => Operators.EnsureArray(me.Object);

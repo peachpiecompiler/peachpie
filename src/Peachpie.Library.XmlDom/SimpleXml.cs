@@ -1582,7 +1582,7 @@ namespace Peachpie.Library.XmlDom
                     iterationType == IterationType.ChildElements ||
                     iterationType == IterationType.Element)
                 {
-                    if (value != null && Type.GetTypeCode(value.GetType()) == TypeCode.Object)
+                    if (value.TypeCode == PhpTypeCode.Object)
                     {
                         PhpException.Throw(PhpError.Warning, Resources.SimpleXmlUnsupportedWriteConversion);
                     }

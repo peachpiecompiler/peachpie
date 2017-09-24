@@ -178,7 +178,8 @@ namespace Pchp.CodeAnalysis.Symbols
         private ImmutableArray<TypeParameterSymbol> _lazyTypeParameters;
         private SignatureData _lazySignature;
         private ImmutableArray<MethodSymbol> _lazyExplicitMethodImplementations;
-        private (CultureInfo Culture, string XmlText) _lazyDocComment;
+        private KeyValuePair<CultureInfo, string> _lazyDocComment;
+        private ImmutableArray<AttributeData> _lazyCustomAttributes;
 
         #endregion
 
@@ -208,7 +209,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (_name == null)
                     _name = string.Empty;
-                
+
                 //InitializeUseSiteDiagnostic(new CSDiagnosticInfo(ErrorCode.ERR_BindToBogus, this));
             }
 
@@ -275,6 +276,60 @@ namespace Pchp.CodeAnalysis.Symbols
         internal override MethodImplAttributes ImplementationAttributes => (MethodImplAttributes)_implFlags;
 
         internal override bool RequiresSecurityObject => HasFlag(MethodAttributes.RequireSecObject);
+
+        public override ImmutableArray<AttributeData> GetAttributes()
+        {
+            if (!_packedFlags.IsCustomAttributesPopulated)
+            {
+                // Compute the value
+                var attributeData = default(ImmutableArray<AttributeData>);
+                var containingPEModuleSymbol = _containingType.ContainingPEModule;
+
+                // Could this possibly be an extension method?
+                bool alreadySet = _packedFlags.IsExtensionMethodIsPopulated;
+                bool checkForExtension = alreadySet
+                    ? _packedFlags.IsExtensionMethod
+                    : this.MethodKind == MethodKind.Ordinary
+                        && IsValidExtensionMethodSignature()
+                        && _containingType.MightContainExtensionMethods;
+
+                bool isExtensionMethod = false;
+                if (checkForExtension)
+                {
+                    containingPEModuleSymbol.LoadCustomAttributesFilterExtensions(_handle,
+                        ref attributeData,
+                        out isExtensionMethod);
+                }
+                else
+                {
+                    containingPEModuleSymbol.LoadCustomAttributes(_handle,
+                        ref attributeData);
+                }
+
+                if (!alreadySet)
+                {
+                    _packedFlags.InitializeIsExtensionMethod(isExtensionMethod);
+                }
+
+                // Store the result in uncommon fields only if it's not empty.
+                Debug.Assert(!attributeData.IsDefault);
+                if (!attributeData.IsEmpty)
+                {
+                    attributeData = InterlockedOperations.Initialize(ref _lazyCustomAttributes, attributeData);
+                }
+
+                _packedFlags.SetIsCustomAttributesPopulated();
+                return attributeData;
+            }
+            else
+            {
+                // Retrieve cached or inferred value.
+                var attributeData = _lazyCustomAttributes;
+                return attributeData.IsDefault
+                    ? InterlockedOperations.Initialize(ref _lazyCustomAttributes, ImmutableArray<AttributeData>.Empty)
+                    : attributeData;
+            }
+        }
 
         public override ImmutableArray<AttributeData> GetReturnTypeAttributes() => Signature.ReturnParam.GetAttributes();
 
@@ -458,6 +513,23 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
                 return _packedFlags.MethodKind;
             }
+        }
+
+        private bool IsValidExtensionMethodSignature()
+        {
+            if (!this.IsStatic)
+            {
+                return false;
+            }
+
+            var parameters = this.Parameters;
+            if (parameters.Length == 0)
+            {
+                return false;
+            }
+
+            var parameter = parameters[0];
+            return (parameter.RefKind == RefKind.None) && !parameter.IsParams;
         }
 
         private MethodKind ComputeMethodKind()

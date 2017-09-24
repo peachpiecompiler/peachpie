@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -109,7 +111,42 @@ namespace Peachpie.RequestHandler
             }
         }
 
-        public void SetHeader(string name, string value) { _httpctx.Response.Headers.Add(name, value); }
+        public void SetHeader(string name, string value)
+        {
+            if (name.EqualsOrdinalIgnoreCase("content-length")) return; // ignore content-length header, it is set correctly by IIS. If set by the app, mostly it is not correct value (strlen() issue).
+
+            //
+            _httpctx.Response.Headers.Add(name, value);
+
+            // specific headers
+            //if (name.EqualsOrdinalIgnoreCase("location"))
+            //{
+            //    _httpctx.Response.RedirectLocation = location;
+            //}
+            if (name.EqualsOrdinalIgnoreCase("content-type"))
+            {
+                 _httpctx.Response.ContentType = value;
+                // _httpctx.Response.ContentEncoding = contentEncoding.Encoding;
+            }
+            //else if (name.EqualsOrdinalIgnoreCase("content-encoding"))
+            //{
+            //    if (_contentEncoding != null) _contentEncoding.SetEncoding(response);// on IntegratedPipeline, set immediately to Headers
+            //    else response.ContentEncoding = RequestContext.CurrentContext.DefaultResponseEncoding;
+            //}
+            else if (name.EqualsOrdinalIgnoreCase("expires"))
+            {
+                //SetExpires(response, value);
+            }
+            else if (name.EqualsOrdinalIgnoreCase("cache-control"))
+            {
+                //CacheLimiter(response, value, null);// ignore invalid cache limiter?
+            }
+            else if (name.EqualsOrdinalIgnoreCase("set-cookie"))
+            {
+                //if (value != null)
+                //    response.AddHeader(header, value);
+            }
+        }
 
         public void RemoveHeader(string name) { _httpctx.Response.Headers.Remove(name); }
 
@@ -211,6 +248,37 @@ namespace Peachpie.RequestHandler
             this.InitSuperglobals();
 
             // TODO: start session if AutoStart is On
+        }
+
+        static void AddVariables(PhpArray result, NameValueCollection collection)
+        {
+            foreach (string name in collection)
+            {
+                // gets all values associated with the name:
+                string[] values = collection.GetValues(name);
+
+                if (values == null)
+                    continue;   // http://phalanger.codeplex.com/workitem/30132
+
+                // adds all items:
+                if (name != null)
+                {
+                    foreach (string value in values)
+                    {
+                        Superglobals.AddVariable(result, name, value, null);
+                    }
+                }
+                else
+                {
+                    // if name is null, only name of the variable is stated:
+                    // e.g. for GET variables, URL looks like this: ...&test&...
+                    // we add the name of the variable and an emtpy string to get what PHP gets:
+                    foreach (string value in values)
+                    {
+                        Superglobals.AddVariable(result, value, string.Empty, null);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -322,6 +390,69 @@ namespace Peachpie.RequestHandler
 
             //
             return array;
+        }
+
+        protected override PhpArray InitGetVariable()
+        {
+            var result = PhpArray.NewEmpty();
+
+            if (_httpctx.Request.RequestType == "GET")
+            {
+                AddVariables(result, _httpctx.Request.Form);
+            }
+
+            AddVariables(result, _httpctx.Request.QueryString);
+
+            //
+            return result;
+        }
+
+        protected override PhpArray InitPostVariable()
+        {
+            var result = PhpArray.NewEmpty();
+
+            if (_httpctx.Request.RequestType == "POST")
+            {
+                AddVariables(result, _httpctx.Request.Form);
+            }
+
+            return result;
+        }
+
+        protected override PhpArray InitFilesVariable()
+        {
+            return base.InitFilesVariable();
+        }
+
+        protected override PhpArray InitCookieVariable()
+        {
+            PhpArray result;
+
+            var cookies = _httpctx.Request.Cookies;
+            var count = cookies.Count;
+            if (count != 0)
+            {
+                result = new PhpArray(count);
+                for (int i = 0; i < count; i++)
+                {
+                    HttpCookie cookie = cookies.Get(i);
+                    Superglobals.AddVariable(result, cookie.Name, HttpUtility.UrlDecode(cookie.Value, StringEncoding), null);
+
+                    //// adds a copy of cookie with the same key as the session name;
+                    //// the name gets encoded and so $_COOKIE[session_name()] doesn't work then:
+                    //if (cookie.Name == AspNetSessionHandler.AspNetSessionName)
+                    //{
+                    //    result[AspNetSessionHandler.AspNetSessionName] = (PhpValue)HttpUtility.UrlDecode(cookie.Value, StringEncoding);
+                    //}
+                }
+            }
+            else
+            {
+                result = PhpArray.NewEmpty();
+            }
+
+            //
+            return result;
         }
 
         /// <summary>

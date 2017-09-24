@@ -162,7 +162,7 @@ namespace Pchp.Core.Dynamic
             //
 
             var restrictions = target.Restrictions;
-            var lt = target.LimitType.GetTypeInfo();
+            var lt = target.Expression.Type.GetTypeInfo();
             if (!lt.IsValueType && !lt.IsSealed && !typeof(PhpArray).IsAssignableFrom(lt.AsType()) && !typeof(PhpResource).IsAssignableFrom(lt.AsType()))
             {
                 // we need to set the type restriction

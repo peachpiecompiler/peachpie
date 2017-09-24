@@ -554,7 +554,7 @@ namespace Pchp.Library
                         int result;
                         if (int.TryParse((PhpVariable.AsString(variable) ?? string.Empty).Trim(), out result))
                         {
-                            if (options != null) PhpException.ArgumentValueNotSupported("options", "!null");
+                            if (!options.IsNull) PhpException.ArgumentValueNotSupported("options", "!null");
                             return (PhpValue)result;  // TODO: options: min_range, max_range
                         }
                         else

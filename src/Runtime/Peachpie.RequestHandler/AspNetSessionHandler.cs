@@ -12,7 +12,9 @@ namespace Peachpie.RequestHandler
         public static readonly PhpSessionHandler Default = new AspNetSessionHandler();
 
         const string PhpNetSessionVars = "Peachpie.SessionVars";
-        
+
+        public const string AspNetSessionName = "ASP.NET_SessionId";
+
         static PhpSerialization.Serializer Serializer => PhpSerialization.PhpSerializer.Instance;
 
         private AspNetSessionHandler() { }
@@ -48,7 +50,7 @@ namespace Peachpie.RequestHandler
         /// <summary>
         /// Gets the session name.
         /// </summary>
-        public override string GetSessionName(IHttpPhpContext webctx) => "ASP.NET_SessionId";
+        public override string GetSessionName(IHttpPhpContext webctx) => AspNetSessionName;
 
         /// <summary>
         /// Sets the session name.

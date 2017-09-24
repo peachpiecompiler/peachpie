@@ -760,12 +760,16 @@ namespace Pchp.Library
         /// <exception cref="PhpException">Thrown if neither <paramref name="glue"/> nor <paramref name="pieces"/> is not null and of type <see cref="PhpArray"/>.</exception>
         public static PhpString implode(Context ctx, PhpValue glue, PhpValue pieces)
         {
-            if (pieces != null && pieces.IsArray)
-                return ImplodeInternal(ctx, glue, pieces.AsArray());
-
-            if (glue.IsArray)
+            var pieces_arr = pieces.AsArray();
+            if (pieces_arr != null)
             {
-                return ImplodeInternal(ctx, pieces, glue.AsArray());
+                return ImplodeInternal(ctx, glue, pieces_arr);
+            }
+
+            var glue_arr = glue.AsArray();
+            if (glue_arr != null)
+            {
+                return ImplodeInternal(ctx, pieces, glue_arr);
             }
 
             return ImplodeGenericEnumeration(ctx, glue, pieces);
@@ -1595,12 +1599,12 @@ namespace Pchp.Library
                 //PhpException.Throw(PhpError.Warning, LibResources.GetString("segment_length_not_positive"));
                 //return null;
             }
-            if (obj == null)
+            if (obj.IsNull)
             {
                 return new PhpArray();
             }
 
-            var phpstr = obj.Object as PhpString;
+            var phpstr = obj.GetValue().Object as PhpString;
             if (phpstr != null && phpstr.ContainsBinaryData)
             {
                 return Split(phpstr.ToBytes(ctx.StringEncoding), splitLength);
@@ -2817,7 +2821,7 @@ namespace Pchp.Library
             if (output == null)
                 throw new ArgumentNullException("output");
 
-            for (;;)
+            for (; ; )
             {
                 int d = input.Read();
                 if (d == -1) break;
@@ -3973,7 +3977,7 @@ namespace Pchp.Library
             // the number of non-null parsed values:
             int count = 0;
 
-            if (result[0] != null)
+            if (!result[0].IsNull)
             {
                 arg.Value = result[0];
                 count = 1;
@@ -3981,7 +3985,7 @@ namespace Pchp.Library
 
             for (int i = 0; i < arguments.Length; i++)
             {
-                if (arguments[i] != null && result[i + 1] != null)
+                if (arguments[i] != null && !result[i + 1].IsNull)
                 {
                     arguments[i].Value = result[i + 1];
                     count++;
@@ -4121,7 +4125,7 @@ namespace Pchp.Library
                     }
 
                     // stores the parsed value:
-                    if (store && item != null)
+                    if (store && !item.IsNull)
                         result.Add(item);
 
                     // shift:

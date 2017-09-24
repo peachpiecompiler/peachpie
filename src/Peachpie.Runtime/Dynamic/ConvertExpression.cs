@@ -136,7 +136,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(void)) return VoidAsConstant(expr, false, typeof(bool));
             if (source == typeof(bool)) return expr;
 
-            throw new NotImplementedException(source.FullName);
+            return Expression.Call(Cache.Operators.ToBoolean_Object, expr);
         }
 
         private static Expression BindToString(Expression expr, Expression ctx)
