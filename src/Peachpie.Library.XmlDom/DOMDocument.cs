@@ -874,6 +874,11 @@ namespace Peachpie.Library.XmlDom
         /// <returns><B>True</B> or <B>false</B>.</returns>
         public virtual bool schemaValidate(Context ctx, string schemaFile, int flags = 0)
         {
+            if ((flags & PhpLibXml.LIBXML_SCHEMA_CREATE) == PhpLibXml.LIBXML_SCHEMA_CREATE)
+            {
+                PhpException.Throw(PhpError.Warning, Resources.SchemaCreateUnsupported);
+            }
+
             XmlSchema schema;
 
             using (PhpStream stream = PhpStream.Open(ctx, schemaFile, "rt"))
@@ -920,6 +925,11 @@ namespace Peachpie.Library.XmlDom
         /// <returns><B>True</B> or <B>false</B>.</returns>
         public virtual bool schemaValidateSource(Context ctx, string schemaString, int flags = 0)
         {
+            if ((flags & PhpLibXml.LIBXML_SCHEMA_CREATE) == PhpLibXml.LIBXML_SCHEMA_CREATE)
+            {
+                PhpException.Throw(PhpError.Warning, Resources.SchemaCreateUnsupported);
+            }
+
             XmlSchema schema;
 
             try

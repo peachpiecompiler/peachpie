@@ -192,6 +192,9 @@
   <data name="RelaxNGUnsupported" xml:space="preserve">
     <value>RELAX NG schema validation is not supported</value>
   </data>
+  <data name="SchemaCreateUnsupported" xml:space="preserve">
+    <value>Default/fixed value nodes creation during XSD schema validation is not supported</value>
+  </data>
   <data name="SimpleXmlAssignmentToDuplicateNodes" xml:space="preserve">
     <value>Cannot assign to an array of nodes (duplicate subnodes of name '{0}' detected)</value>
   </data>

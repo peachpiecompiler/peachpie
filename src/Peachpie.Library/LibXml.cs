@@ -167,6 +167,11 @@ namespace Peachpie.Library
         /// </summary>
         public const string LIBXML_DOTTED_VERSION = "";
 
+        /// <summary>
+        /// Create default/fixed value nodes during XSD schema validation.
+        /// </summary>
+        public const int LIBXML_SCHEMA_CREATE = 1;
+
         #endregion
 
         sealed class State
