@@ -655,11 +655,11 @@ namespace Peachpie.Library.XmlDom
         /// <param name="fileName">The location of the file where the document should be saved.</param>
         /// <param name="options">Unsupported.</param>
         /// <returns>The number of bytes written or <B>false</B> on error.</returns>
-        public virtual object save(Context ctx, string fileName, int options = 0)
+        public virtual PhpValue save(Context ctx, string fileName, int options = 0)
         {
             using (PhpStream stream = PhpStream.Open(ctx, fileName, "wt"))
             {
-                if (stream == null) return false;
+                if (stream == null) return PhpValue.Create(false);
 
                 try
                 {
@@ -681,16 +681,16 @@ namespace Peachpie.Library.XmlDom
                 catch (XmlException e)
                 {
                     PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, fileName);
-                    return null;
+                    return PhpValue.Create(false);
                 }
                 catch (IOException e)
                 {
                     PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, fileName);
-                    return false;
+                    return PhpValue.Create(false);
                 }
 
                 // TODO:
-                return (stream.RawStream.CanSeek ? stream.RawStream.Position : 1);
+                return PhpValue.Create(stream.RawStream.CanSeek ? stream.RawStream.Position : 1);
             }
         }
 
@@ -834,7 +834,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Not implemented properly (TODO: need an HTML parser for this).
         /// </summary>
-        public virtual object saveHTMLFile(Context ctx, string file)
+        public virtual PhpValue saveHTMLFile(Context ctx, string file)
         {
             //TODO: use the HTML parse to same HTML
             return save(ctx, file, 0);
@@ -920,6 +920,7 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Validates the document against the specified XML schema.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="schemaString">The XML schema string.</param>
         /// <param name="flags">Unsupported.</param>
         /// <returns><B>True</B> or <B>false</B>.</returns>
