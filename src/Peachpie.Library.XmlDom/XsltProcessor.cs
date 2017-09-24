@@ -39,7 +39,6 @@ namespace Peachpie.Library.XmlDom
         private delegate void LoadDelegate(IXPathNavigable stylesheet);
         private delegate XmlWriterSettings GetOutputSettingsDelegate();
         private delegate void TransformToWriterDelegate(IXPathNavigable input, XsltArgumentList arguments, XmlWriter results);
-        private delegate void TransformToStreamDelegate(IXPathNavigable input, XsltArgumentList arguments, Stream results);
 
         #endregion
 
@@ -50,7 +49,6 @@ namespace Peachpie.Library.XmlDom
         private LoadDelegate Load;
         private GetOutputSettingsDelegate GetOutputSettings;
         private TransformToWriterDelegate TransformToWriter;
-        private TransformToStreamDelegate TransformToStream;
 
         private XsltArgumentList xsltArgumentList;
         private XsltUserFunctionHandler xsltUserFunctionHandler;
@@ -117,8 +115,6 @@ namespace Peachpie.Library.XmlDom
 
                 TransformToWriter = (TransformToWriterDelegate)Delegate.CreateDelegate(typeof(TransformToWriterDelegate),
                     transform, transformToWriterMethodMvp);
-                TransformToStream = (TransformToStreamDelegate)Delegate.CreateDelegate(typeof(TransformToStreamDelegate),
-                    transform, transformToStreamMethodMvp);
             }
             else
             {
@@ -130,7 +126,6 @@ namespace Peachpie.Library.XmlDom
                     Delegate.CreateDelegate(typeof(GetOutputSettingsDelegate), transform, getOutputSettingsMethodFW);
 
                 TransformToWriter = new TransformToWriterDelegate(transform.Transform);
-                TransformToStream = new TransformToStreamDelegate(transform.Transform);
             }
 
             this.xsltArgumentList = new XsltArgumentList();
@@ -178,37 +173,9 @@ namespace Peachpie.Library.XmlDom
 
             using (MemoryStream stream = new MemoryStream())
             {
-                XmlWriterSettings settings = GetOutputSettings();
-                if (settings.Encoding is UTF8Encoding)
+                if (!TransformInternal(node.XmlNode, stream))
                 {
-                    // no BOM in UTF-8 please!
-                    settings = settings.Clone();
-                    settings.Encoding = new UTF8Encoding(false);
-                }
-
-                using (XmlWriter writer = XmlWriter.Create(stream, settings))
-                {
-                    // transform the document
-                    try
-                    {
-                        TransformToWriter(node.XmlNode, xsltArgumentList, writer);
-                    }
-                    catch (XsltException e)
-                    {
-                        if (e.InnerException != null)
-                        {
-                            // ScriptDiedException etc.
-                            throw e.InnerException;
-                        }
-
-                        PhpException.Throw(PhpError.Warning, e.Message);
-                        return null;
-                    }
-                    catch (InvalidOperationException e)
-                    {
-                        PhpException.Throw(PhpError.Warning, e.Message);
-                        return null;
-                    }
+                    return null;
                 }
 
                 stream.Seek(0, SeekOrigin.Begin);
@@ -242,25 +209,8 @@ namespace Peachpie.Library.XmlDom
             {
                 if (stream == null) return PhpValue.Create(false);
 
-                // transform the document
-                try
+                if (!TransformInternal(doc.XmlNode, stream.RawStream))
                 {
-                    TransformToStream(doc.XmlNode, xsltArgumentList, stream.RawStream);
-                }
-                catch (XsltException e)
-                {
-                    if (e.InnerException != null)
-                    {
-                        // ScriptDiedException etc.
-                        throw e.InnerException;
-                    }
-
-                    PhpException.Throw(PhpError.Warning, e.Message);
-                    return PhpValue.Create(false);
-                }
-                catch (InvalidOperationException e)
-                {
-                    PhpException.Throw(PhpError.Warning, e.Message);
                     return PhpValue.Create(false);
                 }
 
@@ -281,41 +231,51 @@ namespace Peachpie.Library.XmlDom
             // writing to a StringWriter would result in forcing UTF-16 encoding
             using (MemoryStream stream = new MemoryStream())
             {
-                XmlWriterSettings settings = GetOutputSettings();
-                if (settings.Encoding is UTF8Encoding)
+                if (!TransformInternal(doc.XmlNode, stream))
                 {
-                    // no BOM in UTF-8 please!
-                    settings = settings.Clone();
-                    settings.Encoding = new UTF8Encoding(false);
-                }
-
-                using (XmlWriter writer = XmlWriter.Create(stream, settings))
-                {
-                    // transform the document
-                    try
-                    {
-                        TransformToWriter(doc.XmlNode, xsltArgumentList, writer);
-                    }
-                    catch (XsltException e)
-                    {
-                        if (e.InnerException != null)
-                        {
-                            // ScriptDiedException etc.
-                            throw e.InnerException;
-                        }
-
-                        PhpException.Throw(PhpError.Warning, e.Message);
-                        return null;
-                    }
-                    catch (InvalidOperationException e)
-                    {
-                        PhpException.Throw(PhpError.Warning, e.Message);
-                        return null;
-                    }
+                    return null;
                 }
 
                 return new PhpString(stream.ToArray());
             }
+        }
+
+        private bool TransformInternal(IXPathNavigable input, Stream stream)
+        {
+            XmlWriterSettings settings = GetOutputSettings();
+            if (settings.Encoding is UTF8Encoding)
+            {
+                // no BOM in UTF-8 please!
+                settings = settings.Clone();
+                settings.Encoding = new UTF8Encoding(false);
+            }
+
+            using (XmlWriter writer = XmlWriter.Create(stream, settings))
+            {
+                // transform the document
+                try
+                {
+                    TransformToWriter(input, xsltArgumentList, writer);
+                }
+                catch (XsltException e)
+                {
+                    if (e.InnerException != null)
+                    {
+                        // ScriptDiedException etc.
+                        throw e.InnerException;
+                    }
+
+                    PhpException.Throw(PhpError.Warning, e.Message);
+                    return false;
+                }
+                catch (InvalidOperationException e)
+                {
+                    PhpException.Throw(PhpError.Warning, e.Message);
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
