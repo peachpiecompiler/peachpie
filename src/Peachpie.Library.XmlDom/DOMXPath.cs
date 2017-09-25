@@ -107,24 +107,21 @@ namespace Peachpie.Library.XmlDom
             XPathNavigator navigator = GetNavigator(contextnode);
             if (navigator == null) return null;
 
-            //XPathNodeIterator iterator;
-            //try
-            //{
-            //    iterator = navigator.Select(expr, XmlNamespaceManager);
-            //}
-            //catch (Exception ex)
-            //{
-            //    DOMException.Throw(ExceptionCode.SyntaxError, ex.Message);
-            //    return null;
-            //}
+            var nsManager = registerNodeNS ? NamespaceManagerFull : NamespaceManagerExplicit;
 
-            //// create the resulting node list
-            //return IteratorToList(iterator);
+            XPathNodeIterator iterator;
+            try
+            {
+                iterator = navigator.Select(expr, nsManager);
+            }
+            catch (Exception ex)
+            {
+                PhpException.Throw(PhpError.E_WARNING, ex.Message);
+                return null;
+            }
 
-            return QueryInternal(
-                contextnode?.XmlNode,
-                expr,
-                registerNodeNS ? NamespaceManagerFull : NamespaceManagerExplicit);
+            // create the resulting node list
+            return IteratorToList(iterator);
         }
 
         /// <summary>
@@ -158,9 +155,7 @@ namespace Peachpie.Library.XmlDom
             XPathNodeIterator iterator = result as XPathNodeIterator;
             if (iterator != null)
             {
-                //return PhpValue.FromClass(IteratorToList(iterator));
-                var domList = QueryInternal(contextnode?.XmlNode, expr, nsManager);
-                return (domList == null) ? PhpValue.Create(false) : PhpValue.FromClass(domList);
+                return PhpValue.FromClass(IteratorToList(iterator));
             }
             else
             {
@@ -213,53 +208,22 @@ namespace Peachpie.Library.XmlDom
             }
         }
 
-        // TODO: Remove when IteratorToList works
-        private DOMNodeList QueryInternal(XmlNode contextnode, string expr, XmlNamespaceManager xmlNamespaceManager)
+        private DOMNodeList IteratorToList(XPathNodeIterator iterator)
         {
-            if (contextnode == null)
+            DOMNodeList list = new DOMNodeList();
+
+            while (iterator.MoveNext())
             {
-                contextnode = ((XmlDocument)XPathNavigator.UnderlyingObject).DocumentElement;
+                IHasXmlNode has_node = iterator.Current as IHasXmlNode;
+                if (has_node != null)
+                {
+                    var node = DOMNode.Create(has_node.GetNode());
+                    if (node != null) list.AppendNode(node);
+                }
             }
 
-            XmlNodeList xmlList;
-
-            try
-            {
-                // We have to re-run the query in order to get access to the nodes
-                xmlList = contextnode.SelectNodes(expr, xmlNamespaceManager);
-            }
-            catch (Exception ex)
-            {
-                PhpException.Throw(PhpError.E_WARNING, ex.Message);
-                return null;
-            }
-
-            var domList = new DOMNodeList();
-            foreach (XmlNode node in xmlList)
-            {
-                domList.AppendNode(DOMNode.Create(node));
-            }
-
-            return domList;
+            return list;
         }
-
-        // TODO: Use instead of QueryInternal when IHasXmlNode is available (netstandard2.0)
-        //private DOMNodeList IteratorToList(XPathNodeIterator iterator)
-        //{
-        //    DOMNodeList list = new DOMNodeList();
-
-        //    while (iterator.MoveNext())
-        //    {
-        //        IHasXmlNode has_node = iterator.Current as IHasXmlNode;
-        //        if (has_node != null)
-        //        {
-        //            var node = DOMNode.Create(has_node.GetNode());
-        //            if (node != null) list.AppendNode(node);
-        //        }
-        //    }
-
-        //    return list;
-        //}
 
         #endregion
     }
