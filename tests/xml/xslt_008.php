@@ -11,7 +11,7 @@ function __xml_norm($str)
 }
 
 Class foo {
-    function foo() {}
+    function __construct() {}
     function __toString() { return "not a DomNode object";}
 }
 
