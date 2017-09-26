@@ -79,9 +79,9 @@ namespace Peachpie.Library.XmlDom
         public string tagName => this.nodeName;
 
         /// <summary>
-        /// Not implemented in PHP 5.1.6.
+        /// Not implemented in PHP 7.1.1, always returns NULL.
         /// </summary>
-        public object schemaTypeInfo => null;
+        public PhpValue schemaTypeInfo => PhpValue.Null;
 
         #endregion
 

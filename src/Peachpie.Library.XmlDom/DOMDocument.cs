@@ -500,7 +500,7 @@ namespace Peachpie.Library.XmlDom
         }
 
         /// <summary>
-        /// Not implemented in PHP 5.1.6.
+        /// Not implemented in PHP 7.1.1.
         /// </summary>
         public virtual DOMNode adoptNode(DOMNode source)
         {
@@ -513,7 +513,7 @@ namespace Peachpie.Library.XmlDom
         public virtual void normalizeDocument() => XmlDocument.Normalize();
 
         /// <summary>
-        /// Not implemented in PHP 5.1.6.
+        /// Not implemented in PHP 7.1.1.
         /// </summary>
         public virtual void renameNode(DOMNode node, string namespaceUri, string qualifiedName)
         {
@@ -823,12 +823,14 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Dumps the internal document into a string using HTML formatting.
         /// </summary>
-        /// <param name="node">Optional parameter to output a subset of the document. </param>
+        /// <param name="ctx">Current runtime context.</param>
+        /// <param name="node">Optional parameter to output a subset of the document.</param>
         /// <returns>Returns the HTML, or FALSE if an error occurred.</returns>
         [return: CastToFalse]
-        public virtual string saveHTML(DOMNode node = null)
+        public virtual PhpString saveHTML(Context ctx, DOMNode node = null)
         {
-            throw new NotImplementedException();
+            //TODO: Use the HTML parse to save HTML
+            return saveXML(ctx, node);
         }
 
         /// <summary>
@@ -836,7 +838,7 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         public virtual PhpValue saveHTMLFile(Context ctx, string file)
         {
-            //TODO: use the HTML parse to same HTML
+            //TODO: Use the HTML parse to save HTML
             return save(ctx, file, 0);
         }
 
