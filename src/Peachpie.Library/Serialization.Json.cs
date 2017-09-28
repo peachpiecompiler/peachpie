@@ -674,7 +674,7 @@ namespace Pchp.Library
 /// <summary>
 /// Objects implementing JsonSerializable can customize their JSON representation when encoded with <see cref="Pchp.Library.JsonSerialization.json_encode"/>.
 /// </summary>
-[PhpType("JsonSerializable")]
+[PhpType(PhpTypeAttribute.InheritName)]
 public interface JsonSerializable
 {
     /// <summary>

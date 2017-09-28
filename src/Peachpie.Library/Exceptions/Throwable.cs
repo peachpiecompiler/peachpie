@@ -6,7 +6,7 @@ namespace Pchp.Library.Spl
     /// Throwable is the base interface for any object that can be thrown via a throw statement in PHP 7,
     /// including Error and Exception.
     /// </summary>
-    [PhpType("Throwable")]
+    [PhpType(PhpTypeAttribute.InheritName)]
     public interface Throwable
     {
         /// <summary>
