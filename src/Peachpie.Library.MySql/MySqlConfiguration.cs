@@ -62,7 +62,7 @@ namespace Peachpie.Library.MySql
         /// <summary>
         /// Gets, sets, or restores a value of a legacy configuration option.
         /// </summary>
-        static PhpValue GetSet(IPhpConfigurationService config, string option, PhpValue value, IniAction action)
+        static PhpValue GetSet(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
         {
             var local = config.Get<MySqlConfiguration>();
 

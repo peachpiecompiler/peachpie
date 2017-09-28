@@ -253,6 +253,15 @@ namespace Pchp.Core
         protected virtual PhpArray InitPostVariable() => PhpArray.NewEmpty();
 
         /// <summary>Initialize $_FILES global variable.</summary>
+        /// <remarks>
+		/// <list type="bullet">
+		///   <item>$_FILES[{var_name}]['name'] - The original name of the file on the client machine.</item>
+		///   <item>$_FILES[{var_name}]['type'] - The mime type of the file, if the browser provided this information. An example would be "image/gif".</item>
+		///   <item>$_FILES[{var_name}]['size'] - The size, in bytes, of the uploaded file.</item> 
+		///   <item>$_FILES[{var_name}]['tmp_name'] - The temporary filename of the file in which the uploaded file was stored on the server.</item>
+		///   <item>$_FILES[{var_name}]['error'] - The error code associated with this file upload.</item> 
+		/// </list>
+		/// </remarks>
         protected virtual PhpArray InitFilesVariable() => PhpArray.NewEmpty();
 
         /// <summary>Initialize $_COOKIE global variable.</summary>

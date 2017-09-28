@@ -476,6 +476,92 @@ namespace Pchp.Core
 
         #endregion
 
+        #region Temporary Per-Request Files
+
+        /// <summary>
+        /// A list of temporary files which was created during the request and should be deleted at its end.
+        /// </summary>
+        private List<string>/*!*/TemporaryFiles
+        {
+            get
+            {
+                if (_temporaryFiles == null)
+                    _temporaryFiles = new List<string>();
+
+                return _temporaryFiles;
+            }
+        }
+        private List<string> _temporaryFiles;
+
+        /// <summary>
+        /// Silently deletes all temporary files.
+        /// </summary>
+        private void DeleteTemporaryFiles()
+        {
+            if (_temporaryFiles != null)
+            {
+                for (int i = 0; i < _temporaryFiles.Count; i++)
+                {
+                    try
+                    {
+                        File.Delete(_temporaryFiles[i]);
+                    }
+                    catch { }
+                }
+
+                _temporaryFiles = null;
+            }
+        }
+
+        /// <summary>
+        /// Adds temporary file to current handler's temp files list.
+        /// </summary>
+        /// <param name="path">A path to the file.</param>
+        protected void AddTemporaryFile(string path)
+        {
+            Debug.Assert(path != null);
+            TemporaryFiles.Add(path);
+        }
+
+        ///// <summary>
+        ///// Checks whether the given filename is a path to a temporary file
+        ///// (for example created using the filet upload mechanism).
+        ///// </summary>
+        ///// <remarks>
+        ///// The stored paths are checked case-insensitively.
+        ///// </remarks>
+        ///// <exception cref="ArgumentNullException">Argument is a <B>null</B> reference.</exception>
+        //public bool IsTemporaryFile(string path)
+        //{
+        //    if (path == null) throw new ArgumentNullException("path");
+        //    return this._temporaryFiles != null && this._temporaryFiles.IndexOf(path, FullPath.StringComparer) >= 0;
+        //}
+
+        ///// <summary>
+        ///// Removes a file from a list of temporary files.
+        ///// </summary>
+        ///// <param name="path">A full path to the file.</param>
+        ///// <exception cref="ArgumentNullException">Argument is a <B>null</B> reference.</exception>
+        //public bool RemoveTemporaryFile(string path)
+        //{
+        //    if (path == null) throw new ArgumentNullException("path");
+        //    if (this._temporaryFiles == null)
+        //        return false;
+
+        //    var index = this._temporaryFiles.IndexOf(path, FullPath.StringComparer);
+        //    if (index >= 0)
+        //    {
+        //        this._temporaryFiles.RemoveAt(index);
+        //        return true;
+        //    }
+        //    else
+        //    {
+        //        return false;
+        //    }
+        //}
+
+        #endregion
+
         #region IDisposable
 
         bool _disposed;
@@ -497,6 +583,8 @@ namespace Pchp.Core
                 }
                 finally
                 {
+                    DeleteTemporaryFiles();
+
                     //// additional disposal action
                     //if (this.FinallyDispose != null)
                     //    this.FinallyDispose();

@@ -104,6 +104,18 @@ namespace Peachpie.Web
         }
 
         /// <summary>
+        /// Gets max request size (upload size, post size) in bytes.
+        /// Gets <c>0</c> if limit is not set.
+        /// </summary>
+        public long MaxRequestSize
+        {
+            get
+            {
+                return 30_000_000; // TODO: since 2.0.0: _httpctx.Features.Get<IHttpMaxRequestBodySizeFeature>().MaxRequestBodySize;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets session handler for current context.
         /// </summary>
         PhpSessionHandler IHttpPhpContext.SessionHandler
