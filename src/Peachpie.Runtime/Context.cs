@@ -523,42 +523,51 @@ namespace Pchp.Core
             TemporaryFiles.Add(path);
         }
 
-        ///// <summary>
-        ///// Checks whether the given filename is a path to a temporary file
-        ///// (for example created using the filet upload mechanism).
-        ///// </summary>
-        ///// <remarks>
-        ///// The stored paths are checked case-insensitively.
-        ///// </remarks>
-        ///// <exception cref="ArgumentNullException">Argument is a <B>null</B> reference.</exception>
-        //public bool IsTemporaryFile(string path)
-        //{
-        //    if (path == null) throw new ArgumentNullException("path");
-        //    return this._temporaryFiles != null && this._temporaryFiles.IndexOf(path, FullPath.StringComparer) >= 0;
-        //}
+        /// <summary>
+        /// Checks whether the given filename is a path to a temporary file
+        /// (for example created using the filet upload mechanism).
+        /// </summary>
+        /// <remarks>
+        /// The stored paths are checked case-insensitively.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">Argument is a <B>null</B> reference.</exception>
+        public bool IsTemporaryFile(string path)
+        {
+            if (path == null)
+            {
+                throw new ArgumentNullException("path");
+            }
 
-        ///// <summary>
-        ///// Removes a file from a list of temporary files.
-        ///// </summary>
-        ///// <param name="path">A full path to the file.</param>
-        ///// <exception cref="ArgumentNullException">Argument is a <B>null</B> reference.</exception>
-        //public bool RemoveTemporaryFile(string path)
-        //{
-        //    if (path == null) throw new ArgumentNullException("path");
-        //    if (this._temporaryFiles == null)
-        //        return false;
+            return _temporaryFiles != null && _temporaryFiles.Contains(path, CurrentPlatform.PathComparer);
+        }
 
-        //    var index = this._temporaryFiles.IndexOf(path, FullPath.StringComparer);
-        //    if (index >= 0)
-        //    {
-        //        this._temporaryFiles.RemoveAt(index);
-        //        return true;
-        //    }
-        //    else
-        //    {
-        //        return false;
-        //    }
-        //}
+        /// <summary>
+        /// Removes a file from a list of temporary files.
+        /// </summary>
+        /// <param name="path">A full path to the file.</param>
+        /// <exception cref="ArgumentNullException">Argument is a <B>null</B> reference.</exception>
+        public bool RemoveTemporaryFile(string path)
+        {
+            if (path == null)
+            {
+                throw new ArgumentNullException("path");
+            }
+
+            if (_temporaryFiles != null)
+            {
+                // NOTE: == List<T>.IndexOf(T, IEqualityComparer<T>)
+                for (int i = 0; i < _temporaryFiles.Count; i++)
+                {
+                    if (CurrentPlatform.PathComparer.Compare(_temporaryFiles[i], path) == 0)
+                    {
+                        _temporaryFiles.RemoveAt(i);
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
 
         #endregion
 
