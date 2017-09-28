@@ -449,7 +449,7 @@ namespace Pchp.Core.Dynamic
             }
 
             //
-            // runtime fields
+            // runtime fields & magic methods
             //
 
             if (type.RuntimeFieldsHolder != null)   // we don't handle magic methods without the runtime fields
@@ -460,6 +460,8 @@ namespace Pchp.Core.Dynamic
 
                 // Template: runtimeflds != null && runtimeflds.TryGetValue(field, out result)
                 var trygetfield = Expression.AndAlso(Expression.ReferenceNotEqual(runtimeflds, Expression.Constant(null)), Expression.Call(runtimeflds, Cache.Operators.PhpArray_TryGetValue, fieldkey, resultvar));
+                
+                // Template: runtimeflds != null && runtimeflds.ContainsKey(field)
                 var containsfield = Expression.AndAlso(Expression.ReferenceNotEqual(runtimeflds, Expression.Constant(null)), Expression.Call(runtimeflds, Cache.Operators.PhpArray_ContainsKey, fieldkey));
 
                 Expression result;
@@ -478,7 +480,7 @@ namespace Pchp.Core.Dynamic
                         // Template: runtimeflds.Contains(key) ? runtimeflds.EnsureObject(key) : ( __get(key) ?? runtimeflds.EnsureObject(key))
                         return Expression.Condition(containsfield,
                                 Expression.Call(runtimeflds, Cache.Operators.PhpArray_EnsureItemObject, fieldkey),
-                                InvokeHandler(ctx, target, field, __get, access, result, typeof(object)));
+                                InvokeHandler(ctx, target, field, __get, access, result, Cache.Types.Object[0]));
                     }
                     else
                     {
@@ -516,7 +518,7 @@ namespace Pchp.Core.Dynamic
                         // Template: runtimeflds.Contains(key) ? runtimeflds.EnsureItemAlias(key) : ( __get(key) ?? runtimeflds.EnsureItemAlias(key))
                         return Expression.Condition(containsfield,
                                 Expression.Call(runtimeflds, Cache.Operators.PhpArray_EnsureItemAlias, fieldkey),
-                                InvokeHandler(ctx, target, field, __get, access, result, typeof(PhpAlias)));
+                                InvokeHandler(ctx, target, field, __get, access, result, Cache.Types.PhpAlias[0]));
                     }
                     else
                     {
