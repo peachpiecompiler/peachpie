@@ -13,7 +13,7 @@ namespace Pchp.Library
     [PhpHidden]
     public static class StandardPhpOptions
     {
-        public delegate PhpValue GetSetDelegate(IPhpConfigurationService config, string option, PhpValue value, IniAction action);
+        public delegate PhpValue GetSetDelegate(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action);
 
         /// <summary>
         /// An action which can be performed on option.
@@ -95,21 +95,26 @@ namespace Pchp.Library
                 DefaultValue;
         }
 
-        static readonly GetSetDelegate EmptyGsr = new GetSetDelegate((s, name, value, action) => PhpValue.Null);
+        static readonly GetSetDelegate EmptyGsr = new GetSetDelegate((ctx, s, name, value, action) => PhpValue.Null);
 
-        static PhpValue GsrCore(IPhpConfigurationService config, string option, PhpValue value, IniAction action)
+        static PhpValue GsrCore(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
         {
             switch (option.ToLowerInvariant())
             {
                 case "include_path":
                     return (PhpValue)GetSet(ref config.Core.IncludePaths, ".", value, action);
 
+                case "post_max_size":
+                case "upload_max_filesize":
+                    Debug.Assert(action == IniAction.Get);
+                    return (PhpValue)ctx.HttpPhpContext.MaxRequestSize;
+
                 default:
                     throw new ArgumentException();
             }
         }
 
-        static PhpValue GsrMail(IPhpConfigurationService config, string option, PhpValue value, IniAction action)
+        static PhpValue GsrMail(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
         {
             switch (option.ToLowerInvariant())
             {
@@ -211,7 +216,7 @@ namespace Pchp.Library
             Register("open_basedir", IniFlags.Supported | IniFlags.Global, EmptyGsr);
             Register("output_buffering", IniFlags.Supported | IniFlags.Global, EmptyGsr);
             Register("output_handler", IniFlags.Supported | IniFlags.Global, EmptyGsr);
-            Register("post_max_size", IniFlags.Supported | IniFlags.Global, EmptyGsr);
+            Register("post_max_size", IniFlags.Supported | IniFlags.Global | IniFlags.Http, GsrCore);
             Register("precision", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
             Register("register_argc_argv", IniFlags.Supported | IniFlags.Global, EmptyGsr);
             Register("register_globals", IniFlags.Supported | IniFlags.Global, EmptyGsr);
@@ -230,7 +235,7 @@ namespace Pchp.Library
             Register("sql.safe_mode", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
             Register("track_errors", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
             Register("unserialize_callback_func", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("upload_max_filesize", IniFlags.Supported | IniFlags.Global, EmptyGsr);
+            Register("upload_max_filesize", IniFlags.Supported | IniFlags.Global | IniFlags.Http, GsrCore);
             Register("upload_tmp_dir", IniFlags.Supported | IniFlags.Global, EmptyGsr);
             Register("url_rewriter.tags", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
             Register("user_agent", IniFlags.Supported | IniFlags.Local, EmptyGsr);
@@ -283,6 +288,7 @@ namespace Pchp.Library
         /// <summary>
 		/// Tries to get or set an option given its PHP name and value.
 		/// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="config">Configuration to be read or set.</param>
 		/// <param name="name">The option name.</param>
 		/// <param name="value">The option new value if applicable.</param>
@@ -291,7 +297,7 @@ namespace Pchp.Library
 		/// <returns>The option old value.</returns>
 		/// <exception cref="PhpException">The option not supported (Warning).</exception>
 		/// <exception cref="PhpException">The option is read only but action demands write access (Warning).</exception>
-		internal static PhpValue TryGetSet(IPhpConfigurationService config, string name, PhpValue value, IniAction action, out bool error)
+		internal static PhpValue TryGetSet(Context ctx, IPhpConfigurationService config, string name, PhpValue value, IniAction action, out bool error)
         {
             Debug.Assert(name != null);
             error = true;
@@ -320,7 +326,7 @@ namespace Pchp.Library
             }
 
             error = false;
-            return def.Gsr(config, name, value, action);
+            return def.Gsr(ctx, config, name, value, action);
         }
 
         /// <summary>
@@ -392,8 +398,8 @@ namespace Pchp.Library
                     }
                     else
                     {
-                        opt.DefaultValue = def.Gsr(config.Parent, name, PhpValue.Null, IniAction.Get);
-                        opt.LocalValue = def.Gsr(config, name, PhpValue.Null, IniAction.Get);
+                        opt.DefaultValue = def.Gsr(ctx, config.Parent, name, PhpValue.Null, IniAction.Get);
+                        opt.LocalValue = def.Gsr(ctx, config, name, PhpValue.Null, IniAction.Get);
                     }
 
                     yield return opt;
@@ -495,7 +501,7 @@ namespace Pchp.Library
         public static string ini_get(Context ctx, string option)
         {
             bool error;
-            var result = StandardPhpOptions.TryGetSet(ctx.Configuration, option, PhpValue.Void, StandardPhpOptions.IniAction.Get, out error);
+            var result = StandardPhpOptions.TryGetSet(ctx, ctx.Configuration, option, PhpValue.Void, StandardPhpOptions.IniAction.Get, out error);
             if (error)
             {
                 return null;
@@ -517,7 +523,7 @@ namespace Pchp.Library
         public static string ini_set(Context ctx, string option, PhpValue value)
         {
             bool error;
-            var old = StandardPhpOptions.TryGetSet(ctx.Configuration, option, value, StandardPhpOptions.IniAction.Set, out error);
+            var old = StandardPhpOptions.TryGetSet(ctx, ctx.Configuration, option, value, StandardPhpOptions.IniAction.Set, out error);
             if (error)
             {
                 return null;
@@ -539,8 +545,8 @@ namespace Pchp.Library
             var def = StandardPhpOptions.GetOption(option);
             if (def.Gsr != null)
             {
-                var @default = def.Gsr(ctx.Configuration.Parent, option, PhpValue.Null, StandardPhpOptions.IniAction.Get);
-                def.Gsr(ctx.Configuration, option, @default, StandardPhpOptions.IniAction.Set);
+                var @default = def.Gsr(ctx, ctx.Configuration.Parent, option, PhpValue.Null, StandardPhpOptions.IniAction.Get);
+                def.Gsr(ctx, ctx.Configuration, option, @default, StandardPhpOptions.IniAction.Set);
             }
             else
             {
