@@ -379,7 +379,67 @@ namespace Peachpie.Web
 
         protected override PhpArray InitFilesVariable()
         {
-            return base.InitFilesVariable();
+            PhpArray files;
+            int count;
+
+            if (_httpctx.Request.HasFormContentType && (count = _httpctx.Request.Form.Files.Count) != 0)
+            {
+                files = new PhpArray(count);
+
+                // gets a path where temporary files are stored:
+                var temppath = Path.GetTempPath(); // global_config.PostedFiles.GetTempPath(global_config.SafeMode);
+                // temporary file name (first part)
+                var basetempfilename = string.Concat("php_", DateTime.UtcNow.Ticks.ToString("x"), "-");
+                var basetempfileid = this.GetHashCode();
+
+                foreach (var file in _httpctx.Request.Form.Files)
+                {
+                    string file_path, type, file_name;
+                    int error = 0;
+
+                    if (!string.IsNullOrEmpty(file.FileName))
+                    {
+                        type = file.ContentType;
+
+                        // CONSIDER: keep files in memory, use something like virtual fs (ASP.NET Core has one) or define post:// paths ?
+
+                        var tempfilename = string.Concat(basetempfilename, (basetempfileid++).ToString("X"), ".tmp");
+                        file_path = Path.Combine(temppath, tempfilename);
+                        file_name = Path.GetFileName(file.FileName);
+
+                        // registers the temporary file for deletion at request end:
+                        AddTemporaryFile(file_path);
+
+                        // saves uploaded content to the temporary file:
+                        using (var stream = new FileStream(file_path, FileMode.Create))
+                        {
+                            file.CopyTo(stream);
+                        }
+                    }
+                    else
+                    {
+                        file_path = type = file_name = string.Empty;
+                        error = 4; // PostedFileError.NoFile;
+                    }
+
+                    //
+                    files[file.Name] = (PhpValue)new PhpArray(5)
+                    {
+                        { "name", file_name },
+                        { "type",type },
+                        { "tmp_name",file_path },
+                        { "error", error },
+                        { "size", file.Length },
+                    };
+                }
+            }
+            else
+            {
+                files = PhpArray.NewEmpty();
+            }
+
+            //
+            return files;
         }
 
         protected override PhpArray InitCookieVariable()

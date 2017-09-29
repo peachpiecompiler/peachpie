@@ -453,7 +453,7 @@ namespace Peachpie.RequestHandler
             int count;
 
             var request = _httpctx.Request;
-            if (request != null && (count = request.Files.Count) != 0)
+            if ((count = request.Files.Count) != 0)
             {
                 files = new PhpArray(count);
 
