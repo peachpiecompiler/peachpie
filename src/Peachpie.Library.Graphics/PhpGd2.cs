@@ -614,6 +614,68 @@ namespace Peachpie.Library.Graphics
             return !img.IsIndexed;
         }
 
+        #region imagecolorallocate, imagecolorallocatealpha
+
+        /// <summary>
+        /// Allocate a color for an image.
+        /// </summary> 
+        public static int imagecolorallocate(PhpResource im, int red, int green, int blue)
+        {
+            PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+                return -1; // TODO: false
+
+            //TODO: In non-truecolor images allocate the color
+            int color = RGBA(red, green, blue);
+
+            return color;
+        }
+
+        /// <summary>
+        /// Allocate a color with an alpha level.  Works for true color and palette based images.
+        /// </summary>
+        public static int imagecolorallocatealpha(PhpResource im, int red, int green, int blue, int alpha)
+        {
+            var img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+                return -1;// TODO: false
+
+            //TODO: In non-truecolor images allocate the color
+            return RGBA(red, green, blue, alpha);
+        }
+
+        /// <summary>
+        /// RGBA values to PHP Color format.
+        /// </summary>
+        static int RGBA(int red, int green, int blue, int alpha = 0)
+        {
+            return (alpha << 24)
+                | (blue & 0x0000FF)
+                | ((green & 0x0000FF) << 8)
+                | ((red & 0x0000FF) << 16);
+        }
+
+        #endregion
+
+        #region imagesavealpha
+
+        /// <summary>
+        /// Include alpha channel to a saved image
+        /// </summary> 
+        public static bool imagesavealpha(PhpResource im, bool on)
+        {
+            var img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+                return false;
+
+            img.SaveAlpha = on;
+
+            return true;
+        }
+
+        #endregion
+
+
         /// <summary>
         /// Output WBMP image to browser or file
         /// </summary> 
