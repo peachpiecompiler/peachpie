@@ -209,8 +209,10 @@ namespace Peachpie.Web
         {
             var array = this.Server;
 
-            array["SCRIPT_FILENAME"] = (PhpValue)(this.RootPath + "/" + script.Path);
-            array["PHP_SELF"] = (PhpValue)("/" + script.Path);
+            var path = script.Path.Replace('\\', '/');  // address of the script
+
+            array["SCRIPT_FILENAME"] = (PhpValue)string.Concat(this.RootPath, "/", path);
+            array["PHP_SELF"] = (PhpValue)string.Concat("/", path);
         }
 
         /// <summary>
