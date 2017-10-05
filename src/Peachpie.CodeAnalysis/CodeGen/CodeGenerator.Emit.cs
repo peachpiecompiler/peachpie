@@ -2145,9 +2145,10 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (d is NamedTypeSymbol ntype)
             {
-                if (d.IsAnonymousType || !(d.ContainingAssembly is SourceAssemblySymbol))   // TODO: only user defined PHP types
+                if (d.IsAnonymousType || !(d.ContainingAssembly is SourceAssemblySymbol))   // TODO: only user defined PHP types properly
                 {
                     // anonymous classes are not declared
+                    // regular CLR types declared in app context
                     return;
                 }
 
@@ -2158,7 +2159,12 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return;
                 }
 
-                // TODO: skip for regular CLR types declared in app context
+                if (this.CallerType != null && this.CallerType.IsOfType(d))
+                {
+                    // the type is a sub-type of current class context, so it must be declared for sure
+                    // e.g. self, parent
+                    return;
+                }
 
                 // Template: ctx.ExpectTypeDeclared<d>
                 EmitLoadContext();
