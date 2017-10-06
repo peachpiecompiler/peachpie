@@ -75,7 +75,14 @@ namespace ScriptsTest
                 }, File.ReadAllText(path));
 
                 // run
-                script.Evaluate(ctx, ctx.Globals, null);
+                try
+                {
+                    script.Evaluate(ctx, ctx.Globals, null);
+                }
+                catch (ScriptDiedException ex)
+                {
+                    ex.ProcessStatus(ctx);
+                }
             }
 
             //
