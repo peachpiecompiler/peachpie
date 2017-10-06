@@ -147,6 +147,17 @@ namespace Pchp.Core
     }
 
     /// <summary>
+    /// An interface allowing objects to implement custom <c>clone</c> operation.
+    /// </summary>
+    public interface IPhpCloneable
+    {
+        /// <summary>
+        /// Returns the object clone.
+        /// </summary>
+        object Clone();
+    }
+
+    /// <summary>
     /// Visitor implementation for a variable.
     /// </summary>
     /// <remarks>Used for serialization, printing, dumping.</remarks>

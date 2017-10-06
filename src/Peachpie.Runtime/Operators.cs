@@ -815,7 +815,11 @@ namespace Pchp.Core
         /// </summary>
         public static object Clone(Context ctx, object value)
         {
-            if (value != null)
+            if (value is IPhpCloneable cloneable)
+            {
+                value = cloneable.Clone();
+            }
+            else if (value != null)
             {
                 var tinfo = value.GetPhpTypeInfo();
 
@@ -845,6 +849,8 @@ namespace Pchp.Core
             {
                 PhpException.Throw(PhpError.Error, Resources.ErrResources.clone_called_on_non_object);
             }
+
+            //
 
             return value;
         }
