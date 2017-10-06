@@ -3250,13 +3250,13 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            var result_type = cg.DeclaringCompilation.GetTypeFromTypeRef(cg.Routine, this.TypeRefMask);
+            TypeSymbol result_type = cg.DeclaringCompilation.GetTypeFromTypeRef(cg.Routine, this.TypeRefMask);
+
+            object trueLbl = new object();
+            object endLbl = new object();
 
             if (this.IfTrue != null)
             {
-                object trueLbl = new object();
-                object endLbl = new object();
-
                 // Cond ? True : False
                 cg.EmitConvert(this.Condition, cg.CoreTypes.Boolean);   // i4
                 cg.Builder.EmitBranch(ILOpCode.Brtrue, trueLbl);
@@ -3274,9 +3274,6 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                object trueLbl = new object();
-                object endLbl = new object();
-
                 // Cond ?: False
 
                 // <stack> = <cond_var> = Cond
@@ -3310,6 +3307,11 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 cg.EmitPop(result_type);
                 result_type = cg.CoreTypes.Void;
+            }
+            else if (Access.IsReadCopy)
+            {
+                // read by value (dereference if needed) and copy
+                result_type = cg.EmitReadCopy(this.ResultType, result_type, this.TypeRefMask);
             }
 
             //
