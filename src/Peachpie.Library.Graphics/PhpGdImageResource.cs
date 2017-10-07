@@ -31,6 +31,11 @@ namespace Peachpie.Library.Graphics
             }
         }
         TImage/*!*/_image;
+
+        /// <summary>
+        /// Image format.
+        /// </summary>
+        public IImageFormat Format { get { return _format; } }
         IImageFormat _format;
 
         /// <summary>

@@ -617,18 +617,16 @@ namespace Peachpie.Library.Graphics
         #region imagecolorallocate, imagecolorallocatealpha
 
         /// <summary>
-        /// Allocate a color for an image.
+        /// Allocate a color for an image
         /// </summary> 
         public static int imagecolorallocate(PhpResource im, int red, int green, int blue)
         {
-            PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            var img = PhpGdImageResource.ValidImage(im);
             if (img == null)
                 return -1; // TODO: false
 
             //TODO: In non-truecolor images allocate the color
-            int color = RGBA(red, green, blue);
-
-            return color;
+            return RGBA(red, green, blue);
         }
 
         /// <summary>
@@ -675,6 +673,26 @@ namespace Peachpie.Library.Graphics
 
         #endregion
 
+        #region imagerotate
+
+        /// <summary>
+        /// Rotates the image image using the given angle in degrees.
+        /// The center of rotation is the center of the image, and the rotated image may have different dimensions than the original image.
+        /// </summary>
+        [return: CastToFalse]
+        public static PhpResource imagerotate(PhpResource im, double angle, int bgcolor, bool ignore_transparent = false)
+        {
+            var img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+            {
+                return null;
+            }
+
+            //
+            return new PhpGdImageResource(new Image<Rgba32>(img.Image).Rotate((float)(angle * (- Math.PI / 180.0)), true), img.Format);
+        }
+
+        #endregion
 
         /// <summary>
         /// Output WBMP image to browser or file
