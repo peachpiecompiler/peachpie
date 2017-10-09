@@ -50,9 +50,10 @@ namespace Pchp.Core.Reflection
         public string Name { get; }
 
         /// <summary>
-        /// Gets the relative path to the file where the type is declared. Null, if the type is from core, eval etc.
+        /// Gets the relative path to the file where the type is declared.
+        /// Gets <c>null</c> if the type is from core, eval etc.
         /// </summary>
-        public string RelativePath { get; }
+        public string RelativePath => _type.GetCustomAttribute<PhpTypeAttribute>(false)?.FileName;
 
         /// <summary>
         /// CLR type declaration.
@@ -228,8 +229,7 @@ namespace Pchp.Core.Reflection
 
             var attr = _type.GetCustomAttribute<PhpTypeAttribute>(false);
             Name = ResolvePhpTypeName(_type, attr);
-            RelativePath = attr?.FileName;
-
+            
             // register type in extension tables
             ExtensionsAppContext.ExtensionsTable.AddType(this);
         }

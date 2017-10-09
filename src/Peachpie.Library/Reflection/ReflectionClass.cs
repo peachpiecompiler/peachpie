@@ -131,14 +131,11 @@ namespace Pchp.Library.Reflection
         [return: CastToFalse]
         public string getFileName(Context ctx)
         {
-            if (_tinfo.RelativePath != null)
-            {
-                return Path.GetFullPath(Path.Combine(ctx.RootPath, _tinfo.RelativePath));
-            }
-            else
-            {
-                return null;
-            }
+            var path = _tinfo.RelativePath;
+
+            return path != null
+                ? Path.GetFullPath(Path.Combine(ctx.RootPath, path))
+                : null;
         }
 
         public PhpArray getInterfaceNames()
