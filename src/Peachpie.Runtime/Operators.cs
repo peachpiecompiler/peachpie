@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core.Reflection;
@@ -750,6 +751,200 @@ namespace Pchp.Core
             public void Reset() { }
         }
 
+        #region ClrEnumeratorFactory
+
+        abstract class ClrEnumeratorFactory
+        {
+            public static IPhpEnumerator CreateEnumerator(IEnumerable enumerable)
+            {
+                Debug.Assert(enumerable != null);
+
+                // special cases before using reflection
+                if (enumerable is IEnumerable<(PhpValue, PhpValue)> valval) return new ValueTupleEnumerator<PhpValue, PhpValue>(valval);
+                if (enumerable is IDictionary) return new DictionaryEnumerator(((IDictionary)enumerable).GetEnumerator());
+                if (enumerable is IEnumerable<KeyValuePair<object, object>> kv) return new KeyValueEnumerator<object, object>(kv);
+                if (enumerable is IEnumerable<object>) return new EnumerableEnumerator(enumerable.GetEnumerator());
+
+                // TODO: cache following for the enumerable type
+
+                // find IEnumerable<>
+                foreach (var iface_type in enumerable.GetType().GetTypeInfo().GetInterfaces())
+                {
+                    var iface_info = iface_type.GetTypeInfo();
+                    if (iface_info.IsGenericType && iface_info.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                    {
+                        var item_type = iface_info.GenericTypeArguments[0].GetTypeInfo();
+                        if (item_type.IsGenericType)
+                        {
+                            // ValueTuple<A, B>
+                            if (item_type.GetGenericTypeDefinition() == typeof(ValueTuple<,>))
+                            {
+                                return (ClrEnumerator)Activator.CreateInstance(
+                                    typeof(ValueTupleEnumerator<,>).MakeGenericType(item_type.GetGenericArguments()),
+                                    enumerable);
+                            }
+                            
+                            // KeyValuePair<A, B>
+                            if (item_type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
+                            {
+                                return (ClrEnumerator)Activator.CreateInstance(
+                                    typeof(KeyValueEnumerator<,>).MakeGenericType(item_type.GetGenericArguments()),
+                                    enumerable);
+                            }
+                        }
+                    }
+                }
+
+                // generic
+                return new EnumerableEnumerator(enumerable.GetEnumerator());
+            }
+
+            abstract class ClrEnumerator : IPhpEnumerator
+            {
+                abstract protected IEnumerator Enumerator { get; }
+
+                /// <summary>
+                /// Current key and value.
+                /// </summary>
+                PhpValue _key, _value;
+
+                abstract protected void FetchCurrent(ref PhpValue key, ref PhpValue value);
+
+                public bool AtEnd => throw new NotSupportedException();
+
+                public PhpValue CurrentValue => _value;
+
+                public PhpAlias CurrentValueAliased => _value.IsAlias ? _value.Alias : throw new InvalidOperationException();
+
+                public PhpValue CurrentKey => _key;
+
+                public KeyValuePair<PhpValue, PhpValue> Current => new KeyValuePair<PhpValue, PhpValue>(CurrentKey, CurrentValue);
+
+                object IEnumerator.Current => Enumerator.Current;
+
+                public void Dispose()
+                {
+                    _key = _value = PhpValue.Void;
+                    (Enumerator as IDisposable)?.Dispose();
+                }
+
+                public bool MoveFirst()
+                {
+                    Enumerator.Reset();
+                    return MoveNext();
+                }
+
+                public bool MoveLast()
+                {
+                    throw new NotImplementedException();
+                }
+
+                public bool MoveNext()
+                {
+                    if (Enumerator.MoveNext())
+                    {
+                        FetchCurrent(ref _key, ref _value);
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+
+                public bool MovePrevious()
+                {
+                    throw new NotSupportedException();
+                }
+
+                void IEnumerator.Reset() => Enumerator.Reset();
+            }
+
+            /// <summary>
+            /// Enumerator of <see cref="IEnumerable"/>.
+            /// </summary>
+            sealed class EnumerableEnumerator : ClrEnumerator
+            {
+                readonly IEnumerator _enumerator;
+
+                protected override IEnumerator Enumerator => _enumerator;
+
+                protected override void FetchCurrent(ref PhpValue key, ref PhpValue value)
+                {
+                    key = (PhpValue)(key.IsSet ? key.ToLong() + 1L : 0L);
+                    value = PhpValue.FromClr(_enumerator.Current);
+                }
+
+                public EnumerableEnumerator(IEnumerator enumerator)
+                {
+                    Debug.Assert(enumerator != null);
+                    _enumerator = enumerator;
+                }
+            }
+
+            /// <summary>
+            /// Enumerator of <see cref="IDictionary"/>
+            /// </summary>
+            sealed class DictionaryEnumerator : ClrEnumerator
+            {
+                readonly IDictionaryEnumerator _enumerator;
+                protected override IEnumerator Enumerator => _enumerator;
+
+                protected override void FetchCurrent(ref PhpValue key, ref PhpValue value)
+                {
+                    var entry = _enumerator.Entry;
+                    key = PhpValue.FromClr(entry.Key);
+                    value = PhpValue.FromClr(entry.Value);
+                }
+
+                public DictionaryEnumerator(IDictionaryEnumerator enumerator)
+                {
+                    Debug.Assert(enumerator != null);
+                    _enumerator = enumerator;
+                }
+            }
+
+            sealed class ValueTupleEnumerator<K, V> : ClrEnumerator
+            {
+                readonly IEnumerator<(K, V)> _enumerator;
+                protected override IEnumerator Enumerator => _enumerator;
+
+                protected override void FetchCurrent(ref PhpValue key, ref PhpValue value)
+                {
+                    var entry = _enumerator.Current;
+                    key = PhpValue.FromClr(entry.Item1);
+                    value = PhpValue.FromClr(entry.Item2);
+                }
+
+                public ValueTupleEnumerator(IEnumerable<(K, V)> enumerable)
+                {
+                    Debug.Assert(enumerable != null);
+                    _enumerator = enumerable.GetEnumerator();
+                }
+            }
+
+            sealed class KeyValueEnumerator<K, V> : ClrEnumerator
+            {
+                readonly IEnumerator<KeyValuePair<K, V>> _enumerator;
+                protected override IEnumerator Enumerator => _enumerator;
+
+                protected override void FetchCurrent(ref PhpValue key, ref PhpValue value)
+                {
+                    var entry = _enumerator.Current;
+                    key = PhpValue.FromClr(entry.Key);
+                    value = PhpValue.FromClr(entry.Value);
+                }
+
+                public KeyValueEnumerator(IEnumerable<KeyValuePair<K, V>> enumerable)
+                {
+                    Debug.Assert(enumerable != null);
+                    _enumerator = enumerable.GetEnumerator();
+                }
+            }
+        }
+
+        #endregion
+
         /// <summary>
         /// Resolves object enumerator.
         /// </summary>
@@ -787,10 +982,17 @@ namespace Pchp.Core
                     throw new ArgumentException(errmessage);
                 }
             }
+            else if (obj is IPhpEnumerable phpenumerable)
+            {
+                return phpenumerable.GetForeachEnumerator(aliasedValues, caller);
+            }
+            else if (obj is IEnumerable enumerable)
+            {
+                // IDictionaryEnumerator, IEnumerable<ValueTuple>, IEnumerable<KeyValuePair>, IEnumerable, ...
+                return ClrEnumeratorFactory.CreateEnumerator(enumerable);
+            }
             else
             {
-                // TODO: CLR enumerators: IDictionaryEnumerator, IEnumerable, IEnumerable<ValueTuple>, IEnumerable<KeyValuePair>
-
                 // PHP property enumeration
                 return new PhpFieldsEnumerator(obj, caller);
             }
