@@ -2,7 +2,7 @@
 
   <Import Project="..\..\build\Targets\Settings.props" />
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.5</TargetFrameworks>
+    <TargetFrameworks>netstandard1.5;net46</TargetFrameworks>
     <NoWarn>$(NoWarn);1591;1574</NoWarn>
     <AssemblyName>Peachpie.Library.Graphics</AssemblyName>
     <PackageId>Peachpie.Library.Graphics</PackageId>
@@ -17,13 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
-	<ProjectReference Include="..\Peachpie.Library\Peachpie.Library.csproj" />
+    <ProjectReference Include="..\Peachpie.Library\Peachpie.Library.csproj" />
   </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
-    <Reference Include="System" />
-	<Reference Include="System.Core" />
-	<Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
-
+  
 </Project>

@@ -49,6 +49,12 @@ namespace Pchp.Core
         /// </summary>
         void Flush();
 
+        /// <summary>
+        /// Gets max request size (upload size, post size) in bytes.
+        /// Gets <c>-1</c> if limit is not set.
+        /// </summary>
+        long MaxRequestSize { get; }
+
         #region session
 
         /// <summary>

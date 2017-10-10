@@ -726,5 +726,38 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        #region is_uploaded_file, move_uploaded_file
+
+        /// <summary>
+        /// Tells whether the file was uploaded via HTTP POST.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="path"></param>
+        public static bool is_uploaded_file(Context ctx, string path)
+        {
+            return !string.IsNullOrEmpty(path) && ctx.IsTemporaryFile(path);
+        }
+
+        /// <summary>
+        /// Moves an uploaded file to a new location.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="path"></param>
+        /// <param name="destination"></param>
+        /// <returns></returns>
+        public static bool move_uploaded_file(Context ctx, string path, string destination)
+        {
+            if (path == null || !ctx.IsTemporaryFile(path)) return false;
+            
+            try { System.IO.File.Delete(destination); } catch { }
+            System.IO.File.Move(path, destination);
+
+            ctx.RemoveTemporaryFile(path);
+
+            return true;
+        }
+
+        #endregion
     }
 }

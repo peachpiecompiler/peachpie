@@ -27,7 +27,7 @@ namespace Pchp.Library
             /// <summary>
             /// Gets or sets a value of a legacy configuration option.
             /// </summary>
-            private static PhpValue GetSet(IPhpConfigurationService config, string option, PhpValue value, IniAction action)
+            private static PhpValue GetSet(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
             {
                 var local = config.Get<IconvConfig>();
                 if (local == null)

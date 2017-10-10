@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml;
 using System.Xml.XPath;
@@ -807,7 +808,17 @@ namespace Peachpie.Library.XmlDom
 
         #endregion
 
-        #region Internal overrides: Property access
+        #region Magic methods: Property access
+
+        /// <summary>
+        /// Special field containing runtime fields.
+        /// </summary>
+        /// <remarks>
+        /// The field is handled by runtime and is not intended for direct use.
+        /// Magic methods for property access are ignored without runtime fields.
+        /// </remarks>
+        [CompilerGenerated]
+        internal PhpArray __peach__runtimeFields = null;
 
         /// <summary>
         /// Property reading (i.e. child element getter).

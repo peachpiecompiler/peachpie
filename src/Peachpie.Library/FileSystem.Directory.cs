@@ -16,7 +16,7 @@ namespace Pchp.Library
     /// User-like class encapsulating enumeration of a Directory. 
     /// Uses the PhpDirectory implementation upon PhpWrapper streams.
     /// </summary>
-    [PhpType("Directory")]
+    [PhpType(PhpTypeAttribute.InheritName)]
     public class Directory
     {
         #region Fields

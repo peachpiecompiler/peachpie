@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Web;
+using System.Web.Configuration;
 using Pchp.Core;
 using Pchp.Core.Utilities;
 
@@ -125,7 +126,7 @@ namespace Peachpie.RequestHandler
             //}
             if (name.EqualsOrdinalIgnoreCase("content-type"))
             {
-                 _httpctx.Response.ContentType = value;
+                _httpctx.Response.ContentType = value;
                 // _httpctx.Response.ContentEncoding = contentEncoding.Encoding;
             }
             //else if (name.EqualsOrdinalIgnoreCase("content-encoding"))
@@ -208,6 +209,21 @@ namespace Peachpie.RequestHandler
         void IHttpPhpContext.Flush()
         {
             _httpctx.Response.Flush();
+        }
+
+        /// <summary>
+        /// Gets max request size (upload size, post size) in bytes.
+        /// Gets <c>0</c> if limit is not set.
+        /// </summary>
+        public long MaxRequestSize
+        {
+            get
+            {
+                var http_runtime_section = (HttpRuntimeSection)_httpctx.GetSection("system.web/httpRuntime");
+                return (http_runtime_section != null)
+                    ? http_runtime_section.MaxRequestLength * 1024
+                    : 0;// values in config are in kB
+            }
         }
 
         /// <summary>
@@ -419,9 +435,81 @@ namespace Peachpie.RequestHandler
             return result;
         }
 
+        /// <summary>
+		/// Loads $_FILES from HttpRequest.Files.
+		/// </summary>
+		/// <remarks>
+		/// <list type="bullet">
+		///   <item>$_FILES[{var_name}]['name'] - The original name of the file on the client machine.</item>
+		///   <item>$_FILES[{var_name}]['type'] - The mime type of the file, if the browser provided this information. An example would be "image/gif".</item>
+		///   <item>$_FILES[{var_name}]['size'] - The size, in bytes, of the uploaded file.</item> 
+		///   <item>$_FILES[{var_name}]['tmp_name'] - The temporary filename of the file in which the uploaded file was stored on the server.</item>
+		///   <item>$_FILES[{var_name}]['error'] - The error code associated with this file upload.</item> 
+		/// </list>
+		/// </remarks>
         protected override PhpArray InitFilesVariable()
         {
-            return base.InitFilesVariable();
+            PhpArray files;
+            int count;
+
+            var request = _httpctx.Request;
+            if ((count = request.Files.Count) != 0)
+            {
+                files = new PhpArray(count);
+
+                // gets a path where temporary files are stored:
+                var temppath = Path.GetTempPath(); // global_config.PostedFiles.GetTempPath(global_config.SafeMode);
+                // temporary file name (first part)
+                var basetempfilename = string.Concat("php_", _httpctx.Timestamp.Ticks.ToString("x"), "-");
+                var basetempfileid = this.GetHashCode();
+
+                for (int i = 0; i < count; i++)
+                {
+                    string name = request.Files.GetKey(i);
+                    string file_path, type, file_name;
+                    HttpPostedFile file = request.Files[i];
+                    int error = 0;
+
+                    if (!string.IsNullOrEmpty(file.FileName))
+                    {
+                        type = file.ContentType;
+
+                        // CONSIDER: keep files in memory, use something like virtual fs (ASP.NET Core has one) or define post:// paths ?
+
+                        var tempfilename = string.Concat(basetempfilename, (basetempfileid++).ToString("X"), ".tmp");
+                        file_path = Path.Combine(temppath, tempfilename);
+                        file_name = Path.GetFileName(file.FileName);
+
+                        // registers the temporary file for deletion at request end:
+                        AddTemporaryFile(file_path);
+
+                        // saves uploaded content to the temporary file:
+                        file.SaveAs(file_path);
+                    }
+                    else
+                    {
+                        file_path = type = file_name = string.Empty;
+                        error = 4; // PostedFileError.NoFile;
+                    }
+
+                    //
+                    files[name] = (PhpValue)new PhpArray(5)
+                    {
+                        { "name", file_name },
+                        { "type",type },
+                        { "tmp_name",file_path },
+                        { "error", error },
+                        { "size", file.ContentLength },
+                    };
+                }
+            }
+            else
+            {
+                files = PhpArray.NewEmpty();
+            }
+
+            //
+            return files;
         }
 
         protected override PhpArray InitCookieVariable()

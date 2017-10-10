@@ -32,7 +32,7 @@ namespace Pchp.Library
             /// <summary>
             /// Gets, sets, or restores a value of a legacy configuration option.
             /// </summary>
-            private static PhpValue GetSet(IPhpConfigurationService config, string option, PhpValue value, IniAction action)
+            private static PhpValue GetSet(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
             {
                 switch (option)
                 {

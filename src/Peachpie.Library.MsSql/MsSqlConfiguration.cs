@@ -43,7 +43,7 @@ namespace Peachpie.Library.MsSql
         /// <summary>
 		/// Gets or sets a value of a legacy configuration option.
 		/// </summary>
-		static PhpValue GetSet(IPhpConfigurationService config, string option, PhpValue value, IniAction action)
+		static PhpValue GetSet(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
         {
             var local = config.Get<MsSqlConfiguration>();
 

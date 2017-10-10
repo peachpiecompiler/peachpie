@@ -47,13 +47,13 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets the full type name in PHP syntax, cannot be <c>null</c> or empty.
         /// </summary>
-        public string Name => _name;
-        protected readonly string _name;
+        public string Name { get; }
 
         /// <summary>
-        /// Gets the relative path to the file where the type is declared. Null, if the type is from core, eval etc.
+        /// Gets the relative path to the file where the type is declared.
+        /// Gets <c>null</c> if the type is from core, eval etc.
         /// </summary>
-        public string RelativePath { get; }
+        public string RelativePath => _type.GetCustomAttribute<PhpTypeAttribute>(false)?.FileName;
 
         /// <summary>
         /// CLR type declaration.
@@ -228,33 +228,43 @@ namespace Pchp.Core.Reflection
             _type = t.GetTypeInfo();
 
             var attr = _type.GetCustomAttribute<PhpTypeAttribute>(false);
-            RelativePath = ResolveRelativePath(attr);
-            _name = ResolvePhpTypeName(_type, attr);
-
-            // remove suffixed indexes (after a special metadata character)
-            var idx = _name.IndexOfAny(_metadataSeparators);
-            if (idx >= 0)
-            {
-                _name = _name.Remove(idx);
-            }
-
+            Name = ResolvePhpTypeName(_type, attr);
+            
             // register type in extension tables
             ExtensionsAppContext.ExtensionsTable.AddType(this);
         }
-
-        private static string ResolveRelativePath(PhpTypeAttribute attr) => attr?.FileName;
 
         /// <summary>
         /// Resolves PHP-like type name.
         /// </summary>
         static string ResolvePhpTypeName(TypeInfo tinfo, PhpTypeAttribute attr)
         {
-            var explicitName = attr?.ExplicitTypeName;
-            return (explicitName == null)
-                ? tinfo.FullName            // full PHP type name instead of CLR type name
+            string name;
+
+            if (attr != null && (name = attr.ExplicitTypeName) != null)
+            {
+                // explicitly specified type name
+                name = name.Replace(PhpTypeAttribute.InheritName, tinfo.Name);
+            }
+            else
+            {
+                // CLR type
+                name = tinfo.FullName       // full PHP type name instead of CLR type name
                    .Replace('.', '\\')      // namespace separator
-                   .Replace('+', '\\')      // nested type separator
-                : explicitName.Replace(PhpTypeAttribute.InheritName, tinfo.Name);
+                   .Replace('+', '\\');     // nested type separator
+
+                // remove suffixed indexes (after a special metadata character)
+                var idx = name.IndexOfAny(_metadataSeparators);
+                if (idx >= 0)
+                {
+                    name = name.Remove(idx);
+                }
+            }
+
+            Debug.Assert(ReflectionUtils.IsAllowedPhpName(name));
+            
+            //
+            return name;
         }
 
         /// <summary>

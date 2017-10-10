@@ -4,8 +4,10 @@ using System.IO;
 using System.Runtime.InteropServices;
 using ImageSharp;
 using ImageSharp.Formats;
+using ImageSharp.Processing;
 using Pchp.Core;
 using Pchp.Library.Streams;
+using SixLabors.Primitives;
 
 namespace Peachpie.Library.Graphics
 {
@@ -303,6 +305,64 @@ namespace Peachpie.Library.Graphics
             return (int)ImgType.Supported;
         }
 
+        #region imagecopyresampled, imagecopyresized
+
+        /// <summary>
+        /// Copy and resize part of an image using resampling to help ensure clarity.
+        /// </summary> 
+        public static bool imagecopyresampled(PhpResource dst_im, PhpResource src_im,
+            int dst_x, int dst_y, int src_x, int src_y, int dst_w, int dst_h, int src_w, int src_h)
+        {
+            return ImageCopyAndResize(dst_im, src_im,
+                dst_x, dst_y, src_x, src_y,
+                dst_w, dst_h, src_w, src_h,
+                new BicubicResampler());
+        }
+
+        /// <summary>
+        /// Copy and resize part of an image.
+        /// </summary> 
+        public static bool imagecopyresized(PhpResource dst_im, PhpResource src_im,
+            int dst_x, int dst_y, int src_x, int src_y, int dst_w, int dst_h, int src_w, int src_h)
+        {
+            return ImageCopyAndResize(dst_im, src_im,
+                dst_x, dst_y, src_x, src_y,
+                dst_w, dst_h, src_w, src_h,
+                new NearestNeighborResampler());
+        }
+
+        static bool ImageCopyAndResize(PhpResource dst_im, PhpResource src_im,
+            int dst_x, int dst_y, int src_x, int src_y, int dst_w, int dst_h,
+            int src_w, int src_h, IResampler resampler)
+        {
+            var dst_img = PhpGdImageResource.ValidImage(dst_im);
+            var src_img = PhpGdImageResource.ValidImage(src_im);
+
+            if (dst_img == null || src_img == null)
+            {
+                return false;
+            }
+
+            //if (src_w == 0 && src_h == 0)
+            //    return true;
+
+            if (dst_w == 0 || dst_h == 0)
+                return true;
+
+            //if (dst_w < 0) dst_w = 0;
+            //if (dst_h < 0) dst_h = 0;
+
+            var src = src_img.Image
+                .Crop(new Rectangle(src_x, src_y, src_w, src_h))
+                .Resize(dst_w, dst_h, resampler);
+
+            dst_img.Image.DrawImage(src, new Size(dst_w, dst_h), new Point(dst_x, dst_y), GraphicsOptions.Default);
+
+            return true;
+        }
+
+        #endregion
+
         #region imagecreate*
 
         /// <summary>
@@ -554,6 +614,86 @@ namespace Peachpie.Library.Graphics
             return !img.IsIndexed;
         }
 
+        #region imagecolorallocate, imagecolorallocatealpha
+
+        /// <summary>
+        /// Allocate a color for an image
+        /// </summary> 
+        public static int imagecolorallocate(PhpResource im, int red, int green, int blue)
+        {
+            var img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+                return -1; // TODO: false
+
+            //TODO: In non-truecolor images allocate the color
+            return RGBA(red, green, blue);
+        }
+
+        /// <summary>
+        /// Allocate a color with an alpha level.  Works for true color and palette based images.
+        /// </summary>
+        public static int imagecolorallocatealpha(PhpResource im, int red, int green, int blue, int alpha)
+        {
+            var img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+                return -1;// TODO: false
+
+            //TODO: In non-truecolor images allocate the color
+            return RGBA(red, green, blue, alpha);
+        }
+
+        /// <summary>
+        /// RGBA values to PHP Color format.
+        /// </summary>
+        static int RGBA(int red, int green, int blue, int alpha = 0)
+        {
+            return (alpha << 24)
+                | (blue & 0x0000FF)
+                | ((green & 0x0000FF) << 8)
+                | ((red & 0x0000FF) << 16);
+        }
+
+        #endregion
+
+        #region imagesavealpha
+
+        /// <summary>
+        /// Include alpha channel to a saved image
+        /// </summary> 
+        public static bool imagesavealpha(PhpResource im, bool on)
+        {
+            var img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+                return false;
+
+            img.SaveAlpha = on;
+
+            return true;
+        }
+
+        #endregion
+
+        #region imagerotate
+
+        /// <summary>
+        /// Rotates the image image using the given angle in degrees.
+        /// The center of rotation is the center of the image, and the rotated image may have different dimensions than the original image.
+        /// </summary>
+        [return: CastToFalse]
+        public static PhpResource imagerotate(PhpResource im, double angle, int bgcolor, bool ignore_transparent = false)
+        {
+            var img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+            {
+                return null;
+            }
+
+            //
+            return new PhpGdImageResource(new Image<Rgba32>(img.Image).Rotate((float)(angle * (- Math.PI / 180.0)), true), img.Format);
+        }
+
+        #endregion
+
         /// <summary>
         /// Output WBMP image to browser or file
         /// </summary> 
@@ -601,7 +741,7 @@ namespace Peachpie.Library.Graphics
             {
                 img.BackgroundColor(Rgba32.Transparent);
                 img.SaveAsGif(stream);
-            });            
+            });
         }
 
         public static bool imagegif(Context ctx, PhpResource im) => imagegif(ctx, im, PhpValue.Null);
@@ -615,7 +755,7 @@ namespace Peachpie.Library.Graphics
 
             return imagesave(ctx, im, to, (img, stream) =>
             {
-                img.SaveAsPng(stream, new PngEncoder(){ CompressionLevel = quality });
+                img.SaveAsPng(stream, new PngEncoder() { CompressionLevel = quality });
             });
         }
 
@@ -642,42 +782,44 @@ namespace Peachpie.Library.Graphics
 
             try
             {
-                var filename = to.ToStringOrNull();
-                PhpStream phpstream;
-
-                // either save to a file or to output stream
-                if (filename == null)
+                // not specified stream or filename -> save to the output stream
+                if (to.IsEmpty)
                 {
                     saveaction(img.Image, ctx.OutputStream);
+                    return true;
                 }
-                else if (to.IsEmpty)
+
+                // filename specified?
+                var filename = to.ToStringOrNull();
+                if (filename != null)
                 {
                     using (var stream = File.OpenWrite(Path.Combine(ctx.WorkingDirectory, filename)))
                     {
                         saveaction(img.Image, stream);
                     }
+
+                    return true;
                 }
-                else
+
+                // to a PHP stream ?
+                // validate the stream resource, outputs warning in case of invalid resource
+                var phpstream = PhpStream.GetValid(to.AsObject() as PhpResource, FileAccess.Write);
+                if (phpstream == null)
                 {
-                    // validate the stream resource, outputs warning in case of invalid resource
-                    phpstream = PhpStream.GetValid(to.AsObject() as PhpResource, FileAccess.Write);
-                    if (phpstream == null)
-                    {
-                        return false;
-                    }
-
-                    // save image to byte[] and pass it to php stream
-
-                    var ms = new MemoryStream();
-
-                    saveaction(img.Image, ms);
-
-                    phpstream.WriteBytes(ms.ToArray());
-                    phpstream.Flush();
-
-                    // stream is closed after the operation
-                    phpstream.Dispose();
+                    return false;
                 }
+
+                // save image to byte[] and pass it to php stream
+
+                var ms = new MemoryStream();
+
+                saveaction(img.Image, ms);
+
+                phpstream.WriteBytes(ms.ToArray());
+                phpstream.Flush();
+
+                // stream is closed after the operation
+                phpstream.Dispose();
             }
             catch
             {
@@ -686,5 +828,6 @@ namespace Peachpie.Library.Graphics
 
             return true;
         }
+
     }
 }
