@@ -287,6 +287,8 @@ namespace Pchp.Core
 
         public static explicit operator long(PhpValue value) => value.ToLong();
 
+        public static explicit operator ushort(PhpValue value) => checked((ushort)value.ToLong());
+
         public static explicit operator int(PhpValue value) => checked((int)value.ToLong());
 
         public static explicit operator uint(PhpValue value) => checked((uint)value.ToLong());
