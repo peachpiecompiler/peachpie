@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using Pchp.Core.Reflection;
+using System.Reflection;
 
 namespace Pchp.Core
 {
@@ -545,8 +546,9 @@ namespace Pchp.Core
             {
                 var obj = me.Object;
 
-                if (obj is IPhpCallable) return (IPhpCallable)obj;
-
+                if (obj is IPhpCallable) return (IPhpCallable)obj;  // classes with __invoke() magic method implements IPhpCallable
+                if (obj is Delegate d) return RoutineInfo.CreateUserRoutine(d.GetMethodInfo().Name, d);
+                
                 throw new NotImplementedException();    // return PhpCallback.Create(obj);
             }
             public override string DisplayString(ref PhpValue me) => me.Object.GetType().FullName.Replace('.', '\\') + "#" + me.Object.GetHashCode().ToString("X");

@@ -13,7 +13,7 @@ namespace Pchp.Core.Reflection
     /// Runtime information about a function.
     /// </summary>
     [DebuggerDisplay("{Name,nq}")]
-    public abstract class RoutineInfo
+    public abstract class RoutineInfo : IPhpCallable
     {
         /// <summary>
         /// Index to the routine slot.
@@ -87,6 +87,14 @@ namespace Pchp.Core.Reflection
         /// <param name="delegate">.NET delegate.</param>
         /// <returns>Instance of routine info with uninitialized slot index and unbound delegate.</returns>
         public static RoutineInfo CreateUserRoutine(string name, Delegate @delegate) => new DelegateRoutineInfo(name, @delegate);
+
+        #region IPhpCallable
+
+        PhpValue IPhpCallable.Invoke(Context ctx, params PhpValue[] arguments) => Invoke(ctx, Target, arguments);
+
+        PhpValue IPhpCallable.ToPhpValue() => PhpValue.Void;
+
+        #endregion
     }
 
     internal class PhpRoutineInfo : RoutineInfo
@@ -101,7 +109,7 @@ namespace Pchp.Core.Reflection
 
         public override int GetHashCode() => _handle.GetHashCode();
 
-        public override MethodInfo[] Methods => new [] { (MethodInfo)MethodBase.GetMethodFromHandle(_handle) };
+        public override MethodInfo[] Methods => new[] { (MethodInfo)MethodBase.GetMethodFromHandle(_handle) };
 
         public override PhpCallable PhpCallable => _lazyDelegate ?? (_lazyDelegate = BindDelegate());
 
@@ -120,7 +128,13 @@ namespace Pchp.Core.Reflection
     internal class DelegateRoutineInfo : RoutineInfo
     {
         Delegate _delegate;
-        PhpCallable _lazyDelegate;
+        PhpInvokable _lazyInvokable;
+
+        /// <summary>
+        /// Cache of already bound methods,
+        /// avoids unnecessary allocations and dynamic code emittion.
+        /// </summary>
+        static readonly Dictionary<MethodInfo, PhpInvokable> s_bound = new Dictionary<MethodInfo, PhpInvokable>();
 
         public override MethodInfo[] Methods => new[] { _delegate.GetMethodInfo() };
 
@@ -128,22 +142,32 @@ namespace Pchp.Core.Reflection
 
         public override int GetHashCode() => _delegate.GetHashCode();
 
-        public override PhpCallable PhpCallable => _lazyDelegate ?? (_lazyDelegate = BindDelegate());
+        internal PhpInvokable PhpInvokable => _lazyInvokable ?? BindDelegate();
 
-        PhpCallable BindDelegate()
+        PhpInvokable BindDelegate()
         {
-            return (_delegate as PhpCallable) ?? Dynamic.BinderHelpers.BindToPhpCallable(_delegate.GetMethodInfo());
+            var method = _delegate.GetMethodInfo();
+
+            if (!s_bound.TryGetValue(method, out _lazyInvokable))   // TODO: RW lock
+            {
+                lock (s_bound)
+                {
+                    s_bound[method] = _lazyInvokable = Dynamic.BinderHelpers.BindToPhpInvokable(new[] { method });
+                }
+            }
+
+            //
+            return _lazyInvokable;
         }
+
+        public override PhpCallable PhpCallable => (ctx, args) => Invoke(ctx, Target, args);
+
+        public override PhpValue Invoke(Context ctx, object target, params PhpValue[] arguments) => PhpInvokable(ctx, target, arguments);
 
         public DelegateRoutineInfo(string name, Delegate @delegate)
             : base(0, name)
         {
-            if (@delegate == null)
-            {
-                throw new ArgumentNullException(nameof(@delegate));
-            }
-
-            _delegate = @delegate;
+            _delegate = @delegate ?? throw new ArgumentNullException(nameof(@delegate));
         }
     }
 
