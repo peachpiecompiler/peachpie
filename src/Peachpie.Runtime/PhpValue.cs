@@ -287,6 +287,10 @@ namespace Pchp.Core
 
         public static explicit operator long(PhpValue value) => value.ToLong();
 
+        public static explicit operator int(PhpValue value) => checked((int)value.ToLong());
+
+        public static explicit operator uint(PhpValue value) => checked((uint)value.ToLong());
+
         public static explicit operator double(PhpValue value) => value.ToDouble();
 
         public static explicit operator PhpNumber(PhpValue value)
@@ -600,7 +604,8 @@ namespace Pchp.Core
                 if (value.GetType() == typeof(PhpAlias)) return Create((PhpAlias)value);
                 if (value.GetType() == typeof(PhpArray)) return Create((PhpArray)value);
                 if (value.GetType() == typeof(PhpValue)) return (PhpValue)value;
-
+                if (value.GetType() == typeof(uint)) return Create((long)(uint)value);
+                
                 //                
                 return FromClass(value);
             }
