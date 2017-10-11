@@ -94,12 +94,17 @@ namespace Pchp.Core.Dynamic
         {
             var source = expr.Type;
 
-            if (source == typeof(int) || source == typeof(uint)) return Expression.Convert(expr, typeof(long));
-            if (source == typeof(long)) return expr;    // unreachable
-            if (source == typeof(double)) return Expression.Convert(expr, typeof(long));
+            if (source == typeof(int) || source == typeof(uint) ||
+                source == typeof(double) || source == typeof(float))
+            {
+                // (long)expr
+                return Expression.Convert(expr, typeof(long));
+            }
+
             if (source == typeof(PhpNumber)) return Expression.Call(expr, typeof(PhpNumber).GetMethod("ToLong", Cache.Types.Empty));
             if (source == typeof(PhpArray)) return Expression.Call(expr, typeof(PhpArray).GetMethod("ToLong", Cache.Types.Empty));
             if (source == typeof(void)) return VoidAsConstant(expr, 0L, typeof(long));
+            if (source == typeof(long)) return expr;    // unreachable
 
             // TODO: following conversions may fail, we should report it failed and throw an error
             if (source == typeof(PhpValue)) return Expression.Call(expr, typeof(PhpValue).GetMethod("ToLong", Cache.Types.Empty));
@@ -118,6 +123,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(PhpArray)) return Expression.Call(expr, typeof(PhpArray).GetMethod("ToDouble", Cache.Types.Empty));
             if (source == typeof(void)) return VoidAsConstant(expr, 0.0, typeof(double));
             if (source == typeof(double)) return expr;
+            if (source == typeof(float)) return Expression.Convert(expr, typeof(double));
 
             // TODO: following conversions may fail, we should report it failed and throw an error
             if (source == typeof(PhpValue)) return Expression.Call(expr, typeof(PhpValue).GetMethod("ToDouble", Cache.Types.Empty));
@@ -152,6 +158,9 @@ namespace Pchp.Core.Dynamic
 
             if (source == typeof(double))
                 return Expression.Call(Cache.Object.ToString_Double_Context, expr, ctx);
+
+            if (source == typeof(float))
+                return Expression.Call(Cache.Object.ToString_Double_Context, Expression.Convert(expr, typeof(double)), ctx);    // ToString((double)expr, ctx)
 
             if (source == typeof(bool))
                 return Expression.Call(Cache.Object.ToString_Bool, expr);
@@ -195,7 +204,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(int) ||
                 source == typeof(uint) ||
                 source == typeof(long) ||
-                source == typeof(double))   // TODO: ToString_Double_Context
+                source == typeof(float) || source == typeof(double))   // TODO: ToString_Double_Context
             {
                 expr = Expression.Call(expr, Cache.Object.ToString);
                 source = expr.Type;
@@ -241,6 +250,7 @@ namespace Pchp.Core.Dynamic
             //
             if (source == typeof(long)) return Expression.Call(typeof(PhpNumber).GetMethod("Create", Cache.Types.Long), expr);
             if (source == typeof(double)) return Expression.Call(typeof(PhpNumber).GetMethod("Create", Cache.Types.Double), expr);
+            if (source == typeof(float)) return Expression.Call(typeof(PhpNumber).GetMethod("Create", Cache.Types.Double), Expression.Convert(expr, typeof(double)));
             if (source == typeof(void)) return VoidAsConstant(expr, PhpNumber.Default, typeof(PhpNumber));
             if (source == typeof(PhpNumber)) return expr;
             if (source == typeof(PhpValue)) return Expression.Convert(expr, typeof(PhpNumber));
@@ -259,6 +269,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(long)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.Long), expr);
             if (source == typeof(uint)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.Long), Expression.Convert(expr, typeof(long)));
             if (source == typeof(double)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.Double), expr);
+            if (source == typeof(float)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.Double), Expression.Convert(expr, typeof(double)));
             if (source == typeof(string)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.String), expr);
             if (source == typeof(PhpString)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpString), expr);
             if (source == typeof(PhpNumber)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpNumber), expr);
@@ -403,7 +414,7 @@ namespace Pchp.Core.Dynamic
             }
 
             if (t == typeof(PhpValue)) return BindCostFromValue(arg, target);
-            if (t == typeof(double)) return Expression.Constant(BindCostFromDouble(arg, target));
+            if (t == typeof(double) || t == typeof(float)) return Expression.Constant(BindCostFromDouble(arg, target));
             if (t == typeof(long) || t == typeof(int) || t == typeof(uint)) return Expression.Constant(BindCostFromLong(arg, target));
             if (t == typeof(PhpNumber)) return BindCostFromNumber(arg, target);
             if (t == typeof(string)) return Expression.Constant(BindCostFromString(arg, target));
@@ -453,7 +464,7 @@ namespace Pchp.Core.Dynamic
 
         static ConversionCost BindCostFromDouble(Expression arg, Type target)
         {
-            if (target == typeof(double)) return (ConversionCost.Pass);
+            if (target == typeof(double) || target == typeof(float)) return (ConversionCost.Pass);
             if (target == typeof(PhpNumber)) return (ConversionCost.PassCostly);
             if (target == typeof(long) || target == typeof(int) || target == typeof(uint)) return (ConversionCost.LoosingPrecision);
             if (target == typeof(bool)) return (ConversionCost.LoosingPrecision);
@@ -468,7 +479,7 @@ namespace Pchp.Core.Dynamic
         {
             if (target == typeof(int) || target == typeof(long) || target == typeof(uint)) return (ConversionCost.Pass);
             if (target == typeof(PhpNumber)) return (ConversionCost.PassCostly);
-            if (target == typeof(double)) return (ConversionCost.ImplicitCast);
+            if (target == typeof(double) || target == typeof(float)) return (ConversionCost.ImplicitCast);
             if (target == typeof(bool)) return (ConversionCost.LoosingPrecision);
             if (target == typeof(PhpValue)) return (ConversionCost.PassCostly);
             if (target == typeof(string) || target == typeof(PhpString)) return (ConversionCost.ImplicitCast);
@@ -480,7 +491,7 @@ namespace Pchp.Core.Dynamic
 
         static Expression BindCostFromNumber(Expression arg, Type target)
         {
-            if (target == typeof(double) || target == typeof(long) || target == typeof(int) || target == typeof(uint))
+            if (target == typeof(double) || target == typeof(long) || target == typeof(int) || target == typeof(uint) || target == typeof(float))
             {
                 return Expression.Call(typeof(CostOf).GetMethod("To" + target.Name, arg.Type), arg);
             }
@@ -497,7 +508,7 @@ namespace Pchp.Core.Dynamic
         {
             if (target == typeof(bool)) return (ConversionCost.LoosingPrecision);
             if (target == typeof(long) || target == typeof(uint) || target == typeof(int)) return (ConversionCost.LoosingPrecision);
-            if (target == typeof(double)) return (ConversionCost.LoosingPrecision);
+            if (target == typeof(double) || target == typeof(float)) return (ConversionCost.LoosingPrecision);
             if (target == typeof(PhpNumber)) return (ConversionCost.LoosingPrecision);
             if (target == typeof(string)) return (ConversionCost.Pass);
             if (target == typeof(PhpString)) return (ConversionCost.PassCostly);
@@ -514,7 +525,7 @@ namespace Pchp.Core.Dynamic
         {
             if (target == typeof(bool)) return (ConversionCost.LoosingPrecision);
             if (target == typeof(long) || target == typeof(uint) || target == typeof(int)) return (ConversionCost.LoosingPrecision);
-            if (target == typeof(double)) return (ConversionCost.LoosingPrecision);
+            if (target == typeof(double) || target == typeof(float)) return (ConversionCost.LoosingPrecision);
             if (target == typeof(PhpNumber)) return (ConversionCost.LoosingPrecision);
             if (target == typeof(string)) return (ConversionCost.PassCostly);
             if (target == typeof(PhpString)) return (ConversionCost.Pass);
