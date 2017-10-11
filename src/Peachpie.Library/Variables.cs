@@ -454,8 +454,9 @@ namespace Pchp.Library
         public static bool is_iterable(PhpValue variable)
         {
             var obj = variable.Object;
+
             return
-                variable.IsArray ||
+                obj is System.Collections.IEnumerable ||    // => PhpArray
                 obj is Traversable ||
                 (obj is PhpAlias alias && is_iterable(alias.Value));
         }

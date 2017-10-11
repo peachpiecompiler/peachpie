@@ -238,7 +238,7 @@ namespace Pchp.Core
                     // [] -> array
                     return new PhpArray((Array)obj);
                 }
-                // TODO: IList
+                // TODO: IEnumerable, IList (the same behavior as foreach)
                 else
                 {
                     // obj -> array
