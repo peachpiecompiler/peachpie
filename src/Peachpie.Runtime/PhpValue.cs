@@ -455,7 +455,9 @@ namespace Pchp.Core
 
             if (type == typeof(long)) return this.ToLong();
             if (type == typeof(int)) return (int)this.ToLong();
+            if (type == typeof(uint)) return (uint)this.ToLong();
             if (type == typeof(double)) return this.ToDouble();
+            if (type == typeof(float)) return (float)this.ToDouble();
             if (type == typeof(bool)) return this.ToBoolean();
             if (type == typeof(PhpArray)) return this.ToArray();
             if (type == typeof(string)) return this.ToString();
@@ -600,15 +602,17 @@ namespace Pchp.Core
                 if (value.GetType() == typeof(int)) return Create((int)value);
                 if (value.GetType() == typeof(long)) return Create((long)value);
                 if (value.GetType() == typeof(double)) return Create((double)value);
+                if (value.GetType() == typeof(float)) return Create((float)value);
                 if (value.GetType() == typeof(bool)) return Create((bool)value);
                 if (value.GetType() == typeof(string)) return Create((string)value);
                 if (value.GetType() == typeof(PhpString)) return Create((PhpString)value);
                 if (value.GetType() == typeof(PhpAlias)) return Create((PhpAlias)value);
                 if (value.GetType() == typeof(PhpArray)) return Create((PhpArray)value);
                 if (value.GetType() == typeof(PhpValue)) return (PhpValue)value;
-                if (value.GetType() == typeof(uint)) return Create((long)(uint)value);
-                
-                //                
+                if (value.GetType() == typeof(PhpNumber)) return Create((PhpNumber)value);
+                if (value.GetType() == typeof(uint)) return Create((uint)value);
+
+                // object        
                 return FromClass(value);
             }
             else
