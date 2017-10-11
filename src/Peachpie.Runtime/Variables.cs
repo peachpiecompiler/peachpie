@@ -475,6 +475,7 @@ namespace Pchp.Core
             if (value.TypeCode == PhpTypeCode.Int32)
             {
                 l = value.ToLong();
+                return true;
             }
 
             if (value.TypeCode == PhpTypeCode.Alias)

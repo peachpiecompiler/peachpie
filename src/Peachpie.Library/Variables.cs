@@ -317,11 +317,14 @@ namespace Pchp.Library
                     return true;
 
                 case "string":
-                    variable = PhpValue.Create(variable.ToString(ctx));
+                    if (variable.TypeCode != PhpTypeCode.WritableString)    // already a string with possible binary data
+                    {
+                        variable = PhpValue.Create(variable.ToString(ctx));
+                    }
                     return true;
 
                 case "array":
-                    variable = PhpValue.Create(variable.AsArray());
+                    variable = PhpValue.Create(variable.ToArray());
                     return true;
 
                 case "object":
