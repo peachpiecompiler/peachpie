@@ -470,5 +470,29 @@ namespace Pchp.Library
         /// Returns a unique identifier for the current thread.
         /// </summary>
         public static int zend_thread_id() => System.Threading.Thread.CurrentThread.ManagedThreadId;
+
+        #region usleep, sleep
+
+        /// <summary>
+        /// Delay execution in microseconds.
+        /// </summary>
+        public static void usleep(long microseconds)
+        {
+            if (microseconds < 0) throw new ArgumentOutOfRangeException();
+            System.Threading.Thread.Sleep((int)(microseconds / 1000L));
+        }
+
+        /// <summary>
+        /// Delay execution.
+        /// </summary>
+        //[return: CastToFalse]
+        public static int sleep(long seconds)
+        {
+            if (seconds < 0) throw new ArgumentOutOfRangeException();
+            System.Threading.Thread.Sleep((int)(seconds * 1000L));
+            return 0;
+        }
+
+        #endregion
     }
 }
