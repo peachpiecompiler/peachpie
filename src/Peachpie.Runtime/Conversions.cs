@@ -238,7 +238,11 @@ namespace Pchp.Core
                     // [] -> array
                     return new PhpArray((Array)obj);
                 }
-                // TODO: IEnumerable, IList (the same behavior as foreach)
+                else if (obj is System.Collections.IEnumerable)
+                {
+                    // the same behavior as foreach for CLR enumerators
+                    return PhpArray.Create(Operators.GetForeachEnumerator((System.Collections.IEnumerable)obj));
+                }
                 else
                 {
                     // obj -> array

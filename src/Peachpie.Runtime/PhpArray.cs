@@ -253,6 +253,25 @@ namespace Pchp.Core
             };
         }
 
+        /// <summary>
+        /// Creates array from PHP enumerator.
+        /// </summary>
+        internal static PhpArray Create(IPhpEnumerator phpenumerator)
+        {
+            Debug.Assert(phpenumerator != null);
+
+            var arr = new PhpArray();
+
+            while (phpenumerator.MoveNext())
+            {
+                var current = phpenumerator.Current;
+                arr.Add(current.Key.ToIntStringKey(), current.Value);
+            }
+
+            //
+            return arr;
+        }
+
         #endregion
 
         #region Operators
