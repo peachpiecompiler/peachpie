@@ -290,6 +290,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             var enumeratorPlace = new LocalPlace(_enumeratorLoc);
 
+            // NOTE: PHP writes first to {valueVar} then to {keyVar}
+
             if (_currentValue != null && _currentKey != null)
             {
                 // special PhpArray enumerator
@@ -330,19 +332,19 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                     var item1place = new FieldPlace(new LocalPlace(tmp), item1);
                     var item2place = new FieldPlace(new LocalPlace(tmp), item2);
 
-                    // value = tmp.Item1;
+                    // value = tmp.Item2;
                     cg.EmitSequencePoint(valueVar.PhpSyntax);
                     var valueTarget = valueVar.BindPlace(cg);
                     valueTarget.EmitStorePrepare(cg);
-                    valueTarget.EmitStore(cg, item1place.EmitLoad(cg.Builder));
+                    valueTarget.EmitStore(cg, item2place.EmitLoad(cg.Builder));
 
-                    // key = tmp.Item2;
+                    // key = tmp.Item1;
                     if (keyVar != null)
                     {
                         cg.EmitSequencePoint(keyVar.PhpSyntax);
                         var keyTarget = keyVar.BindPlace(cg);
                         keyTarget.EmitStorePrepare(cg);
-                        keyTarget.EmitStore(cg, item2place.EmitLoad(cg.Builder));
+                        keyTarget.EmitStore(cg, item1place.EmitLoad(cg.Builder));
                     }
 
                     //
