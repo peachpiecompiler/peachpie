@@ -118,10 +118,27 @@ namespace Pchp.Core
                 case PhpTypeCode.Undefined: return (sx.Length == 0) ? 0 : 1;
                 case PhpTypeCode.Object:
                     if (y.Object == null) goto case PhpTypeCode.Null;
-                    break;
+                    else return CompareStringToObject(sx, y.Object);
             }
 
             throw new NotImplementedException($"compare(String, {y.TypeCode})");
+        }
+
+        static int CompareStringToObject(string sx, object y)
+        {
+            Debug.Assert(y != null);
+
+            var toString = y.GetPhpTypeInfo().RuntimeMethods[TypeMethods.MagicMethods.__tostring];
+            if (toString == null)
+            {
+                // If not convertible to string (it must contain the __toString method), the object is always greater
+                return -1;
+            }
+            else
+            {
+                // __toString is eventually called from ToString
+                return Compare(sx, y.ToString());
+            }
         }
 
         public static int Compare(object x, PhpValue y)
@@ -138,6 +155,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Null: return 1;
                 case PhpTypeCode.Boolean: return y.Boolean ? 0 : 1;
                 case PhpTypeCode.Alias: return Compare(x, y.Alias.Value);
+                case PhpTypeCode.String: return -CompareStringToObject(y.String, x);
                 case PhpTypeCode.Object:
                     if (y.Object == null) goto case PhpTypeCode.Null;
                     bool incomparable;
