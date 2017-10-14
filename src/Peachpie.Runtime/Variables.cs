@@ -236,8 +236,8 @@ namespace Pchp.Core
         /// <summary>
         /// PHP name for <see cref="System.Object"/>.
         /// </summary>
-        public const string TypeNameObject = "mixed";
-
+        public const string TypeNameObject = "object";
+        
         /// <summary>
         /// PHP name for <B>null</B>.
         /// </summary>
@@ -272,8 +272,10 @@ namespace Pchp.Core
                 case PhpTypeCode.Alias: return GetTypeName(value.Alias.Value);
                 case PhpTypeCode.PhpArray: return PhpArray.PhpTypeName;
                 case PhpTypeCode.Object:
-                    if (value.IsNull) return TypeNameNull;
-                    return value.Object.GetType().Name;
+                    if (value.IsNull) goto case PhpTypeCode.Null;
+                    if (value.Object is PhpResource) return PhpResource.PhpTypeName;
+                    return value.Object.GetType().Name; // TODO: TypeNameObject
+                case PhpTypeCode.Null: return TypeNameNull;
                 case PhpTypeCode.Undefined: return TypeNameVoid;
             }
 
@@ -473,6 +475,7 @@ namespace Pchp.Core
             if (value.TypeCode == PhpTypeCode.Int32)
             {
                 l = value.ToLong();
+                return true;
             }
 
             if (value.TypeCode == PhpTypeCode.Alias)

@@ -243,7 +243,9 @@ namespace Pchp.Core.Dynamic
                 }
                 else
                 {
-                    // getter
+                    // Operators.EnsureArray( fld )
+                    // TODO: string
+                    expr = Expression.Call(Cache.Operators.Object_EnsureArray, expr);
                 }
             }
             else if (access.EnsureAlias())
@@ -689,7 +691,7 @@ namespace Pchp.Core.Dynamic
                     Expression.TryFinally(
                         Expression.Condition(Expression.Property(tokenassign, Cache.RecursionCheckToken.IsInRecursion),
                             @default,
-                            ConvertExpression.Bind(getter, resultType, ctx)),
+                            BindAccess( ConvertExpression.Bind(getter, resultType, ctx), ctx, access, rvalue: null )),
                         Expression.Call(tokenvar, Cache.RecursionCheckToken.Dispose)
                     ));
             }

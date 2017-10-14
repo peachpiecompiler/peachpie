@@ -317,11 +317,14 @@ namespace Pchp.Library
                     return true;
 
                 case "string":
-                    variable = PhpValue.Create(variable.ToString(ctx));
+                    if (variable.TypeCode != PhpTypeCode.WritableString)    // already a string with possible binary data
+                    {
+                        variable = PhpValue.Create(variable.ToString(ctx));
+                    }
                     return true;
 
                 case "array":
-                    variable = PhpValue.Create(variable.AsArray());
+                    variable = PhpValue.Create(variable.ToArray());
                     return true;
 
                 case "object":
@@ -454,8 +457,9 @@ namespace Pchp.Library
         public static bool is_iterable(PhpValue variable)
         {
             var obj = variable.Object;
+
             return
-                variable.IsArray ||
+                obj is System.Collections.IEnumerable ||    // => PhpArray
                 obj is Traversable ||
                 (obj is PhpAlias alias && is_iterable(alias.Value));
         }

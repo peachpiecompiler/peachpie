@@ -989,7 +989,7 @@ namespace Pchp.Core
             else if (obj is IEnumerable enumerable)
             {
                 // IDictionaryEnumerator, IEnumerable<ValueTuple>, IEnumerable<KeyValuePair>, IEnumerable, ...
-                return ClrEnumeratorFactory.CreateEnumerator(enumerable);
+                return GetForeachEnumerator(enumerable);
             }
             else
             {
@@ -997,6 +997,14 @@ namespace Pchp.Core
                 return new PhpFieldsEnumerator(obj, caller);
             }
         }
+
+        /// <summary>
+        /// Gets <see cref="IPhpEnumerator"/> from regular .NET <see cref="IEnumerable"/>.
+        /// Enumerator is reflected to properly unwrap <c>key</c> and <c>value</c> of PHP enumeration.
+        /// Supported interfaces are <see cref="IDictionaryEnumerator"/>, <see cref="IEnumerable{ValueTuple}"/>, <see cref="IEnumerable{KeyValuePair}"/>, <see cref="IEnumerable"/> etc.
+        /// See <see cref="ClrEnumeratorFactory"/> for more details.
+        /// </summary>
+        internal static IPhpEnumerator GetForeachEnumerator(IEnumerable enumerable) => ClrEnumeratorFactory.CreateEnumerator(enumerable);
 
         /// <summary>
         /// Gets PHP enumerator of <c>NULL</c> or <b>empty</b> value.
