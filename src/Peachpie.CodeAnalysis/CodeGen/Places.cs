@@ -222,7 +222,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         void EmitOpCode(ILBuilder il, ILOpCode code)
         {
             il.EmitOpCode(code);
-            il.EmitToken(_field.OriginalDefinition, null, DiagnosticBag.GetInstance());    // .{field}
+            il.EmitToken(_field, null, DiagnosticBag.GetInstance());    // .{field}
         }
 
         public TypeSymbol TypeOpt => _field.Type;
