@@ -186,7 +186,7 @@ namespace Pchp.Core.Dynamic
                 if (expr is ConstantExpression && ((ConstantExpression)expr).Value == null)
                 {
                     // (string)null
-                    return Expression.Constant("null", typeof(string));
+                    return Expression.Constant(string.Empty, typeof(string));
                 }
 
                 // __toString
