@@ -160,8 +160,9 @@ namespace Peachpie.Library.XmlDom
     [PhpType(PhpTypeAttribute.InheritName)]
     public partial class SimpleXMLElement :
         Traversable, ArrayAccess, Pchp.Library.Spl.Countable,
-        IPhpConvertible, IPhpComparable, IEnumerable<(PhpValue Key, PhpValue Value)>
+        IPhpConvertible, IPhpComparable, IPhpCloneable, IEnumerable<(PhpValue Key, PhpValue Value)>
     {
+
         #region enum IterationType
 
         /// <summary>
@@ -628,6 +629,12 @@ namespace Peachpie.Library.XmlDom
         }
 
         /// <summary>
+        /// String representation of the XML element.
+        /// </summary>
+        /// <returns>XML element content.</returns>
+        public virtual string __toString() => ToString();
+
+        /// <summary>
         /// Internal to-<see cref="int"/> conversion.
         /// </summary>
         long IPhpConvertible.ToLong() => Pchp.Core.Convert.StringToLongInteger(ToString());
@@ -788,23 +795,26 @@ namespace Peachpie.Library.XmlDom
         //    }
         //}
 
-        ///// <summary>
-        ///// Invoked when the instance is being cloned.
-        ///// </summary>
-        //protected override DObject CloneObjectInternal(DTypeDesc caller, ScriptContext context, bool deepCopyFields)
-        //{
-        //    SimpleXMLElement clone;
-        //    if (iterationType == IterationType.Attribute)
-        //    {
-        //        clone = Create(className, XmlAttribute, iterationNamespace);
-        //    }
-        //    else clone = Create(className, XmlElement, iterationType, iterationNamespace);
+        /// <summary>
+        /// Invoked when the instance is being cloned.
+        /// </summary>
+        object IPhpCloneable.Clone()
+        {
+            SimpleXMLElement clone;
+            if (iterationType == IterationType.Attribute)
+            {
+                clone = Create(_ctx, className, XmlAttribute, iterationNamespace);
+            }
+            else
+            {
+                clone = Create(_ctx, className, XmlElement, iterationType, iterationNamespace);
+            }
 
-        //    if (intermediateElements != null) clone.intermediateElements = new List<string>(intermediateElements);
-        //    clone._namespaceManager = _namespaceManager;
+            if (intermediateElements != null) clone.intermediateElements = new List<string>(intermediateElements);
+            clone._namespaceManager = _namespaceManager;
 
-        //    return clone;
-        //}
+            return clone;
+        }
 
         #endregion
 
@@ -962,6 +972,12 @@ namespace Peachpie.Library.XmlDom
                     default:
                         break;
                 }
+            }
+            else if (value.IsObject && value.Object is SimpleXMLElement elem)
+            {
+                // https://stackoverflow.com/a/17953855
+                return object.ReferenceEquals(this, elem) ? 0 : 1;
+                // TODO: Figure out how to return false simultaneously for >, <, >= and <=
             }
 
             // return base.CompareTo(obj, comparer);
