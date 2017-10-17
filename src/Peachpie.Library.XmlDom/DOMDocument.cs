@@ -681,12 +681,12 @@ namespace Peachpie.Library.XmlDom
                 catch (XmlException e)
                 {
                     PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, fileName);
-                    return PhpValue.Create(false);
+                    return PhpValue.False;
                 }
                 catch (IOException e)
                 {
                     PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_ERROR, 0, 0, 0, e.Message, fileName);
-                    return PhpValue.Create(false);
+                    return PhpValue.False;
                 }
 
                 // TODO:
@@ -704,6 +704,29 @@ namespace Peachpie.Library.XmlDom
         [return: CastToFalse]
         public virtual PhpString saveXML(Context ctx, DOMNode node = null, int options = 0)
         {
+            using (MemoryStream stream = new MemoryStream())
+            {
+                if (SaveXMLInternal(ctx, stream, node))
+                {
+                    return new PhpString(stream.ToArray());
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Saves this document to a given stream.
+        /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
+        /// <param name="outStream">The output stream.</param>
+        /// <param name="node">The node to dump (the entire document if <B>null</B>).</param>
+        /// <param name="omitXmlDeclaration">Whether to skip the opening XML declaration.</param>
+        /// <returns>True for success, false for failure.</returns>
+        private bool SaveXMLInternal(Context ctx, Stream outStream, DOMNode node = null, bool omitXmlDeclaration = false)
+        {
             XmlNode xml_node;
 
             if (node == null) xml_node = XmlNode;
@@ -713,7 +736,7 @@ namespace Peachpie.Library.XmlDom
                 if (xml_node.OwnerDocument != XmlDocument && xml_node != XmlNode)
                 {
                     DOMException.Throw(ExceptionCode.WrongDocument);
-                    return null;
+                    return false;
                 }
             }
 
@@ -721,18 +744,16 @@ namespace Peachpie.Library.XmlDom
             {
                 Encoding = Utils.GetNodeEncoding(ctx, xml_node),
                 Indent = _formatOutput,
+                OmitXmlDeclaration = omitXmlDeclaration
             };
 
-            using (MemoryStream stream = new MemoryStream())
+            // use a XML writer and set its Formatting property to Formatting.Indented
+            using (XmlWriter writer = XmlWriter.Create(outStream, settings))
             {
-                // use a XML writer and set its Formatting proprty to Formatting.Indented
-                using (XmlWriter writer = XmlWriter.Create(stream, settings))
-                {
-                    xml_node.WriteTo(writer);
-                }
-
-                return new PhpString(stream.ToArray());
+                xml_node.WriteTo(writer);
             }
+
+            return true;
         }
 
         /// <summary>
@@ -829,17 +850,41 @@ namespace Peachpie.Library.XmlDom
         [return: CastToFalse]
         public virtual PhpString saveHTML(Context ctx, DOMNode node = null)
         {
-            //TODO: Use the HTML parse to save HTML
-            return saveXML(ctx, node);
+            using (var ms = new MemoryStream())
+            {
+                OutputHtmlDoctype(ms);
+                SaveXMLInternal(ctx, ms, node, omitXmlDeclaration: true);
+
+                return new PhpString(ms.ToArray());
+            }
         }
 
         /// <summary>
-        /// Not implemented properly (TODO: need an HTML parser for this).
+        /// Dumps the internal document into a file using HTML formatting.
         /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
+        /// <param name="file">The path to the saved HTML document.</param>
         public virtual PhpValue saveHTMLFile(Context ctx, string file)
         {
-            //TODO: Use the HTML parse to save HTML
-            return save(ctx, file, 0);
+            using (PhpStream stream = PhpStream.Open(ctx, file, "wt"))
+            {
+                if (stream == null) return PhpValue.Create(false);
+
+                OutputHtmlDoctype(stream.RawStream);
+                SaveXMLInternal(ctx, stream.RawStream, null, omitXmlDeclaration: true);
+
+                // TODO:
+                return PhpValue.Create(stream.RawStream.CanSeek ? stream.RawStream.Position : 1);
+            }
+        }
+
+        private void OutputHtmlDoctype(Stream outStream)
+        {
+            using (var sw = new StreamWriter(outStream, Encoding.ASCII, bufferSize: 128, leaveOpen: true))
+            {
+                sw.WriteLine("<!DOCTYPE html PUBLIC \" -//W3C//DTD HTML 4.0 Transitional//EN\" \"http://www.w3.org/TR/REC-html40/loose.dtd\">");
+                sw.Flush();
+            }
         }
 
         #endregion
