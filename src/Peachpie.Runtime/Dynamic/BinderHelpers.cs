@@ -685,13 +685,21 @@ namespace Pchp.Core.Dynamic
                 var tokenassign = Expression.Assign(tokenvar, Expression.New(Cache.RecursionCheckToken.ctor_ctx_object_int,
                     ctx, Expression.Convert(target, Cache.Types.Object[0]), Expression.Constant(subkey)));
 
+                // bind getter access
+                if (access.EnsureAlias() || access.EnsureArray() || access.EnsureObject())
+                {
+                    getter = BindAccess(getter, ctx, access, rvalue: null);
+                }
+
+                getter = ConvertExpression.Bind(getter, resultType, ctx);
+
                 //
                 return Expression.Block(resultType,
                     new[] { tokenvar },
                     Expression.TryFinally(
                         Expression.Condition(Expression.Property(tokenassign, Cache.RecursionCheckToken.IsInRecursion),
                             @default,
-                            BindAccess( ConvertExpression.Bind(getter, resultType, ctx), ctx, access, rvalue: null )),
+                            getter),
                         Expression.Call(tokenvar, Cache.RecursionCheckToken.Dispose)
                     ));
             }
