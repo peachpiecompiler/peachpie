@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <a href="http://www.peachpie.io"><img src="http://www.peachpie.io/wp-content/uploads/2016/12/peachpie-round.png" width="400" alt="Peachpie" width="400"></a>
+  <img src="https://www.peachpie.io/wp-content/uploads/2017/10/full-orange-400x100.png" width="400" alt="Peachpie"/>
   <br>
   Peachpie Compiler
   <br>
