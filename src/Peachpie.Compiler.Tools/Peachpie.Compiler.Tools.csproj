@@ -3,7 +3,7 @@
   <Import Project="..\..\build\Targets\Settings.props" />
   <PropertyGroup>
     <Description>Command line tool enabling 'php' project compilation.</Description>
-    <TargetFrameworks>net46;netcoreapp1.0</TargetFrameworks>
+    <TargetFrameworks>net46;netcoreapp1.1;netcoreapp2.0</TargetFrameworks>
     <AssemblyName>dotnet-compile-php</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>Peachpie.Compiler.Tools</PackageId>
@@ -16,6 +16,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Peachpie.CodeAnalysis\Peachpie.CodeAnalysis.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.IO.FileSystem.Primitives" Version="4.3.0" />    
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">

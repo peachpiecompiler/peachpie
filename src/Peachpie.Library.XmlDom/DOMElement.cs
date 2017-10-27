@@ -12,7 +12,7 @@ namespace Peachpie.Library.XmlDom
     {
         #region Fields and Properties
 
-        protected internal XmlElement XmlElement
+        internal XmlElement XmlElement
         {
             get { return (XmlElement)XmlNode; }
             set { XmlNode = value; }
@@ -79,16 +79,22 @@ namespace Peachpie.Library.XmlDom
         public string tagName => this.nodeName;
 
         /// <summary>
-        /// Not implemented in PHP 5.1.6.
+        /// Not implemented in PHP 7.1.1, always returns NULL.
         /// </summary>
-        public object schemaTypeInfo => null;
+        public PhpValue schemaTypeInfo => PhpValue.Null;
 
         #endregion
 
         #region Construction
 
-        public DOMElement()
+        [PhpFieldsOnlyCtor]
+        protected DOMElement()
         { }
+
+        public DOMElement(string name, string value = null, string namespaceUri = null)
+        {
+            __construct(name, value, namespaceUri);
+        }
 
         internal DOMElement(XmlElement/*!*/ xmlElement)
         {

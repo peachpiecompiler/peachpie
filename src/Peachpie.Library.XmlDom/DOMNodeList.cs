@@ -4,13 +4,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using Pchp.Core;
+using Pchp.Core.Resources;
 
 // TODO: Enable multiple simultaneous iterations
 
 namespace Peachpie.Library.XmlDom
 {
     [PhpType(PhpTypeAttribute.InheritName)]
-    public class DOMNodeList : Traversable, Iterator
+    public class DOMNodeList : Traversable, Iterator, ArrayAccess
     {
         #region Fields and Properties
 
@@ -56,9 +57,15 @@ namespace Peachpie.Library.XmlDom
         /// <returns>The node or <B>NULL</B> if the <paramref name="index"/> is invalid.</returns>
         public DOMNode item(int index)
         {
-            if (index < 0 || index >= _list.Count) return null;
+            if (!IsIndexValid(index))
+            {
+                return null;
+            }
+
             return _list[index];
         }
+
+        private bool IsIndexValid(int index) => index >= 0 && index < _list.Count;
 
         #endregion
 
@@ -79,6 +86,55 @@ namespace Peachpie.Library.XmlDom
         PhpValue Iterator.key() => PhpValue.Create(_element);
 
         PhpValue Iterator.current() => PhpValue.FromClass(_list[_element]);
+
+        #endregion
+
+        #region ArrayAccess
+
+        PhpValue ArrayAccess.offsetGet(PhpValue offset)
+        {
+            if (!TryConvertOffset(offset, out int index))
+            {
+                return PhpValue.Null;
+            }
+
+            return (item(index) is DOMNode node) ? PhpValue.FromClass(node) : PhpValue.Null;
+        }
+
+        void ArrayAccess.offsetSet(PhpValue offset, PhpValue value)
+        {
+            // Only read array access is permitted
+            PhpException.Throw(PhpError.Error, ErrResources.object_used_as_array, nameof(DOMNodeList));
+        }
+
+        void ArrayAccess.offsetUnset(PhpValue offset)
+        {
+            // Only read array access is permitted
+            PhpException.Throw(PhpError.Error, ErrResources.object_used_as_array, nameof(DOMNodeList));
+        }
+
+        bool ArrayAccess.offsetExists(PhpValue offset)
+        {
+            if (!TryConvertOffset(offset, out int index))
+            {
+                return false;
+            }
+
+            return IsIndexValid(index);
+        }
+
+        private bool TryConvertOffset(PhpValue offset, out int index)
+        {
+            if (offset.ToNumber(out var number).HasFlag(Pchp.Core.Convert.NumberInfo.Unconvertible))
+            {
+                index = -1;
+                return false;
+            }
+
+            // "3.14" -> 3
+            index = (int)number.ToLong();
+            return true;
+        }
 
         #endregion
     }

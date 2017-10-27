@@ -42,8 +42,13 @@ namespace Peachpie.Library.Scripting
                 typeof(Pchp.Core.Context),      // Peachpie.Runtime
                 typeof(Pchp.Library.Strings),   // Peachpie.Library
                 typeof(ScriptingProvider),      // Peachpie.Library.Scripting
-                typeof(XmlDom.XmlDom),          // Peachpie.Library.XmlDom
             };
+
+            var xmlDomType = Type.GetType(Assembly.CreateQualifiedName("Peachpie.Library.XmlDom", "Peachpie.Library.XmlDom.XmlDom"));
+            if (xmlDomType != null)
+            {
+                types.Add(xmlDomType);
+            }
 
             var list = types.Distinct().Select(ass => ass.GetTypeInfo().Assembly).ToList();
             var set = new HashSet<Assembly>(list);

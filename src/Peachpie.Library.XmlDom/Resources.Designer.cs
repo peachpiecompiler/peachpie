@@ -287,6 +287,15 @@ namespace Peachpie.Library.XmlDom {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Default/fixed value nodes creation during XSD schema validation is not supported.
+        /// </summary>
+        internal static string SchemaCreateUnsupported {
+            get {
+                return ResourceManager.GetString("SchemaCreateUnsupported", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Cannot assign to an array of nodes (duplicate subnodes of name &apos;{0}&apos; detected).
         /// </summary>
         internal static string SimpleXmlAssignmentToDuplicateNodes {

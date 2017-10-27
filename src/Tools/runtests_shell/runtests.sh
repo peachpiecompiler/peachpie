@@ -1,7 +1,9 @@
+#!/bin/bash
 # Prepare the files needed to compile and run the tests
 
-TOOL_DIR="./src/Tools/runtests_shell"
-OUTPUT_DIR="$TOOL_DIR/bin/Debug/netcoreapp1.0"
+# Absolute paths - https://stackoverflow.com/a/246128/2105235
+TOOL_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+OUTPUT_DIR="$TOOL_DIR/bin/Debug/netcoreapp2.0"
 
 PHP_TMP_FILE=$OUTPUT_DIR/php.out
 PEACH_TMP_FILE=$OUTPUT_DIR/peach.out
@@ -18,6 +20,10 @@ dotnet restore $TOOL_DIR
 # Compile and run every PHP file in ./tests and check the output against the one from the PHP interpreter
 for PHP_FILE in $(find $PWD/tests -name *.php)
 do
+  # Run each file in the directory it is contained in (in order for relative paths to work)
+  PHP_FILE_DIR=$(dirname $PHP_FILE)
+  cd $PHP_FILE_DIR
+
   echo -n "Testing $PHP_FILE..."
   echo "$PHP_FILE" | grep -Eq ".*skip(\\([^)/]*\\))?_[^/]*$"
   if [ $? -eq 0 ];then

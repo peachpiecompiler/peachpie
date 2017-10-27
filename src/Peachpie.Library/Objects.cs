@@ -95,7 +95,7 @@ namespace Pchp.Library
             {
                 if (obj.IsObject)
                 {
-                    return obj.Object.GetType().FullName.Replace('.', '\\');
+                    return obj.Object.GetPhpTypeInfo().Name;
                 }
                 else if (obj.IsAlias)
                 {

@@ -2,13 +2,14 @@
 
   <Import Project="..\..\build\Targets\Settings.props" />
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.5;net46</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net46</TargetFrameworks>
     <NoWarn>$(NoWarn);1591;1574</NoWarn>
     <AssemblyName>Peachpie.Library.XmlDom</AssemblyName>
     <PackageId>Peachpie.Library.XmlDom</PackageId>
     <PackageTags>peachpie;library;xml;dom</PackageTags>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Description>Peachpie PHP language library functions for XML processing.</Description>
+    <NetStandardImplicitPackageVersion></NetStandardImplicitPackageVersion><!-- Clean up the default value -->
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="HtmlAgilityPack" Version="1.5.1" />

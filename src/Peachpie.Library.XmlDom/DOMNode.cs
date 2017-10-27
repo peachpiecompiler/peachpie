@@ -220,8 +220,6 @@ namespace Peachpie.Library.XmlDom
             if (xmlNode == null) return null;
             switch (xmlNode.NodeType)
             {
-                // TODO: Enable each class when it is implemented
-
                 case XmlNodeType.Attribute: return new DOMAttr((XmlAttribute)xmlNode);
                 case XmlNodeType.SignificantWhitespace:
                 case XmlNodeType.Whitespace: return new DOMText((XmlCharacterData)xmlNode); // also see XmlDocument.PreserveWhitespace
@@ -229,11 +227,11 @@ namespace Peachpie.Library.XmlDom
                 case XmlNodeType.Comment: return new DOMComment((XmlComment)xmlNode);
                 case XmlNodeType.Document: return new DOMDocument((XmlDocument)xmlNode);
                 case XmlNodeType.DocumentFragment: return new DOMDocumentFragment((XmlDocumentFragment)xmlNode);
-                //case XmlNodeType.DocumentType: return new DOMDocumentType((XmlDocumentType)xmlNode);
+                case XmlNodeType.DocumentType: return new DOMDocumentType((XmlDocumentType)xmlNode);
                 case XmlNodeType.Element: return new DOMElement((XmlElement)xmlNode);
-                //case XmlNodeType.Entity: return new DOMEntity((XmlEntity)xmlNode);
-                //case XmlNodeType.EntityReference: return new DOMEntityReference((XmlEntityReference)xmlNode);
-                //case XmlNodeType.Notation: return new DOMNotation((XmlNotation)xmlNode);
+                case XmlNodeType.Entity: return new DOMEntity((XmlEntity)xmlNode);
+                case XmlNodeType.EntityReference: return new DOMEntityReference((XmlEntityReference)xmlNode);
+                case XmlNodeType.Notation: return new DOMNotation((XmlNotation)xmlNode);
                 case XmlNodeType.ProcessingInstruction: return new DOMProcessingInstruction((XmlProcessingInstruction)xmlNode);
                 case XmlNodeType.Text: return new DOMText((XmlText)xmlNode);
 

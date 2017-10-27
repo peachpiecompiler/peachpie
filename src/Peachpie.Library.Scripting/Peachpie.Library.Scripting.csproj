@@ -2,7 +2,7 @@
 
   <Import Project="..\..\build\Targets\Settings.props" />
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.5;net46</TargetFrameworks>
+    <TargetFrameworks>netstandard1.5;netstandard2.0;net46</TargetFrameworks>
     <NoWarn>$(NoWarn);1591;1574</NoWarn>
     <AssemblyName>Peachpie.Library.Scripting</AssemblyName>
     <PackageId>Peachpie.Library.Scripting</PackageId>
@@ -22,7 +22,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Peachpie.CodeAnalysis\Peachpie.CodeAnalysis.csproj" />
-    <ProjectReference Include="..\Peachpie.Library.XmlDom\Peachpie.Library.XmlDom.csproj" />
     <ProjectReference Include="..\Peachpie.Library\Peachpie.Library.csproj" />
     <ProjectReference Include="..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
   </ItemGroup>
@@ -35,6 +34,10 @@
   
   <ItemGroup Condition=" '$(TargetFramework)' != 'net46' ">
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' != 'netstandard1.5' ">
+    <ProjectReference Include="..\Peachpie.Library.XmlDom\Peachpie.Library.XmlDom.csproj" />
   </ItemGroup>
 
 </Project>

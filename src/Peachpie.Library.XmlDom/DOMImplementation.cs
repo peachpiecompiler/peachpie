@@ -30,7 +30,7 @@ namespace Peachpie.Library.XmlDom
         #region Operations
 
         /// <summary>
-        /// Not implemented in PHP 5.1.6.
+        /// Not implemented in PHP 7.1.1.
         /// </summary>
         public DOMNode getFeature(string feature, string version)
         {

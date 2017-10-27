@@ -58,6 +58,9 @@ namespace ScriptsTest
 
             using (var ctx = Context.CreateEmpty())
             {
+                // mimic the execution in the given folder
+                ctx.WorkingDirectory = Path.GetDirectoryName(path);
+
                 // redirect text output
                 ctx.Output = new StreamWriter(outputStream, Encoding.UTF8) { AutoFlush = true };
                 ctx.OutputStream = outputStream;
@@ -72,7 +75,14 @@ namespace ScriptsTest
                 }, File.ReadAllText(path));
 
                 // run
-                script.Evaluate(ctx, ctx.Globals, null);
+                try
+                {
+                    script.Evaluate(ctx, ctx.Globals, null);
+                }
+                catch (ScriptDiedException ex)
+                {
+                    ex.ProcessStatus(ctx);
+                }
             }
 
             //
@@ -82,10 +92,10 @@ namespace ScriptsTest
 
         static string Interpret(string path)
         {
-            return RunProcess("php", path);
+            return RunProcess("php", Path.GetFileName(path), Path.GetDirectoryName(path));
         }
 
-        static string RunProcess(string exe, string args)
+        static string RunProcess(string exe, string args, string cwd)
         {
             var process = new Process();
             process.StartInfo = new ProcessStartInfo(exe, args)
@@ -94,6 +104,7 @@ namespace ScriptsTest
                 RedirectStandardOutput = true,
                 StandardOutputEncoding = Encoding.UTF8,
                 UseShellExecute = false,
+                WorkingDirectory = cwd
             };
 
             //

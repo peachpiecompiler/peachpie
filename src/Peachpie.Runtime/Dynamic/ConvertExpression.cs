@@ -186,7 +186,7 @@ namespace Pchp.Core.Dynamic
                 if (expr is ConstantExpression && ((ConstantExpression)expr).Value == null)
                 {
                     // (string)null
-                    return Expression.Constant("null", typeof(string));
+                    return Expression.Constant(string.Empty, typeof(string));
                 }
 
                 // __toString
@@ -419,6 +419,7 @@ namespace Pchp.Core.Dynamic
             if (t == typeof(PhpNumber)) return BindCostFromNumber(arg, target);
             if (t == typeof(string)) return Expression.Constant(BindCostFromString(arg, target));
             if (t == typeof(PhpString)) return Expression.Constant(BindCostFromPhpString(arg, target));
+            if (t == typeof(PhpArray)) return BindCostFromPhpArray(arg, target);
 
             // other types
             if (t.GetTypeInfo().IsAssignableFrom(target.GetTypeInfo())) return Expression.Constant(ConversionCost.Pass);
@@ -536,6 +537,13 @@ namespace Pchp.Core.Dynamic
             if (tinfo.IsAssignableFrom(typeof(IPhpCallable).GetTypeInfo())) throw new NotImplementedException("IPhpCallable");
 
             return ConversionCost.Error;
+        }
+
+        static Expression BindCostFromPhpArray(Expression arg, Type target)
+        {
+            if (target == typeof(string) || target == typeof(PhpString)) return Expression.Constant(ConversionCost.Warning);
+
+            throw new NotImplementedException($"costof(array -> {target})");
         }
 
         #endregion
