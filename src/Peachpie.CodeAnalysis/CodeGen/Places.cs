@@ -194,6 +194,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(field);
 
+            if (field is SourceFieldSymbol srcf)
+            {
+                // field redeclares its parent member, use the original def
+                // TODO: do not call it OriginalDefinition ... make some RealDefinition property ?
+                field = srcf.OriginalDefinition;
+            }
+
             _holder = holder;
             _field = (FieldSymbol)field;
 
@@ -222,7 +229,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         void EmitOpCode(ILBuilder il, ILOpCode code)
         {
             il.EmitOpCode(code);
-            il.EmitToken(_field.OriginalDefinition, null, DiagnosticBag.GetInstance());    // .{field}
+            il.EmitToken(_field, null, DiagnosticBag.GetInstance());    // .{field}
         }
 
         public TypeSymbol TypeOpt => _field.Type;
