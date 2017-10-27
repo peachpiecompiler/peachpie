@@ -1,7 +1,7 @@
 <?php
 
 function dump($x) {
-    var_dump($x);
+    print_r($x);
 }
 
 function test($a) {
