@@ -38,23 +38,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         #region Helpers
 
         /// <summary>
-        /// Determines if given expression represents a variable which value is less than <c>Int64.Max</c> in current state.
+        /// In case given expression is a local or parameter reference,
+        /// gets its variable handle within <see cref="State"/>.
         /// </summary>
-        bool IsLTInt64Max(BoundReferenceExpression r)
+        VariableHandle TryGetVariableHandle(BoundExpression expr)
         {
-            var varname = AsVariableName(r);
-            return varname.IsValid() && State.IsLTInt64Max(State.GetLocalHandle(varname));
-        }
-
-        /// <summary>
-        /// In case of a local variable or parameter, sets associated flag determining its value is less than Int64.Max.
-        /// </summary>
-        void LTInt64Max(BoundReferenceExpression r, bool lt)
-        {
-            var varname = AsVariableName(r);
+            var varname = AsVariableName(expr as BoundReferenceExpression);
             if (varname.IsValid())
             {
-                State.LTInt64Max(State.GetLocalHandle(varname), lt);
+                return State.GetLocalHandle(varname);
+            }
+            else
+            {
+                return default(VariableHandle);
             }
         }
 
@@ -154,12 +150,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // analyse initializer
                 Accept(v.InitialValue);
 
-                State.LTInt64Max(local, (v.InitialValue.ConstantValue.HasValue && v.InitialValue.ConstantValue.Value is long && (long)v.InitialValue.ConstantValue.Value < long.MaxValue));
+                State.SetLessThanLongMax(local, (v.InitialValue.ConstantValue.HasValue && v.InitialValue.ConstantValue.Value is long && (long)v.InitialValue.ConstantValue.Value < long.MaxValue));
                 State.SetLocalType(local, ((IPhpExpression)v.InitialValue).TypeRefMask | oldtype);
             }
             else
             {
-                State.LTInt64Max(local, false);
+                State.SetLessThanLongMax(local, false);
                 State.SetLocalType(local, TypeCtx.GetNullTypeMask() | oldtype);
                 // TODO: explicitly State.SetLocalUninitialized() ?
             }
@@ -267,6 +263,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         protected virtual void VisitLocalVariableRef(BoundVariableRef x, VariableHandle local)
         {
+            Debug.Assert(local.IsValid);
+
             var previoustype = State.GetLocalType(local);       // type of the variable in the previous state
 
             // remember the initial state of variable at this point
@@ -356,7 +354,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 //
                 State.SetLocalType(local, vartype);
-                State.LTInt64Max(local, false);
+                State.SetLessThanLongMax(local, false);
                 x.TypeRefMask = vartype;
             }
 
@@ -364,7 +362,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 x.TypeRefMask = TypeCtx.GetNullTypeMask();
                 State.SetLocalType(local, x.TypeRefMask);
-                State.LTInt64Max(local, false);
+                State.SetLessThanLongMax(local, false);
                 State.SetVarUninitialized(local);
             }
         }
@@ -438,7 +436,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // double++ => double
                 resulttype = TypeCtx.GetDoubleTypeMask();
             }
-            else if (IsLTInt64Max(x.Target))    // we'd like to keep long if we are sure we don't overflow to double
+            else if (State.IsLessThanLongMax(TryGetVariableHandle(x.Target)))    // we'd like to keep long if we are sure we don't overflow to double
             {
                 // long++ [< long.MaxValue] => long
                 resulttype = TypeCtx.GetLongTypeMask();
@@ -631,7 +629,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (IsDoubleOnly(lValType) || IsDoubleOnly(rValType))
                     return TypeCtx.GetDoubleTypeMask();
 
-                if (IsLTInt64Max(left as BoundReferenceExpression) && IsLongConstant(right, 1)) // LONG + 1, where LONG < long.MaxValue
+                if (State.IsLessThanLongMax(TryGetVariableHandle(left)) && IsLongConstant(right, 1)) // LONG + 1, where LONG < long.MaxValue
                     return TypeCtx.GetLongTypeMask();
 
                 return TypeCtx.GetNumberTypeMask();
@@ -734,12 +732,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.GreaterThanOrEqual:
                 case Operations.LessThanOrEqual:
 
-                    if (branch == ConditionBranch.ToTrue)
+                    // comparison with long value
+                    if (branch == ConditionBranch.ToTrue && IsLongOnly(x.Right))
                     {
-                        if (x.Operation == Operations.LessThan && IsLongOnly(x.Right))
+                        if (x.Operation == Operations.LessThan)
                         {
                             // $x < LONG
-                            LTInt64Max(x.Left as BoundReferenceExpression, true);
+                            State.SetLessThanLongMax(TryGetVariableHandle(x.Left), true);
                         }
                     }
 

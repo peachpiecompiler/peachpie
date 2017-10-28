@@ -61,10 +61,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             _initializedMask = state1._initializedMask & state2._initializedMask;
 
             // intersection of other variable flags
-            if (state1._lessThanLongMax != null && state2._lessThanLongMax != null)
+            if (state1._notes != null && state2._notes != null)
             {
-                _lessThanLongMax = new HashSet<VariableHandle>(state1._lessThanLongMax);
-                _lessThanLongMax.Intersect(state2._lessThanLongMax);
+                _notes = new HashSet<NoteData>(state1._notes);
+                _notes.Intersect(state2._notes);
             }
 
             //// merge variables kind,
@@ -104,9 +104,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             _initializedMask = other._initializedMask;
 
-            if (other._lessThanLongMax != null)
+            if (other._notes != null)
             {
-                _lessThanLongMax = new HashSet<VariableHandle>(other._lessThanLongMax);
+                _notes = new HashSet<NoteData>(other._notes);
             }
 
             //if (other._varKindMap != null)
@@ -304,33 +304,86 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #endregion
 
-        #region Constraints
+        #region Constraints (Notes about variables)
 
-        HashSet<VariableHandle> _lessThanLongMax;
-
-        /// <summary>
-        /// Sets or removes LTInt64 flag for a variable.
-        /// </summary>
-        public void LTInt64Max(VariableHandle handle, bool lt)
+        enum NoteKind
         {
-            if (lt)
+            /// <summary>
+            /// Noting that variable is less than Long.Max.
+            /// </summary>
+            LessThanLongMax,
+
+            /// <summary>
+            /// Noting that variable is greater than Long.Min.
+            /// </summary>
+            GreaterThanLongMin,
+        }
+
+        struct NoteData : IEquatable<NoteData>
+        {
+            public VariableHandle Variable;
+            public NoteKind Kind;
+
+            public NoteData(VariableHandle variable, NoteKind kind)
             {
-                if (_lessThanLongMax == null) _lessThanLongMax = new HashSet<VariableHandle>();
-                _lessThanLongMax.Add(handle);
+                this.Variable = variable;
+                this.Kind = kind;
             }
-            else
+
+            public override int GetHashCode() => Variable.GetHashCode() ^ (int)Kind;
+
+            public bool Equals(NoteData other) => this.Variable == other.Variable && this.Kind == other.Kind;
+        }
+        HashSet<NoteData> _notes;
+
+        bool HasConstrain(VariableHandle variable, NoteKind kind) => _notes != null && _notes.Contains(new NoteData(variable, kind));
+
+        void SetConstrain(VariableHandle variable, NoteKind kind, bool set)
+        {
+            if (set) AddConstrain(variable, kind);
+            else RemoveConstrain(variable, kind);
+        }
+
+        void AddConstrain(VariableHandle variable, NoteKind kind)
+        {
+            if (variable.IsValid)
             {
-                if (_lessThanLongMax != null)
+                var notes = _notes;
+                if (notes == null)
                 {
-                    _lessThanLongMax.Remove(handle);
+                    _notes = notes = new HashSet<NoteData>();
+                }
+
+                notes.Add(new NoteData(variable, kind));
+            }
+        }
+
+        void RemoveConstrain(VariableHandle variable, NoteKind kind)
+        {
+            if (variable.IsValid)
+            {
+                var notes = _notes;
+                if (notes != null)
+                {
+                    notes.Remove(new NoteData(variable, kind));
+
+                    if (notes.Count == 0)
+                    {
+                        _notes = null;
+                    }
                 }
             }
         }
 
         /// <summary>
+        /// Sets or removes LTInt64 flag for a variable.
+        /// </summary>
+        public void SetLessThanLongMax(VariableHandle handle, bool lt) => SetConstrain(handle, NoteKind.LessThanLongMax, lt);
+
+        /// <summary>
         /// Gets LTInt64 flag for a variable.
         /// </summary>
-        public bool IsLTInt64Max(VariableHandle handle) => _lessThanLongMax != null && _lessThanLongMax.Contains(handle);
+        public bool IsLessThanLongMax(VariableHandle handle) => HasConstrain(handle, NoteKind.LessThanLongMax);
 
         #endregion
 
@@ -341,7 +394,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             return _flowCtx.ReturnType;
         }
-        
+
         //#region Variable Kind
 
         //Dictionary<VariableName, VariableKind> _varKindMap;

@@ -975,6 +975,12 @@ namespace Pchp.CodeAnalysis.Semantics
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Ceq_long_string)
                             .Expect(SpecialType.System_Boolean);
                     }
+                    else if (ytype == cg.CoreTypes.PhpNumber)
+                    {
+                        // i8 == number
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Eq_long_number)
+                            .Expect(SpecialType.System_Boolean);
+                    }
 
                     // value
                     ytype = cg.EmitConvertToPhpValue(ytype, 0);
@@ -1303,6 +1309,13 @@ namespace Pchp.CodeAnalysis.Semantics
                         return cg.EmitCall(ILOpCode.Call, lt
                             ? cg.CoreMethods.Operators.Clt_long_double
                             : cg.CoreMethods.Operators.Cgt_long_double);
+                    }
+                    else if (ytype == cg.CoreTypes.PhpNumber)
+                    {
+                        // i8 <> number
+                        return cg.EmitCall(ILOpCode.Call, lt
+                            ? cg.CoreMethods.PhpNumber.lt_long_number
+                            : cg.CoreMethods.PhpNumber.gt_long_number);
                     }
                     else
                     {

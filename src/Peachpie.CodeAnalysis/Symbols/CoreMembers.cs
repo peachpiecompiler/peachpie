@@ -677,6 +677,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 Ineq_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.InequalityOperatorName, ct.PhpNumber, ct.Long);
                 Eq_number_double = ct.PhpNumber.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpNumber, ct.Double);
                 Ineq_number_double = ct.PhpNumber.Operator(WellKnownMemberNames.InequalityOperatorName, ct.PhpNumber, ct.Double);
+                Eq_long_number = ct.PhpNumber.Operator(WellKnownMemberNames.EqualityOperatorName, ct.Long, ct.PhpNumber);
+                Ineq_long_number = ct.PhpNumber.Operator(WellKnownMemberNames.InequalityOperatorName, ct.Long, ct.PhpNumber);
 
                 Add_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.AdditionOperatorName, ct.PhpNumber, ct.PhpNumber);
                 Add_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.AdditionOperatorName, ct.PhpNumber, ct.Long);
@@ -751,9 +753,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 gt_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.GreaterThanOperatorName, ct.PhpNumber, ct.PhpNumber);
                 gt_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.GreaterThanOperatorName, ct.PhpNumber, ct.Long);
                 gt_number_double = ct.PhpNumber.Operator(WellKnownMemberNames.GreaterThanOperatorName, ct.PhpNumber, ct.Double);
+                gt_long_number = ct.PhpNumber.Operator(WellKnownMemberNames.GreaterThanOperatorName, ct.Long, ct.PhpNumber);
                 lt_number_number = ct.PhpNumber.Operator(WellKnownMemberNames.LessThanOperatorName, ct.PhpNumber, ct.PhpNumber);
                 lt_number_long = ct.PhpNumber.Operator(WellKnownMemberNames.LessThanOperatorName, ct.PhpNumber, ct.Long);
                 lt_number_double = ct.PhpNumber.Operator(WellKnownMemberNames.LessThanOperatorName, ct.PhpNumber, ct.Double);
+                lt_long_number = ct.PhpNumber.Operator(WellKnownMemberNames.LessThanOperatorName, ct.Long, ct.PhpNumber);
             }
 
             public readonly CoreMethod
@@ -773,12 +777,13 @@ namespace Pchp.CodeAnalysis.Symbols
                 Eq_number_number, Ineq_number_number,
                 Eq_number_long, Ineq_number_long,
                 Eq_number_double, Ineq_number_double,
+                Eq_long_number, Ineq_long_number,
                 Add_number_number, Add_number_long, Add_long_number, Add_value_number, Add_number_double, Add_double_number, Add_number_value,
                 Subtract_number_number, Subtract_long_number, Subtract_number_long,
                 Division_number_value, Division_number_number, Division_number_long, Division_number_double, Division_long_number,
                 Mul_number_number, Mul_number_double, Mul_number_long, Mul_long_number, Mul_number_value, Mul_value_number,
-                gt_number_number, gt_number_long, gt_number_double,
-                lt_number_number, lt_number_long, lt_number_double,
+                gt_number_number, gt_number_long, gt_number_double, gt_long_number,
+                lt_number_number, lt_number_long, lt_number_double, lt_long_number,
                 Negation;
 
             public readonly CoreField

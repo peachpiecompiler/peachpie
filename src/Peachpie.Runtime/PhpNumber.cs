@@ -166,6 +166,22 @@ namespace Pchp.Core
             return x.IsLong ? (x._long > ly) : (x._double > (double)ly);
         }
 
+        public static bool operator <(long lx, PhpNumber y)
+        {
+            y.AssertTypeCode();
+
+            //
+            return y.IsLong ? (lx < y._long) : ((double)lx < y._double);
+        }
+
+        public static bool operator >(long lx, PhpNumber y)
+        {
+            y.AssertTypeCode();
+
+            //
+            return y.IsLong ? (lx > y._long) : ((double)lx > y._double);
+        }
+
         /// <summary>
         /// Non strict equality operator.
         /// </summary>
@@ -218,6 +234,18 @@ namespace Pchp.Core
         /// </summary>
         public static bool operator !=(PhpNumber x, long y)
             => !(x == y);
+
+        /// <summary>
+        /// Non strict equality operator.
+        /// </summary>
+        public static bool operator ==(long lx, PhpNumber y)
+            => y.IsLong ? lx == y.Long : lx == y.Double;
+
+        /// <summary>
+        /// Non strict equality operator.
+        /// </summary>
+        public static bool operator !=(long lx, PhpNumber y)
+            => !(lx == y);
 
         /// <summary>
         /// Non strict equality operator.
