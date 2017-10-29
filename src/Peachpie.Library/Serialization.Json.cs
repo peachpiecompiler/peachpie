@@ -35,7 +35,7 @@ namespace Pchp.Library
             #region Tokens
 
             /// <summary>
-            /// Contains definition of (one-character) tokens that constitute PHP serialized data.
+            /// Contains definition of tokens that constitute PHP serialized data.
             /// </summary>
             internal class Tokens
             {
@@ -49,6 +49,8 @@ namespace Pchp.Library
                 internal const string PropertyKeyValueSeparatorString = ":";
 
                 internal const char Quote = '"';
+                internal const string QuoteString = "\""; // "
+                internal const string DoubleQuoteString = "\"\""; // ""
                 internal const char Escape = '\\';
 
                 internal const string EscapedNewLine = @"\n";
@@ -257,8 +259,6 @@ namespace Pchp.Library
                 /// <summary>
                 /// Determines if given character should be encoded.
                 /// </summary>
-                /// <param name="c"></param>
-                /// <returns></returns>
                 private bool CharShouldBeEncoded(char c)
                 {
                     switch (c)
@@ -291,6 +291,21 @@ namespace Pchp.Library
                 }
 
                 /// <summary>
+                /// Determines if some chars in given string should be encoded.
+                /// </summary>
+                private bool StringShouldBeEncoded(string str)
+                {
+                    Debug.Assert(str != null);
+
+                    for (int i = 0; i < str.Length; i++)
+                    {
+                        if (CharShouldBeEncoded(str[i])) return true;
+                    }
+
+                    return false;
+                }
+
+                /// <summary>
                 /// Convert 16b character into json encoded character.
                 /// </summary>
                 /// <param name="value">The full string to be encoded.</param>
@@ -319,8 +334,7 @@ namespace Pchp.Library
                                 if (CharIsPrintable(c))
                                 {
                                     int start = i++;
-                                    for (; i < value.Length && !CharShouldBeEncoded(value[i]); ++i)
-                                        ;
+                                    while (i < value.Length && !CharShouldBeEncoded(value[i])) ++i;
 
                                     return value.Substring(start, (i--) - start);   // accumulate characters, mostly it is entire string value (faster)
                                 }
@@ -373,18 +387,33 @@ namespace Pchp.Library
                         }
                     }
 
-                    var strVal = new StringBuilder(value.Length + 2);
-
-                    strVal.Append(Tokens.Quote);
-
-                    for (int i = 0; i < value.Length; ++i)
+                    if (value.Length == 0)
                     {
-                        strVal.Append(EncodeStringIncremental(value, ref i));
+                        // empty string
+                        _result.Append(Tokens.DoubleQuoteString);   // ""
                     }
+                    else if (!StringShouldBeEncoded(value)) // most common case
+                    {
+                        // string can be appended as it is
+                        _result.Append(Tokens.QuoteString);
+                        _result.Append(value);
+                        _result.Append(Tokens.QuoteString);
+                    }
+                    else
+                    {
+                        var strVal = new StringBuilder(value.Length + 4);
 
-                    strVal.Append(Tokens.Quote);
+                        strVal.Append(Tokens.Quote);
 
-                    _result.Append(strVal.ToString());
+                        for (int i = 0; i < value.Length; ++i)
+                        {
+                            strVal.Append(EncodeStringIncremental(value, ref i));
+                        }
+
+                        strVal.Append(Tokens.Quote);
+
+                        _result.Append(strVal.ToString());
+                    }
                 }
 
                 void WriteArray(PhpHashtable array)
