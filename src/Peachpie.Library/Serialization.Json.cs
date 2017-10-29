@@ -41,8 +41,12 @@ namespace Pchp.Library
             {
                 internal const char ObjectOpen = '{';
                 internal const char ObjectClose = '}';
+
                 internal const char ItemsSeparator = ',';
+                internal const string ItemsSeparatorString = ",";
+
                 internal const char PropertyKeyValueSeparator = ':';
+                internal const string PropertyKeyValueSeparatorString = ":";
 
                 internal const char Quote = '"';
                 internal const char Escape = '\\';
@@ -115,9 +119,15 @@ namespace Pchp.Library
                 bool PushObject(object obj)
                 {
                     int count = 0;
-                    foreach (var x in _recursionStack)
+                    if (_recursionStack.Count != 0)
                     {
-                        if (x == obj) count++;
+                        foreach (var x in _recursionStack)
+                        {
+                            if (x == obj)
+                            {
+                                count++;
+                            }
+                        }
                     }
 
 
@@ -358,7 +368,7 @@ namespace Pchp.Library
                         if ((result & Core.Convert.NumberInfo.IsNumber) != 0)
                         {
                             if ((result & Core.Convert.NumberInfo.LongInteger) != 0) _result.Append(l.ToString());
-                            if ((result & Core.Convert.NumberInfo.Double) != 0) _result.Append(d.ToString());
+                            if ((result & Core.Convert.NumberInfo.Double) != 0) _result.Append(d.ToString(System.Globalization.CultureInfo.InvariantCulture));
                             return;
                         }
                     }
@@ -389,7 +399,7 @@ namespace Pchp.Library
                     {
                         // ,
                         if (bFirst) bFirst = false;
-                        else Write(Tokens.ItemsSeparator);
+                        else Write(Tokens.ItemsSeparatorString);
 
                         Debug.Assert(enumerator.CurrentKey.IsInteger);
 
@@ -411,11 +421,11 @@ namespace Pchp.Library
                     {
                         // ,
                         if (bFirst) bFirst = false;
-                        else Write(Tokens.ItemsSeparator);
+                        else Write(Tokens.ItemsSeparatorString);
 
                         // "key":value
                         WriteString(pair.Key);
-                        Write(Tokens.PropertyKeyValueSeparator);
+                        Write(Tokens.PropertyKeyValueSeparatorString);
                         pair.Value.Accept(this);
                     }
 
