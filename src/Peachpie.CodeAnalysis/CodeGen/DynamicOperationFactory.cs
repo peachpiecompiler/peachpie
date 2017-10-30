@@ -110,6 +110,17 @@ namespace Pchp.CodeAnalysis.CodeGen
                 _container, CallSite, namehint, Accessibility.Private, true, true,
                 autoincrement: true);
 
+        /// <summary>
+        /// Creates internal autoincremented field in current container.
+        /// </summary>
+        /// <param name="type">Field type.</param>
+        /// <param name="name">Field name prefix.</param>
+        /// <param name="isstatic">Whether the field is static.</param>
+        /// <returns>The synthesized field.</returns>
+        public SynthesizedFieldSymbol CreateSynthesizedField(TypeSymbol type, string name, bool isstatic) => _cg.Module.SynthesizedManager
+            .GetOrCreateSynthesizedField(
+                _container, type, name, Accessibility.Internal, isstatic, false, true);
+
         public DynamicOperationFactory(CodeGenerator cg, NamedTypeSymbol container)
         {
             Contract.ThrowIfNull(cg);

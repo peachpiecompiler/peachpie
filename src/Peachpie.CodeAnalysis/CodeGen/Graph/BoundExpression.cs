@@ -3341,7 +3341,21 @@ namespace Pchp.CodeAnalysis.Semantics
                 // PhpArray.NewEmpty()
                 return cg.Emit_PhpArray_NewEmpty();
             }
+            else if (this.RequiresContext)
+            {
+                // new PhpArray(){ ... }
+                return EmitNewPhpArray(cg);
+            }
+            else // array items do not need Context => they are immutable/literals
+            {
+                // static PhpArray field;
+                // field ?? (field = new PhpArray(){ ... })
+                return EmitCachedPhpArray(cg);
+            }
+        }
 
+        TypeSymbol EmitNewPhpArray(CodeGenerator cg)
+        {
             // new PhpArray(count)
             cg.Builder.EmitIntConstant(_items.Length);
             var result = cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray_int)
@@ -3376,6 +3390,35 @@ namespace Pchp.CodeAnalysis.Semantics
 
             //
             return result;
+        }
+
+        /// <summary>
+        /// Caches the array instance into an internal app-static field,
+        /// so repetitious creations only uses the existing instance.
+        /// </summary>
+        TypeSymbol EmitCachedPhpArray(CodeGenerator cg)
+        {
+            // static PhpArray arr`;
+            var fld = cg.Factory.CreateSynthesizedField(cg.CoreTypes.PhpArray, "<arr>", true);
+            var fldplace = new FieldPlace(null, fld);
+
+            // TODO: reuse existing cached PhpArray with the same content
+
+            // arr ?? (arr = new PhpArray(){...})
+            fldplace.EmitLoad(cg.Builder);
+            cg.EmitNullCoalescing((cg_) =>
+            {
+                fldplace.EmitStorePrepare(cg_.Builder);
+                EmitNewPhpArray(cg_);
+                cg_.Builder.EmitOpCode(ILOpCode.Dup);
+                fldplace.EmitStore(cg_.Builder);
+            });
+
+            // .DeepCopy()
+            cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.DeepCopy);
+
+            //
+            return fld.Type;    // ~ PhpArray
         }
     }
 
