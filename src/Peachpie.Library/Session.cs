@@ -140,17 +140,20 @@ namespace Pchp.Library
             var webctx = GetHttpPhpContext(ctx);
             if (webctx != null && webctx.SessionHandler != null)
             {
-                id = webctx.SessionHandler.GetSessionId(webctx);
-
-                if (newid != null)
+                if (webctx.SessionState != PhpSessionState.Closed || newid != null)
                 {
-                    if (webctx.SessionState != PhpSessionState.Closed)
-                    {
-                        // err
-                    }
+                    id = webctx.SessionHandler.GetSessionId(webctx);
 
-                    // change session id
-                    throw new NotSupportedException(nameof(newid));
+                    if (newid != null)
+                    {
+                        if (webctx.SessionState != PhpSessionState.Closed)
+                        {
+                            // err
+                        }
+
+                        // change session id
+                        throw new NotSupportedException(nameof(newid));
+                    }
                 }
             }
 
