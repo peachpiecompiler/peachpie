@@ -3341,7 +3341,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 // PhpArray.NewEmpty()
                 return cg.Emit_PhpArray_NewEmpty();
             }
-            else if (this.RequiresContext)
+            else if (cg.IsInCachedArrayExpression || this.RequiresContext)
             {
                 // new PhpArray(){ ... }
                 return EmitNewPhpArray(cg);
@@ -3398,11 +3398,16 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         TypeSymbol EmitCachedPhpArray(CodeGenerator cg)
         {
+            Debug.Assert(cg.IsInCachedArrayExpression == false);
+
             // static PhpArray arr`;
             var fld = cg.Factory.CreateSynthesizedField(cg.CoreTypes.PhpArray, "<arr>", true);
             var fldplace = new FieldPlace(null, fld);
 
             // TODO: reuse existing cached PhpArray with the same content
+
+            //
+            cg.IsInCachedArrayExpression = true;
 
             // arr ?? (arr = new PhpArray(){...})
             fldplace.EmitLoad(cg.Builder);
@@ -3416,6 +3421,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // .DeepCopy()
             cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.DeepCopy);
+
+            //
+            cg.IsInCachedArrayExpression = false;
 
             //
             return fld.Type;    // ~ PhpArray

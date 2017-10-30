@@ -288,6 +288,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         public bool IsGlobalScope => _routine is SourceGlobalMethodSymbol;
 
         /// <summary>
+        /// Gets or sets value determining <see cref="BoundArrayEx"/> is being emitted.
+        /// When set, array expression caching is disabled.
+        /// </summary>
+        internal bool IsInCachedArrayExpression { get; set; }
+
+        /// <summary>
         /// Type of the caller context (the class declaring current method) or null.
         /// </summary>
         public TypeSymbol CallerType => (_routine is SourceMethodSymbol) ? _routine.ContainingType : null;
