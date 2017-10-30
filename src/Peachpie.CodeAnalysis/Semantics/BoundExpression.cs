@@ -257,7 +257,10 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Whether the expression needs current <c>Pchp.Core.Context</c> to be evaluated.
         /// Otherwise, the expression can be evaluated in app context or in compile time.
         /// </summary>
-        public virtual bool RequiresContext => true;
+        /// <remarks>
+        /// If the expression is a literal, a resolved constant or immutable, it does not require the Context.
+        /// </remarks>
+        public virtual bool RequiresContext => !this.ConstantValue.HasValue;
 
         /// <summary>
         /// Resolved value of the expression.
