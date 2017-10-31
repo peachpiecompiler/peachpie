@@ -38,6 +38,14 @@ namespace Pchp.Library
         public const long PHP_INT_MIN = long.MinValue;
         public const long PHP_INT_MAX = long.MaxValue;
 
+        public const double PHP_FLOAT_MIN = double.MinValue;
+        public const double PHP_FLOAT_MAX = double.MaxValue;
+
+        /// <summary>Smallest representable positive number x, so that x + 1.0 != 1.0.</summary>
+        public const double PHP_FLOAT_EPSILON = double.Epsilon;
+        /// <summary>Number of decimal digits that can be rounded into a float and back without precision loss.</summary>
+        public const double PHP_FLOAT_DIG = 15;
+
         public const object NULL = null;
         public const bool TRUE = true;
         public const bool FALSE = false;
