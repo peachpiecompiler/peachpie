@@ -329,7 +329,7 @@ namespace Peachpie.Web
             array["SERVER_SOFTWARE"] = (PhpValue)"ASP.NET Core Server";
             array["SERVER_PROTOCOL"] = (PhpValue)request.Protocol;
             array["SERVER_NAME"] = (PhpValue)request.Host.Host;
-            array["SERVER_PORT"] = (PhpValue)request.Host.Port;
+            array["SERVER_PORT"] = (PhpValue)(request.Host.Port ?? _httpctx.Connection.LocalPort);
             array["REQUEST_URI"] = (PhpValue)(request.Path.Value + request.QueryString.Value);
             array["REQUEST_METHOD"] = (PhpValue)request.Method;
             array["SCRIPT_NAME"] = (PhpValue)request.Path.ToString();
