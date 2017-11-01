@@ -464,7 +464,9 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 var fkind = (flist.Modifiers & PhpMemberAttributes.Static) == 0
                     ? SourceFieldSymbol.KindEnum.InstanceField
-                    : SourceFieldSymbol.KindEnum.StaticField;
+                    : flist.IsAppStatic()
+                        ? SourceFieldSymbol.KindEnum.AppStaticField
+                        : SourceFieldSymbol.KindEnum.StaticField;
 
                 foreach (var f in flist.Fields)
                 {
