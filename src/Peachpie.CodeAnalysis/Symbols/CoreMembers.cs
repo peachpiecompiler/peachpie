@@ -437,6 +437,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Echo_Bool = ct.Context.Method("Echo", ct.Boolean);
 
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle = ct.Operators.Method("GetForeachEnumerator", ct.PhpValue, ct.Boolean, ct.RuntimeTypeHandle);
+                GetForeachEnumerator_Iterator = ct.Operators.Method("GetForeachEnumerator", ct.Iterator);
 
                 GetSelf_RuntimeTypeHandle = ct.Operators.Method("GetSelf", ct.RuntimeTypeHandle);
                 GetParent_RuntimeTypeHandle = ct.Operators.Method("GetParent", ct.RuntimeTypeHandle);
@@ -519,6 +520,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32, Echo_Bool,
 
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle,
+                GetForeachEnumerator_Iterator,
 
                 GetSelf_RuntimeTypeHandle, GetParent_RuntimeTypeHandle,
 

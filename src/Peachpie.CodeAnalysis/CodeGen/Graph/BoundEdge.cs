@@ -441,8 +441,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 cg.EmitCallerRuntimeTypeHandle();
                 enumeratorType = cg.EmitCall(ILOpCode.Callvirt, GetForeachEnumerator_Bool_RuntimeTypeHandle);
             }
+            else if (enumereeType.IsOfType(cg.CoreTypes.Iterator))
+            {
+                enumeratorType = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetForeachEnumerator_Iterator);
+            }
             // TODO: IPhpArray
-            // TODO: Iterator
             else if (getEnumeratorMethod != null && getEnumeratorMethod.ParameterCount == 0 && enumereeType.IsReferenceType)
             {
                 // enumeree.GetEnumerator()

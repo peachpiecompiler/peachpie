@@ -946,6 +946,16 @@ namespace Pchp.Core
         #endregion
 
         /// <summary>
+        /// Gets <see cref="Iterator"/> object enumerator.
+        /// </summary>
+        /// <returns>Instance of the enumerator. Cannot be <c>null</c>.</returns>
+        public static IPhpEnumerator GetForeachEnumerator(Iterator it)
+        {
+            Debug.Assert(it != null);
+            return new PhpIteratorEnumerator(it);
+        }
+
+        /// <summary>
         /// Resolves object enumerator.
         /// </summary>
         /// <exception cref="Exception">Object cannot be enumerated.</exception>
@@ -956,7 +966,7 @@ namespace Pchp.Core
 
             if (obj is Iterator)
             {
-                return new PhpIteratorEnumerator((Iterator)obj);
+                return GetForeachEnumerator((Iterator)obj);
             }
             else if (obj is IteratorAggregate)
             {
@@ -969,7 +979,7 @@ namespace Pchp.Core
 
                 if (obj is Iterator)
                 {
-                    return new PhpIteratorEnumerator((Iterator)obj);
+                    return GetForeachEnumerator((Iterator)obj);
                 }
                 else
                 {
@@ -1010,6 +1020,11 @@ namespace Pchp.Core
         /// Gets PHP enumerator of <c>NULL</c> or <b>empty</b> value.
         /// </summary>
         public static IPhpEnumerator GetEmptyForeachEnumerator() => PhpEmptyEnumerator.Instance;
+
+        /// <summary>
+        /// Gets enumerator object for given value.
+        /// </summary>
+        public static IPhpEnumerator GetForeachEnumerator(PhpValue value, bool aliasedValues, RuntimeTypeHandle caller) => value.GetForeachEnumerator(aliasedValues, caller);
 
         #endregion
 
@@ -1270,15 +1285,6 @@ namespace Pchp.Core
         public static PhpValue GetGeneratorSentItem(Generator g) => g._currSendItem;
 
         public static void SetGeneratorReturnedValue(Generator g, PhpValue value) => g._returnValue = value;
-        #endregion
-
-        #region Enumerator
-
-        /// <summary>
-        /// Gets enumerator object for given value.
-        /// </summary>
-        public static IPhpEnumerator GetForeachEnumerator(PhpValue value, bool aliasedValues, RuntimeTypeHandle caller) => value.GetForeachEnumerator(aliasedValues, caller);
-
         #endregion
 
         #region Dynamic
