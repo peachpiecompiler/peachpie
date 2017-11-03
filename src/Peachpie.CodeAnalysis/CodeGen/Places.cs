@@ -1125,7 +1125,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
     }
 
-    internal class BoundIndirectTemporalVariablePlace : BoundIndirectVariablePlace
+    internal sealed class BoundIndirectTemporalVariablePlace : BoundIndirectVariablePlace
     {
         public BoundIndirectTemporalVariablePlace(BoundExpression nameExpr, BoundAccess access)
             : base(nameExpr, access)
