@@ -254,7 +254,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
     partial class ForeachEnumereeEdge
     {
-        LocalDefinition _enumeratorLoc;
+        CodeGenerator.TemporaryLocalDefinition _enumeratorLoc;
         MethodSymbol _moveNextMethod, _disposeMethod;
         PropertySymbol _currentValue, _currentKey, _current;
 
@@ -265,30 +265,28 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         internal void EmitMoveNext(CodeGenerator cg)
         {
-            Debug.Assert(_enumeratorLoc != null);
+            Debug.Assert(_enumeratorLoc.IsValid);
             Debug.Assert(_moveNextMethod != null);
             Debug.Assert(_moveNextMethod.IsStatic == false);
 
             if (_enumeratorLoc.Type.IsValueType)
             {
                 // <locaddr>.MoveNext()
-                cg.Builder.EmitLocalAddress(_enumeratorLoc);
+                _enumeratorLoc.EmitLoadAddress(cg.Builder);
             }
             else
             {
                 // <loc>.MoveNext()
-                cg.Builder.EmitLocalLoad(_enumeratorLoc);
+                _enumeratorLoc.EmitLoad(cg.Builder);
             }
 
-            cg.EmitCall(CallOpCode(_moveNextMethod, (TypeSymbol)_enumeratorLoc.Type), _moveNextMethod)
+            cg.EmitCall(CallOpCode(_moveNextMethod, _enumeratorLoc.Type), _moveNextMethod)
                 .Expect(SpecialType.System_Boolean);
         }
 
         internal void EmitGetCurrent(CodeGenerator cg, BoundReferenceExpression valueVar, BoundReferenceExpression keyVar)
         {
-            Debug.Assert(_enumeratorLoc != null);
-
-            var enumeratorPlace = new LocalPlace(_enumeratorLoc);
+            Debug.Assert(_enumeratorLoc.IsValid);
 
             // NOTE: PHP writes first to {valueVar} then to {keyVar}
 
@@ -299,14 +297,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 cg.EmitSequencePoint(valueVar.PhpSyntax);
                 var valueTarget = valueVar.BindPlace(cg);
                 valueTarget.EmitStorePrepare(cg);
-                valueTarget.EmitStore(cg, cg.EmitGetProperty(enumeratorPlace, _currentValue));
+                valueTarget.EmitStore(cg, cg.EmitGetProperty(_enumeratorLoc, _currentValue));
 
                 if (keyVar != null)
                 {
                     cg.EmitSequencePoint(keyVar.PhpSyntax);
                     var keyTarget = keyVar.BindPlace(cg);
                     keyTarget.EmitStorePrepare(cg);
-                    keyTarget.EmitStore(cg, cg.EmitGetProperty(enumeratorPlace, _currentKey));
+                    keyTarget.EmitStore(cg, cg.EmitGetProperty(_enumeratorLoc, _currentKey));
                 }
             }
             else
@@ -322,7 +320,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 {
                     // tmp = current;
                     var tmp = cg.GetTemporaryLocal(valuetype);
-                    cg.EmitGetProperty(enumeratorPlace, _current);
+                    cg.EmitGetProperty(_enumeratorLoc, _current);
                     cg.Builder.EmitLocalStore(tmp);
 
                     // TODO: ValueTuple Helper
@@ -356,7 +354,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                     cg.EmitSequencePoint(valueVar.PhpSyntax);
                     var valueTarget = valueVar.BindPlace(cg);
                     valueTarget.EmitStorePrepare(cg);
-                    var t = cg.EmitGetProperty(enumeratorPlace, _current);  // TOOD: PhpValue.FromClr
+                    var t = cg.EmitGetProperty(_enumeratorLoc, _current);  // TOOD: PhpValue.FromClr
                     valueTarget.EmitStore(cg, t);
 
                     if (keyVar != null)
@@ -375,9 +373,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // TODO: if (enumerator != null)
 
                 if (_enumeratorLoc.Type.IsValueType)
-                    cg.Builder.EmitLocalAddress(_enumeratorLoc);
+                {
+                    _enumeratorLoc.EmitLoadAddress(cg.Builder);
+                }
                 else
-                    cg.Builder.EmitLocalLoad(_enumeratorLoc);
+                {
+                    _enumeratorLoc.EmitLoad(cg.Builder);
+                }
 
                 cg.EmitCall(CallOpCode(_disposeMethod, (TypeSymbol)_enumeratorLoc.Type), _disposeMethod)
                     .Expect(SpecialType.System_Void);
@@ -463,8 +465,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _disposeMethod = enumeratorType.LookupMember<MethodSymbol>("Dispose", m => m.ParameterCount == 0 && !m.IsStatic);
 
             //
-            _enumeratorLoc = cg.GetTemporaryLocal(enumeratorType);
-            cg.Builder.EmitLocalStore(_enumeratorLoc);
+            _enumeratorLoc = cg.GetTemporaryLocal(enumeratorType, longlive: true, immediateReturn: false);
+            _enumeratorLoc.EmitStore();
 
             // bind methods
             _moveNextMethod = enumeratorType.LookupMember<MethodSymbol>(WellKnownMemberNames.MoveNextMethodName);    // TODO: Err if there is no MoveNext()
