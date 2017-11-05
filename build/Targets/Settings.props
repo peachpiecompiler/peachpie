@@ -32,8 +32,8 @@
   <!-- package -->
   <PropertyGroup>
     <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/iolevel/peachpie</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/iolevel/peachpie</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/peachpiecompiler/peachpie</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/peachpiecompiler/peachpie</PackageProjectUrl>
     <PackageOutputPath>$(MSBuildThisFileDirectory)../../.nugs</PackageOutputPath>
   </PropertyGroup>
 
