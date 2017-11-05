@@ -686,7 +686,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
             else
             {
-                // [PhpTypeAttribute(FullName)]
+                // [PhpTypeAttribute(FullName, FileName)]
                 attrs = attrs.Add(new SynthesizedAttributeData(
                         DeclaringCompilation.CoreMethods.Ctors.PhpTypeAttribute_string_string,
                         ImmutableArray.Create(
