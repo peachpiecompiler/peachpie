@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace Pchp.CodeAnalysis.CommandLine
 {
@@ -153,6 +154,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             string mainTypeName = null, pdbPath = null;
             Version languageVersion = null;
             bool shortOpenTags = false;
+            bool resourcesOrModulesSpecified = false;
             DebugInformationFormat debugInformationFormat = DebugInformationFormat.Pdb;
             List<string> referencePaths = new List<string>();
             if (sdkDirectoryOpt != null) referencePaths.Add(sdkDirectoryOpt);
@@ -398,6 +400,38 @@ namespace Pchp.CodeAnalysis.CommandLine
                         runtimeMetadataVersion = unquoted;
                         continue;
 
+                    case "res":
+                    case "resource":
+                        if (value == null)
+                        {
+                            break; // Dev11 reports unrecognized option
+                        }
+
+                        var embeddedResource = ParseResourceDescription(arg, value, baseDirectory, diagnostics, embedded: true);
+                        if (embeddedResource != null)
+                        {
+                            managedResources.Add(embeddedResource);
+                            resourcesOrModulesSpecified = true;
+                        }
+
+                        continue;
+
+                    case "linkres":
+                    case "linkresource":
+                        if (value == null)
+                        {
+                            break; // Dev11 reports unrecognized option
+                        }
+
+                        var linkedResource = ParseResourceDescription(arg, value, baseDirectory, diagnostics, embedded: false);
+                        if (linkedResource != null)
+                        {
+                            managedResources.Add(linkedResource);
+                            resourcesOrModulesSpecified = true;
+                        }
+
+                        continue;
+
                     default:
                         break;
                 }
@@ -406,7 +440,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             GetCompilationAndModuleNames(diagnostics, outputKind, sourceFiles, sourceFiles.Count != 0, /*moduleAssemblyName*/null, ref outputFileName, ref moduleName, out compilationName);
 
             //
-            if (sourceFiles.Count == 0 && !IsScriptRunner)
+            if (sourceFiles.Count == 0 && !IsScriptRunner && (outputKind.IsNetModule() || !resourcesOrModulesSpecified))
             {
                 // warning: no source files specified
                 diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.WRN_NoSourceFiles, Location.None));
@@ -666,6 +700,65 @@ namespace Pchp.CodeAnalysis.CommandLine
                 var properties = new MetadataReferenceProperties(MetadataImageKind.Assembly, aliases, embedInteropTypes);
                 yield return new CommandLineReference(path, properties);
             }
+        }
+
+        internal static ResourceDescription ParseResourceDescription(
+            string arg,
+            string resourceDescriptor,
+            string baseDirectory,
+            IList<Diagnostic> diagnostics,
+            bool embedded)
+        {
+            ParseResourceDescription(
+                resourceDescriptor,
+                baseDirectory,
+                false,
+                out string filePath,
+                out string fullPath,
+                out string fileName,
+                out string resourceName,
+                out string accessibility);
+
+            bool isPublic;
+            if (accessibility == null)
+            {
+                // If no accessibility is given, we default to "public".
+                // NOTE: Dev10 distinguishes between null and empty/whitespace-only.
+                isPublic = true;
+            }
+            else if (string.Equals(accessibility, "public", StringComparison.OrdinalIgnoreCase))
+            {
+                isPublic = true;
+            }
+            else if (string.Equals(accessibility, "private", StringComparison.OrdinalIgnoreCase))
+            {
+                isPublic = false;
+            }
+            else
+            {
+                //diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_BadResourceVis, accessibility);
+                return null;
+            }
+
+            if (string.IsNullOrEmpty(filePath))
+            {
+                //AddDiagnostic(diagnostics, Errors.ErrorCode.ERR_NoFileSpec, arg);
+                return null;
+            }
+
+            if (fullPath == null || string.IsNullOrWhiteSpace(fileName) || fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            {
+                //AddDiagnostic(diagnostics, Errors.ErrorCode.FTL_InputFileNameTooLong, filePath);
+                return null;
+            }
+
+            Func<Stream> dataProvider = () =>
+            {
+                // Use FileShare.ReadWrite because the file could be opened by the current process.
+                // For example, it is an XML doc file produced by the build.
+                return new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            };
+            return new ResourceDescription(resourceName, fileName, dataProvider, isPublic, embedded, checkArgs: false);
         }
     }
 }
