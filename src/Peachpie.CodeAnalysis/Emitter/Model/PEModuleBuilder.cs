@@ -46,6 +46,13 @@ namespace Pchp.CodeAnalysis.Emit
         HashSet<string> _namesOfTopLevelTypes;  // initialized with set of type names within first call to GetTopLevelTypes()
 
         internal readonly IEnumerable<ResourceDescription> ManifestResources;
+
+        /// <summary>
+        /// Managed resources to be emitted with the module.
+        /// </summary>
+        /// <remarks>Add or remove items from the list to build resulting set of resource emitted in the assembly.</remarks>
+        internal readonly List<ResourceDescription> Resources = new List<ResourceDescription>();
+
         internal readonly CommonModuleCompilationState CompilationState;
 
         // This is a map from the document "name" to the document.
@@ -565,7 +572,7 @@ namespace Pchp.CodeAnalysis.Emit
                 _lazyManagedResources = builder.ToImmutableAndFree();
             }
 
-            return _lazyManagedResources;
+            return _lazyManagedResources.Concat(this.Resources.Select(r => r.ToManagedResource(this)));
         }
 
         protected virtual void AddEmbeddedResourcesFromAddedModules(ArrayBuilder<Cci.ManagedResource> builder, DiagnosticBag diagnostics)
