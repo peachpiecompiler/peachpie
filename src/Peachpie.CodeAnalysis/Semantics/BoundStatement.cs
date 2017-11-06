@@ -342,8 +342,17 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public IExpression Returned => YieldedValue;
 
-        public BoundYieldStatement(BoundExpression valueExpression, BoundExpression keyExpression)
+        /// <summary>
+        /// The yield expression unique ordinal value within the routine.
+        /// Indexed from one.
+        /// </summary>
+        public int YieldIndex { get; }
+
+        public BoundYieldStatement(int index, BoundExpression valueExpression, BoundExpression keyExpression)
         {
+            Debug.Assert(index > 0);
+
+            YieldIndex = index;
             YieldedValue = valueExpression;
             YieldedKey = keyExpression;
         }

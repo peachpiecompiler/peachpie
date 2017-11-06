@@ -347,10 +347,6 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(cg.Routine.ControlFlowGraph.Yields != null);
 
-            // yieldIndex is 1-based because zero is reserved for to-first-yield-run.
-            var yieldIndex = Array.IndexOf(cg.Routine.ControlFlowGraph.Yields, this) + 1;
-            Debug.Assert(yieldIndex >= 1);
-
             var il = cg.Builder;
 
             // sets currValue, currKey and userKeyReturned
@@ -373,7 +369,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             //generator._state = yieldIndex
             cg.EmitGeneratorInstance();
-            il.EmitIntConstant(yieldIndex);
+            il.EmitIntConstant(YieldIndex);
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
 
             // return & set continuation point just after that
@@ -383,18 +379,6 @@ namespace Pchp.CodeAnalysis.Semantics
             // Operators.HandleGeneratorException(generator)
             cg.EmitGeneratorInstance();
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.HandleGeneratorException_Generator);
-        }
-
-        static void EmitPhpValueOrDefault(CodeGenerator cg, BoundExpression valueExpr)
-        {
-            if (valueExpr == null)
-            {
-                cg.Emit_PhpValue_Null();
-            }
-            else
-            {
-                cg.EmitConvertToPhpValue(valueExpr);
-            }
         }
     }
 

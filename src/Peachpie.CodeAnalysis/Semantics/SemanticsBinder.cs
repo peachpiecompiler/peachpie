@@ -862,15 +862,17 @@ namespace Pchp.CodeAnalysis.Semantics
     internal class GeneratorSemanticsBinder : SemanticsBinder
     {
         #region FieldsAndProperties
+
         /// <summary>
         /// Found yield statements (needed for ControlFlowGraph)
         /// </summary>
         public override BoundYieldStatement[] Yields { get => _yields.ToArray(); }
-        readonly List<BoundYieldStatement> _yields;
+        readonly List<BoundYieldStatement> _yields = new List<BoundYieldStatement>();
 
-        readonly HashSet<AST.LangElement> _yieldsToStatementRootPath;
+        readonly HashSet<AST.LangElement> _yieldsToStatementRootPath = new HashSet<AST.LangElement>();
         int _rewriterVariableIndex = 0;
         int _underYieldLikeExLevel = -1;
+
         #endregion
 
         #region PreBoundBlocks
@@ -903,12 +905,9 @@ namespace Pchp.CodeAnalysis.Semantics
         #endregion
 
         #region Construction
-        public GeneratorSemanticsBinder(ImmutableArray<AST.IYieldLikeEx> yields, LocalsTable locals = null, DiagnosticBag diagnostics = null)
+        public GeneratorSemanticsBinder(ImmutableArray<AST.IYieldLikeEx> yields, LocalsTable locals, DiagnosticBag diagnostics)
             : base(locals, diagnostics)
         {
-            _yields = new List<BoundYieldStatement>();
-            _yieldsToStatementRootPath = new HashSet<AST.LangElement>();
-
             // save all parents of all yieldLikeEx in current routine -> will need to realocate all expressions on path and in its children
             //  - the ones to the left from yieldLikeEx<>root path need to get moved in statements before yieldLikeEx
             //  - the ones on the path could be left alone but if we prepend the ones on the right we must also move the ones on the path as they should get executed before the right ones
@@ -918,7 +917,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 Debug.Assert(yieldLikeEx is AST.LangElement);
                 var parent = ((AST.LangElement)yieldLikeEx).ContainingElement;
                 // add all parents until reaching the top of current statement tree
-                while (!(parent is AST.MethodDecl || parent is AST.FunctionDecl || parent is AST.ExpressionStmt))
+                while (!(parent is AST.MethodDecl || parent is AST.IStatement))
                 {
                     _yieldsToStatementRootPath.Add(parent);
                     parent = parent.ContainingElement;
@@ -1100,7 +1099,7 @@ namespace Pchp.CodeAnalysis.Semantics
             var boundKeyExpr = (expr.KeyExpr != null) ? BindExpression(expr.KeyExpr) : null;
 
             // bind yield statement (represents return & continuation)
-            var boundYieldStatement = new BoundYieldStatement(boundValueExpr, boundKeyExpr)
+            var boundYieldStatement = new BoundYieldStatement(_yields.Count + 1, boundValueExpr, boundKeyExpr)
                 .WithSyntax(expr); // need to explicitly set PhpSyntax because this element doesn't go trough BindExpression (BoundYieldEx gets returned instead)
 
             _yields.Add(boundYieldStatement);

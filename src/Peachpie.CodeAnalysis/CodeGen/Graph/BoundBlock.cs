@@ -128,29 +128,27 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             var stateTmpLocal = cg.GetTemporaryLocal(cg.CoreTypes.Int32);
             cg.Builder.EmitLocalStore(stateTmpLocal);
 
-
             // g._state = -1 : running
             cg.EmitGeneratorInstance();
             cg.Builder.EmitIntConstant(-1);
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
 
-
             // create label for situation when state doesn't correspond to continuation: 0 -> didn't run to first yield
             var noContinuationLabel = new NamedLabel("noStateContinuation");
 
             // prepare jump table from yields
-            var yields = cg.Routine.ControlFlowGraph.Yields;
             var yieldExLabels = new List<KeyValuePair<ConstantValue, object>>();
-            for (var i = 0; i < yields.Length; i++)
+            foreach (var yield in cg.Routine.ControlFlowGraph.Yields)
             {
-                // i+1 because labels have 1-based index (zero is reserved for run to first yield)
-                yieldExLabels.Add(new KeyValuePair<ConstantValue, object>(ConstantValue.Create(i + 1), yields[i]));
+                // labels have 1-based index (zero is reserved for run to first yield)
+                // label object is the BoundYieldStatement itself, it is Marked at the proper place within its Emit method
+                Debug.Assert(yield.YieldIndex >= 1);
+                yieldExLabels.Add(new KeyValuePair<ConstantValue, object>(ConstantValue.Create(yield.YieldIndex), yield));
             }
 
             // emit switch table that based on g._state jumps to appropriate continuation label
             cg.Builder.EmitIntegerSwitchJumpTable(yieldExLabels.ToArray(), noContinuationLabel, stateTmpLocal, Microsoft.Cci.PrimitiveTypeCode.Int32);
             cg.ReturnTemporaryLocal(stateTmpLocal);
-
 
             cg.Builder.MarkLabel(noContinuationLabel);
         }
