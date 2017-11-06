@@ -202,6 +202,13 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        public TypeSymbol EmitConvertToPhpValue(BoundExpression expr)
+        {
+            return expr != null
+                ? EmitConvertToPhpValue(Emit(expr), expr.TypeRefMask)
+                : Emit_PhpValue_Null();
+        }
+
         public TypeSymbol EmitConvertToPhpValue(TypeSymbol from, TypeRefMask fromHint)
         {
             return EmitConvertToPhpValue(from, fromHint, _il, _moduleBuilder, _diagnostics);
@@ -954,7 +961,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     EmitPop(from);
                     _il.EmitNullConstant();
                     return;
-                    
+
                 default:
                     if (from == CoreTypes.PhpValue)
                     {

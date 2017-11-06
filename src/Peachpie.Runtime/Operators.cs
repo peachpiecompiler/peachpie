@@ -11,6 +11,7 @@ using Pchp.Core.Reflection;
 
 namespace Pchp.Core
 {
+    [DebuggerNonUserCode]
     public static class Operators
     {
         #region Numeric
@@ -1272,15 +1273,43 @@ namespace Pchp.Core
 
         public static void SetGeneratorState(Generator g, int newState) => g._state = newState;
 
-        public static void NullGeneratorThrownException(Generator g) => g._currException = null;
+        /// <summary>
+        /// In case generator has an exception, throws it.
+        /// The current exception is then nullified.
+        /// </summary>
+        [DebuggerNonUserCode, DebuggerHidden]
+        public static void HandleGeneratorException(Generator g)
+        {
+            var exception = g._currException;
+            g._currException = null;
 
-        public static Exception GetGeneratorThrownException(Generator g) => g._currException;
+            if (exception != null)
+            {
+                throw exception;
+            }
+        }
 
         public static void SetGeneratorCurrValue(Generator g, PhpValue value) => g._currValue = value;
 
         public static void SetGeneratorCurrKey(Generator g, PhpValue value) => g._currKey = value;
 
         public static void SetGeneratorReturnedUserKey(Generator g, bool value) => g._userKeyReturned = value;
+
+        /// <summary>Set yielded value from generator where key is not specified.</summary>
+        public static void SetGeneratorCurrent(Generator g, PhpValue value)
+        {
+            g._currValue = value;
+            g._currKey = PhpValue.Void;
+            g._userKeyReturned = false;
+        }
+
+        /// <summary>Set yielded value from generator with key.</summary>
+        public static void SetGeneratorCurrent(Generator g, PhpValue value, PhpValue key)
+        {
+            g._currValue = value;
+            g._currKey = key;
+            g._userKeyReturned = true;
+        }
 
         public static PhpValue GetGeneratorSentItem(Generator g) => g._currSendItem;
 

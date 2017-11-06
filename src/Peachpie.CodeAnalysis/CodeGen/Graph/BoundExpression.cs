@@ -4326,15 +4326,24 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(cg.GeneratorStateMachineMethod != null);
 
-            var il = cg.Builder;
+            if (this.Access.IsNone)
+            {
+                return cg.CoreTypes.Void;
+            }
+            else if (this.Access.IsRead)
+            {
+                // leave result of yield expr. (sent value) on eval stack
 
-            // leave result of yield expr. (sent value) on eval stack
+                cg.EmitGeneratorInstance();
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorSentItem_Generator);
 
-            cg.EmitGeneratorInstance();
-            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorSentItem_Generator);
-
-            // type of expression result is PHP value (sent value)
-            return cg.CoreTypes.PhpValue;
+                // type of expression result is PHP value (sent value)
+                return cg.CoreTypes.PhpValue;
+            }
+            else
+            {
+                throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(this.Access);
+            }
         }
     }
 }

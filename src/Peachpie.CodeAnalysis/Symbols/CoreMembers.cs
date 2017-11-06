@@ -451,11 +451,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate = ct.Operators.Method("BuildGenerator", ct.Context, ct.Object, ct.PhpArray, ct.PhpArray, ct.GeneratorStateMachineDelegate);
                 GetGeneratorState_Generator = ct.Operators.Method("GetGeneratorState", ct.Generator);
                 SetGeneratorState_Generator_int = ct.Operators.Method("SetGeneratorState", ct.Generator, ct.Int32);
-                NullGeneratorThrownException_Generator = ct.Operators.Method("NullGeneratorThrownException", ct.Generator);
-                GetGeneratorThrownException_Generator = ct.Operators.Method("GetGeneratorThrownException", ct.Generator);
-                SetGeneratorCurrValue_Generator_PhpValue = ct.Operators.Method("SetGeneratorCurrValue", ct.Generator, ct.PhpValue);
-                SetGeneratorCurrKey_Generator_PhpValue = ct.Operators.Method("SetGeneratorCurrKey", ct.Generator, ct.PhpValue);
-                SetGeneratorReturnedUserKey_Generator_bool = ct.Operators.Method("SetGeneratorReturnedUserKey", ct.Generator, ct.Boolean);
+                HandleGeneratorException_Generator = ct.Operators.Method("HandleGeneratorException", ct.Generator);
+                SetGeneratorCurrent_Generator_PhpValue = ct.Operators.Method("SetGeneratorCurrent", ct.Generator, ct.PhpValue);
+                SetGeneratorCurrent_Generator_PhpValue_PhpValue = ct.Operators.Method("SetGeneratorCurrent", ct.Generator, ct.PhpValue, ct.PhpValue);
                 GetGeneratorSentItem_Generator = ct.Operators.Method("GetGeneratorSentItem", ct.Generator);
                 SetGeneratorReturnedValue_Generator_PhpValue = ct.Operators.Method("SetGeneratorReturnedValue", ct.Generator, ct.PhpValue);
 
@@ -529,8 +527,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 Eval_Context_PhpArray_object_RuntimeTypeHandle_string_string_int_int,
 
                 BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate,
-                GetGeneratorState_Generator, SetGeneratorState_Generator_int, NullGeneratorThrownException_Generator, GetGeneratorThrownException_Generator, SetGeneratorCurrValue_Generator_PhpValue,
-                SetGeneratorCurrKey_Generator_PhpValue, SetGeneratorReturnedUserKey_Generator_bool, GetGeneratorSentItem_Generator, SetGeneratorReturnedValue_Generator_PhpValue,
+                GetGeneratorState_Generator, SetGeneratorState_Generator_int, HandleGeneratorException_Generator,
+                SetGeneratorCurrent_Generator_PhpValue, SetGeneratorCurrent_Generator_PhpValue_PhpValue,
+                GetGeneratorSentItem_Generator, SetGeneratorReturnedValue_Generator_PhpValue,
 
                 offsetGet_ArrayAccess_PhpValue,
 

@@ -353,63 +353,48 @@ namespace Pchp.CodeAnalysis.Semantics
 
             var il = cg.Builder;
 
-            // sets currValue and currKey on generator object
-            setAsPhpValueOnGenerator(cg, YieldedValue, cg.CoreMethods.Operators.SetGeneratorCurrValue_Generator_PhpValue);
-            setAsPhpValueOnGenerator(cg, YieldedKey, cg.CoreMethods.Operators.SetGeneratorCurrKey_Generator_PhpValue);
+            // sets currValue, currKey and userKeyReturned
 
-
-            // generator._userKeyReturned = (YieldedKey != null)
-            var userKeyReturned = (YieldedKey != null);
-            cg.EmitGeneratorInstance();
-            cg.Builder.EmitBoolConstant(userKeyReturned);
-            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorReturnedUserKey_Generator_bool);
-
+            // Template: Operators.SetGeneratorCurrent(generator, value [,key])
+            cg.EmitGeneratorInstance();             // generator
+            cg.EmitConvertToPhpValue(YieldedValue); // value (can be NULL)
+            
+            if (YieldedKey == null)
+            {
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorCurrent_Generator_PhpValue)
+                    .Expect(SpecialType.System_Void);
+            }
+            else
+            {
+                cg.EmitConvertToPhpValue(cg.Emit(YieldedKey), YieldedKey.TypeRefMask);
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorCurrent_Generator_PhpValue_PhpValue)
+                    .Expect(SpecialType.System_Void);
+            }
 
             //generator._state = yieldIndex
             cg.EmitGeneratorInstance();
             il.EmitIntConstant(yieldIndex);
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorState_Generator_int);
 
-
             // return & set continuation point just after that
             il.EmitRet(true);
             il.MarkLabel(this);
 
-            // if(generator._currException != null) throw ex;
+            // Operators.HandleGeneratorException(generator)
             cg.EmitGeneratorInstance();
-            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorThrownException_Generator);
-
-            var excNotNull = new NamedLabel("generator._currException == null");
-            il.EmitBranch(ILOpCode.Brfalse, excNotNull);
-
-            // load the exception to be thrown on stack (so it can be nulled)
-            cg.EmitGeneratorInstance();
-            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetGeneratorThrownException_Generator);
-
-            //g._curException = null : clear the field after throwing the exception
-            cg.EmitGeneratorInstance();
-            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.NullGeneratorThrownException_Generator);
-
-            il.EmitThrow(false);
-
-            il.MarkLabel(excNotNull);
-
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.HandleGeneratorException_Generator);
         }
 
-        private void setAsPhpValueOnGenerator(CodeGenerator cg, BoundExpression valueExpr, CoreMethod setMethod)
+        static void EmitPhpValueOrDefault(CodeGenerator cg, BoundExpression valueExpr)
         {
-            cg.EmitGeneratorInstance();
-
             if (valueExpr == null)
             {
                 cg.Emit_PhpValue_Null();
             }
             else
             {
-                cg.EmitConvertToPhpValue(cg.Emit(valueExpr), valueExpr.TypeRefMask);
+                cg.EmitConvertToPhpValue(valueExpr);
             }
-
-            cg.EmitCall(ILOpCode.Call, setMethod);
         }
     }
 
