@@ -348,7 +348,8 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.EmptyEx) return BindIsEmptyEx((AST.EmptyEx)expr).WithAccess(access);
             if (expr is AST.LambdaFunctionExpr) return BindLambda((AST.LambdaFunctionExpr)expr).WithAccess(access);
             if (expr is AST.EvalEx) return BindEval((AST.EvalEx)expr).WithAccess(access);
-            if (expr is AST.YieldEx) return BindYieldEx((AST.YieldEx)expr).WithAccess(access);
+            if (expr is AST.YieldEx) return BindYieldEx((AST.YieldEx)expr, access).WithAccess(access);
+            if (expr is AST.YieldFromEx) return BindYieldFromEx((AST.YieldFromEx)expr, access).WithAccess(access);
             if (expr is AST.ShellEx) return BindShellEx((AST.ShellEx)expr).WithAccess(access);
 
             //
@@ -356,7 +357,12 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundLiteral(null);
         }
 
-        protected virtual BoundYieldEx BindYieldEx(AST.YieldEx expr)
+        protected virtual BoundYieldEx BindYieldEx(AST.YieldEx expr, BoundAccess access)
+        {
+            throw ExceptionUtilities.Unreachable;
+        }
+
+        protected virtual BoundYieldEx BindYieldFromEx(AST.YieldFromEx expr, BoundAccess access)
         {
             throw ExceptionUtilities.Unreachable;
         }
@@ -1085,17 +1091,17 @@ namespace Pchp.CodeAnalysis.Semantics
                 falseExprBag.BoundElement);
         }
 
-        protected override BoundYieldEx BindYieldEx(AST.YieldEx expr)
+        protected override BoundYieldEx BindYieldEx(AST.YieldEx expr, BoundAccess access)
         {
             // Reference: https://github.com/dotnet/roslyn/blob/05d923831e1bc2a88918a2073fba25ab060dda0c/src/Compilers/CSharp/Portable/Binder/Binder_Statements.cs#L194
 
             // TODO: Throw error when trying to iterate a non-reference generator by reference 
-            var access = _locals.Routine.SyntaxSignature.AliasReturn
+            var valueaccess = _locals.Routine.SyntaxSignature.AliasReturn
                     ? BoundAccess.ReadRef
                     : BoundAccess.Read;
 
             // bind value and key expressions
-            var boundValueExpr = (expr.ValueExpr != null) ? BindExpression(expr.ValueExpr, access) : null;
+            var boundValueExpr = (expr.ValueExpr != null) ? BindExpression(expr.ValueExpr, valueaccess) : null;
             var boundKeyExpr = (expr.KeyExpr != null) ? BindExpression(expr.KeyExpr) : null;
 
             // bind yield statement (represents return & continuation)
@@ -1108,6 +1114,15 @@ namespace Pchp.CodeAnalysis.Semantics
             // return BoundYieldEx representing a reference to a value sent to the generator
             return new BoundYieldEx();
         }
+
+        protected override BoundYieldEx BindYieldFromEx(AST.YieldFromEx expr, BoundAccess access)
+        {
+            // Template: foreach (<expr> => <key> as <value>) yield <key> => <value>;
+            // return <expr>.GeneratorReturnValue
+
+            throw new NotImplementedException();
+        }
+
         #endregion
 
         #region Helpers
@@ -1208,6 +1223,5 @@ namespace Pchp.CodeAnalysis.Semantics
             return currExprBag;
         }
         #endregion
-
     }
 }
