@@ -107,7 +107,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Context, Operators, Convert, Comparison, StrictComparison,
             ScriptAttribute, PhpTraitAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, ScriptDiedException,
             IStaticInit, RoutineInfo,
-            CallBinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
+            BinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
             PhpTypeInfoExtension, PhpTypeInfo,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable, IPhpConvertible,
             IntStringKey, PhpHashtable,
@@ -161,7 +161,7 @@ namespace Pchp.CodeAnalysis.Symbols
             ArrayAccess = CreateFromFullName("ArrayAccess");
             Closure = CreateFromFullName("Closure");
 
-            CallBinderFactory = Create("Dynamic.CallBinderFactory");
+            BinderFactory = Create("Dynamic.BinderFactory");
             GetClassConstBinder = Create("Dynamic.GetClassConstBinder");
             GetFieldBinder = Create("Dynamic.GetFieldBinder");
             SetFieldBinder = Create("Dynamic.SetFieldBinder");

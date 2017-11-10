@@ -2478,7 +2478,7 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.Builder.EmitStringConstant(_nameOpt.HasValue ? _nameOpt.Value.ToString() : null);    // fallback function name
             cg.EmitLoadToken(returntype, null); // return type
             cg.Builder.EmitIntConstant(0);      // generic params count
-            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.CallBinderFactory_Function);
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.BinderFactory_Function);
         }
     }
 
@@ -2493,7 +2493,7 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.EmitLoadToken(cg.CallerType, null);              // class context
             cg.EmitLoadToken(returntype, null);                 // return type
             cg.Builder.EmitIntConstant(0);                      // generic params count
-            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.CallBinderFactory_InstanceFunction);
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.BinderFactory_InstanceFunction);
         }
     }
 
@@ -2522,7 +2522,7 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.EmitLoadToken(cg.CallerType, null);              // class context
             cg.EmitLoadToken(returntype, null);                 // return type
             cg.Builder.EmitIntConstant(0);                      // generic params count
-            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.CallBinderFactory_StaticFunction);
+            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.BinderFactory_StaticFunction);
         }
 
         internal override void EmitBeforeCall(CodeGenerator cg)

@@ -1710,7 +1710,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 cctor.EmitLoadToken(cg.CallerType, null);
                 cctor.EmitLoadToken(return_type, null);
                 cctor.Builder.EmitIntConstant((int)Access.Flags);
-                cctor.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Dynamic.GetFieldBinder_ctor);
+                cctor.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.GetFieldBinder);
             });
 
             //
@@ -1773,7 +1773,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 cctor.Builder.EmitStringConstant(this.NameValueOpt);
                 cctor.EmitLoadToken(cg.Routine.ContainingType, null);
                 cctor.Builder.EmitIntConstant((int)Access.Flags);   // flags
-                cctor.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Dynamic.SetFieldBinder_ctor);
+                cctor.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.SetFieldBinder);
             });
         }
 
@@ -1870,9 +1870,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                 cctor.EmitCallerRuntimeTypeHandle();
                 cctor.EmitLoadToken(return_type, null);
                 cctor.Builder.EmitIntConstant((int)Access.Flags);
-                cctor.EmitCall(ILOpCode.Newobj, _boundref.IsClassConstant
-                    ? cg.CoreMethods.Dynamic.GetClassConstBinder_ctor
-                    : cg.CoreMethods.Dynamic.GetFieldBinder_ctor);
+                cctor.EmitCall(ILOpCode.Call, _boundref.IsClassConstant
+                    ? cg.CoreMethods.Dynamic.GetClassConstBinder
+                    : cg.CoreMethods.Dynamic.GetFieldBinder);
             });
 
             //
@@ -1927,7 +1927,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 cctor.Builder.EmitStringConstant(this.NameValueOpt);
                 cctor.EmitCallerRuntimeTypeHandle();
                 cctor.Builder.EmitIntConstant((int)Access.Flags);   // flags
-                cctor.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Dynamic.SetFieldBinder_ctor);
+                cctor.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.SetFieldBinder);
             });
         }
 

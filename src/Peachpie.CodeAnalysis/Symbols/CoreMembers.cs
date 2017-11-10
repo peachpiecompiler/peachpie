@@ -1010,24 +1010,22 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             public DynamicHolder(CoreTypes ct)
             {
-                CallBinderFactory_Function = ct.CallBinderFactory.Method("Function", ct.String, ct.String, ct.RuntimeTypeHandle, ct.Int32);
-                CallBinderFactory_InstanceFunction = ct.CallBinderFactory.Method("InstanceFunction", ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.Int32);
-                CallBinderFactory_StaticFunction = ct.CallBinderFactory.Method("StaticFunction", ct.RuntimeTypeHandle, ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.Int32);
-                GetClassConstBinder_ctor = ct.GetClassConstBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.AccessMask);
-                GetFieldBinder_ctor = ct.GetFieldBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.AccessMask);
-                SetFieldBinder_ctor = ct.SetFieldBinder.Ctor(ct.String, ct.RuntimeTypeHandle, ct.AccessMask);
+                BinderFactory_Function = ct.BinderFactory.Method("Function", ct.String, ct.String, ct.RuntimeTypeHandle, ct.Int32);
+                BinderFactory_InstanceFunction = ct.BinderFactory.Method("InstanceFunction", ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.Int32);
+                BinderFactory_StaticFunction = ct.BinderFactory.Method("StaticFunction", ct.RuntimeTypeHandle, ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.Int32);
 
+                GetFieldBinder = ct.BinderFactory.Method("GetField", ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.AccessMask);
+                SetFieldBinder = ct.BinderFactory.Method("SetField", ct.String, ct.RuntimeTypeHandle, ct.AccessMask);
+                GetClassConstBinder = ct.BinderFactory.Method("GetClassConst", ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.AccessMask);
+                
                 GetPhpTypeInfo_T = ct.PhpTypeInfoExtension.Method("GetPhpTypeInfo");
                 GetPhpTypeInfo_Object = ct.PhpTypeInfoExtension.Method("GetPhpTypeInfo", ct.Object);
                 GetPhpTypeInfo_RuntimeTypeHandle = ct.PhpTypeInfoExtension.Method("GetPhpTypeInfo", ct.RuntimeTypeHandle);
             }
 
-            public readonly CoreConstructor
-                GetClassConstBinder_ctor,
-                GetFieldBinder_ctor, SetFieldBinder_ctor;
-
             public readonly CoreMethod
-                CallBinderFactory_Function, CallBinderFactory_InstanceFunction, CallBinderFactory_StaticFunction,
+                BinderFactory_Function, BinderFactory_InstanceFunction, BinderFactory_StaticFunction,
+                GetFieldBinder, SetFieldBinder, GetClassConstBinder,
                 GetPhpTypeInfo_T, GetPhpTypeInfo_Object, GetPhpTypeInfo_RuntimeTypeHandle;
         }
 

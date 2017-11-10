@@ -7,7 +7,7 @@ using Pchp.Core.Reflection;
 
 namespace Pchp.Core.Dynamic
 {
-    public class GetFieldBinder : DynamicMetaObjectBinder
+    class GetFieldBinder : DynamicMetaObjectBinder
     {
         readonly string _name;
         readonly Type _classContext;
@@ -102,7 +102,7 @@ namespace Pchp.Core.Dynamic
         }
     }
 
-    public class GetClassConstBinder : GetFieldBinder
+    class GetClassConstBinder : GetFieldBinder
     {
         public GetClassConstBinder(string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType, AccessMask access)
             :base(name, classContext, returnType, access)

@@ -7,7 +7,7 @@ using Pchp.Core.Reflection;
 
 namespace Pchp.Core.Dynamic
 {
-    public class SetFieldBinder : DynamicMetaObjectBinder
+    class SetFieldBinder : DynamicMetaObjectBinder
     {
         readonly string _name;
         readonly Type _classContext;
