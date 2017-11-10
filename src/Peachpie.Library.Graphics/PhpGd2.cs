@@ -689,7 +689,57 @@ namespace Peachpie.Library.Graphics
             }
 
             //
-            return new PhpGdImageResource(new Image<Rgba32>(img.Image).Rotate((float)(angle * (- Math.PI / 180.0)), true), img.Format);
+            return new PhpGdImageResource(new Image<Rgba32>(img.Image).Rotate((float)(angle * (-Math.PI / 180.0)), true), img.Format);
+        }
+
+        #endregion
+
+        #region imagecopy,imagecopymerge
+
+        /// <summary>
+        /// Copy a part of <paramref name="src_im"/> onto <paramref name="dst_im"/> starting at the x,y coordinates src_x, src_y with a width of src_w and a height of src_h.
+        /// The portion defined will be copied onto the x,y coordinates, dst_x and dst_y.
+        /// </summary>
+        public static bool imagecopy(PhpResource dst_im, PhpResource src_im, int dst_x, int dst_y, int src_x, int src_y, int src_w, int src_h)
+        {
+            return imagecopy(dst_im, src_im, dst_x, dst_y, src_x, src_y, src_w, src_h, 1.0f);
+        }
+
+        /// <summary>
+        /// Merge one part of an image with another.
+        /// </summary> 
+        public static bool imagecopymerge(PhpResource dst_im, PhpResource src_im, int dst_x, int dst_y, int src_x, int src_y, int src_w, int src_h, int pct)
+        {
+            return imagecopy(dst_im, src_im, dst_x, dst_y, src_x, src_y, src_w, src_h, pct * 0.01f);
+        }
+
+        static bool imagecopy(PhpResource dst_im, PhpResource src_im, int dst_x, int dst_y, int src_x, int src_y, int src_w, int src_h, float opacity = 1.0f)
+        {
+            var dst = PhpGdImageResource.ValidImage(dst_im);
+            var src = PhpGdImageResource.ValidImage(src_im);
+
+            if (src == null || dst == null)
+            {
+                return false;
+            }
+
+            if (src_w <= 0 || src_h <= 0 || opacity <= 0)
+            {
+                // nothing to do
+                return true;
+            }
+
+            try
+            {
+                dst.Image.DrawImage(src.Image.Crop(new Rectangle(src_x, src_y, src_w, src_h)), opacity, new Size(src_w, src_h), new Point(dst_x, dst_y));
+            }
+            catch (Exception ex)
+            {
+                PhpException.Throw(PhpError.Warning, ex.Message);
+                return false;
+            }
+
+            return true;
         }
 
         #endregion
