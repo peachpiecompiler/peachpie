@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using Pchp.Core;
+using Pchp.Library.Resources;
 
-namespace Peachpie.Library.DateTime
+namespace Pchp.Library.DateTime
 {
     /// <summary>
     /// Represents a date interval.
@@ -22,6 +24,9 @@ namespace Peachpie.Library.DateTime
         public int invert;
         public PhpValue days = PhpValue.False;
 
+        [PhpFieldsOnlyCtor]
+        protected DateInterval() { }
+
         public DateInterval(string interval_spec)
         {
             __construct(interval_spec);
@@ -35,10 +40,48 @@ namespace Peachpie.Library.DateTime
             s = ts.Seconds;
             i = ts.Minutes;
             h = ts.Hours;
-            d = ts.Days;
+            d = ts.Days;    // contains also months and years
+            // m
+            // y
+
+            invert = ts.Ticks >= 0 ? 0 : 1;
         }
 
-        public static DateInterval createFromDateString(string time) { throw new NotImplementedException(); }
+        public static DateInterval createFromDateString(string time)
+        {
+            var result = new DateInterval();
+
+            var scanner = new Scanner(new StringReader(time.ToLowerInvariant()));
+            while (true)
+            {
+                Tokens token = scanner.GetNextToken();
+                if (token == Tokens.ERROR || scanner.Errors > 0)
+                {
+                    break;
+                }
+
+                if (token == Tokens.EOF)
+                {
+                    break;
+                }
+            }
+
+            //
+            var ts = scanner.Time;
+
+            result.f = ts.f > 0 ? ts.f : 0;
+
+            result.s = ts.s > 0 ? ts.s : 0;
+            result.i = ts.i > 0 ? ts.i : 0;
+            result.h = ts.h > 0 ? ts.h : 0;
+
+            result.d = ts.d > 0 ? ts.d : 0;
+            result.m = ts.m > 0 ? ts.m : 0;
+            result.y = ts.y > 0 ? ts.y : 0;
+
+            //
+            return result;
+        }
 
         public virtual string format(string format) { throw new NotImplementedException(); }
     }
