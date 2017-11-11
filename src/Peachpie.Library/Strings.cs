@@ -4416,7 +4416,7 @@ namespace Pchp.Library
             return result.ToString();
         }
 
-        #endregion
+        #endregion 
 
         #region number_format, money_format
 
@@ -5468,6 +5468,230 @@ namespace Pchp.Library
         /// Returns the length of a string.
         /// </summary>
         public static int strlen(PhpString x) => x.Length;
+
+        #endregion
+
+        #region ctype_*
+
+        public static bool ctype_alnum(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (char.IsLetterOrDigit(text[i]) == false)
+                {
+                    return false;
+                }
+            }
+
+            //
+            return true;
+        }
+
+        public static bool ctype_alpha(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (char.IsLetter(text[i]) == false)
+                {
+                    return false;
+                }
+            }
+
+            //
+            return true;
+        }
+
+        public static bool ctype_cntrl(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (char.IsControl(text[i]) == false)
+                {
+                    return false;
+                }
+            }
+
+            //
+            return true;
+        }
+
+        public static bool ctype_digit(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (char.IsDigit(text[i]) == false)
+                {
+                    return false;
+                }
+            }
+
+            //
+            return true;
+        }
+
+        public static bool ctype_graph(string text)
+        {
+            //if (string.IsNullOrEmpty(text))
+            //{
+            //    return false;
+            //}
+
+            //for (int i = 0; i < text.Length; i++)
+            //{
+            //    var category = Char.GetUnicodeCategory(text[i]);
+            //    if (category == System.Globalization.UnicodeCategory.Control || category == System.Globalization.UnicodeCategory.OtherNotAssigned || category == System.Globalization.UnicodeCategory.Surrogate || text[i] == ' ')
+            //    {
+            //        return false;
+            //    }
+            //}
+
+            ////
+            //return true;
+            throw new NotImplementedException();
+        }
+
+        public static bool ctype_print(string text)
+        {
+            //if (string.IsNullOrEmpty(text))
+            //{
+            //    return false;
+            //}
+
+            //for (int i = 0; i < text.Length; i++)
+            //{
+            //    var category = Char.GetUnicodeCategory(text[i]);
+            //    if (category == System.Globalization.UnicodeCategory.Control || category == System.Globalization.UnicodeCategory.OtherNotAssigned || category == System.Globalization.UnicodeCategory.Surrogate)
+            //    {
+            //        return false;
+            //    }
+            //}
+
+            ////
+            //return true;
+            throw new NotImplementedException();
+        }
+
+        public static bool ctype_punct(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (char.IsPunctuation(text[i]) == false)
+                {
+                    return false;
+                }
+            }
+
+            //
+            return true;
+        }
+
+        public static bool ctype_space(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (char.IsWhiteSpace(text[i]) == false)
+                {
+                    return false;
+                }
+            }
+
+            //
+            return true;
+        }
+
+        public static bool ctype_xdigit(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                var c = text[i];
+                if ((c >= '0' && c <= '9') ||
+                    (c >= 'A' && c <= 'Z') ||
+                    (c >= 'a' && c <= 'z'))
+                {
+                    continue;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            //
+            return true;
+        }
+
+        public static bool ctype_lower(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (char.IsLower(text[i]) == false)
+                {
+                    return false;
+                }
+            }
+
+            //
+            return true;
+        }
+
+        public static bool ctype_upper(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (char.IsUpper(text[i]) == false)
+                {
+                    return false;
+                }
+            }
+
+            //
+            return true;
+        }
 
         #endregion
     }
