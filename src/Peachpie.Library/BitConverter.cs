@@ -802,48 +802,48 @@ namespace Pchp.Library
             return reverse;
         }
 
-        #region Unit Testing
-#if DEBUG
+//        #region Unit Testing
+//#if DEBUG
 
-        public static void Test_Pack()
-        {
-            //pack("ccc", -5, "0001x", "-8").Dump(Console.Out);
-            //pack("c*", -5, "0001x", "-8").Dump(Console.Out);
-            //pack("cCsS", 1, 1, 1, 1).Dump(Console.Out);
-            //pack("nviI", 1, 1, 1, 1).Dump(Console.Out);
-            //pack("lLNV", 1, 1, 1, 1).Dump(Console.Out);
-            //pack("fd", 1, 1).Dump(Console.Out);
-            //pack("H*", "abcde").Dump(Console.Out);
-            //pack("h*", "abcde").Dump(Console.Out);
-            //pack("H*", "abcd").Dump(Console.Out);
-            //pack("h*", "abcd").Dump(Console.Out);
-            //pack("A*", "hello").Dump(Console.Out);
-            //pack("a2", "hello").Dump(Console.Out);
-            //pack("a10", "hello").Dump(Console.Out);
-            //pack("A10", "hello").Dump(Console.Out);
-            //pack("nvc*", 0x1234, 0x5678, 65, 66).Dump(Console.Out);
-            //pack("x10X5x8x1X2x1X2").Dump(Console.Out);
-            //pack("@5s2c3", "+5e10", "007xasd", "-6", "49", ".1").Dump(Console.Out);
-            //pack("@5f2c3", "+5e10", "007xasd", "-6", "49", ".1").Dump(Console.Out);
-            //pack("a*", "ìšèøžýáíé").Dump(Console.Out);
-            //pack("a0", "xxx").Dump(Console.Out);
-        }
+//        public static void Test_Pack()
+//        {
+//            pack("ccc", -5, "0001x", "-8").Dump(Console.Out);
+//            pack("c*", -5, "0001x", "-8").Dump(Console.Out);
+//            pack("cCsS", 1, 1, 1, 1).Dump(Console.Out);
+//            pack("nviI", 1, 1, 1, 1).Dump(Console.Out);
+//            pack("lLNV", 1, 1, 1, 1).Dump(Console.Out);
+//            pack("fd", 1, 1).Dump(Console.Out);
+//            pack("H*", "abcde").Dump(Console.Out);
+//            pack("h*", "abcde").Dump(Console.Out);
+//            pack("H*", "abcd").Dump(Console.Out);
+//            pack("h*", "abcd").Dump(Console.Out);
+//            pack("A*", "hello").Dump(Console.Out);
+//            pack("a2", "hello").Dump(Console.Out);
+//            pack("a10", "hello").Dump(Console.Out);
+//            pack("A10", "hello").Dump(Console.Out);
+//            pack("nvc*", 0x1234, 0x5678, 65, 66).Dump(Console.Out);
+//            pack("x10X5x8x1X2x1X2").Dump(Console.Out);
+//            pack("@5s2c3", "+5e10", "007xasd", "-6", "49", ".1").Dump(Console.Out);
+//            pack("@5f2c3", "+5e10", "007xasd", "-6", "49", ".1").Dump(Console.Out);
+//            pack("a*", "ìšèøžýáíé").Dump(Console.Out);
+//            pack("a0", "xxx").Dump(Console.Out);
+//        }
 
-        public static void Test_Unpack()
-        {
-            //unpack("@2/a*x", new PhpString("1234567812123456781212345678121234567812")).Dump(Console.Out);
-            //unpack("@2/@100/a*x", new PhpString("1234567812123456781212345678121234567812")).Dump(Console.Out);
-            //unpack("@2/X3/a*x", new PhpString("1234567812123456781212345678121234567812")).Dump(Console.Out);
-            //unpack("a*x/a*y", new PhpString("1234567812123456781212345678121234567812")).Dump(Console.Out);
-            //unpack("xx/a*y", new PhpString("1234567812123456781212345678121234567812")).Dump(Console.Out);
-            //unpack("ca/Cb", new PhpString("\x90\x90")).Dump(Console.Out);
+//        public static void Test_Unpack()
+//        {
+//            unpack("@2/a*x", new PhpString("1234567812123456781212345678121234567812")).Dump(Console.Out);
+//            unpack("@2/@100/a*x", new PhpString("1234567812123456781212345678121234567812")).Dump(Console.Out);
+//            unpack("@2/X3/a*x", new PhpString("1234567812123456781212345678121234567812")).Dump(Console.Out);
+//            unpack("a*x/a*y", new PhpString("1234567812123456781212345678121234567812")).Dump(Console.Out);
+//            unpack("xx/a*y", new PhpString("1234567812123456781212345678121234567812")).Dump(Console.Out);
+//            unpack("ca/Cb", new PhpString("\x90\x90")).Dump(Console.Out);
 
-            //unpack("@5/s2x/c3y", Pack("@5s2c3", "+5e10", "007xasd", "-6", "49", ".1")).Dump(Console.Out);
-            //unpack("na/vb/c*c", Pack("nvc*", 1234, 5678, 65, 66)).Dump(Console.Out);
-            //unpack("h*", pack("h*", "ABCDEF123456")).Dump(Console.Out);
-        }
+//            unpack("@5/s2x/c3y", Pack("@5s2c3", "+5e10", "007xasd", "-6", "49", ".1")).Dump(Console.Out);
+//            unpack("na/vb/c*c", Pack("nvc*", 1234, 5678, 65, 66)).Dump(Console.Out);
+//            unpack("h*", pack("h*", "ABCDEF123456")).Dump(Console.Out);
+//        }
 
-#endif
-        #endregion
+//#endif
+//        #endregion
     }
 }
