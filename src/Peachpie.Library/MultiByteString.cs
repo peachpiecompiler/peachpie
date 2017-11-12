@@ -365,12 +365,63 @@ namespace Pchp.Library
 
         #endregion
 
-        #region mb_strlen
+        #region mb_strlen, mb_strwidth
 
         /// <summary>
         /// Counts characters in a Unicode string or multi-byte string in PhpBytes.
         /// </summary>
         public static int mb_strlen(Context ctx, PhpValue str, string encoding = null) => ToString(ctx, str, encoding).Length;
+
+        /// <summary>
+        /// Return width of string.
+        /// </summary>
+        public static int mb_strwidth(Context ctx, PhpValue str, string encoding = null)
+        {
+            /*
+             * Chars                Width
+             * U+0000 - U+0019	    0
+             * U+0020 - U+1FFF	    1
+             * U+2000 - U+FF60	    2
+             * U+FF61 - U+FF9F	    1
+             * U+FFA0 -	            2
+             */
+
+            var text = ToString(ctx, str, encoding);
+            int width = 0;
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                var c = text[i];
+                if (c >= '\x20')
+                {
+                    if (c < '\x2000')
+                    {
+                        width += 1;
+                    }
+                    else
+                    {
+                        if (c < '\xff61')
+                        {
+                            width += 2;
+                        }
+                        else
+                        {
+                            if (c < '\xffa0')
+                            {
+                                width += 1;
+                            }
+                            else
+                            {
+                                width += 2;
+                            }
+                        }
+                    }
+                }
+            }
+
+            //
+            return width;
+        }
 
         #endregion
 
