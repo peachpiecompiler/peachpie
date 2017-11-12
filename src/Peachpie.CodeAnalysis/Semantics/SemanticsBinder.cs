@@ -362,7 +362,7 @@ namespace Pchp.CodeAnalysis.Semantics
             throw ExceptionUtilities.Unreachable;
         }
 
-        protected virtual BoundYieldEx BindYieldFromEx(AST.YieldFromEx expr, BoundAccess access)
+        protected virtual BoundExpression BindYieldFromEx(AST.YieldFromEx expr, BoundAccess access)
         {
             throw ExceptionUtilities.Unreachable;
         }
@@ -1115,12 +1115,14 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundYieldEx();
         }
 
-        protected override BoundYieldEx BindYieldFromEx(AST.YieldFromEx expr, BoundAccess access)
+        protected override BoundExpression BindYieldFromEx(AST.YieldFromEx expr, BoundAccess access)
         {
             // Template: foreach (<expr> => <key> as <value>) yield <key> => <value>;
             // return <expr>.GeneratorReturnValue
 
-            throw new NotImplementedException();
+            //
+            _diagnostics.Add(_locals.Routine, expr, Errors.ErrorCode.ERR_NotYetImplemented, $"Expression of type '{expr.GetType().Name}'");
+            return new BoundLiteral(null);
         }
 
         #endregion
