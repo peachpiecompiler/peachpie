@@ -3749,7 +3749,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         Debug.Assert(stack.tIndex == cg.CoreTypes.PhpValue);
                         // GetItemValue(<array>, <index>)
                         //cg.Builder.EmitBoolConstant(Access.IsQuiet);
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.IPhpArray.GetItemValue_PhpValue);
+                        t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.IPhpArray.GetItemValue_PhpValue);
                     }
 
                     if (Access.IsReadCopy)
