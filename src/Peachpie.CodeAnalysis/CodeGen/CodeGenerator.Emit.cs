@@ -1042,43 +1042,41 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
-        /// Emits <c>this</c> instance for a method call.
+        /// Emits <paramref name="thisExpr"/> to be used as target instance of method call, field or property.
         /// </summary>
-        NamedTypeSymbol LoadMethodThisArgument(MethodSymbol method, BoundExpression thisExpr)
+        internal NamedTypeSymbol LoadTargetInstance(BoundExpression thisExpr, MethodSymbol method)
         {
-            var containingType = method.ContainingType;
+            NamedTypeSymbol targetType = method.HasThis ? method.ContainingType : CoreTypes.Void;
 
             if (thisExpr != null)
             {
-                if (method.HasThis)
+                if (targetType.SpecialType != SpecialType.System_Void)
                 {
                     // <thisExpr> -> <TObject>
-                    EmitConvert(thisExpr, containingType);
+                    EmitConvert(thisExpr, targetType);
 
-                    if (containingType.IsValueType)
+                    if (targetType.IsValueType)
                     {
-                        EmitStructAddr(containingType);   // value -> valueaddr
+                        EmitStructAddr(targetType);   // value -> valueaddr
                     }
 
                     //
-                    return containingType;
+                    return targetType;
                 }
                 else
                 {
                     // POP <thisExpr>
                     EmitPop(Emit(thisExpr));
 
-                    // We need to remember the type for late static binding, e.g.: $instance->staticMethodUsingLSB()
-                    // TODO: Resolve from $instance dynamically (it may be its subclass)
-                    return (method as SourceRoutineSymbol)?.RequiresLateStaticBoundParam == true ? containingType : null;
+                    return null;
                 }
             }
             else
             {
-                if (method.HasThis)
+                if (targetType.SpecialType != SpecialType.System_Void)
                 {
                     if (ThisPlaceOpt != null && ThisPlaceOpt.TypeOpt != null &&
-                        ThisPlaceOpt.TypeOpt.IsEqualToOrDerivedFrom(method.ContainingType))
+                        ThisPlaceOpt.TypeOpt.IsEqualToOrDerivedFrom(targetType))
                     {
                         // implicit $this instance
                         return EmitThis();
@@ -1093,14 +1091,14 @@ namespace Pchp.CodeAnalysis.CodeGen
                         // NOTE: we can't just pass NULL since the instance holds reference to Context that is needed by API internally
 
                         var dummyctor =
-                            (MethodSymbol)(containingType as IPhpTypeSymbol)?.InstanceConstructorFieldsOnly ??    // .ctor that only initializes fields with default values
-                            containingType.InstanceConstructors.Where(m => m.Parameters.All(p => p.IsImplicitlyDeclared)).FirstOrDefault();   // implicit ctor
+                            (MethodSymbol)(targetType as IPhpTypeSymbol)?.InstanceConstructorFieldsOnly ??    // .ctor that only initializes fields with default values
+                            targetType.InstanceConstructors.Where(m => m.Parameters.All(p => p.IsImplicitlyDeclared)).FirstOrDefault();   // implicit ctor
 
-                        if (containingType.IsReferenceType && dummyctor != null)
+                        if (targetType.IsReferenceType && dummyctor != null)
                         {
                             // new T(Context)
                             EmitCall(ILOpCode.Newobj, dummyctor, null, ImmutableArray<BoundArgument>.Empty, null)
-                                .Expect(containingType);
+                                .Expect(targetType);
                         }
                         else
                         {
@@ -1109,7 +1107,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         }
 
                         //
-                        return containingType;
+                        return targetType;
                     }
                 }
                 else
@@ -1205,7 +1203,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             Debug.Assert(packedarguments.Any(a => a.IsUnpacking));
 
             // {this}
-            var thisType = (code != ILOpCode.Newobj) ? LoadMethodThisArgument(method, thisExpr) : null;
+            var thisType = (code != ILOpCode.Newobj) ? LoadTargetInstance(thisExpr, method) : null;
 
             // .callvirt -> .call
             if (code == ILOpCode.Callvirt && (!method.HasThis || !method.IsMetadataVirtual()))
@@ -1236,7 +1234,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     p.IsImplicitlyDeclared &&   // implicitly declared parameter
                     !p.IsParams)
                 {
-                    LoadMethodSpecialArgument(p, staticType ?? BoundTypeRefFromSymbol.CreateOrNull(thisType));
+                    LoadMethodSpecialArgument(p, staticType ?? BoundTypeRefFromSymbol.CreateOrNull(thisType ?? method.ContainingType));
                     continue;
                 }
 
@@ -1301,7 +1299,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             Debug.Assert(arguments.All(a => !a.IsUnpacking), "Unpacking does not allow us to call the method directly.");
 
             // {this}
-            var thisType = (code != ILOpCode.Newobj) ? LoadMethodThisArgument(method, thisExpr) : null;
+            var thisType = (code != ILOpCode.Newobj) ? LoadTargetInstance(thisExpr, method) : null;
 
             // .callvirt -> .call
             if (code == ILOpCode.Callvirt && (!method.HasThis || !method.IsMetadataVirtual()))
@@ -1325,7 +1323,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     p.IsImplicitlyDeclared &&   // implicitly declared parameter
                     !p.IsParams)
                 {
-                    LoadMethodSpecialArgument(p, staticType ?? BoundTypeRefFromSymbol.CreateOrNull(thisType));
+                    LoadMethodSpecialArgument(p, staticType ?? BoundTypeRefFromSymbol.CreateOrNull(thisType ?? method.ContainingType));
                     continue;
                 }
 

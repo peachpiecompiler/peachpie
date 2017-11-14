@@ -1159,6 +1159,40 @@ namespace Pchp.CodeAnalysis.CodeGen
             _property = (PropertySymbol)property;
         }
 
+        /// <summary>
+        /// Emits instance of the field containing class.
+        /// </summary>
+        protected void EmitLoadTarget(CodeGenerator cg, InstanceCacheHolder instanceOpt)
+        {
+            // instance
+            var instancetype = InstanceCacheHolder.EmitInstance(instanceOpt, cg, _instance);
+
+            //
+            if (_property.IsStatic)
+            {
+                if (instancetype != null)
+                {
+                    cg.EmitPop(instancetype);
+                }
+            }
+            else
+            {
+                if (instancetype != null)
+                {
+                    cg.EmitConvert(instancetype, _instance.TypeRefMask, _property.ContainingType);
+
+                    if (_property.ContainingType.IsValueType)
+                    {
+                        throw new NotImplementedException(); // cg.EmitStructAddr(_property.ContainingType);   // value -> valueaddr
+                    }
+                }
+                else
+                {
+                    throw new NotImplementedException($"Non-static property {_property.ContainingType.Name}::${_property.MetadataName} accessed statically!");
+                }
+            }
+        }
+
         public TypeSymbol TypeOpt => _property.Type;
 
         public bool HasAddress => false;
@@ -1196,7 +1230,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 throw new NotImplementedException();
             }
 
-            InstanceCacheHolder.EmitInstance(instanceOpt, cg, _instance);
+            EmitLoadTarget(cg, instanceOpt);
         }
 
         public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
@@ -1207,7 +1241,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 throw new NotImplementedException();
             }
 
-            InstanceCacheHolder.EmitInstance(instanceOpt, cg, _instance);
+            EmitLoadTarget(cg, instanceOpt);
         }
 
         public void EmitUnset(CodeGenerator cg)
@@ -1279,7 +1313,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits instance of the field containing class.
         /// </summary>
-        protected virtual void EmitLoadFieldInstance(CodeGenerator cg, InstanceCacheHolder instanceOpt)
+        protected void EmitLoadTarget(CodeGenerator cg, InstanceCacheHolder instanceOpt)
         {
             // instance
             var instancetype = InstanceCacheHolder.EmitInstance(instanceOpt, cg, Instance);
@@ -1312,10 +1346,15 @@ namespace Pchp.CodeAnalysis.CodeGen
                     if (instancetype != null)
                     {
                         cg.EmitConvert(instancetype, Instance.TypeRefMask, _field.ContainingType);
+
+                        if (_field.ContainingType.IsValueType)
+                        {
+                            throw new NotImplementedException(); // cg.EmitStructAddr(_field.ContainingType);   // value -> valueaddr
+                        }
                     }
                     else
                     {
-                        throw new NotImplementedException($"Instance field {_field.ContainingType.Name}::${_field.MetadataName} accessed statically!");
+                        throw new NotImplementedException($"Non-static field {_field.ContainingType.Name}::${_field.MetadataName} accessed statically!");
                     }
                 }
             }
@@ -1323,7 +1362,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
         {
-            EmitLoadFieldInstance(cg, instanceOpt);
+            EmitLoadTarget(cg, instanceOpt);
         }
 
         public virtual TypeSymbol EmitLoad(CodeGenerator cg)
@@ -1511,7 +1550,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Debug.Assert(Access.IsWrite || Access.IsUnset);
 
-            EmitLoadFieldInstance(cg, instanceOpt);
+            EmitLoadTarget(cg, instanceOpt);
 
             //
             var type = Field.Type;
