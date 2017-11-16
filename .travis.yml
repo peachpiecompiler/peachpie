@@ -2,7 +2,7 @@ sudo: required
 dist: trusty
 language: php
 php:
-  - '7.0'
+  - '7.1'
 
 install:
   - ./build/install_dependencies_ubuntu14.sh
