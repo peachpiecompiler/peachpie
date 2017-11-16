@@ -763,7 +763,13 @@ namespace Pchp.CodeAnalysis.Semantics
             // bind value (read as value or as ref)
             if (expr is AST.ValueAssignEx assignEx)
             {
-                value = BindExpression(assignEx.RValue, BoundAccess.Read.WithReadCopy());
+                var readaccess = BoundAccess.Read;
+                if (!(target is BoundListEx))   // we don't need copy of RValue if assigning to list()
+                {
+                    readaccess = readaccess.WithReadCopy();
+                }
+
+                value = BindExpression(assignEx.RValue, readaccess);
             }
             else if (expr is AST.RefAssignEx refAssignEx)
             {

@@ -3431,7 +3431,10 @@ namespace Pchp.CodeAnalysis.Semantics
             });
 
             // .DeepCopy()
-            cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.DeepCopy);
+            // if (this.Access.IsReadCopy) // unsafe ?
+            {
+                cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.DeepCopy);
+            }
 
             //
             cg.IsInCachedArrayExpression = false;
