@@ -795,7 +795,11 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             //
 
-            if (from.IsReferenceType)
+            if (from.IsOfType(CoreTypes.PhpArray))
+            {
+                // nothing
+            }
+            else if (from.IsReferenceType)
             {
                 // <stack> as PhpArray
                 _il.EmitOpCode(ILOpCode.Isinst);
