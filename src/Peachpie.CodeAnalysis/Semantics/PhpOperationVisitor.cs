@@ -128,7 +128,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual void VisitList(BoundListEx x)
         {
-            x.Variables.ForEach(Accept);
+            x.Items.ForEach(pair =>
+            {
+                Accept(pair.Key);
+                Accept(pair.Value);
+            });
         }
 
         public virtual void VisitFieldRef(BoundFieldRef x)

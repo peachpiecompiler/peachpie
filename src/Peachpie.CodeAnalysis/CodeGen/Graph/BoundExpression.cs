@@ -2209,22 +2209,31 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.Builder.EmitBranch(ILOpCode.Brfalse, lblnull);
 
             // NOTE: since PHP7, variables are assigned from left to right
-            var vars = this.Variables;
-            for (int i = 0; i < vars.Length; i++)
+            var items = this.Items;
+            for (int i = 0; i < items.Length; i++)
             {
-                var target = vars[i];
-                if (target == null)
+                var target = items[i];
+                if (target.Value == null)
+                {
                     continue;
+                }
 
                 // Template: <vars[i]> = <tmp>[i]
 
-                var boundtarget = target.BindPlace(cg);
+                var boundtarget = target.Value.BindPlace(cg);
                 boundtarget.EmitStorePrepare(cg);
 
                 // LOAD IPhpArray.GetItemValue(IntStringKey{i})
                 cg.Builder.EmitLocalLoad(tmp);
-                cg.EmitIntStringKey(i);
-                var itemtype = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.GetItemValue_IntStringKey);
+                if (target.Key == null)
+                {
+                    cg.EmitIntStringKey(i);
+                }
+                else
+                {
+                    cg.EmitIntStringKey(target.Key);
+                }
+                var itemtype = cg.EmitDereference(cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.GetItemValue_IntStringKey));
 
                 // STORE vars[i]
                 boundtarget.EmitStore(cg, itemtype);
@@ -2237,11 +2246,13 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // Template: <vars[i]> = NULL
             cg.Builder.MarkLabel(lblnull);
-            for (int i = 0; i < vars.Length; i++)
+            for (int i = 0; i < items.Length; i++)
             {
-                var target = vars[i];
+                var target = items[i].Value;
                 if (target == null)
+                {
                     continue;
+                }
 
                 // Template: <vars[i]> = NULL
 

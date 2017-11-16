@@ -1097,14 +1097,14 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Bound target variables.
         /// </summary>
-        public BoundReferenceExpression[] Variables => _vars;
-        readonly BoundReferenceExpression[] _vars;
+        public KeyValuePair<BoundExpression, BoundReferenceExpression>[] Items => _items;
+        readonly KeyValuePair<BoundExpression, BoundReferenceExpression>[] _items;
 
-        public BoundListEx(BoundReferenceExpression[] vars)
+        public BoundListEx(KeyValuePair<BoundExpression, BoundReferenceExpression>[] items)
         {
-            Debug.Assert(vars != null);
-            Debug.Assert(vars.Length != 0);
-            _vars = vars;
+            Debug.Assert(items != null);
+            Debug.Assert(items.Length != 0);
+            _items = items;
         }
 
         public override void Accept(OperationVisitor visitor)

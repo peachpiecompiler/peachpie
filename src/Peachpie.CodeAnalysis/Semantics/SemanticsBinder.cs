@@ -584,23 +584,30 @@ namespace Pchp.CodeAnalysis.Semantics
                 // _diagnostics. ...
             }
 
-            return new BoundArrayEx(BindArrayItems(x.Items))
+            return new BoundArrayEx(BindArrayItems(x.Items, BoundAccess.Read.WithReadCopy()))
                 .WithSyntax(x)
                 .WithAccess(access);
         }
 
-        protected IEnumerable<KeyValuePair<BoundExpression, BoundExpression>> BindArrayItems(AST.Item[] items)
+        protected IEnumerable<KeyValuePair<BoundExpression, BoundExpression>> BindArrayItems(AST.Item[] items, BoundAccess valueaccess)
         {
             foreach (var x in items)
             {
-                Debug.Assert(x is AST.RefItem || x is AST.ValueItem);
+                if (x == null)
+                {
+                    yield return new KeyValuePair<BoundExpression, BoundExpression>();
+                }
+                else
+                {
+                    Debug.Assert(x is AST.RefItem || x is AST.ValueItem);
 
-                var boundIndex = (x.Index != null) ? BindExpression(x.Index, BoundAccess.Read) : null;
-                var boundValue = (x is AST.RefItem refItem)
-                    ? BindExpression(refItem.RefToGet, BoundAccess.ReadRef)
-                    : BindExpression(((AST.ValueItem)x).ValueExpr, BoundAccess.Read.WithReadCopy());
+                    var boundIndex = (x.Index != null) ? BindExpression(x.Index, BoundAccess.Read) : null;
+                    var boundValue = (x is AST.RefItem refItem)
+                        ? BindExpression(refItem.RefToGet, BoundAccess.ReadRef)
+                        : BindExpression(((AST.ValueItem)x).ValueExpr, valueaccess);
 
-                yield return new KeyValuePair<BoundExpression, BoundExpression>(boundIndex, boundValue);
+                    yield return new KeyValuePair<BoundExpression, BoundExpression>(boundIndex, boundValue);
+                }
             }
         }
 
@@ -806,11 +813,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindListEx(AST.ListEx expr)
         {
-            var vars = expr.Items
-                .Select(lval => (lval != null) ? (BoundReferenceExpression)BindExpression(((AST.ValueItem)lval).ValueExpr, BoundAccess.Write) : null)
-                .ToArray();
+            var items = BindArrayItems(expr.Items, BoundAccess.Write)
+                .Select(pair => new KeyValuePair<BoundExpression, BoundReferenceExpression>(pair.Key, (BoundReferenceExpression)pair.Value));
 
-            return new BoundListEx(vars).WithAccess(BoundAccess.Write);
+            return new BoundListEx(items.ToArray()).WithAccess(BoundAccess.Write);
         }
 
         public BoundStatement BindEmptyStmt(Span span)

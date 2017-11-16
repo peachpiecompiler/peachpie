@@ -1626,9 +1626,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var elementtype = this.TypeCtx.GetElementType(x.Access.WriteMask);
             Debug.Assert(!elementtype.IsVoid);
 
-            foreach (var v in x.Variables.WhereNotNull())   // list() may contain NULL implying ignored variable
+            foreach (var v in x.Items)   // list() may contain NULL implying ignored variable
             {
-                Visit(v, v.Access.WithWrite(elementtype));
+                if (v.Value != null)
+                {
+                    Accept(v.Key);
+                    Visit(v.Value, v.Value.Access.WithWrite(elementtype));
+                }
             }
         }
 
