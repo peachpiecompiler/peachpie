@@ -12,13 +12,13 @@ public sealed class Closure : IPhpCallable
     /// <summary>
     /// Actual anonymous function.
     /// </summary>
-    readonly internal RoutineInfo routine;
+    readonly internal IPhpCallable callable;
 
     /// <summary>
     /// Fixed (use) parameters to be passed to <see cref="routine"/>.
     /// </summary>
     readonly PhpArray @static;
-    
+
     /// <summary>
     /// Anonymous function parameters, for dumping only.
     /// </summary>
@@ -27,13 +27,13 @@ public sealed class Closure : IPhpCallable
     /// <summary>
     /// Constructs the closure.
     /// </summary>
-    internal Closure(RoutineInfo routine, PhpArray parameter, PhpArray @static)
+    internal Closure(IPhpCallable routine, PhpArray parameter, PhpArray @static)
     {
         Debug.Assert(routine != null);
         Debug.Assert(parameter != null);
         Debug.Assert(@static != null);
 
-        this.routine = routine;
+        this.callable = routine;
         this.parameter = parameter;
         this.@static = @static;
     }
@@ -42,6 +42,26 @@ public sealed class Closure : IPhpCallable
     /// Duplicates a closure with a specific bound object and class scope.
     /// </summary>
     public static Closure bind(Closure closure, object newthis, string newscope = null) => closure.bindTo(newthis, newscope);
+
+    /// <summary>
+    /// Create and return a new anonymous function from given callable using the current scope.
+    /// This method checks if the callable is callable in the current scope and throws a TypeError if it is not.
+    /// </summary>
+    public static Closure fromCallable(IPhpCallable callable)
+    {
+        if (callable == null)
+        {
+            throw new ArgumentNullException();
+        }
+
+        if (callable is Closure)
+        {
+            return (Closure)callable;
+        }
+        
+        //
+        return new Closure(callable, PhpArray.Empty, PhpArray.Empty);
+    }
 
     /// <summary>
     /// Duplicates the closure with a new bound object and class scope.
@@ -57,7 +77,7 @@ public sealed class Closure : IPhpCallable
         {
             if (!object.ReferenceEquals(oldthis.Object, newthis))
             {
-                return new Closure(this.routine, this.parameter, this.@static);
+                return new Closure(this.callable, this.parameter, this.@static);
             }
         }
         else
@@ -95,7 +115,7 @@ public sealed class Closure : IPhpCallable
         Array.Copy(arguments, 0, newargs, @static.Count, arguments.Length);
 
         //
-        return this.routine.PhpCallable(ctx, newargs);
+        return this.callable.Invoke(ctx, newargs);
     }
 
     /// <summary>
