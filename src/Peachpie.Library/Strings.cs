@@ -1100,52 +1100,6 @@ namespace Pchp.Library
 
         #region substr_count internals
 
-        private static bool SubstringCountInternalCheck(string needle)
-        {
-            if (string.IsNullOrEmpty(needle))
-            {
-                PhpException.InvalidArgument(nameof(needle), Resources.LibResources.arg_null_or_empty);
-                return false;
-            }
-
-            return true;
-        }
-        private static bool SubstringCountInternalCheck(string haystack, int offset)
-        {
-            if (offset < 0)
-            {
-                PhpException.Throw(PhpError.Warning, LibResources.substr_count_offset_zero);
-                return false;
-            }
-            if (offset > haystack.Length)
-            {
-                PhpException.Throw(PhpError.Warning, string.Format(LibResources.substr_count_offset_exceeds, offset));
-                return false;
-            }
-
-            return true;
-        }
-        private static bool SubstringCountInternalCheck(string haystack, int offset, int length)
-        {
-            if (!SubstringCountInternalCheck(haystack, offset))
-            {
-                return false;
-            }
-
-            if (length == 0)
-            {
-                PhpException.Throw(PhpError.Warning, LibResources.substr_count_zero_length);
-                return false;
-            }
-            if (offset + length > haystack.Length)
-            {
-                PhpException.Throw(PhpError.Warning, string.Format(LibResources.substr_count_length_exceeds, length));
-                return false;
-            }
-
-            return true;
-        }
-
         /// <summary>
         /// Count the number of substring occurrences. Expects correct argument values.
         /// </summary>
@@ -1163,7 +1117,7 @@ namespace Pchp.Library
             }
             else
             {
-                while ((offset = haystack.IndexOf(needle, offset, end - offset)) != -1)
+                while ((offset = haystack.IndexOf(needle, offset, end - offset, StringComparison.Ordinal)) != -1)
                 {
                     offset += needle.Length;
                     result++;
@@ -1175,19 +1129,6 @@ namespace Pchp.Library
         #endregion
 
         #region substr_count, substr_replace, substr_compare
-
-        /// <summary>
-        /// See <see cref="substr_count(string,string,int,int)"/>.
-        /// </summary>
-        [return: CastToFalse]
-        public static int substr_count(string haystack, string needle, int offset = 0)
-        {
-            if (String.IsNullOrEmpty(haystack)) return 0;
-            if (!SubstringCountInternalCheck(needle)) return -1;
-            if (!SubstringCountInternalCheck(haystack, offset)) return -1;
-
-            return SubstringCountInternal(haystack, needle, offset, haystack.Length);
-        }
 
         /// <summary>
         /// Count the number of substring occurrences.
@@ -1203,13 +1144,55 @@ namespace Pchp.Library
         /// </remarks>
         /// <exception cref="PhpException">Thrown if <paramref name="needle"/> is null.</exception>
         [return: CastToFalse]
-        public static int substr_count(string haystack, string needle, int offset, int length)
+        public static int substr_count(string haystack, string needle, int offset = 0, int length = 0)
         {
-            if (string.IsNullOrEmpty(haystack)) return 0;
-            if (!SubstringCountInternalCheck(needle)) return -1;
-            if (!SubstringCountInternalCheck(haystack, offset, length)) return -1;
+            if (string.IsNullOrEmpty(needle))
+            {
+                // Warning: Empty substring
+                PhpException.InvalidArgument(nameof(needle), Resources.LibResources.arg_empty);
+                return -1;
+            }
 
-            return SubstringCountInternal(haystack, needle, offset, offset + length);
+            if (string.IsNullOrEmpty(haystack))
+            {
+                return 0;
+            }
+
+            if (offset < 0)
+            {
+                // PHP 7.1: negative offset ends from the end of the string
+                offset = haystack.Length + offset;
+            }
+
+            if (offset < 0 || offset > haystack.Length)
+            {
+                // Warning: Offset not contained in string
+                PhpException.Throw(PhpError.Warning, Resources.LibResources.substr_count_offset_exceeds, offset.ToString());
+                return -1;
+            }
+
+            int end;
+
+            if (length > 0)
+            {
+                end = offset + length;
+            }
+            else
+            {
+                // PHP 7.1: negative (and zero) length counts from the end
+                end = haystack.Length + length;
+            }
+
+            if (end < 0 || end > haystack.Length)
+            {
+                // Warning: Invalid length value
+                PhpException.Throw(PhpError.Warning, Resources.LibResources.substr_count_length_exceeds, length.ToString());
+                return -1;
+            }
+
+            //
+
+            return SubstringCountInternal(haystack, needle, offset, end);
         }
 
         /// <summary>
