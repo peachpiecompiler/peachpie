@@ -1144,7 +1144,7 @@ namespace Pchp.Library
         /// </remarks>
         /// <exception cref="PhpException">Thrown if <paramref name="needle"/> is null.</exception>
         [return: CastToFalse]
-        public static int substr_count(string haystack, string needle, int offset = 0, int length = 0)
+        public static int substr_count(string haystack, string needle, int offset = 0, int length = int.MaxValue)
         {
             if (string.IsNullOrEmpty(needle))
             {
@@ -1177,6 +1177,11 @@ namespace Pchp.Library
             {
                 // PHP 7.1.11: zero length is interpreted correctly
                 return 0;
+            }
+            else if (length == int.MaxValue)
+            {
+                // default value
+                end = haystack.Length;
             }
             else if (length > 0)
             {
