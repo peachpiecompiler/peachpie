@@ -1173,7 +1173,12 @@ namespace Pchp.Library
 
             int end;
 
-            if (length > 0)
+            if (length == 0)
+            {
+                // PHP 7.1.11: zero length is interpreted correctly
+                return 0;
+            }
+            else if (length > 0)
             {
                 end = offset + length;
             }
