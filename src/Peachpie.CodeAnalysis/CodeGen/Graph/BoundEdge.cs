@@ -10,6 +10,7 @@ using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Text;
+using System.Collections.Immutable;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
@@ -174,6 +175,64 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             il.CloseLocalScope();
         }
 
+        void EmitTypeCheck(CodeGenerator cg, BoundTypeRef tref)
+        {
+            var il = cg.Builder;
+
+            // STACK : object
+
+            if (tref.ResolvedType.IsErrorTypeOrNull())
+            {
+                // Template: filter(Operators.IsInstanceOf(<stack>, type))
+                tref.EmitLoadTypeInfo(cg, false);
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.IsInstanceOf_Object_PhpTypeInfo)
+                    .Expect(SpecialType.System_Boolean);
+            }
+            else
+            {
+                // Template: filter (<stack> is Interface)
+                il.EmitOpCode(ILOpCode.Isinst);
+                cg.EmitSymbolToken(tref.ResolvedType, null);
+                il.EmitNullConstant();
+                il.EmitOpCode(ILOpCode.Cgt_un); // value > null : bool
+            }
+
+            // STACK: i4 (boolean)
+        }
+
+        void EmitMultipleTypeCheck(CodeGenerator cg, ImmutableArray<BoundTypeRef> trefs)
+        {
+            var il = cg.Builder;
+
+            // STACK : object
+
+            var lblFound = new NamedLabel("filter_found");
+            var lblEnd = new NamedLabel("filter_end");
+
+            for (int i = 0; i < trefs.Length; i++)
+            {
+                il.EmitOpCode(ILOpCode.Dup);
+
+                // (ex is T) : bool
+                EmitTypeCheck(cg, trefs[i]);
+
+                // if (STACK) goto lblFound;
+                il.EmitBranch(ILOpCode.Brtrue, lblFound);
+            }
+
+            il.EmitOpCode(ILOpCode.Pop);    // POP object
+            il.EmitBoolConstant(false);
+            il.EmitBranch(ILOpCode.Br, lblEnd);
+
+            il.MarkLabel(lblFound);
+            il.EmitOpCode(ILOpCode.Pop);    // POP object
+            il.EmitBoolConstant(true);
+
+            il.MarkLabel(lblEnd);
+
+            // STACK: i4 (boolean)
+        }
+
         void EmitCatchBlock(CodeGenerator cg, CatchBlock catchBlock)
         {
             Debug.Assert(catchBlock.Variable.Variable != null);
@@ -183,31 +242,29 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             il.AdjustStack(1); // Account for exception on the stack.
 
-            if (catchBlock.TypeRef.ResolvedType.IsErrorTypeOrNull() || !catchBlock.TypeRef.ResolvedType.IsOfType(cg.CoreTypes.Exception))
+            var trefs = BoundMultipleTypeRef.Flattern(catchBlock.TypeRef);  // set of types we catch in this catch block
+
+            // do we have to generate .filter or just .catch<type>:
+            if (trefs.Length != 1 || trefs[0].ResolvedType.IsErrorTypeOrNull() || !trefs[0].ResolvedType.IsOfType(cg.CoreTypes.Exception))
             {
                 // Template: catch when
                 il.OpenLocalScope(ScopeType.Filter);
 
                 // STACK : object
 
-                if (catchBlock.TypeRef.ResolvedType.IsErrorTypeOrNull())
+                if (trefs.Length == 1)
                 {
-                    extype = cg.CoreTypes.Object.Symbol;
+                    EmitTypeCheck(cg, trefs[0]);
 
-                    // Template: filter(Operators.IsInstanceOf(<stack>, type))
-                    catchBlock.TypeRef.EmitLoadTypeInfo(cg, false);
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.IsInstanceOf_Object_PhpTypeInfo)
-                        .Expect(SpecialType.System_Boolean);
+                    extype = trefs[0].ResolvedType.IsErrorTypeOrNull()
+                        ? cg.CoreTypes.Object.Symbol
+                        : trefs[0].ResolvedType;
                 }
                 else
                 {
-                    extype = catchBlock.TypeRef.ResolvedType;
+                    EmitMultipleTypeCheck(cg, trefs);
 
-                    // Template: filter (<stack> is Interface)
-                    il.EmitOpCode(ILOpCode.Isinst);
-                    cg.EmitSymbolToken(extype, null);
-                    il.EmitNullConstant();
-                    il.EmitOpCode(ILOpCode.Cgt_un); // value > null : bool
+                    extype = cg.CoreTypes.Object.Symbol;
                 }
 
                 // STACK : i4 ? handle : continue
@@ -221,7 +278,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             else
             {
                 // Template: catch (TypeRef)
-                extype = catchBlock.TypeRef.ResolvedType;
+                extype = trefs[0].ResolvedType;
                 il.OpenLocalScope(ScopeType.Catch, cg.Module.Translate(extype, null, cg.Diagnostics));
             }
 

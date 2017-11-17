@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -33,6 +34,18 @@ namespace Pchp.CodeAnalysis.Semantics
             if (x != null)
             {
                 Accept(x.TypeExpression);
+            }
+        }
+
+        public virtual void VisitMultipleTypeRef(BoundMultipleTypeRef x)
+        {
+            Debug.Assert(x != null);
+            Debug.Assert(x.TypeExpression == null);
+            Debug.Assert(x.BoundTypes.Length > 1);
+
+            for (int i = 0; i < x.BoundTypes.Length; i++)
+            {
+                x.BoundTypes[i].Accept(this);
             }
         }
 

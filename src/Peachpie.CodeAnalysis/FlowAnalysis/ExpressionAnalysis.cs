@@ -930,7 +930,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         protected override void Visit(BoundInstanceOfEx x, ConditionBranch branch)
         {
             Accept(x.Operand);
-            VisitTypeRef(x.AsType);
+            x.AsType.Accept(this);
 
             // TOOD: x.ConstantValue // in case we know and the operand is a local variable (we can ignore the expression and emit result immediatelly)
 
@@ -1254,6 +1254,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (tref == null)
                 return;
+
+            Debug.Assert(!(tref is BoundMultipleTypeRef));
 
             if (tref.TypeRef is INamedTypeRef)
             {

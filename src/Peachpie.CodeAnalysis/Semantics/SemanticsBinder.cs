@@ -527,16 +527,24 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundTypeRef BindTypeRef(AST.TypeRef tref, bool objectTypeInfoSemantic = false)
         {
-            Debug.Assert(!(tref is AST.MultipleTypeRef));   // multiple types have to be handled prior to call to this method
-
-            var bound = new BoundTypeRef(tref, objectTypeInfoSemantic);
-
-            if (tref is AST.IndirectTypeRef)
+            if (tref is AST.MultipleTypeRef mref)
             {
-                bound.TypeExpression = BindExpression(((AST.IndirectTypeRef)tref).ClassNameVar);
+                return new BoundMultipleTypeRef(
+                    mref.MultipleTypes.Select(r => BindTypeRef(r, objectTypeInfoSemantic)).AsImmutable(),
+                    tref,
+                    objectTypeInfoSemantic);
             }
+            else
+            {
+                var bound = new BoundTypeRef(tref, objectTypeInfoSemantic);
 
-            return bound;
+                if (tref is AST.IndirectTypeRef)
+                {
+                    bound.TypeExpression = BindExpression(((AST.IndirectTypeRef)tref).ClassNameVar);
+                }
+
+                return bound;
+            }
         }
 
         protected virtual BoundExpression BindConditionalEx(AST.ConditionalEx expr)

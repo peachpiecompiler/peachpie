@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.CodeAnalysis.CodeGen;
+using System.Collections.Immutable;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -99,14 +100,49 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         internal BoundExpression TypeExpression { get; set; }
 
-        public bool IsDirect => TypeExpression == null;
+        public virtual bool IsDirect => TypeExpression == null;
 
-        ITypeSymbol IBoundTypeRef.Symbol => throw new NotImplementedException();
+        ITypeSymbol IBoundTypeRef.Symbol => this.ResolvedType;
 
         public BoundTypeRef(TypeRef tref, bool objAsTypeInfo)
         {
             _typeRef = tref;
             _objectTypeInfoSemantic = objAsTypeInfo;
+        }
+    }
+
+    /// <summary>
+    /// Bound ultiple <see cref="TypeRef"/>.
+    /// </summary>
+    public sealed partial class BoundMultipleTypeRef : BoundTypeRef
+    {
+        /// <summary>
+        /// Array of bound types.
+        /// </summary>
+        public ImmutableArray<BoundTypeRef> BoundTypes => _boundTypes;
+        readonly ImmutableArray<BoundTypeRef> _boundTypes;
+
+        public override bool IsDirect => false;
+
+        internal static ImmutableArray<BoundTypeRef> Flattern(BoundTypeRef tref)
+        {
+            if (tref is BoundMultipleTypeRef mtref)
+            {
+                return mtref.BoundTypes;
+            }
+            else
+            {
+                return ImmutableArray.Create(tref);
+            }
+        }
+
+        public BoundMultipleTypeRef(ImmutableArray<BoundTypeRef> boundTypes, TypeRef tref, bool objAsTypeInfo)
+            : base(tref, objAsTypeInfo)
+        {
+            Debug.Assert(boundTypes.Length > 1);
+            Debug.Assert(!boundTypes.Any(t => t is BoundMultipleTypeRef));
+
+            _boundTypes = boundTypes;
         }
     }
 }

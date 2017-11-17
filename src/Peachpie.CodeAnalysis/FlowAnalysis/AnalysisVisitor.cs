@@ -359,7 +359,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // add catch control variable to the state
             Accept(x.Variable);
-            VisitTypeRef(x.TypeRef);
+            x.TypeRef.Accept(this);
             State.SetLocalType(State.GetLocalHandle(x.Variable.Name.NameValue), TypeCtx.GetTypeMask(x.TypeRef.TypeRef));
 
             //

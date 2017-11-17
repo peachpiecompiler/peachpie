@@ -15,7 +15,7 @@ public sealed class Closure : IPhpCallable
     readonly internal IPhpCallable callable;
 
     /// <summary>
-    /// Fixed (use) parameters to be passed to <see cref="routine"/>.
+    /// Fixed (use) parameters to be passed to <see cref="callable"/>.
     /// </summary>
     readonly PhpArray @static;
 

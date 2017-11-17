@@ -25,7 +25,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Emits name of bound type.
         /// </summary>
-        internal void EmitClassName(CodeGenerator cg)
+        internal virtual void EmitClassName(CodeGenerator cg)
         {
             if (_typeRef is PrimitiveTypeRef)
             {
@@ -76,7 +76,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <param name="cg">Code generator instance.</param>
         /// <param name="throwOnError">Emits PHP error in case type is not declared.</param>
         /// <remarks>Emits <c>NULL</c> in case type is not declared.</remarks>
-        internal TypeSymbol EmitLoadTypeInfo(CodeGenerator cg, bool throwOnError = false)
+        internal virtual TypeSymbol EmitLoadTypeInfo(CodeGenerator cg, bool throwOnError = false)
         {
             Debug.Assert(cg != null);
 
@@ -136,7 +136,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Emits <c>PhpTypeInfo</c> of late static bound type.
         /// </summary>
-        TypeSymbol  EmitLoadStaticPhpTypeInfo(CodeGenerator cg)
+        static TypeSymbol  EmitLoadStaticPhpTypeInfo(CodeGenerator cg)
         {
             if (cg.ThisPlaceOpt != null)
             {
@@ -156,13 +156,13 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        TypeSymbol EmitLoadSelf(CodeGenerator cg)
+        static TypeSymbol EmitLoadSelf(CodeGenerator cg)
         {
             cg.EmitCallerRuntimeTypeHandle();
             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetSelf_RuntimeTypeHandle);
         }
 
-        TypeSymbol EmitLoadParent(CodeGenerator cg)
+        static TypeSymbol EmitLoadParent(CodeGenerator cg)
         {
             cg.EmitCallerRuntimeTypeHandle();
             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetParent_RuntimeTypeHandle);
@@ -176,6 +176,21 @@ namespace Pchp.CodeAnalysis.Semantics
             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.GetPhpTypeInfo_T.Symbol.Construct(t));
         }
 
-        public void Accept(PhpOperationVisitor visitor) => visitor.VisitTypeRef(this);
+        public virtual void Accept(PhpOperationVisitor visitor) => visitor.VisitTypeRef(this);
+    }
+
+    partial class BoundMultipleTypeRef
+    {
+        internal override void EmitClassName(CodeGenerator cg)
+        {
+            throw new NotSupportedException();
+        }
+
+        internal override TypeSymbol EmitLoadTypeInfo(CodeGenerator cg, bool throwOnError = false)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitMultipleTypeRef(this);
     }
 }
