@@ -341,6 +341,9 @@ namespace Pchp.Library
             int a = 0;            // index of the current argument
             int pos = 0;          // the position in the buffer
 
+            PhpNumber num;
+            bool le2;
+
             for (int i = 0; i < count; i++)
             {
                 char specifier = specifiers[i];
@@ -427,7 +430,10 @@ namespace Pchp.Library
                     case 's': // signed short (always 16 bit, machine byte order) 
                     case 'S': // unsigned short (always 16 bit, machine byte order) 
                         while (repeater-- > 0)
-                            PackNumber(BitConverter.GetBytes(unchecked((ushort)args[a++].ToLong())), le, buffer, ref pos);
+                        {
+                            var ni = args[a++].ToNumber(out num);
+                            PackNumber(BitConverter.GetBytes(unchecked((ushort)num.ToLong())), le, buffer, ref pos);
+                        }
                         break;
 
                     case 'n': // unsigned short (always 16 bit, big endian byte order) 
@@ -451,13 +457,23 @@ namespace Pchp.Library
                         break;
 
                     case 'f': // float (machine dependent size and representation - size is always 4B) 
+                    case 'g': // float (machine dependent size, little endian byte order)
+                    case 'G': // float (machine dependent size, big endian byte order)
+                        le2 = specifier == 'f' ? le : (specifier == 'g');
                         while (repeater-- > 0)
-                            PackNumber(BitConverter.GetBytes(unchecked((float)args[a++].ToDouble())), le, buffer, ref pos);
+                        {
+                            PackNumber(BitConverter.GetBytes(unchecked((float)args[a++].ToDouble())), le2, buffer, ref pos);
+                        }
                         break;
 
                     case 'd': // double (machine dependent size and representation - size is always 8B) 
+                    case 'e': // double (machine dependent size, little endian byte order)
+                    case 'E': // double (machine dependent size, big endian byte order)
+                        le2 = specifier == 'd' ? le : (specifier == 'e');
                         while (repeater-- > 0)
-                            PackNumber(BitConverter.GetBytes(args[a++].ToDouble()), le, buffer, ref pos);
+                        {
+                            PackNumber(BitConverter.GetBytes(args[a++].ToDouble()), le2, buffer, ref pos);
+                        }
                         break;
 
                     default:
