@@ -530,6 +530,31 @@ namespace Pchp.Core
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Gets <see cref="PhpTypeInfo"/> from a string or an object instance.
+        /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
+        /// <param name="object">String or object. Other value types cause an exception.</param>
+        /// <returns>Corresponding <see cref="PhpTypeInfo"/> descriptor. Cannot be <c>null</c>.</returns>
+        public static PhpTypeInfo TypeNameOrObjectToType(Context ctx, PhpValue @object)
+        {
+            object obj;
+            string str;
+
+            if ((obj = (@object.AsObject())) != null)
+            {
+                return obj.GetType().GetPhpTypeInfo();
+            }
+            else if ((str = PhpVariable.AsString(@object)) != null)
+            {
+                return ctx.GetDeclaredType(str, true);
+            }
+            else
+            {
+                throw new ArgumentException();
+            }
+        }
+
         #endregion
 
         #region self, parent

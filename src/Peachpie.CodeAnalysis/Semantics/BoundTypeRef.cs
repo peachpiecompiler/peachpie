@@ -68,6 +68,8 @@ namespace Pchp.CodeAnalysis.Semantics
         public TypeRef TypeRef => _typeRef;
         readonly TypeRef _typeRef;
 
+        readonly bool _objectTypeInfoSemantic;
+
         string DebugView
         {
             get
@@ -101,9 +103,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
         ITypeSymbol IBoundTypeRef.Symbol => throw new NotImplementedException();
 
-        public BoundTypeRef(TypeRef tref)
+        public BoundTypeRef(TypeRef tref, bool objAsTypeInfo)
         {
             _typeRef = tref;
+            _objectTypeInfoSemantic = objAsTypeInfo;
         }
     }
 }

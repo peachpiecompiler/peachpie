@@ -1863,7 +1863,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _lazyLoadCallSite.Place.EmitLoad(cg.Builder);
 
             // LOAD PhpTypeInfo
-            _type.EmitLoadTypeInfo(cg);
+            _type.EmitLoadTypeInfo(cg, true);
         }
 
         public TypeSymbol EmitLoad(CodeGenerator cg)
@@ -1904,7 +1904,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 Debug.Assert(cctor.Routine == cg.Routine);  // same caller context
 
-                // new [GetFieldBinder|GetClassConstBinder](field_name, context, return, flags)
+                // [GetFieldBinder|GetClassConstBinder](field_name, context, return, flags)
                 cctor.Builder.EmitStringConstant(this.NameValueOpt);
                 cctor.EmitCallerRuntimeTypeHandle();
                 cctor.EmitLoadToken(return_type, null);
@@ -1927,7 +1927,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _lazyStoreCallSite.EmitLoadTarget(cg.Builder);
             _lazyStoreCallSite.Place.EmitLoad(cg.Builder);
 
-            _type.EmitLoadTypeInfo(cg);
+            _type.EmitLoadTypeInfo(cg, true);
         }
 
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType)

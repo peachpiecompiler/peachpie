@@ -388,7 +388,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (x is AST.ClassConstUse)
             {
                 var cx = (AST.ClassConstUse)x;
-                var typeref = BindTypeRef(cx.TargetType);
+                var typeref = BindTypeRef(cx.TargetType, objectTypeInfoSemantic: true);
 
                 if (cx.Name.Equals("class"))   // pseudo class constant
                 {
@@ -518,16 +518,18 @@ namespace Pchp.CodeAnalysis.Semantics
                     ? new BoundRoutineName(new QualifiedName(stmtd.MethodName))
                     : new BoundRoutineName(new BoundUnaryEx(BindExpression(((AST.IndirectStMtdCall)f).MethodNameExpression), AST.Operations.StringCast));
 
-                return new BoundStaticFunctionCall(BindTypeRef(f.TargetType), boundname, boundArguments);
+                return new BoundStaticFunctionCall(BindTypeRef(f.TargetType, objectTypeInfoSemantic: true), boundname, boundArguments);
             }
 
             //
             throw new NotImplementedException(x.GetType().FullName);
         }
 
-        public BoundTypeRef BindTypeRef(AST.TypeRef tref)
+        public BoundTypeRef BindTypeRef(AST.TypeRef tref, bool objectTypeInfoSemantic = false)
         {
-            var bound = new BoundTypeRef(tref);
+            Debug.Assert(!(tref is AST.MultipleTypeRef));   // multiple types have to be handled prior to call to this method
+
+            var bound = new BoundTypeRef(tref, objectTypeInfoSemantic);
 
             if (tref is AST.IndirectTypeRef)
             {
@@ -670,7 +672,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindFieldUse(AST.StaticFieldUse x, BoundAccess access)
         {
-            var typeref = BindTypeRef(x.TargetType);
+            var typeref = BindTypeRef(x.TargetType, objectTypeInfoSemantic: true);
             BoundVariableName varname;
 
             if (x is AST.DirectStFldUse)

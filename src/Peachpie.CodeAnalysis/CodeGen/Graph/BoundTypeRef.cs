@@ -108,13 +108,23 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                // CALL <ctx>.GetDeclaredType(<typename>, autoload:true)
-                cg.EmitLoadContext();
-                this.EmitClassName(cg);
-                cg.Builder.EmitBoolConstant(true);
-                t = cg.EmitCall(ILOpCode.Call, throwOnError
-                    ? cg.CoreMethods.Context.GetDeclaredTypeOrThrow_string_bool
-                    : cg.CoreMethods.Context.GetDeclaredType_string_bool);
+                if (_objectTypeInfoSemantic && this.TypeExpression != null) // type of object instance handled // only makes sense if type is indirect
+                {
+                    Debug.Assert(throwOnError); // expecting we throw on error
+                    cg.EmitLoadContext();
+                    cg.EmitConvertToPhpValue(this.TypeExpression);
+                    t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.TypeNameOrObjectToType_Context_PhpValue);
+                }
+                else
+                {
+                    // CALL <ctx>.GetDeclaredType(<typename>, autoload:true)
+                    cg.EmitLoadContext();
+                    this.EmitClassName(cg);
+                    cg.Builder.EmitBoolConstant(true);
+                    t = cg.EmitCall(ILOpCode.Call, throwOnError
+                        ? cg.CoreMethods.Context.GetDeclaredTypeOrThrow_string_bool
+                        : cg.CoreMethods.Context.GetDeclaredType_string_bool);
+                }
             }
 
             return t;

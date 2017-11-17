@@ -267,7 +267,7 @@ namespace Pchp.Library
             }
             else if ((str = PhpVariable.AsString(@object)) != null)
             {
-                return ctx.GetDeclaredType(str, true);
+                return ctx.GetDeclaredType(str, autoload);
             }
             else
             {
