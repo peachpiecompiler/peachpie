@@ -83,11 +83,45 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #region Construction
 
+        /// <summary>
+        /// Creates <see cref="SemanticsBinder"/> for given routine (passed with <paramref name="locals"/>).
+        /// </summary>
+        /// <param name="locals">Table of local variables within routine.</param>
+        /// <param name="diagnostics">Optional. Diagnostics.</param>
+        public static SemanticsBinder Create(LocalsTable locals, DiagnosticBag diagnostics = null)
+        {
+            Debug.Assert(locals != null);
+
+            var routine = locals.Routine;
+            Debug.Assert(routine != null);
+
+            // try to get yields from current routine
+            routine.Syntax.Properties.TryGetProperty(out ImmutableArray<AST.IYieldLikeEx> yields);  // routine binder sets this property
+
+            var isGeneratorMethod = !yields.IsDefaultOrEmpty;
+            if (isGeneratorMethod)
+            {
+                // TODO: move this to SourceRoutineSymbol ctor?
+                routine.Flags |= FlowAnalysis.RoutineFlags.IsGenerator;
+            }
+
+            //
+            return (isGeneratorMethod)
+                ? new GeneratorSemanticsBinder(yields, locals, diagnostics)
+                : new SemanticsBinder(locals, diagnostics);
+        }
+
         public SemanticsBinder(LocalsTable locals = null, DiagnosticBag diagnostics = null)
         {
             _locals = locals;
             _diagnostics = diagnostics ?? DiagnosticBag.GetInstance();
         }
+
+        /// <summary>
+        /// Provides binder with CFG builder.
+        /// </summary>
+        public virtual void SetupBuilder(Func<BoundBlock> newBlockFunc)
+        { }
 
         #endregion
 
@@ -887,7 +921,7 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
-    internal class GeneratorSemanticsBinder : SemanticsBinder
+    internal sealed class GeneratorSemanticsBinder : SemanticsBinder
     {
         #region FieldsAndProperties
 
@@ -907,22 +941,21 @@ namespace Pchp.CodeAnalysis.Semantics
         private BoundBlock _preBoundBlockFirst;
         private BoundBlock _preBoundBlockLast;
 
-        // TODO: Replace with a better mechanism to get a new Block with correct ord number from BuilderVisitor
-        internal Func<BoundBlock> GetNewBlock;
+        Func<BoundBlock> _newBlockFunc;
 
-        private void InitPreBoundBlocks()
+        void InitPreBoundBlocks()
         {
-            _preBoundBlockFirst = _preBoundBlockFirst ?? GetNewBlock();
+            _preBoundBlockFirst = _preBoundBlockFirst ?? _newBlockFunc();
             _preBoundBlockLast = _preBoundBlockLast ?? _preBoundBlockFirst;
         }
 
-        protected BoundBlock CurrentPreBoundBlock
+        BoundBlock CurrentPreBoundBlock
         {
             get { InitPreBoundBlocks(); return _preBoundBlockLast; }
             set { _preBoundBlockLast = value; }
         }
 
-        protected bool AnyPreBoundItems
+        bool AnyPreBoundItems
         {
             get
             {
@@ -933,6 +966,7 @@ namespace Pchp.CodeAnalysis.Semantics
         #endregion
 
         #region Construction
+
         public GeneratorSemanticsBinder(ImmutableArray<AST.IYieldLikeEx> yields, LocalsTable locals, DiagnosticBag diagnostics)
             : base(locals, diagnostics)
         {
@@ -952,6 +986,17 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
             }
         }
+
+        public override void SetupBuilder(Func<BoundBlock> newBlockFunc)
+        {
+            Debug.Assert(newBlockFunc != null);
+
+            base.SetupBuilder(newBlockFunc);
+
+            //
+            _newBlockFunc = newBlockFunc;
+        }
+
         #endregion
 
         #region GeneralOverrides
@@ -1219,7 +1264,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             object _; // discard
 
-            var endBlock = GetNewBlock();
+            var endBlock = _newBlockFunc();
             falseBlockStart = falseBlockStart ?? endBlock;
 
             _ = new ConditionalEdge(sourceBlock, trueBlockStart, falseBlockStart, condExpr);

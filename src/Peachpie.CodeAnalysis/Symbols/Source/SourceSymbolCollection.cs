@@ -182,7 +182,6 @@ namespace Pchp.CodeAnalysis.Symbols
                         yieldsInRoutines.Add(containingRoutine, new List<IYieldLikeEx>());
                     }
                     yieldsInRoutines[containingRoutine].Add(yield);
-
                 }
 
                 foreach(var yieldsInRoutine in yieldsInRoutines)

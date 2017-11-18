@@ -143,11 +143,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Contract.ThrowIfNull(statements);
             Contract.ThrowIfNull(binder);
 
-            // TODO: Implement a cleaner way to enable SemanticsBinder to create BoundBlocks trough BuilderVisitor
-            if (binder is GeneratorSemanticsBinder gsb)
-            {
-                gsb.GetNewBlock = this.NewBlock;
-            }
+            // setup the binder
+            binder.SetupBuilder(this.NewBlock);
 
             _binder = binder;
             _naming = naming;

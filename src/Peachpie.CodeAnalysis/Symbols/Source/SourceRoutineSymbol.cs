@@ -38,24 +38,13 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (_cfg == null && this.Statements != null) // ~ Statements => non abstract method
                 {
                     // create initial flow state
-                    var state = StateBinder.CreateInitialState(this);
-
-                    // try to get yields from current routine
-                    Syntax.Properties.TryGetProperty(out ImmutableArray<IYieldLikeEx> yields);
-
-                    var isGeneratorMethod = !yields.IsDefaultOrEmpty;
-                    if (isGeneratorMethod)
-                    {
-                        this.Flags |= RoutineFlags.IsGenerator;
-                    }
-
-                    //
-                    var binder = isGeneratorMethod
-                        ? new GeneratorSemanticsBinder(yields, this.LocalsTable, DeclaringCompilation.DeclarationDiagnostics)
-                        : new SemanticsBinder(this.LocalsTable, DeclaringCompilation.DeclarationDiagnostics);
+                    var state = StateBinder.CreateInitialState(this);                    
 
                     // build control flow graph
-                    _cfg = new ControlFlowGraph(this.Statements, binder, this.GetNamingContext());
+                    _cfg = new ControlFlowGraph(
+                        this.Statements,
+                        SemanticsBinder.Create(this.LocalsTable, DeclaringCompilation.DeclarationDiagnostics),
+                        this.GetNamingContext());
                     _cfg.Start.FlowState = state;
                 }
 
