@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -46,6 +47,49 @@ namespace Pchp.Core
         public void Throw(PhpError error, string formatString, params string[] args)
         {
             // TODO: when (if) this will get called, currently errors are passed to Context.DefaultErrorHandler
+        }
+
+        /// <summary>
+        /// Performs debug assertion.
+        /// </summary>
+        /// <param name="condition">Condition to be checked.</param>
+        /// <param name="action">Either nothing, a message or a <c>Throwable</c>(implementing <see cref="Exception"/>).</param>
+        /// <returns></returns>
+        public bool Assert(bool condition, PhpValue action = default(PhpValue))
+        {
+            if (condition == false)
+            {
+                AssertFailed(action);
+            }
+
+            //
+            return condition;
+        }
+
+        /// <summary>
+        /// Invoked by runtime when PHP assertion fails.
+        /// </summary>
+        protected virtual void AssertFailed(PhpValue action = default(PhpValue))
+        {
+            const string AssertionErrorName = "AssertionError";
+
+            var t_assertex = GetDeclaredType(AssertionErrorName);
+            Debug.Assert(t_assertex != null);
+
+            Exception exception; // exception to be thrown
+
+            if (action.IsSet && !action.IsEmpty)
+            {
+                var description = action.AsString();
+                exception = action.AsObject() as Exception ?? (Exception)t_assertex.Creator(this, (PhpValue)description);
+            }
+            else
+            {
+                exception = (Exception)t_assertex.Creator(this);
+            }
+
+            //
+            throw exception;
         }
     }
 }

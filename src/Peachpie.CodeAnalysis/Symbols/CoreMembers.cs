@@ -979,6 +979,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetDeclaredType_string_bool = ct.Context.Method("GetDeclaredType", ct.String, ct.Boolean);
                 GetDeclaredTypeOrThrow_string_bool = ct.Context.Method("GetDeclaredTypeOrThrow", ct.String, ct.Boolean);
 
+                Assert_bool_PhpValue = ct.Context.Method("Assert", ct.Boolean, ct.PhpValue);
+
                 // properties
                 RootPath = ct.Context.Property("RootPath");
                 Globals = ct.Context.Property("Globals");
@@ -1001,6 +1003,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ExpectTypeDeclared_T,
                 GetStatic_T,
                 GetDeclaredType_string_bool, GetDeclaredTypeOrThrow_string_bool,
+                Assert_bool_PhpValue,
                 Dispose;
 
             public readonly CoreProperty

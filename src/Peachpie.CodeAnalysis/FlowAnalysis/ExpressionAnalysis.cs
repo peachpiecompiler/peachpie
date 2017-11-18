@@ -1157,6 +1157,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             PostProcessRoutineCall(x, null);
         }
 
+        public override void VisitAssert(BoundAssertEx x)
+        {
+            VisitRoutineCall(x);
+            x.TypeRefMask = TypeCtx.GetBooleanTypeMask();
+        }
+
         MethodSymbol[] AsMethodOverloads(MethodSymbol method)
         {
             if (method is AmbiguousMethodSymbol && ((AmbiguousMethodSymbol)method).IsOverloadable)

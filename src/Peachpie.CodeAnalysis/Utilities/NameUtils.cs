@@ -291,6 +291,11 @@ namespace Pchp.CodeAnalysis
 
         public static bool StringsEqual(this string str1, string str2, bool ignoreCase) => string.Equals(str1, str2, ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
 
+        public static bool IsAssertFunctionName(this TranslatedQualifiedName qname)
+        {
+            return qname.OriginalName == SpecialNames.assert;
+        }
+
         /// <summary>
         /// Special PHP type and function names.
         /// </summary>
@@ -314,6 +319,9 @@ namespace Pchp.CodeAnalysis
 
             /// <summary>Special <c>is_null</c> function name.</summary>
             public static QualifiedName is_null { get { return new QualifiedName(new Name("is_null")); } }
+
+            /// <summary>Special <c>assert</c> function name.</summary>
+            public static QualifiedName assert { get { return new QualifiedName(new Name("assert")); } }
         }
     }
 }

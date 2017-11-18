@@ -502,19 +502,19 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             OpenBreakScope(end, move);
 
             // bind reference expression for foreach key variable
-            BoundReferenceExpression keyVar = (x.KeyVariable != null) ?
-                (BoundReferenceExpression)_binder.BindWholeExpression(x.KeyVariable.Variable, BoundAccess.Write).GetOnlyBoundElement()
+            var keyVar = (x.KeyVariable != null)
+                ? (BoundReferenceExpression)_binder.BindWholeExpression(x.KeyVariable.Variable, BoundAccess.Write).GetOnlyBoundElement()
                 : null;
-
 
             // bind reference expression for foreach value variable 
             var valueVar = (BoundReferenceExpression)(_binder.BindWholeExpression(
                     (Expression)x.ValueVariable.Variable ?? x.ValueVariable.List,
-                    x.ValueVariable.Alias ? BoundAccess.Write.WithWriteRef(FlowAnalysis.TypeRefMask.AnyType) : BoundAccess.Write
-                    ).GetOnlyBoundElement());
+                    x.ValueVariable.Alias ? BoundAccess.Write.WithWriteRef(FlowAnalysis.TypeRefMask.AnyType) : BoundAccess.Write)
+                .GetOnlyBoundElement());
 
             // ForeachMoveNextEdge : ConditionalEdge
-            var moveEdge = new ForeachMoveNextEdge(move, body, end, enumereeEdge,
+            var moveEdge = new ForeachMoveNextEdge(
+                move, body, end, enumereeEdge,
                 keyVar, valueVar,
                 Span.FromBounds(x.Enumeree.Span.End + 1, (x.KeyVariable ?? x.ValueVariable).Span.Start - 1).ToTextSpan() /*"as" between enumeree and variables*/);
             // while (enumerator.MoveNext()) {

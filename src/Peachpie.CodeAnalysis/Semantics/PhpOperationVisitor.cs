@@ -92,6 +92,11 @@ namespace Pchp.CodeAnalysis.Semantics
             VisitRoutineCall(x);
         }
 
+        public virtual void VisitAssert(BoundAssertEx x)
+        {
+            VisitRoutineCall(x);
+        }
+
         public virtual void VisitBinaryExpression(BoundBinaryEx x)
         {
             Accept(x.Left);

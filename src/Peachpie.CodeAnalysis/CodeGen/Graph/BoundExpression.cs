@@ -2953,6 +2953,42 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundAssertEx
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            var args = ArgumentsInSourceOrder.Length;
+            if (args == 0)
+            {
+                // error, should be handled by diagnostics
+                cg.Builder.EmitBoolConstant(true);
+            }
+            else
+            {
+                // Template: <ctx>.Assert( condition.ToBoolean(), action )
+                cg.EmitLoadContext();
+
+                cg.EmitConvertToBool(ArgumentsInSourceOrder[0].Value);
+
+                if (args > 1)
+                {
+                    cg.EmitConvertToPhpValue(ArgumentsInSourceOrder[1].Value);
+                }
+                else
+                {
+                    cg.Emit_PhpValue_Void();
+                }
+
+                // 
+                cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.Assert_bool_PhpValue)
+                    .Expect(SpecialType.System_Boolean);
+            }
+
+            //
+            return cg.CoreTypes.Boolean;
+        }
+    }
+
     partial class BoundAssignEx
     {
         internal override TypeSymbol Emit(CodeGenerator cg)

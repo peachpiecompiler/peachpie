@@ -81,6 +81,11 @@ namespace Pchp.CodeAnalysis.Semantics
         public virtual BoundYieldStatement[] Yields { get => EmptyArray<BoundYieldStatement>.Instance; }
         protected readonly DiagnosticBag _diagnostics;
 
+        /// <summary>
+        /// Gets value determining whether to compile <c>assert</c>. otherwise the expression is ignored.
+        /// </summary>
+        bool EnableAssertExpression => Routine != null && Routine.DeclaringCompilation.Options.DebugPlusMode;
+
         #region Construction
 
         /// <summary>
@@ -505,14 +510,21 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundConcatEx(boundargs.AsImmutable());
         }
 
-        protected BoundRoutineCall BindFunctionCall(AST.FunctionCall x)
+        protected BoundExpression BindFunctionCall(AST.FunctionCall x)
         {
             return BindFunctionCall(x,
                 boundTarget: x.IsMemberOf != null ? BindExpression(x.IsMemberOf, BoundAccess.Read/*Object?*/) : null,
                 boundArguments: BindArguments(x.CallSignature.Parameters));
         }
 
-        BoundRoutineCall BindFunctionCall(AST.FunctionCall x, BoundExpression boundTarget, ImmutableArray<BoundArgument> boundArguments)
+        BoundExpression BindAssertExpression(ImmutableArray<BoundArgument> boundArguments)
+        {
+            return EnableAssertExpression
+                ? (BoundExpression)new BoundAssertEx(boundArguments)
+                : (BoundExpression)new BoundLiteral(true.AsObject());
+        }
+
+        BoundExpression BindFunctionCall(AST.FunctionCall x, BoundExpression boundTarget, ImmutableArray<BoundArgument> boundArguments)
         {
             if (x is AST.DirectFcnCall dirFcnCall)
             {
@@ -521,7 +533,15 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 if (boundTarget == null)
                 {
-                    return new BoundGlobalFunctionCall(fname.Name, fname.FallbackName, boundArguments);
+                    if (fname.IsAssertFunctionName())
+                    {
+                        // Template: assert(...)
+                        return BindAssertExpression(boundArguments);    // TODO: do not even bind arguments if aseert is not enabled
+                    }
+                    else
+                    {
+                        return new BoundGlobalFunctionCall(fname.Name, fname.FallbackName, boundArguments);
+                    }
                 }
                 else
                 {
@@ -879,7 +899,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.LongIntLiteral longIntLit) return new BoundLiteral(longIntLit.Value);
             if (expr is AST.StringLiteral stringLit) return new BoundLiteral(stringLit.Value);
             if (expr is AST.DoubleLiteral doubleLit) return new BoundLiteral(doubleLit.Value);
-            if (expr is AST.BoolLiteral boolLit) return new BoundLiteral(boolLit.Value);
+            if (expr is AST.BoolLiteral boolLit) return new BoundLiteral(boolLit.Value.AsObject());
             if (expr is AST.NullLiteral nullLit) return new BoundLiteral(null);
             if (expr is AST.BinaryStringLiteral binStringLit) return new BoundLiteral(binStringLit.Value);
 
@@ -1185,7 +1205,7 @@ namespace Pchp.CodeAnalysis.Semantics
         protected override BoundExpression BindYieldFromEx(AST.YieldFromEx expr, BoundAccess access)
         {
             // Template: foreach (<expr> => <key> as <value>) yield <key> => <value>;
-            // return <expr>.GeneratorReturnValue
+            // return <expr>.getReturn()
 
             //
             _diagnostics.Add(_locals.Routine, expr, Errors.ErrorCode.ERR_NotYetImplemented, $"Expression of type '{expr.GetType().Name}'");

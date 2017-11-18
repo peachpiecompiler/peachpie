@@ -121,9 +121,14 @@ namespace Pchp.CodeAnalysis
         readonly static object s_false = false;
 
         /// <summary>
+        /// Boxes <see cref="bool"/> into object without memory allocation.
+        /// </summary>
+        public static object AsObject(this bool b) => b ? s_true : s_false;
+
+        /// <summary>
         /// Gets <see cref="Optional{Object}"/> of <see cref="bool"/>.
         /// This method does not allocate a new boolean on heap.
         /// </summary>
-        public static Optional<object> AsOptional(this bool b) => new Optional<object>(b ? s_true : s_false);
+        public static Optional<object> AsOptional(this bool b) => new Optional<object>(AsObject(b));
     }
 }

@@ -651,6 +651,21 @@ namespace Pchp.CodeAnalysis.Semantics
         public override void Accept(PhpOperationVisitor visitor) => visitor.VisitExit(this);
     }
 
+    public sealed partial class BoundAssertEx : BoundRoutineCall
+    {
+        public override BoundExpression Instance => null;
+
+        public BoundAssertEx(ImmutableArray<BoundArgument> arguments)
+            : base(arguments)
+        {
+            
+        }
+
+        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
+        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
+        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitAssert(this);
+    }
+
     #endregion
 
     #region BoundLambda
