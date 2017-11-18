@@ -42,7 +42,7 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public static bool IsNull(this Optional<object> value)
         {
-            return value.HasValue && value.Value == null;
+            return value.HasValue && ReferenceEquals(value.Value, null);
         }
 
         /// <summary>

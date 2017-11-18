@@ -77,6 +77,8 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_ValueOfTypeCannotBeAliased,
         /// <summary>"Cannot instantiate {0} {1}", e.g. "interface", the type name</summary>
         ERR_CannotInstantiateType,
+        /// <summary>Using string as the assertion is deprecated</summary>
+        ERR_StringAssertionDeprecated,
 
         //
         // Warnings
@@ -97,6 +99,12 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_UnreachableCode,
         WRN_NotYetImplementedIgnored,
         WRN_NoSourceFiles,
+        /// <summary>Too many arguments provided</summary>
+        WRN_TooManyArguments,
+        /// <summary>{0}() expects at least {1} parameter(s), {2} given</summary>
+        WRN_MissingArguments,
+        /// <summary>Assertion will always fail</summary>
+        WRN_AssertAlwaysFail,
 
         //
         // Visible information

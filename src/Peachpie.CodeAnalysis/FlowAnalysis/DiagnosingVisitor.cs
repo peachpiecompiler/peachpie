@@ -133,6 +133,41 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitDeclareStatement(x);
         }
 
+        public override void VisitAssert(BoundAssertEx x)
+        {
+            base.VisitAssert(x);
+
+            var args = x.ArgumentsInSourceOrder;
+
+            // check number of parameters
+            // check whether it is not always false or always true
+            if (args.Length >= 1)
+            {
+                if (args[0].Value.ConstantValue.EqualsOptional(false.AsOptional()))
+                {
+                    // always failing
+                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_AssertAlwaysFail);
+                }
+
+                if (_routine.TypeRefContext.IsAString(args[0].Value.TypeRefMask))
+                {
+                    // deprecated and not supported
+                    _diagnostics.Add(_routine, args[0].Value.PhpSyntax, ErrorCode.ERR_StringAssertionDeprecated);
+                }
+
+                if (args.Length > 2)
+                {
+                    // too many args
+                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_TooManyArguments);
+                }
+            }
+            else
+            {
+                // assert() expects at least 1 parameter, 0 given
+                _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_MissingArguments, "assert", 1, 0);
+            }
+        }
+
         void CheckMethodCallTargetInstance(BoundExpression target, string methodName)
         {
             if (target == null)

@@ -2957,10 +2957,16 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            var args = ArgumentsInSourceOrder.Length;
-            if (args == 0)
+            var args = ArgumentsInSourceOrder;
+            if (args.Length == 0 || args[0].Value.ConstantValue.EqualsOptional(true.AsOptional()))
             {
-                // error, should be handled by diagnostics
+                if (Access.IsNone)
+                {
+                    // emit nothing
+                    return cg.CoreTypes.Void;
+                }
+
+                // always passing
                 cg.Builder.EmitBoolConstant(true);
             }
             else
@@ -2968,11 +2974,11 @@ namespace Pchp.CodeAnalysis.Semantics
                 // Template: <ctx>.Assert( condition.ToBoolean(), action )
                 cg.EmitLoadContext();
 
-                cg.EmitConvertToBool(ArgumentsInSourceOrder[0].Value);
+                cg.EmitConvertToBool(args[0].Value);
 
-                if (args > 1)
+                if (args.Length > 1)
                 {
-                    cg.EmitConvertToPhpValue(ArgumentsInSourceOrder[1].Value);
+                    cg.EmitConvertToPhpValue(args[1].Value);
                 }
                 else
                 {

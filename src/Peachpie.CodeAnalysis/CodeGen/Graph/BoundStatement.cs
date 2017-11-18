@@ -48,8 +48,11 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override void Emit(CodeGenerator cg)
         {
-            cg.EmitSequencePoint(this.PhpSyntax);
-            cg.EmitPop(this.Expression.Emit(cg));
+            if (Expression.IsConstant() == false)
+            {
+                cg.EmitSequencePoint(this.PhpSyntax);
+                cg.EmitPop(Expression.Emit(cg));
+            }
         }
     }
 
@@ -224,7 +227,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // Context.GetStatic<H>()
             var getmethod = cg.CoreMethods.Context.GetStatic_T.Symbol.Construct(holder);
-            
+
             // Template: <local> = &Context.GetStatic<H>().value
             var local = this.Declaration.Variable.BindPlace(cg.Builder, BoundAccess.Write.WithWriteRef(TypeRefMask.AnyType), 0);
             local.EmitStorePrepare(cg);
@@ -354,7 +357,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // Template: Operators.SetGeneratorCurrent(generator, value [,key])
             cg.EmitGeneratorInstance();             // generator
             cg.EmitConvertToPhpValue(YieldedValue); // value (can be NULL)
-            
+
             if (YieldedKey == null)
             {
                 cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorCurrent_Generator_PhpValue)
