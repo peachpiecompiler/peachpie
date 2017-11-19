@@ -152,7 +152,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (_routine.TypeRefContext.IsAString(args[0].Value.TypeRefMask))
                 {
                     // deprecated and not supported
-                    _diagnostics.Add(_routine, args[0].Value.PhpSyntax, ErrorCode.ERR_StringAssertionDeprecated);
+                    _diagnostics.Add(_routine, args[0].Value.PhpSyntax, ErrorCode.WRN_StringAssertionDeprecated);
                 }
 
                 if (args.Length > 2)

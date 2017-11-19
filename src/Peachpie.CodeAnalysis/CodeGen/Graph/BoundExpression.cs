@@ -2958,7 +2958,9 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
             var args = ArgumentsInSourceOrder;
-            if (args.Length == 0 || args[0].Value.ConstantValue.EqualsOptional(true.AsOptional()))
+            if (args.Length == 0 ||
+                args[0].Value.ConstantValue.EqualsOptional(true.AsOptional()) ||    // ignoring assertion evaluated to true
+                cg.IsReadonlyStringOnly(args[0].Value.TypeRefMask))                 // ignoring string assertions
             {
                 if (Access.IsNone)
                 {

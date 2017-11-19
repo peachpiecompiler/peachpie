@@ -183,7 +183,7 @@
   <data name="ERR_BadSwitch" xml:space="preserve">
     <value>Unrecognized option: '{0}'</value>
   </data>
-  <data name="ERR_StringAssertionDeprecated" xml:space="preserve">
+  <data name="WRN_StringAssertionDeprecated" xml:space="preserve">
     <value>Using string as the assertion is deprecated</value>
   </data>
   <data name="WRN_AssertAlwaysFail" xml:space="preserve">
