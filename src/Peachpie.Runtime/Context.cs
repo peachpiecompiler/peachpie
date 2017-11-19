@@ -49,7 +49,7 @@ namespace Pchp.Core
 
             if (cmdargs != null && cmdargs.Length != 0)
             {
-                ctx.IntializeArgvArgc(cmdargs);
+                ctx.InitializeArgvArgc(cmdargs);
             }
 
             //

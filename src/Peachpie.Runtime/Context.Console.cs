@@ -15,7 +15,12 @@ namespace Pchp.Core
         /// </summary>
 		sealed class ConsoleContext : Context
         {
-            public ConsoleContext(params string[] args)
+            /// <summary>
+            /// Initializes the console context.
+            /// </summary>
+            /// <param name="mainscript">Entry script file name.</param>
+            /// <param name="args">Command line arguments.</param>
+            public ConsoleContext(string mainscript, params string[] args)
             {
                 RootPath = Directory.GetCurrentDirectory();
                 WorkingDirectory = RootPath;
@@ -25,12 +30,30 @@ namespace Pchp.Core
 
                 // Globals
                 InitSuperglobals();
-                IntializeArgvArgc(args);
+                InitializeServerVars(mainscript);
+                InitializeArgvArgc(args);
             }
         }
 
+        /// <summary>Initialize additional <c>$_SERVER</c> entries.</summary>
+        /// <param name="mainscript"></param>
+        protected void InitializeServerVars(string mainscript)
+        {
+            var server = this.Server;
+
+            // initialize server variables in order:
+
+            server["PHP_SELF"] = (PhpValue)mainscript;
+            server["SCRIPT_NAME"] = (PhpValue)mainscript;
+            server["SCRIPT_FILENAME"] = (PhpValue)mainscript;
+            server["PATH_TRANSLATED"] = (PhpValue)mainscript;
+            server["DOCUMENT_ROOT"] = (PhpValue)string.Empty;
+            server["REQUEST_TIME_FLOAT"] = (PhpValue)DateTimeUtils.UtcToUnixTimeStampFloat(DateTime.UtcNow);
+            server["REQUEST_TIME"] = (PhpValue)DateTimeUtils.UtcToUnixTimeStamp(DateTime.UtcNow);
+        }
+
         /// <summary>Initializes global $argv and $argc variables and corresponding $_SERVER entries.</summary>
-        protected void IntializeArgvArgc(params string[] args)
+        protected void InitializeArgvArgc(params string[] args)
         {
             Debug.Assert(args != null);
 
@@ -45,9 +68,9 @@ namespace Pchp.Core
         /// <summary>
         /// Creates context to be used within a console application.
         /// </summary>
-        public static Context CreateConsole(params string[] args)
+        public static Context CreateConsole(string mainscript, params string[] args)
         {
-            return new ConsoleContext(args);
+            return new ConsoleContext(mainscript, args);
         }
     }
 }

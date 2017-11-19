@@ -15,6 +15,16 @@ namespace Pchp.CodeAnalysis.Emit
 {
     partial class PEModuleBuilder
     {
+        static string EntryPointScriptName(MethodSymbol method)
+        {
+            if (method is SourceRoutineSymbol routine)
+            {
+                return routine.ContainingFile.RelativeFilePath;
+            }
+
+            return string.Empty;
+        }
+
         /// <summary>
         /// Create real CIL entry point, where it calls given method.
         /// </summary>
@@ -44,15 +54,33 @@ namespace Pchp.CodeAnalysis.Emit
                     // create Context
                     var ctx_loc = il.LocalSlotManager.AllocateSlot(types.Context.Symbol, LocalSlotConstraints.None);
 
-                    // ctx_loc = Context.Create***(args)
-                    var createMethodName = (_compilation.Options.OutputKind == OutputKind.ConsoleApplication) ? "CreateConsole" : "CreateEmpty";
-                    MethodSymbol create_method = _compilation.CoreTypes.Context.Symbol.LookupMember<MethodSymbol>(createMethodName);
-                    Debug.Assert(create_method != null);
-                    Debug.Assert(create_method.ParameterCount == 1);
-                    Debug.Assert(create_method.Parameters[0].Type == args_place.TypeOpt);
-                    args_place.EmitLoad(il);
-                    il.EmitOpCode(ILOpCode.Call, +1);
-                    il.EmitToken(create_method, null, diagnostic);
+                    if (_compilation.Options.OutputKind == OutputKind.ConsoleApplication)
+                    {
+                        // CreateConsole(mainscript, args)
+                        MethodSymbol create_method = types.Context.Symbol.LookupMember<MethodSymbol>("CreateConsole");
+                        Debug.Assert(create_method != null);
+                        Debug.Assert(create_method.ParameterCount == 2);
+                        Debug.Assert(create_method.Parameters[0].Type == types.String);
+                        Debug.Assert(create_method.Parameters[1].Type == args_place.TypeOpt);
+
+                        il.EmitStringConstant(EntryPointScriptName(method));    // mainscript
+                        args_place.EmitLoad(il);                                // args
+
+                        il.EmitOpCode(ILOpCode.Call, +2);
+                        il.EmitToken(create_method, null, diagnostic);
+                    }
+                    else
+                    {
+                        // CreateEmpty(args)
+                        MethodSymbol create_method = types.Context.Symbol.LookupMember<MethodSymbol>("CreateEmpty");
+                        Debug.Assert(create_method != null);
+                        Debug.Assert(create_method.ParameterCount == 1);
+                        Debug.Assert(create_method.Parameters[0].Type == args_place.TypeOpt);
+                        args_place.EmitLoad(il);    // args
+                        il.EmitOpCode(ILOpCode.Call, +1);
+                        il.EmitToken(create_method, null, diagnostic);
+                    }
+
                     il.EmitLocalStore(ctx_loc);
 
                     // Template:
