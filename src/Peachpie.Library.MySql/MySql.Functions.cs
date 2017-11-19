@@ -1142,7 +1142,7 @@ namespace Peachpie.Library.MySql
             if (result != null) result.Dispose();
 
             // success if there were no errors:
-            return connection.LastException != null;
+            return connection.LastException == null;
         }
 
         #endregion
