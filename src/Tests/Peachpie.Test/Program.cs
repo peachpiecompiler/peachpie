@@ -15,7 +15,7 @@ namespace Peachpie.Test
             var provider = (Context.IScriptingProvider)new Library.Scripting.ScriptingProvider();
             var fullpath = Path.Combine(Directory.GetCurrentDirectory(), ScriptPath);
 
-            using (var ctx = Context.CreateConsole(args))
+            using (var ctx = Context.CreateConsole(string.Empty, args))
             {
                 //
                 var script = provider.CreateScript(new Context.ScriptOptions()
