@@ -542,9 +542,10 @@ namespace Pchp.Core
         /// </summary>
         public static PhpArray Add(PhpArray x, PhpValue y)
         {
-            if (y.IsArray)
+            var arr = y.AsArray();  // array or &array
+            if (arr != null)
             {
-                return PhpArray.Union(x, y.Array);
+                return PhpArray.Union(x, arr);
             }
 
             //PhpException.UnsupportedOperandTypes();
