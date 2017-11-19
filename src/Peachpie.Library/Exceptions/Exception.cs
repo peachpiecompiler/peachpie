@@ -51,10 +51,7 @@ namespace Pchp.Library.Spl
             throw new NotImplementedException();
         }
 
-        public virtual string getTraceAsString()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual string getTraceAsString() => this.StackTrace;
 
         public virtual string __toString()
         {
