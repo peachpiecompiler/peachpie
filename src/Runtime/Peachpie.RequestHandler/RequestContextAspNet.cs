@@ -112,7 +112,7 @@ namespace Peachpie.RequestHandler
             }
         }
 
-        public void SetHeader(string name, string value)
+        void IHttpPhpContext.SetHeader(string name, string value)
         {
             if (name.EqualsOrdinalIgnoreCase("content-length")) return; // ignore content-length header, it is set correctly by IIS. If set by the app, mostly it is not correct value (strlen() issue).
 
@@ -149,9 +149,18 @@ namespace Peachpie.RequestHandler
             }
         }
 
-        public void RemoveHeader(string name) { _httpctx.Response.Headers.Remove(name); }
+        void IHttpPhpContext.RemoveHeader(string name) { _httpctx.Response.Headers.Remove(name); }
 
-        public void RemoveHeaders() { _httpctx.Response.Headers.Clear(); }
+        void IHttpPhpContext.RemoveHeaders() { _httpctx.Response.Headers.Clear(); }
+
+        /// <summary>Enumerates HTTP headers in current response.</summary>
+        IEnumerable<KeyValuePair<string, string>> IHttpPhpContext.GetHeaders()
+        {
+            foreach (string name in _httpctx.Response.Headers)
+            {
+                yield return new KeyValuePair<string, string>(name, _httpctx.Response.Headers[name]);
+            }
+        }
 
         public event Action HeadersSending
         {

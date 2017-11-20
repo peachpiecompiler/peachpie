@@ -517,10 +517,17 @@ namespace Pchp.Library
 
             var list = new PhpArray();
 
-            //foreach (var x in ScriptContext.CurrentContext.Headers)
-            //{
-            //    list.Add(x.Key + ": " + x.Value);
-            //}
+            foreach (var x in webctx.GetHeaders())
+            {
+                if (string.IsNullOrEmpty(x.Value))
+                {
+                    list.Add(x.Key);
+                }
+                else
+                {
+                    list.Add(x.Key + ": " + x.Value);
+                }
+            }
 
             /*foreach (var x in context.Response.Cookies.AllKeys)
             {
