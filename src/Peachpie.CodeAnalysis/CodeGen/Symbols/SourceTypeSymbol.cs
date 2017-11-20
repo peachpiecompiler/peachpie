@@ -260,12 +260,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public void FinalizeMethodTable(Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
         {
-            if (this.IsInterface)
-            {
-                // Interfaces can't contain implementations
-                return;
-            }
-
             // creates ghost stubs for overrides that do not match the signature
 
             foreach (var info in this.ResolveOverrides(diagnostics))
