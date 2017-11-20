@@ -1,5 +1,18 @@
 <?php
 
-interface IResultWrapper extends Iterator {
-  public function next();
+interface IA {
+  public function foo();
 }
+
+interface IB extends IA {
+}
+
+class A implements IA, IB
+{
+  public function foo() {
+	  print_r( func_get_args() ); // implicit parameter is created, causes new implicit overload
+  }
+}
+(new A)->foo(666);
+
+echo "Done";

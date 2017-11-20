@@ -171,6 +171,19 @@ namespace Pchp.Core
     }
 
     /// <summary>
+    /// Denotates a function parameter that will be loaded with current late static bound class.
+    /// The parameter must be of type <see cref="PhpTypeInfo"/>.
+    /// </summary>
+    /// <remarks>
+    /// The parameter is used to access calers' late static class (<c>static</c>).
+    /// The parameter must be before regular parameters.</remarks>
+    [AttributeUsage(AttributeTargets.Parameter)]
+    public sealed class ImportCallerStaticClassAttribute : Attribute
+    {
+
+    }
+
+    /// <summary>
 	/// Marks return values of methods implementing PHP functions which returns <B>false</B> on error
 	/// but has other return type than <see cref="bool"/> or <see cref="object"/>.
 	/// </summary>

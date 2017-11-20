@@ -320,11 +320,25 @@ namespace Pchp.Core
             return true;
         }
 
+        /// <summary>
+        /// Determines if given callable is syntactically valid.
+        /// </summary>
         public static bool IsValidCallback(IPhpCallable callable)
         {
             PhpCallback tmp;
 
             return callable != null && ((tmp = callable as PhpCallback) == null || tmp.IsValid);
+        }
+
+        /// <summary>
+        /// Determines if given callable is valid and referes toi an existing function.
+        /// </summary>
+        public static bool IsValidBoundCallback(Context ctx, IPhpCallable callable)
+        {
+            var tmp = callable as PhpCallback;
+            return (tmp != null)
+                ? tmp.IsValidBound(ctx)
+                : callable != null;
         }
 
         /// <summary>

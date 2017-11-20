@@ -49,4 +49,19 @@ namespace Pchp.Library.Spl
             __construct(message, code, previous);
         }
     }
+
+    /// <summary>
+    /// Exception thrown if a value does not adhere to a defined valid data domain.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class DomainException : LogicException
+    {
+        [PhpFieldsOnlyCtor]
+        protected DomainException() { }
+
+        public DomainException(string message = "", long code = 0, Throwable previous = null)
+        {
+            __construct(message, code, previous);
+        }
+    }
 }

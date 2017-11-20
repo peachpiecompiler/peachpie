@@ -136,7 +136,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Emits <c>PhpTypeInfo</c> of late static bound type.
         /// </summary>
-        static TypeSymbol  EmitLoadStaticPhpTypeInfo(CodeGenerator cg)
+        internal static TypeSymbol  EmitLoadStaticPhpTypeInfo(CodeGenerator cg)
         {
             if (cg.ThisPlaceOpt != null)
             {

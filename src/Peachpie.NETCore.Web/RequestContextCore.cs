@@ -28,12 +28,12 @@ namespace Peachpie.Web
         #region IHttpPhpContext
 
         /// <summary>Gets value indicating HTTP headers were already sent.</summary>
-        public bool HeadersSent
+        bool IHttpPhpContext.HeadersSent
         {
             get { return _httpctx.Response.HasStarted; }
         }
 
-        public void SetHeader(string name, string value)
+        void IHttpPhpContext.SetHeader(string name, string value)
         {
             StringValues newitem = new StringValues(value);
             //StringValues olditem;
@@ -46,9 +46,15 @@ namespace Peachpie.Web
             _httpctx.Response.Headers[name] = newitem;
         }
 
-        public void RemoveHeader(string name) { _httpctx.Response.Headers.Remove(name); }
+        void IHttpPhpContext.RemoveHeader(string name) { _httpctx.Response.Headers.Remove(name); }
 
-        public void RemoveHeaders() { _httpctx.Response.Headers.Clear(); }
+        void IHttpPhpContext.RemoveHeaders() { _httpctx.Response.Headers.Clear(); }
+
+        /// <summary>Enumerates HTTP headers in current response.</summary>
+        IEnumerable<KeyValuePair<string, string>> IHttpPhpContext.GetHeaders()
+        {
+            return _httpctx.Response.Headers.Select(pair => new KeyValuePair<string, string>(pair.Key, pair.Value.ToString()));
+        }
 
         public event Action HeadersSending
         {

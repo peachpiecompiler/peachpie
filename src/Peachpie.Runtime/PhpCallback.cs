@@ -59,6 +59,14 @@ namespace Pchp.Core
         public virtual bool IsValid => true;
 
         /// <summary>
+        /// Tries to bind the callback and checks if the callback is valid.
+        /// </summary>
+        internal bool IsValidBound(Context ctx)
+        {
+            return IsValid && Bind(ctx) != InvokeError;
+        }
+
+        /// <summary>
         /// Gets value indicating this instance represents the same callback as <paramref name="other"/>.
         /// </summary>
         /// <param name="other">The other instance to compare with.</param>

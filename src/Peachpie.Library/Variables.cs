@@ -503,15 +503,18 @@ namespace Pchp.Library
         /// <summary>
         /// Verifies that the contents of a variable can be called as a function.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="variable">The variable.</param>
         /// <param name="syntaxOnly">If <B>true</B>, it is only checked that has <pararef name="variable"/>
         /// a valid structure to be used as a callback. if <B>false</B>, the existence of the function (or
         /// method) is also verified.</param>
         /// <returns><B>true</B> if <paramref name="variable"/> denotes a function, <B>false</B>
         /// otherwise.</returns>
-        public static bool is_callable(IPhpCallable variable, bool syntaxOnly = false)
+        public static bool is_callable(Context ctx, IPhpCallable variable, bool syntaxOnly = false)
         {
-            return PhpVariable.IsValidCallback(variable);  // TODO: check syntaxOnly || can be bound
+            return syntaxOnly
+                ? PhpVariable.IsValidCallback(variable)
+                : PhpVariable.IsValidBoundCallback(ctx, variable);
         }
 
         /// <summary>
@@ -530,7 +533,7 @@ namespace Pchp.Library
         public static bool is_callable(Context ctx, [ImportCallerClass] RuntimeTypeHandle callerCtx, PhpValue variable, bool syntaxOnly, out string callableName)
         {
             var callback = variable.AsCallable(callerCtx);
-            if (PhpVariable.IsValidCallback(callback))
+            if (is_callable(ctx, callback, syntaxOnly: syntaxOnly))
             {
                 callableName = callback.ToString();
                 return true;

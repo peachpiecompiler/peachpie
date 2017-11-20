@@ -22,6 +22,9 @@ namespace Pchp.Core
 
         void RemoveHeaders();
 
+        /// <summary>Enumerates HTTP headers in current response.</summary>
+        IEnumerable<KeyValuePair<string, string>> GetHeaders();
+
         /// <summary>
         /// Event fired before headers are sent.
         /// </summary>

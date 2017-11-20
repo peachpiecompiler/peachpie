@@ -25,7 +25,9 @@ namespace Pchp.Core.Dynamic
         /// </summary>
         public static bool IsImplicitParameter(this ParameterInfo p)
         {
-            return p.IsContextParameter() || p.IsLateStaticParameter() || p.IsImportLocalsParameter() || p.IsImportCallerArgsParameter() || p.IsImportCallerClassParameter();
+            return
+                p.IsContextParameter() || p.IsLateStaticParameter() ||
+                p.IsImportLocalsParameter() || p.IsImportCallerArgsParameter() || p.IsImportCallerClassParameter() || p.IsImportCallerStaticClassParameter();
 
             // TODO: classCtx, <this>
         }
@@ -61,6 +63,13 @@ namespace Pchp.Core.Dynamic
             return
                 (p.ParameterType == typeof(string) || p.ParameterType == typeof(RuntimeTypeHandle) || p.ParameterType == typeof(PhpTypeInfo)) &&
                 p.GetCustomAttribute(typeof(ImportCallerClassAttribute)) != null;
+        }
+
+        public static bool IsImportCallerStaticClassParameter(this ParameterInfo p)
+        {
+            return
+                (p.ParameterType == typeof(PhpTypeInfo)) &&
+                p.GetCustomAttribute(typeof(ImportCallerStaticClassAttribute)) != null;
         }
 
         /// <summary>
@@ -751,6 +760,10 @@ namespace Pchp.Core.Dynamic
                     {
                         // TODO: pass classctx from the callsite
                         throw new NotImplementedException();
+                    }
+                    else if (p.IsImportCallerStaticClassParameter())
+                    {
+                        throw new NotSupportedException(); // we don't know current late static bound type
                     }
                     else
                     {
