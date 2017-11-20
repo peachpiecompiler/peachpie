@@ -314,5 +314,16 @@ namespace Pchp.Library
 
             return false;
         }
+
+        /// <summary>
+        /// Gets information about the last error that occurred.
+        /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
+        /// <returns>Array with error information or <c>null</c> if there is no error.</returns>
+        public static PhpArray error_get_last(Context ctx)
+        {
+            Debug.Fail(nameof(error_get_last) + ": not implemeted.");
+            return null;
+        }
     }
 }
