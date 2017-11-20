@@ -408,6 +408,12 @@ namespace Pchp.Core.Dynamic
                 return Expression.Constant(ConversionCost.Pass);
             }
 
+            if (t == typeof(PhpAlias))
+            {
+                arg = Expression.PropertyOrField(arg, "Value");
+                t = typeof(PhpValue);
+            }
+
             if (target == typeof(PhpAlias) || target == typeof(PhpValue))
             {
                 return Expression.Constant(ConversionCost.PassCostly);
