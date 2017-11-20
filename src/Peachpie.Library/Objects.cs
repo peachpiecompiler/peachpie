@@ -112,6 +112,12 @@ namespace Pchp.Library
         }
 
         /// <summary>
+        /// Gets the name of the class the static method is called in.
+        /// </summary>
+        [return: CastToFalse]
+        public static string get_called_class([ImportCallerStaticClass]PhpTypeInfo @static) => @static?.Name;
+
+        /// <summary>
         /// Helper getting declared classes or interfaces.
         /// </summary>
         /// <param name="ctx">Runtime context with declared types.</param>

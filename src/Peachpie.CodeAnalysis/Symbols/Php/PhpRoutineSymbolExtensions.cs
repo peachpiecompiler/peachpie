@@ -265,6 +265,10 @@ namespace Pchp.CodeAnalysis.Symbols
                     {
                         f |= RoutineFlags.UsesArgs;
                     }
+                    else if (SpecialParameterSymbol.IsCallerStaticClassParameter(p))
+                    {
+                        f |= RoutineFlags.UsesLateStatic;
+                    }
                 }
                 else
                 {

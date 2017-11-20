@@ -1173,6 +1173,15 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 return p.Type;
             }
+            // current "static"
+            else if (SpecialParameterSymbol.IsCallerStaticClassParameter(p))
+            {
+                if (p.Type == CoreTypes.PhpTypeInfo)
+                {
+                    return BoundTypeRef.EmitLoadStaticPhpTypeInfo(this);
+                }
+                throw ExceptionUtilities.UnexpectedValue(p.Type);
+            }
             // late static
             else if (SpecialParameterSymbol.IsLateStaticParameter(p))
             {
