@@ -9,8 +9,8 @@ interface IB extends IA {
 
 class A implements IA, IB
 {
-  public function foo($p) {
-	  echo $p;
+  public function foo() {
+	  print_r( func_get_args() ); // implicit parameter is created, causes new implicit overload
   }
 }
 (new A)->foo(666);
