@@ -611,7 +611,7 @@ namespace Pchp.Core
                 if (value.GetType() == typeof(PhpValue)) return (PhpValue)value;
                 if (value.GetType() == typeof(PhpNumber)) return Create((PhpNumber)value);
                 if (value.GetType() == typeof(uint)) return Create((uint)value);
-                if (value.GetType() == typeof(byte[])) return PhpValue.Create(new PhpString((byte[])value));
+                if (value.GetType() == typeof(byte[])) return Create(new PhpString((byte[])value));
 
                 // object        
                 return FromClass(value);
