@@ -178,7 +178,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     // add interface member,
                     // resolve its override
-                    overrides.Add(new OverrideInfo(m.Method, OverrideHelper.ResolveMethodImplementation(m.Method, this)) { ImplementsInterface = true });
+                    overrides.Add(new OverrideInfo(m.Method, this.IsInterface ? null : OverrideHelper.ResolveMethodImplementation(m.Method, this)) { ImplementsInterface = true });
                 }
             }
 
