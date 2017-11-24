@@ -18,18 +18,18 @@ namespace Pchp.CodeAnalysis
             switch (op)
             {
                 case Operations.AssignAdd: return Operations.Add;
-                case Operations.AssignAnd: return Operations.And;
+                case Operations.AssignAnd: return Operations.BitAnd;
                 case Operations.AssignAppend: return Operations.Concat;
                 case Operations.AssignDiv: return Operations.Div;
                 case Operations.AssignMod: return Operations.Mod;
                 case Operations.AssignMul: return Operations.Mul;
-                case Operations.AssignOr: return Operations.Or;
+                case Operations.AssignOr: return Operations.BitOr;
                 case Operations.AssignPow: return Operations.Pow;
                 case Operations.AssignPrepend: return Operations.Concat;
                 case Operations.AssignShiftLeft: return Operations.ShiftLeft;
                 case Operations.AssignShiftRight: return Operations.ShiftRight;
                 case Operations.AssignSub: return Operations.Sub;
-                case Operations.AssignXor: return Operations.Xor;
+                case Operations.AssignXor: return Operations.BitXor;
                 default:
                     throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(op);
             }
