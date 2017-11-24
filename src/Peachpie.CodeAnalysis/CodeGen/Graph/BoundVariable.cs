@@ -214,10 +214,17 @@ namespace Pchp.CodeAnalysis.Semantics
                         if (_symbol.IsParams)
                         {
                             Debug.Assert(_symbol.Type.IsSZArray());
-                            Debug.Assert(clrtype == cg.CoreTypes.PhpArray);
+                            Debug.Assert(clrtype == cg.CoreTypes.PhpArray || clrtype == cg.CoreTypes.PhpValue);
 
                             // <local> = new PhpArray(){ ... }
                             cg.ArrayToPhpArray(srcplace, true);
+
+                            // The params array may have degenerated to PhpValue if another type is assigned to it later
+                            if (clrtype == cg.CoreTypes.PhpValue)
+                            {
+                                // <local> = PhpValue.Create(...)
+                                cg.EmitConvertToPhpValue(cg.CoreTypes.PhpArray, 0);
+                            }
                         }
                         else
                         {
