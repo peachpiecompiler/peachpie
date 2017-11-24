@@ -2313,7 +2313,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             EmitBeforeCall(cg);
 
-            if (!TargetMethod.IsErrorMethod())
+            if (!TargetMethod.IsErrorMethodOrNull())
             {
                 // the most preferred case when method is known,
                 // the method can be called directly
@@ -2574,7 +2574,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         private TypeSymbol EmitNewClass(CodeGenerator cg)
         {
-            if (!TargetMethod.IsErrorMethod())
+            if (!TargetMethod.IsErrorMethodOrNull())
             {
                 // ensure type is declared
                 cg.EmitExpectTypeDeclared(TargetMethod.ContainingType);

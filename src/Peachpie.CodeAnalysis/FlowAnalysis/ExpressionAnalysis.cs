@@ -1038,101 +1038,121 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitRoutineCall(x);
         }
 
-        void PostProcessRoutineCall(BoundRoutineCall x, MethodSymbol target)
+        bool BindParams(PhpParam[] expectedparams, ImmutableArray<BoundArgument> givenargs)
         {
-            //
-            if (target != null && target.IsErrorMethod() == false)
+            for (int i = 0; i < givenargs.Length; i++)
             {
-                TypeRefMask result_type = 0;
-
-                var args = x.ArgumentsInSourceOrder;
-
-                // analyze TargetMethod with x.Arguments
-                // require method result type if access != none
-                if (x.Access.IsRead)
+                if (givenargs[i].IsUnpacking)
                 {
-                    var enqueued = this.Worklist.EnqueueRoutine(target, CurrentBlock);
-                    if (enqueued)   // => target has to be reanalysed
-                    {
-                        // note: continuing current block may be waste of time
-                    }
+                    break;
                 }
 
-                // process arguments by ref
-                var expectedparams = target.GetExpectedArguments(this.TypeCtx);
-                for (int i = 0; i < expectedparams.Length && i < args.Length; i++)
+                if (i < expectedparams.Length)
                 {
-                    if (args[i].IsUnpacking)    // => the rest of arguments can't be bound to parameters
+                    if (expectedparams[i].IsVariadic)
                     {
                         break;
                     }
 
-                    // bind ref parameters to variables:
-                    var ep = expectedparams[i];
-                    if (ep.IsAlias || ep.IsByRef)  // => args[i] must be a variable
+                    BindParam(expectedparams[i], givenargs[i]);
+                }
+                else
+                {
+                    // argument cannot be bound
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        void BindParam(PhpParam expected, BoundArgument givenarg)
+        {
+            // bind ref parameters to variables:
+            if (expected.IsAlias || expected.IsByRef)  // => args[i] must be a variable
+            {
+                var refexpr = givenarg.Value as BoundReferenceExpression;
+                if (refexpr != null)
+                {
+                    if (expected.IsByRef && !refexpr.Access.IsWrite)
                     {
-                        var refexpr = args[i].Value as BoundReferenceExpression;
-                        if (refexpr != null)
+                        SemanticsBinder.BindWriteAccess(refexpr);
+                        Worklist.Enqueue(CurrentBlock);
+                    }
+
+                    if (expected.IsAlias && !refexpr.Access.IsReadRef)
+                    {
+                        SemanticsBinder.BindReadRefAccess(refexpr);
+                        Worklist.Enqueue(CurrentBlock);
+                    }
+
+                    var refvar = refexpr as BoundVariableRef;
+                    if (refvar != null)
+                    {
+                        if (refvar.Name.IsDirect)
                         {
-                            if (ep.IsByRef && !refexpr.Access.IsWrite)
+                            var local = State.GetLocalHandle(refvar.Name.NameValue);
+                            State.SetLocalType(local, expected.Type);
+                            refvar.MaybeUninitialized = false;
+                            if (expected.IsAlias)
                             {
-                                SemanticsBinder.BindWriteAccess(refexpr);
-                                Worklist.Enqueue(CurrentBlock);
-                            }
-
-                            if (ep.IsAlias && !refexpr.Access.IsReadRef)
-                            {
-                                SemanticsBinder.BindReadRefAccess(refexpr);
-                                Worklist.Enqueue(CurrentBlock);
-                            }
-
-                            var refvar = refexpr as BoundVariableRef;
-                            if (refvar != null)
-                            {
-                                if (refvar.Name.IsDirect)
-                                {
-                                    var local = State.GetLocalHandle(refvar.Name.NameValue);
-                                    State.SetLocalType(local, ep.Type);
-                                    refvar.MaybeUninitialized = false;
-                                    if (ep.IsAlias)
-                                    {
-                                        State.MarkLocalByRef(local);
-                                    }
-                                }
-                                else
-                                {
-                                    // TODO: indirect variable -> all may be aliases of any type
-                                }
-                            }
-                            else
-                            {
-                                // fields, array items, ...
-                                // TODO: remember the field will be accessed as reference
+                                State.MarkLocalByRef(local);
                             }
                         }
                         else
                         {
-                            // TODO: Err, variable or field must be passed into byref argument. foo("hello") where function foo(&$x){}
+                            // TODO: indirect variable -> all may be aliases of any type
                         }
+                    }
+                    else
+                    {
+                        // fields, array items, ...
+                        // TODO: remember the field will be accessed as reference
+                    }
+                }
+                else
+                {
+                    // TODO: Err, variable or field must be passed into byref argument. foo("hello") where function foo(&$x){}
+                }
+            }
+        }
+
+        /// <summary>
+        /// Bind arguments to target method and resolve resulting <see cref="BoundExpression.TypeRefMask"/>.
+        /// Expecting <see cref="BoundRoutineCall.TargetMethod"/> is resolved.
+        /// If the target method cannot be bound at compile time, <see cref="BoundRoutineCall.TargetMethod"/> is nulled.
+        /// </summary>
+        void BindTargetMethod(BoundRoutineCall x, bool maybeOverload = false)
+        {
+            if (false == x.TargetMethod.IsErrorMethodOrNull())
+            {
+                // analyze TargetMethod with x.Arguments
+                // require method result type if access != none
+                if (x.Access.IsRead)
+                {
+                    if (Worklist.EnqueueRoutine(x.TargetMethod, CurrentBlock))
+                    {
+                        // target will be reanalysed
+                        // note: continuing current block may be waste of time
                     }
                 }
 
                 //
-                Routine.Flags |= target.InvocationFlags();
+                Routine.Flags |= x.TargetMethod.InvocationFlags();
+                x.TypeRefMask = x.TargetMethod.GetResultType(TypeCtx);
 
-                //
-                result_type |= target.GetResultType(TypeCtx);
-
-                x.TypeRefMask = result_type;
-            }
-            else
-            {
-
+                // process arguments
+                if (!BindParams(x.TargetMethod.GetExpectedArguments(this.TypeCtx), x.ArgumentsInSourceOrder) && maybeOverload)
+                {
+                    x.TargetMethod = null; // nullify the target method -> call dynamically, arguments cannot be bound at compile time
+                }
             }
 
             //
+
             if (x.Access.IsReadRef)
             {
+                // reading by ref:
                 x.TypeRefMask = x.TypeRefMask.WithRefFlag;
             }
         }
@@ -1140,21 +1160,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override void VisitExit(BoundExitEx x)
         {
             VisitRoutineCall(x);
-            PostProcessRoutineCall(x, null);
+            BindTargetMethod(x);
         }
 
         public override void VisitEcho(BoundEcho x)
         {
             VisitRoutineCall(x);
             x.TypeRefMask = 0;
-            PostProcessRoutineCall(x, null);
+            BindTargetMethod(x);
         }
 
         public override void VisitConcat(BoundConcatEx x)
         {
             VisitRoutineCall(x);
             x.TypeRefMask = TypeCtx.GetWritableStringTypeMask();
-            PostProcessRoutineCall(x, null);
+            BindTargetMethod(x);
         }
 
         public override void VisitAssert(BoundAssertEx x)
@@ -1195,7 +1215,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 AnalysisFacts.HandleFunctionCall(x, this, branch);
             }
 
-            PostProcessRoutineCall(x, x.TargetMethod);
+            BindTargetMethod(x);
         }
 
         public override void VisitInstanceFunctionCall(BoundInstanceFunctionCall x)
@@ -1233,7 +1253,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
             }
 
-            PostProcessRoutineCall(x, x.TargetMethod);
+            BindTargetMethod(x, maybeOverload: true);
         }
 
         public override void VisitStaticFunctionCall(BoundStaticFunctionCall x)
@@ -1253,7 +1273,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, this.TypeCtx.ContainingType);
             }
 
-            PostProcessRoutineCall(x, x.TargetMethod);
+            BindTargetMethod(x);
         }
 
         public override void VisitTypeRef(BoundTypeRef tref)
@@ -1390,7 +1410,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             //
-            PostProcessRoutineCall(x, null);
+            BindTargetMethod(x);
         }
 
         public override void VisitArgument(BoundArgument x)

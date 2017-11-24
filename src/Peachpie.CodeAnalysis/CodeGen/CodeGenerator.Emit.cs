@@ -2853,7 +2853,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(method);
             Debug.Assert(code == ILOpCode.Call || code == ILOpCode.Calli || code == ILOpCode.Callvirt || code == ILOpCode.Newobj);
-            Debug.Assert(!method.IsErrorMethod());
+            Debug.Assert(!method.IsErrorMethodOrNull());
 
             var stack = method.GetCallStackBehavior();
 

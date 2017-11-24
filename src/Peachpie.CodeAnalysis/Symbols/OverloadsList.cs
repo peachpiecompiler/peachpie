@@ -29,7 +29,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return new MissingMethodSymbol();
             }
 
-            if (_methods.Count == 1 && _methods[0].IsErrorMethod())
+            if (_methods.Count == 1 && _methods[0].IsErrorMethodOrNull())
             {
                 return _methods[0];
             }
@@ -104,7 +104,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             for (int i = methods.Count - 1; i >= 0; i--)
             {
-                if (methods[i].IsErrorMethod() && !methods[i].IsAccessible(classCtx) || methods[i].IsFieldsOnlyConstructor())
+                if (methods[i].IsErrorMethodOrNull() && !methods[i].IsAccessible(classCtx) || methods[i].IsFieldsOnlyConstructor())
                 {
                     methods.RemoveAt(i);
                 }

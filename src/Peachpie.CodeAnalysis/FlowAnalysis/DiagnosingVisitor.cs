@@ -220,7 +220,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         private void CheckUndefinedFunctionCall(BoundGlobalFunctionCall x)
         {
-            if (x.Name.IsDirect && x.TargetMethod.IsErrorMethod())
+            if (x.Name.IsDirect && x.TargetMethod.IsErrorMethodOrNull())
             {
                 var errmethod = (ErrorMethodSymbol)x.TargetMethod;
                 if (errmethod != null && errmethod.ErrorKind == ErrorMethodKind.Missing)
@@ -232,7 +232,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         private void CheckUndefinedMethodCall(BoundRoutineCall x, TypeSymbol type, BoundRoutineName name)
         {
-            if (name.IsDirect && x.TargetMethod.IsErrorMethod() && type != null && !type.IsErrorType())
+            if (name.IsDirect && x.TargetMethod.IsErrorMethodOrNull() && type != null && !type.IsErrorType())
             {
                 _diagnostics.Add(_routine, ((FunctionCall)x.PhpSyntax).NameSpan.ToTextSpan(), ErrorCode.WRN_UndefinedMethodCall, name.NameValue.ToString(), type.Name);
             }

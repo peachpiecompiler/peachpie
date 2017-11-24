@@ -587,7 +587,7 @@ namespace Pchp.CodeAnalysis
 
                 // "Function"
                 var func = this.SourceSymbolCollection.GetFunction(NameUtils.MakeQualifiedName(maintype, true));
-                if (!func.IsErrorMethod())
+                if (!func.IsErrorMethodOrNull())
                     return func;
 
                 // Method
