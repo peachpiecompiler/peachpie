@@ -232,7 +232,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return false;
         }
 
-        public SourceFileSymbol GetFile(string fname) => _files.TryGetOrDefault(fname);
+        public SourceFileSymbol GetFile(string fname) => fname != null ? _files.TryGetOrDefault(fname) : null;
 
         /// <summary>
         /// Gets compilation syntax trees.
