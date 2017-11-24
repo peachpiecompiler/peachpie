@@ -7,6 +7,7 @@ using System.Composition;
 using System.Composition.Hosting;
 using System.Linq;
 using System.Reflection;
+using System.Diagnostics;
 
 namespace Pchp.Core
 {
@@ -62,6 +63,23 @@ namespace Pchp.Core
         // TODO: local (instance) services
 
         /// <summary>
+        /// Workaround for https://github.com/peachpiecompiler/peachpie/issues/108
+        /// In Microsoft.Extensions.DependencyInjection 2.0 signature of <see cref="ServiceCollectionContainerBuilderExtensions.BuildServiceProvider(IServiceCollection)"/> has been changed slightly causing <see cref="MissingMethodException"/>.
+        /// Lets bind it dynamically.
+        /// </summary>
+        static IServiceProvider BuildServiceProvider(IServiceCollection services)
+        {
+            // Template: return ServiceCollectionContainerBuilderExtensions.BuildServiceProvider(services);
+
+            var t = typeof(ServiceCollectionContainerBuilderExtensions).GetTypeInfo();
+            var BuildServiceProviderMethod = t.GetMethod(nameof(BuildServiceProvider), new Type[] { typeof(IServiceCollection) });
+            Debug.Assert(BuildServiceProviderMethod != null);
+
+            //
+            return (IServiceProvider)BuildServiceProviderMethod.Invoke(null, new[] { services });
+        }
+
+        /// <summary>
         /// Gets service provider of global services.
         /// </summary>
         public static IServiceProvider GlobalServices
@@ -74,7 +92,7 @@ namespace Pchp.Core
                     {
                         if (_globalServices == null)
                         {
-                            _globalServices = ConfigureServices().BuildServiceProvider();
+                            _globalServices = BuildServiceProvider(ConfigureServices());
                         }
                     }
                 }
