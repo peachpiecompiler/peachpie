@@ -959,41 +959,42 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             Accept(x.VarReference);
 
-            if (branch != ConditionBranch.AnyResult)
+            // try to get resulting value and type of the variable
+            var localname = AsVariableName(x.VarReference);
+            if (localname.IsValid())
             {
-                // try to get resulting value and type of the variable
-                var localname = AsVariableName(x.VarReference);
-                if (localname.IsValid())
+                var handle = State.GetLocalHandle(localname);
+                Debug.Assert(handle.IsValid);
+
+                // Remove any constant value of isset()
+                x.ConstantValue = default(Optional<object>);
+
+                //
+                if (State.IsLocalSet(handle))
                 {
-                    var handle = State.GetLocalHandle(localname);
-                    Debug.Assert(handle.IsValid);
+                    // If the variable is always defined, isset() behaves like !is_null()
+                    var currenttype = State.GetLocalType(handle);
 
-                    // Remove any constant value of isset()
-                    x.ConstantValue = default(Optional<object>);
+                    // a type in the true branch:
+                    var positivetype = TypeCtx.WithoutNull(currenttype);
 
-                    //
-                    if (State.IsLocalSet(handle))
+                    // resolve the constant if possible,
+                    // does not depend on the branch
+                    if (!currenttype.IsRef)
                     {
-                        // If the variable is always defined, isset() behaves like !is_null()
-                        var currenttype = State.GetLocalType(handle);
-
-                        // a type in the true branch:
-                        var positivetype = TypeCtx.WithoutNull(currenttype);
-
-                        // resolve the constant if possible,
-                        // does not depend on the branch
-                        if (!currenttype.IsRef)
+                        if (positivetype.IsVoid)    // always false
                         {
-                            if (positivetype.IsVoid)    // always false
-                            {
-                                x.ConstantValue = ConstantValueExtensions.AsOptional(false);
-                            }
-                            else if (positivetype == currenttype && !currenttype.IsAnyType)   // not void nor null
-                            {
-                                x.ConstantValue = ConstantValueExtensions.AsOptional(true);
-                            }
+                            x.ConstantValue = ConstantValueExtensions.AsOptional(false);
                         }
+                        else if (positivetype == currenttype && !currenttype.IsAnyType)   // not void nor null
+                        {
+                            x.ConstantValue = ConstantValueExtensions.AsOptional(true);
+                        }
+                    }
 
+                    // we can be more specific in true/false branches:
+                    if (branch != ConditionBranch.AnyResult)
+                    {
                         // update target type in true/false branch:
                         var newtype = (branch == ConditionBranch.ToTrue)
                             ? positivetype
@@ -1006,15 +1007,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         State.SetLocalType(handle, newtype);
                     }
                 }
+                else
+                {
+                    // variable is not set for sure
+                    // isset : false
+                    x.ConstantValue = ConstantValueExtensions.AsOptional(false);
+                }
 
-                // In the positive branch, the variable will be initialized for sure
+                // mark variable as either initialized or uninintialized in respective branches
                 if (branch == ConditionBranch.ToTrue)
                 {
-                    var varname = AsVariableName(TryGetExpressionChainRoot(x.VarReference) as BoundReferenceExpression);    // in case of a chained expression, we know its root will be initialized
-                    if (varname.IsValid())
-                    {
-                        State.SetVarInitialized(State.GetLocalHandle(varname));
-                    }
+                    State.SetVarInitialized(handle);
                 }
             }
 
@@ -1408,6 +1411,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 x.TypeRefMask = 0;
             }
+
+            // reset type analysis (include may change local variables)
+            State.SetAllUnknown(true);
 
             //
             BindTargetMethod(x);

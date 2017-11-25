@@ -8,7 +8,7 @@ function bar($foo) {
     if ($foo > 0) {
         $maybeUndefined = 0;
     }
-    echo $maybeUndefined/*!PHP3007!*/;
+    echo $maybeUndefined/* non strict PHP3007 */;
 
     echo $alwaysDefined;
 }

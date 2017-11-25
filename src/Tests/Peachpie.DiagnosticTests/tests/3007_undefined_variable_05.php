@@ -13,11 +13,11 @@ function bar($arg) {
     unset($foo);
   }
 
-  echo $foo/*!PHP3007!*/;
+  echo $foo/* non strict PHP3007 */;
 
   $foo = 24;
   for ($i = 0; $i < 10; $i++) {
-    echo $foo/*!PHP3007!*/;
+    echo $foo/* non strict PHP3007 */;
 
     unset($foo);
 

@@ -61,8 +61,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             Debug.Assert(state1.FlowContext == state2.FlowContext);
 
             //
-            _varsType = EnumeratorExtension.MixArrays(state1._varsType, state2._varsType, TypeRefMask.Or);
             _flowCtx = state1._flowCtx;
+            _varsType = EnumeratorExtension.MixArrays(state1._varsType, state2._varsType, TypeRefMask.Or, TypeRefContext.GetNullTypeMask);
             _initializedMask = state1._initializedMask | state2._initializedMask;
 
             // intersection of other variable flags
@@ -270,7 +270,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         }
 
         /// <summary>
-        /// Gets value indicating the variable is set in all code paths.
+        /// Gets value indicating the variable may be set in some code paths.
         /// Gets also <c>true</c> if we don't known.
         /// </summary>
         public bool IsLocalSet(VariableHandle handle)
