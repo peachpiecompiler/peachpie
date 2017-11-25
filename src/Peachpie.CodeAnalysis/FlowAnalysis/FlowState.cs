@@ -40,6 +40,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Mask of initialized variables in this state.
         /// </summary>
+        /// <remarks>
+        /// Single bits indicates the corresponding variable was set.
+        /// <c>0</c> determines the variable was not set in any code path.
+        /// <c>1</c> determines the variable may be set.
+        /// </remarks>
         ulong _initializedMask;
 
         #endregion
@@ -58,7 +63,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             //
             _varsType = EnumeratorExtension.MixArrays(state1._varsType, state2._varsType, TypeRefMask.Or);
             _flowCtx = state1._flowCtx;
-            _initializedMask = state1._initializedMask & state2._initializedMask;
+            _initializedMask = state1._initializedMask | state2._initializedMask;
 
             // intersection of other variable flags
             if (state1._notes != null && state2._notes != null)
