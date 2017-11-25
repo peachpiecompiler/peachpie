@@ -400,6 +400,11 @@ namespace Pchp.Core.Reflection
         }
 
         /// <summary>
+        /// Gets <see cref="PhpTypeInfo"/> of given <paramref name="typeInfo"/>.
+        /// </summary>
+        public static PhpTypeInfo GetPhpTypeInfo(this TypeInfo typeInfo) => typeInfo.AsType().GetPhpTypeInfo();
+
+        /// <summary>
         /// Gets <see cref="PhpTypeInfo"/> of given object.
         /// </summary>
         public static PhpTypeInfo GetPhpTypeInfo(this object obj) => obj.GetType().GetPhpTypeInfo();
