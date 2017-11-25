@@ -977,6 +977,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Gets source element index and delegate that emits the LOAD of source element.</param>
         public void EmitEnumerateArray(IPlace arrplace, int startindex, Action<LocalDefinition, Func<TypeSymbol>> bodyemit)
         {
+            Debug.Assert(arrplace.TypeOpt.IsSZArray());
+
             var arr_element = ((ArrayTypeSymbol)arrplace.TypeOpt).ElementType;
 
             // Template: for (i = 0; i < params.Length; i++) <phparr>.Add(arrplace[i])

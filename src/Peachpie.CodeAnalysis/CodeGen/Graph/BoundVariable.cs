@@ -80,7 +80,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             if (_place == null)
-            {                
+            {
                 // unoptimized locals
                 return new BoundIndirectVariablePlace(new BoundLiteral(this.Name), access);
             }
@@ -208,29 +208,27 @@ namespace Pchp.CodeAnalysis.Semantics
                         _lazyLocal = new BoundLocal(new SynthesizedLocalSymbol(routine, srcparam.Name, clrtype));
                         _lazyLocal.EmitInit(cg);
                         var localplace = _lazyLocal.Place(cg.Builder);
+                        TypeSymbol srctype;
 
                         localplace.EmitStorePrepare(cg.Builder);
 
                         if (_symbol.IsParams)
                         {
                             Debug.Assert(_symbol.Type.IsSZArray());
-                            Debug.Assert(clrtype == cg.CoreTypes.PhpArray || clrtype == cg.CoreTypes.PhpValue);
 
                             // <local> = new PhpArray(){ ... }
                             cg.ArrayToPhpArray(srcplace, true);
 
-                            // The params array may have degenerated to PhpValue if another type is assigned to it later
-                            if (clrtype == cg.CoreTypes.PhpValue)
-                            {
-                                // <local> = PhpValue.Create(...)
-                                cg.EmitConvertToPhpValue(cg.CoreTypes.PhpArray, 0);
-                            }
+                            srctype = cg.CoreTypes.PhpArray;
                         }
                         else
                         {
-                            // <local> = <param>
-                            cg.EmitConvert(srcplace.EmitLoad(cg.Builder), 0, clrtype);
+                            srctype = srcplace.EmitLoad(cg.Builder);
                         }
+
+                        // <local> = <param>
+                        cg.EmitConvert(srctype, 0, clrtype);
+
                         localplace.EmitStore(cg.Builder);
                     }
                 }
