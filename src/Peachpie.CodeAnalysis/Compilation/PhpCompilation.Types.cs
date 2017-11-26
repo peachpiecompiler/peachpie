@@ -186,6 +186,7 @@ namespace Pchp.CodeAnalysis
                         case AST.PrimitiveTypeRef.PrimitiveType.callable: return CoreTypes.PhpValue; // array|string|object
                         case AST.PrimitiveTypeRef.PrimitiveType.@void: return CoreTypes.Void;
                         case AST.PrimitiveTypeRef.PrimitiveType.iterable: return CoreTypes.PhpValue;   // array|Traversable
+                        case AST.PrimitiveTypeRef.PrimitiveType.@object: return CoreTypes.Object;   // Object
                         default: throw new ArgumentException();
                     }
                 }

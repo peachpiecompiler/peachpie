@@ -9,6 +9,7 @@ using Pchp.CodeAnalysis.FlowAnalysis;
 using System.Diagnostics;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
+using Devsense.PHP.Text;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -26,7 +27,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _file = file;
         }
 
-        internal override Signature SyntaxSignature => new Signature(false, Array.Empty<FormalParam>());
+        internal override Signature SyntaxSignature => new Signature(false, Array.Empty<FormalParam>(), Span.Invalid);
 
         internal override TypeRef SyntaxReturnType => null;
 

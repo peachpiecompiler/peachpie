@@ -326,6 +326,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         case AST.PrimitiveTypeRef.PrimitiveType.callable: return GetCallableTypeMask();
                         case AST.PrimitiveTypeRef.PrimitiveType.@void: return 0;
                         case AST.PrimitiveTypeRef.PrimitiveType.iterable: return GetArrayTypeMask() | GetTypeMask(NameUtils.SpecialNames.Traversable, true);   // array | Traversable
+                        case AST.PrimitiveTypeRef.PrimitiveType.@object: return GetSystemObjectTypeMask();
                         default: throw new ArgumentException();
                     }
                 }

@@ -85,10 +85,10 @@ namespace Peachpie.CodeAnalysis.Syntax
             return tref;
         }
 
-        public override LangElement Lambda(Span span, Span headingSpan, bool isStatic, bool aliasReturn, TypeRef returnType, IEnumerable<FormalParam> formalParams, Span formalParamsSpan, IEnumerable<FormalParam> lexicalVars, LangElement body)
+        public override LangElement Lambda(Span span, Span headingSpan, bool aliasReturn, PhpMemberAttributes modifiers, TypeRef returnType, IEnumerable<FormalParam> formalParams, Span formalParamsSpan, IEnumerable<FormalParam> lexicalVars, LangElement body)
         {
             return AddAndReturn(ref _lambdas,
-                (LambdaFunctionExpr)base.Lambda(span, headingSpan, isStatic, aliasReturn, returnType, formalParams, formalParamsSpan, lexicalVars, body));
+                (LambdaFunctionExpr)base.Lambda(span, headingSpan, aliasReturn, modifiers, returnType, formalParams, formalParamsSpan, lexicalVars, body));
         }
 
         public override LangElement Yield(Span span, LangElement keyOpt, LangElement valueOpt)
@@ -101,11 +101,9 @@ namespace Peachpie.CodeAnalysis.Syntax
             return AddAndReturn(ref _yieldNodes, base.YieldFrom(span, fromExpr));
         }
 
-        public override LangElement ParenthesisExpression(Span span, LangElement expression)
-        {
-            // ignore parenthesis
-            return expression;
-        }
+        public override LangElement EncapsedExpression(Span span, LangElement expression, Tokens openDelimiter) => expression;
+
+        public override LangElement StringEncapsedExpression(Span span, LangElement expression, Tokens openDelimiter, string label) => expression;
 
         public NodesFactory(SourceUnit sourceUnit) : base(sourceUnit)
         {

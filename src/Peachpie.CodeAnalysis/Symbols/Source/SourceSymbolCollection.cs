@@ -208,7 +208,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 var containingtype = l.ContainingType;
                 var container = (containingtype != null) ? (NamedTypeSymbol)containingtype.GetProperty<SourceTypeSymbol>() : fsymbol;                
 
-                var lambdasymbol = new SourceLambdaSymbol(l, container, !l.IsStatic);
+                var lambdasymbol = new SourceLambdaSymbol(l, container, !l.Modifiers.IsStatic());
                 Debug.Assert(container is ILambdaContainerSymbol);
                 ((ILambdaContainerSymbol)container).AddLambda(lambdasymbol);
             }

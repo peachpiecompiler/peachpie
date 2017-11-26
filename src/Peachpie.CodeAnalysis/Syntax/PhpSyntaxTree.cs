@@ -52,6 +52,12 @@ namespace Pchp.CodeAnalysis
             _source = source;
         }
 
+        static LanguageFeatures DefaultLanguageVersion(ref Version languageVersion)
+        {
+            languageVersion = new Version(7, 2);
+            return LanguageFeatures.Php72Set;
+        }
+
         internal static LanguageFeatures ParseLanguageVersion(ref Version languageVersion)
         {
             if (languageVersion != null)
@@ -71,6 +77,7 @@ namespace Pchp.CodeAnalysis
                     {
                         case 0: return LanguageFeatures.Php70Set;
                         case 1: return LanguageFeatures.Php71Set;
+                        case 2: return LanguageFeatures.Php72Set;
                     }
                 }
 
@@ -79,8 +86,7 @@ namespace Pchp.CodeAnalysis
             else
             {
                 // latest
-                languageVersion = new Version(7, 1);
-                return LanguageFeatures.Basic;
+                return DefaultLanguageVersion(ref languageVersion);
             }
         }
 

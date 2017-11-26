@@ -371,7 +371,6 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (expr is AST.ArrayEx) return BindArrayEx((AST.ArrayEx)expr, access);
                 if (expr is AST.ItemUse) return BindItemUse((AST.ItemUse)expr, access);
                 if (expr is AST.StaticFieldUse) return BindFieldUse((AST.StaticFieldUse)expr, access);
-                if (expr is AST.ListEx) return BindListEx((AST.ListEx)expr).WithAccess(access);
             }
             if (expr is AST.BinaryEx) return BindBinaryEx((AST.BinaryEx)expr).WithAccess(access);
             if (expr is AST.AssignEx) return BindAssignEx((AST.AssignEx)expr, access);
@@ -640,17 +639,33 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindArrayEx(AST.ArrayEx x, BoundAccess access)
         {
-            Debug.Assert(access.IsRead);
-
-            if (access.IsReadRef)
+            if (x.Operation == AST.Operations.Array)
             {
-                // TODO: warninng deprecated
-                // _diagnostics. ...
-            }
+                Debug.Assert(access.IsRead);
 
-            return new BoundArrayEx(BindArrayItems(x.Items, BoundAccess.Read.WithReadCopy()))
-                .WithSyntax(x)
-                .WithAccess(access);
+                if (access.IsReadRef)
+                {
+                    // TODO: warninng deprecated
+                    // _diagnostics. ...
+                }
+
+                return new BoundArrayEx(BindArrayItems(x.Items, BoundAccess.Read.WithReadCopy()))
+                    .WithAccess(access);
+            }
+            else if (x.Operation == AST.Operations.List)
+            {
+                Debug.Assert(access.IsWrite);
+
+                var items = BindArrayItems(x.Items, BoundAccess.Write)
+                    .Select(pair => new KeyValuePair<BoundExpression, BoundReferenceExpression>(pair.Key, (BoundReferenceExpression)pair.Value));
+
+                return new BoundListEx(items.ToArray())
+                    .WithAccess(BoundAccess.Write);
+            }
+            else
+            {
+                throw ExceptionUtilities.UnexpectedValue(x.Operation);
+            }
         }
 
         protected IEnumerable<KeyValuePair<BoundExpression, BoundExpression>> BindArrayItems(AST.Item[] items, BoundAccess valueaccess)
@@ -879,14 +894,6 @@ namespace Pchp.CodeAnalysis.Semantics
                     return new BoundCompoundAssignEx(target, value, expr.Operation).WithAccess(access);
                 }
             }
-        }
-
-        protected BoundExpression BindListEx(AST.ListEx expr)
-        {
-            var items = BindArrayItems(expr.Items, BoundAccess.Write)
-                .Select(pair => new KeyValuePair<BoundExpression, BoundReferenceExpression>(pair.Key, (BoundReferenceExpression)pair.Value));
-
-            return new BoundListEx(items.ToArray()).WithAccess(BoundAccess.Write);
         }
 
         public BoundStatement BindEmptyStmt(Span span)
