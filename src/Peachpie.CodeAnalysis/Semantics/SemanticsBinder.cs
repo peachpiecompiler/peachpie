@@ -670,10 +670,19 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected IEnumerable<KeyValuePair<BoundExpression, BoundExpression>> BindArrayItems(AST.Item[] items, BoundAccess valueaccess)
         {
-            foreach (var x in items)
+            // trim trailing empty items
+            int count = items.Length;
+            while (count > 0 && items[count - 1] == null)
             {
+                count--;
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                var x = items[i];
                 if (x == null)
                 {
+                    // list() may contain empty items
                     yield return new KeyValuePair<BoundExpression, BoundExpression>();
                 }
                 else
