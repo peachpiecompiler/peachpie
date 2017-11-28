@@ -79,7 +79,7 @@ We can use all the help we can get. You can contribute to our repository, spread
 However, please read the [Contribution Guidelines](https://github.com/peachpiecompiler/peachpie/blob/master/CONTRIBUTING.md) first and ensure you are following them. Also, we kindly ask you to respect our [Code of Conduct](https://github.com/peachpiecompiler/peachpie/blob/master/CODE_OF_CONDUCT.md) when posting or interacting with other users. 
 
 ## Providing feedback
-If you found a bug, the easiest way of providing feedback is to post it on [Gitter](https://gitter.im/iolevel/peachpie). We will enable the posting of issues on GitHub once the compiler will be in version 1.0.
+If you found a bug, have a question or if you have an improvement suggestion, the easiest way of providing feedback is to post it on [Gitter](https://gitter.im/iolevel/peachpie) or submit an issue here on GitHub. We try to respond as quickly as possible.
 
 
 ## .NET Foundation
