@@ -158,13 +158,13 @@ namespace Pchp.CodeAnalysis.Semantics
 
         static TypeSymbol EmitLoadSelf(CodeGenerator cg)
         {
-            cg.EmitCallerRuntimeTypeHandle();
+            cg.EmitCallerTypeHandle();
             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetSelf_RuntimeTypeHandle);
         }
 
         static TypeSymbol EmitLoadParent(CodeGenerator cg)
         {
-            cg.EmitCallerRuntimeTypeHandle();
+            cg.EmitCallerTypeHandle();
             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetParent_RuntimeTypeHandle);
         }
 

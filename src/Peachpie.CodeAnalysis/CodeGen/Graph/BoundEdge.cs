@@ -495,7 +495,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
                 // enumeree.GetForeachEnumerator(bool aliasedValues, RuntimeTypeHandle caller)
                 cg.Builder.EmitBoolConstant(_aliasedValues);
-                cg.EmitCallerRuntimeTypeHandle();
+                cg.EmitCallerTypeHandle();
                 enumeratorType = cg.EmitCall(ILOpCode.Callvirt, GetForeachEnumerator_Bool_RuntimeTypeHandle);
             }
             else if (enumereeType.IsOfType(cg.CoreTypes.Iterator))
@@ -512,7 +512,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             {
                 cg.EmitConvertToPhpValue(enumereeType, 0);
                 cg.Builder.EmitBoolConstant(_aliasedValues);
-                cg.EmitCallerRuntimeTypeHandle();
+                cg.EmitCallerTypeHandle();
 
                 // Operators.GetForeachEnumerator(PhpValue, bool, RuntimeTypeHandle)
                 enumeratorType = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle);

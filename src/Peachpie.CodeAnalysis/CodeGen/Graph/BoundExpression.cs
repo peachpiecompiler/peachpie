@@ -2357,6 +2357,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #region Emit CallSite
 
+        protected virtual bool CallsiteRequiresCallerContext => false;
         protected virtual string CallsiteName => null;
         protected virtual BoundExpression RoutineNameExpr => null;
         protected virtual BoundTypeRef RoutineTypeRef => null;
@@ -2393,11 +2394,16 @@ namespace Pchp.CodeAnalysis.Semantics
             // (callsite, ctx, [target], [name], ...)
             callsite.EmitLoadCallsite();                // callsite
             callsite.EmitTargetInstance(EmitTarget);    // [target]
-            callsite.EmitTargetTypeParam(RoutineTypeRef);// [target_type]
-            callsite.EmitNameParam(RoutineNameExpr);    // [name]
-            callsite.EmitLoadContext();                 // ctx
+            callsite.EmitTargetTypeParam(RoutineTypeRef);// [target_type] : PhpTypeInfo
+            callsite.EmitNameParam(RoutineNameExpr);    // [name] : string
+            callsite.EmitLoadContext();                 // ctx : Context
 
-            _arguments.ForEach(callsite.EmitArg);
+            if (CallsiteRequiresCallerContext)
+            {
+                callsite.EmitCallerTypeParam();         // [class_ctx] : RuntimeTypeHandle
+            }
+
+            callsite.EmitArgs(_arguments);              // ...
 
             // RETURN TYPE:
             var return_type = this.Access.IsRead
@@ -2468,6 +2474,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundInstanceFunctionCall
     {
+        protected override bool CallsiteRequiresCallerContext => true;
         protected override string CallsiteName => _name.IsDirect ? _name.NameValue.ToString() : null;
         protected override BoundExpression RoutineNameExpr => _name.NameExpression;
 
@@ -2483,6 +2490,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundStaticFunctionCall
     {
+        protected override bool CallsiteRequiresCallerContext => true;
         protected override string CallsiteName => _name.IsDirect ? _name.NameValue.ToString() : null;
         protected override BoundExpression RoutineNameExpr => _name.NameExpression;
         protected override BoundTypeRef RoutineTypeRef => _typeRef.ResolvedType.IsErrorTypeOrNull() ? _typeRef : null;    // in case the type has to be resolved in runtime and passed to callsite
@@ -2572,7 +2580,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         .Construct(_typeref.ResolvedType);
 
                     cg.EmitLoadContext();                       // Context
-                    cg.EmitCallerRuntimeTypeHandle();           // RuntimeTypeHandle
+                    cg.EmitCallerTypeHandle();           // RuntimeTypeHandle
                     cg.Emit_ArgumentsIntoArray(_arguments, default(PhpSignatureMask));  // PhpValue[]
 
                     return cg.EmitCall(ILOpCode.Call, create_t);
@@ -2589,7 +2597,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         .Single();
 
                     cg.EmitLoadContext();                       // Context
-                    cg.EmitCallerRuntimeTypeHandle();           // RuntimeTypeHandle
+                    cg.EmitCallerTypeHandle();           // RuntimeTypeHandle
                     _typeref.EmitLoadTypeInfo(cg, true);        // PhpTypeInfo
                     cg.Emit_ArgumentsIntoArray(_arguments, default(PhpSignatureMask));  // PhpValue[]
 
@@ -2747,7 +2755,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 cg.EmitConvert(_arguments[0].Value, cg.CoreTypes.String);
                 cg.LocalsPlaceOpt.EmitLoad(cg.Builder); // scope of local variables, corresponds to $GLOBALS in global scope.
                 cg.EmitThisOrNull();    // $this
-                cg.EmitCallerRuntimeTypeHandle();    // self : RuntimeTypeHandle
+                cg.EmitCallerTypeHandle();    // self : RuntimeTypeHandle
                 cg.Builder.EmitBoolConstant(IsOnceSemantic);
                 cg.Builder.EmitBoolConstant(IsRequireSemantic);
                 return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.Include_string_string_PhpArray_object_RuntimeTypeHandle_bool_bool);
@@ -2873,7 +2881,7 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.EmitLoadContext();
             cg.LocalsPlaceOpt.EmitLoad(cg.Builder);
             cg.EmitThisOrNull();
-            cg.EmitCallerRuntimeTypeHandle();           // self : RuntimeTypeHandle
+            cg.EmitCallerTypeHandle();           // self : RuntimeTypeHandle
             cg.EmitConvert(this.CodeExpression, cg.CoreTypes.String);   // (string)code
             cg.Builder.EmitStringConstant(filepath);    // currentpath
             cg.Builder.EmitIntConstant(line);           // line

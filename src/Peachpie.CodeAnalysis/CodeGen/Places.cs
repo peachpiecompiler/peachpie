@@ -1906,7 +1906,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 // [GetFieldBinder|GetClassConstBinder](field_name, context, return, flags)
                 cctor.Builder.EmitStringConstant(this.NameValueOpt);
-                cctor.EmitCallerRuntimeTypeHandle();
+                cctor.EmitCallerTypeHandle();
                 cctor.EmitLoadToken(return_type, null);
                 cctor.Builder.EmitIntConstant((int)Access.Flags);
                 cctor.EmitCall(ILOpCode.Call, _boundref.IsClassConstant
@@ -1964,7 +1964,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _lazyStoreCallSite.Construct(functype, cctor =>
             {
                 cctor.Builder.EmitStringConstant(this.NameValueOpt);
-                cctor.EmitCallerRuntimeTypeHandle();
+                cctor.EmitCallerTypeHandle();
                 cctor.Builder.EmitIntConstant((int)Access.Flags);   // flags
                 cctor.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.SetFieldBinder);
             });

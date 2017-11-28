@@ -130,6 +130,15 @@ namespace Pchp.CodeAnalysis.CodeGen
                 return t;
             }
 
+            /// <summary>Emits arguments to be passed to callsite.</summary>
+            public void EmitArgs(ImmutableArray<BoundArgument> args)
+            {
+                for (int i = 0; i < args.Length; i++)
+                {
+                    EmitArg(args[i]);
+                }
+            }
+
             /// <summary>Emits argument to be passed to callsite.</summary>
             public void EmitArg(BoundArgument a)
             {
@@ -161,9 +170,21 @@ namespace Pchp.CodeAnalysis.CodeGen
             public void EmitLoadContext()
                 => AddArg(_cg.EmitLoadContext());
 
-            /// <summary>Template: new CallerTypeParam(RuntimeTypeHandle)</summary>
+            /// <summary>
+            /// If needed in runtime, emits caller type context.
+            /// Template: new CallerTypeParam(RuntimeTypeHandle)</summary>
             public TypeSymbol EmitCallerTypeParam()
-                => EmitWrapParam(_cg.CoreTypes.Dynamic_CallerTypeParam, _cg.EmitCallerRuntimeTypeHandle());
+            {
+                var runtimectx = _cg.RuntimeCallerTypePlace;
+                if (runtimectx != null)
+                {
+                    return EmitWrapParam(_cg.CoreTypes.Dynamic_CallerTypeParam, runtimectx.EmitLoad(_cg.Builder));
+                }
+                else
+                {
+                    return null;
+                }
+            }
 
             /// <summary>Template: new TargetTypeParam(PhpTypeInfo)</summary>
             public TypeSymbol EmitTargetTypeParam(BoundTypeRef tref)
