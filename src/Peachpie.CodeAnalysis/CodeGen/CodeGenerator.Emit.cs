@@ -43,7 +43,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits <c>RuntimeTypeHandle</c> of current class context.
         /// </summary>
-        public void EmitCallerRuntimeTypeHandle()
+        public TypeSymbol EmitCallerRuntimeTypeHandle()
         {
             var caller = this.CallerType;
             if (caller != null)
@@ -61,6 +61,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // default(RuntimeTypeHandle)
                 EmitLoadDefaultOfValueType(this.CoreTypes.RuntimeTypeHandle);
             }
+
+            //
+            return CoreTypes.RuntimeTypeHandle;
         }
 
         /// <summary>

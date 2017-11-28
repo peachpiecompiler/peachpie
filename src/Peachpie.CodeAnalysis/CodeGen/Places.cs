@@ -1698,8 +1698,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 _lazyLoadCallSite = cg.Factory.StartCallSite("get_" + this.NameValueOpt);
 
             // callsite.Target callsite
-            _lazyLoadCallSite.EmitLoadTarget(cg.Builder);
-            _lazyLoadCallSite.Place.EmitLoad(cg.Builder);
+            _lazyLoadCallSite.EmitLoadTarget();
+            _lazyLoadCallSite.EmitLoadCallsite();
 
             // instance
             InstanceCacheHolder.EmitInstance(instanceOpt, cg, Instance);
@@ -1762,8 +1762,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 _lazyStoreCallSite = cg.Factory.StartCallSite("set_" + this.NameValueOpt);
 
             // callsite.Target callsite
-            _lazyStoreCallSite.EmitLoadTarget(cg.Builder);
-            _lazyStoreCallSite.Place.EmitLoad(cg.Builder);
+            _lazyStoreCallSite.EmitLoadTarget();
+            _lazyStoreCallSite.EmitLoadCallsite();
 
             // instance
             InstanceCacheHolder.EmitInstance(instanceOpt, cg, Instance);
@@ -1859,8 +1859,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 _lazyLoadCallSite = cg.Factory.StartCallSite("get_" + this.NameValueOpt);
 
             // callsite.Target callsite
-            _lazyLoadCallSite.EmitLoadTarget(cg.Builder);
-            _lazyLoadCallSite.Place.EmitLoad(cg.Builder);
+            _lazyLoadCallSite.EmitLoadTarget();
+            _lazyLoadCallSite.EmitLoadCallsite();
 
             // LOAD PhpTypeInfo
             _type.EmitLoadTypeInfo(cg, true);
@@ -1924,8 +1924,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 _lazyStoreCallSite = cg.Factory.StartCallSite("set_" + this.NameValueOpt);
 
             // callsite.Target callsite
-            _lazyStoreCallSite.EmitLoadTarget(cg.Builder);
-            _lazyStoreCallSite.Place.EmitLoad(cg.Builder);
+            _lazyStoreCallSite.EmitLoadTarget();
+            _lazyStoreCallSite.EmitLoadCallsite();
 
             _type.EmitLoadTypeInfo(cg, true);
         }

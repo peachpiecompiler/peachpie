@@ -2350,13 +2350,16 @@ namespace Pchp.CodeAnalysis.Semantics
             return (this.ResultType = cg.EmitMethodAccess(stacktype, method, Access));
         }
 
-        protected virtual string CallsiteName => null;
-        protected virtual BoundExpression RoutineNameExpr => null;
-        protected virtual BoundTypeRef RoutineTypeRef => null;
+        protected virtual bool IsVirtualCall => true;
 
         /// <summary>Type reference to the static type. The containing type of called routine, e.g. <c>THE_TYPE::foo()</c>. Used for direct method call requiring late static type..</summary>
         protected virtual BoundTypeRef LateStaticTypeRef => null;
-        protected virtual bool IsVirtualCall => true;
+
+        #region Emit CallSite
+
+        protected virtual string CallsiteName => null;
+        protected virtual BoundExpression RoutineNameExpr => null;
+        protected virtual BoundTypeRef RoutineTypeRef => null;
 
         /// <summary>
         /// Optional. Emits instance on which the method is invoked.
@@ -2368,16 +2371,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if (Instance != null)
             {
-                cg.Emit(Instance);
-
-                if (Instance.ResultType.SpecialType == SpecialType.System_Void)
-                {
-                    // void: invalid code, should be reported in DiagnosingVisitor
-                    cg.Builder.EmitNullConstant();
-                    return cg.CoreTypes.Object;
-                }
-
-                return Instance.ResultType;
+                return cg.Emit(Instance);
             }
             else
             {
@@ -2390,43 +2384,20 @@ namespace Pchp.CodeAnalysis.Semantics
             // callsite
 
             var callsite = cg.Factory.StartCallSite("call_" + this.CallsiteName);
-            var callsiteargs = new List<TypeSymbol>(_arguments.Length);
 
             // LOAD callsite.Target
-            callsite.EmitLoadTarget(cg.Builder);
+            callsite.EmitLoadTarget();
 
             // LOAD callsite arguments
 
-            // (callsite, [target], ctx, [name], ...)
-            callsite.Place.EmitLoad(cg.Builder);
+            // (callsite, ctx, [target], [name], ...)
+            callsite.EmitLoadCallsite();                // callsite
+            callsite.EmitTargetInstance(EmitTarget);    // [target]
+            callsite.EmitTargetTypeParam(RoutineTypeRef);// [target_type]
+            callsite.EmitNameParam(RoutineNameExpr);    // [name]
+            callsite.EmitLoadContext();                 // ctx
 
-            callsiteargs.Add(cg.EmitLoadContext());     // ctx
-
-            var target = EmitTarget(cg);
-            if (target != null)
-            {
-                callsiteargs.Add(target);   // instance
-            }
-
-            if (RoutineTypeRef != null)
-            {
-                callsiteargs.Add(RoutineTypeRef.EmitLoadTypeInfo(cg, true));   // PhpTypeInfo
-            }
-
-            if (RoutineNameExpr != null)
-            {
-                callsiteargs.Add(cg.Emit(RoutineNameExpr));   // name
-            }
-
-            foreach (var a in _arguments)
-            {
-                if (a.IsUnpacking)
-                {
-                    throw new InvalidOperationException("Argument unpacking is not handled by callsites.");
-                }
-
-                callsiteargs.Add(cg.Emit(a.Value));
-            }
+            _arguments.ForEach(callsite.EmitArg);
 
             // RETURN TYPE:
             var return_type = this.Access.IsRead
@@ -2438,7 +2409,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // Target()
             var functype = cg.Factory.GetCallSiteDelegateType(
                 null, RefKind.None,
-                callsiteargs.AsImmutable(),
+                callsite.Arguments,
                 default(ImmutableArray<RefKind>),
                 null,
                 return_type);
@@ -2453,6 +2424,8 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         internal virtual void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype) { throw new InvalidOperationException(); }
+
+        #endregion
     }
 
     partial class BoundGlobalFunctionCall

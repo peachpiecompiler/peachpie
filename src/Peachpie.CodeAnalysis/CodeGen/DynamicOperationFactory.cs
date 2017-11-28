@@ -35,6 +35,12 @@ namespace Pchp.CodeAnalysis.CodeGen
             public MethodSymbol CallSite_Create => _callsite_create;
             MethodSymbol _callsite_create;
 
+            /// <summary>
+            /// Gets emitted callsite arguments.
+            /// </summary>
+            public ImmutableArray<TypeSymbol> Arguments => _arguments.AsImmutable();
+            readonly List<TypeSymbol> _arguments = new List<TypeSymbol>();
+
             public void Construct(NamedTypeSymbol functype, Action<CodeGenerator> binder_builder)
             {
                 var callsitetype = _factory.CallSite_T.Construct(functype);
@@ -64,14 +70,30 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // }
             }
 
-            public void EmitLoadTarget(ILBuilder il)
+            public void EmitLoadTarget()
             {
+                Debug.Assert(_arguments.Count == 0);
+
+                var il = _cg.Builder;
+
+                // Template: LOAD callsite.Target
                 this.Place.EmitLoad(il);
                 il.EmitOpCode(ILOpCode.Ldfld);
                 il.EmitSymbolToken(_factory._cg.Module, _factory._cg.Diagnostics, _target, null);
             }
 
+            public void EmitLoadCallsite()
+            {
+                Debug.Assert(_arguments.Count == 0);
+
+                // Template: LOAD callsite
+                Place.EmitLoad(_cg.Builder);
+            }
+
             readonly DynamicOperationFactory _factory;
+
+            /// <summary><see cref="CodeGenerator"/> instance.</summary>
+            CodeGenerator _cg => _factory._cg;
 
             internal CallSiteData(DynamicOperationFactory factory, string fldname = null)
             {
@@ -82,6 +104,82 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // AsMember // we'll change containing type later once we know, important to have Substitued symbol before calling it
                 _target = new SubstitutedFieldSymbol(factory.CallSite_T, factory.CallSite_T_Target, _fld.MetadataName);
             }
+
+            /// <summary>
+            /// Notes arguments pushed on the stack to be passed to callsite.
+            /// </summary>
+            void AddArg(TypeSymbol t) => _arguments.Add(t);
+
+            public TypeSymbol EmitTargetInstance(Func<CodeGenerator, TypeSymbol>/*!*/emitter)
+            {
+                Debug.Assert(emitter != null);
+                var t = emitter(_cg);
+                if (t != null)
+                {
+                    if (t.SpecialType == SpecialType.System_Void)
+                    {
+                        // void: invalid code, should be reported in DiagnosingVisitor
+                        _cg.Builder.EmitNullConstant();
+                        t = _cg.CoreTypes.Object;
+                    }
+
+                    AddArg(t);
+                }
+
+                //
+                return t;
+            }
+
+            /// <summary>Emits argument to be passed to callsite.</summary>
+            public void EmitArg(BoundArgument a)
+            {
+                if (a.IsUnpacking)
+                {
+                    EmitUnpackingParam(_cg.Emit(a.Value));
+                }
+                else
+                {
+                    AddArg(_cg.Emit(a.Value));
+                }
+            }
+
+            /// <summary>Emits new instance of wrapper with value. Returns wrapper.</summary>
+            public TypeSymbol EmitWrapParam(NamedTypeSymbol wrapper, TypeSymbol value)
+            {
+                // Template: new wrapper(<STACK:value>)
+
+                var ctor = wrapper.InstanceConstructors.Single(m => m.ParameterCount == 1);
+                Debug.Assert(ctor.Parameters[0].Type == value);
+                var t = _cg.EmitCall(ILOpCode.Newobj, ctor);
+
+                AddArg(t);
+
+                return t;
+            }
+
+            /// <summary>Template: &lt;ctx&gt;</summary>
+            public void EmitLoadContext()
+                => AddArg(_cg.EmitLoadContext());
+
+            /// <summary>Template: new CallerTypeParam(RuntimeTypeHandle)</summary>
+            public TypeSymbol EmitCallerTypeParam()
+                => EmitWrapParam(_cg.CoreTypes.Dynamic_CallerTypeParam, _cg.EmitCallerRuntimeTypeHandle());
+
+            /// <summary>Template: new TargetTypeParam(PhpTypeInfo)</summary>
+            public TypeSymbol EmitTargetTypeParam(BoundTypeRef tref)
+                => tref != null ? EmitWrapParam(_cg.CoreTypes.Dynamic_TargetTypeParam, tref.EmitLoadTypeInfo(_cg, true)) : null;
+
+            /// <summary>Template: new NameParam{T}(STACK)</summary>
+            public TypeSymbol EmitNameParam(BoundExpression expr)
+                => expr != null ? EmitNameParam(_cg.Emit(expr)) : null;
+
+            /// <summary>Template: new NameParam{T}(STACK)</summary>
+            public TypeSymbol EmitNameParam(TypeSymbol value)
+                => EmitWrapParam(_cg.CoreTypes.Dynamic_NameParam_T.Symbol.Construct(value), value);
+
+            /// <summary>Template: new UnpackingParam{T}(STACK)</summary>
+            public TypeSymbol EmitUnpackingParam(TypeSymbol value)
+                => EmitWrapParam(_cg.CoreTypes.Dynamic_UnpackingParam_T.Symbol.Construct(value), value);
         }
 
         readonly PhpCompilation _compilation;
@@ -242,8 +340,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             //var holder = holders.FirstOrDefault(h => ReferenceEquals(h.DeclaringMethod, _cg.Routine) && h.VariableName == locName && h.ValueType == locType);
             //if (holder == null)
             //{
-                var holder = new SynthesizedStaticLocHolder(_cg.Routine, locName, locType);
-                _cg.Module.SynthesizedManager.AddNestedType(_container, holder);
+            var holder = new SynthesizedStaticLocHolder(_cg.Routine, locName, locType);
+            _cg.Module.SynthesizedManager.AddNestedType(_container, holder);
             //}
 
             return holder;

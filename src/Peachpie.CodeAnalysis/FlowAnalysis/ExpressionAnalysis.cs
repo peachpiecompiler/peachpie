@@ -1578,6 +1578,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // analyse elements
             foreach (var i in items)
             {
+                Debug.Assert(i.Value != null);
+
                 Accept(i.Key);
                 Accept(i.Value);
 
