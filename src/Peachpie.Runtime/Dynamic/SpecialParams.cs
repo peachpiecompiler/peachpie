@@ -137,7 +137,7 @@ namespace Pchp.Core.Dynamic
 
         void ISpecialParamHolder.Process(CallSiteContext info, Expression valueExpr)
         {
-            info.AddRestriction(Expression.Equal(valueExpr, Expression.Constant(Value)));
+            info.AddRestriction(Expression.Call(valueExpr, Cache.Operators.RuntimeTypeHandle_Equals_RuntimeTypeHandle, Expression.Constant(Value)));
             info.ClassContext = Type.GetTypeFromHandle(Value);
         }
 
