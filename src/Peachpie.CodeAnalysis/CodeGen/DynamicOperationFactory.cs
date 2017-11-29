@@ -41,6 +41,11 @@ namespace Pchp.CodeAnalysis.CodeGen
             public ImmutableArray<TypeSymbol> Arguments => _arguments.AsImmutable();
             readonly List<TypeSymbol> _arguments = new List<TypeSymbol>();
 
+            public void Prepare()
+            {
+                _arguments.Clear();
+            }
+
             public void Construct(NamedTypeSymbol functype, Action<CodeGenerator> binder_builder)
             {
                 var callsitetype = _factory.CallSite_T.Construct(functype);

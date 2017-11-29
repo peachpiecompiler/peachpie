@@ -1697,6 +1697,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (_lazyLoadCallSite == null)
                 _lazyLoadCallSite = cg.Factory.StartCallSite("get_" + this.NameValueOpt);
 
+            _lazyLoadCallSite.Prepare();
+
             // callsite.Target callsite
             _lazyLoadCallSite.EmitLoadTarget();
             _lazyLoadCallSite.EmitLoadCallsite();
@@ -1751,6 +1753,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             if (_lazyStoreCallSite == null)
                 _lazyStoreCallSite = cg.Factory.StartCallSite("set_" + this.NameValueOpt);
+
+            _lazyStoreCallSite.Prepare();
 
             // callsite.Target callsite
             _lazyStoreCallSite.EmitLoadTarget();
@@ -1839,6 +1843,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (_lazyLoadCallSite == null)
                 _lazyLoadCallSite = cg.Factory.StartCallSite("get_" + this.NameValueOpt);
 
+            _lazyLoadCallSite.Prepare();
+
             // callsite.Target callsite
             _lazyLoadCallSite.EmitLoadTarget();
             _lazyLoadCallSite.EmitLoadCallsite();
@@ -1895,38 +1901,37 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (_lazyStoreCallSite == null)
                 _lazyStoreCallSite = cg.Factory.StartCallSite("set_" + this.NameValueOpt);
 
+            _lazyLoadCallSite.Prepare();
+
             // callsite.Target callsite
             _lazyStoreCallSite.EmitLoadTarget();
             _lazyStoreCallSite.EmitLoadCallsite();
 
-            _type.EmitLoadTypeInfo(cg, true);
+            // LOAD PhpTypeInfo
+            _lazyStoreCallSite.EmitTargetTypeParam(_type);
+
+            // Context
+            _lazyStoreCallSite.EmitLoadContext();
+
+            // NameExpression in case of indirect call
+            _lazyStoreCallSite.EmitNameParam(_name.NameExpression);
         }
 
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
         {
             Debug.Assert(_lazyStoreCallSite != null);
 
-            // Template: Invoke(PhpTypeInfo, [string name], [value], Context)
-
-            var args = new List<TypeSymbol>();
-
-            // NameExpression in case of indirect call
-            if (!_name.IsDirect)
-            {
-                args.Add(cg.CoreTypes.String);
-            }
+            // Template: Invoke(PhpTypeInfo, Context, [string name], [value])
 
             if (valueType != null)
             {
-                args.Add(valueType);
+                _lazyStoreCallSite.AddArg(valueType);
             }
-
-            args.Add(cg.EmitLoadContext());
 
             // Target()
             var functype = cg.Factory.GetCallSiteDelegateType(
                 null, RefKind.None,
-                args.AsImmutable(),
+                _lazyStoreCallSite.Arguments,
                 default(ImmutableArray<RefKind>),
                 null,
                 cg.CoreTypes.Void);

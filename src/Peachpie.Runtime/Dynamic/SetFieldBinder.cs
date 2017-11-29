@@ -23,7 +23,7 @@ namespace Pchp.Core.Dynamic
 
         public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
         {
-            bool hasTargetInstance = (target.LimitType != typeof(PhpTypeInfo));
+            bool hasTargetInstance = (target.LimitType != typeof(TargetTypeParam));
 
             var bound = new CallSiteContext()
             {
