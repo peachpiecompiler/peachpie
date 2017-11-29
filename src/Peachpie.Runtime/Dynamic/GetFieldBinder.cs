@@ -24,47 +24,20 @@ namespace Pchp.Core.Dynamic
             _access = access & AccessMask.ReadMask;
         }
 
-        string ResolveName(DynamicMetaObject[] args, ref BindingRestrictions restrictions)
-        {
-            int i = 1;  // [0] = ctx
-
-            if (_name != null)
-            {
-                return _name;
-            }
-            else
-            {
-                Debug.Assert(args.Length >= i && args[i].LimitType == typeof(string));
-                restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Equal(args[i].Expression, Expression.Constant(args[i].Value)))); // args[0] == "VALUE"
-                return (string)args[i++].Value;
-            }
-        }
-
         public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
         {
-            var restrictions = BindingRestrictions.Empty;
+            bool hasTargetInstance = (target.LimitType != typeof(PhpTypeInfo));
 
-            PhpTypeInfo phptype;
-            Expression target_expr;
-
-            //
-            var ctx = args[0];
-            var fldName = ResolveName(args, ref restrictions);
-
-            //
-            if (target.LimitType == typeof(PhpTypeInfo))    // static field
+            var bound = new CallSiteContext()
             {
-                target_expr = null;
-                phptype = (PhpTypeInfo)target.Value;
-
-                // 
-                restrictions = restrictions.Merge(BindingRestrictions.GetInstanceRestriction(target.Expression, phptype));
+                ClassContext = _classContext,
+                Name =_name
             }
-            else
-            {
-                var isobject = BinderHelpers.TryTargetAsObject(target, out DynamicMetaObject instance);
-                restrictions = restrictions.Merge(instance.Restrictions);
+            .ProcessArgs(target, args, hasTargetInstance);
 
+            if (hasTargetInstance)
+            {
+                var isobject = bound.TargetType != null;                
                 if (isobject == false)
                 {
                     var defaultexpr = ConvertExpression.BindDefault(_returnType);
@@ -77,24 +50,24 @@ namespace Pchp.Core.Dynamic
                         defaultexpr = Expression.Block(throwcall, defaultexpr);
                     }
 
-                    return new DynamicMetaObject(defaultexpr, restrictions);
+                    return new DynamicMetaObject(defaultexpr, bound.Restrictions);
                 }
 
-                phptype = instance.RuntimeType.GetPhpTypeInfo();
-                target_expr = target_expr = Expression.Convert(instance.Expression, instance.RuntimeType);              
+                // instance := (T)instance
+                bound.TargetInstance = Expression.Convert(bound.TargetInstance, bound.TargetType.Type.AsType());
             }
 
-            Debug.Assert(IsClassConst == (target_expr == null));
+            Debug.Assert(IsClassConst == (bound.TargetInstance == null));
 
             //
             var getter = IsClassConst
-                ? BinderHelpers.BindClassConstant(phptype, _classContext, fldName, ctx.Expression)
-                : BinderHelpers.BindField(phptype, _classContext, target_expr, fldName, ctx.Expression, _access, null);
+                ? BinderHelpers.BindClassConstant(bound.TargetType, bound.ClassContext, bound.Name, bound.Context)
+                : BinderHelpers.BindField(bound.TargetType, bound.ClassContext, bound.TargetInstance, bound.Name, bound.Context, _access, null);
 
             if (getter != null)
             {
                 //
-                return new DynamicMetaObject(ConvertExpression.Bind(getter, _returnType, ctx.Expression), restrictions);
+                return new DynamicMetaObject(ConvertExpression.Bind(getter, _returnType, bound.Context), bound.Restrictions);
             }
 
             // field not found
@@ -105,7 +78,7 @@ namespace Pchp.Core.Dynamic
     class GetClassConstBinder : GetFieldBinder
     {
         public GetClassConstBinder(string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType, AccessMask access)
-            :base(name, classContext, returnType, access)
+            : base(name, classContext, returnType, access)
         {
         }
 

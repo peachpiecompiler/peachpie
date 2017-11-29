@@ -168,10 +168,10 @@ namespace Pchp.CodeAnalysis.Symbols
             SetFieldBinder = Create("Dynamic.SetFieldBinder");
             AccessMask = CreateFromFullName("Pchp.CodeAnalysis.Semantics.AccessMask");
 
-            Dynamic_NameParam_T = Create("Dynamic.NameParam");
+            Dynamic_NameParam_T = Create("Dynamic.NameParam`1");
             Dynamic_TargetTypeParam = Create("Dynamic.TargetTypeParam");
             Dynamic_CallerTypeParam = Create("Dynamic.CallerTypeParam");
-            Dynamic_UnpackingParam_T = Create("Dynamic.UnpackingParam");
+            Dynamic_UnpackingParam_T = Create("Dynamic.UnpackingParam`1");
 
             PhpTypeInfoExtension = Create("Reflection.PhpTypeInfoExtension");
             PhpTypeInfo = Create("Reflection.PhpTypeInfo");

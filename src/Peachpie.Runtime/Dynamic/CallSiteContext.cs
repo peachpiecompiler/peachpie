@@ -44,7 +44,9 @@ namespace Pchp.Core.Dynamic
             }
 
             // args[taken..count]
-            this.Arguments = args.Skip(taken).Select(x => x.Expression).ToArray();
+            this.Arguments = (taken == args.Length)
+                ? Array.Empty<Expression>()
+                : args.Skip(taken).Select(x => x.Expression).ToArray();
 
             //
             return this;

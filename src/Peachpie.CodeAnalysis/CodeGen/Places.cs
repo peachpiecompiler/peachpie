@@ -1701,8 +1701,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             _lazyLoadCallSite.EmitLoadTarget();
             _lazyLoadCallSite.EmitLoadCallsite();
 
-            // instance
-            InstanceCacheHolder.EmitInstance(instanceOpt, cg, Instance);
+            // target instance
+            _lazyLoadCallSite.EmitTargetInstance(_cg => InstanceCacheHolder.EmitInstance(instanceOpt, _cg, Instance));
         }
 
         public TypeSymbol EmitLoad(CodeGenerator cg)
@@ -1719,22 +1719,13 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // Template: Invoke(TInstance, Context, [string name])
 
-            var args = new List<TypeSymbol>()
-            {
-                cg.EmitLoadContext()
-            };
-
-            // NameExpression in case of indirect call
-            if (!Name.IsDirect)
-            {
-                cg.EmitConvert(Name.NameExpression, cg.CoreTypes.String);
-                args.Add(cg.CoreTypes.String);
-            }
+            _lazyLoadCallSite.EmitLoadContext();                                    // ctx : Context
+            _lazyLoadCallSite.EmitNameParam(Name.NameExpression);                   // [name] : string
 
             // Target()
             var functype = cg.Factory.GetCallSiteDelegateType(
-                this.Instance.ResultType, RefKind.None,
-                args.AsImmutable(),
+                null, RefKind.None,
+                _lazyLoadCallSite.Arguments,
                 default(ImmutableArray<RefKind>),
                 null,
                 return_type);
@@ -1746,7 +1737,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 // new GetFieldBinder(field_name, context, return, flags)
                 cctor.Builder.EmitStringConstant(this.NameValueOpt);
-                cctor.EmitLoadToken(cg.CallerType, null);
+                cctor.EmitLoadToken(cg.CallerType, null);           // class context
                 cctor.EmitLoadToken(return_type, null);
                 cctor.Builder.EmitIntConstant((int)Access.Flags);
                 cctor.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.GetFieldBinder);
@@ -1765,14 +1756,14 @@ namespace Pchp.CodeAnalysis.CodeGen
             _lazyStoreCallSite.EmitLoadTarget();
             _lazyStoreCallSite.EmitLoadCallsite();
 
-            // instance
-            InstanceCacheHolder.EmitInstance(instanceOpt, cg, Instance);
+            // target instance
+            _lazyStoreCallSite.EmitTargetInstance(_cg => InstanceCacheHolder.EmitInstance(instanceOpt, _cg, Instance));
 
-            // NameExpression in case of indirect call
-            if (!Name.IsDirect)
-            {
-                cg.EmitConvert(Name.NameExpression, cg.CoreTypes.String);
-            }
+            // ctx : Context
+            _lazyStoreCallSite.EmitLoadContext();
+
+            // [name] : string
+            _lazyStoreCallSite.EmitNameParam(Name.NameExpression);
         }
 
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
@@ -1780,27 +1771,17 @@ namespace Pchp.CodeAnalysis.CodeGen
             Debug.Assert(_lazyStoreCallSite != null);
             Debug.Assert(this.Instance.ResultType != null);
 
-            // Template: Invoke(TInstance, [string name], [value], Context)
-
-            var args = new List<TypeSymbol>();
-
-            // NameExpression in case of indirect call
-            if (!Name.IsDirect)
-            {
-                args.Add(cg.CoreTypes.String);
-            }
+            // Template: Invoke(TInstance, Context, [string name], [value])
 
             if (valueType != null)
             {
-                args.Add(valueType);
+                _lazyStoreCallSite.AddArg(valueType);
             }
-
-            args.Add(cg.EmitLoadContext());
 
             // Target()
             var functype = cg.Factory.GetCallSiteDelegateType(
-                this.Instance.ResultType, RefKind.None,
-                args.AsImmutable(),
+                null, RefKind.None,
+                _lazyStoreCallSite.Arguments,
                 default(ImmutableArray<RefKind>),
                 null,
                 cg.CoreTypes.Void);
@@ -1810,7 +1791,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _lazyStoreCallSite.Construct(functype, cctor =>
             {
                 cctor.Builder.EmitStringConstant(this.NameValueOpt);
-                cctor.EmitLoadToken(cg.Routine.ContainingType, null);
+                cctor.EmitLoadToken(cg.CallerType, null);           // class context
                 cctor.Builder.EmitIntConstant((int)Access.Flags);   // flags
                 cctor.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.SetFieldBinder);
             });
@@ -1863,7 +1844,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _lazyLoadCallSite.EmitLoadCallsite();
 
             // LOAD PhpTypeInfo
-            _type.EmitLoadTypeInfo(cg, true);
+            _lazyLoadCallSite.EmitTargetTypeParam(_type);
         }
 
         public TypeSymbol EmitLoad(CodeGenerator cg)
@@ -1877,22 +1858,13 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // Template: Invoke(PhpTypeInfo, Context, [string name])
 
-            var args = new List<TypeSymbol>()
-            {
-                cg.EmitLoadContext()
-            };
-
-            // NameExpression in case of indirect call
-            if (!_name.IsDirect)
-            {
-                cg.EmitConvert(_name.NameExpression, cg.CoreTypes.String);
-                args.Add(cg.CoreTypes.String);
-            }
+            _lazyLoadCallSite.EmitLoadContext();                                    // ctx : Context
+            _lazyLoadCallSite.EmitNameParam(Name.NameExpression);                   // [name] : string
 
             // Target()
             var functype = cg.Factory.GetCallSiteDelegateType(
-                cg.CoreTypes.PhpTypeInfo, RefKind.None,
-                args.AsImmutable(),
+                null, RefKind.None,
+                _lazyLoadCallSite.Arguments,
                 default(ImmutableArray<RefKind>),
                 null,
                 return_type);
@@ -1906,7 +1878,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 // [GetFieldBinder|GetClassConstBinder](field_name, context, return, flags)
                 cctor.Builder.EmitStringConstant(this.NameValueOpt);
-                cctor.EmitCallerTypeHandle();
+                cctor.EmitLoadToken(cg.CallerType, null);           // class context
                 cctor.EmitLoadToken(return_type, null);
                 cctor.Builder.EmitIntConstant((int)Access.Flags);
                 cctor.EmitCall(ILOpCode.Call, _boundref.IsClassConstant
@@ -1953,7 +1925,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // Target()
             var functype = cg.Factory.GetCallSiteDelegateType(
-                cg.CoreTypes.PhpTypeInfo, RefKind.None,
+                null, RefKind.None,
                 args.AsImmutable(),
                 default(ImmutableArray<RefKind>),
                 null,

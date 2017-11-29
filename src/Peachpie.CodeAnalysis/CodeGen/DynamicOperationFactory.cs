@@ -108,7 +108,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             /// <summary>
             /// Notes arguments pushed on the stack to be passed to callsite.
             /// </summary>
-            void AddArg(TypeSymbol t) => _arguments.Add(t);
+            internal void AddArg(TypeSymbol t) => _arguments.Add(t);
 
             public TypeSymbol EmitTargetInstance(Func<CodeGenerator, TypeSymbol>/*!*/emitter)
             {
@@ -192,7 +192,17 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             /// <summary>Template: new NameParam{T}(STACK)</summary>
             public TypeSymbol EmitNameParam(BoundExpression expr)
-                => expr != null ? EmitNameParam(_cg.Emit(expr)) : null;
+            {
+                if (expr != null)
+                {
+                    _cg.EmitConvert(expr, _cg.CoreTypes.String);
+                    return EmitNameParam(_cg.CoreTypes.String);
+                }
+                else
+                {
+                    return null;
+                }
+            }
 
             /// <summary>Template: new NameParam{T}(STACK)</summary>
             public TypeSymbol EmitNameParam(TypeSymbol value)
