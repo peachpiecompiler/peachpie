@@ -390,6 +390,11 @@ namespace Pchp.Core.Reflection
         {
             PhpTypeInfo result = null;
 
+            if (handle.Equals(default(RuntimeTypeHandle)))
+            {
+                return null;
+            }
+
             // lookup cache first
             lock (_cache)   // TODO: RW lock
             {

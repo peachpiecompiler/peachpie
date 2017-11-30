@@ -108,6 +108,7 @@ namespace Pchp.CodeAnalysis.Symbols
             ScriptAttribute, PhpTraitAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, ScriptDiedException,
             IStaticInit, RoutineInfo,
             BinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
+            Dynamic_NameParam_T, Dynamic_TargetTypeParam, Dynamic_CallerTypeParam, Dynamic_UnpackingParam_T,
             PhpTypeInfoExtension, PhpTypeInfo,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable, IPhpConvertible,
             IntStringKey, PhpHashtable,
@@ -166,6 +167,11 @@ namespace Pchp.CodeAnalysis.Symbols
             GetFieldBinder = Create("Dynamic.GetFieldBinder");
             SetFieldBinder = Create("Dynamic.SetFieldBinder");
             AccessMask = CreateFromFullName("Pchp.CodeAnalysis.Semantics.AccessMask");
+
+            Dynamic_NameParam_T = Create("Dynamic.NameParam`1");
+            Dynamic_TargetTypeParam = Create("Dynamic.TargetTypeParam");
+            Dynamic_CallerTypeParam = Create("Dynamic.CallerTypeParam");
+            Dynamic_UnpackingParam_T = Create("Dynamic.UnpackingParam`1");
 
             PhpTypeInfoExtension = Create("Reflection.PhpTypeInfoExtension");
             PhpTypeInfo = Create("Reflection.PhpTypeInfo");

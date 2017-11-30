@@ -2350,13 +2350,17 @@ namespace Pchp.CodeAnalysis.Semantics
             return (this.ResultType = cg.EmitMethodAccess(stacktype, method, Access));
         }
 
-        protected virtual string CallsiteName => null;
-        protected virtual BoundExpression RoutineNameExpr => null;
-        protected virtual BoundTypeRef RoutineTypeRef => null;
+        protected virtual bool IsVirtualCall => true;
 
         /// <summary>Type reference to the static type. The containing type of called routine, e.g. <c>THE_TYPE::foo()</c>. Used for direct method call requiring late static type..</summary>
         protected virtual BoundTypeRef LateStaticTypeRef => null;
-        protected virtual bool IsVirtualCall => true;
+
+        #region Emit CallSite
+
+        protected virtual bool CallsiteRequiresCallerContext => false;
+        protected virtual string CallsiteName => null;
+        protected virtual BoundExpression RoutineNameExpr => null;
+        protected virtual BoundTypeRef RoutineTypeRef => null;
 
         /// <summary>
         /// Optional. Emits instance on which the method is invoked.
@@ -2368,16 +2372,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if (Instance != null)
             {
-                cg.Emit(Instance);
-
-                if (Instance.ResultType.SpecialType == SpecialType.System_Void)
-                {
-                    // void: invalid code, should be reported in DiagnosingVisitor
-                    cg.Builder.EmitNullConstant();
-                    return cg.CoreTypes.Object;
-                }
-
-                return Instance.ResultType;
+                return cg.Emit(Instance);
             }
             else
             {
@@ -2390,43 +2385,25 @@ namespace Pchp.CodeAnalysis.Semantics
             // callsite
 
             var callsite = cg.Factory.StartCallSite("call_" + this.CallsiteName);
-            var callsiteargs = new List<TypeSymbol>(_arguments.Length);
 
             // LOAD callsite.Target
-            callsite.EmitLoadTarget(cg.Builder);
+            callsite.EmitLoadTarget();
 
             // LOAD callsite arguments
 
-            // (callsite, [target], ctx, [name], ...)
-            callsite.Place.EmitLoad(cg.Builder);
+            // (callsite, ctx, [target], [name], ...)
+            callsite.EmitLoadCallsite();                // callsite
+            callsite.EmitTargetInstance(EmitTarget);    // [target]
+            callsite.EmitTargetTypeParam(RoutineTypeRef);// [target_type] : PhpTypeInfo
+            callsite.EmitNameParam(RoutineNameExpr);    // [name] : string
+            callsite.EmitLoadContext();                 // ctx : Context
 
-            callsiteargs.Add(cg.EmitLoadContext());     // ctx
-
-            var target = EmitTarget(cg);
-            if (target != null)
+            if (CallsiteRequiresCallerContext)
             {
-                callsiteargs.Add(target);   // instance
+                callsite.EmitCallerTypeParam();         // [class_ctx] : RuntimeTypeHandle
             }
 
-            if (RoutineTypeRef != null)
-            {
-                callsiteargs.Add(RoutineTypeRef.EmitLoadTypeInfo(cg, true));   // PhpTypeInfo
-            }
-
-            if (RoutineNameExpr != null)
-            {
-                callsiteargs.Add(cg.Emit(RoutineNameExpr));   // name
-            }
-
-            foreach (var a in _arguments)
-            {
-                if (a.IsUnpacking)
-                {
-                    throw new InvalidOperationException("Argument unpacking is not handled by callsites.");
-                }
-
-                callsiteargs.Add(cg.Emit(a.Value));
-            }
+            callsite.EmitArgs(_arguments);              // ...
 
             // RETURN TYPE:
             var return_type = this.Access.IsRead
@@ -2438,7 +2415,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // Target()
             var functype = cg.Factory.GetCallSiteDelegateType(
                 null, RefKind.None,
-                callsiteargs.AsImmutable(),
+                callsite.Arguments,
                 default(ImmutableArray<RefKind>),
                 null,
                 return_type);
@@ -2453,6 +2430,8 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         internal virtual void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype) { throw new InvalidOperationException(); }
+
+        #endregion
     }
 
     partial class BoundGlobalFunctionCall
@@ -2495,6 +2474,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundInstanceFunctionCall
     {
+        protected override bool CallsiteRequiresCallerContext => true;
         protected override string CallsiteName => _name.IsDirect ? _name.NameValue.ToString() : null;
         protected override BoundExpression RoutineNameExpr => _name.NameExpression;
 
@@ -2510,6 +2490,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundStaticFunctionCall
     {
+        protected override bool CallsiteRequiresCallerContext => true;
         protected override string CallsiteName => _name.IsDirect ? _name.NameValue.ToString() : null;
         protected override BoundExpression RoutineNameExpr => _name.NameExpression;
         protected override BoundTypeRef RoutineTypeRef => _typeRef.ResolvedType.IsErrorTypeOrNull() ? _typeRef : null;    // in case the type has to be resolved in runtime and passed to callsite
@@ -2599,7 +2580,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         .Construct(_typeref.ResolvedType);
 
                     cg.EmitLoadContext();                       // Context
-                    cg.EmitCallerRuntimeTypeHandle();           // RuntimeTypeHandle
+                    cg.EmitCallerTypeHandle();           // RuntimeTypeHandle
                     cg.Emit_ArgumentsIntoArray(_arguments, default(PhpSignatureMask));  // PhpValue[]
 
                     return cg.EmitCall(ILOpCode.Call, create_t);
@@ -2616,7 +2597,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         .Single();
 
                     cg.EmitLoadContext();                       // Context
-                    cg.EmitCallerRuntimeTypeHandle();           // RuntimeTypeHandle
+                    cg.EmitCallerTypeHandle();           // RuntimeTypeHandle
                     _typeref.EmitLoadTypeInfo(cg, true);        // PhpTypeInfo
                     cg.Emit_ArgumentsIntoArray(_arguments, default(PhpSignatureMask));  // PhpValue[]
 
@@ -2774,7 +2755,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 cg.EmitConvert(_arguments[0].Value, cg.CoreTypes.String);
                 cg.LocalsPlaceOpt.EmitLoad(cg.Builder); // scope of local variables, corresponds to $GLOBALS in global scope.
                 cg.EmitThisOrNull();    // $this
-                cg.EmitCallerRuntimeTypeHandle();    // self : RuntimeTypeHandle
+                cg.EmitCallerTypeHandle();    // self : RuntimeTypeHandle
                 cg.Builder.EmitBoolConstant(IsOnceSemantic);
                 cg.Builder.EmitBoolConstant(IsRequireSemantic);
                 return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.Include_string_string_PhpArray_object_RuntimeTypeHandle_bool_bool);
@@ -2900,7 +2881,7 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.EmitLoadContext();
             cg.LocalsPlaceOpt.EmitLoad(cg.Builder);
             cg.EmitThisOrNull();
-            cg.EmitCallerRuntimeTypeHandle();           // self : RuntimeTypeHandle
+            cg.EmitCallerTypeHandle();           // self : RuntimeTypeHandle
             cg.EmitConvert(this.CodeExpression, cg.CoreTypes.String);   // (string)code
             cg.Builder.EmitStringConstant(filepath);    // currentpath
             cg.Builder.EmitIntConstant(line);           // line
