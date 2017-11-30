@@ -2983,27 +2983,26 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
             var target_place = this.Target.BindPlace(cg);
+
             Debug.Assert(target_place != null);
             Debug.Assert(target_place.TypeOpt == null || target_place.TypeOpt.SpecialType != SpecialType.System_Void);
 
             // T tmp; // in case access is Read
-            var t_value = target_place.TypeOpt;
-            if (t_value == cg.CoreTypes.PhpAlias || t_value == cg.CoreTypes.PhpValue)
-                t_value = null; // no inplace conversion
-
+            TypeSymbol t_value;
             LocalDefinition tmp = null;
 
             // <target> = <value>
             target_place.EmitStorePrepare(cg);
 
-            // TODO: load value & dereference eventually
-            if (t_value != null && !this.Value.Access.IsReadRef)
+            if (target_place.TypeOpt != null && !Value.Access.IsReadRef && Access.IsNone)
             {
-                cg.EmitConvert(this.Value, t_value);   // TODO: do not convert here yet
+                // we can convert more efficiently here
+                t_value = target_place.TypeOpt;
+                cg.EmitConvert(Value, t_value);
             }
             else
             {
-                t_value = cg.Emit(this.Value);
+                t_value = cg.Emit(Value);
             }
 
             if (t_value.SpecialType == SpecialType.System_Void)
@@ -3016,6 +3015,7 @@ namespace Pchp.CodeAnalysis.Semantics
             //
             if (Access.IsNone)
             {
+                // nothing
             }
             else if (Access.IsRead)
             {
@@ -3042,7 +3042,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (Access.IsReadCopy)
                 {
                     // DeepCopy(<tmp>)
-                    t_value = cg.EmitDeepCopy(t_value, this.Value.TypeRefMask);
+                    t_value = cg.EmitDeepCopy(t_value, Value.TypeRefMask);
                 }
             }
 
