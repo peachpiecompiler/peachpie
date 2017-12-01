@@ -548,8 +548,8 @@ namespace Pchp.Core
 
                 if (obj is IPhpCallable) return (IPhpCallable)obj;  // classes with __invoke() magic method implements IPhpCallable
                 if (obj is Delegate d) return RoutineInfo.CreateUserRoutine(d.GetMethodInfo().Name, d);
-                
-                throw new NotImplementedException();    // return PhpCallback.Create(obj);
+
+                return PhpCallback.CreateInvalid();
             }
             public override string DisplayString(ref PhpValue me) => me.Object.GetType().FullName.Replace('.', '\\') + "#" + me.Object.GetHashCode().ToString("X");
             public override void Output(ref PhpValue me, Context ctx) => ctx.Echo(Convert.ToStringOrThrow(me.Object, ctx));
