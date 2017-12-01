@@ -334,6 +334,7 @@ namespace Pchp.Core.Dynamic
 
             if (source == typeof(PhpArray)) return expr;
             if (source == typeof(PhpValue)) return Expression.Call(expr, Cache.Operators.PhpValue_ToArray);
+            if (source == typeof(object) && expr is ConstantExpression c && c.Value == null) return Expression.Constant(null, typeof(PhpArray));
 
             throw new NotImplementedException(source.FullName);
         }
