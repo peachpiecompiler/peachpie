@@ -31,14 +31,12 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
-        /// Gets place of <c>this</c> value in CLR.
-        /// This is not necessary the same as PHP <c>$this</c> variable.
+        /// Gets place of <c>this</c> parameter in CLR corresponding to <c>current class instance</c>.
         /// </summary>
         internal virtual IPlace GetThisPlace()
         {
-            var thisParameter = this.ThisParameter;
-            return (thisParameter != null)
-                ? new ReadOnlyPlace(new ParamPlace(thisParameter))
+            return this.HasThis
+                ? new ArgPlace(ContainingType, 0)
                 : null;
         }
 
@@ -55,12 +53,11 @@ namespace Pchp.CodeAnalysis.Symbols
                     if (this.IsGeneratorMethod())
                     {
                         // $this ~ arg1
-                        return new ArgPlace(thisPlace.TypeOpt, 1);
+                        thisPlace = new ArgPlace(thisPlace.TypeOpt, 1);
                     }
-                    else
-                    {
-                        return thisPlace;
-                    }
+
+                    //
+                    return new ReadOnlyPlace(thisPlace);
                 }
                 else
                 {
@@ -229,7 +226,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
     partial class SourceGlobalMethodSymbol
     {
-        public override IPlace PhpThisVariablePlace => base.PhpThisVariablePlace;
+        internal override IPlace GetThisPlace() => new ParamPlace(ThisParameter);
 
         internal override void SynthesizeStubs(PEModuleBuilder module, DiagnosticBag diagnostic)
         {
@@ -268,7 +265,8 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         internal override IPlace GetContextPlace()
         {
-            if (!IsStatic && this.ThisParameter != null)
+            var thisplace = GetThisPlace();
+            if (thisplace != null)
             {
                 // <this>.<ctx> in instance methods
                 var t = (SourceTypeSymbol)this.ContainingType;
@@ -276,7 +274,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 var ctx_field = t.ContextStore;
                 if (ctx_field != null)  // might be null in interfaces
                 {
-                    return new FieldPlace(GetThisPlace(), ctx_field);
+                    return new FieldPlace(thisplace, ctx_field);
                 }
                 else
                 {
@@ -318,7 +316,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
     partial class SourceFunctionSymbol
     {
-        internal void EmitInit(Emit.PEModuleBuilder module)
+        internal void EmitInit(PEModuleBuilder module)
         {
             var cctor = module.GetStaticCtorBuilder(_file);
             var field = new FieldPlace(null, this.EnsureRoutineInfoField(module));
@@ -336,17 +334,47 @@ namespace Pchp.CodeAnalysis.Symbols
 
     partial class SourceLambdaSymbol
     {
-        internal void EmitInit(Emit.PEModuleBuilder module)
+        internal override IPlace GetContextPlace()
+        {
+            // Template: Operators.Context(<closure>)
+            return new OperatorPlace(DeclaringCompilation.CoreMethods.Operators.Context_Closure, new ParamPlace(ClosureParameter));
+        }
+
+        public override IPlace PhpThisVariablePlace
+        {
+            get
+            {
+                if (UseThis)
+                {
+                    // Template: Operators.This(<closure>)
+                    return new OperatorPlace(DeclaringCompilation.CoreMethods.Operators.This_Closure, new ParamPlace(ClosureParameter));
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        }
+
+        internal IPlace GetCallerTypePlace()
+        {
+            // Template: Operators.Scope(<closure>)
+            return new OperatorPlace(DeclaringCompilation.CoreMethods.Operators.Scope_Closure, new ParamPlace(ClosureParameter));
+        }
+
+        internal void EmitInit(PEModuleBuilder module)
         {
             var cctor = module.GetStaticCtorBuilder(_container);
             var field = new FieldPlace(null, this.EnsureRoutineInfoField(module));
 
-            // {RoutineInfoField} = RoutineInfo.CreateUserRoutine(name, handle)
+            var ct = module.Compilation.CoreTypes;
+
+            // {RoutineInfoField} = new PhpAnonymousRoutineInfo(name, handle)
             field.EmitStorePrepare(cctor);
 
             cctor.EmitStringConstant(this.MetadataName);
             cctor.EmitLoadToken(module, DiagnosticBag.GetInstance(), this, null);
-            cctor.EmitCall(module, DiagnosticBag.GetInstance(), ILOpCode.Call, module.Compilation.CoreMethods.Reflection.CreateUserRoutine_string_RuntimeMethodHandle);
+            cctor.EmitCall(module, DiagnosticBag.GetInstance(), ILOpCode.Call, ct.Operators.Method("AnonymousRoutine", ct.String, ct.RuntimeMethodHandle));
 
             field.EmitStore(cctor);
         }
@@ -354,9 +382,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
     partial class SourceGeneratorSymbol
     {
-        internal void EmitInit(Emit.PEModuleBuilder module)
+        internal void EmitInit(PEModuleBuilder module)
         {
-            //Don't  need any initial emit
+            // Don't need any initial emit
         }
     }
 };

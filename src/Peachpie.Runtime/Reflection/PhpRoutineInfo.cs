@@ -125,6 +125,15 @@ namespace Pchp.Core.Reflection
         }
     }
 
+    /// <summary>Represents anonymous function with special <see cref="Closure"/> parameter.</summary>
+    internal sealed class PhpAnonymousRoutineInfo : PhpRoutineInfo
+    {
+        public PhpAnonymousRoutineInfo(string name, RuntimeMethodHandle handle)
+            : base(name, handle)
+        {
+        }
+    }
+
     internal class DelegateRoutineInfo : RoutineInfo
     {
         Delegate _delegate;

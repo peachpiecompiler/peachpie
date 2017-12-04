@@ -51,8 +51,6 @@ namespace Pchp.CodeAnalysis.Symbols
             return _lazyRoutineInfoField;
         }
 
-        public override ParameterSymbol ThisParameter => null;
-
         internal override Signature SyntaxSignature => _syntax.Signature;
 
         internal override TypeRef SyntaxReturnType => _syntax.ReturnType;

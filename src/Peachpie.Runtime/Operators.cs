@@ -1278,12 +1278,21 @@ namespace Pchp.Core
 
         #endregion
 
-        #region BuildClosure
+        #region Closure
+
+        public static RoutineInfo AnonymousRoutine(string name, RuntimeMethodHandle handle) => new PhpAnonymousRoutineInfo(name, handle);
 
         /// <summary>
         /// Create <see cref="Closure"/> with specified anonymous function and used parameters.
         /// </summary>
-        public static Closure BuildClosure(RoutineInfo routine, PhpArray parameter, PhpArray @static) => new Closure(routine, parameter, @static);
+        public static Closure BuildClosure(Context/*!*/ctx, IPhpCallable routine, object @this, RuntimeTypeHandle scope, PhpArray/*!*/parameter, PhpArray/*!*/@static)
+            => new Closure(ctx, routine, @this, scope, parameter, @static);
+
+        public static Context Context(this Closure closure) => closure._ctx;
+
+        public static RuntimeTypeHandle Scope(this Closure closure) => closure._classCtx;
+
+        public static object This(this Closure closure) => closure._this;
 
         #endregion
 

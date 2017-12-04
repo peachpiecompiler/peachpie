@@ -336,6 +336,51 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
     }
 
+    internal class OperatorPlace : IPlace
+    {
+        readonly MethodSymbol _operator;
+        readonly IPlace _operand;
+
+        public OperatorPlace(MethodSymbol @operator, IPlace operand)
+        {
+            Debug.Assert(@operator != null);
+            Debug.Assert(@operator.HasThis == false);
+            Debug.Assert(operand != null);
+
+            _operator = @operator;
+            _operand = operand;
+        }
+
+        public TypeSymbol TypeOpt => _operator.ReturnType;
+
+        public bool HasAddress => false;
+
+        public TypeSymbol EmitLoad(ILBuilder il)
+        {
+            _operand.EmitLoad(il);
+
+            il.EmitOpCode(ILOpCode.Call, _operator.GetCallStackBehavior());
+            il.EmitToken(_operator, null, DiagnosticBag.GetInstance());
+
+            return TypeOpt;
+        }
+
+        public void EmitLoadAddress(ILBuilder il)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void EmitStore(ILBuilder il)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void EmitStorePrepare(ILBuilder il)
+        {
+            throw new NotSupportedException();
+        }
+    }
+
     #endregion
 
     #region IBoundReference
