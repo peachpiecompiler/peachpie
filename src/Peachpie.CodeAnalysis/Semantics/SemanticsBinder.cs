@@ -480,7 +480,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindInstanceOfEx(AST.InstanceOfEx x)
         {
-            return new BoundInstanceOfEx(BindExpression(x.Expression, BoundAccess.Read), BindTypeRef(x.ClassNameRef));
+            return new BoundInstanceOfEx(BindExpression(x.Expression, BoundAccess.Read), BindTypeRef(x.ClassNameRef, objectTypeInfoSemantic: true));
         }
 
         protected BoundExpression BindIncludeEx(AST.IncludingEx x)
