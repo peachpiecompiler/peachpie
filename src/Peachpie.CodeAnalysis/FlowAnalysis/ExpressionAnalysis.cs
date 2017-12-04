@@ -1282,10 +1282,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override void VisitTypeRef(BoundTypeRef tref)
         {
             if (tref == null)
+            {
                 return;
+            }
 
             Debug.Assert(!(tref is BoundMultipleTypeRef));
 
+            // visit indirect type
+            Accept(tref.TypeExpression);
+
+            // resolve known types
             if (tref.TypeRef is INamedTypeRef)
             {
                 var qname = ((INamedTypeRef)tref.TypeRef).ClassName;
@@ -1329,8 +1335,28 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         break;
                 }
             }
+            else if (tref.TypeRef is IndirectTypeRef)
+            {
+                Debug.Assert(tref.TypeExpression != null);
 
-            Accept(tref.TypeExpression);
+                // string:
+                if (tref.TypeExpression.ConstantValue.HasValue && tref.TypeExpression.ConstantValue.Value is string tname)
+                {
+                    tref.ResolvedType = (TypeSymbol)_model.GetType(NameUtils.MakeQualifiedName(tname, true));
+                }
+                else if (tref.ObjectTypeInfoSemantic)
+                {
+                    // $this:
+                    if (tref.TypeExpression is BoundVariableRef varref && varref.Name.NameValue == VariableName.ThisVariableName)
+                    {
+                        tref.ResolvedType = TypeCtx.ContainingType; // $this, self
+                    }
+                    //else if (IsClassOnly(tref.TypeExpression.TypeRefMask))
+                    //{
+                    //    // ...
+                    //}
+                }                    
+            }
         }
 
         public override void VisitNew(BoundNewEx x)
