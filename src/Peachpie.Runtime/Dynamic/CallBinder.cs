@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.Core.Dynamic
 {
+    [DebuggerNonUserCode]
     abstract class CallBinder : DynamicMetaObjectBinder
     {
         protected readonly Type _returnType;
@@ -81,6 +82,7 @@ namespace Pchp.Core.Dynamic
     /// <summary>
     /// Binder to a global function call.
     /// </summary>
+    [DebuggerNonUserCode]
     class CallFunctionBinder : CallBinder
     {
         protected string _name;
@@ -153,6 +155,7 @@ namespace Pchp.Core.Dynamic
     /// <summary>
     /// Binder to an instance function call.
     /// </summary>
+    [DebuggerNonUserCode]
     class CallInstanceMethodBinder : CallBinder
     {
         readonly string _name;
@@ -225,6 +228,7 @@ namespace Pchp.Core.Dynamic
     /// <summary>
     /// Binder to an instance function call.
     /// </summary>
+    [DebuggerNonUserCode]
     class CallStaticMethodBinder : CallBinder
     {
         readonly PhpTypeInfo _type;

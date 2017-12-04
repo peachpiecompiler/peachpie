@@ -14,6 +14,7 @@ namespace Pchp.Core
         /// <summary>
         /// Methods table for <see cref="PhpValue"/> instance.
         /// </summary>
+        [DebuggerNonUserCode]
         abstract class TypeTable
         {
             #region Singletons

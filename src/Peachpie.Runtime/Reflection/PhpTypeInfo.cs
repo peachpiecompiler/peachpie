@@ -14,6 +14,7 @@ namespace Pchp.Core.Reflection
     /// Runtime information about a type.
     /// </summary>
     [DebuggerDisplay("{Name,nq}")]
+    [DebuggerNonUserCode]
     public class PhpTypeInfo
     {
         /// <summary>
@@ -326,6 +327,7 @@ namespace Pchp.Core.Reflection
 
     #region PhpTypeInfoExtension
 
+    [DebuggerNonUserCode]
     public static class PhpTypeInfoExtension
     {
         static MethodInfo _lazyGetPhpTypeInfo_T;
