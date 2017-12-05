@@ -2775,35 +2775,27 @@ namespace Pchp.CodeAnalysis.Semantics
                 throw new InvalidOperationException();
             }
 
-            // Template: BuildClosure(BoundLambdaMethod.EnsureRoutineInfoField(), [this, use1, use2, ...], [p1, p2, ...])
+            // Template: BuildClosure(ctx, BoundLambdaMethod.EnsureRoutineInfoField(), this, scope, [use1, use2, ...], [p1, p2, ...])
 
             var idxfld = this.BoundLambdaMethod.EnsureRoutineInfoField(cg.Module);
-            new FieldPlace(null, idxfld).EmitLoad(cg.Builder);
+            
+            cg.EmitLoadContext();           // Context
+            idxfld.EmitLoad(cg.Builder);    // routine
+            cg.EmitThisOrNull();            // $this
+            cg.EmitCallerTypeHandle();      // scope
+            EmitParametersArray(cg);        // "parameters"
+            EmitUseArray(cg);               // "static"
 
-            EmitParametersArray(cg);
-            EmitUseArray(cg);
-
-            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildClosure_RoutineInfo_PhpArray_PhpArray);
+            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildClosure_Context_IPhpCallable_Object_RuntimeTypeHandle_PhpArray_PhpArray);
         }
 
         void EmitUseArray(CodeGenerator cg)
         {
-            var count = (BoundLambdaMethod.UseThis ? 1 : 0) + UseVars.Length;
-            if (count != 0)
+            if (UseVars.Length != 0)
             {
                 // new PhpArray(<count>)
-                cg.Builder.EmitIntConstant(count);
+                cg.Builder.EmitIntConstant(UseVars.Length);
                 cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray_int);
-
-                //
-                if (BoundLambdaMethod.UseThis)
-                {
-                    // <stack>.Add("this", this)
-                    cg.Builder.EmitOpCode(ILOpCode.Dup);
-                    cg.EmitIntStringKey(VariableName.ThisVariableName.Value);
-                    cg.EmitConvertToPhpValue(cg.EmitThisOrNull(), 0);
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_IntStringKey_PhpValue);
-                }
 
                 // uses
                 foreach (var u in UseVars)
@@ -2839,6 +2831,8 @@ namespace Pchp.CodeAnalysis.Semantics
             var ps = ((LambdaFunctionExpr)PhpSyntax).Signature.FormalParams;
             if (ps != null && ps.Length != 0)
             {
+                // TODO: cache singleton
+            
                 // new PhpArray(<count>){ ... }
                 cg.Builder.EmitIntConstant(ps.Length);
                 cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray_int);
@@ -3834,7 +3828,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
                 else if (Access.IsReadRef)
                 {
-                    Debug.WriteLine("TODO: we need reference to PhpValue so we can modifiy its content! This is not compatible with behavior of = &$null[0].");
+                    Debug.WriteLine("TODO: we need reference to PhpValue so we can modify its content! This is not compatible with behavior of = &$null[0].");
                     // PhpValue.GetItemRef(index, bool)
                     cg.Builder.EmitBoolConstant(Access.IsQuiet);
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureItemAlias_PhpValue_PhpValue_Bool);

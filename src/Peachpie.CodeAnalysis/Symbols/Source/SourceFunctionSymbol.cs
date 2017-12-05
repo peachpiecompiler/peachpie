@@ -51,8 +51,6 @@ namespace Pchp.CodeAnalysis.Symbols
             return _lazyRoutineInfoField;
         }
 
-        public override ParameterSymbol ThisParameter => null;
-
         internal override Signature SyntaxSignature => _syntax.Signature;
 
         internal override TypeRef SyntaxReturnType => _syntax.ReturnType;
@@ -67,8 +65,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override NamedTypeSymbol ContainingType => _file;
 
-        protected override TypeRefContext CreateTypeRefContext()
-            => new TypeRefContext(_syntax.ContainingSourceUnit, null);
+        protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(null);
 
         internal QualifiedName QualifiedName => NameUtils.MakeQualifiedName(_syntax.Name, _syntax.ContainingNamespace);
 

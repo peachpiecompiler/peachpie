@@ -35,7 +35,7 @@ namespace Pchp.CodeAnalysis.Symbols
         ParameterSymbol[] CreateParameters(SourceRoutineSymbol originalRoutine)
         {
             // resolve type of $this
-            TypeSymbol thisType = originalRoutine.ThisParameter?.Type ?? (TypeSymbol)originalRoutine.DeclaringCompilation.ObjectType;
+            TypeSymbol thisType = originalRoutine.PhpThisVariablePlace?.TypeOpt ?? (TypeSymbol)originalRoutine.DeclaringCompilation.ObjectType;
 
             Debug.Assert(thisType != null);
 

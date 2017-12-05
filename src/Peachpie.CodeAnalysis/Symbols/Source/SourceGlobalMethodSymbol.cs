@@ -55,7 +55,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return Array.Empty<SourceParameterSymbol>();
         }
 
-        public override ParameterSymbol ThisParameter => this.ImplicitParameters.First(p => p.Name == SpecialParameterSymbol.ThisName);
+        public ParameterSymbol ThisParameter => this.ImplicitParameters.First(p => p.Name == SpecialParameterSymbol.ThisName);
 
         public ParameterSymbol SelfParameter => this.ImplicitParameters.First(p => p.Name == SpecialParameterSymbol.SelfName);
 
@@ -103,6 +103,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override PhpCompilation DeclaringCompilation => _file.DeclaringCompilation;
 
-        protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(_file.SyntaxTree.Source, null);
+        protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(null);
     }
 }

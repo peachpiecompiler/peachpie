@@ -74,8 +74,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected abstract TypeRefContext CreateTypeRefContext();
 
-        public abstract ParameterSymbol ThisParameter { get; }
-
         internal abstract Signature SyntaxSignature { get; }
 
         /// <summary>

@@ -336,6 +336,51 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
     }
 
+    internal class OperatorPlace : IPlace
+    {
+        readonly MethodSymbol _operator;
+        readonly IPlace _operand;
+
+        public OperatorPlace(MethodSymbol @operator, IPlace operand)
+        {
+            Debug.Assert(@operator != null);
+            Debug.Assert(@operator.HasThis == false);
+            Debug.Assert(operand != null);
+
+            _operator = @operator;
+            _operand = operand;
+        }
+
+        public TypeSymbol TypeOpt => _operator.ReturnType;
+
+        public bool HasAddress => false;
+
+        public TypeSymbol EmitLoad(ILBuilder il)
+        {
+            _operand.EmitLoad(il);
+
+            il.EmitOpCode(ILOpCode.Call, _operator.GetCallStackBehavior());
+            il.EmitToken(_operator, null, DiagnosticBag.GetInstance());
+
+            return TypeOpt;
+        }
+
+        public void EmitLoadAddress(ILBuilder il)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void EmitStore(ILBuilder il)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void EmitStorePrepare(ILBuilder il)
+        {
+            throw new NotSupportedException();
+        }
+    }
+
     #endregion
 
     #region IBoundReference
@@ -873,13 +918,48 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         TypeSymbol IPlace.EmitLoad(ILBuilder il) => _place.EmitLoad(il);
 
-        void IPlace.EmitStorePrepare(ILBuilder il) { }
+        void IPlace.EmitStorePrepare(ILBuilder il) => _place.EmitStorePrepare(il);
 
         void IPlace.EmitStore(ILBuilder il) => _place.EmitStore(il);
 
         void IPlace.EmitLoadAddress(ILBuilder il) => _place.EmitLoadAddress(il);
 
         #endregion
+    }
+
+    internal sealed class BoundThisPlace : IBoundReference
+    {
+        readonly IPlace _place;
+        readonly BoundAccess _access;
+
+        public BoundThisPlace(IPlace place, BoundAccess access)
+        {
+            Contract.ThrowIfNull(place);
+
+            _place = place;
+            _access = access;
+        }
+
+        public TypeSymbol TypeOpt => _place.TypeOpt;
+
+        public TypeSymbol EmitLoad(CodeGenerator cg)
+        {
+            // TODO: EnsureArray
+
+            return _place.EmitLoad(cg.Builder);
+        }
+
+        public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null) { }
+
+        public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
+        {
+            throw new InvalidOperationException();
+        }
+
+        public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null)
+        {
+            throw new InvalidOperationException();
+        }
     }
 
     internal class BoundSuperglobalPlace : IBoundReference
@@ -1721,8 +1801,9 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // Template: Invoke(TInstance, Context, [string name])
 
-            _lazyLoadCallSite.EmitLoadContext();                                    // ctx : Context
-            _lazyLoadCallSite.EmitNameParam(Name.NameExpression);                   // [name] : string
+            _lazyLoadCallSite.EmitLoadContext();                    // ctx : Context
+            _lazyLoadCallSite.EmitNameParam(Name.NameExpression);   // [name] : string
+            _lazyLoadCallSite.EmitCallerTypeParam();                // [classctx] : RuntimeTypeHandle
 
             // Target()
             var functype = cg.Factory.GetCallSiteDelegateType(
@@ -1768,6 +1849,9 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // [name] : string
             _lazyStoreCallSite.EmitNameParam(Name.NameExpression);
+
+            // [classctx] : RuntimeTypeHandle
+            _lazyStoreCallSite.EmitCallerTypeParam();                // [classctx] : RuntimeTypeHandle
         }
 
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType)

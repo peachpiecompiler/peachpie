@@ -81,10 +81,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     return new ParamPlace(global.SelfParameter);
                 }
-                //else if (this.Routine is SourceLambdaSymbol lambda)
-                //{
-                //    lambda.SelfParameter ...
-                //}
+                else if (this.Routine is SourceLambdaSymbol lambda)
+                {
+                    return lambda.GetCallerTypePlace();
+                }
 
                 return null;
             }
@@ -2903,6 +2903,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Debug.Assert(p != null, nameof(p));
             return new ParamPlace(p).EmitLoad(il);
+        }
+
+        public static TypeSymbol EmitLoad(this FieldSymbol f, ILBuilder il, IPlace holder = null)
+        {
+            Debug.Assert(f != null, nameof(f));
+            return new FieldPlace(holder, f).EmitLoad(il);
         }
     }
 }

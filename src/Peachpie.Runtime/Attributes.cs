@@ -162,7 +162,7 @@ namespace Pchp.Core
     /// The parameter must be of type <see cref="RuntimeTypeHandle"/>, <see cref="PhpTypeInfo"/> or <see cref="string"/>.
     /// </summary>
     /// <remarks>
-    /// The parameter is used to access calers' class context.
+    /// The parameter is used to access callers class context.
     /// The parameter must be before regular parameters.</remarks>
     [AttributeUsage(AttributeTargets.Parameter)]
     public sealed class ImportCallerClassAttribute : Attribute
