@@ -1851,7 +1851,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _lazyStoreCallSite.EmitNameParam(Name.NameExpression);
 
             // [classctx] : RuntimeTypeHandle
-            _lazyLoadCallSite.EmitCallerTypeParam();                // [classctx] : RuntimeTypeHandle
+            _lazyStoreCallSite.EmitCallerTypeParam();                // [classctx] : RuntimeTypeHandle
         }
 
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
