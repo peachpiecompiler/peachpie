@@ -46,11 +46,6 @@ namespace Pchp.Core.Dynamic
             throw new ArgumentException(string.Format("Function '{0}' not found!", nameText));
         }
 
-        protected void Combine(ref BindingRestrictions restrictions, BindingRestrictions restriction)
-        {
-            restrictions = restrictions.Merge(restriction);
-        }
-
         #region DynamicMetaObjectBinder
 
         public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)

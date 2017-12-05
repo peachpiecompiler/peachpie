@@ -19,18 +19,7 @@ namespace Pchp.Core.Dynamic
         {
             if (hasTargetInstance)
             {
-                Debug.Assert(target != null);
-
-                if (BinderHelpers.TryTargetAsObject(target, out target))
-                {
-                    this.AddRestriction(target.Restrictions);
-                    this.TargetInstance = target.Expression;
-                    this.CurrentTargetInstance = target.Value;
-                    if (this.TargetType == null && target.Value != null)
-                    {
-                        this.TargetType = target.Value.GetPhpTypeInfo();
-                    }
-                }
+                ProcessTarget(target);
             }
             else
             {
@@ -50,6 +39,22 @@ namespace Pchp.Core.Dynamic
 
             //
             return this;
+        }
+
+        void ProcessTarget(DynamicMetaObject target)
+        {
+            Debug.Assert(target != null);
+
+            if (BinderHelpers.TryTargetAsObject(target, out target))
+            {
+                this.AddRestriction(target.Restrictions);
+                this.TargetInstance = target.Expression;
+                this.CurrentTargetInstance = target.Value;
+                if (this.TargetType == null && target.Value != null)
+                {
+                    this.TargetType = target.Value.GetPhpTypeInfo();
+                }
+            }
         }
 
         bool ProcessArg(DynamicMetaObject arg)
