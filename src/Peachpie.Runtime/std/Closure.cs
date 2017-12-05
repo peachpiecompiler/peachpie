@@ -15,8 +15,8 @@ public sealed class Closure : IPhpCallable
     /// <summary>Current runtime context.</summary>
     internal readonly Context _ctx;
 
-    /// <summary>Current class scope. (class context, self, bound scope)</summary>
-    internal readonly RuntimeTypeHandle _classCtx;
+    /// <summary>Current class scope. (class context)</summary>
+    internal readonly RuntimeTypeHandle _scope;
 
     /// <summary>Reference to <c>this</c> instance. Can be <c>null</c>.</summary>
     internal readonly object _this;
@@ -44,7 +44,7 @@ public sealed class Closure : IPhpCallable
         _callable = routine;
         _ctx = ctx;
         _this = @this;
-        _classCtx = scope;
+        _scope = scope;
 
         this.parameter = parameter;
         this.@static = @static;
@@ -53,13 +53,13 @@ public sealed class Closure : IPhpCallable
     /// <summary>
     /// Duplicates a closure with a specific bound object and class scope.
     /// </summary>
-    public static Closure bind(Closure closure, object newthis, string newscope = null) => closure.bindTo(newthis, newscope);
+    public static Closure bind(Closure closure, object newthis, PhpValue newscope = default(PhpValue)) => closure.bindTo(newthis, newscope);
 
     /// <summary>
     /// Create and return a new anonymous function from given callable using the current scope.
     /// This method checks if the callable is callable in the current scope and throws a TypeError if it is not.
     /// </summary>
-    public static Closure fromCallable(Context ctx, [ImportCallerClass]RuntimeTypeHandle scope, IPhpCallable callable)
+    public static Closure fromCallable(Context ctx, IPhpCallable callable)
     {
         if (callable == null)
         {
@@ -72,29 +72,49 @@ public sealed class Closure : IPhpCallable
         }
 
         //
-        return new Closure(ctx, callable, null, scope, PhpArray.Empty, PhpArray.Empty);
+        return new Closure(ctx, callable, null, default(RuntimeTypeHandle), PhpArray.Empty, PhpArray.Empty);
     }
 
     /// <summary>
     /// Duplicates the closure with a new bound object and class scope.
     /// </summary>
-    public Closure bindTo(object newthis, string newscope = null)
+    public Closure bindTo(object newthis, PhpValue newscope = default(PhpValue))
     {
-        Debug.Assert(newscope == null, "newscope is not supported yet.");
+        // create new Closure with updated '$this' and `scope`
 
-        // create new Closure with updated '$this'
+        return new Closure(_ctx, _callable, newthis, ResolveNewScope(newthis, newscope), parameter, @static);
+    }
 
-        if (!ReferenceEquals(_this, newthis))   // TODO: newscope
+    internal RuntimeTypeHandle ResolveNewScope(object newthis, PhpValue newscope = default(PhpValue))
+    {
+        if (newscope.IsSet)
         {
-            return new Closure(_ctx, _callable,
-                @this: newthis,
-                scope: ReferenceEquals(newthis, null) ? default(RuntimeTypeHandle) : newthis.GetType().TypeHandle,
-                parameter: parameter,
-                @static: @static);
+            // Operators.TypeNameOrObjectToType(newscope) + handle "static"
+
+            object obj;
+            string str;
+
+            if ((obj = (newscope.AsObject())) != null)
+            {
+                return obj.GetType().TypeHandle;
+            }
+            else if ((str = PhpVariable.AsString(newscope)) != null)
+            {
+                return "static".Equals(str, StringComparison.OrdinalIgnoreCase)
+                    ? _scope
+                    : _ctx.GetDeclaredTypeOrThrow(str, true).TypeHandle;
+            }
+            else if (newscope.IsNull)
+            {
+                return default(RuntimeTypeHandle);
+            }
+            else
+            {
+                throw new ArgumentException(nameof(newscope));
+            }
         }
 
-        // '$this' was not changed
-        return this;
+        return ReferenceEquals(newthis, null) ? _scope : newthis.GetType().TypeHandle;
     }
 
     /// <summary>

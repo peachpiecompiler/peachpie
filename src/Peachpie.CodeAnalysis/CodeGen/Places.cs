@@ -1801,8 +1801,9 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // Template: Invoke(TInstance, Context, [string name])
 
-            _lazyLoadCallSite.EmitLoadContext();                                    // ctx : Context
-            _lazyLoadCallSite.EmitNameParam(Name.NameExpression);                   // [name] : string
+            _lazyLoadCallSite.EmitLoadContext();                    // ctx : Context
+            _lazyLoadCallSite.EmitNameParam(Name.NameExpression);   // [name] : string
+            _lazyLoadCallSite.EmitCallerTypeParam();                // [classctx] : RuntimeTypeHandle
 
             // Target()
             var functype = cg.Factory.GetCallSiteDelegateType(
@@ -1848,6 +1849,9 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // [name] : string
             _lazyStoreCallSite.EmitNameParam(Name.NameExpression);
+
+            // [classctx] : RuntimeTypeHandle
+            _lazyLoadCallSite.EmitCallerTypeParam();                // [classctx] : RuntimeTypeHandle
         }
 
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType)

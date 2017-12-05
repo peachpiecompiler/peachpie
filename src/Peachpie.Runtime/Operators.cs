@@ -1290,7 +1290,7 @@ namespace Pchp.Core
 
         public static Context Context(this Closure closure) => closure._ctx;
 
-        public static RuntimeTypeHandle Scope(this Closure closure) => closure._classCtx;
+        public static RuntimeTypeHandle Scope(this Closure closure) => closure._scope;
 
         public static object This(this Closure closure) => closure._this;
 
