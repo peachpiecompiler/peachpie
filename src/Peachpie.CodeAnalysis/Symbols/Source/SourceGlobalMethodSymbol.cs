@@ -103,6 +103,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override PhpCompilation DeclaringCompilation => _file.DeclaringCompilation;
 
-        protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(_file.SyntaxTree.Source, null);
+        protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(null);
     }
 }

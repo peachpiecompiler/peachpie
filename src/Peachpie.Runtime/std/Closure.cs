@@ -86,7 +86,11 @@ public sealed class Closure : IPhpCallable
 
         if (!ReferenceEquals(_this, newthis))   // TODO: newscope
         {
-            return new Closure(_ctx, _callable, newthis, _classCtx, parameter, @static);
+            return new Closure(_ctx, _callable,
+                @this: newthis,
+                scope: ReferenceEquals(newthis, null) ? default(RuntimeTypeHandle) : newthis.GetType().TypeHandle,
+                parameter: parameter,
+                @static: @static);
         }
 
         // '$this' was not changed

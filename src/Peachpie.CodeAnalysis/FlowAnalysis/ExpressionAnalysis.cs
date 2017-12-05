@@ -1252,7 +1252,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (resolvedtype != null)
                 {
                     var candidates = resolvedtype.LookupMethods(x.Name.NameValue.Name.Value);
-                    x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, this.TypeCtx.ContainingType);
+                    x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, this.TypeCtx.SelfType);
                 }
             }
 
@@ -1273,7 +1273,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var candidates = x.TypeRef.ResolvedType.LookupMethods(x.Name.NameValue.Name.Value);
                 // if (candidates.Any(c => c.HasThis)) throw new NotImplementedException("instance method called statically");
 
-                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, this.TypeCtx.ContainingType);
+                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, this.TypeCtx.SelfType);
             }
 
             BindTargetMethod(x);
@@ -1316,17 +1316,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 switch (((ReservedTypeRef)tref.TypeRef).Type)
                 {
                     case ReservedTypeRef.ReservedType.self:
-                        tref.ResolvedType = TypeCtx.ContainingType ?? new MissingMetadataTypeSymbol(tref.TypeRef.QualifiedName.ToString(), 0, false);
+                        tref.ResolvedType = TypeCtx.SelfType ?? new MissingMetadataTypeSymbol(tref.TypeRef.QualifiedName.ToString(), 0, false);
                         break;
 
                     case ReservedTypeRef.ReservedType.parent:
-                        tref.ResolvedType = TypeCtx.ContainingType?.BaseType ?? new MissingMetadataTypeSymbol(tref.TypeRef.QualifiedName.ToString(), 0, false);
+                        tref.ResolvedType = TypeCtx.SelfType?.BaseType ?? new MissingMetadataTypeSymbol(tref.TypeRef.QualifiedName.ToString(), 0, false);
                         break;
 
                     case ReservedTypeRef.ReservedType.@static:
-                        if (TypeCtx.ContainingType != null && TypeCtx.ContainingType.IsSealed)
+                        if (TypeCtx.SelfType != null && TypeCtx.SelfType.IsSealed)
                         {
-                            tref.ResolvedType = TypeCtx.ContainingType;
+                            tref.ResolvedType = TypeCtx.SelfType;
                         }
                         else
                         {
@@ -1347,9 +1347,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 else if (tref.ObjectTypeInfoSemantic)
                 {
                     // $this:
-                    if (tref.TypeExpression is BoundVariableRef varref && varref.Name.NameValue == VariableName.ThisVariableName)
+                    if (tref.TypeExpression is BoundVariableRef varref && varref.Name.NameValue.IsThisVariableName)
                     {
-                        tref.ResolvedType = TypeCtx.ContainingType; // $this, self
+                        tref.ResolvedType = TypeCtx.ThisType; // $this, self
                     }
                     //else if (IsClassOnly(tref.TypeExpression.TypeRefMask))
                     //{
@@ -1372,7 +1372,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var candidates = type.InstanceConstructors.ToArray();
 
                 //
-                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, this.TypeCtx.ContainingType);
+                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, this.TypeCtx.SelfType);
 
                 // reanalyse candidates
                 foreach (var c in candidates)
@@ -1489,7 +1489,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         // TODO: visibility and resolution (model)
                         var fldname = x.FieldName.NameValue.Value;
                         var member = resolvedtype.ResolveInstanceProperty(fldname);
-                        if (member != null && member.IsAccessible(this.TypeCtx.ContainingType))
+                        if (member != null && member.IsAccessible(this.TypeCtx.SelfType))
                         {
                             Debug.Assert(member is FieldSymbol || member is PropertySymbol);
                             if (member is FieldSymbol)
@@ -1705,20 +1705,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             switch (x.Type)
             {
                 case PseudoConstUse.Types.Line:
-                    value = TypeCtx.SourceUnit.GetLineFromPosition(x.PhpSyntax.Span.Start) + 1;
+                    value = x.PhpSyntax.ContainingSourceUnit.GetLineFromPosition(x.PhpSyntax.Span.Start) + 1;
                     break;
 
                 case PseudoConstUse.Types.Class:
                 case PseudoConstUse.Types.Trait:
-                    value = (TypeCtx.ContainingType is IPhpTypeSymbol)
-                        ? ((IPhpTypeSymbol)TypeCtx.ContainingType).FullName.ToString()
+                    value = (TypeCtx.SelfType is IPhpTypeSymbol)
+                        ? ((IPhpTypeSymbol)TypeCtx.SelfType).FullName.ToString()
                         : string.Empty;
                     break;
 
                 case PseudoConstUse.Types.Method:
                     value = Routine != null
-                        ? TypeCtx.ContainingType is IPhpTypeSymbol
-                            ? ((IPhpTypeSymbol)TypeCtx.ContainingType).FullName.ToString(new Name(Routine.Name), false)
+                        ? TypeCtx.SelfType is IPhpTypeSymbol
+                            ? ((IPhpTypeSymbol)TypeCtx.SelfType).FullName.ToString(new Name(Routine.Name), false)
                             : Routine.Name
                         : string.Empty;
                     break;

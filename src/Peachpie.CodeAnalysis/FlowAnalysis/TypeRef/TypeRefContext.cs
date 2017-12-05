@@ -36,32 +36,37 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         private readonly List<ITypeRef>/*!*/_typeRefs;
 
         /// <summary>
-        /// Contains type of current context (refers to <c>self</c> or <c>$this</c>).
+        /// Contains type of current context (refers to <c>self</c>).
         /// Can be <c>null</c>.
         /// </summary>
-        internal NamedTypeSymbol ContainingType => _containingType;
-        private readonly SourceTypeSymbol _containingType;
+        internal NamedTypeSymbol SelfType => _selfType;
+        private readonly SourceTypeSymbol _selfType;
+
+        /// <summary>
+        /// Type corresponding to <c>$this</c> variable.
+        /// Can be <c>null</c> if <c>$this</c> is resolved in runtime.
+        /// </summary>
+        internal NamedTypeSymbol ThisType => _thisType;
+        private readonly SourceTypeSymbol _thisType;
 
         /// <summary>
         /// When resolved, contains type mask of <c>static</c> type.
         /// </summary>
         private TypeRefMask _staticTypeMask;
 
-        /// <summary>
-        /// Current source unit. Used for resolving current file name, elements position etc. Can be <c>null</c>.
-        /// </summary>
-        public SourceUnit SourceUnit { get { return _sourceUnit; } }
-        private readonly SourceUnit _sourceUnit;
-
         #endregion
 
         #region Initialization
 
-        internal TypeRefContext(SourceUnit sourceUnit, SourceTypeSymbol containingType)
+        internal TypeRefContext(SourceTypeSymbol selfType)
+            : this(selfType, thisType: selfType)
+        { }
+
+        internal TypeRefContext(SourceTypeSymbol selfType, SourceTypeSymbol thisType)
         {
-            _sourceUnit = sourceUnit;
             _typeRefs = new List<ITypeRef>();
-            _containingType = containingType;
+            _selfType = selfType;
+            _thisType = thisType;
         }
 
         /// <summary>
@@ -357,9 +362,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             Contract.ThrowIfNull(tref);
 
-            var dvar = tref.ClassNameVar as AST.DirectVarUse;
-            if (dvar != null && dvar.IsMemberOf == null && dvar.VarName.IsThisVariableName)
-                return GetThisTypeMask();
+            if (tref.ClassNameVar is AST.DirectVarUse dvar)
+            {
+                if (dvar.IsMemberOf == null && dvar.VarName.IsThisVariableName)
+                {
+                    return GetThisTypeMask();
+                }
+            }
 
             //
             return TypeRefMask.AnyType;
@@ -556,9 +565,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             TypeRefMask result = TypeRefMask.AnyType;
 
-            if (_containingType != null)
+            if (_selfType != null)
             {
-                result = GetTypeCtxMask(_containingType.Syntax);
+                result = GetTypeCtxMask(_selfType.Syntax);
                 result.IncludesSubclasses = false;
             }
 
@@ -570,7 +579,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetThisTypeMask()
         {
-            return GetTypeCtxMask(_containingType?.Syntax);
+            return GetTypeCtxMask(_thisType?.Syntax);
         }
 
         /// <summary>
@@ -578,9 +587,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetParentTypeMask()
         {
-            if (_containingType != null && _containingType.Syntax.BaseClass != null)
+            if (_selfType != null && _selfType.Syntax.BaseClass != null)
             {
-                return GetTypeMask(new ClassTypeRef(_containingType.Syntax.BaseClass.ClassName), false);
+                return GetTypeMask(new ClassTypeRef(_selfType.Syntax.BaseClass.ClassName), false);
             }
             else
             {
