@@ -3828,7 +3828,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
                 else if (Access.IsReadRef)
                 {
-                    Debug.WriteLine("TODO: we need reference to PhpValue so we can modifiy its content! This is not compatible with behavior of = &$null[0].");
+                    Debug.WriteLine("TODO: we need reference to PhpValue so we can modify its content! This is not compatible with behavior of = &$null[0].");
                     // PhpValue.GetItemRef(index, bool)
                     cg.Builder.EmitBoolConstant(Access.IsQuiet);
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureItemAlias_PhpValue_PhpValue_Bool);

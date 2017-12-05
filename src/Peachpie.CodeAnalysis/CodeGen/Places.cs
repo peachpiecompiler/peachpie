@@ -918,13 +918,48 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         TypeSymbol IPlace.EmitLoad(ILBuilder il) => _place.EmitLoad(il);
 
-        void IPlace.EmitStorePrepare(ILBuilder il) { }
+        void IPlace.EmitStorePrepare(ILBuilder il) => _place.EmitStorePrepare(il);
 
         void IPlace.EmitStore(ILBuilder il) => _place.EmitStore(il);
 
         void IPlace.EmitLoadAddress(ILBuilder il) => _place.EmitLoadAddress(il);
 
         #endregion
+    }
+
+    internal sealed class BoundThisPlace : IBoundReference
+    {
+        readonly IPlace _place;
+        readonly BoundAccess _access;
+
+        public BoundThisPlace(IPlace place, BoundAccess access)
+        {
+            Contract.ThrowIfNull(place);
+
+            _place = place;
+            _access = access;
+        }
+
+        public TypeSymbol TypeOpt => _place.TypeOpt;
+
+        public TypeSymbol EmitLoad(CodeGenerator cg)
+        {
+            // TODO: EnsureArray
+
+            return _place.EmitLoad(cg.Builder);
+        }
+
+        public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null) { }
+
+        public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
+        {
+            throw new InvalidOperationException();
+        }
+
+        public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null)
+        {
+            throw new InvalidOperationException();
+        }
     }
 
     internal class BoundSuperglobalPlace : IBoundReference

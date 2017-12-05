@@ -57,7 +57,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
 
                     //
-                    return new ReadOnlyPlace(thisPlace);
+                    return thisPlace;
                 }
                 else
                 {
