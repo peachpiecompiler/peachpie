@@ -69,7 +69,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void VisitNew(BoundNewEx x)
         {
-            if (!x.TypeRef.ResolvedType.IsErrorTypeOrNull())
+            if (x.TypeRef.ResolvedType.IsValidType())
             {
                 if (x.TypeRef.ResolvedType.IsInterfaceType())
                 {

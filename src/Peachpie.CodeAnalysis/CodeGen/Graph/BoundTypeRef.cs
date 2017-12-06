@@ -82,7 +82,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             TypeSymbol t;
 
-            if (!this.ResolvedType.IsErrorTypeOrNull())
+            if (this.ResolvedType.IsValidType())
             {
                 t = EmitLoadPhpTypeInfo(cg, this.ResolvedType);
             }

@@ -33,6 +33,16 @@ namespace Pchp.CodeAnalysis.Symbols
             return actual;
         }
 
+        /// <summary>Assertion that type is valid.</summary>
+        public static TypeSymbol ExpectValid(this TypeSymbol actual)
+        {
+            Debug.Assert(actual.IsValidType());
+            return actual;
+        }
+
+        /// <summary>Gets value indicating the type is not null, not ambiguous and not error type.</summary>
+        public static bool IsValidType(this TypeSymbol type) => !IsErrorTypeOrNull(type);
+
         public static bool ImplementsInterface(this TypeSymbol subType, TypeSymbol superInterface/*, ref HashSet<DiagnosticInfo> useSiteDiagnostics*/)
         {
             if (subType == superInterface)

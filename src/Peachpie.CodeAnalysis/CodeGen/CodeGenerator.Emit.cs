@@ -389,7 +389,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public TypeSymbol EmitLoadToken(TypeSymbol type, SyntaxNode syntaxNodeOpt)
         {
-            if (!type.IsErrorTypeOrNull())
+            if (type.IsValidType())
             {
                 _il.EmitLoadToken(_moduleBuilder, _diagnostics, type, syntaxNodeOpt);
             }
@@ -2177,7 +2177,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public void EmitExpectTypeDeclared(TypeSymbol d)
         {
-            Debug.Assert(!d.IsErrorTypeOrNull());
+            Debug.Assert(d.IsValidType());
 
             if (d is NamedTypeSymbol ntype)
             {

@@ -2520,7 +2520,7 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override void EmitBeforeCall(CodeGenerator cg)
         {
             // ensure type is declared
-            if (!_typeRef.ResolvedType.IsErrorTypeOrNull())
+            if (_typeRef.ResolvedType.IsValidType())
             {
                 cg.EmitExpectTypeDeclared(_typeRef.ResolvedType);
             }
@@ -2565,7 +2565,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                if (!_typeref.ResolvedType.IsErrorTypeOrNull())
+                if (_typeref.ResolvedType.IsValidType())
                 {
                     // ensure type is delcared
                     cg.EmitExpectTypeDeclared(_typeref.ResolvedType);
@@ -4108,7 +4108,7 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(type.IsReferenceType);
 
             //
-            if (!AsType.ResolvedType.IsErrorTypeOrNull())
+            if (AsType.ResolvedType.IsValidType())
             {
                 if (!isnull)
                 {
