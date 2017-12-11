@@ -444,10 +444,14 @@ namespace Pchp.CodeAnalysis.Symbols
                 TypeNameOrObjectToType_Context_PhpValue = ct.Operators.Method("TypeNameOrObjectToType", ct.Context, ct.PhpValue);
 
                 Clone_Context_Object = ct.Operators.Method("Clone", ct.Context, ct.Object);
-                BuildClosure_RoutineInfo_PhpArray_PhpArray = ct.Operators.Method("BuildClosure", ct.RoutineInfo, ct.PhpArray, ct.PhpArray);
                 Eval_Context_PhpArray_object_RuntimeTypeHandle_string_string_int_int = ct.Operators.Method("Eval", ct.Context, ct.PhpArray, ct.Object, ct.RuntimeTypeHandle, ct.String, ct.String, ct.Int32, ct.Int32);
                 GetName_PhpTypeInfo = ct.PhpTypeInfo.Property("Name");
                 GetTypeHandle_PhpTypeInfo = ct.PhpTypeInfo.Property("TypeHandle");
+
+                BuildClosure_Context_IPhpCallable_Object_RuntimeTypeHandle_PhpArray_PhpArray = ct.Operators.Method("BuildClosure", ct.Context, ct.IPhpCallable, ct.Object, ct.RuntimeTypeHandle, ct.PhpArray, ct.PhpArray);
+                This_Closure = ct.Operators.Method("This", ct.Closure);
+                Scope_Closure = ct.Operators.Method("Scope", ct.Closure);
+                Context_Closure = ct.Operators.Method("Context", ct.Closure);
 
                 BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate = ct.Operators.Method("BuildGenerator", ct.Context, ct.Object, ct.PhpArray, ct.PhpArray, ct.GeneratorStateMachineDelegate);
                 GetGeneratorState_Generator = ct.Operators.Method("GetGeneratorState", ct.Generator);
@@ -525,8 +529,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 TypeNameOrObjectToType_Context_PhpValue,
 
                 Clone_Context_Object,
-                BuildClosure_RoutineInfo_PhpArray_PhpArray,
                 Eval_Context_PhpArray_object_RuntimeTypeHandle_string_string_int_int,
+
+                BuildClosure_Context_IPhpCallable_Object_RuntimeTypeHandle_PhpArray_PhpArray,
+                This_Closure, Scope_Closure, Context_Closure,
 
                 BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate,
                 GetGeneratorState_Generator, SetGeneratorState_Generator_int, HandleGeneratorException_Generator,

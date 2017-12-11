@@ -94,6 +94,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         internal TypeSymbol ResolveType(INamedTypeRef dtype)
         {
+            if (dtype.ClassName.IsReservedClassName)
+            {
+                throw ExceptionUtilities.UnexpectedValue(dtype.ClassName);
+            }
+
             return (TypeSymbol)_model.GetType(dtype.ClassName);
         }
 
@@ -1252,7 +1257,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (resolvedtype != null)
                 {
                     var candidates = resolvedtype.LookupMethods(x.Name.NameValue.Name.Value);
-                    x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, this.TypeCtx.ContainingType);
+                    x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, this.TypeCtx.SelfType);
                 }
             }
 
@@ -1273,54 +1278,43 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var candidates = x.TypeRef.ResolvedType.LookupMethods(x.Name.NameValue.Name.Value);
                 // if (candidates.Any(c => c.HasThis)) throw new NotImplementedException("instance method called statically");
 
-                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, this.TypeCtx.ContainingType);
+                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, this.TypeCtx.SelfType);
             }
 
             BindTargetMethod(x);
         }
 
-        public override void VisitTypeRef(BoundTypeRef tref)
+        TypeSymbol ResolveTypeRef(TypeRef tref, BoundExpression expr = null, bool objectTypeInfoSemantic = false)
         {
-            if (tref == null)
-                return;
-
-            Debug.Assert(!(tref is BoundMultipleTypeRef));
-
-            if (tref.TypeRef is INamedTypeRef)
+            if (tref is INamedTypeRef namedref)
             {
-                var qname = ((INamedTypeRef)tref.TypeRef).ClassName;
-                if (qname.IsReservedClassName)
+                if (tref is TranslatedTypeRef translatedref)
                 {
-                    throw ExceptionUtilities.UnexpectedValue(qname);
+                    // resolve self or parent directly
+                    var resolved = ResolveTypeRef(translatedref.OriginalType);
+                    if (resolved.IsValidType())
+                    {
+                        return resolved;
+                    }
                 }
-                else
-                {
-                    tref.ResolvedType = (TypeSymbol)_model.GetType(qname);
-                }
+
+                return ResolveType(namedref);
             }
-            else if (tref.TypeRef is AnonymousTypeRef)
-            {
-                var atqname = ((AnonymousTypeRef)tref.TypeRef).TypeDeclaration.GetAnonymousTypeQualifiedName();
-                tref.ResolvedType = (TypeSymbol)_model.GetType(atqname);
-                Debug.Assert(tref.ResolvedType != null);
-            }
-            else if (tref.TypeRef is ReservedTypeRef)
+            else if (tref is ReservedTypeRef)
             {
                 // resolve types that parser skipped
-                switch (((ReservedTypeRef)tref.TypeRef).Type)
+                switch (((ReservedTypeRef)tref).Type)
                 {
                     case ReservedTypeRef.ReservedType.self:
-                        tref.ResolvedType = TypeCtx.ContainingType ?? new MissingMetadataTypeSymbol(tref.TypeRef.QualifiedName.ToString(), 0, false);
-                        break;
+                        return TypeCtx.SelfType ?? new MissingMetadataTypeSymbol(tref.QualifiedName.ToString(), 0, false);
 
                     case ReservedTypeRef.ReservedType.parent:
-                        tref.ResolvedType = TypeCtx.ContainingType?.BaseType ?? new MissingMetadataTypeSymbol(tref.TypeRef.QualifiedName.ToString(), 0, false);
-                        break;
+                        return TypeCtx.SelfType?.BaseType ?? new MissingMetadataTypeSymbol(tref.QualifiedName.ToString(), 0, false);
 
                     case ReservedTypeRef.ReservedType.@static:
-                        if (TypeCtx.ContainingType != null && TypeCtx.ContainingType.IsSealed)
+                        if (TypeCtx.SelfType != null && TypeCtx.SelfType.IsSealed)
                         {
-                            tref.ResolvedType = TypeCtx.ContainingType;
+                            return TypeCtx.SelfType;
                         }
                         else
                         {
@@ -1329,8 +1323,55 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         break;
                 }
             }
+            else if (tref is AnonymousTypeRef anonymousref)
+            {
+                return ((TypeSymbol)_model
+                    .GetType(anonymousref.TypeDeclaration.GetAnonymousTypeQualifiedName()))
+                    .ExpectValid();
+            }
+            else if (tref is IndirectTypeRef)
+            {
+                Debug.Assert(expr != null);
 
+                // string:
+                if (expr.ConstantValue.HasValue && expr.ConstantValue.Value is string tname)
+                {
+                    return (TypeSymbol)_model.GetType(NameUtils.MakeQualifiedName(tname, true));
+                }
+                else if (objectTypeInfoSemantic)
+                {
+                    // $this:
+                    if (expr is BoundVariableRef varref && varref.Name.NameValue.IsThisVariableName)
+                    {
+                        return TypeCtx.ThisType; // $this, self
+                    }
+                    //else if (IsClassOnly(tref.TypeExpression.TypeRefMask))
+                    //{
+                    //    // ...
+                    //}
+                }
+            }
+
+            //
+            return null;
+        }
+
+        public override void VisitTypeRef(BoundTypeRef tref)
+        {
+            if (tref == null)
+            {
+                return;
+            }
+
+            Debug.Assert(!(tref is BoundMultipleTypeRef));
+
+            // visit indirect type
             Accept(tref.TypeExpression);
+
+            // resolve type symbol
+            tref.ResolvedType = ResolveTypeRef(tref.TypeRef,
+                expr: tref.TypeExpression,
+                objectTypeInfoSemantic: tref.ObjectTypeInfoSemantic);
         }
 
         public override void VisitNew(BoundNewEx x)
@@ -1346,7 +1387,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var candidates = type.InstanceConstructors.ToArray();
 
                 //
-                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, this.TypeCtx.ContainingType);
+                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, this.TypeCtx.SelfType);
 
                 // reanalyse candidates
                 foreach (var c in candidates)
@@ -1463,7 +1504,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         // TODO: visibility and resolution (model)
                         var fldname = x.FieldName.NameValue.Value;
                         var member = resolvedtype.ResolveInstanceProperty(fldname);
-                        if (member != null && member.IsAccessible(this.TypeCtx.ContainingType))
+                        if (member != null && member.IsAccessible(this.TypeCtx.SelfType))
                         {
                             Debug.Assert(member is FieldSymbol || member is PropertySymbol);
                             if (member is FieldSymbol)
@@ -1578,6 +1619,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // analyse elements
             foreach (var i in items)
             {
+                Debug.Assert(i.Value != null);
+
                 Accept(i.Key);
                 Accept(i.Value);
 
@@ -1677,20 +1720,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             switch (x.Type)
             {
                 case PseudoConstUse.Types.Line:
-                    value = TypeCtx.SourceUnit.GetLineFromPosition(x.PhpSyntax.Span.Start) + 1;
+                    value = x.PhpSyntax.ContainingSourceUnit.GetLineFromPosition(x.PhpSyntax.Span.Start) + 1;
                     break;
 
                 case PseudoConstUse.Types.Class:
                 case PseudoConstUse.Types.Trait:
-                    value = (TypeCtx.ContainingType is IPhpTypeSymbol)
-                        ? ((IPhpTypeSymbol)TypeCtx.ContainingType).FullName.ToString()
+                    value = (TypeCtx.SelfType is IPhpTypeSymbol)
+                        ? ((IPhpTypeSymbol)TypeCtx.SelfType).FullName.ToString()
                         : string.Empty;
                     break;
 
                 case PseudoConstUse.Types.Method:
                     value = Routine != null
-                        ? TypeCtx.ContainingType is IPhpTypeSymbol
-                            ? ((IPhpTypeSymbol)TypeCtx.ContainingType).FullName.ToString(new Name(Routine.Name), false)
+                        ? TypeCtx.SelfType is IPhpTypeSymbol
+                            ? ((IPhpTypeSymbol)TypeCtx.SelfType).FullName.ToString(new Name(Routine.Name), false)
                             : Routine.Name
                         : string.Empty;
                     break;
@@ -1732,7 +1775,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 x.TypeRefMask = TypeCtx.GetStringTypeMask();
 
-                if (x.TargetType.ResolvedType.IsErrorTypeOrNull() == false)
+                if (x.TargetType.ResolvedType.IsValidType())
                 {
                     x.ConstantValue = new Optional<object>(((IPhpTypeSymbol)x.TargetType.ResolvedType).FullName.ToString());
                 }

@@ -84,7 +84,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal bool CanBeNull(TypeSymbol type)
         {
-            Debug.Assert(!type.IsErrorTypeOrNull());
+            Debug.Assert(type.IsValidType());
 
             return
                 type.IsReferenceType ||

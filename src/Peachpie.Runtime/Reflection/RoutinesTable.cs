@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace Pchp.Core.Reflection
 {
+    [DebuggerNonUserCode]
     internal static class RoutinesAppContext
     {
         public static readonly Dictionary<string, int> NameToIndex = new Dictionary<string, int>();
@@ -50,6 +51,7 @@ namespace Pchp.Core.Reflection
     /// <summary>
     /// Runtime table of application PHP functions.
     /// </summary>
+    [DebuggerNonUserCode]
     internal class RoutinesTable
     {
         public class RoutinesCount

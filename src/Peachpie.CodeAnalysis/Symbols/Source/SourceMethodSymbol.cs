@@ -21,7 +21,6 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly SourceTypeSymbol _type;
         readonly MethodDecl/*!*/_syntax;
 
-        ParameterSymbol _lazyThisSymbol;
         MethodSymbol _lazyOverridenMethod;
 
         public SourceMethodSymbol(SourceTypeSymbol/*!*/type, MethodDecl/*!*/syntax)
@@ -32,20 +31,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _type = type;
             _syntax = syntax;
         }
-
-        public override ParameterSymbol ThisParameter
-        {
-            get
-            {
-                if (_lazyThisSymbol == null && this.HasThis)
-                {
-                    _lazyThisSymbol = new SpecialParameterSymbol(this, _type, SpecialParameterSymbol.ThisName, -1);
-                }
-
-                return _lazyThisSymbol;
-            }
-        }
-
+        
         public override IMethodSymbol OverriddenMethod
         {
             get

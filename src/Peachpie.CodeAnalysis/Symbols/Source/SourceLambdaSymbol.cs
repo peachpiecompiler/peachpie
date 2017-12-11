@@ -46,22 +46,16 @@ namespace Pchp.CodeAnalysis.Symbols
             return _lazyRoutineInfoField;
         }
 
+        /// <summary>Parameter containing reference to <c>Closure</c> object.</summary>
+        internal ParameterSymbol ClosureParameter => ImplicitParameters[0];
+
         protected override IEnumerable<ParameterSymbol> BuildImplicitParams()
         {
-            var index = 0;
-
-            // Context ctx
-            yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
-
-            // System.Object @this
-            if (_useThis)
+            return new[]
             {
-                yield return new SpecialParameterSymbol(
-                    this,
-                    (ContainingType is SourceTypeSymbol) ? ContainingType : DeclaringCompilation.CoreTypes.Object,  // Jakub: this is not correct according to PHP; $this may be anything and changed to anything in runtime, therefore there should be always `System.Object`. Since we cannot change the closure scope in runtime and I don't like changing scopes in runtime in general, we allow $this strongly typed to `ContainingType` 
-                    SpecialParameterSymbol.ThisName,
-                    index++);
-            }
+                // Closure <closure>
+                new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Closure, "<closure>", 0)
+            };
         }
 
         protected override IEnumerable<SourceParameterSymbol> BuildSrcParams(Signature signature, PHPDocBlock phpdocOpt = null)
@@ -71,21 +65,6 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         internal override IList<Statement> Statements => _syntax.Body.Statements;
-
-        public override ParameterSymbol ThisParameter
-        {
-            get
-            {
-                if (UseThis)
-                {
-                    return ImplicitParameters.First(p => p.Name == SpecialParameterSymbol.ThisName);
-                }
-                else
-                {
-                    return null;
-                }
-            }
-        }
 
         internal override Signature SyntaxSignature => _syntax.Signature;
 
@@ -127,6 +106,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsSealed => false;
 
-        protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(_syntax.ContainingSourceUnit, _container as SourceTypeSymbol);
+        protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(_container as SourceTypeSymbol, thisType: null);
     }
 }

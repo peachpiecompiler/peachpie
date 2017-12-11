@@ -45,7 +45,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             // $this
-            if (routine.ThisParameter != null)
+            if (routine.PhpThisVariablePlace != null)
             {
                 InitThisVar(flowCtx, state);
             }

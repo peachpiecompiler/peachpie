@@ -9,6 +9,7 @@ using System.Threading;
 
 namespace Pchp.Core.Reflection
 {
+    [DebuggerNonUserCode]
     internal static class TypesAppContext
     {
         public static readonly Dictionary<string, int> NameToIndex = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -54,6 +55,7 @@ namespace Pchp.Core.Reflection
         }
     }
 
+    [DebuggerNonUserCode]
     internal class TypesTable
     {
         public class TypesCount

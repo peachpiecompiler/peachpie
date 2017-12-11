@@ -166,7 +166,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override OperationKind Kind => OperationKind.None;
 
-        internal override Symbol Symbol => _routine.ThisParameter;
+        public override string Name => VariableName.ThisVariableName.Value;
+
+        internal override Symbol Symbol => null;
 
         public override void Accept(OperationVisitor visitor)
             => visitor.DefaultVisit(this);

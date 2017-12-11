@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Dynamic;
+using System.Linq;
 using System.Linq.Expressions;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.Core.Reflection;
@@ -20,65 +21,36 @@ namespace Pchp.Core.Dynamic
             _access = access & AccessMask.WriteMask;
         }
 
-        void ResolveArgs(DynamicMetaObject[] args, ref BindingRestrictions restrictions, out string fieldName, out Expression valueExpr)
-        {
-            int i = 0;
-
-            // name
-            if (_name != null)
-            {
-                fieldName = _name;
-            }
-            else
-            {
-                Debug.Assert(args.Length >= i && args[i].LimitType == typeof(string));
-                restrictions = restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Equal(args[i].Expression, Expression.Constant(args[i].Value)))); // args[0] == "VALUE"
-                fieldName = (string)args[i++].Value;
-            }
-
-            //
-            valueExpr = (args.Length > i && i < args.Length - 1) ? args[i].Expression : null;
-        }
-
         public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
         {
-            var restrictions = BindingRestrictions.Empty;
-            
-            Expression target_expr;
-            PhpTypeInfo phptype;
+            bool hasTargetInstance = (target.LimitType != typeof(TargetTypeParam));
 
-            //
-            string fldName;
-            Expression value;
-
-            ResolveArgs(args, ref restrictions, out fldName, out value);
-            var ctx = args[args.Length - 1];
-
-            //
-            if (target.LimitType == typeof(PhpTypeInfo))    // static field
+            var bound = new CallSiteContext()
             {
-                target_expr = null;
-                phptype = (PhpTypeInfo)target.Value;
+                ClassContext = _classContext,
+                Name = _name,
             }
-            else
+            .ProcessArgs(target, args, hasTargetInstance);
+
+            //
+            if (hasTargetInstance)
             {
-                var isobject = BinderHelpers.TryTargetAsObject(target, out DynamicMetaObject instance);
+                var isobject = bound.TargetType != null;
                 if (isobject == false)
                 {
-                    throw new NotSupportedException();
+                    throw new NotSupportedException();  // TODO: VariableMisusedAsObject
                 }
-                
-                restrictions = restrictions.Merge(instance.Restrictions);
-                target_expr = Expression.Convert(instance.Expression, instance.RuntimeType);
-                phptype = instance.RuntimeType.GetPhpTypeInfo();
+
+                // instance := (T)instance
+                bound.TargetInstance = Expression.Convert(bound.TargetInstance, bound.TargetType.Type.AsType());
             }
 
             //
-            var setter = BinderHelpers.BindField(phptype, _classContext, target_expr, fldName, ctx.Expression, _access, value);
+            var setter = BinderHelpers.BindField(bound.TargetType, bound.ClassContext, bound.TargetInstance, bound.Name, bound.Context, _access, bound.Arguments.FirstOrDefault());
             if (setter != null)
             {
                 //
-                return new DynamicMetaObject(setter, restrictions);
+                return new DynamicMetaObject(setter, bound.Restrictions);
             }
 
             // field not found

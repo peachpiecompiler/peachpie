@@ -69,6 +69,10 @@ namespace Pchp.CodeAnalysis.Semantics
         public TypeRef TypeRef => _typeRef;
         readonly TypeRef _typeRef;
 
+        /// <summary>
+        /// Gets value determining the indirect type reference can refer to an object instance which type is used to get the type info.
+        /// </summary>
+        public bool ObjectTypeInfoSemantic => _objectTypeInfoSemantic;
         readonly bool _objectTypeInfoSemantic;
 
         string DebugView

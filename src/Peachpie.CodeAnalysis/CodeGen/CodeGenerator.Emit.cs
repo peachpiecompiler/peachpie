@@ -43,7 +43,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits <c>RuntimeTypeHandle</c> of current class context.
         /// </summary>
-        public void EmitCallerRuntimeTypeHandle()
+        public TypeSymbol EmitCallerTypeHandle()
         {
             var caller = this.CallerType;
             if (caller != null)
@@ -51,15 +51,42 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // RuntimeTypeHandle
                 EmitLoadToken(caller, null);
             }
-            else if (this.Routine is SourceGlobalMethodSymbol global)
-            {
-                global.SelfParameter.EmitLoad(_il)
-                    .Expect(CoreTypes.RuntimeTypeHandle);
-            }
             else
             {
-                // default(RuntimeTypeHandle)
-                EmitLoadDefaultOfValueType(this.CoreTypes.RuntimeTypeHandle);
+                var place = RuntimeCallerTypePlace;
+                if (place != null)
+                {
+                     place.EmitLoad(_il).Expect(CoreTypes.RuntimeTypeHandle);
+                }
+                else
+                {
+                    // default(RuntimeTypeHandle)
+                    EmitLoadDefaultOfValueType(this.CoreTypes.RuntimeTypeHandle);
+                }
+            }
+            
+            //
+            return CoreTypes.RuntimeTypeHandle;
+        }
+
+        /// <summary>
+        /// In case current routine has a caller context provided in runtime,
+        /// gets its <see cref="IPlace"/>.
+        /// </summary>
+        public IPlace RuntimeCallerTypePlace
+        {
+            get
+            {
+                if (this.Routine is SourceGlobalMethodSymbol global)
+                {
+                    return new ParamPlace(global.SelfParameter);
+                }
+                else if (this.Routine is SourceLambdaSymbol lambda)
+                {
+                    return lambda.GetCallerTypePlace();
+                }
+
+                return null;
             }
         }
 
@@ -362,7 +389,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public TypeSymbol EmitLoadToken(TypeSymbol type, SyntaxNode syntaxNodeOpt)
         {
-            if (!type.IsErrorTypeOrNull())
+            if (type.IsValidType())
             {
                 _il.EmitLoadToken(_moduleBuilder, _diagnostics, type, syntaxNodeOpt);
             }
@@ -2150,7 +2177,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public void EmitExpectTypeDeclared(TypeSymbol d)
         {
-            Debug.Assert(!d.IsErrorTypeOrNull());
+            Debug.Assert(d.IsValidType());
 
             if (d is NamedTypeSymbol ntype)
             {
@@ -2364,7 +2391,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         EmitThisOrNull();
                         break;
                     case SpecialParameterSymbol.SelfName:
-                        this.EmitCallerRuntimeTypeHandle();
+                        this.EmitCallerTypeHandle();
                         break;
                     default:
                         throw ExceptionUtilities.UnexpectedValue(p.Name);
@@ -2876,6 +2903,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Debug.Assert(p != null, nameof(p));
             return new ParamPlace(p).EmitLoad(il);
+        }
+
+        public static TypeSymbol EmitLoad(this FieldSymbol f, ILBuilder il, IPlace holder = null)
+        {
+            Debug.Assert(f != null, nameof(f));
+            return new FieldPlace(holder, f).EmitLoad(il);
         }
     }
 }
