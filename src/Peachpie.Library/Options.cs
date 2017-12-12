@@ -138,6 +138,23 @@ namespace Pchp.Library
             }
         }
 
+        static PhpValue GsrSession(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
+        {
+            if (action != IniAction.Get)
+            {
+                PhpException.Throw(PhpError.Warning, "Modifying session options is not supported.");
+            }
+
+            switch (option.ToLowerInvariant())
+            {
+                case "session.serialize_handler":
+                    return (PhpValue)"php";
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(option));
+            }
+        }
+
         static Dictionary<string, OptionDefinition> _options = new Dictionary<string, OptionDefinition>(150, StringComparer.Ordinal);
 
         /// <summary>
@@ -230,6 +247,7 @@ namespace Pchp.Library
             Register("safe_mode_protected_env_vars", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
             Register("session.auto_start", IniFlags.Supported | IniFlags.Global | IniFlags.Http, EmptyGsr);
             Register("session.save_handler", IniFlags.Supported | IniFlags.Local | IniFlags.Http, EmptyGsr);
+            Register("session.serialize_handler", IniFlags.Supported | IniFlags.Local | IniFlags.Http, GsrSession);
             Register("session.name", IniFlags.Supported | IniFlags.Global | IniFlags.Http, EmptyGsr);
             Register("short_open_tag", IniFlags.Supported | IniFlags.Global, EmptyGsr);
             Register("sql.safe_mode", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);

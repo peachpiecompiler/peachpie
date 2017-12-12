@@ -1246,9 +1246,13 @@ namespace Pchp.Library
 
         internal static PhpValue GetExtreme(PhpValue[] numbers, bool maximum)
         {
-            if (numbers.Length == 1 && numbers[0].IsArray)
+            if (numbers.Length == 1)
             {
-                return FindExtreme(numbers[0].Array.Values, maximum);
+                var arr = numbers[0].AsArray();
+                if (arr != null)
+                {
+                    return FindExtreme(arr.Values, maximum);
+                }
             }
 
             //
