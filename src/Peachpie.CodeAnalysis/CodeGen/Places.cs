@@ -1985,7 +1985,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (_lazyStoreCallSite == null)
                 _lazyStoreCallSite = cg.Factory.StartCallSite("set_" + this.NameValueOpt);
 
-            _lazyLoadCallSite.Prepare();
+            _lazyStoreCallSite.Prepare();
 
             // callsite.Target callsite
             _lazyStoreCallSite.EmitLoadTarget();
