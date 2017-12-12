@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
-    <PackageReference Include="IBM.Data.DB2.Core" Version="1.0.0.100" />
+    <PackageReference Include="IBM.Data.DB2.Core" Version="1.1.1.101" />
   </ItemGroup>
 
 </Project>
