@@ -216,7 +216,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         void EmitToString(Emit.PEModuleBuilder module)
         {
-            if (this.IsInterface)
+            if (this.IsInterface || this.IsTrait)
             {
                 return;
             }
@@ -243,7 +243,10 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
                     else
                     {
-                        // TODO: Throw object_could_not_be_converted
+                        // PhpException.ObjectToStringNotSupported(this)
+                        cg.EmitThis();
+                        cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreTypes.PhpException.Method("ObjectToStringNotSupported", cg.CoreTypes.Object)));
+
                         // return ""
                         cg.Builder.EmitStringConstant(string.Empty);
                     }

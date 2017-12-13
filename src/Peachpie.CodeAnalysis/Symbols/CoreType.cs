@@ -104,7 +104,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public const string PhpFieldsOnlyCtorAttributeName = "PhpFieldsOnlyCtorAttribute";
 
         public readonly CoreType
-            Context, Operators, Convert, Comparison, StrictComparison,
+            Context, Operators, Convert, Comparison, StrictComparison, PhpException,
             ScriptAttribute, PhpTraitAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, ScriptDiedException,
             IStaticInit, RoutineInfo,
             BinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
@@ -151,6 +151,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Comparison = Create("Comparison");
             StrictComparison = Create("StrictComparison");
             Convert = Create("Convert");
+            PhpException = Create("PhpException");
             ScriptAttribute = Create("ScriptAttribute");
             PhpTraitAttribute = Create(PhpTraitAttributeName);
             PhpTypeAttribute = Create("PhpTypeAttribute");

@@ -1,4 +1,5 @@
-﻿using Pchp.Core.Resources;
+﻿using Pchp.Core.Reflection;
+using Pchp.Core.Resources;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -254,6 +255,28 @@ namespace Pchp.Core
             {
                 Throw(PhpError.Warning, ErrResources.scalar_used_as_object, PhpVariable.GetTypeName(var));
             }
+        }
+
+        /// <summary>
+        /// Recoverable fatal error: Object of class X could not be converted to string.
+        /// </summary>
+        /// <param name="instance">The object instance.</param>
+        public static void ObjectToStringNotSupported(object instance)
+        {
+            var classname = (instance != null)
+                ? instance.GetPhpTypeInfo().Name
+                : PhpVariable.TypeNameNull;
+
+            ObjectConvertError(classname, PhpVariable.TypeNameString);
+        }
+
+        /// <summary>
+        /// Recoverable fatal error: Object of class {0} could not be converted to {1}.
+        /// </summary>
+        public static void ObjectConvertError(string classname, string targettype)
+        {
+            // TODO: Recoverable fatal error
+            Throw(PhpError.Error, ErrResources.object_could_not_be_converted, classname, targettype);
         }
 
         /// <summary>
