@@ -192,6 +192,16 @@ namespace Pchp.CodeAnalysis.Symbols
                             ctxFieldPlace.EmitStore(il);
                         }
 
+                        // trait specific:
+                        if (ctor is SynthesizedPhpTraitCtorSymbol tctor)
+                        {
+                            // this.<>this = @this
+                            var thisFieldPlace = new FieldPlace(cg.ThisPlaceOpt, tctor.ContainingType.RealThisField);
+                            thisFieldPlace.EmitStorePrepare(il);
+                            tctor.ThisParameter.EmitLoad(il);
+                            thisFieldPlace.EmitStore(il);
+                        }
+
                         // initialize class fields
                         foreach (var fld in this.EnsureMembers().OfType<SourceFieldSymbol>().Where(fld => !fld.RequiresHolder && !fld.IsStatic && !fld.IsConst))
                         {

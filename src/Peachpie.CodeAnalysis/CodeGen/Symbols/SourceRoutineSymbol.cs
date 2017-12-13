@@ -55,6 +55,11 @@ namespace Pchp.CodeAnalysis.Symbols
                         // $this ~ arg1
                         thisPlace = new ArgPlace(thisPlace.TypeOpt, 1);
                     }
+                    else if (this.ContainingType.IsTraitType())
+                    {
+                        // $this ~ this.<>this
+                        thisPlace = new FieldPlace(thisPlace, ((SourceTraitTypeSymbol)this.ContainingType).RealThisField);
+                    }
 
                     //
                     return thisPlace;

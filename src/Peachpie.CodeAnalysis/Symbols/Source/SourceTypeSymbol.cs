@@ -46,7 +46,10 @@ namespace Pchp.CodeAnalysis.Symbols
                     //
                     if (_lazyContextField == null)
                     {
-                        _lazyContextField = new SynthesizedFieldSymbol(this, DeclaringCompilation.CoreTypes.Context.Symbol, SpecialParameterSymbol.ContextName, Accessibility.Protected, false, true);
+                        _lazyContextField = new SynthesizedFieldSymbol(this, DeclaringCompilation.CoreTypes.Context.Symbol, SpecialParameterSymbol.ContextName,
+                            accessibility: this.IsSealed ? Accessibility.Private : Accessibility.Protected,
+                            isStatic: false,
+                            isReadOnly: true);
                     }
                 }
 
@@ -63,7 +66,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                if (_lazyRuntimeFieldsField == null && !this.IsStatic && !this.IsInterface)
+                if (_lazyRuntimeFieldsField == null && !this.IsStatic && !this.IsInterface && !this.IsTrait)
                 {
                     const string fldname = "<runtime_fields>";
 
@@ -99,7 +102,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Resolved base type.
         /// </summary>
-        NamedTypeSymbol _lazyBaseType;
+        protected NamedTypeSymbol _lazyBaseType;
 
         /// <summary>
         /// Resolved base interfaces.
@@ -189,7 +192,7 @@ namespace Pchp.CodeAnalysis.Symbols
         protected SourceTypeSymbol(SourceFileSymbol file, TypeDecl syntax)
         {
             Contract.ThrowIfNull(file);
-            
+
             _syntax = syntax;
             _file = file;
 
@@ -515,19 +518,21 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<MethodSymbol> StaticConstructors => ImmutableArray<MethodSymbol>.Empty;
 
-        public override ImmutableArray<MethodSymbol> InstanceConstructors
+        public sealed override ImmutableArray<MethodSymbol> InstanceConstructors
         {
             get
             {
                 var result = _lazyCtors;
                 if (result.IsDefault)
                 {
-                    _lazyCtors = result = SynthesizedPhpCtorSymbol.CreateCtors(this).ToImmutableArray();
+                    _lazyCtors = result = CreateInstanceConstructors().ToImmutableArray();
                 }
 
                 return result;
             }
         }
+
+        protected virtual IEnumerable<MethodSymbol> CreateInstanceConstructors() => SynthesizedPhpCtorSymbol.CreateCtors(this);
 
         /// <summary>
         /// Gets magic <c>__invoke</c> method or <c>null</c>.
@@ -790,6 +795,45 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal class SourceTraitTypeSymbol : SourceTypeSymbol
     {
+        /// <summary>
+        /// Field holding actual <c>this</c> instance of the class that uses this trait.
+        /// </summary>
+        public IFieldSymbol RealThisField
+        {
+            get
+            {
+                if (_lazyRealThisField == null)
+                {
+                    _lazyRealThisField = new SynthesizedFieldSymbol(this, DeclaringCompilation.CoreTypes.Object, "<>" + SpecialParameterSymbol.ThisName,
+                        accessibility: Accessibility.Private,
+                        isStatic: false,
+                        isReadOnly: true);
+                }
+
+                return _lazyRealThisField;
+            }
+        }
+        IFieldSymbol _lazyRealThisField; // private object <>this;
+
+        public override NamedTypeSymbol BaseType
+        {
+            get
+            {
+                if (_lazyBaseType == null)
+                {
+                    _lazyBaseType = DeclaringCompilation.CoreTypes.Object.Symbol;
+                    Debug.Assert(_lazyBaseType != null);
+                }
+
+                return _lazyBaseType;
+            }
+        }
+
+        protected override IEnumerable<MethodSymbol> CreateInstanceConstructors()
+        {
+            yield return new SynthesizedPhpTraitCtorSymbol(this);
+        }
+
         public override bool IsTrait => true;
 
         public override bool IsSealed => true;  // traits cannot be extended
@@ -798,9 +842,20 @@ namespace Pchp.CodeAnalysis.Symbols
             : base(file, syntax)
         {
             Debug.Assert(syntax.MemberAttributes.IsTrait());
+            Debug.Assert(syntax.BaseClass == null); // not expecting trait can extend another class
         }
 
         protected override SourceTypeSymbol NewSelf() => new SourceTraitTypeSymbol(ContainingFile, Syntax);
+
+        internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()
+        {
+            foreach (var f in base.GetFieldsToEmit())
+            {
+                yield return f;
+            }
+
+            yield return RealThisField;
+        }
     }
 
     /// <summary>
