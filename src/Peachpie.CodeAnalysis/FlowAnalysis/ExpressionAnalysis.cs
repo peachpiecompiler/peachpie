@@ -1288,7 +1288,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (tref is INamedTypeRef namedref)
             {
-                if (tref is TranslatedTypeRef translatedref)
+                if (tref is TranslatedTypeRef translatedref && translatedref.OriginalType is ReservedTypeRef)
                 {
                     // resolve self or parent directly
                     var resolved = ResolveTypeRef(translatedref.OriginalType);
