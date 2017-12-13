@@ -1302,17 +1302,37 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else if (tref is ReservedTypeRef)
             {
+                if (TypeCtx.SelfType == null || TypeCtx.SelfType.IsTraitType())
+                {
+                    switch (((ReservedTypeRef)tref).Type)
+                    {
+                        case ReservedTypeRef.ReservedType.self:
+                            break;
+                        case ReservedTypeRef.ReservedType.parent:
+                            break;
+                        case ReservedTypeRef.ReservedType.@static:
+                            this.Routine.Flags |= RoutineFlags.UsesLateStatic;
+                            break;
+                    }
+
+                    // no self, parent, static resolvable in compile-time:
+                    return new MissingMetadataTypeSymbol(tref.QualifiedName.ToString(), 0, false);
+                }
+
                 // resolve types that parser skipped
                 switch (((ReservedTypeRef)tref).Type)
                 {
                     case ReservedTypeRef.ReservedType.self:
-                        return TypeCtx.SelfType ?? new MissingMetadataTypeSymbol(tref.QualifiedName.ToString(), 0, false);
+                        return TypeCtx.SelfType;
 
                     case ReservedTypeRef.ReservedType.parent:
-                        return TypeCtx.SelfType?.BaseType ?? new MissingMetadataTypeSymbol(tref.QualifiedName.ToString(), 0, false);
+                        var btype = TypeCtx.SelfType.BaseType;
+                        return (btype == null || btype.IsObjectType()) // no "System.Object" in PHP, invalid parent
+                            ? new MissingMetadataTypeSymbol(tref.QualifiedName.ToString(), 0, false)
+                            : btype;
 
                     case ReservedTypeRef.ReservedType.@static:
-                        if (TypeCtx.SelfType != null && TypeCtx.SelfType.IsSealed)
+                        if (TypeCtx.SelfType.IsSealed)
                         {
                             return TypeCtx.SelfType;
                         }
@@ -1343,7 +1363,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     // $this:
                     if (expr is BoundVariableRef varref && varref.Name.NameValue.IsThisVariableName)
                     {
-                        return TypeCtx.ThisType; // $this, self
+                        if (TypeCtx.ThisType != null && TypeCtx.ThisType.IsSealed)
+                        {
+                            return TypeCtx.ThisType; // $this, self
+                        }
                     }
                     //else if (IsClassOnly(tref.TypeExpression.TypeRefMask))
                     //{
