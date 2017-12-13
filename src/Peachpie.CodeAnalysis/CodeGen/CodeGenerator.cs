@@ -288,6 +288,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         public bool IsGlobalScope => _routine is SourceGlobalMethodSymbol;
 
         /// <summary>
+        /// Whether the code is generated inside method in a trait type.
+        /// </summary>
+        public bool IsInTrait => _routine is SourceMethodSymbol && _routine.ContainingType.IsTraitType();
+
+        /// <summary>
         /// Gets or sets value determining <see cref="BoundArrayEx"/> is being emitted.
         /// When set, array expression caching is disabled.
         /// </summary>

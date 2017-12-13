@@ -171,10 +171,25 @@ namespace Pchp.CodeAnalysis.Symbols
 
         #region Construction
 
-        public SourceTypeSymbol(SourceFileSymbol file, TypeDecl syntax)
+        internal static SourceTypeSymbol Create(SourceFileSymbol file, TypeDecl syntax)
+        {
+            if (syntax is AnonymousTypeDecl at)
+            {
+                return new SourceAnonymousTypeSymbol(file, at);
+            }
+
+            if (syntax.MemberAttributes.IsTrait())
+            {
+                return new SourceTraitTypeSymbol(file, syntax);
+            }
+
+            return new SourceTypeSymbol(file, syntax);
+        }
+
+        protected SourceTypeSymbol(SourceFileSymbol file, TypeDecl syntax)
         {
             Contract.ThrowIfNull(file);
-
+            
             _syntax = syntax;
             _file = file;
 
@@ -182,12 +197,22 @@ namespace Pchp.CodeAnalysis.Symbols
             _staticsContainer = new SynthesizedStaticFieldsHolder(this);
         }
 
-        private SourceTypeSymbol(SourceFileSymbol file, TypeDecl syntax, NamedTypeSymbol baseType, ImmutableArray<NamedTypeSymbol> ifacesType, int version)
-            : this(file, syntax)
+        /// <summary>
+        /// Creates instance of self to be used for creating new versions of the same type.
+        /// </summary>
+        protected virtual SourceTypeSymbol NewSelf() => new SourceTypeSymbol(_file, _syntax);
+
+        private SourceTypeSymbol NewSelf(NamedTypeSymbol baseType, ImmutableArray<NamedTypeSymbol> ifacesType, int version, SourceTypeSymbol nextVersion)
         {
-            _lazyBaseType = baseType;
-            _lazyInterfacesType = ifacesType;
-            _version = version;
+            var self = NewSelf();
+
+            self._lazyBaseType = baseType;
+            self._lazyInterfacesType = ifacesType;
+            self._version = version;
+            self._nextVersion = nextVersion;
+
+            //
+            return self;
         }
 
         /// <summary>
@@ -247,11 +272,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     else
                     {
                         // create next version of this type with already resolved type signature
-                        _nextVersion = new SourceTypeSymbol(_file, _syntax, v[0], v.RemoveAt(0), ++lastVersion)
-                        {
-                            //_lambdas = _lambdas,
-                            _nextVersion = _nextVersion
-                        };
+                        _nextVersion = NewSelf(v[0], v.RemoveAt(0), ++lastVersion, _nextVersion);
 
                         // clone lambdas that use $this
                         if (_lambdas != null)
@@ -587,7 +608,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     name += "`" + decls.TakeWhile(f => f.Syntax != this.Syntax).Count().ToString();   // index within types with the same name
                 }
-                
+
                 // #version
                 if (_version != 0)
                 {
@@ -618,7 +639,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override bool IsInterface => (_syntax.MemberAttributes & PhpMemberAttributes.Interface) != 0;
 
-        public bool IsTrait => (_syntax.MemberAttributes & PhpMemberAttributes.Trait) != 0;
+        public virtual bool IsTrait => false;
 
         public override bool IsAbstract => _syntax.MemberAttributes.IsAbstract() || IsInterface;
 
@@ -765,6 +786,24 @@ namespace Pchp.CodeAnalysis.Symbols
     }
 
     /// <summary>
+    /// PHP trait symbol.
+    /// </summary>
+    internal class SourceTraitTypeSymbol : SourceTypeSymbol
+    {
+        public override bool IsTrait => true;
+
+        public override bool IsSealed => true;  // traits cannot be extended
+
+        public SourceTraitTypeSymbol(SourceFileSymbol file, TypeDecl syntax)
+            : base(file, syntax)
+        {
+            Debug.Assert(syntax.MemberAttributes.IsTrait());
+        }
+
+        protected override SourceTypeSymbol NewSelf() => new SourceTraitTypeSymbol(ContainingFile, Syntax);
+    }
+
+    /// <summary>
     /// Symbol representing a PHP anonymous class.
     /// Builds a type similar to <b>internal sealed class [anonymous@class filename position]</b>.
     /// </summary>
@@ -786,5 +825,7 @@ namespace Pchp.CodeAnalysis.Symbols
             : base(file, syntax)
         {
         }
+
+        protected override SourceTypeSymbol NewSelf() => new SourceAnonymousTypeSymbol(ContainingFile, Syntax);
     }
 }
