@@ -110,7 +110,7 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 if (_objectTypeInfoSemantic && this.TypeExpression != null) // type of object instance handled // only makes sense if type is indirect
                 {
-                    Debug.Assert(throwOnError); // expecting we throw on error
+                    // TODO: throwOnError
                     cg.EmitLoadContext();
                     cg.EmitConvertToPhpValue(this.TypeExpression);
                     t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.TypeNameOrObjectToType_Context_PhpValue);
