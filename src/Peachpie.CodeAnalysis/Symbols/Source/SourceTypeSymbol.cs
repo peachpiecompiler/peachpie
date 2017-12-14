@@ -125,6 +125,82 @@ namespace Pchp.CodeAnalysis.Symbols
             }
             IFieldSymbol _lazyTraitInstanceField;
 
+            struct DeclaredAs
+            {
+                public MethodSymbol SourceMethod;
+                public PhpMemberAttributes Visibility;
+                public string Name;
+            }
+
+            Dictionary<Name, DeclaredAs> _lazyMembersMap;
+
+            /// <summary>
+            /// Map of visible trait members how to be declared in containing class.
+            /// </summary>
+            Dictionary<Name, DeclaredAs> MembersMap
+            {
+                get
+                {
+                    if (_lazyMembersMap == null)
+                    {
+                        // initial map of methods
+                        var map = new Dictionary<Name, DeclaredAs>();
+                        foreach (var m in Symbol.GetMembers().OfType<SourceMethodSymbol>()) // TODO: concat with trait uses of trait
+                        {
+                            map[new Name(m.RoutineName)] = new DeclaredAs()
+                            {
+                                Name = m.RoutineName,
+                                SourceMethod = m,
+                                Visibility = PhpMemberAttributes.Public,    // TODO: declared visibility
+                            };
+                        }
+
+                        // adaptations
+                        if (Adaptations != null && Adaptations.Length != 0)
+                        {
+                            var phpt = (IPhpTypeSymbol)Symbol;
+                            foreach (var a in Adaptations)
+                            {
+                                if (a is TraitsUse.TraitAdaptationPrecedence precedence)
+                                {
+                                    if (precedence.IgnoredTypes.Select(t => t.QualifiedName.Value).Contains(phpt.FullName))
+                                    {
+                                        // member was hidden
+                                        map.Remove(a.TraitMemberName.Item2.Name);
+                                    }
+                                }
+                                else if (a is TraitsUse.TraitAdaptationAlias alias)
+                                {
+                                    if (!a.TraitMemberName.Item1.HasValue || a.TraitMemberName.Item1.QualifiedName == phpt.FullName)
+                                    {
+                                        var sourcename = a.TraitMemberName.Item2.Name;
+                                        if (map.TryGetValue(sourcename, out DeclaredAs declaredas))
+                                        {
+                                            if (alias.NewModifier.HasValue) declaredas.Visibility = alias.NewModifier.Value;
+                                            if (alias.NewName.HasValue) declaredas.Name = alias.NewName.Name.Value;
+
+                                            // update map
+                                            map[sourcename] = declaredas;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    throw ExceptionUtilities.UnexpectedValue(a);
+                                }
+                            }
+                        }
+
+                        //
+                        _lazyMembersMap = map;
+                    }
+
+                    return _lazyMembersMap;
+                }
+            }
+
+            // TODO: synthesized members (methods, properties, constants)
+
             public TraitUse(SourceTypeSymbol type, NamedTypeSymbol symbol, TraitsUse.TraitAdaptation[] adaptations)
             {
                 Debug.Assert(symbol != null);
@@ -338,7 +414,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 // collect variations of possible base types
                 var variations = Variations(tsignature.Select(t => t.Symbol).AsImmutable(), this.ContainingFile);
-                
+
                 // instantiate versions
                 bool self = true;
                 int lastVersion = 0;    // the SourceTypeSymbol version, 0 ~ a single version, >0 ~ multiple version
