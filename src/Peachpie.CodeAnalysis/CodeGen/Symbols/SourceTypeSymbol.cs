@@ -195,7 +195,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         // trait instances:
                         foreach (var t in this.TraitUses)
                         {
-                            EmitTraitInstanceInit(cg, t);
+                            EmitTraitInstanceInit(cg, ctor, t);
                         }
 
                         // trait specific:
@@ -243,7 +243,7 @@ namespace Pchp.CodeAnalysis.Symbols
             selfFieldPlace.EmitStore(il);
         }
 
-        void EmitTraitInstanceInit(CodeGenerator cg, TraitUse t)
+        void EmitTraitInstanceInit(CodeGenerator cg, SynthesizedPhpCtorSymbol ctor, TraitUse t)
         {
             // Template: this.<>trait_T = new T(ctx, this, self)
 
@@ -261,7 +261,8 @@ namespace Pchp.CodeAnalysis.Symbols
             instancePlace.EmitStorePrepare(cg.Builder);
             cg.EmitLoadContext();           // Context
             cg.EmitThis();                  // this
-            cg.EmitLoadToken(this, null);   // self
+            if (ctor is SynthesizedPhpTraitCtorSymbol ctort) ctort.SelfParameter.EmitLoad(cg.Builder);  // self'1 // self is passed from <self> parameter in trait ctor (when using trait in trait)
+            else cg.EmitLoadToken(this, null);   // self'2 // self is current class scope
             cg.EmitCall(ILOpCode.Newobj, tctor); // new T(...)
             instancePlace.EmitStore(cg.Builder);
         }
