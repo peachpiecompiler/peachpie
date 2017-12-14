@@ -81,7 +81,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else
             {
-                return TypeRefMask.AnyType;
+                return GetSystemObjectTypeMask();
             }
         }
 
@@ -336,7 +336,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     }
                 }
                 else if (tref is AST.INamedTypeRef) return GetTypeMask(((AST.INamedTypeRef)tref).ClassName, includesSubclasses);
-                else if (tref is AST.ReservedTypeRef) return GetTypeMaskOfReservedClassName(((AST.ReservedTypeRef)tref).QualifiedName.Value.Name); // NOTE: should be translated by parser to AliasedTypeRef
+                else if (tref is AST.ReservedTypeRef) return GetTypeMaskOfReservedClassName(((AST.ReservedTypeRef)tref).QualifiedName.Value.Name);
                 else if (tref is AST.AnonymousTypeRef) return GetTypeMask(((AST.AnonymousTypeRef)tref).TypeDeclaration.GetAnonymousTypeQualifiedName(), false);
                 else if (tref is AST.MultipleTypeRef)
                 {
@@ -563,12 +563,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetSelfTypeMask()
         {
-            TypeRefMask result = TypeRefMask.AnyType;
+            TypeRefMask result;
 
-            if (_selfType != null)
+            if (_selfType != null && !_selfType.IsTrait)
             {
                 result = GetTypeCtxMask(_selfType.Syntax);
                 result.IncludesSubclasses = false;
+            }
+            else
+            {
+                result = GetSystemObjectTypeMask();
             }
 
             return result;
@@ -593,7 +597,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else
             {
-                return TypeRefMask.AnyType;
+                return GetSystemObjectTypeMask();
             }
         }
 
@@ -604,11 +608,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (_staticTypeMask == 0)
             {
-                var mask = GetThisTypeMask();
-                if (mask != 0)
-                    mask.IncludesSubclasses = true;
-
-                _staticTypeMask = mask;
+                _staticTypeMask = GetThisTypeMask();    // including subclasses
             }
 
             return _staticTypeMask;
