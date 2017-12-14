@@ -308,6 +308,11 @@ namespace Pchp.Library
                 return null;
             }
 
+            if (data == null)
+            {
+                data = Array.Empty<byte>();
+            }
+
             int length_bound = data.Length + (data.Length / PHP_ZLIB_MODIFIER) + 15 + 1;
 
             byte[] output;
