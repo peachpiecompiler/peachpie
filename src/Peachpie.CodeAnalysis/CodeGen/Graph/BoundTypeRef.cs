@@ -80,27 +80,22 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(cg != null);
 
-            TypeSymbol t;
-
             if (this.ResolvedType.IsValidType())
             {
-                t = EmitLoadPhpTypeInfo(cg, this.ResolvedType);
+                return EmitLoadPhpTypeInfo(cg, this.ResolvedType);
             }
             else if (_typeRef is ReservedTypeRef) // late static bound
             {
                 switch (((ReservedTypeRef)_typeRef).Type)
                 {
                     case ReservedTypeRef.ReservedType.@static:
-                        t = EmitLoadStaticPhpTypeInfo(cg);
-                        break;
+                        return EmitLoadStaticPhpTypeInfo(cg);
 
                     case ReservedTypeRef.ReservedType.self:
-                        t = EmitLoadSelf(cg);
-                        break;
+                        return EmitLoadSelf(cg);
 
                     case ReservedTypeRef.ReservedType.parent:
-                        t = EmitLoadParent(cg);
-                        break;
+                        return EmitLoadParent(cg);
 
                     default:
                         throw Roslyn.Utilities.ExceptionUtilities.Unreachable;
@@ -113,7 +108,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     // TODO: throwOnError
                     cg.EmitLoadContext();
                     cg.EmitConvertToPhpValue(this.TypeExpression);
-                    t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.TypeNameOrObjectToType_Context_PhpValue);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.TypeNameOrObjectToType_Context_PhpValue);
                 }
                 else
                 {
@@ -121,13 +116,11 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitLoadContext();
                     this.EmitClassName(cg);
                     cg.Builder.EmitBoolConstant(true);
-                    t = cg.EmitCall(ILOpCode.Call, throwOnError
+                    return cg.EmitCall(ILOpCode.Call, throwOnError
                         ? cg.CoreMethods.Context.GetDeclaredTypeOrThrow_string_bool
                         : cg.CoreMethods.Context.GetDeclaredType_string_bool);
                 }
             }
-
-            return t;
         }
 
         ITypeSymbol IBoundTypeRef.EmitLoadTypeInfo(CodeGenerator cg, bool throwOnError)

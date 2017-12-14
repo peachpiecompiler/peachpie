@@ -87,7 +87,14 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (this.CallerType is SourceTraitTypeSymbol trait)
                 {
-                    return new FieldPlace(this.ThisPlaceOpt, trait.RealClassCtxField);
+                    if (this.ThisPlaceOpt != null)
+                    {
+                        return new FieldPlace(this.ThisPlaceOpt, trait.RealClassCtxField);
+                    }
+                    else
+                    {
+                        // TODO: SelfParameter
+                    }
                 }
                 
                 return null;
