@@ -257,13 +257,22 @@ namespace Pchp.CodeAnalysis.Symbols
             Debug.Assert(tctor.Parameters[1].Type == cg.CoreTypes.Object);
             Debug.Assert(tctor.Parameters[2].Type == cg.CoreTypes.RuntimeTypeHandle);
 
+            // using trait in trait?
+            var ctort = ctor as SynthesizedPhpTraitCtorSymbol;
+
             //
             instancePlace.EmitStorePrepare(cg.Builder);
-            cg.EmitLoadContext();           // Context
-            cg.EmitThis();                  // this
-            if (ctor is SynthesizedPhpTraitCtorSymbol ctort) ctort.SelfParameter.EmitLoad(cg.Builder);  // self'1 // self is passed from <self> parameter in trait ctor (when using trait in trait)
+            // Context:
+            cg.EmitLoadContext();
+            // this:
+            if (ctort != null) ctort.ThisParameter.EmitLoad(cg.Builder);    // this is passed from caller
+            else cg.EmitThis();
+            // self:
+            if (ctort != null) ctort.SelfParameter.EmitLoad(cg.Builder);  // self'1 // self is passed from <self> parameter in trait ctor (when using trait in trait)
             else cg.EmitLoadToken(this, null);   // self'2 // self is current class scope
-            cg.EmitCall(ILOpCode.Newobj, tctor); // new T(...)
+            // new T(...)
+            cg.EmitCall(ILOpCode.Newobj, tctor);
+
             instancePlace.EmitStore(cg.Builder);
         }
 
