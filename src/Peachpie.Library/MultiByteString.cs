@@ -193,6 +193,14 @@ namespace Pchp.Library
                 //ArmSCII-8
                 //CP850
 
+                // cp{CodePage}
+                if (name.StartsWith("cp", StringComparison.OrdinalIgnoreCase) &&
+                    name.Length > 2 &&
+                    int.TryParse(name.Substring(2), out int codepage))
+                {
+                    return Encoding.GetEncoding(codepage);                    
+                }
+
                 //
                 return null;
             }
