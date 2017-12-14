@@ -310,7 +310,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         }
 
+        /// <summary>.ctor parameter <c>object @this</c>.</summary>
         public ParameterSymbol ThisParameter => this.Parameters[1];
+
+        /// <summary>.ctor parameter <c>RuntimeTypeHandle &lt;self&gt;</c>.</summary>
+        public ParameterSymbol SelfParameter => this.Parameters[2];
 
         protected override IEnumerable<ParameterSymbol> CreateParameters(IEnumerable<ParameterSymbol> baseparams)
         {
@@ -318,11 +322,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
             int index = 0;
 
+            // note: the signature is very similar to global code routine <Main>
+
             // Context <ctx>
             yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
 
             // object this
             yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Object, SpecialParameterSymbol.ThisName, index++);
+
+            // RuntimeTypeHandle <self>
+            yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.RuntimeTypeHandle, SpecialParameterSymbol.SelfName, index++);
         }
     }
 

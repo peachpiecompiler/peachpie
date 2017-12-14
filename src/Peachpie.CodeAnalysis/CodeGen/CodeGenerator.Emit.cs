@@ -46,7 +46,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         public TypeSymbol EmitCallerTypeHandle()
         {
             var caller = this.CallerType;
-            if (caller != null)
+            if (caller != null && !caller.IsTraitType())
             {
                 // RuntimeTypeHandle
                 EmitLoadToken(caller, null);
@@ -85,7 +85,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     return lambda.GetCallerTypePlace();
                 }
-
+                else if (this.CallerType is SourceTraitTypeSymbol trait)
+                {
+                    return new FieldPlace(this.ThisPlaceOpt, trait.RealClassCtxField);
+                }
+                
                 return null;
             }
         }

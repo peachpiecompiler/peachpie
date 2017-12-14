@@ -195,11 +195,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         // trait specific:
                         if (ctor is SynthesizedPhpTraitCtorSymbol tctor)
                         {
-                            // this.<>this = @this
-                            var thisFieldPlace = new FieldPlace(cg.ThisPlaceOpt, tctor.ContainingType.RealThisField);
-                            thisFieldPlace.EmitStorePrepare(il);
-                            tctor.ThisParameter.EmitLoad(il);
-                            thisFieldPlace.EmitStore(il);
+                            EmitTraitCtorInit(cg, tctor);
                         }
 
                         // initialize class fields
@@ -222,6 +218,23 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 }, null, diagnostics, false));
             }
+        }
+
+        static void EmitTraitCtorInit(CodeGenerator cg, SynthesizedPhpTraitCtorSymbol tctor)
+        {
+            var il = cg.Builder;
+
+            // this.<>this = @this
+            var thisFieldPlace = new FieldPlace(cg.ThisPlaceOpt, tctor.ContainingType.RealThisField);
+            thisFieldPlace.EmitStorePrepare(il);
+            tctor.ThisParameter.EmitLoad(il);
+            thisFieldPlace.EmitStore(il);
+
+            // this.<self> = <self>
+            var selfFieldPlace = new FieldPlace(cg.ThisPlaceOpt, tctor.ContainingType.RealClassCtxField);
+            selfFieldPlace.EmitStorePrepare(il);
+            tctor.SelfParameter.EmitLoad(il);
+            selfFieldPlace.EmitStore(il);
         }
 
         void EmitToString(Emit.PEModuleBuilder module)

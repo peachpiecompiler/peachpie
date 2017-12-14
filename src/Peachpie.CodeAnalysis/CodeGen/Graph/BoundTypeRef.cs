@@ -138,22 +138,25 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         internal static TypeSymbol  EmitLoadStaticPhpTypeInfo(CodeGenerator cg)
         {
-            if (cg.ThisPlaceOpt != null)
+            if (cg.Routine != null)
             {
-                // Template: GetPhpTypeInfo(this)
-                cg.EmitThis();
-                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.GetPhpTypeInfo_Object);
+                var thisVariablePlace = cg.Routine.PhpThisVariablePlace;
+                if (thisVariablePlace != null)
+                {
+                    // Template: GetPhpTypeInfo(this)
+                    thisVariablePlace.EmitLoad(cg.Builder);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.GetPhpTypeInfo_Object);
+                }
+
+                var lateStaticParameter = cg.Routine.ImplicitParameters.FirstOrDefault(SpecialParameterSymbol.IsLateStaticParameter);
+                if (lateStaticParameter != null)
+                {
+                    // Template: LOAD @static   // ~ @static parameter passed by caller
+                    return lateStaticParameter.EmitLoad(cg.Builder);
+                }
             }
-            else if (cg.Routine != null)
-            {
-                // Template: LOAD @static   // ~ @static parameter passed by caller
-                return new ParamPlace(cg.Routine.ImplicitParameters.First(SpecialParameterSymbol.IsLateStaticParameter))
-                    .EmitLoad(cg.Builder);
-            }
-            else
-            {
-                throw new InvalidOperationException();
-            }
+
+            throw new InvalidOperationException();
         }
 
         static TypeSymbol EmitLoadSelf(CodeGenerator cg)

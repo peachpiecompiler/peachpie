@@ -813,7 +813,27 @@ namespace Pchp.CodeAnalysis.Symbols
                 return _lazyRealThisField;
             }
         }
-        IFieldSymbol _lazyRealThisField; // private object <>this;
+        IFieldSymbol _lazyRealThisField; // private readonly object <>this;
+
+        /// <summary>
+        /// Field holding actual <c>scope</c> type of the class that uses this trait.
+        /// </summary>
+        public IFieldSymbol RealClassCtxField
+        {
+            get
+            {
+                if (_lazyRealClassCtxField == null)
+                {
+                    _lazyRealClassCtxField = new SynthesizedFieldSymbol(this, DeclaringCompilation.CoreTypes.RuntimeTypeHandle, SpecialParameterSymbol.SelfName,
+                        accessibility: Accessibility.Private,
+                        isStatic: false,
+                        isReadOnly: true);
+                }
+
+                return _lazyRealClassCtxField;
+            }
+        }
+        IFieldSymbol _lazyRealClassCtxField; // private readonly RuntimeTypeHandle <self>;
 
         public override NamedTypeSymbol BaseType
         {
@@ -855,6 +875,8 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             yield return RealThisField;
+
+            yield return RealClassCtxField;
         }
     }
 
