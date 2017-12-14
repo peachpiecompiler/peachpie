@@ -944,9 +944,24 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public TypeSymbol EmitLoad(CodeGenerator cg)
         {
-            // TODO: EnsureArray
+            // Ensure Array ($this[] =)
+            if (_access.EnsureArray)
+            {
+                if (TypeOpt?.IsOfType(cg.CoreTypes.ArrayAccess) == true)
+                {
+                    // Operators.EnsureArray(<place>)
+                    _place.EmitLoad(cg.Builder);
 
-            return _place.EmitLoad(cg.Builder);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_ArrayAccess)
+                            .Expect(cg.CoreTypes.IPhpArray);
+                }
+
+                throw new NotImplementedException($"EnsureArray(this {{{TypeOpt?.Name}}})");
+            }
+            else
+            {
+                return _place.EmitLoad(cg.Builder);
+            }
         }
 
         public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null) { }
