@@ -192,6 +192,12 @@ namespace Pchp.CodeAnalysis.Symbols
                             ctxFieldPlace.EmitStore(il);
                         }
 
+                        // trait instances:
+                        foreach (var t in this.TraitUses)
+                        {
+                            EmitTraitInstanceInit(cg, t);
+                        }
+
                         // trait specific:
                         if (ctor is SynthesizedPhpTraitCtorSymbol tctor)
                         {
@@ -235,6 +241,29 @@ namespace Pchp.CodeAnalysis.Symbols
             selfFieldPlace.EmitStorePrepare(il);
             tctor.SelfParameter.EmitLoad(il);
             selfFieldPlace.EmitStore(il);
+        }
+
+        void EmitTraitInstanceInit(CodeGenerator cg, TraitUse t)
+        {
+            // Template: this.<>trait_T = new T(ctx, this, self)
+
+            // PLACE: this.<>trait_T
+            var instancePlace = new FieldPlace(cg.ThisPlaceOpt, t.TraitInstanceField);
+
+            // .ctor(Context, object @this, RuntimeTypeHandle self)
+            var tctor = t.Symbol.InstanceConstructors[0];
+            Debug.Assert(tctor.ParameterCount == 3);
+            Debug.Assert(tctor.Parameters[0].Type == cg.CoreTypes.Context);
+            Debug.Assert(tctor.Parameters[1].Type == cg.CoreTypes.Object);
+            Debug.Assert(tctor.Parameters[2].Type == cg.CoreTypes.RuntimeTypeHandle);
+
+            //
+            instancePlace.EmitStorePrepare(cg.Builder);
+            cg.EmitLoadContext();           // Context
+            cg.EmitThis();                  // this
+            cg.EmitLoadToken(this, null);   // self
+            cg.EmitCall(ILOpCode.Newobj, tctor); // new T(...)
+            instancePlace.EmitStore(cg.Builder);
         }
 
         void EmitToString(Emit.PEModuleBuilder module)

@@ -96,6 +96,47 @@ namespace Pchp.CodeAnalysis.Symbols
 
         #endregion
 
+        #region TraitUse
+
+        protected sealed class TraitUse
+        {
+            readonly SourceTypeSymbol ContainingType;
+
+            public readonly NamedTypeSymbol Symbol;
+            public readonly TraitsUse.TraitAdaptation[] Adaptations;
+
+            /// <summary>
+            /// private readonly T &lt;&gt;_t;
+            /// </summary>
+            public IFieldSymbol TraitInstanceField
+            {
+                get
+                {
+                    if (_lazyTraitInstanceField == null)
+                    {
+                        _lazyTraitInstanceField = new SynthesizedFieldSymbol(ContainingType, Symbol, "<>" + "trait_" + Symbol.Name,
+                            accessibility: Accessibility.Private,
+                            isStatic: false,
+                            isReadOnly: true);
+                    }
+
+                    return _lazyTraitInstanceField;
+                }
+            }
+            IFieldSymbol _lazyTraitInstanceField;
+
+            public TraitUse(SourceTypeSymbol type, NamedTypeSymbol symbol, TraitsUse.TraitAdaptation[] adaptations)
+            {
+                Debug.Assert(symbol != null);
+
+                this.ContainingType = type;
+                this.Symbol = symbol;
+                this.Adaptations = adaptations;
+            }
+        }
+
+        #endregion
+
         readonly protected TypeDecl _syntax;
         readonly SourceFileSymbol _file;
 
@@ -108,6 +149,8 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Resolved base interfaces.
         /// </summary>
         ImmutableArray<NamedTypeSymbol> _lazyInterfacesType;
+
+        ImmutableArray<TraitUse> _lazyTraitUses;
 
         /// <summary>
         /// In case the declaration is ambiguous, this references symbol with alternative declaration.
@@ -202,12 +245,13 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         protected virtual SourceTypeSymbol NewSelf() => new SourceTypeSymbol(_file, _syntax);
 
-        private SourceTypeSymbol NewSelf(NamedTypeSymbol baseType, ImmutableArray<NamedTypeSymbol> ifacesType, int version, SourceTypeSymbol nextVersion)
+        private SourceTypeSymbol NewSelf(NamedTypeSymbol baseType, ImmutableArray<NamedTypeSymbol> ifacesType, ImmutableArray<TraitUse> traitUses, int version, SourceTypeSymbol nextVersion)
         {
             var self = NewSelf();
 
             self._lazyBaseType = baseType;
             self._lazyInterfacesType = ifacesType;
+            self._lazyTraitUses = traitUses;
             self._version = version;
             self._nextVersion = nextVersion;
 
@@ -231,9 +275,46 @@ namespace Pchp.CodeAnalysis.Symbols
             diagnostics.Free();
         }
 
-        private void ResolveBaseTypes(DiagnosticBag diagnostics)
+        ImmutableArray<NamedTypeSymbol> SelectInterfaces(TypeRefSymbol[] tsignature, ImmutableArray<NamedTypeSymbol> boundtypes)
+        {
+            Debug.Assert(tsignature.Length == boundtypes.Length);
+            List<NamedTypeSymbol> list = null;
+
+            for (int i = 0; i < tsignature.Length; i++)
+            {
+                if (tsignature[i].Attributes.IsInterface())
+                {
+                    if (list == null) list = new List<NamedTypeSymbol>(1);
+                    list.Add(boundtypes[i]);
+                }
+            }
+
+            //
+            return (list != null) ? list.AsImmutableOrEmpty() : ImmutableArray<NamedTypeSymbol>.Empty;
+        }
+
+        ImmutableArray<TraitUse> SelectTraitUses(TypeRefSymbol[] tsignature, ImmutableArray<NamedTypeSymbol> boundtypes)
+        {
+            Debug.Assert(tsignature.Length == boundtypes.Length);
+            List<TraitUse> list = null;
+
+            for (int i = 0; i < tsignature.Length; i++)
+            {
+                if (tsignature[i].Attributes.IsTrait())
+                {
+                    if (list == null) list = new List<TraitUse>(1);
+                    list.Add(new TraitUse(this, boundtypes[i], tsignature[i].TraitAdaptations));
+                }
+            }
+
+            //
+            return (list != null) ? list.AsImmutableOrEmpty() : ImmutableArray<TraitUse>.Empty;
+        }
+
+        void ResolveBaseTypes(DiagnosticBag diagnostics)
         {
             Debug.Assert(_lazyInterfacesType.IsDefault);    // not resolved yet
+            Debug.Assert(_lazyTraitUses.IsDefault);         // not resolved yet
 
             // get possible type signature [ BaseType?, Interface1, ..., InterfaceN ]
             // Single slots may refer to a MissingTypeSymbol or an ambiguous type symbol
@@ -257,22 +338,30 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 // collect variations of possible base types
                 var variations = Variations(tsignature.Select(t => t.Symbol).AsImmutable(), this.ContainingFile);
-
+                
                 // instantiate versions
                 bool self = true;
                 int lastVersion = 0;    // the SourceTypeSymbol version, 0 ~ a single version, >0 ~ multiple version
                 foreach (var v in variations)
                 {
+                    Debug.Assert(v.Length == tsignature.Length);
+
+                    var v_base = v[0];
+                    var v_interfaces = SelectInterfaces(tsignature, v);
+                    var v_traituses = SelectTraitUses(tsignature, v);
+
                     if (self)
                     {
-                        _lazyBaseType = v[0];
-                        _lazyInterfacesType = v.RemoveAt(0);
+                        _lazyBaseType = v_base;
+                        _lazyInterfacesType = v_interfaces;
+                        _lazyTraitUses = v_traituses;
+
                         self = false;
                     }
                     else
                     {
                         // create next version of this type with already resolved type signature
-                        _nextVersion = NewSelf(v[0], v.RemoveAt(0), ++lastVersion, _nextVersion);
+                        _nextVersion = NewSelf(v_base, v_interfaces, v_traituses, ++lastVersion, _nextVersion);
 
                         // clone lambdas that use $this
                         if (_lambdas != null)
@@ -284,6 +373,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         }
                     }
                 }
+
                 if (lastVersion != 0)
                 {
                     _version = ++lastVersion;
@@ -293,9 +383,10 @@ namespace Pchp.CodeAnalysis.Symbols
             }
             else
             {
-                // default:
+                // default with unbound error types:
                 _lazyBaseType = tsignature[0].Symbol;
-                _lazyInterfacesType = tsignature.Skip(1).Select(t => t.Symbol).AsImmutable();
+                _lazyInterfacesType = tsignature.Where(x => x.Attributes.IsInterface()).Select(x => x.Symbol).AsImmutable();
+                _lazyTraitUses = tsignature.Where(x => x.Attributes.IsTrait()).Select(x => new TraitUse(this, x.Symbol, x.TraitAdaptations)).AsImmutable();
             }
 
             // check for circular bases in all versions
@@ -378,10 +469,15 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             public INamedTypeRef TypeRef;
             public NamedTypeSymbol Symbol;
+
+            public PhpMemberAttributes Attributes;
+
+            /// <summary>Optional. Trait adaptations.</summary>
+            public TraitsUse.TraitAdaptation[] TraitAdaptations;
         }
 
         /// <summary>
-        /// Gets type signature of the type [BaseType or NULL, Interface1, ..., InterfaceN]
+        /// Gets type signature of the type [BaseType or NULL, Interface1, ..., InterfaceN, Trait1, ..., TraitN]
         /// </summary>
         private static IEnumerable<TypeRefSymbol> ResolveTypeSignature(SourceTypeSymbol type, PhpCompilation compilation)
         {
@@ -395,7 +491,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 yield return new TypeRefSymbol()
                 {
                     TypeRef = syntax.BaseClass,
-                    Symbol = (baseTypeName == type.FullName) ? type : (NamedTypeSymbol)compilation.GlobalSemantics.GetType(baseTypeName)
+                    Symbol = (baseTypeName == type.FullName) ? type : (NamedTypeSymbol)compilation.GlobalSemantics.GetType(baseTypeName),
                 };
             }
             else if ((syntax.MemberAttributes & (PhpMemberAttributes.Static | PhpMemberAttributes.Interface)) != 0) // a static class or an interface
@@ -417,7 +513,25 @@ namespace Pchp.CodeAnalysis.Symbols
                     yield return new TypeRefSymbol()
                     {
                         TypeRef = i,
-                        Symbol = (qname == type.FullName) ? type : (NamedTypeSymbol)compilation.GlobalSemantics.GetType(qname)
+                        Symbol = (qname == type.FullName) ? type : (NamedTypeSymbol)compilation.GlobalSemantics.GetType(qname),
+                        Attributes = PhpMemberAttributes.Interface,
+                    };
+                }
+            }
+
+            // used traits // consider: move to semantic binder?
+            foreach (var m in syntax.Members.OfType<TraitsUse>())
+            {
+                foreach (var t in m.TraitsList)
+                {
+                    var namedt = (INamedTypeRef)t;
+
+                    yield return new TypeRefSymbol()
+                    {
+                        TypeRef = namedt,
+                        Symbol = (NamedTypeSymbol)compilation.GlobalSemantics.GetType(namedt.ClassName),
+                        Attributes = PhpMemberAttributes.Trait,
+                        TraitAdaptations = m.TraitAdaptationBlock?.Adaptations,
                     };
                 }
             }
@@ -669,6 +783,20 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<NamedTypeSymbol> Interfaces => GetDeclaredInterfaces(null);
 
+        /// <summary>
+        /// Bound trait uses.
+        /// </summary>
+        protected ImmutableArray<TraitUse> TraitUses
+        {
+            get
+            {
+                ResolveBaseTypes();
+                Debug.Assert(!_lazyTraitUses.IsDefault);
+
+                return _lazyTraitUses;
+            }
+        }
+
         public override ImmutableArray<Symbol> GetMembers() => EnsureMembers().AsImmutable();
 
         public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
@@ -763,6 +891,12 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 yield return RuntimeFieldsStore;
             }
+
+            // trait instances
+            foreach (var t in this.TraitUses)
+            {
+                yield return t.TraitInstanceField;
+            }
         }
 
         public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
@@ -816,7 +950,7 @@ namespace Pchp.CodeAnalysis.Symbols
         }
         IFieldSymbol _lazyRealClassCtxField; // private readonly RuntimeTypeHandle <self>;
 
-        /// <summary>[PhpTrait] attribute if this class is a trait. Initialized lazily.</summary>
+        /// <summary>[PhpTrait] attribute. Initialized lazily.</summary>
         BaseAttributeData _lazyPhpTraitAttribute;
 
         public override NamedTypeSymbol BaseType
