@@ -73,13 +73,13 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public override bool IsStatic => _syntax.Modifiers.IsStatic();
+
         public override bool IsAbstract => !IsStatic && (_syntax.Modifiers.IsAbstract() || _type.IsInterface);
 
-        public override bool IsOverride => this.OverriddenMethod != null && this.SignaturesMatch((MethodSymbol)this.OverriddenMethod);
+        public override bool IsOverride => !IsStatic && this.OverriddenMethod != null && this.SignaturesMatch((MethodSymbol)this.OverriddenMethod);
 
-        public override bool IsSealed => !IsStatic && _syntax.Modifiers.IsSealed();
-
-        public override bool IsStatic => _syntax.Modifiers.IsStatic();
+        public override bool IsSealed => _syntax.Modifiers.IsSealed() && IsVirtual;
 
         public override bool IsVirtual => !IsStatic;    // every method in PHP is virtual except static methods
 
@@ -90,9 +90,5 @@ namespace Pchp.CodeAnalysis.Symbols
                 return ImmutableArray.Create(Location.Create(ContainingFile.SyntaxTree, _syntax.Span.ToTextSpan()));
             }
         }
-
-        internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => this.IsVirtual;
-
-        internal override bool IsMetadataFinal => IsSealed && !IsStatic && base.IsMetadataFinal;
     }
 }

@@ -165,9 +165,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         List<SourceLambdaSymbol> _lambdas;
 
-        /// <summary>[PhpTrait] attribute if this class is a trait. Initialized lazily.</summary>
-        BaseAttributeData _lazyPhpTraitAttribute;
-
         public SourceFileSymbol ContainingFile => _file;
 
         Location CreateLocation(TextSpan span) => Location.Create(ContainingFile.SyntaxTree, span);
@@ -697,29 +694,13 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var attrs = base.GetAttributes();
 
-            if (this.IsTrait)
-            {
-                // [PhpTraitAttribute()]
-                if (_lazyPhpTraitAttribute == null)
-                {
-                    _lazyPhpTraitAttribute = new SynthesizedAttributeData(
-                        DeclaringCompilation.CoreMethods.Ctors.PhpTraitAttribute,
-                        ImmutableArray<TypedConstant>.Empty,
-                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
-                }
-
-                attrs = attrs.Add(_lazyPhpTraitAttribute);
-            }
-            else
-            {
-                // [PhpTypeAttribute(FullName, FileName)]
-                attrs = attrs.Add(new SynthesizedAttributeData(
-                        DeclaringCompilation.CoreMethods.Ctors.PhpTypeAttribute_string_string,
-                        ImmutableArray.Create(
-                            new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, FullName.ToString()),
-                            new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, ContainingFile.RelativeFilePath.ToString())),
-                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
-            }
+            // [PhpTypeAttribute(FullName, FileName)]
+            attrs = attrs.Add(new SynthesizedAttributeData(
+                    DeclaringCompilation.CoreMethods.Ctors.PhpTypeAttribute_string_string,
+                    ImmutableArray.Create(
+                        new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, FullName.ToString()),
+                        new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, ContainingFile.RelativeFilePath.ToString())),
+                    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
 
             return attrs;
         }
@@ -835,6 +816,9 @@ namespace Pchp.CodeAnalysis.Symbols
         }
         IFieldSymbol _lazyRealClassCtxField; // private readonly RuntimeTypeHandle <self>;
 
+        /// <summary>[PhpTrait] attribute if this class is a trait. Initialized lazily.</summary>
+        BaseAttributeData _lazyPhpTraitAttribute;
+
         public override NamedTypeSymbol BaseType
         {
             get
@@ -877,6 +861,25 @@ namespace Pchp.CodeAnalysis.Symbols
             yield return RealThisField;
 
             yield return RealClassCtxField;
+        }
+
+        public override ImmutableArray<AttributeData> GetAttributes()
+        {
+            var attrs = base.GetAttributes();
+
+            // [PhpTraitAttribute()]
+            if (_lazyPhpTraitAttribute == null)
+            {
+                _lazyPhpTraitAttribute = new SynthesizedAttributeData(
+                    DeclaringCompilation.CoreMethods.Ctors.PhpTraitAttribute,
+                    ImmutableArray<TypedConstant>.Empty,
+                    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+            }
+
+            attrs = attrs.Add(_lazyPhpTraitAttribute);
+
+            //
+            return attrs;
         }
     }
 

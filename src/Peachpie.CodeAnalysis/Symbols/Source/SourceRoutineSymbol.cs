@@ -290,9 +290,9 @@ namespace Pchp.CodeAnalysis.Symbols
         /// virtual = IsVirtual AND NewSlot 
         /// override = IsVirtual AND !NewSlot
         /// </summary>
-        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => !IsOverride && !IsStatic;
+        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => !IsOverride && IsMetadataVirtual(ignoreInterfaceImplementationChanges);
 
-        internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => IsVirtual;
+        internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => IsVirtual && (!ContainingType.IsSealed || IsOverride || IsAbstract); // do not make method virtual if not necessary
 
         public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
         {
