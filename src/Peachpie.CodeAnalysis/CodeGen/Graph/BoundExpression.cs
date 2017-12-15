@@ -4170,13 +4170,15 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.RootPath.Getter);
 
                     var relative_dir = sourcefile.DirectoryRelativePath;
-                    if (relative_dir.Length != 0) relative_dir = "/" + relative_dir;
+                    if (relative_dir.Length != 0)
+                    {
+                        cg.Builder.EmitStringConstant("/" + relative_dir);
 
-                    cg.Builder.EmitStringConstant(relative_dir);
+                        // TODO: normalize slashes
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Concat_String_String);
+                    }
 
-                    // TODO: normalize slashes
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Concat_String_String)
-                        .Expect(SpecialType.System_String);
+                    return cg.CoreTypes.String;
 
                 default:
 
