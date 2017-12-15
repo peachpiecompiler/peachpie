@@ -79,32 +79,31 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 ParameterSymbol p;
 
-                if (_callerTypePlace != null)
+                if (_callerTypePlace == null)
                 {
-                    return _callerTypePlace;
-                }
-                else if (this.Routine is SourceGlobalMethodSymbol global)
-                {
-                    return new ParamPlace(global.SelfParameter);
-                }
-                else if (this.Routine is SourceLambdaSymbol lambda)
-                {
-                    return lambda.GetCallerTypePlace();
-                }
-                else if (this.CallerType is SourceTraitTypeSymbol trait)
-                {
-                    if (this.ThisPlaceOpt != null)
+                    if (this.Routine is SourceGlobalMethodSymbol global)
                     {
-                        return new FieldPlace(this.ThisPlaceOpt, trait.RealClassCtxField);
+                        _callerTypePlace = new ParamPlace(global.SelfParameter);
                     }
-                    else if (this.Routine != null && (p = Routine.Parameters.FirstOrDefault(SpecialParameterSymbol.IsSelfParameter)) != null)
+                    else if (this.Routine is SourceLambdaSymbol lambda)
                     {
-                        // static method in trait gets <self> as parameter
-                        return new ParamPlace(p);
+                        _callerTypePlace = lambda.GetCallerTypePlace();
+                    }
+                    else if (this.CallerType is SourceTraitTypeSymbol trait)
+                    {
+                        if (this.ThisPlaceOpt != null)
+                        {
+                            _callerTypePlace = new FieldPlace(this.ThisPlaceOpt, trait.RealClassCtxField);
+                        }
+                        else if (this.Routine != null && (p = Routine.Parameters.FirstOrDefault(SpecialParameterSymbol.IsSelfParameter)) != null)
+                        {
+                            // static method in trait gets <self> as parameter
+                            _callerTypePlace = new ParamPlace(p);
+                        }
                     }
                 }
 
-                return null;
+                return _callerTypePlace;
             }
             set
             {
