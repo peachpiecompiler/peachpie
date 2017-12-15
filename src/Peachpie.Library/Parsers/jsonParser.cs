@@ -170,9 +170,7 @@ internal  partial class Parser: ShiftReduceParser<SemanticValueType,Position>
         return;
       case 10: // elements -> value ITEMS_SEPARATOR elements 
 {
-			var node = value_stack.array[value_stack.top-3].yyval.elements;
-            node.Next = value_stack.array[value_stack.top-1].yyval.elements;
-            yyval.elements = node;
+			yyval.elements = new Node<PhpValue>(value_stack.array[value_stack.top-3].yyval.value, value_stack.array[value_stack.top-1].yyval.elements);
 		}
         return;
       case 11: // elements -> value 

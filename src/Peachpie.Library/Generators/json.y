@@ -100,9 +100,7 @@ array:
 elements:
 		value ITEMS_SEPARATOR elements
 		{
-			var node = $1.elements;
-            node.Next = $3.elements;
-            $$.elements = node;
+			$$.elements = new Node<PhpValue>($1.value, $3.elements);
 		}
 	|	value { $$.elements = new Node<PhpValue>($1.value); }
 	;
