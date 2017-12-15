@@ -1,6 +1,9 @@
 using System.Diagnostics;
 using Pchp.Core;
 using Pchp.Library.Parsers;
+
+using Pair = System.Collections.Generic.KeyValuePair<string, Pchp.Core.PhpValue>;
+
 %%
 
 %namespace Pchp.Library.Json
@@ -11,7 +14,11 @@ using Pchp.Library.Parsers;
 
 %union
 {
-	public object obj; 
+    public object obj;
+    public PhpValue value;
+
+    public Parser.Node<Pair> members { get => (Parser.Node<Pair>)obj; set => obj = value; }
+    public Parser.Node<PhpValue> elements { get => (Parser.Node<PhpValue>)obj; set => obj = value; }
 }
 
 %token ARRAY_OPEN
@@ -36,81 +43,79 @@ using Pchp.Library.Parsers;
 %% /* Productions */
 
 start:
-	  value	{ Result = (PhpValue)$1.obj; }
+	  value	{ Result = $1.value; }
 ;
 
 object:
 		OBJECT_OPEN members OBJECT_CLOSE
 		{
-			var elements = (List<KeyValuePair<string, PhpValue>>)$2.obj;				
-			var arr = new PhpArray(elements.Count);
+			var arr = new PhpArray(16);
 				
-			foreach (var item in elements)
+			for (var n = $2.members; n != null; n = n.Next)
 			{
-				arr.Add( Core.Convert.StringToArrayKey(item.Key), item.Value );
+				arr.Add( Core.Convert.StringToArrayKey(n.Value.Key), n.Value.Value );
 			}
 					
 			if (decodeOptions.Assoc)
 			{
-				$$.obj = PhpValue.Create(arr);
+				$$.value = PhpValue.Create(arr);
 			}
 			else
 			{
-				$$.obj = PhpValue.FromClass(arr.ToClass());
+				$$.value = PhpValue.FromClass(arr.ToClass());
 			}
 		}
-	|	OBJECT_OPEN OBJECT_CLOSE	{ $$.obj = PhpValue.FromClass(new stdClass()); }
+	|	OBJECT_OPEN OBJECT_CLOSE	{ $$.value = PhpValue.FromClass(new stdClass()); }
 	;
 	
 members:
 		pair ITEMS_SEPARATOR members
 		{
-			var elements = (List<KeyValuePair<string, PhpValue>>)$3.obj;
-			var result = new List<KeyValuePair<string, PhpValue>>( elements.Count + 1 ){ (KeyValuePair<string, PhpValue>)$1.obj };
-			result.AddRange(elements);			
-			$$.obj = result;
+			var node = $1.members;
+            node.Next = $3.members;
+            $$.members = node;
 		}
-	|	pair	{ $$.obj = new List<KeyValuePair<string, PhpValue>>(){ (KeyValuePair<string,PhpValue>)$1.obj }; }
+	|	pair	{ $$.members = $1.members; }
 	;
 	
 pair:
-		STRING NAMEVALUE_SEPARATOR value	{ $$.obj = new KeyValuePair<string,PhpValue>((string)$1.obj, (PhpValue)$3.obj); }
+		STRING NAMEVALUE_SEPARATOR value	{ $$.members = new Node<Pair>(new Pair((string)$1.obj, $3.value)); }
 	;
 	
 array:
 		ARRAY_OPEN elements ARRAY_CLOSE
 		{
-			var elements = (List<PhpValue>)$2.obj;
-			var arr = new PhpArray( elements.Count );
+			var arr = new PhpArray(16);
 			
-			foreach (var item in elements)
-				arr.Add( item );
+            for (var n = $2.elements; n != null; n = n.Next)
+            {
+                arr.Add( n.Value );
+            }
 				
-			$$.obj = arr;
+			$$.value = PhpValue.Create(arr);
 		}
-	|	ARRAY_OPEN ARRAY_CLOSE	{ $$.obj = PhpArray.NewEmpty(); }
+	|	ARRAY_OPEN ARRAY_CLOSE	{ $$.value = PhpValue.Create(PhpArray.NewEmpty()); }
 	;
 	
 elements:
 		value ITEMS_SEPARATOR elements
 		{
-			var elements = (List<PhpValue>)$3.obj;
-			var result = new List<PhpValue>( elements.Count + 1 ){ (PhpValue)$1.obj };
-			result.AddRange(elements);
-			$$.obj = result;
+			var node = $1.elements;
+            node.Next = $3.elements;
+            $$.elements = node;
 		}
-	|	value { $$.obj = new List<PhpValue>(){ (PhpValue)$1.obj }; }
+	|	value { $$.elements = new Node<PhpValue>($1.value); }
 	;
 	
 value:
-		STRING	{$$.obj = PhpValue.Create((string)$1.obj);}
-	|	INTEGER	{$$.obj = PhpValue.FromClr($1.obj);}
-	|	DOUBLE	{$$.obj = PhpValue.FromClr($1.obj);}
-	|	object	{$$.obj = (PhpValue)$1.obj;}
-	|	array	{$$.obj = PhpValue.Create((PhpArray)$1.obj);}
-	|	TRUE	{$$.obj = PhpValue.True;}
-	|	FALSE	{$$.obj = PhpValue.False;}
-	|	NULL	{$$.obj = PhpValue.Null;}
+		STRING	{$$.value = PhpValue.Create((string)$1.obj);}
+	|	INTEGER	{$$.value = PhpValue.FromClr($1.obj);}
+	|	DOUBLE	{$$.value = PhpValue.FromClr($1.obj);}
+	|	object	{$$.value = $1.value;}
+	|	array	{$$.value = $1.value;}
+	|	TRUE	{$$.value = PhpValue.True;}
+	|	FALSE	{$$.value = PhpValue.False;}
+	|	NULL	{$$.value = PhpValue.Null;}
 	;
 
 %%
@@ -118,13 +123,3 @@ value:
 protected override int EofToken { get { return (int)Tokens.EOF; } }
 protected override int ErrorToken { get { return (int)Tokens.ERROR; } }
 
-readonly PhpSerialization.JsonSerializer.DecodeOptions/*!*/decodeOptions;
-
-internal Parser(PhpSerialization.JsonSerializer.DecodeOptions/*!*/decodeOptions)
-{
-	Debug.Assert(decodeOptions != null);
-	
-	this.decodeOptions = decodeOptions;
-}
-
-public PhpValue Result { get; private set; }
