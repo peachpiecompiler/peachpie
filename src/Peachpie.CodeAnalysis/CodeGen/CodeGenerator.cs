@@ -301,7 +301,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Type of the caller context (the class declaring current method) or null.
         /// </summary>
-        public TypeSymbol CallerType => (_routine is SourceMethodSymbol) ? _routine.ContainingType : null;
+        public TypeSymbol CallerType
+        {
+            get => _callerType ?? ((_routine is SourceMethodSymbol) ? _routine.ContainingType : null);
+            set => _callerType = value;
+        }
+        TypeSymbol _callerType;
+        IPlace _callerTypePlace;
 
         public SourceFileSymbol ContainingFile => _containingFile;
         SourceFileSymbol _containingFile;

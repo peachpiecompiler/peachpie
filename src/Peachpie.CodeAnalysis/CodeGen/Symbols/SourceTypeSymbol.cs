@@ -337,12 +337,19 @@ namespace Pchp.CodeAnalysis.Symbols
                         IPlace thisPlace = null;
                         IPlace traitInstancePlace = null;
                         IPlace ctxPlace;
+                        IPlace selfPlace = null;
 
                         if (m.IsStatic)
                         {
                             // Template: return TRAIT.method(...)
                             Debug.Assert(SpecialParameterSymbol.IsContextParameter(m.Parameters[0]));
                             ctxPlace = new ParamPlace(m.Parameters[0]);
+
+                            if (this.IsTrait)
+                            {
+                                Debug.Assert(SpecialParameterSymbol.IsSelfParameter(m.Parameters[1]));
+                                selfPlace = new ParamPlace(m.Parameters[1]);
+                            }
                         }
                         else
                         {
@@ -352,7 +359,11 @@ namespace Pchp.CodeAnalysis.Symbols
                             traitInstancePlace = new FieldPlace(thisPlace, t.TraitInstanceField); // this.<>trait
                         }
 
-                        using (var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, this, ctxPlace, thisPlace))
+                        using (var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, this, ctxPlace, thisPlace)
+                        {
+                            CallerType = this,
+                            RuntimeCallerTypePlace = selfPlace,
+                        })
                         {
                             cg.EmitRet(cg.EmitForwardCall(m.ForwardedCall, m, thisPlaceExplicit: traitInstancePlace));
                         }

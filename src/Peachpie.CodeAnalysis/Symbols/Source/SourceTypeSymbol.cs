@@ -257,7 +257,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 var isstatic = declared.SourceMethod.IsStatic;
                 var symbol = new SynthesizedMethodSymbol(ContainingType,
-                    declared.Name, isstatic, !isstatic && !ContainingType.IsTraitType(), declared.SourceMethod.ReturnType, declared.Visibility.GetAccessibility(),
+                    declared.Name, isstatic, !isstatic && !ContainingType.IsTrait, declared.SourceMethod.ReturnType, declared.Visibility.GetAccessibility(),
                     isfinal: false)
                 {
                     ForwardedCall = declared.SourceMethod,  // remember the trait method that will be called by this wrapper
@@ -267,7 +267,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 var ps = new List<ParameterSymbol>(declared.SourceMethod.ParameterCount);
                 foreach (var p in declared.SourceMethod.Parameters)
                 {
-                    if (isstatic && SpecialParameterSymbol.IsSelfParameter(p))
+                    if (isstatic && SpecialParameterSymbol.IsSelfParameter(p) && !ContainingType.IsTrait)
                     {
                         continue;
                     }

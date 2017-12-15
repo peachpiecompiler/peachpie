@@ -77,7 +77,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             get
             {
-                if (this.Routine is SourceGlobalMethodSymbol global)
+                ParameterSymbol p;
+
+                if (_callerTypePlace != null)
+                {
+                    return _callerTypePlace;
+                }
+                else if (this.Routine is SourceGlobalMethodSymbol global)
                 {
                     return new ParamPlace(global.SelfParameter);
                 }
@@ -91,13 +97,18 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         return new FieldPlace(this.ThisPlaceOpt, trait.RealClassCtxField);
                     }
-                    else
+                    else if (this.Routine != null && (p = Routine.Parameters.FirstOrDefault(SpecialParameterSymbol.IsSelfParameter)) != null)
                     {
-                        // TODO: SelfParameter
+                        // static method in trait gets <self> as parameter
+                        return new ParamPlace(p);
                     }
                 }
 
                 return null;
+            }
+            set
+            {
+                _callerTypePlace = value;
             }
         }
 
