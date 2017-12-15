@@ -27,10 +27,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 containingtype, prefix + method.Name, method.IsStatic, explicitOverride != null, ghostreturn, method.DeclaredAccessibility)
             {
                 ExplicitOverride = explicitOverride,
+                ForwardedCall = method,
             };
 
-            ghost.SetParameters(ghostparams.Select(p =>
-                new SynthesizedParameterSymbol(ghost, p.Type, p.Ordinal, p.RefKind, p.Name, p.IsParams)).ToArray());
+            ghost.SetParameters(ghostparams.Select(p => SynthesizedParameterSymbol.Create(ghost, p)).ToArray());
 
             // save method symbol to module
             module.SynthesizedManager.AddMethod(containingtype, ghost);

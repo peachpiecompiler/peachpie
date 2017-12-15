@@ -57,7 +57,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public ParameterSymbol ThisParameter => this.ImplicitParameters.First(p => p.Name == SpecialParameterSymbol.ThisName);
 
-        public ParameterSymbol SelfParameter => this.ImplicitParameters.First(p => p.Name == SpecialParameterSymbol.SelfName);
+        public ParameterSymbol SelfParameter => this.ImplicitParameters.First(SpecialParameterSymbol.IsSelfParameter);
 
         public override string Name => WellKnownPchpNames.GlobalRoutineName;
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,6 +19,13 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly Accessibility _accessibility;
         protected ImmutableArray<ParameterSymbol> _parameters;
 
+        /// <summary>
+        /// Optional.
+        /// Gats actual method that will be called by this one.
+        /// For informational purposes.
+        /// </summary>
+        public MethodSymbol ForwardedCall { get; set; }
+
         internal MethodSymbol ExplicitOverride { get; set; }
 
         public override IMethodSymbol OverriddenMethod => ExplicitOverride;
@@ -27,7 +35,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _type = containingType;
             _name = name;
             _static = isstatic;
-            _virtual = isvirtual;
+            _virtual = isvirtual && !isstatic;
             _return = returnType;
             _accessibility = accessibility;
             _final = isfinal && isvirtual && !isstatic;

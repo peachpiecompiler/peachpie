@@ -56,7 +56,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 var place = RuntimeCallerTypePlace;
                 if (place != null)
                 {
-                     place.EmitLoad(_il).Expect(CoreTypes.RuntimeTypeHandle);
+                    place.EmitLoad(_il).Expect(CoreTypes.RuntimeTypeHandle);
                 }
                 else
                 {
@@ -64,7 +64,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     EmitLoadDefaultOfValueType(this.CoreTypes.RuntimeTypeHandle);
                 }
             }
-            
+
             //
             return CoreTypes.RuntimeTypeHandle;
         }
@@ -96,7 +96,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         // TODO: SelfParameter
                     }
                 }
-                
+
                 return null;
             }
         }
@@ -1184,7 +1184,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 return Emit_ArgsArray(CoreTypes.PhpValue); // TODO: T
             }
             // class context
-            else if (SpecialParameterSymbol.IsCallerClassParameter(p))
+            else if (SpecialParameterSymbol.IsCallerClassParameter(p) || SpecialParameterSymbol.IsSelfParameter(p))
             {
                 if (p.Type == CoreTypes.PhpTypeInfo)
                 {
@@ -1199,18 +1199,16 @@ namespace Pchp.CodeAnalysis.CodeGen
                         ? ((IPhpTypeSymbol)this.CallerType).FullName.ToString()
                         : null);
                 }
+                else if (p.Type == CoreTypes.RuntimeTypeHandle)
+                {
+                    // LOAD <RuntimeTypeHandle>
+                    return EmitCallerTypeHandle();
+                }
                 else
                 {
-                    if (p.Type == CoreTypes.RuntimeTypeHandle)
-                    {
-                        // LOAD <RuntimeTypeHandle>
-                        return this.EmitLoadToken(this.CallerType, null);
-                    }
-                    else
-                    {
-                        throw ExceptionUtilities.UnexpectedValue(p.Type);
-                    }
+                    throw ExceptionUtilities.UnexpectedValue(p.Type);
                 }
+
                 return p.Type;
             }
             // current "static"
@@ -1419,8 +1417,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         /// <param name="target">Method to be called.</param>
         /// <param name="thismethod">Current method.</param>
+        /// <param name="thisPlaceExplicit">Optionaly specified place of object instance to call the method on.</param>
         /// <returns>Return of <paramref name="target"/>.</returns>
-        internal TypeSymbol EmitForwardCall(MethodSymbol target, MethodSymbol thismethod)
+        internal TypeSymbol EmitForwardCall(MethodSymbol target, MethodSymbol thismethod, IPlace thisPlaceExplicit = null)
         {
             if (target == null)
             {
@@ -1433,7 +1432,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 thisExpr = new BoundVariableRef(new BoundVariableName(VariableName.ThisVariableName))
                 {
-                    Variable = BoundLocal.CreateFromPlace(this.ThisPlaceOpt),
+                    Variable = BoundLocal.CreateFromPlace(thisPlaceExplicit ?? this.ThisPlaceOpt),
                     Access = BoundAccess.Read
                 };
             }

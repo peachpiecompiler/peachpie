@@ -100,8 +100,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected sealed class TraitUse
         {
+            /// <summary>
+            /// Type using the trait.
+            /// </summary>
             readonly SourceTypeSymbol ContainingType;
 
+            /// <summary>
+            /// Trait type symbol.
+            /// </summary>
             public readonly NamedTypeSymbol Symbol;
             public readonly TraitsUse.TraitAdaptation[] Adaptations;
 
@@ -132,8 +138,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 public string Name;
             }
 
-            Dictionary<Name, DeclaredAs> _lazyMembersMap;
-
             /// <summary>
             /// Map of visible trait members how to be declared in containing class.
             /// </summary>
@@ -145,7 +149,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     {
                         // initial map of methods
                         var map = new Dictionary<Name, DeclaredAs>();
-                        foreach (var m in Symbol.GetMembers().OfType<SourceMethodSymbol>()) // TODO: concat with trait uses of trait
+                        foreach (var m in Symbol.GetMembers().OfType<SourceMethodSymbol>())
                         {
                             map[new Name(m.RoutineName)] = new DeclaredAs()
                             {
@@ -153,6 +157,23 @@ namespace Pchp.CodeAnalysis.Symbols
                                 SourceMethod = m,
                                 Visibility = PhpMemberAttributes.Public,    // TODO: declared visibility
                             };
+                        }
+
+                        // methods from contained trait:
+                        if (Symbol is SourceTypeSymbol srct && !srct.TraitUses.IsEmpty)
+                        {
+                            foreach (var t in srct.TraitUses)
+                            {
+                                foreach (var m in t.GetMembers().OfType<MethodSymbol>())
+                                {
+                                    map[new Name(m.Name)] = new DeclaredAs()
+                                    {
+                                        Name = m.Name,
+                                        SourceMethod = m,
+                                        Visibility = PhpMemberAttributes.Public,    // TODO
+                                    };
+                                }
+                            }
                         }
 
                         // adaptations
@@ -198,8 +219,66 @@ namespace Pchp.CodeAnalysis.Symbols
                     return _lazyMembersMap;
                 }
             }
+            Dictionary<Name, DeclaredAs> _lazyMembersMap;
 
-            // TODO: synthesized members (methods, properties, constants)
+            /// <summary>
+            /// Gets synthesized members (methods, properties, constants).
+            /// </summary>
+            public ImmutableArray<Symbol> GetMembers()
+            {
+                if (_lazyMembers.IsDefault)
+                {
+                    _lazyMembers = CreateMembers().AsImmutable();
+                }
+
+                return _lazyMembers;
+            }
+            ImmutableArray<Symbol> _lazyMembers;
+
+            IEnumerable<Symbol> CreateMembers()
+            {
+                // TODO: constants
+                // TODO: properties
+
+                // methods
+                foreach (var m in MembersMap.Values)
+                {
+                    if (m.SourceMethod.IsAbstract == false)
+                    {
+                        yield return CreateTraitMethodImplementation(m);
+                    }
+                }
+
+                //
+                yield break;
+            }
+
+            SynthesizedMethodSymbol CreateTraitMethodImplementation(DeclaredAs declared)
+            {
+                var isstatic = declared.SourceMethod.IsStatic;
+                var symbol = new SynthesizedMethodSymbol(ContainingType,
+                    declared.Name, isstatic, !isstatic && !ContainingType.IsTraitType(), declared.SourceMethod.ReturnType, declared.Visibility.GetAccessibility(),
+                    isfinal: false)
+                {
+                    ForwardedCall = declared.SourceMethod,  // remember the trait method that will be called by this wrapper
+                };
+
+                // clone parameters:
+                var ps = new List<ParameterSymbol>(declared.SourceMethod.ParameterCount);
+                foreach (var p in declared.SourceMethod.Parameters)
+                {
+                    if (isstatic && SpecialParameterSymbol.IsSelfParameter(p))
+                    {
+                        continue;
+                    }
+
+                    ps.Add(SynthesizedParameterSymbol.Create(symbol, p));
+                }
+                symbol.SetParameters(ps.ToArray());
+
+                //
+                return symbol;
+            }
 
             public TraitUse(SourceTypeSymbol type, NamedTypeSymbol symbol, TraitsUse.TraitAdaptation[] adaptations)
             {
@@ -876,7 +955,20 @@ namespace Pchp.CodeAnalysis.Symbols
         public override ImmutableArray<Symbol> GetMembers() => EnsureMembers().AsImmutable();
 
         public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
-            => EnsureMembers().Where(s => s.Name.StringsEqual(name, ignoreCase)).AsImmutable();
+        {
+            IEnumerable<Symbol> members = EnsureMembers();
+
+            // lookup trait members
+            if (!TraitUses.IsEmpty)
+            {
+                members = members.Concat(TraitUses.SelectMany(t => t.GetMembers()));
+            }
+
+            //
+            return members
+                .Where(s => s.Name.StringsEqual(name, ignoreCase))
+                .AsImmutable();
+        }
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers()
         {

@@ -30,6 +30,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
             // System.ToString
             EmitToString(module);
+
+            // trait methods
+            EmitTraitImplementations(module);
         }
 
         void EmitFieldsCctor(Emit.PEModuleBuilder module)
@@ -64,6 +67,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var invoke = new SynthesizedMethodSymbol(this, "IPhpCallable.Invoke", false, true, DeclaringCompilation.CoreTypes.PhpValue, isfinal: false)
             {
                 ExplicitOverride = (MethodSymbol)DeclaringCompilation.CoreTypes.IPhpCallable.Symbol.GetMembers("Invoke").Single(),
+                ForwardedCall = __invoke,
             };
             invoke.SetParameters(
                 new SpecialParameterSymbol(invoke, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, 0),
@@ -192,16 +196,16 @@ namespace Pchp.CodeAnalysis.Symbols
                             ctxFieldPlace.EmitStore(il);
                         }
 
-                        // trait instances:
-                        foreach (var t in this.TraitUses)
-                        {
-                            EmitTraitInstanceInit(cg, ctor, t);
-                        }
-
                         // trait specific:
                         if (ctor is SynthesizedPhpTraitCtorSymbol tctor)
                         {
                             EmitTraitCtorInit(cg, tctor);
+                        }
+
+                        // trait instances:
+                        foreach (var t in this.TraitUses)
+                        {
+                            EmitTraitInstanceInit(cg, ctor, t);
                         }
 
                         // initialize class fields
@@ -255,7 +259,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Debug.Assert(tctor.ParameterCount == 3);
             Debug.Assert(tctor.Parameters[0].Type == cg.CoreTypes.Context);
             Debug.Assert(tctor.Parameters[1].Type == cg.CoreTypes.Object);
-            Debug.Assert(tctor.Parameters[2].Type == cg.CoreTypes.RuntimeTypeHandle);
+            Debug.Assert(SpecialParameterSymbol.IsSelfParameter(tctor.Parameters[2]));
 
             // using trait in trait?
             var ctort = ctor as SynthesizedPhpTraitCtorSymbol;
@@ -291,6 +295,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 var tostring = new SynthesizedMethodSymbol(this, "ToString", false, true, DeclaringCompilation.CoreTypes.String, Accessibility.Public, isfinal: false)
                 {
                     ExplicitOverride = (MethodSymbol)DeclaringCompilation.GetSpecialTypeMember(SpecialMember.System_Object__ToString),
+                    ForwardedCall = __tostring,
                 };
 
                 module.SetMethodBody(tostring, MethodGenerator.GenerateMethodBody(module, tostring, il =>
@@ -316,6 +321,45 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 }, null, DiagnosticBag.GetInstance(), false));
                 module.SynthesizedManager.AddMethod(this, tostring);
+            }
+        }
+
+        void EmitTraitImplementations(Emit.PEModuleBuilder module)
+        {
+            foreach (var t in TraitUses)
+            {
+                foreach (var m in t.GetMembers().OfType<SynthesizedMethodSymbol>())
+                {
+                    Debug.Assert(m.ForwardedCall != null);
+
+                    module.SetMethodBody(m, MethodGenerator.GenerateMethodBody(module, m, il =>
+                    {
+                        IPlace thisPlace = null;
+                        IPlace traitInstancePlace = null;
+                        IPlace ctxPlace;
+
+                        if (m.IsStatic)
+                        {
+                            // Template: return TRAIT.method(...)
+                            Debug.Assert(SpecialParameterSymbol.IsContextParameter(m.Parameters[0]));
+                            ctxPlace = new ParamPlace(m.Parameters[0]);
+                        }
+                        else
+                        {
+                            // Template: return this.<>trait.method(...)
+                            thisPlace = new ArgPlace(this, 0);  // this
+                            ctxPlace = new FieldPlace(thisPlace, this.ContextStore);    // this.<ctx>
+                            traitInstancePlace = new FieldPlace(thisPlace, t.TraitInstanceField); // this.<>trait
+                        }
+
+                        using (var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, this, ctxPlace, thisPlace))
+                        {
+                            cg.EmitRet(cg.EmitForwardCall(m.ForwardedCall, m, thisPlaceExplicit: traitInstancePlace));
+                        }
+
+                    }, null, DiagnosticBag.GetInstance(), false));
+                    module.SynthesizedManager.AddMethod(this, m);
+                }
             }
         }
 
