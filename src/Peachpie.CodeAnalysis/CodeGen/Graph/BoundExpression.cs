@@ -4180,6 +4180,16 @@ namespace Pchp.CodeAnalysis.Semantics
 
                     return cg.CoreTypes.String;
 
+                case PseudoConstUse.Types.Class:
+
+                    // TODO: out of class scope => ""
+
+                    // resolve name of self in runtime:
+                    // Template: Operators.GetSelf(<self>).Name
+                    BoundTypeRef.EmitLoadSelf(cg);  // GetSelf() : PhpTypeInfo
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetName_PhpTypeInfo.Getter) // Name : string
+                            .Expect(SpecialType.System_String);
+
                 default:
 
                     // the other pseudoconstants should be resolved by flow analysis

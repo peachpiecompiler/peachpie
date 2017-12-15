@@ -1748,9 +1748,27 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 case PseudoConstUse.Types.Class:
                 case PseudoConstUse.Types.Trait:
-                    value = (TypeCtx.SelfType is IPhpTypeSymbol)
-                        ? ((IPhpTypeSymbol)TypeCtx.SelfType).FullName.ToString()
-                        : string.Empty;
+                    if (TypeCtx.SelfType is IPhpTypeSymbol phpt)
+                    {
+                        value = phpt.FullName.ToString();
+
+                        if (phpt.IsTrait && x.Type == PseudoConstUse.Types.Class)
+                        {
+                            // __CLASS__ inside trait resolved in runtime
+                            x.TypeRefMask = TypeCtx.GetStringTypeMask();
+                            return;
+                        }
+
+                        if (!phpt.IsTrait && x.Type == PseudoConstUse.Types.Trait)
+                        {
+                            // __TRAIT__ inside class is empty string
+                            value = string.Empty;
+                        }
+                    }
+                    else
+                    {
+                        value = string.Empty;
+                    }
                     break;
 
                 case PseudoConstUse.Types.Method:

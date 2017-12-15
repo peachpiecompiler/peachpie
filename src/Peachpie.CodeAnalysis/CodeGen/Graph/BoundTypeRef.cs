@@ -152,7 +152,12 @@ namespace Pchp.CodeAnalysis.Semantics
             throw new InvalidOperationException();
         }
 
-        static TypeSymbol EmitLoadSelf(CodeGenerator cg)
+        /// <summary>
+        /// Loads <c>PhpTypeInfo</c> of <c>self</c>.
+        /// </summary>
+        /// <param name="cg"></param>
+        /// <returns>Type symbol of PhpTypeInfo.</returns>
+        internal static TypeSymbol EmitLoadSelf(CodeGenerator cg)
         {
             cg.EmitCallerTypeHandle();
             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetSelf_RuntimeTypeHandle);
