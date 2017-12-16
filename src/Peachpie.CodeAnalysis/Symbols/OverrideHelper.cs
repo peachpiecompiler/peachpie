@@ -115,9 +115,8 @@ namespace Pchp.CodeAnalysis.Symbols
                         }
                     }
 
-                    // remember m's base declaration cannot be overriden again
-                    var mbase = m.OverriddenMethod;
-                    if (mbase != null)
+                    // already overriden methods cannot be overriden again:
+                    for (var mbase = m.OverriddenMethod; mbase != null; mbase = mbase.OverriddenMethod)
                     {
                         overriden.Add((MethodSymbol)mbase);
                     }
