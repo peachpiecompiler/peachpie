@@ -14,6 +14,7 @@ using System.Globalization;
 using System.Threading;
 using Microsoft.CodeAnalysis.Text;
 using static Pchp.CodeAnalysis.AstUtils;
+using Pchp.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -131,10 +132,25 @@ namespace Pchp.CodeAnalysis.Symbols
             }
             IFieldSymbol _lazyTraitInstanceField;
 
+            /// <summary>
+            /// Specifies implementation of a trait method in containing class.
+            /// </summary>
+            [DebuggerDisplay("{Visibility} {Name,nq} -> {SourceMethod}")]
             struct DeclaredAs
             {
+                /// <summary>
+                /// Trait method.
+                /// </summary>
                 public MethodSymbol SourceMethod;
+
+                /// <summary>
+                /// Method visibility in containing class.
+                /// </summary>
                 public PhpMemberAttributes Visibility;
+
+                /// <summary>
+                /// Method name in containing class.
+                /// </summary>
                 public string Name;
             }
 
@@ -147,10 +163,27 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     if (_lazyMembersMap == null)
                     {
-                        // initial map of methods
+                        // collect source methods to be mapped to containing class:
+                        var sourcemembers = new Dictionary<MemberQualifiedName, MethodSymbol>();
                         var map = new Dictionary<Name, DeclaredAs>();
-                        foreach (var m in Symbol.GetMembers().OfType<SourceMethodSymbol>())
+
+                        // mehods that will be mapped to containing class:
+                        IEnumerable<MethodSymbol> traitmethods = Symbol.GetMembers().OfType<SourceMethodSymbol>();
+
+                        // methods from used traits:
+                        if (Symbol is SourceTypeSymbol srct && !srct.TraitUses.IsEmpty)
                         {
+                            // containing trait uses first (members will be overriden by this trait use)
+                            traitmethods = srct.TraitUses.SelectMany(t => t.GetMembers()).OfType<MethodSymbol>().Concat(traitmethods);
+                        }
+
+                        // map of methods from trait:
+                        foreach (var m in traitmethods)
+                        {
+                            // {T::method_name} => method
+                            sourcemembers[new MemberQualifiedName(((IPhpTypeSymbol)m.ContainingType).FullName, new Name(m.RoutineName))] = m;
+
+                            // {method_name} => method
                             map[new Name(m.RoutineName)] = new DeclaredAs()
                             {
                                 Name = m.RoutineName,
@@ -159,50 +192,42 @@ namespace Pchp.CodeAnalysis.Symbols
                             };
                         }
 
-                        // methods from contained trait:
-                        if (Symbol is SourceTypeSymbol srct && !srct.TraitUses.IsEmpty)
-                        {
-                            foreach (var t in srct.TraitUses)
-                            {
-                                foreach (var m in t.GetMembers().OfType<MethodSymbol>())
-                                {
-                                    map[new Name(m.Name)] = new DeclaredAs()
-                                    {
-                                        Name = m.Name,
-                                        SourceMethod = m,
-                                        Visibility = PhpMemberAttributes.Public,    // TODO
-                                    };
-                                }
-                            }
-                        }
-
                         // adaptations
                         if (Adaptations != null && Adaptations.Length != 0)
                         {
                             var phpt = (IPhpTypeSymbol)Symbol;
                             foreach (var a in Adaptations)
                             {
+                                var membername = a.TraitMemberName.Item2.Name;
+
                                 if (a is TraitsUse.TraitAdaptationPrecedence precedence)
                                 {
-                                    if (precedence.IgnoredTypes.Select(t => t.QualifiedName.Value).Contains(phpt.FullName))
+                                    if (map.TryGetValue(membername, out DeclaredAs declared) &&
+                                        precedence.IgnoredTypes.Select(t => t.QualifiedName.Value).Contains(((IPhpTypeSymbol)declared.SourceMethod.ContainingType).FullName))
                                     {
                                         // member was hidden
-                                        map.Remove(a.TraitMemberName.Item2.Name);
+                                        map.Remove(membername);
                                     }
                                 }
                                 else if (a is TraitsUse.TraitAdaptationAlias alias)
                                 {
-                                    if (!a.TraitMemberName.Item1.HasValue || a.TraitMemberName.Item1.QualifiedName == phpt.FullName)
-                                    {
-                                        var sourcename = a.TraitMemberName.Item2.Name;
-                                        if (map.TryGetValue(sourcename, out DeclaredAs declaredas))
-                                        {
-                                            if (alias.NewModifier.HasValue) declaredas.Visibility = alias.NewModifier.Value;
-                                            if (alias.NewName.HasValue) declaredas.Name = alias.NewName.Name.Value;
+                                    // add an alias to the map:
+                                    var qname = a.TraitMemberName.Item1.HasValue ? a.TraitMemberName.Item1.QualifiedName : phpt.FullName;
 
-                                            // update map
-                                            map[sourcename] = declaredas;
-                                        }
+                                    if (sourcemembers.TryGetValue(new MemberQualifiedName(qname, membername), out MethodSymbol s))
+                                    {
+                                        var declaredas = new DeclaredAs()
+                                        {
+                                            SourceMethod = s,
+                                            Name = membername.Value,
+                                            Visibility = PhpMemberAttributes.Public,    // TODO: declared visibility
+                                        };
+
+                                        if (alias.NewModifier.HasValue) declaredas.Visibility = alias.NewModifier.Value;
+                                        if (alias.NewName.HasValue) declaredas.Name = alias.NewName.Name.Value;
+
+                                        // update map
+                                        map[membername] = declaredas;
                                     }
                                 }
                                 else
@@ -243,10 +268,18 @@ namespace Pchp.CodeAnalysis.Symbols
                 // methods
                 foreach (var m in MembersMap.Values)
                 {
-                    if (m.SourceMethod.IsAbstract == false)
+                    if (m.SourceMethod.IsAbstract)
                     {
-                        yield return CreateTraitMethodImplementation(m);
+                        // abstract methods must be implemented by containing class
+                        continue;
                     }
+                    if (ContainingType.Syntax.Members.OfType<MethodDecl>().Any(x => x.Name.Name.Equals(m.Name)))
+                    {
+                        // "overriden" in containing class
+                        continue;
+                    }
+
+                    yield return CreateTraitMethodImplementation(m);
                 }
 
                 //
