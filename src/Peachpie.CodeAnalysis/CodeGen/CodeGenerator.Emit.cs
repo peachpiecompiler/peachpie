@@ -160,6 +160,26 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        /// <summary>
+        /// Emits value of <c>$this</c>.
+        /// Available only within source routines.
+        /// In case no $this is available, nothing is emitted and function returns <c>null</c> reference.
+        /// </summary>
+        public TypeSymbol EmitPhpThis()
+        {
+            if (Routine != null)
+            {
+                var thisplace = Routine.PhpThisVariablePlace;
+                if (thisplace != null)
+                {
+                    return thisplace.EmitLoad(_il);
+                }
+            }
+
+            //
+            return null;
+        }
+
         public TypeSymbol EmitGeneratorInstance()
         {
             Contract.ThrowIfNull(this.GeneratorStateMachineMethod);

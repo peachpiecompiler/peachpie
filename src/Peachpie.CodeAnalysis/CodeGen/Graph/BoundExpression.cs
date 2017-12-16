@@ -2499,7 +2499,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override TypeSymbol EmitTarget(CodeGenerator cg)
         {
-            return cg.EmitThisOrNull();
+            return cg.EmitPhpThis();
         }
 
         internal override TypeSymbol EmitDynamicCall(CodeGenerator cg)
