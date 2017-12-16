@@ -2497,9 +2497,22 @@ namespace Pchp.CodeAnalysis.Semantics
         protected override BoundTypeRef LateStaticTypeRef => _typeRef;  // used for direct routine call requiring late static type
         protected override bool IsVirtualCall => false;
 
+        /// <summary>
+        /// Emits current class instance, expected by callsite to resolve instance function called statically.
+        /// </summary>
         internal override TypeSymbol EmitTarget(CodeGenerator cg)
         {
-            return cg.EmitPhpThis();
+            var t = cg.EmitPhpThis();
+
+            if (t == null)
+            {
+                // null if this is not available
+                cg.Builder.EmitNullConstant();
+                t = cg.CoreTypes.Object;
+            }
+
+            //
+            return t;
         }
 
         internal override TypeSymbol EmitDynamicCall(CodeGenerator cg)
