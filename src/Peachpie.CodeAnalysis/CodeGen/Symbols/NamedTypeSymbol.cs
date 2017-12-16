@@ -135,6 +135,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
             // collect this type declared methods including synthesized methods
             var methods = this.GetMembers().OfType<MethodSymbol>();
+            if (this is SourceTypeSymbol stype) methods = methods.Concat(stype.TraitMembers);
+
             var methodslookup = methods.Where(OverrideHelper.CanOverride).ToLookup(m => m.RoutineName);
 
             // resolve overrides of inherited members

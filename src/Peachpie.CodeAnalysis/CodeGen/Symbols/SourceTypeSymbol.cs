@@ -427,6 +427,12 @@ namespace Pchp.CodeAnalysis.Symbols
                             info.Method.ReturnType, info.Method.Parameters, info.Method);
                     }
                 }
+                
+                // setup synthesized methods explicit override as resolved
+                if (info.Override is SynthesizedMethodSymbol sm && sm.ExplicitOverride == null && sm.ContainingType == this)
+                {
+                    sm.ExplicitOverride = info.Method;
+                }
             }
         }
     }

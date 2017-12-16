@@ -174,7 +174,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         if (Symbol is SourceTypeSymbol srct && !srct.TraitUses.IsEmpty)
                         {
                             // containing trait uses first (members will be overriden by this trait use)
-                            traitmethods = srct.TraitUses.SelectMany(t => t.GetMembers()).OfType<MethodSymbol>().Concat(traitmethods);
+                            traitmethods = srct.TraitMembers.Concat(traitmethods);
                         }
 
                         // map of methods from trait:
@@ -227,7 +227,7 @@ namespace Pchp.CodeAnalysis.Symbols
                                         if (alias.NewName.HasValue) declaredas.Name = alias.NewName.Name.Value;
 
                                         // update map
-                                        map[membername] = declaredas;
+                                        map[new Name(declaredas.Name)] = declaredas;
                                     }
                                 }
                                 else
@@ -985,6 +985,21 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public IEnumerable<SynthesizedMethodSymbol> TraitMembers
+        {
+            get
+            {
+                if (TraitUses.IsEmpty)
+                {
+                    return Enumerable.Empty<SynthesizedMethodSymbol>();
+                }
+                else
+                {
+                    return TraitUses.SelectMany(t => t.GetMembers()).Cast<SynthesizedMethodSymbol>();
+                }
+            }
+        }
+
         public override ImmutableArray<Symbol> GetMembers() => EnsureMembers().AsImmutable();
 
         public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
@@ -994,7 +1009,7 @@ namespace Pchp.CodeAnalysis.Symbols
             // lookup trait members
             if (!TraitUses.IsEmpty)
             {
-                members = members.Concat(TraitUses.SelectMany(t => t.GetMembers()));
+                members = members.Concat(TraitMembers);
             }
 
             //
@@ -1036,7 +1051,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit()
         {
-            return this.Interfaces;
+            var ifaces = GetDeclaredInterfaces(null);
+
+            //
+            if (TryGetMagicInvoke() != null)
+            {
+                // __invoke => IPhpCallable
+                ifaces = ifaces.Add(DeclaringCompilation.CoreTypes.IPhpCallable);
+            }
+
+            return ifaces;
         }
 
         internal override ImmutableArray<NamedTypeSymbol> GetDeclaredInterfaces(ConsList<Symbol> basesBeingResolved)
@@ -1044,16 +1068,7 @@ namespace Pchp.CodeAnalysis.Symbols
             ResolveBaseTypes();
 
             //
-            if (TryGetMagicInvoke() == null)
-            {
-                return _lazyInterfacesType;
-            }
-            else
-            {
-                // __invoke => IPhpCallable
-                return _lazyInterfacesType
-                    .Add(DeclaringCompilation.CoreTypes.IPhpCallable);
-            }
+            return _lazyInterfacesType;
         }
 
         internal override IEnumerable<IMethodSymbol> GetMethodsToEmit()
