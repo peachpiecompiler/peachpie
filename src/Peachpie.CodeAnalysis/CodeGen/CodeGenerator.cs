@@ -303,13 +303,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public TypeSymbol CallerType
         {
-            get => _callerType ?? ((_routine is SourceMethodSymbol)
-                ? (_routine.ContainingType is SourceTraitTypeSymbol t ? t.TSelfParameter : _routine.ContainingType)
-                : null);
+            get => GetSelfType(_callerType ?? (_routine is SourceMethodSymbol ? _routine.ContainingType : null));
             set => _callerType = value;
         }
         TypeSymbol _callerType;
         IPlace _callerTypePlace;
+
+        TypeSymbol GetSelfType(TypeSymbol scope) => scope is SourceTraitTypeSymbol t ? t.TSelfParameter : scope;
 
         public SourceFileSymbol ContainingFile => _containingFile;
         SourceFileSymbol _containingFile;
