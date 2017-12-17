@@ -81,10 +81,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
 
                 // determine from code flow
-                if (!routine.ContainingType.IsTraitType())
-                {
-                    return compilation.GetTypeFromTypeRef(typeCtx, routine.ResultTypeMask);
-                }
+                return compilation.GetTypeFromTypeRef(typeCtx, routine.ResultTypeMask);
             }
             else
             {

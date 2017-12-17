@@ -75,6 +75,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             if (routine.ControlFlowGraph == null)
             {
+                if (routine is SynthesizedMethodSymbol sr && sr.ForwardedCall is IPhpRoutineSymbol routine2)
+                {
+                    return EnqueueRoutine(routine2, caller);
+                }
+
                 // library (sourceless) function
                 return false;
             }

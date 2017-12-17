@@ -347,7 +347,11 @@ namespace Pchp.CodeAnalysis.Symbols
                             CallerType = this,
                         })
                         {
-                            cg.EmitRet(cg.EmitForwardCall(m.ForwardedCall, m, thisPlaceExplicit: traitInstancePlace));
+                            var forwarded_type = cg.EmitForwardCall(m.ForwardedCall, m, thisPlaceExplicit: traitInstancePlace);
+                            var target_type = m.ReturnType;
+
+                            cg.EmitConvert(forwarded_type, 0, target_type); // always (forwarded_type === target_type)
+                            cg.EmitRet(target_type);
                         }
 
                     }, null, DiagnosticBag.GetInstance(), false));

@@ -87,9 +87,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<ParameterSymbol> Parameters => _parameters;
         
-        public override bool ReturnsVoid => _return.SpecialType == SpecialType.System_Void;
+        public override bool ReturnsVoid => ReturnType.SpecialType == SpecialType.System_Void;
 
-        public override TypeSymbol ReturnType => _return;
+        public override TypeSymbol ReturnType => _return ?? ForwardedCall?.ReturnType ?? throw new InvalidOperationException();
 
         internal override ObsoleteAttributeData ObsoleteAttributeData => null;
 
