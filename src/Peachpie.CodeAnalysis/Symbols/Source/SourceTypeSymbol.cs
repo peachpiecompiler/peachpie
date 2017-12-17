@@ -320,7 +320,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Debug.Assert(symbol.IsTraitType());
 
                 this.ContainingType = type;
-                this.Symbol = symbol.Construct(type.IsTrait ? (TypeSymbol)type.TypeParameters[0] : type);
+                this.Symbol = symbol.Construct(type is SourceTraitTypeSymbol tt ? tt.TSelfParameter : type);    // if contained in trait, pass its TSelf
                 this.Adaptations = adaptations;
             }
         }
@@ -1183,7 +1183,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Debug.Assert(syntax.MemberAttributes.IsTrait());
             Debug.Assert(syntax.BaseClass == null); // not expecting trait can extend another class
 
-            _typeParameters = ImmutableArray.Create<TypeParameterSymbol>( new AnonymousTypeParameterSymbol(this, 0, "TSelf") );
+            _typeParameters = ImmutableArray.Create<TypeParameterSymbol>(new AnonymousTypeParameterSymbol(this, 0, "TSelf"));
         }
 
         protected override SourceTypeSymbol NewSelf() => new SourceTraitTypeSymbol(ContainingFile, Syntax);

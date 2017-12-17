@@ -303,30 +303,22 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                var originalctors = _originalDefinition.InstanceConstructors;
-
-                var builder = ArrayBuilder<MethodSymbol>.GetInstance();
-
                 if (_unbound)
                 {
-                    //// Preserve order of members.
-                    //foreach (var t in originalctors)
-                    //{
-                    //    if (t.Kind == SymbolKind.NamedType)
-                    //    {
-                    //        builder.Add(((NamedTypeSymbol)t).AsMember(this));
-                    //    }
-                    //}
+                    return ImmutableArray<MethodSymbol>.Empty;
                 }
                 else
                 {
-                    foreach (var t in originalctors)
-                    {
-                        builder.Add((MethodSymbol)t.SymbolAsMember(this));
-                    }
-                }
+                    var originalctors = _originalDefinition.InstanceConstructors;
+                    var result = new MethodSymbol[originalctors.Length];
 
-                return builder.ToImmutableAndFree();
+                    for (int i = 0; i < result.Length; i++)
+                    {
+                        result[i] = originalctors[i].AsMember(this);
+                    }
+
+                    return result.AsImmutable();
+                }
             }
         }
 
