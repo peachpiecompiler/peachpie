@@ -235,16 +235,10 @@ namespace Pchp.CodeAnalysis.Symbols
             var il = cg.Builder;
 
             // this.<>this = @this
-            var thisFieldPlace = new FieldPlace(cg.ThisPlaceOpt, tctor.ContainingType.RealThisField);
+            var thisFieldPlace = new FieldPlace(cg.ThisPlaceOpt, tctor.ContainingType.RealThisField, module: cg.Module);
             thisFieldPlace.EmitStorePrepare(il);
             tctor.ThisParameter.EmitLoad(il);
             thisFieldPlace.EmitStore(il);
-
-            // this.<self> = <self>
-            var selfFieldPlace = new FieldPlace(cg.ThisPlaceOpt, tctor.ContainingType.RealClassCtxField);
-            selfFieldPlace.EmitStorePrepare(il);
-            tctor.SelfParameter.EmitLoad(il);
-            selfFieldPlace.EmitStore(il);
         }
 
         void EmitTraitInstanceInit(CodeGenerator cg, SynthesizedPhpCtorSymbol ctor, TraitUse t)
@@ -252,14 +246,13 @@ namespace Pchp.CodeAnalysis.Symbols
             // Template: this.<>trait_T = new T(ctx, this, self)
 
             // PLACE: this.<>trait_T
-            var instancePlace = new FieldPlace(cg.ThisPlaceOpt, t.TraitInstanceField);
+            var instancePlace = new FieldPlace(cg.ThisPlaceOpt, t.TraitInstanceField, module: cg.Module);
 
             // .ctor(Context, object @this, RuntimeTypeHandle self)
             var tctor = t.Symbol.InstanceConstructors[0];
-            Debug.Assert(tctor.ParameterCount == 3);
+            Debug.Assert(tctor.ParameterCount == 2);
             Debug.Assert(tctor.Parameters[0].Type == cg.CoreTypes.Context);
-            Debug.Assert(tctor.Parameters[1].Type == cg.CoreTypes.Object);
-            Debug.Assert(SpecialParameterSymbol.IsSelfParameter(tctor.Parameters[2]));
+            //Debug.Assert(tctor.Parameters[1].Type == TSelfParameter);
 
             // using trait in trait?
             var ctort = ctor as SynthesizedPhpTraitCtorSymbol;
@@ -271,10 +264,7 @@ namespace Pchp.CodeAnalysis.Symbols
             // this:
             if (ctort != null) ctort.ThisParameter.EmitLoad(cg.Builder);    // this is passed from caller
             else cg.EmitThis();
-            // self:
-            if (ctort != null) ctort.SelfParameter.EmitLoad(cg.Builder);  // self'1 // self is passed from <self> parameter in trait ctor (when using trait in trait)
-            else cg.EmitLoadToken(this, null);   // self'2 // self is current class scope
-            // new T(...)
+            // new T<TSelf>(...)
             cg.EmitCall(ILOpCode.Newobj, tctor);
 
             instancePlace.EmitStore(cg.Builder);
@@ -337,32 +327,24 @@ namespace Pchp.CodeAnalysis.Symbols
                         IPlace thisPlace = null;
                         IPlace traitInstancePlace = null;
                         IPlace ctxPlace;
-                        IPlace selfPlace = null;
 
                         if (m.IsStatic)
                         {
                             // Template: return TRAIT.method(...)
                             Debug.Assert(SpecialParameterSymbol.IsContextParameter(m.Parameters[0]));
                             ctxPlace = new ParamPlace(m.Parameters[0]);
-
-                            if (this.IsTrait)
-                            {
-                                Debug.Assert(SpecialParameterSymbol.IsSelfParameter(m.Parameters[1]));
-                                selfPlace = new ParamPlace(m.Parameters[1]);
-                            }
                         }
                         else
                         {
                             // Template: return this.<>trait.method(...)
                             thisPlace = new ArgPlace(this, 0);  // this
                             ctxPlace = new FieldPlace(thisPlace, this.ContextStore);    // this.<ctx>
-                            traitInstancePlace = new FieldPlace(thisPlace, t.TraitInstanceField); // this.<>trait
+                            traitInstancePlace = new FieldPlace(thisPlace, t.TraitInstanceField, module); // this.<>trait
                         }
 
                         using (var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, this, ctxPlace, thisPlace)
                         {
                             CallerType = this,
-                            RuntimeCallerTypePlace = selfPlace,
                         })
                         {
                             cg.EmitRet(cg.EmitForwardCall(m.ForwardedCall, m, thisPlaceExplicit: traitInstancePlace));
@@ -427,7 +409,7 @@ namespace Pchp.CodeAnalysis.Symbols
                             info.Method.ReturnType, info.Method.Parameters, info.Method);
                     }
                 }
-                
+
                 // setup synthesized methods explicit override as resolved
                 if (info.Override is SynthesizedMethodSymbol sm && sm.ExplicitOverride == null && sm.ContainingType == this)
                 {

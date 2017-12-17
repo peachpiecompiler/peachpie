@@ -189,8 +189,9 @@ namespace Pchp.CodeAnalysis.CodeGen
     {
         readonly IPlace _holder;
         readonly FieldSymbol _field;
+        readonly Cci.IFieldReference _fieldref;
 
-        public FieldPlace(IPlace holder, IFieldSymbol field)
+        public FieldPlace(IPlace holder, IFieldSymbol field, Emit.PEModuleBuilder module = null)
         {
             Contract.ThrowIfNull(field);
 
@@ -203,6 +204,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             _holder = holder;
             _field = (FieldSymbol)field;
+            _fieldref = (module != null) ? module.Translate((FieldSymbol)field, null, DiagnosticBag.GetInstance()) : (Cci.IFieldReference)field;
 
             Debug.Assert(holder != null || field.IsStatic);
             Debug.Assert(holder == null || holder.TypeOpt.IsOfType(_field.ContainingType) || _field.ContainingType.IsValueType);
@@ -229,7 +231,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         void EmitOpCode(ILBuilder il, ILOpCode code)
         {
             il.EmitOpCode(code);
-            il.EmitToken(_field, null, DiagnosticBag.GetInstance());    // .{field}
+            il.EmitToken(_fieldref, null, DiagnosticBag.GetInstance());    // .{field}
         }
 
         public TypeSymbol TypeOpt => _field.Type;
@@ -929,28 +931,31 @@ namespace Pchp.CodeAnalysis.CodeGen
 
     internal sealed class BoundThisPlace : IBoundReference
     {
-        readonly IPlace _place;
+        readonly SourceRoutineSymbol _routine;
         readonly BoundAccess _access;
 
-        public BoundThisPlace(IPlace place, BoundAccess access)
+        public BoundThisPlace(SourceRoutineSymbol routine, BoundAccess access)
         {
-            Contract.ThrowIfNull(place);
+            Contract.ThrowIfNull(routine);
+            Debug.Assert(routine.GetPhpThisVariablePlace() != null);
 
-            _place = place;
+            _routine = routine;
             _access = access;
         }
 
-        public TypeSymbol TypeOpt => _place.TypeOpt;
+        public TypeSymbol TypeOpt => _routine.GetPhpThisVariablePlace().TypeOpt;
 
         public TypeSymbol EmitLoad(CodeGenerator cg)
         {
+            var place = _routine.GetPhpThisVariablePlace(cg.Module);
+
             // Ensure Array ($this[] =)
             if (_access.EnsureArray)
             {
                 if (TypeOpt?.IsOfType(cg.CoreTypes.ArrayAccess) == true)
                 {
                     // Operators.EnsureArray(<place>)
-                    _place.EmitLoad(cg.Builder);
+                    place.EmitLoad(cg.Builder);
 
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_ArrayAccess)
                             .Expect(cg.CoreTypes.IPhpArray);
@@ -960,7 +965,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
-                return _place.EmitLoad(cg.Builder);
+                return place.EmitLoad(cg.Builder);
             }
         }
 

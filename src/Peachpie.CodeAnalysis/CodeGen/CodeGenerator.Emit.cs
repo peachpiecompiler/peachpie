@@ -46,10 +46,17 @@ namespace Pchp.CodeAnalysis.CodeGen
         public TypeSymbol EmitCallerTypeHandle()
         {
             var caller = this.CallerType;
-            if (caller != null && !caller.IsTraitType())
+            if (caller != null)
             {
-                // RuntimeTypeHandle
-                EmitLoadToken(caller, null);
+                if (caller.IsTraitType())
+                {
+                    EmitLoadToken(((SourceTraitTypeSymbol)caller).TSelfParameter, null);
+                }
+                else
+                {
+                    // RuntimeTypeHandle
+                    EmitLoadToken(caller, null);
+                }
             }
             else
             {
@@ -77,8 +84,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             get
             {
-                ParameterSymbol p;
-
                 if (_callerTypePlace == null)
                 {
                     if (this.Routine is SourceGlobalMethodSymbol global)
@@ -88,18 +93,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                     else if (this.Routine is SourceLambdaSymbol lambda)
                     {
                         _callerTypePlace = lambda.GetCallerTypePlace();
-                    }
-                    else if (this.CallerType is SourceTraitTypeSymbol trait)
-                    {
-                        if (this.ThisPlaceOpt != null)
-                        {
-                            _callerTypePlace = new FieldPlace(this.ThisPlaceOpt, trait.RealClassCtxField);
-                        }
-                        else if (this.Routine != null && (p = Routine.Parameters.FirstOrDefault(SpecialParameterSymbol.IsSelfParameter)) != null)
-                        {
-                            // static method in trait gets <self> as parameter
-                            _callerTypePlace = new ParamPlace(p);
-                        }
                     }
                 }
 
@@ -169,7 +162,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             if (Routine != null)
             {
-                var thisplace = Routine.PhpThisVariablePlace;
+                var thisplace = Routine.GetPhpThisVariablePlace(this.Module);
                 if (thisplace != null)
                 {
                     return thisplace.EmitLoad(_il);
@@ -2197,6 +2190,13 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
+                // declare unbound generic types properly (traits, generic classes)
+                if (t.Arity != 0)
+                {
+                    // TODO: declare as unbound
+                    return;
+                }
+
                 var dependent = t.GetDependentSourceTypeSymbols();
 
                 // ensure all types are loaded into context,
@@ -2345,7 +2345,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (index == dependency_handle.Length || versions.Length == 1)
             {
                 Debug.Assert(versions.Length == 1);
-
+                Debug.Assert(versions[0].Arity == 0);   // declare as unbound generic type, see EmitDeclareType
                 // <ctx>.DeclareType<T>();
                 // goto DONE;
                 EmitLoadContext();
@@ -2901,7 +2901,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public static void EmitSymbolToken(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics, FieldSymbol symbol, SyntaxNode syntaxNode)
         {
-            il.EmitToken(symbol, syntaxNode, diagnostics);
+            il.EmitToken(module.Translate(symbol, syntaxNode, diagnostics), syntaxNode, diagnostics);
         }
 
         public static void EmitValueDefault(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics, LocalDefinition tmp)

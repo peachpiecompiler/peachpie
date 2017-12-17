@@ -133,7 +133,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if (cg.Routine != null)
             {
-                var thisVariablePlace = cg.Routine.PhpThisVariablePlace;
+                var thisVariablePlace = cg.Routine.GetPhpThisVariablePlace(cg.Module);
                 if (thisVariablePlace != null)
                 {
                     // Template: GetPhpTypeInfo(this)

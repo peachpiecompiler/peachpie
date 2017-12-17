@@ -299,6 +299,37 @@ namespace Pchp.CodeAnalysis.Symbols
             return _originalDefinition.GetTypeMembers(name, arity).SelectAsArray((t, self) => t.AsMember(self), this);
         }
 
+        public override ImmutableArray<MethodSymbol> InstanceConstructors
+        {
+            get
+            {
+                var originalctors = _originalDefinition.InstanceConstructors;
+
+                var builder = ArrayBuilder<MethodSymbol>.GetInstance();
+
+                if (_unbound)
+                {
+                    //// Preserve order of members.
+                    //foreach (var t in originalctors)
+                    //{
+                    //    if (t.Kind == SymbolKind.NamedType)
+                    //    {
+                    //        builder.Add(((NamedTypeSymbol)t).AsMember(this));
+                    //    }
+                    //}
+                }
+                else
+                {
+                    foreach (var t in originalctors)
+                    {
+                        builder.Add((MethodSymbol)t.SymbolAsMember(this));
+                    }
+                }
+
+                return builder.ToImmutableAndFree();
+            }
+        }
+
         public sealed override ImmutableArray<Symbol> GetMembers()
         {
             var builder = ArrayBuilder<Symbol>.GetInstance();

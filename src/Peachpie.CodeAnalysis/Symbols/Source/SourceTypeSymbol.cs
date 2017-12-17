@@ -168,20 +168,21 @@ namespace Pchp.CodeAnalysis.Symbols
                         var map = new Dictionary<Name, DeclaredAs>();
 
                         // mehods that will be mapped to containing class:
-                        IEnumerable<MethodSymbol> traitmethods = Symbol.GetMembers().OfType<SourceMethodSymbol>();
+                        IEnumerable<MethodSymbol> traitmethods = Symbol.GetMembers().OfType<MethodSymbol>();
 
                         // methods from used traits:
-                        if (Symbol is SourceTypeSymbol srct && !srct.TraitUses.IsEmpty)
+                        if (Symbol.OriginalDefinition is SourceTypeSymbol srct && !srct.TraitUses.IsEmpty)
                         {
                             // containing trait uses first (members will be overriden by this trait use)
-                            traitmethods = srct.TraitMembers.Concat(traitmethods);
+                            traitmethods = srct.TraitMembers.Select(m => m.AsMember(m.ContainingType.Construct(ContainingType))).Concat(traitmethods);
                         }
 
                         // map of methods from trait:
                         foreach (var m in traitmethods)
                         {
                             // {T::method_name} => method
-                            sourcemembers[new MemberQualifiedName(((IPhpTypeSymbol)m.ContainingType).FullName, new Name(m.RoutineName))] = m;
+                            var phpt = (IPhpTypeSymbol)m.ContainingType.OriginalDefinition;
+                            sourcemembers[new MemberQualifiedName(phpt.FullName, new Name(m.RoutineName))] = m;
 
                             // {method_name} => method
                             map[new Name(m.RoutineName)] = new DeclaredAs()
@@ -195,7 +196,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         // adaptations
                         if (Adaptations != null && Adaptations.Length != 0)
                         {
-                            var phpt = (IPhpTypeSymbol)Symbol;
+                            var phpt = (IPhpTypeSymbol)Symbol.OriginalDefinition;
                             foreach (var a in Adaptations)
                             {
                                 var membername = a.TraitMemberName.Item2.Name;
@@ -203,7 +204,7 @@ namespace Pchp.CodeAnalysis.Symbols
                                 if (a is TraitsUse.TraitAdaptationPrecedence precedence)
                                 {
                                     if (map.TryGetValue(membername, out DeclaredAs declared) &&
-                                        precedence.IgnoredTypes.Select(t => t.QualifiedName.Value).Contains(((IPhpTypeSymbol)declared.SourceMethod.ContainingType).FullName))
+                                        precedence.IgnoredTypes.Select(t => t.QualifiedName.Value).Contains(((IPhpTypeSymbol)declared.SourceMethod.ContainingType.OriginalDefinition).FullName))
                                     {
                                         // member was hidden
                                         map.Remove(membername);
@@ -316,9 +317,10 @@ namespace Pchp.CodeAnalysis.Symbols
             public TraitUse(SourceTypeSymbol type, NamedTypeSymbol symbol, TraitsUse.TraitAdaptation[] adaptations)
             {
                 Debug.Assert(symbol != null);
+                Debug.Assert(symbol.IsTraitType());
 
                 this.ContainingType = type;
-                this.Symbol = symbol;
+                this.Symbol = symbol.Construct(type.IsTrait ? (TypeSymbol)type.TypeParameters[0] : type);
                 this.Adaptations = adaptations;
             }
         }
@@ -514,7 +516,10 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (t.Symbol != null)
                 {
-                    if (t.Symbol.Arity != 0) diagnostics.Add(CreateLocation(t.TypeRef.Span.ToTextSpan()), Errors.ErrorCode.ERR_NotYetImplemented, "Using generic types.");
+                    if (t.Symbol.Arity != 0 && !t.Attributes.IsTrait())
+                    {
+                        diagnostics.Add(CreateLocation(t.TypeRef.Span.ToTextSpan()), Errors.ErrorCode.ERR_NotYetImplemented, "Using generic types");
+                    }
                     if (t.Symbol is ErrorTypeSymbol err && err.CandidateReason != CandidateReason.Ambiguous)
                     {
                         diagnostics.Add(CreateLocation(t.TypeRef.Span.ToTextSpan()), Errors.ErrorCode.ERR_TypeNameCannotBeResolved, t.TypeRef.ClassName.ToString());
@@ -967,7 +972,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        internal override bool MangleName => false;
+        internal override bool MangleName => Arity != 0;
 
         public override ImmutableArray<NamedTypeSymbol> Interfaces => GetDeclaredInterfaces(null);
 
@@ -1129,13 +1134,13 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Field holding actual <c>this</c> instance of the class that uses this trait.
         /// </summary>
-        public IFieldSymbol RealThisField
+        public FieldSymbol RealThisField
         {
             get
             {
                 if (_lazyRealThisField == null)
                 {
-                    _lazyRealThisField = new SynthesizedFieldSymbol(this, DeclaringCompilation.CoreTypes.Object, "<>" + SpecialParameterSymbol.ThisName,
+                    _lazyRealThisField = new SynthesizedFieldSymbol(this, TSelfParameter, "<>" + SpecialParameterSymbol.ThisName,
                         accessibility: Accessibility.Private,
                         isStatic: false,
                         isReadOnly: true);
@@ -1144,27 +1149,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return _lazyRealThisField;
             }
         }
-        IFieldSymbol _lazyRealThisField; // private readonly object <>this;
-
-        /// <summary>
-        /// Field holding actual <c>scope</c> type of the class that uses this trait.
-        /// </summary>
-        public IFieldSymbol RealClassCtxField
-        {
-            get
-            {
-                if (_lazyRealClassCtxField == null)
-                {
-                    _lazyRealClassCtxField = new SynthesizedFieldSymbol(this, DeclaringCompilation.CoreTypes.RuntimeTypeHandle, SpecialParameterSymbol.SelfName,
-                        accessibility: Accessibility.Private,
-                        isStatic: false,
-                        isReadOnly: true);
-                }
-
-                return _lazyRealClassCtxField;
-            }
-        }
-        IFieldSymbol _lazyRealClassCtxField; // private readonly RuntimeTypeHandle <self>;
+        FieldSymbol _lazyRealThisField; // private readonly !TSelf <>this;
 
         /// <summary>[PhpTrait] attribute. Initialized lazily.</summary>
         BaseAttributeData _lazyPhpTraitAttribute;
@@ -1197,9 +1182,19 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             Debug.Assert(syntax.MemberAttributes.IsTrait());
             Debug.Assert(syntax.BaseClass == null); // not expecting trait can extend another class
+
+            _typeParameters = ImmutableArray.Create<TypeParameterSymbol>( new AnonymousTypeParameterSymbol(this, 0, "TSelf") );
         }
 
         protected override SourceTypeSymbol NewSelf() => new SourceTraitTypeSymbol(ContainingFile, Syntax);
+
+        public override int Arity => TypeParameters.Length;
+        public override ImmutableArray<TypeParameterSymbol> TypeParameters => _typeParameters;
+        public override ImmutableArray<TypeSymbol> TypeArguments => StaticCast<TypeSymbol>.From(_typeParameters);
+
+        public TypeSymbol TSelfParameter => _typeParameters[0];
+
+        ImmutableArray<TypeParameterSymbol> _typeParameters;
 
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()
         {
@@ -1209,8 +1204,6 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             yield return RealThisField;
-
-            yield return RealClassCtxField;
         }
 
         public override ImmutableArray<AttributeData> GetAttributes()

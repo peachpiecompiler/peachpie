@@ -1231,6 +1231,45 @@ namespace Pchp.CodeAnalysis.Emit
             throw ExceptionUtilities.UnexpectedValue(typeSymbol.Kind);
         }
 
+        internal Cci.IFieldReference Translate(
+            FieldSymbol fieldSymbol,
+            SyntaxNode syntaxNodeOpt,
+            DiagnosticBag diagnostics,
+            bool needDeclaration = false)
+        {
+            Debug.Assert(fieldSymbol.IsDefinitionOrDistinct());
+            // Debug.Assert(!fieldSymbol.IsTupleField, "tuple fields should be rewritten to underlying by now");
+
+            if (!fieldSymbol.IsDefinition)
+            {
+                Debug.Assert(!needDeclaration);
+
+                return fieldSymbol;
+            }
+            else if (!needDeclaration && IsGenericType(fieldSymbol.ContainingType))
+            {
+                object reference;
+                Cci.IFieldReference fieldRef;
+
+                if (_genericInstanceMap.TryGetValue(fieldSymbol, out reference))
+                {
+                    return (Cci.IFieldReference)reference;
+                }
+
+                fieldRef = new SpecializedFieldReference(fieldSymbol);
+                fieldRef = (Cci.IFieldReference)_genericInstanceMap.GetOrAdd(fieldSymbol, fieldRef);
+
+                return fieldRef;
+            }
+
+            //if (_embeddedTypesManagerOpt != null)
+            //{
+            //    return _embeddedTypesManagerOpt.EmbedFieldIfNeedTo(fieldSymbol, syntaxNodeOpt, diagnostics);
+            //}
+
+            return fieldSymbol;
+        }
+
         internal Cci.ITypeReference Translate(
             NamedTypeSymbol namedTypeSymbol, SyntaxNode syntaxOpt, DiagnosticBag diagnostics,
             bool fromImplements = false,

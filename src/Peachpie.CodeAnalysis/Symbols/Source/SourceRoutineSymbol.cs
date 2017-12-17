@@ -112,12 +112,6 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 // Context <ctx>
                 yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
-
-                if (this.ContainingType.IsTraitType())
-                {
-                    // RuntimeTypeHandle <self>
-                    yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.RuntimeTypeHandle, SpecialParameterSymbol.SelfName, index++);
-                }
             }
         }
 
