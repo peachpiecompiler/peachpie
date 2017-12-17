@@ -309,7 +309,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         TypeSymbol _callerType;
         IPlace _callerTypePlace;
 
-        TypeSymbol GetSelfType(TypeSymbol scope) => scope is SourceTraitTypeSymbol t ? t.TSelfParameter : scope;
+        static TypeSymbol GetSelfType(TypeSymbol scope) => scope is SourceTraitTypeSymbol t ? t.TSelfParameter : scope;
 
         public SourceFileSymbol ContainingFile => _containingFile;
         SourceFileSymbol _containingFile;

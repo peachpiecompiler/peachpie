@@ -153,7 +153,7 @@ namespace Pchp.CodeAnalysis.Symbols
             module.SetMethodBody(tophpvalue, MethodGenerator.GenerateMethodBody(module, tophpvalue, il =>
             {
                 var thisPlace = new ArgPlace(this, 0);
-                var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, this, new FieldPlace(thisPlace, this.ContextStore), thisPlace);
+                var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, this, new FieldPlace(thisPlace, this.ContextStore, module), thisPlace);
 
                 // return PhpValue.FromClass(this)
                 cg.EmitThis();
@@ -185,7 +185,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         var ctxField = this.ContextStore;
                         if (ctxField != null && object.ReferenceEquals((object)ctxField.ContainingType, this))
                         {
-                            var ctxFieldPlace = new FieldPlace(cg.ThisPlaceOpt, ctxField);
+                            var ctxFieldPlace = new FieldPlace(cg.ThisPlaceOpt, ctxField, module);
 
                             // Debug.Assert(<ctx> != null)
                             cg.EmitDebugAssertNotNull(cg.ContextPlaceOpt, "Context cannot be null.");
@@ -291,7 +291,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 module.SetMethodBody(tostring, MethodGenerator.GenerateMethodBody(module, tostring, il =>
                 {
                     var thisPlace = new ArgPlace(this, 0);
-                    var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, this, new FieldPlace(thisPlace, this.ContextStore), thisPlace);
+                    var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, this, new FieldPlace(thisPlace, this.ContextStore, module), thisPlace);
 
                     if (__tostring != null)
                     {
@@ -338,7 +338,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         {
                             // Template: return this.<>trait.method(...)
                             thisPlace = new ArgPlace(this, 0);  // this
-                            ctxPlace = new FieldPlace(thisPlace, this.ContextStore);    // this.<ctx>
+                            ctxPlace = new FieldPlace(thisPlace, this.ContextStore, module);    // this.<ctx>
                             traitInstancePlace = new FieldPlace(thisPlace, t.TraitInstanceField, module); // this.<>trait
                         }
 

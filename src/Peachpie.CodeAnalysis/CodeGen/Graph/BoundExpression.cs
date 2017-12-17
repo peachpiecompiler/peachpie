@@ -3445,7 +3445,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // static PhpArray arr`;
             var fld = cg.Factory.CreateSynthesizedField(cg.CoreTypes.PhpArray, "<arr>", true);
-            var fldplace = new FieldPlace(null, fld);
+            var fldplace = new FieldPlace(null, fld, cg.Module);
 
             // TODO: reuse existing cached PhpArray with the same content
 

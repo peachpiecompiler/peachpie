@@ -47,7 +47,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal void EmitInit(CodeGenerator cg)
         {
-            var fldplace = new FieldPlace(IsStatic ? null : new ArgPlace(ContainingType, 0), this);
+            var fldplace = new FieldPlace(IsStatic ? null : new ArgPlace(ContainingType, 0), this, cg.Module);
             
             if (this.Initializer != null)
             {

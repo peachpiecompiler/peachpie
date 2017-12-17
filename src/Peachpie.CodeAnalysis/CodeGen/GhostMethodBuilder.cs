@@ -54,7 +54,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                     // Context
                     var ctxPlace = thisPlace != null && ghost.ContainingType is SourceTypeSymbol sourcetype
-                        ? (sourcetype.ContextStore != null ? new FieldPlace(thisPlace, sourcetype.ContextStore) : null)
+                        ? (sourcetype.ContextStore != null ? new FieldPlace(thisPlace, sourcetype.ContextStore, module) : null)
                         : (IPlace)new ArgPlace(module.Compilation.CoreTypes.Context, 0);
 
                     var cg = new CodeGenerator(il, module, diagnostic, module.Compilation.Options.OptimizationLevel, false, containingtype, ctxPlace, thisPlace);

@@ -256,7 +256,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     var cg = new CodeGenerator(il, module, diagnostic, compilation.Options.OptimizationLevel, false,
                         holder.ContainingType, new ArgPlace(compilation.CoreTypes.Context, 1), new ArgPlace(holder, 0));
 
-                    var valuePlace = new FieldPlace(cg.ThisPlaceOpt, holder.ValueField);
+                    var valuePlace = new FieldPlace(cg.ThisPlaceOpt, holder.ValueField, module);
 
                     // Template: this.value = <initilizer>;
 
@@ -284,7 +284,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     var cg = new CodeGenerator(il, module, diagnostic, compilation.Options.OptimizationLevel, false,
                         holder.ContainingType, null, new ArgPlace(holder, 0));
 
-                    var valuePlace = new FieldPlace(cg.ThisPlaceOpt, holder.ValueField);
+                    var valuePlace = new FieldPlace(cg.ThisPlaceOpt, holder.ValueField, module);
 
                     // Template: this.value = default(T);
 

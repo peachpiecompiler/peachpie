@@ -321,7 +321,7 @@ namespace Pchp.CodeAnalysis.Symbols
         internal void EmitInit(PEModuleBuilder module)
         {
             var cctor = module.GetStaticCtorBuilder(_file);
-            var field = new FieldPlace(null, this.EnsureRoutineInfoField(module));
+            var field = new FieldPlace(null, this.EnsureRoutineInfoField(module), module);
 
             // {RoutineInfoField} = RoutineInfo.CreateUserRoutine(name, handle)
             field.EmitStorePrepare(cctor);
@@ -364,7 +364,7 @@ namespace Pchp.CodeAnalysis.Symbols
         internal void EmitInit(PEModuleBuilder module)
         {
             var cctor = module.GetStaticCtorBuilder(_container);
-            var field = new FieldPlace(null, this.EnsureRoutineInfoField(module));
+            var field = new FieldPlace(null, this.EnsureRoutineInfoField(module), module);
 
             var ct = module.Compilation.CoreTypes;
 
