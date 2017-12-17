@@ -578,15 +578,21 @@ namespace Pchp.Core
         /// Gets <see cref="PhpTypeInfo"/> of parent.
         /// Throws in case of parent being used out of class context or within a parentless class.
         /// </summary>
-        public static PhpTypeInfo GetParent(RuntimeTypeHandle self)
+        public static PhpTypeInfo GetParent(RuntimeTypeHandle self) => GetParent(self.GetPhpTypeInfo());
+
+        /// <summary>
+        /// Gets <see cref="PhpTypeInfo"/> of parent.
+        /// Throws in case of parent being used out of class context or within a parentless class.
+        /// </summary>
+        public static PhpTypeInfo GetParent(PhpTypeInfo self)
         {
-            if (self.Equals(default(RuntimeTypeHandle)))
+            if (self == null)
             {
                 PhpException.Throw(PhpError.Error, Resources.ErrResources.parent_used_out_of_class);
             }
             else
             {
-                var t = self.GetPhpTypeInfo().BaseType;
+                var t = self.BaseType;
                 if (t != null)
                 {
                     return t;

@@ -441,6 +441,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 GetSelf_RuntimeTypeHandle = ct.Operators.Method("GetSelf", ct.RuntimeTypeHandle);
                 GetParent_RuntimeTypeHandle = ct.Operators.Method("GetParent", ct.RuntimeTypeHandle);
+                GetParent_PhpTypeInfo = ct.Operators.Method("GetParent", ct.PhpTypeInfo);
                 TypeNameOrObjectToType_Context_PhpValue = ct.Operators.Method("TypeNameOrObjectToType", ct.Context, ct.PhpValue);
 
                 Clone_Context_Object = ct.Operators.Method("Clone", ct.Context, ct.Object);
@@ -525,7 +526,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle,
                 GetForeachEnumerator_Iterator,
 
-                GetSelf_RuntimeTypeHandle, GetParent_RuntimeTypeHandle,
+                GetSelf_RuntimeTypeHandle, GetParent_RuntimeTypeHandle, GetParent_PhpTypeInfo,
                 TypeNameOrObjectToType_Context_PhpValue,
 
                 Clone_Context_Object,

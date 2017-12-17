@@ -159,14 +159,37 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <returns>Type symbol of PhpTypeInfo.</returns>
         internal static TypeSymbol EmitLoadSelf(CodeGenerator cg)
         {
-            cg.EmitCallerTypeHandle();
-            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetSelf_RuntimeTypeHandle);
+            var caller = cg.CallerType;
+            if (caller != null)
+            {
+                // current scope is resolved in compile-time:
+                // Template: GetPhpTypeInfo<CallerType>()
+                return EmitLoadPhpTypeInfo(cg, caller);
+            }
+            else
+            {
+                // Template: Operators.GetSelf( {caller type handle} )
+                cg.EmitCallerTypeHandle();
+                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetSelf_RuntimeTypeHandle);
+            }
         }
 
         static TypeSymbol EmitLoadParent(CodeGenerator cg)
         {
-            cg.EmitCallerTypeHandle();
-            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetParent_RuntimeTypeHandle);
+            var caller = cg.CallerType;
+            if (caller != null)
+            {
+                // current scope is resolved in compile-time:
+                // Template: Operators.GetParent( GetPhpTypeInfo<CallerType>() )
+                EmitLoadPhpTypeInfo(cg, caller);
+                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetParent_PhpTypeInfo);
+            }
+            else
+            {
+                // Template: Operators.GetParent( {caller type handle} )
+                cg.EmitCallerTypeHandle();
+                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetParent_RuntimeTypeHandle);
+            }
         }
 
         internal static TypeSymbol EmitLoadPhpTypeInfo(CodeGenerator cg, ITypeSymbol t)
