@@ -48,15 +48,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             var caller = this.CallerType;
             if (caller != null)
             {
-                if (caller.IsTraitType())
-                {
-                    EmitLoadToken(((SourceTraitTypeSymbol)caller).TSelfParameter, null);
-                }
-                else
-                {
-                    // RuntimeTypeHandle
-                    EmitLoadToken(caller, null);
-                }
+                // RuntimeTypeHandle
+                EmitLoadToken(caller, null);
             }
             else
             {

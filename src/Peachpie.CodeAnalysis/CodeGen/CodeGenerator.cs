@@ -303,7 +303,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public TypeSymbol CallerType
         {
-            get => _callerType ?? ((_routine is SourceMethodSymbol) ? _routine.ContainingType : null);
+            get => _callerType ?? ((_routine is SourceMethodSymbol)
+                ? (_routine.ContainingType is SourceTraitTypeSymbol t ? t.TSelfParameter : _routine.ContainingType)
+                : null);
             set => _callerType = value;
         }
         TypeSymbol _callerType;
