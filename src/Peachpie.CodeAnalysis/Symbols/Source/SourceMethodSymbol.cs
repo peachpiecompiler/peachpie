@@ -34,6 +34,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override bool RequiresLateStaticBoundParam =>
             IsStatic &&                             // `static` in instance method == typeof($this)
+            ControlFlowGraph != null &&             // cfg sets {Flags}
             (this.Flags & RoutineFlags.UsesLateStatic) != 0 &&
             (!_type.IsSealed || _type.IsTrait);     // `static` == `self` <=> self is sealed
 
