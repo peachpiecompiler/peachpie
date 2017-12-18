@@ -2626,11 +2626,37 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(Access.IsNone);
 
-            _arguments
-                .Select(a => a.Value)
-                .ForEach(cg.EmitEcho);
+            Expressions(_arguments).ForEach(cg.EmitEcho);
 
             return cg.CoreTypes.Void;
+        }
+
+        /// <summary>
+        /// Expressions to be echoed.
+        /// </summary>
+        static IEnumerable<BoundExpression> Expressions(ImmutableArray<BoundArgument> args)
+        {
+            foreach (var a in args)
+            {
+                if (a.Value is BoundConcatEx concat)
+                {
+                    // Check if arguments can be echoed separately without concatenating them,
+                    // this is only possible if the arguments won't have side effects.
+                    var concat_args = concat.ArgumentsInSourceOrder;
+                    if (concat_args.Length <= 1 ||
+                        concat_args.Skip(1).All(ca => ca.Value.IsConstant() || ca.Value is BoundVariableRef loc || ca.Value is BoundPseudoConst))
+                    {
+                        foreach (var ca in Expressions(concat_args))
+                        {
+                            yield return ca;
+                        }
+
+                        continue;
+                    }
+                }
+
+                yield return a.Value;
+            }
         }
     }
 
@@ -2648,7 +2674,9 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 var expr = x.Value;
                 if (IsEmpty(expr))
+                {
                     continue;
+                }
 
                 //
                 cg.Builder.EmitOpCode(ILOpCode.Dup);    // PhpString
@@ -2662,23 +2690,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return cg.CoreTypes.PhpString;
         }
 
-        bool IsEmpty(BoundExpression x)
-        {
-            if (x.ConstantValue.HasValue)
-            {
-                var value = x.ConstantValue.Value;
-                if (value == null)
-                    return true;
-
-                if (value is string && ((string)value).Length == 0)
-                    return true;
-
-                if (value is bool && ((bool)value) == false)
-                    return true;
-            }
-
-            return false;
-        }
+        static bool IsEmpty(BoundExpression x) => x.ConstantValue.HasValue && ExpressionsExtension.IsEmptyStringValue(x.ConstantValue.Value);
     }
 
     partial class BoundIncludeEx
@@ -2791,7 +2803,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // Template: BuildClosure(ctx, BoundLambdaMethod.EnsureRoutineInfoField(), this, scope, [use1, use2, ...], [p1, p2, ...])
 
             var idxfld = this.BoundLambdaMethod.EnsureRoutineInfoField(cg.Module);
-            
+
             cg.EmitLoadContext();           // Context
             idxfld.EmitLoad(cg.Builder);    // routine
             cg.EmitThisOrNull();            // $this
@@ -2845,7 +2857,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (ps != null && ps.Length != 0)
             {
                 // TODO: cache singleton
-            
+
                 // new PhpArray(<count>){ ... }
                 cg.Builder.EmitIntConstant(ps.Length);
                 cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray_int);

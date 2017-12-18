@@ -2003,6 +2003,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(expr);
 
+            // check if the value won't be an empty string:
+            if (expr.ConstantValue.HasValue && ExpressionsExtension.IsEmptyStringValue(expr.ConstantValue.Value))
+            {
+                return;
+            }
+
             // Template: <ctx>.Echo(expr);
 
             this.EmitLoadContext();
@@ -2716,7 +2722,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             // sequence point
             var body = AstUtils.BodySpanOrInvalid(Routine?.Syntax);
-            if (body.IsValid)
+            if (body.IsValid && EmitPdbSequencePoints)
             {
                 EmitSequencePoint(new Span(body.End - 1, 1));
                 EmitOpCode(ILOpCode.Nop);

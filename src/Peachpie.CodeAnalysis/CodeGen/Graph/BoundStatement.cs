@@ -30,10 +30,6 @@ namespace Pchp.CodeAnalysis.Semantics
             if (cg.EmitPdbSequencePoints)
             {
                 var span = _span;
-                //if (span.IsEmpty && PhpSyntax != null)
-                //{
-                //    span = PhpSyntax.Span.ToTextSpan();
-                //}
 
                 if (!span.IsEmpty)
                 {
@@ -144,26 +140,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             //
             cg.EmitConvert(Thrown, cg.CoreTypes.Exception);
-
-            //var t = cg.Emit(Thrown);
-            //if (t.IsReferenceType)
-            //{
-            //    //if (!t.IsEqualToOrDerivedFrom(cg.CoreTypes.Exception))
-            //    //{
-            //    //    throw new NotImplementedException();    // Wrap to System.Exception
-            //    //}
-            //    cg.EmitCastClass(t, cg.CoreTypes.Exception);
-            //}
-            //else
-            //{
-            //    //if (t == cg.CoreTypes.PhpValue)
-            //    //{
-
-            //    //}
-
-            //    throw new NotImplementedException();    // Wrap to System.Exception
-            //}
-
+            
             // throw <stack>;
             cg.Builder.EmitThrow(false);
         }

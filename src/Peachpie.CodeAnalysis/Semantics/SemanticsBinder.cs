@@ -242,7 +242,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(stmt != null);
 
-            if (stmt is AST.EchoStmt echoStm) return new BoundExpressionStatement(new BoundEcho(BindArguments(echoStm.Parameters)));
+            if (stmt is AST.EchoStmt echoStm) return BindEcho(echoStm, BindArguments(echoStm.Parameters));
             if (stmt is AST.ExpressionStmt exprStm) return new BoundExpressionStatement(BindExpression(exprStm.Expression, BoundAccess.None));
             if (stmt is AST.JumpStmt jmpStm) return BindJumpStmt(jmpStm);
             if (stmt is AST.FunctionDecl) return new BoundFunctionDeclStatement(stmt.GetProperty<SourceFunctionSymbol>());
@@ -258,6 +258,11 @@ namespace Pchp.CodeAnalysis.Semantics
             //
             _diagnostics.Add(_locals.Routine, stmt, Errors.ErrorCode.ERR_NotYetImplemented, $"Statement of type '{stmt.GetType().Name}'");
             return new BoundEmptyStatement(stmt.Span.ToTextSpan());
+        }
+
+        BoundStatement BindEcho(AST.EchoStmt stmt, ImmutableArray<BoundArgument> args)
+        {
+            return new BoundExpressionStatement(new BoundEcho(args).WithSyntax(stmt));
         }
 
         BoundStatement BindUnsetStmt(AST.UnsetStmt stmt)
