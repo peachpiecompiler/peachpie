@@ -129,7 +129,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Emits <c>PhpTypeInfo</c> of late static bound type.
         /// </summary>
-        internal static TypeSymbol  EmitLoadStaticPhpTypeInfo(CodeGenerator cg)
+        internal static TypeSymbol EmitLoadStaticPhpTypeInfo(CodeGenerator cg)
         {
             if (cg.Routine != null)
             {
@@ -146,6 +146,14 @@ namespace Pchp.CodeAnalysis.Semantics
                 {
                     // Template: LOAD @static   // ~ @static parameter passed by caller
                     return lateStaticParameter.EmitLoad(cg.Builder);
+                }
+
+                var caller = cg.CallerType;
+                if (caller is SourceTypeSymbol srct && srct.IsSealed)
+                {
+                    // `static` == `self` <=> self is sealed
+                    // Template: GetPhpTypeInfo<CallerType>()
+                    return EmitLoadPhpTypeInfo(cg, caller);
                 }
             }
 

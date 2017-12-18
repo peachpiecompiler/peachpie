@@ -390,9 +390,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 x.BeforeTypeRef = TypeRefMask.AnyType;
 
-                // indirect variable access:
-                Routine.Flags |= RoutineFlags.HasIndirectVar;
-
                 Accept(x.Name.NameExpression);
 
                 // bind variable place
@@ -1304,17 +1301,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 if (TypeCtx.SelfType == null || TypeCtx.SelfType.IsTraitType())
                 {
-                    switch (((ReservedTypeRef)tref).Type)
-                    {
-                        case ReservedTypeRef.ReservedType.self:
-                            break;
-                        case ReservedTypeRef.ReservedType.parent:
-                            break;
-                        case ReservedTypeRef.ReservedType.@static:
-                            this.Routine.Flags |= RoutineFlags.UsesLateStatic;
-                            break;
-                    }
-
                     // no self, parent, static resolvable in compile-time:
                     return new MissingMetadataTypeSymbol(tref.QualifiedName.ToString(), 0, false);
                 }
@@ -1334,11 +1320,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     case ReservedTypeRef.ReservedType.@static:
                         if (TypeCtx.SelfType.IsSealed)
                         {
+                            // `static` == `self` <=> self is sealed
                             return TypeCtx.SelfType;
-                        }
-                        else
-                        {
-                            this.Routine.Flags |= RoutineFlags.UsesLateStatic;
                         }
                         break;
                 }
@@ -1427,8 +1410,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void VisitInclude(BoundIncludeEx x)
         {
-            this.Routine.Flags |= RoutineFlags.HasInclude;
-
             VisitRoutineCall(x);
 
             // resolve target script
@@ -1901,7 +1882,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitEval(x);
 
             //
-            Routine.Flags |= RoutineFlags.HasEval;
             State.SetAllUnknown(true);
 
             //

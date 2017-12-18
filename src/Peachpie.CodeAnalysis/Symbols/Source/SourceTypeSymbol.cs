@@ -107,7 +107,7 @@ namespace Pchp.CodeAnalysis.Symbols
             readonly SourceTypeSymbol ContainingType;
 
             /// <summary>
-            /// Trait type symbol.
+            /// Constructed trait type symbol.
             /// </summary>
             public readonly NamedTypeSymbol Symbol;
             public readonly TraitsUse.TraitAdaptation[] Adaptations;
@@ -146,7 +146,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 /// <summary>
                 /// Method visibility in containing class.
                 /// </summary>
-                public PhpMemberAttributes Visibility;
+                public Accessibility Accessibility;
 
                 /// <summary>
                 /// Method name in containing class.
@@ -189,7 +189,7 @@ namespace Pchp.CodeAnalysis.Symbols
                             {
                                 Name = m.RoutineName,
                                 SourceMethod = m,
-                                Visibility = PhpMemberAttributes.Public,    // TODO: declared visibility
+                                Accessibility = Accessibility.Public,    // TODO: declared visibility
                             };
                         }
 
@@ -217,14 +217,20 @@ namespace Pchp.CodeAnalysis.Symbols
 
                                     if (sourcemembers.TryGetValue(new MemberQualifiedName(qname, membername), out MethodSymbol s))
                                     {
-                                        var declaredas = new DeclaredAs()
+                                        if (map.TryGetValue(membername, out DeclaredAs declaredas) && declaredas.SourceMethod == s)
+                                        {
+                                            // aliasing the symbol, remove the old declaration
+                                            map.Remove(membername);
+                                        }
+
+                                        declaredas = new DeclaredAs()
                                         {
                                             SourceMethod = s,
                                             Name = membername.Value,
-                                            Visibility = PhpMemberAttributes.Public,    // TODO: declared visibility
+                                            Accessibility = Accessibility.Public,    // TODO: declared visibility
                                         };
 
-                                        if (alias.NewModifier.HasValue) declaredas.Visibility = alias.NewModifier.Value;
+                                        if (alias.NewModifier.HasValue) declaredas.Accessibility = alias.NewModifier.Value.GetAccessibility();
                                         if (alias.NewName.HasValue) declaredas.Name = alias.NewName.Name.Value;
 
                                         // update map
@@ -274,6 +280,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         // abstract methods must be implemented by containing class
                         continue;
                     }
+
                     if (ContainingType.Syntax.Members.OfType<MethodDecl>().Any(x => x.Name.Name.Equals(m.Name)))
                     {
                         // "overriden" in containing class
@@ -289,29 +296,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
             SynthesizedMethodSymbol CreateTraitMethodImplementation(DeclaredAs declared)
             {
-                var isstatic = declared.SourceMethod.IsStatic;
-                var symbol = new SynthesizedMethodSymbol(ContainingType,
-                    declared.Name, isstatic, !isstatic && !ContainingType.IsTrait, null, declared.Visibility.GetAccessibility(),
-                    isfinal: false)
-                {
-                    ForwardedCall = declared.SourceMethod,  // remember the trait method that will be called by this wrapper
-                };
-
-                // clone parameters:
-                var ps = new List<ParameterSymbol>(declared.SourceMethod.ParameterCount);
-                foreach (var p in declared.SourceMethod.Parameters)
-                {
-                    if (isstatic && SpecialParameterSymbol.IsSelfParameter(p) && !ContainingType.IsTrait)
-                    {
-                        continue;
-                    }
-
-                    ps.Add(SynthesizedParameterSymbol.Create(symbol, p));
-                }
-                symbol.SetParameters(ps.ToArray());
-
-                //
-                return symbol;
+                return new SynthesizedTraitMethodSymbol(
+                    ContainingType, declared.Name, declared.SourceMethod, declared.Accessibility,
+                    isfinal: false);
             }
 
             public TraitUse(SourceTypeSymbol type, NamedTypeSymbol symbol, TraitsUse.TraitAdaptation[] adaptations)
@@ -1123,106 +1110,6 @@ namespace Pchp.CodeAnalysis.Symbols
         public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
         {
             return Syntax.PHPDoc?.Summary ?? string.Empty;
-        }
-    }
-
-    /// <summary>
-    /// PHP trait symbol.
-    /// </summary>
-    internal class SourceTraitTypeSymbol : SourceTypeSymbol
-    {
-        /// <summary>
-        /// Field holding actual <c>this</c> instance of the class that uses this trait.
-        /// </summary>
-        public FieldSymbol RealThisField
-        {
-            get
-            {
-                if (_lazyRealThisField == null)
-                {
-                    _lazyRealThisField = new SynthesizedFieldSymbol(this, TSelfParameter, "<>" + SpecialParameterSymbol.ThisName,
-                        accessibility: Accessibility.Private,
-                        isStatic: false,
-                        isReadOnly: true);
-                }
-
-                return _lazyRealThisField;
-            }
-        }
-        FieldSymbol _lazyRealThisField; // private readonly !TSelf <>this;
-
-        /// <summary>[PhpTrait] attribute. Initialized lazily.</summary>
-        BaseAttributeData _lazyPhpTraitAttribute;
-
-        public override NamedTypeSymbol BaseType
-        {
-            get
-            {
-                if (_lazyBaseType == null)
-                {
-                    _lazyBaseType = DeclaringCompilation.CoreTypes.Object.Symbol;
-                    Debug.Assert(_lazyBaseType != null);
-                }
-
-                return _lazyBaseType;
-            }
-        }
-
-        protected override IEnumerable<MethodSymbol> CreateInstanceConstructors()
-        {
-            yield return new SynthesizedPhpTraitCtorSymbol(this);
-        }
-
-        public override bool IsTrait => true;
-
-        public override bool IsSealed => true;  // traits cannot be extended
-
-        public SourceTraitTypeSymbol(SourceFileSymbol file, TypeDecl syntax)
-            : base(file, syntax)
-        {
-            Debug.Assert(syntax.MemberAttributes.IsTrait());
-            Debug.Assert(syntax.BaseClass == null); // not expecting trait can extend another class
-
-            _typeParameters = ImmutableArray.Create<TypeParameterSymbol>(new AnonymousTypeParameterSymbol(this, 0, "TSelf"));
-        }
-
-        protected override SourceTypeSymbol NewSelf() => new SourceTraitTypeSymbol(ContainingFile, Syntax);
-
-        public override int Arity => TypeParameters.Length;
-        public override ImmutableArray<TypeParameterSymbol> TypeParameters => _typeParameters;
-        public override ImmutableArray<TypeSymbol> TypeArguments => StaticCast<TypeSymbol>.From(_typeParameters);
-
-        public TypeSymbol TSelfParameter => _typeParameters[0];
-
-        ImmutableArray<TypeParameterSymbol> _typeParameters;
-
-        internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()
-        {
-            foreach (var f in base.GetFieldsToEmit())
-            {
-                yield return f;
-            }
-
-            yield return RealThisField;
-        }
-
-        public override ImmutableArray<AttributeData> GetAttributes()
-        {
-            var attrs = base.GetAttributes();
-
-            // [PhpTraitAttribute()]
-            if (_lazyPhpTraitAttribute == null)
-            {
-                _lazyPhpTraitAttribute = new SynthesizedAttributeData(
-                    DeclaringCompilation.CoreMethods.Ctors.PhpTraitAttribute,
-                    ImmutableArray<TypedConstant>.Empty,
-                    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
-            }
-
-            attrs = attrs.Add(_lazyPhpTraitAttribute);
-
-            //
-            return attrs;
         }
     }
 

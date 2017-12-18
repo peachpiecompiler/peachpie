@@ -13,10 +13,10 @@ using System.Text;
 using System.Threading.Tasks;
 using AST = Devsense.PHP.Syntax.Ast;
 using Pchp.CodeAnalysis.Semantics.Graph;
+using Pchp.CodeAnalysis.FlowAnalysis;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
-
     /// <summary>
     /// Holds currently bound item and optionally the first and the last BoundBlock containing all the statements that are supposed to go before the BoundElement. 
     /// </summary>
@@ -72,6 +72,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         /// <summary>
         /// Gets corresponding routine.
+        /// Can be <c>null</c>.
         /// </summary>
         public SourceRoutineSymbol Routine => _locals?.Routine;
 
@@ -286,7 +287,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundGlobalVariableStatement(
                 new BoundVariableRef(BindVariableName(varuse))
                     .WithSyntax(varuse)
-                    .WithAccess(BoundAccess.Write.WithWriteRef(FlowAnalysis.TypeRefMask.AnyType)))
+                    .WithAccess(BoundAccess.Write.WithWriteRef(TypeRefMask.AnyType)))
                 .WithSyntax(varuse);
         }
 
@@ -413,6 +414,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindEval(AST.EvalEx expr)
         {
+            Routine.Flags |= RoutineFlags.HasEval;
+
             return new BoundEvalEx(BindExpression(expr.Code));
         }
 
@@ -485,6 +488,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindIncludeEx(AST.IncludingEx x)
         {
+            Routine.Flags |= RoutineFlags.HasInclude;
+
             return new BoundIncludeEx(BindExpression(x.Target, BoundAccess.Read), x.InclusionType);
         }
 
@@ -594,6 +599,11 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (tref is AST.IndirectTypeRef)
                 {
                     bound.TypeExpression = BindExpression(((AST.IndirectTypeRef)tref).ClassNameVar);
+                }
+
+                if (tref is AST.ReservedTypeRef rt && rt.Type == AST.ReservedTypeRef.ReservedType.@static && Routine != null)
+                {
+                    Routine.Flags |= RoutineFlags.UsesLateStatic;
                 }
 
                 return bound;
@@ -740,6 +750,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (expr.IsMemberOf == null)
             {
+                if (!varname.IsDirect)
+                {
+                    Routine.Flags |= RoutineFlags.HasIndirectVar;
+                }
+
                 return new BoundVariableRef(varname).WithAccess(access);
             }
             else

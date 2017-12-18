@@ -38,7 +38,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (_cfg == null && this.Statements != null) // ~ Statements => non abstract method
                 {
                     // create initial flow state
-                    var state = StateBinder.CreateInitialState(this);                    
+                    var state = StateBinder.CreateInitialState(this);
 
                     // build control flow graph
                     _cfg = new ControlFlowGraph(
@@ -108,14 +108,24 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var index = 0;
 
-            if (this.IsStatic)  // instance methods have <ctx> in <this>.<ctx> field, see SourceNamedTypeSymbol._lazyContextField
+            if (IsStatic)  // instance methods have <ctx> in <this>.<ctx> field, see SourceNamedTypeSymbol._lazyContextField
             {
                 // Context <ctx>
                 yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
             }
+
+            if (ControlFlowGraph != null && RequiresLateStaticBoundParam)   // note: CFG ensures RequiresLateStaticBoundParam is set
+            {
+                // PhpTypeInfo <static>
+                yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpTypeInfo, SpecialParameterSymbol.StaticTypeName, index++);
+            }
         }
 
-        internal bool RequiresLateStaticBoundParam => (this.Flags & RoutineFlags.UsesLateStatic) != 0 && !this.HasThis && (this is SourceMethodSymbol);
+        internal bool RequiresLateStaticBoundParam =>
+            (this.Flags & RoutineFlags.UsesLateStatic) != 0 &&
+            this.HasThis == false &&
+            this is SourceMethodSymbol &&
+            (ContainingType is SourceTypeSymbol srct && (!srct.IsSealed || srct.IsTrait));    // `static` == `self` <=> self is sealed
 
         /// <summary>
         /// Constructs routine source parameters.
@@ -146,15 +156,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     _implicitParams = BuildImplicitParams().ToList();
                 }
 
-                // late static bound parameter may be needed based on flow analysis,
-                // so we have to ensure it is in the list if it isn't yet
-                if (RequiresLateStaticBoundParam && !_implicitParams.Any(SpecialParameterSymbol.IsLateStaticParameter))
-                {
-                    // PhpTypeInfo <static>
-                    _implicitParams.Add(
-                        new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpTypeInfo, SpecialParameterSymbol.StaticTypeName, _implicitParams.Count)
-                    );
-                }
+                Debug.Assert(RequiresLateStaticBoundParam ? _implicitParams.Any(SpecialParameterSymbol.IsLateStaticParameter) : true);
 
                 //
                 return _implicitParams;
