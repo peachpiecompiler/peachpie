@@ -113,12 +113,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 // Context <ctx>
                 yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
             }
-
-            if (RequiresLateStaticBoundParam)
-            {
-                // PhpTypeInfo <static>
-                yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpTypeInfo, SpecialParameterSymbol.StaticTypeName, index++);
-            }
         }
 
         /// <summary>
@@ -126,10 +120,9 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal bool RequiresLateStaticBoundParam =>
             this.HasThis == false &&    // `static` in instance method == typeof($this)
+            (ContainingType is SourceTypeSymbol srct && (!srct.IsSealed || srct.IsTrait)) &&    // `static` == `self` <=> self is sealed
             ControlFlowGraph != null && // CFG ensures {Flags} are set
-            (this.Flags & RoutineFlags.UsesLateStatic) != 0 &&
-            this is SourceMethodSymbol &&
-            (ContainingType is SourceTypeSymbol srct && (!srct.IsSealed || srct.IsTrait));    // `static` == `self` <=> self is sealed
+            (this.Flags & RoutineFlags.UsesLateStatic) != 0;
 
         /// <summary>
         /// Constructs routine source parameters.
@@ -160,7 +153,11 @@ namespace Pchp.CodeAnalysis.Symbols
                     _implicitParams = BuildImplicitParams().ToList();
                 }
 
-                Debug.Assert(RequiresLateStaticBoundParam ? _implicitParams.Any(SpecialParameterSymbol.IsLateStaticParameter) : true);
+                if (RequiresLateStaticBoundParam && !_implicitParams.Any(SpecialParameterSymbol.IsLateStaticParameter))
+                {
+                    // PhpTypeInfo <static>
+                    _implicitParams.Add(new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpTypeInfo, SpecialParameterSymbol.StaticTypeName, _implicitParams.Count));
+                }
 
                 //
                 return _implicitParams;
