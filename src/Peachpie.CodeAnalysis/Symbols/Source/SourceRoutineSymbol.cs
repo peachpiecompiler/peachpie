@@ -114,16 +114,20 @@ namespace Pchp.CodeAnalysis.Symbols
                 yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
             }
 
-            if (ControlFlowGraph != null && RequiresLateStaticBoundParam)   // note: CFG ensures RequiresLateStaticBoundParam is set
+            if (RequiresLateStaticBoundParam)
             {
                 // PhpTypeInfo <static>
                 yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpTypeInfo, SpecialParameterSymbol.StaticTypeName, index++);
             }
         }
 
+        /// <summary>
+        /// Gets value indicating this routine requires a special {PhpTypeInfo static} parameter to resolve `static` reserved type inside the routine body.
+        /// </summary>
         internal bool RequiresLateStaticBoundParam =>
+            this.HasThis == false &&    // `static` in instance method == typeof($this)
+            ControlFlowGraph != null && // CFG ensures {Flags} are set
             (this.Flags & RoutineFlags.UsesLateStatic) != 0 &&
-            this.HasThis == false &&
             this is SourceMethodSymbol &&
             (ContainingType is SourceTypeSymbol srct && (!srct.IsSealed || srct.IsTrait));    // `static` == `self` <=> self is sealed
 
