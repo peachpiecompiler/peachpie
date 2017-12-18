@@ -31,7 +31,12 @@ namespace Pchp.CodeAnalysis.Symbols
             _type = type;
             _syntax = syntax;
         }
-        
+
+        internal override bool RequiresLateStaticBoundParam =>
+            IsStatic &&                             // `static` in instance method == typeof($this)
+            (this.Flags & RoutineFlags.UsesLateStatic) != 0 &&
+            (!_type.IsSealed || _type.IsTrait);     // `static` == `self` <=> self is sealed
+
         public override IMethodSymbol OverriddenMethod
         {
             get

@@ -33,6 +33,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsGlobalScope => true;
 
+        internal override bool RequiresLateStaticBoundParam => false;   // not supported in global code
+
         protected override IEnumerable<ParameterSymbol> BuildImplicitParams()
         {
             int index = 0;

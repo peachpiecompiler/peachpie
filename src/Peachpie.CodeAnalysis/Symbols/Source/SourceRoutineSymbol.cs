@@ -118,11 +118,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets value indicating this routine requires a special {PhpTypeInfo static} parameter to resolve `static` reserved type inside the routine body.
         /// </summary>
-        internal bool RequiresLateStaticBoundParam =>
-            this.HasThis == false &&    // `static` in instance method == typeof($this)
-            (ContainingType is SourceTypeSymbol srct && (!srct.IsSealed || srct.IsTrait)) &&    // `static` == `self` <=> self is sealed
-            ControlFlowGraph != null && // CFG ensures {Flags} are set
-            (this.Flags & RoutineFlags.UsesLateStatic) != 0;
+        internal virtual bool RequiresLateStaticBoundParam => false;
 
         /// <summary>
         /// Constructs routine source parameters.
