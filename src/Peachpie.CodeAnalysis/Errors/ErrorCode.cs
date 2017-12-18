@@ -77,6 +77,12 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_ValueOfTypeCannotBeAliased,
         /// <summary>"Cannot instantiate {0} {1}", e.g. "interface", the type name</summary>
         ERR_CannotInstantiateType,
+        /// <summary>"{0} cannot use {1} - it is not a trait"</summary>
+        ERR_CannotUseNonTrait,
+        /// <summary>"Class {0} cannot extend from {1} {2}", e.g. from trait T</summary>
+        ERR_CannotExtendFrom,
+        /// <summary>"{0} cannot implement {1} - it is not an interface"</summary>
+        ERR_CannotImplementNonInterface,
         
         //
         // Warnings

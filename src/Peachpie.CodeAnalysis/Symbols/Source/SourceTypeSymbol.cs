@@ -15,6 +15,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis.Text;
 using static Pchp.CodeAnalysis.AstUtils;
 using Pchp.CodeAnalysis.Utilities;
+using Pchp.CodeAnalysis.Errors;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -389,6 +390,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         Location CreateLocation(TextSpan span) => Location.Create(ContainingFile.SyntaxTree, span);
 
+        Location CreateLocation(Devsense.PHP.Text.Span span) => CreateLocation(span.ToTextSpan());
+
         #region Construction
 
         internal static SourceTypeSymbol Create(SourceFileSymbol file, TypeDecl syntax)
@@ -505,30 +508,44 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     if (t.Symbol.Arity != 0 && !t.Attributes.IsTrait())
                     {
-                        diagnostics.Add(CreateLocation(t.TypeRef.Span.ToTextSpan()), Errors.ErrorCode.ERR_NotYetImplemented, "Using generic types");
+                        diagnostics.Add(CreateLocation(t.TypeRef.Span), ErrorCode.ERR_NotYetImplemented, "Using generic types");
                     }
                     if (t.Symbol is ErrorTypeSymbol err && err.CandidateReason != CandidateReason.Ambiguous)
                     {
-                        diagnostics.Add(CreateLocation(t.TypeRef.Span.ToTextSpan()), Errors.ErrorCode.ERR_TypeNameCannotBeResolved, t.TypeRef.ClassName.ToString());
+                        diagnostics.Add(CreateLocation(t.TypeRef.Span), ErrorCode.ERR_TypeNameCannotBeResolved, t.TypeRef.ClassName.ToString());
                     }
                 }
             }
 
             if (!diagnostics.HasAnyErrors())
             {
+                var tmperrors = new List<Diagnostic>();
+
                 // collect variations of possible base types
                 var variations = Variations(tsignature.Select(t => t.Symbol).AsImmutable(), this.ContainingFile);
 
                 // instantiate versions
-                bool self = true;
+                bool self = true;       // first we update bound types in current instance, then we create versions
                 int lastVersion = 0;    // the SourceTypeSymbol version, 0 ~ a single version, >0 ~ multiple version
                 foreach (var v in variations)
                 {
                     Debug.Assert(v.Length == tsignature.Length);
 
+                    // Since we create various versions,
+                    // some of them may be invalid (wrong base type etc.).
+                    // Only create valid version. If there is no valid version, report the errors.
+
+                    if (CheckForErrors(tmperrors, tsignature, v))
+                    {
+                        Debug.Assert(tmperrors.Count != 0);
+                        continue;
+                    }
+
                     var v_base = v[0];
                     var v_interfaces = SelectInterfaces(tsignature, v);
                     var v_traituses = SelectTraitUses(tsignature, v);
+
+                    // create the variation:
 
                     if (self)
                     {
@@ -554,26 +571,82 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
                 }
 
+                if (self)   // no valid variation found, report errors
+                {
+                    Debug.Assert(tmperrors != null && tmperrors.Count != 0);
+                    var spansreported = new HashSet<TextSpan>();
+                    foreach (var err in tmperrors)
+                    {
+                        if (spansreported.Add(err.Location.SourceSpan))
+                        {
+                            diagnostics.Add(err);
+                        }
+                    }
+                }
+
                 if (lastVersion != 0)
                 {
                     _version = ++lastVersion;
 
-                    diagnostics.Add(CreateLocation(_syntax.HeadingSpan.ToTextSpan()), Errors.ErrorCode.WRN_AmbiguousDeclaration, this.FullName);
+                    diagnostics.Add(CreateLocation(_syntax.HeadingSpan.ToTextSpan()), ErrorCode.WRN_AmbiguousDeclaration, this.FullName);
                 }
             }
-            else
+
+            if (diagnostics.HasAnyErrors())
             {
                 // default with unbound error types:
                 _lazyBaseType = tsignature[0].Symbol;
                 _lazyInterfacesType = tsignature.Where(x => x.Attributes.IsInterface()).Select(x => x.Symbol).AsImmutable();
-                _lazyTraitUses = tsignature.Where(x => x.Attributes.IsTrait()).Select(x => new TraitUse(this, x.Symbol, x.TraitAdaptations)).AsImmutable();
+                _lazyTraitUses = ImmutableArray<TraitUse>.Empty;
+            }
+            else
+            {
+                // check for circular bases in all versions
+                for (var t = this; t != null; t = t.NextVersion)
+                {
+                    CheckForCircularBase(t, diagnostics);
+                }
+            }
+        }
+
+        bool CheckForErrors(List<Diagnostic> errors, TypeRefSymbol[] tsignature, ImmutableArray<NamedTypeSymbol> boundtypes)
+        {
+            bool haserrors = false;
+
+            // check the base:
+            var v_base = boundtypes[0];
+            if (v_base != null)
+            {
+                if (v_base.IsInterface || v_base.IsTraitType() || v_base.IsStructType())
+                {
+                    haserrors = true;
+                    errors.Add(MessageProvider.Instance.CreateDiagnostic(
+                        ErrorCode.ERR_CannotExtendFrom, CreateLocation(tsignature[0].TypeRef.Span),
+                        this.FullName, v_base.IsInterface ? "interface" : v_base.IsStructType() ? "struct" : "trait", v_base.MakeQualifiedName()));
+                }
             }
 
-            // check for circular bases in all versions
-            for (var t = this; t != null; t = t.NextVersion)
+            // check implements and use
+            for (int i = 0; i < tsignature.Length; i++)
             {
-                CheckForCircularBase(t, diagnostics);
+                if (tsignature[i].Attributes.IsInterface() && !boundtypes[i].IsInterface)
+                {
+                    haserrors = true;
+                    errors.Add(MessageProvider.Instance.CreateDiagnostic(
+                        ErrorCode.ERR_CannotImplementNonInterface, CreateLocation(tsignature[i].TypeRef.Span),
+                        this.FullName, boundtypes[i].MakeQualifiedName()));
+                }
+                else if (tsignature[i].Attributes.IsTrait() && !boundtypes[i].IsTraitType())
+                {
+                    haserrors = true;
+                    errors.Add(MessageProvider.Instance.CreateDiagnostic(
+                        ErrorCode.ERR_CannotUseNonTrait, CreateLocation(tsignature[i].TypeRef.Span),
+                        this.FullName, boundtypes[i].MakeQualifiedName()));
+                }
             }
+
+            //
+            return haserrors;
         }
 
         void CheckForCircularBase(SourceTypeSymbol t, DiagnosticBag diagnostics)
