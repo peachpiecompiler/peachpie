@@ -588,7 +588,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     _version = ++lastVersion;
 
-                    diagnostics.Add(CreateLocation(_syntax.HeadingSpan.ToTextSpan()), ErrorCode.WRN_AmbiguousDeclaration, this.FullName);
+                    diagnostics.Add(CreateLocation(_syntax.HeadingSpan), ErrorCode.WRN_AmbiguousDeclaration, this.FullName);
                 }
             }
 
@@ -611,7 +611,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         bool CheckForErrors(List<Diagnostic> errors, TypeRefSymbol[] tsignature, ImmutableArray<NamedTypeSymbol> boundtypes)
         {
-            bool haserrors = false;
+            int count = errors.Count;
 
             // check the base:
             var v_base = boundtypes[0];
@@ -619,7 +619,6 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (v_base.IsInterface || v_base.IsTraitType() || v_base.IsStructType())
                 {
-                    haserrors = true;
                     errors.Add(MessageProvider.Instance.CreateDiagnostic(
                         ErrorCode.ERR_CannotExtendFrom, CreateLocation(tsignature[0].TypeRef.Span),
                         this.FullName, v_base.IsInterface ? "interface" : v_base.IsStructType() ? "struct" : "trait", v_base.MakeQualifiedName()));
@@ -629,24 +628,21 @@ namespace Pchp.CodeAnalysis.Symbols
             // check implements and use
             for (int i = 0; i < tsignature.Length; i++)
             {
-                if (tsignature[i].Attributes.IsInterface() && !boundtypes[i].IsInterface)
+                var target = tsignature[i].Attributes;
+                var bound = boundtypes[i];
+
+                if ((target.IsInterface() && !bound.IsInterface) || // implements non-interface
+                    (target.IsTrait() && !bound.IsTraitType()))     // use non-trait
                 {
-                    haserrors = true;
                     errors.Add(MessageProvider.Instance.CreateDiagnostic(
-                        ErrorCode.ERR_CannotImplementNonInterface, CreateLocation(tsignature[i].TypeRef.Span),
-                        this.FullName, boundtypes[i].MakeQualifiedName()));
-                }
-                else if (tsignature[i].Attributes.IsTrait() && !boundtypes[i].IsTraitType())
-                {
-                    haserrors = true;
-                    errors.Add(MessageProvider.Instance.CreateDiagnostic(
-                        ErrorCode.ERR_CannotUseNonTrait, CreateLocation(tsignature[i].TypeRef.Span),
-                        this.FullName, boundtypes[i].MakeQualifiedName()));
+                        target.IsInterface() ? ErrorCode.ERR_CannotImplementNonInterface : ErrorCode.ERR_CannotUseNonTrait,
+                        CreateLocation(tsignature[i].TypeRef.Span),
+                        this.FullName, bound.MakeQualifiedName()));
                 }
             }
 
             //
-            return haserrors;
+            return count != errors.Count;
         }
 
         void CheckForCircularBase(SourceTypeSymbol t, DiagnosticBag diagnostics)
@@ -656,7 +652,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (set.Add(b) == false)
                 {
-                    diagnostics.Add(CreateLocation(_syntax.HeadingSpan.ToTextSpan()), Errors.ErrorCode.ERR_CircularBase, t.BaseType, t);
+                    diagnostics.Add(CreateLocation(_syntax.HeadingSpan), ErrorCode.ERR_CircularBase, t.BaseType, t);
                     break;
                 }
             }
@@ -859,7 +855,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 foreach (var f in flist.Fields)
                 {
                     yield return new SourceFieldSymbol(this, f.Name.Value,
-                        CreateLocation(f.NameSpan.ToTextSpan()),
+                        CreateLocation(f.NameSpan),
                         flist.Modifiers.GetAccessibility(), f.PHPDoc ?? flist.PHPDoc,
                         fkind,
                         (f.Initializer != null) ? binder.BindWholeExpression(f.Initializer, BoundAccess.Read).GetOnlyBoundElement() : null);
@@ -872,7 +868,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 foreach (var c in clist.Constants)
                 {
                     yield return new SourceFieldSymbol(this, c.Name.Name.Value,
-                        CreateLocation(c.Name.Span.ToTextSpan()),
+                        CreateLocation(c.Name.Span),
                         Accessibility.Public, c.PHPDoc ?? clist.PHPDoc,
                         SourceFieldSymbol.KindEnum.ClassConstant,
                         binder.BindWholeExpression(c.Initializer, BoundAccess.Read).GetOnlyBoundElement());
@@ -1016,7 +1012,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsStatic => _syntax.MemberAttributes.IsStatic();
 
-        public override ImmutableArray<Location> Locations => ImmutableArray.Create(CreateLocation(_syntax.Span.ToTextSpan()));
+        public override ImmutableArray<Location> Locations => ImmutableArray.Create(CreateLocation(_syntax.Span));
 
         internal override bool ShouldAddWinRTMembers => false;
 
