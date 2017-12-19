@@ -253,18 +253,36 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Creates instance of <see cref="PhpMethodInfo"/>.
         /// </summary>
-        public static PhpMethodInfo Create(int index, string name, MethodInfo[] methods, PhpTypeInfo lateStaticType = null)
+        public static PhpMethodInfo Create(int index, string name, MethodInfo[] methods, PhpTypeInfo callertype = null)
         {
-            if (lateStaticType != null && lateStaticType.Type.IsClass &&
-                methods.Any(Dynamic.BinderHelpers.HasLateStaticParameter))
+            if (callertype != null)
             {
-                // if method requires late static bound type, remember it:
-                return new PhpMethodInfoWithBoundType(index, name, methods, lateStaticType);
+                if (callertype.Type.IsClass && methods.Any(Dynamic.BinderHelpers.HasLateStaticParameter))
+                {
+                    // if method requires late static bound type, remember it:
+                    return new PhpMethodInfoWithBoundType(index, name, methods, lateStaticType: callertype);
+                }
+
+                // reuse PhpMethodInfo from base type if possible
+                if (AllDeclaredInBase(methods, callertype.Type.AsType()) &&
+                    callertype.BaseType != null &&
+                    callertype.BaseType.RuntimeMethods[name] is PhpMethodInfo frombase)
+                {
+                    return frombase;
+                }
             }
-            else
+
+            return new PhpMethodInfo(index, name, methods);
+        }
+
+        static bool AllDeclaredInBase(MethodInfo[] methods, Type callertype)
+        {
+            for (int i = 0; i < methods.Length; i++)
             {
-                return new PhpMethodInfo(index, name, methods);
+                if (methods[i].DeclaringType == callertype) return false;
             }
+
+            return true;
         }
 
         PhpInvokable _lazyDelegate;
