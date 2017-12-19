@@ -78,7 +78,7 @@ namespace Pchp.Core.Reflection
         /// <param name="name">Function name.</param>
         /// <param name="handles">CLR methods.</param>
         /// <returns>Instance of routine info with uninitialized slot index and unbound delegate.</returns>
-        public static RoutineInfo CreateUserRoutine(string name, MethodInfo[] handles) => new PhpMethodInfo(0, name, handles);
+        public static RoutineInfo CreateUserRoutine(string name, MethodInfo[] handles) => PhpMethodInfo.Create(0, name, handles);
 
         /// <summary>
         /// Creates user routine from a CLR delegate.
@@ -233,6 +233,40 @@ namespace Pchp.Core.Reflection
     /// </summary>
     internal class PhpMethodInfo : RoutineInfo
     {
+        #region PhpMethodInfoWithBoundType
+
+        sealed class PhpMethodInfoWithBoundType : PhpMethodInfo
+        {
+            public override PhpTypeInfo LateStaticType => _lateStaticType;
+            readonly PhpTypeInfo _lateStaticType;
+
+            public PhpMethodInfoWithBoundType(int index, string name, MethodInfo[] methods, PhpTypeInfo lateStaticType)
+                : base(index, name, methods)
+            {
+                Debug.Assert(lateStaticType != null);
+                _lateStaticType = lateStaticType;
+            }
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Creates instance of <see cref="PhpMethodInfo"/>.
+        /// </summary>
+        public static PhpMethodInfo Create(int index, string name, MethodInfo[] methods, PhpTypeInfo lateStaticType = null)
+        {
+            if (lateStaticType != null && lateStaticType.Type.IsClass &&
+                methods.Any(Dynamic.BinderHelpers.HasLateStaticParameter))
+            {
+                // if method requires late static bound type, remember it:
+                return new PhpMethodInfoWithBoundType(index, name, methods, lateStaticType);
+            }
+            else
+            {
+                return new PhpMethodInfo(index, name, methods);
+            }
+        }
+
         PhpInvokable _lazyDelegate;
 
         /// <summary>
@@ -241,7 +275,10 @@ namespace Pchp.Core.Reflection
         public override MethodInfo[] Methods => _methods;
         readonly MethodInfo[] _methods;
 
-        public PhpMethodInfo(int index, string name, MethodInfo[] methods)
+        /// <summary>Optional. Bound static type.</summary>
+        public virtual PhpTypeInfo LateStaticType => null;
+
+        protected PhpMethodInfo(int index, string name, MethodInfo[] methods)
             : base(index, name)
         {
             _methods = methods;
@@ -251,7 +288,7 @@ namespace Pchp.Core.Reflection
 
         PhpInvokable BindDelegate()
         {
-            return _lazyDelegate = Dynamic.BinderHelpers.BindToPhpInvokable(_methods);
+            return _lazyDelegate = Dynamic.BinderHelpers.BindToPhpInvokable(_methods, LateStaticType);
         }
 
         public override PhpCallable PhpCallable

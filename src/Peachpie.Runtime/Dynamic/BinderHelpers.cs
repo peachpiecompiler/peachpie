@@ -72,6 +72,17 @@ namespace Pchp.Core.Dynamic
                 p.GetCustomAttribute(typeof(ImportCallerStaticClassAttribute)) != null;
         }
 
+        public static bool HasLateStaticParameter(MethodInfo m)
+        {
+            var ps = m.GetParameters();
+            for (int i = 0; i < ps.Length; i++)
+            {
+                if (IsLateStaticParameter(ps[i])) return true;
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Determines the parameter does not have a default value explicitly specified.
         /// </summary>
@@ -885,7 +896,7 @@ namespace Pchp.Core.Dynamic
             return lambda.Compile();
         }
 
-        public static PhpInvokable BindToPhpInvokable(MethodInfo[] methods)
+        public static PhpInvokable BindToPhpInvokable(MethodInfo[] methods, PhpTypeInfo lateStaticType = null)
         {
             // (Context ctx, object target, PhpValue[] arguments)
             var ps = new ParameterExpression[] {
@@ -894,7 +905,7 @@ namespace Pchp.Core.Dynamic
                 Expression.Parameter(typeof(PhpValue[]), "argv") };
 
             // invoke targets
-            var invocation = OverloadBinder.BindOverloadCall(typeof(PhpValue), ps[1], methods, ps[0], ps[2]);
+            var invocation = OverloadBinder.BindOverloadCall(typeof(PhpValue), ps[1], methods, ps[0], ps[2], lateStaticType);
             Debug.Assert(invocation.Type == typeof(PhpValue));
 
             // compile & create delegate

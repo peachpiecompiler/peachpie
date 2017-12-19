@@ -49,10 +49,10 @@ namespace Pchp.Core.Reflection
 
         #region Initialization
 
-        internal TypeMethods(TypeInfo type)
+        internal TypeMethods(PhpTypeInfo type)
         {
             // collect available methods (including methods on base classes)
-            foreach (var m in type
+            foreach (var m in type.Type
                 .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy)
                 .ToLookup(_MethodName, StringComparer.OrdinalIgnoreCase))
             {
@@ -66,7 +66,8 @@ namespace Pchp.Core.Reflection
                     _methods = new Dictionary<string, PhpMethodInfo>(StringComparer.OrdinalIgnoreCase);
                 }
 
-                var info = new PhpMethodInfo(_methods.Count + 1, m.Key, m.ToArray());
+                // TODO: reuse PhpMethodInfo from base type
+                var info = PhpMethodInfo.Create(_methods.Count + 1, m.Key, m.ToArray(), type);
 
                 _methods[info.Name] = info;
 

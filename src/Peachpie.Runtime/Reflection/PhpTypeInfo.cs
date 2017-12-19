@@ -291,7 +291,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets collection of PHP methods in this type and base types.
         /// </summary>
-        public TypeMethods RuntimeMethods => _runtimeMethods ?? (_runtimeMethods = new TypeMethods(_type));
+        public TypeMethods RuntimeMethods => _runtimeMethods ?? (_runtimeMethods = new TypeMethods(this));
         TypeMethods _runtimeMethods;
 
         /// <summary>

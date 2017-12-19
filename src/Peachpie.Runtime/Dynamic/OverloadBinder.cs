@@ -723,13 +723,13 @@ namespace Pchp.Core.Dynamic
             return CombineCosts(expr_costs);
         }
 
-        public static Expression BindOverloadCall(Type treturn, Expression target, MethodBase[] methods, Expression ctx, Expression argsarray)
+        public static Expression BindOverloadCall(Type treturn, Expression target, MethodBase[] methods, Expression ctx, Expression argsarray, PhpTypeInfo lateStaticType = null)
         {
             Expression result = null;
 
             while (result == null)
             {
-                result = BindOverloadCall(treturn, target, ref methods, ctx, new ArgumentsBinder.ArgsArrayBinder(ctx, argsarray));
+                result = BindOverloadCall(treturn, target, ref methods, ctx, new ArgumentsBinder.ArgsArrayBinder(ctx, argsarray), lateStaticType);
             }
 
             return result;
