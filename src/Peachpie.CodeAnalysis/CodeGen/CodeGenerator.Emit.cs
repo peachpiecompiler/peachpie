@@ -2189,22 +2189,27 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
-                // declare unbound generic types properly (traits, generic classes)
-                if (t.Arity != 0)
-                {
-                    // TODO: declare as unbound
-                    return;
-                }
-
                 var dependent = t.GetDependentSourceTypeSymbols();
 
                 // ensure all types are loaded into context,
                 // autoloads if necessary
                 dependent.ForEach(EmitExpectTypeDeclared);
 
-                // <ctx>.DeclareType<T>()
-                EmitLoadContext();
-                EmitCall(ILOpCode.Call, CoreMethods.Context.DeclareType_T.Symbol.Construct(t));
+                if (t.Arity == 0)
+                {
+                    // <ctx>.DeclareType<T>()
+                    EmitLoadContext();
+                    EmitCall(ILOpCode.Call, CoreMethods.Context.DeclareType_T.Symbol.Construct(t));
+                }
+                else
+                {
+                    // <ctx>.DeclareType( PhpTypeInfo, Name )
+                    EmitLoadContext();
+                    EmitLoadToken(t.AsUnboundGenericType(), null);
+                    EmitCall(ILOpCode.Call, CoreMethods.Dynamic.GetPhpTypeInfo_RuntimeTypeHandle);
+                    Builder.EmitStringConstant(t.FullName.ToString());
+                    EmitCall(ILOpCode.Call, CoreMethods.Context.DeclareType_PhpTypeInfo_String);
+                }
             }
 
             //

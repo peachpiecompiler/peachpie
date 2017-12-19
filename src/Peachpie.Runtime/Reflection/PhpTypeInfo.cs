@@ -38,7 +38,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets value indicating the type is a trait.
         /// </summary>
-        public bool IsTrait => !IsInterface && _type.GetCustomAttribute<PhpTraitAttribute>(false) != null;
+        public bool IsTrait => !IsInterface && _type.IsSealed && _type.GetCustomAttribute<PhpTraitAttribute>(false) != null;
 
         /// <summary>
         /// Gets list of PHP extensions associated with the current type.
@@ -223,16 +223,21 @@ namespace Pchp.Core.Reflection
             return _lazyCreatorProtected;
         }
 
-        internal PhpTypeInfo(Type t)
+        internal PhpTypeInfo(TypeInfo t)
         {
             Debug.Assert(t != null);
-            _type = t.GetTypeInfo();
+            _type = t;
 
             var attr = _type.GetCustomAttribute<PhpTypeAttribute>(false);
             Name = ResolvePhpTypeName(_type, attr);
-            
+
             // register type in extension tables
             ExtensionsAppContext.ExtensionsTable.AddType(this);
+        }
+
+        internal PhpTypeInfo(Type t)
+            :this(t.GetTypeInfo())
+        {   
         }
 
         /// <summary>
@@ -369,10 +374,17 @@ namespace Pchp.Core.Reflection
                     _lazyGetPhpTypeInfo_T = typeof(PhpTypeInfoExtension).GetRuntimeMethod("GetPhpTypeInfo", Dynamic.Cache.Types.Empty);
                 }
 
-                // TypeInfoHolder<TType>.TypeInfo;
-                result = (PhpTypeInfo)_lazyGetPhpTypeInfo_T
-                    .MakeGenericMethod(type)
-                    .Invoke(null, Utilities.ArrayUtils.EmptyObjects);
+                if (type.GetTypeInfo().IsGenericTypeDefinition)
+                {
+                    result = new PhpTypeInfo(type);
+                }
+                else
+                {
+                    // TypeInfoHolder<TType>.TypeInfo;
+                    result = (PhpTypeInfo)_lazyGetPhpTypeInfo_T
+                        .MakeGenericMethod(type)
+                        .Invoke(null, Utilities.ArrayUtils.EmptyObjects);
+                }
 
                 lock (_cache)
                 {
@@ -436,7 +448,6 @@ namespace Pchp.Core.Reflection
             }
         }
     }
-
 
     /// <summary>
     /// Delegate for dynamic object creation.

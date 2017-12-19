@@ -972,6 +972,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 DeclareFunction_RoutineInfo = ct.Context.Method("DeclareFunction", ct.RoutineInfo);
                 DeclareType_T = ct.Context.Method("DeclareType");
+                DeclareType_PhpTypeInfo_String = ct.Context.Method("DeclareType", ct.PhpTypeInfo, ct.String);
 
                 DisableErrorReporting = ct.Context.Method("DisableErrorReporting");
                 EnableErrorReporting = ct.Context.Method("EnableErrorReporting");
@@ -1004,7 +1005,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreMethod
                 AddScriptReference_TScript,
-                DeclareFunction_RoutineInfo, DeclareType_T,
+                DeclareFunction_RoutineInfo, DeclareType_T, DeclareType_PhpTypeInfo_String,
                 DisableErrorReporting, EnableErrorReporting,
                 CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_string_PhpArray_object_RuntimeTypeHandle_bool_bool,
                 ExpectTypeDeclared_T,
@@ -1029,7 +1030,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetFieldBinder = ct.BinderFactory.Method("GetField", ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.AccessMask);
                 SetFieldBinder = ct.BinderFactory.Method("SetField", ct.String, ct.RuntimeTypeHandle, ct.AccessMask);
                 GetClassConstBinder = ct.BinderFactory.Method("GetClassConst", ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.AccessMask);
-                
+
                 GetPhpTypeInfo_T = ct.PhpTypeInfoExtension.Method("GetPhpTypeInfo");
                 GetPhpTypeInfo_Object = ct.PhpTypeInfoExtension.Method("GetPhpTypeInfo", ct.Object);
                 GetPhpTypeInfo_RuntimeTypeHandle = ct.PhpTypeInfoExtension.Method("GetPhpTypeInfo", ct.RuntimeTypeHandle);
