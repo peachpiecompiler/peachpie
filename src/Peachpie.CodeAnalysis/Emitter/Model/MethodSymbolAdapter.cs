@@ -302,9 +302,11 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 CheckDefinitionInvariant();
-                return PEModuleBuilder.MemberVisibility(this);
+                return VisibilityToEmit;
             }
         }
+
+        protected virtual Cci.TypeMemberVisibility VisibilityToEmit => PEModuleBuilder.MemberVisibility(this);
 
         Cci.IMethodBody Cci.IMethodDefinition.GetBody(EmitContext context)
         {

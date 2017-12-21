@@ -58,6 +58,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsTrait => true;
 
+        public override bool IsAbstract => false;
+
         public override bool IsSealed => true;  // traits cannot be extended
 
         public SourceTraitTypeSymbol(SourceFileSymbol file, TypeDecl syntax)
@@ -70,6 +72,8 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         protected override SourceTypeSymbol NewSelf() => new SourceTraitTypeSymbol(ContainingFile, Syntax);
+
+        protected override MethodSymbol CreateSourceMethod(MethodDecl m) => new SourceTraitMethodSymbol(this, m);
 
         public override int Arity => TypeParameters.Length;
         public override ImmutableArray<TypeParameterSymbol> TypeParameters => _typeParameters;

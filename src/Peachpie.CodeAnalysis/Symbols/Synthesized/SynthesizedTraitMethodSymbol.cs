@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Cci;
 using Microsoft.CodeAnalysis;
 
 namespace Pchp.CodeAnalysis.Symbols
@@ -41,6 +42,19 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 //
                 return _parameters;
+            }
+        }
+
+        protected override TypeMemberVisibility VisibilityToEmit
+        {
+            get
+            {
+                if (ContainingType.IsTraitType())
+                {
+                    return TypeMemberVisibility.Public;
+                }
+
+                return base.VisibilityToEmit;
             }
         }
     }

@@ -10,13 +10,14 @@ using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Syntax;
+using Microsoft.Cci;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
     /// Represents a PHP class method.
     /// </summary>
-    internal sealed partial class SourceMethodSymbol : SourceRoutineSymbol
+    internal partial class SourceMethodSymbol : SourceRoutineSymbol
     {
         readonly SourceTypeSymbol _type;
         readonly MethodDecl/*!*/_syntax;
@@ -95,6 +96,50 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 return ImmutableArray.Create(Location.Create(ContainingFile.SyntaxTree, _syntax.Span.ToTextSpan()));
             }
+        }
+    }
+
+    /// <summary>
+    /// Represents a PHP trait method.
+    /// </summary>
+    internal class SourceTraitMethodSymbol : SourceMethodSymbol
+    {
+        AttributeData _lazyDeclaredVisibilityAtribute = null;
+
+        public SourceTraitMethodSymbol(SourceTraitTypeSymbol type, MethodDecl syntax)
+            : base(type, syntax)
+        {
+        }
+
+        // trait method is always emitted as `public`
+        protected override TypeMemberVisibility VisibilityToEmit => TypeMemberVisibility.Public;
+
+        // abstract trait method must have an empty implementation
+        public override bool IsAbstract => false;
+
+        // abstract trait method must have an empty implementation
+        internal override IList<Statement> Statements => base.IsAbstract ? Array.Empty<Statement>() : base.Statements;
+
+        internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(CommonModuleCompilationState compilationState)
+        {
+            var attrs = base.GetCustomAttributesToEmit(compilationState);
+
+            if (DeclaredAccessibility != Accessibility.Public)
+            {
+                if (_lazyDeclaredVisibilityAtribute == null)
+                {
+                    //// [DeclaredVisibility({private|protected})]
+                    //_lazyDeclaredVisibilityAtribute = new SynthesizedAttributeData(
+                    //    DeclaringCompilation.CoreMethods.Ctors.DeclaredVisibilityAtribute,
+                    //    ImmutableArray<TypedConstant>.Empty,
+                    //    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                }
+
+                //attrs = attrs.Concat(_lazyDeclaredVisibilityAtribute);
+            }
+
+            //
+            return attrs;
         }
     }
 }

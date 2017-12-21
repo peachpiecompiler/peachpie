@@ -156,6 +156,21 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             /// <summary>
+            /// Gets real accessibility (visibility) of trait member.
+            /// </summary>
+            Accessibility DeclaredAccessibility(MethodSymbol m)
+            {
+                if (m is SynthesizedMethodSymbol sm && sm.ForwardedCall != null)
+                {
+                    return DeclaredAccessibility(sm);
+                }
+                else
+                {
+                    return m.DeclaredAccessibility;
+                }
+            }
+
+            /// <summary>
             /// Map of visible trait members how to be declared in containing class.
             /// </summary>
             Dictionary<Name, DeclaredAs> MembersMap
@@ -190,7 +205,7 @@ namespace Pchp.CodeAnalysis.Symbols
                             {
                                 Name = m.RoutineName,
                                 SourceMethod = m,
-                                Accessibility = Accessibility.Public,    // TODO: declared visibility
+                                Accessibility = DeclaredAccessibility(m),
                             };
                         }
 
@@ -228,7 +243,7 @@ namespace Pchp.CodeAnalysis.Symbols
                                         {
                                             SourceMethod = s,
                                             Name = membername.Value,
-                                            Accessibility = Accessibility.Public,    // TODO: declared visibility
+                                            Accessibility = DeclaredAccessibility(s),
                                         };
 
                                         if (alias.NewModifier.HasValue) declaredas.Accessibility = alias.NewModifier.Value.GetAccessibility();
@@ -830,13 +845,11 @@ namespace Pchp.CodeAnalysis.Symbols
             return _lazyMembers;
         }
 
+        protected virtual MethodSymbol CreateSourceMethod(MethodDecl m) => new SourceMethodSymbol(this, m);
+
         IEnumerable<MethodSymbol> LoadMethods()
         {
-            // source methods
-            foreach (var m in _syntax.Members.OfType<MethodDecl>())
-            {
-                yield return new SourceMethodSymbol(this, m);
-            }
+            return _syntax.Members.OfType<MethodDecl>().Select(CreateSourceMethod);
         }
 
         IEnumerable<FieldSymbol> LoadFields()
