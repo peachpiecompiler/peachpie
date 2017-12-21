@@ -44,7 +44,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 // note, their initializers do not have Context available, since they are not bound to a Context
 
                 var cctor = module.GetStaticCtorBuilder(this);
-                var cg = new CodeGenerator(cctor, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, this, null, null);
+                var cg = new CodeGenerator(cctor, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, this, null, null)
+                {
+                    CallerType = this,
+                };
 
                 foreach (var f in sflds)
                 {
