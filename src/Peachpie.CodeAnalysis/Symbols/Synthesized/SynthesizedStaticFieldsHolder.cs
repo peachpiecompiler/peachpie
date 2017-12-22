@@ -29,7 +29,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets enumeration of fields that will be emitted within this holder.
         /// </summary>
-        internal IEnumerable<SourceFieldSymbol> Fields => _class.GetMembers().OfType<SourceFieldSymbol>().Where(f => f.RequiresHolder);
+        internal IEnumerable<FieldSymbol> Fields => _class.GetMembers().OfType<FieldSymbol>().Where(PhpFieldSymbolExtension.RequiresHolder);
 
         /// <summary>
         /// Gets value indicating whether there are fields or constants.
@@ -98,7 +98,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit()
         {
-            if (Fields.Any(f => f.RequiresContext))
+            if (Fields.Any(PhpFieldSymbolExtension.RequiresContext))
             {
                 // we need Init(Context) method
                 return ImmutableArray.Create(DeclaringCompilation.CoreTypes.IStaticInit.Symbol);

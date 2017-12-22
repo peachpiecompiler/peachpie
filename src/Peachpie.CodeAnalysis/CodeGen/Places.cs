@@ -1428,7 +1428,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
-                var statics = _field.TryGetStatics();   // in case field is a PHP static field
+                var statics = _field.TryGetStaticsContainer();   // in case field is a PHP static field
                 if (statics != null)
                 {
                     // PHP static field contained in a holder class

@@ -51,6 +51,11 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         INamedTypeSymbol StaticsContainer { get; }
 
+        ///// <summary>
+        ///// Gets enumeration of used traits.
+        ///// </summary>
+        //IEnumerable<IPhpTypeSymbol> Traits { get; }
+
         #endregion
     }
 }

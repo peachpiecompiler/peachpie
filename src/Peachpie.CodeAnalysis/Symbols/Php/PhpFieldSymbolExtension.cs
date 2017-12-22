@@ -12,28 +12,22 @@ namespace Pchp.CodeAnalysis.Symbols
         /// gets its holder class type.
         /// See <see cref="SynthesizedStaticFieldsHolder"/>.
         /// </summary>
-        public static TypeSymbol TryGetStatics(this FieldSymbol fld)
+        public static TypeSymbol TryGetStaticsContainer(this FieldSymbol fld)
         {
             // nested class __statics { fld }
 
             if (!fld.IsStatic)
             {
-                var srcfld = fld as SourceFieldSymbol;
-                if (srcfld != null && srcfld.RequiresHolder)
+                if (RequiresHolder(fld))
                 {
-                    // SourceFieldSymbol
-                    return srcfld.ContainingType.TryGetStatics();
+                    return fld.ContainingType.TryGetStatics();
                 }
                 else
                 {
-                    // PEFieldSymbol
-                    if (fld.ContainingType.Name == WellKnownPchpNames.StaticsHolderClassName)
+                    // FieldSymbol
+                    if (fld.ContainingType.IsStaticsContainer())
                     {
-                        var statics = fld.ContainingType.ContainingType.TryGetStatics();
-                        if (ReferenceEquals(statics, fld.ContainingType))
-                        {
-                            return statics;
-                        }
+                        return fld.ContainingType;
                     }
                 }
             }
@@ -48,6 +42,48 @@ namespace Pchp.CodeAnalysis.Symbols
         public static bool IsPhpStatic(this FieldSymbol f)
         {
             return f.IsStatic || (f is SourceFieldSymbol sf && sf.FieldKind == SourceFieldSymbol.KindEnum.StaticField);
+        }
+
+        /// <summary>
+        /// Gets value indicating whether the field has to be contained in <see cref="SynthesizedStaticFieldsHolder"/>.
+        /// </summary>
+        public static bool RequiresHolder(FieldSymbol f)
+        {
+            if (f is SubstitutedFieldSymbol sub) return RequiresHolder(sub.OriginalDefinition);
+            if (f is SourceFieldSymbol sf) return RequiresHolder(sf, sf.FieldKind);
+            if (f is SynthesizedTraitFieldSymbol tf) return RequiresHolder(tf, tf.FieldKind);
+            return false;
+        }
+
+        /// <summary>
+        /// Gets value indicating whether the field has to be contained in <see cref="SynthesizedStaticFieldsHolder"/>.
+        /// </summary>
+        public static bool RequiresHolder(FieldSymbol f, SourceFieldSymbol.KindEnum kind)
+        {
+            switch (kind)
+            {
+                case SourceFieldSymbol.KindEnum.AppStaticField: return false;
+                case SourceFieldSymbol.KindEnum.StaticField: return true; // PHP static field is bound to Context and has to be instantiated within holder class
+                case SourceFieldSymbol.KindEnum.InstanceField: return false;
+                case SourceFieldSymbol.KindEnum.ClassConstant: return f.GetConstantValue(false) == null;   // if constant has to be evaluated in runtime, we have to evaluate its value for each context separatelly within holder
+                default:
+                    throw Roslyn.Utilities.ExceptionUtilities.Unreachable;
+            }
+        }
+
+        public static bool RequiresContext(FieldSymbol f)
+        {
+            if (f is SourceFieldSymbol sf) return sf.RequiresContext;
+            if (f is SynthesizedTraitFieldSymbol tf) return tf.RequiresContext;
+
+            return false;
+        }
+
+        public static void EmitInit(FieldSymbol f, CodeGen.CodeGenerator cg)
+        {
+            if (f is SourceFieldSymbol sf) sf.EmitInit(cg);
+            else if (f is SynthesizedTraitFieldSymbol tf) tf.EmitInit(cg);
+            else throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(f);
         }
     }
 }

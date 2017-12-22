@@ -1,13 +1,143 @@
 ﻿using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
+    #region PhpPropertyInfo
+
+    internal partial struct PhpPropertyInfo
+    {
+        readonly Symbol _symbol;
+
+        public PhpPropertyInfo(FieldSymbol f)
+        {
+            Debug.Assert(f != null);
+
+            _symbol = f;
+        }
+
+        public PhpPropertyInfo(PropertySymbol p)
+        {
+            Debug.Assert(p != null);
+
+            _symbol = p;
+        }
+
+        public static PhpPropertyInfo Create(FieldSymbol f) => new PhpPropertyInfo(f);
+
+        public static PhpPropertyInfo Create(PropertySymbol p) => new PhpPropertyInfo(p);
+
+        public static PhpPropertyInfo TryCreate(ISymbol s) => (s is FieldSymbol f) ? Create(f) : (s is PropertySymbol p ? Create(p) : default(PhpPropertyInfo));
+
+        public static bool IsValid(PhpPropertyInfo info) => info.Symbol != null;
+
+        public Symbol Symbol => _symbol;
+
+        public bool IsInStaticsContainer => _symbol.ContainingType.IsStaticsContainer();
+
+        public SourceFieldSymbol.KindEnum FieldKind
+        {
+            get
+            {
+                Symbol s = _symbol;
+
+                if (s is SubstitutedFieldSymbol sub)    // bound generic 
+                {
+                    s = sub.OriginalDefinition;
+                }
+
+                if (s is SourceFieldSymbol srcf)
+                {
+                    return srcf.FieldKind;
+                }
+
+                if (s is FieldSymbol f)
+                {
+                    // CLR static
+                    if (f.IsStatic) return SourceFieldSymbol.KindEnum.AppStaticField;
+
+                    // const
+                    if (f.IsConst) return SourceFieldSymbol.KindEnum.ClassConstant;
+
+                    if (IsInStaticsContainer)
+                    {
+                        // __statics { readonly }
+                        if (f.IsReadOnly) return SourceFieldSymbol.KindEnum.ClassConstant;
+
+                        // __statics
+                        return SourceFieldSymbol.KindEnum.StaticField;
+                    }
+
+                    // var
+                    return SourceFieldSymbol.KindEnum.InstanceField;
+                }
+
+                if (s is PropertySymbol p)
+                {
+                    if (p.IsStatic) return SourceFieldSymbol.KindEnum.AppStaticField;
+                    return SourceFieldSymbol.KindEnum.InstanceField;
+                }
+
+                throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(_symbol);
+            }
+        }
+
+        public NamedTypeSymbol DeclaringType
+        {
+            get
+            {
+                return IsInStaticsContainer
+                    ? _symbol.ContainingType.ContainingType
+                    : _symbol.ContainingType;
+            }
+        }
+    }
+
+    #endregion
+
     internal static class PhpTypeSymbolExtensions
     {
+        public static bool IsStaticsContainer(this NamedTypeSymbol t)
+        {
+            return
+                t.Name == WellKnownPchpNames.StaticsHolderClassName &&
+                t.DeclaredAccessibility == Accessibility.Public &&
+                t.Arity == 0 &&
+                !t.IsStatic &&
+                t.ContainingType != null;
+        }
+
+        /// <summary>
+        /// Enumerates class fields and properties as declared in PHP.
+        /// </summary>
+        public static IEnumerable<PhpPropertyInfo> EnumerateProperties(this INamedTypeSymbol t)
+        {
+            var result = t.GetMembers()
+                .Select(PhpPropertyInfo.TryCreate)
+                .Where(PhpPropertyInfo.IsValid);
+
+            if (t is IPhpTypeSymbol phpt && !(t is SourceTypeSymbol))   // SourceTypeSymbol lists all its fields already, __statics must not be listed
+            {
+                var __statics = phpt.StaticsContainer;
+                if (__statics != null)
+                {
+                    result = result.Concat(EnumerateProperties(__statics));
+                }
+            }
+
+            var btype = t.BaseType;
+            if (btype != null && btype.SpecialType != SpecialType.System_Object)
+            {
+                result = result.Concat(EnumerateProperties(btype));
+            }
+
+            return result;
+        }
+
         static FieldSymbol GetStaticField(INamedTypeSymbol t, string name)
         {
             FieldSymbol field = null;
@@ -117,16 +247,6 @@ namespace Pchp.CodeAnalysis.Symbols
             for (var t = type; t != null; t = t.BaseType)
             {
                 var f = GetClassConstant(t, name);
-                if (f != null)
-                {
-                    return f;
-                }
-            }
-
-            // const on an interface
-            foreach (var iface in type.AllInterfaces)
-            {
-                var f = GetClassConstant(iface, name);
                 if (f != null)
                 {
                     return f;

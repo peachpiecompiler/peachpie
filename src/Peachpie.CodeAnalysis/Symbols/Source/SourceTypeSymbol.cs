@@ -190,7 +190,10 @@ namespace Pchp.CodeAnalysis.Symbols
                         if (Symbol.OriginalDefinition is SourceTypeSymbol srct && !srct.TraitUses.IsEmpty)
                         {
                             // containing trait uses first (members will be overriden by this trait use)
-                            traitmethods = srct.TraitMembers.Select(m => m.AsMember(m.ContainingType.Construct(ContainingType))).Concat(traitmethods);
+                            traitmethods = srct
+                                .TraitMembers.OfType<MethodSymbol>()
+                                .Select(m => m.AsMember(m.ContainingType.Construct(ContainingType)))
+                                .Concat(traitmethods);
                         }
 
                         // map of methods from trait:
@@ -285,8 +288,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
             IEnumerable<Symbol> CreateMembers()
             {
-                // TODO: constants
-                // TODO: properties
+                foreach (var p in Symbol.EnumerateProperties())
+                {
+                    yield return new SynthesizedTraitFieldSymbol(ContainingType, (FieldSymbol)TraitInstanceField, p);
+                }
 
                 // methods
                 foreach (var m in MembersMap.Values)
@@ -316,6 +321,11 @@ namespace Pchp.CodeAnalysis.Symbols
                     ContainingType, declared.Name, declared.SourceMethod, declared.Accessibility,
                     isfinal: false);
             }
+
+            //FieldSymbol CreateTraitConstantImplementation(FieldSymbol field)
+            //{
+
+            //}
 
             public TraitUse(SourceTypeSymbol type, NamedTypeSymbol symbol, TraitsUse.TraitAdaptation[] adaptations)
             {
@@ -1059,7 +1069,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public IEnumerable<SynthesizedMethodSymbol> TraitMembers
+        public IEnumerable<Symbol> TraitMembers
         {
             get
             {
@@ -1069,12 +1079,23 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
                 else
                 {
-                    return TraitUses.SelectMany(t => t.GetMembers()).Cast<SynthesizedMethodSymbol>();
+                    return TraitUses.SelectMany(t => t.GetMembers());
                 }
             }
         }
 
-        public override ImmutableArray<Symbol> GetMembers() => EnsureMembers().AsImmutable();
+        public override ImmutableArray<Symbol> GetMembers()
+        {
+            IEnumerable<Symbol> members = EnsureMembers();
+
+            // lookup trait members
+            if (!TraitUses.IsEmpty)
+            {
+                members = members.Concat(TraitMembers);
+            }
+
+            return members.AsImmutable();
+        }
 
         public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
         {
@@ -1154,7 +1175,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()
         {
-            foreach (var f in EnsureMembers().OfType<IFieldSymbol>())
+            foreach (var f in GetMembers().OfType<FieldSymbol>())
             {
                 if (f.OriginalDefinition != f)
                 {
@@ -1162,8 +1183,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     continue;
                 }
 
-                var srcf = f as SourceFieldSymbol;
-                if (srcf.RequiresHolder)
+                if (PhpFieldSymbolExtension.RequiresHolder(f))
                 {
                     continue;   // this field has to be emitted within StaticsContainer
                 }

@@ -117,7 +117,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (x != null)
             {
                 if (x is BoundVariableRef v) return v.Name.IsDirect ? v : TryGetExpressionChainRoot(v.Name.NameExpression);
-                if (x is BoundFieldRef f) return TryGetExpressionChainRoot(f.Instance ?? f.ParentType?.TypeExpression);
+                if (x is BoundFieldRef f) return TryGetExpressionChainRoot(f.Instance ?? f.ContainingType?.TypeExpression);
                 if (x is BoundInstanceFunctionCall m) return TryGetExpressionChainRoot(m.Instance);
                 if (x is BoundArrayItemEx a) return TryGetExpressionChainRoot(a.Array);
             }
@@ -1482,7 +1482,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override void VisitFieldRef(BoundFieldRef x)
         {
             Accept(x.Instance);
-            VisitTypeRef(x.ParentType);
+            VisitTypeRef(x.ContainingType);
             Accept(x.FieldName.NameExpression);
 
             if (x.IsInstanceField)  // {Instance}->FieldName
@@ -1552,7 +1552,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // static fields or constants
             if (x.IsStaticField || x.IsClassConstant)    // {ClassName}::${StaticFieldName}, {ClassName}::{ConstantName}
             {
-                var ParentType = (NamedTypeSymbol)x.ParentType.ResolvedType;
+                var containingType = (NamedTypeSymbol)x.ContainingType.ResolvedType;
 
                 if (x.IsClassConstant)
                 {
@@ -1560,10 +1560,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     Debug.Assert(!x.Access.IsEnsure && !x.Access.IsWrite && !x.Access.IsReadRef);
                 }
 
-                if (ParentType != null && x.FieldName.IsDirect)
+                if (containingType != null && x.FieldName.IsDirect)
                 {
                     var fldname = x.FieldName.NameValue.Value;
-                    var field = x.IsStaticField ? ParentType.ResolveStaticField(fldname) : ParentType.ResolveClassConstant(fldname);
+                    var field = x.IsStaticField ? containingType.ResolveStaticField(fldname) : containingType.ResolveClassConstant(fldname);
                     if (field != null)
                     {
                         // TODO: visibility -> ErrCode
@@ -1591,7 +1591,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     else if (x.IsStaticField)
                     {
                         // TODO: visibility
-                        var prop = ParentType.LookupMember<PropertySymbol>(fldname);
+                        var prop = containingType.LookupMember<PropertySymbol>(fldname);
                         if (prop != null && prop.IsStatic)
                         {
                             x.BoundReference = new BoundPropertyPlace(null, prop);
@@ -1605,7 +1605,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 // indirect field access:
                 // indirect field access with known class name:
-                x.BoundReference = new BoundIndirectStFieldPlace(x.ParentType, x.FieldName, x);
+                x.BoundReference = new BoundIndirectStFieldPlace(x.ContainingType, x.FieldName, x);
                 x.TypeRefMask = TypeRefMask.AnyType;
                 return;
             }

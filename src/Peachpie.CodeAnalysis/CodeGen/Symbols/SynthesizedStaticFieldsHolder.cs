@@ -36,13 +36,13 @@ namespace Pchp.CodeAnalysis.Symbols
                 //
                 foreach (var fld in this.Fields)
                 {
-                    if (fld.RequiresContext)
+                    if (PhpFieldSymbolExtension.RequiresContext(fld))
                     {
                         requiresInit = true;
                     }
                     else
                     {
-                        fld.EmitInit(cg);
+                        PhpFieldSymbolExtension.EmitInit(fld, cg);
                     }
                 }
 
@@ -81,9 +81,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 foreach (var fld in this.Fields)
                 {
-                    if (fld.RequiresContext)
+                    if (PhpFieldSymbolExtension.RequiresContext(fld))
                     {
-                        fld.EmitInit(cg);
+                        PhpFieldSymbolExtension.EmitInit(fld, cg);
                     }
                 }
 

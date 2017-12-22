@@ -17,7 +17,9 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Gets special <c>_statics</c> nested class holding static fields bound to context.
         /// </summary>
         /// <returns></returns>
-        internal TypeSymbol TryGetStatics() => (TypeSymbol)(this as IPhpTypeSymbol)?.StaticsContainer;
+        internal TypeSymbol TryGetStatics() => (TypeSymbol)(this is IPhpTypeSymbol phpt
+            ? phpt.StaticsContainer
+            : this.GetTypeMembers(WellKnownPchpNames.StaticsHolderClassName).Where(PhpTypeSymbolExtensions.IsStaticsContainer).SingleOrDefault());
 
         /// <summary>
         /// Emits load of statics holder.
@@ -25,8 +27,7 @@ namespace Pchp.CodeAnalysis.Symbols
         internal TypeSymbol EmitLoadStatics(CodeGenerator cg)
         {
             var statics = TryGetStatics();
-
-            if (statics != null && statics.GetMembers().OfType<IFieldSymbol>().Any())
+            if (statics != null)
             {
                 // Template: <ctx>.GetStatics<_statics>()
                 cg.EmitLoadContext();
@@ -134,9 +135,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // collect this type declared methods including synthesized methods
-            var methods = this.GetMembers().OfType<MethodSymbol>();
-            if (this is SourceTypeSymbol stype) methods = methods.Concat(stype.TraitMembers);
-
+            var methods = this.GetMembers().OfType<MethodSymbol>();            
             var methodslookup = methods.Where(OverrideHelper.CanOverride).ToLookup(m => m.RoutineName);
 
             // resolve overrides of inherited members
@@ -208,5 +207,10 @@ namespace Pchp.CodeAnalysis.Symbols
             // cache & return
             return (_lazyOverrides = overrides.ToArray());
         }
+    }
+
+    partial struct PhpPropertyInfo
+    {
+
     }
 }

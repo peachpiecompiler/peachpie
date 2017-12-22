@@ -115,7 +115,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 return this.GetTypeMembers(WellKnownPchpNames.StaticsHolderClassName)
-                    .Where(t => !t.IsStatic && t.DeclaredAccessibility == Accessibility.Public && t.Arity == 0)
+                    .Where(PhpTypeSymbolExtensions.IsStaticsContainer)
                     .SingleOrDefault();
             }
         }
