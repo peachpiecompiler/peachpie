@@ -13,18 +13,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Whteher the field initializer requires a reference to current <c>Context</c>.
         /// </summary>
-        internal bool RequiresContext
-        {
-            get
-            {
-                if (this.Initializer != null && !this.Initializer.ConstantValue.HasValue)
-                {
-                    return this.Initializer.RequiresContext;
-                }
-
-                return false;
-            }
-        }
+        internal bool RequiresContext => this.Initializer != null && this.Initializer.RequiresContext;
 
         /// <summary>
         /// Gets value indicating whether the field has to be contained in <see cref="SynthesizedStaticFieldsHolder"/>.

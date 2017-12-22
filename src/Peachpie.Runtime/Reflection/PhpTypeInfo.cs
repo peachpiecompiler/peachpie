@@ -335,9 +335,15 @@ namespace Pchp.Core.Reflection
     [DebuggerNonUserCode]
     public static class PhpTypeInfoExtension
     {
-        static MethodInfo _lazyGetPhpTypeInfo_T;
+        /// <summary>
+        /// <see cref="MethodInfo"/> of <see cref="PhpTypeInfoExtension.GetPhpTypeInfo{TType}"/>.
+        /// </summary>
+        readonly static MethodInfo s_getPhpTypeInfo_T = typeof(PhpTypeInfoExtension).GetRuntimeMethod("GetPhpTypeInfo", Dynamic.Cache.Types.Empty);
 
-        readonly static Dictionary<RuntimeTypeHandle, PhpTypeInfo> _cache = new Dictionary<RuntimeTypeHandle, PhpTypeInfo>();
+        /// <summary>
+        /// Cache of resolved <see cref="PhpTypeInfo"/> corresponding to <see cref="RuntimeTypeHandle"/>.
+        /// </summary>
+        readonly static Dictionary<RuntimeTypeHandle, PhpTypeInfo> s_cache = new Dictionary<RuntimeTypeHandle, PhpTypeInfo>();
 
         /// <summary>
         /// Gets <see cref="PhpTypeInfo"/> of given <typeparamref name="TType"/>.
@@ -361,34 +367,31 @@ namespace Pchp.Core.Reflection
             var handle = type.TypeHandle;
 
             // lookup cache first
-            lock (_cache)    // TODO: RW lock
+            lock (s_cache)    // TODO: RW lock
             {
-                _cache.TryGetValue(handle, out result);
+                s_cache.TryGetValue(handle, out result);
             }
 
             // invoke GetPhpTypeInfo<TType>() dynamically and cache the result
             if (result == null)
             {
-                if (_lazyGetPhpTypeInfo_T == null)
-                {
-                    _lazyGetPhpTypeInfo_T = typeof(PhpTypeInfoExtension).GetRuntimeMethod("GetPhpTypeInfo", Dynamic.Cache.Types.Empty);
-                }
-
                 if (type.GetTypeInfo().IsGenericTypeDefinition)
                 {
+                    // generic type definition cannot be used as a type parameter for GetPhpTypeInfo<T>
+                    // just instantiate the type info and cache the result
                     result = new PhpTypeInfo(type);
                 }
                 else
                 {
                     // TypeInfoHolder<TType>.TypeInfo;
-                    result = (PhpTypeInfo)_lazyGetPhpTypeInfo_T
+                    result = (PhpTypeInfo)s_getPhpTypeInfo_T
                         .MakeGenericMethod(type)
                         .Invoke(null, Utilities.ArrayUtils.EmptyObjects);
                 }
 
-                lock (_cache)
+                lock (s_cache)
                 {
-                    _cache[handle] = result;
+                    s_cache[handle] = result;
                 }
             }
 
@@ -410,9 +413,9 @@ namespace Pchp.Core.Reflection
             }
 
             // lookup cache first
-            lock (_cache)   // TODO: RW lock
+            lock (s_cache)   // TODO: RW lock
             {
-                _cache.TryGetValue(handle, out result);
+                s_cache.TryGetValue(handle, out result);
             }
 
             return result ?? GetPhpTypeInfo(Type.GetTypeFromHandle(handle));
@@ -470,12 +473,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Associated runtime type information.
         /// </summary>
-        public static readonly PhpTypeInfo TypeInfo = Create(typeof(TType));
-
-        static PhpTypeInfo Create(Type type)
-        {
-            return new PhpTypeInfo(type);
-        }
+        public static readonly PhpTypeInfo TypeInfo = new PhpTypeInfo(typeof(TType));
     }
 
     #endregion
