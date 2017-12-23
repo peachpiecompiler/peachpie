@@ -29,7 +29,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets enumeration of fields that will be emitted within this holder.
         /// </summary>
-        internal IEnumerable<FieldSymbol> Fields => _class.GetMembers().OfType<FieldSymbol>().Where(PhpFieldSymbolExtension.IsInStaticsHolder);
+        internal IEnumerable<FieldSymbol> Fields => _class.GetDeclaredMembers().OfType<FieldSymbol>().Where(PhpFieldSymbolExtension.IsInStaticsHolder);
 
         /// <summary>
         /// Gets value indicating whether there are fields or constants.

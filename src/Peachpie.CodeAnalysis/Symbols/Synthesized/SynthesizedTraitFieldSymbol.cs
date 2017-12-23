@@ -15,13 +15,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
         PhpPropertyKind IPhpPropertySymbol.FieldKind => _traitmember.FieldKind;
 
-        TypeSymbol IPhpPropertySymbol.ContainingStaticsHolder => PhpFieldSymbolExtension.RequiresHolder(this, _traitmember.FieldKind) ? this.ContainingType.TryGetStaticsHolder() : null;
+        TypeSymbol IPhpPropertySymbol.ContainingStaticsHolder => RequiresHolder ? DeclaringType.TryGetStaticsHolder() : null;
 
         bool IPhpPropertySymbol.RequiresContext => !IsConst;
 
-        TypeSymbol IPhpPropertySymbol.DeclaringType => this.ContainingType;
+        TypeSymbol IPhpPropertySymbol.DeclaringType => DeclaringType;
 
         #endregion
+
+        NamedTypeSymbol DeclaringType => (NamedTypeSymbol)base.ContainingSymbol;
+        bool RequiresHolder => PhpFieldSymbolExtension.RequiresHolder(this, _traitmember.FieldKind);
 
         readonly IPhpPropertySymbol _traitmember;
         readonly FieldSymbol _traitInstanceField;
@@ -32,6 +35,9 @@ namespace Pchp.CodeAnalysis.Symbols
             _traitInstanceField = traitInstanceField;
             _traitmember = sourceField;
         }
+
+        public override Symbol ContainingSymbol => ((IPhpPropertySymbol)this).ContainingStaticsHolder ?? DeclaringType;
+        public override NamedTypeSymbol ContainingType => (NamedTypeSymbol)ContainingSymbol;
 
         public override bool IsReadOnly => _traitmember is FieldSymbol f && f.IsReadOnly;
         public override bool IsStatic => IsConst || _traitmember.FieldKind == PhpPropertyKind.AppStaticField;

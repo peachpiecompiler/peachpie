@@ -1084,7 +1084,10 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override ImmutableArray<Symbol> GetMembers()
+        /// <summary>
+        /// Enumerates all members including fields that will be contained in <c>_statics</c> holder.
+        /// </summary>
+        internal IEnumerable<Symbol> GetDeclaredMembers()
         {
             IEnumerable<Symbol> members = EnsureMembers();
 
@@ -1094,21 +1097,19 @@ namespace Pchp.CodeAnalysis.Symbols
                 members = members.Concat(TraitMembers);
             }
 
-            return members.AsImmutable();
+            return members;
+        }
+
+        public override ImmutableArray<Symbol> GetMembers()
+        {
+            return GetDeclaredMembers()
+                .Where(m => m.ContainingType == this)   // skips members contained in _statics holder
+                .AsImmutable();
         }
 
         public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
         {
-            IEnumerable<Symbol> members = EnsureMembers();
-
-            // lookup trait members
-            if (!TraitUses.IsEmpty)
-            {
-                members = members.Concat(TraitMembers);
-            }
-
-            //
-            return members
+            return GetDeclaredMembers()
                 .Where(s => s.Name.StringsEqual(name, ignoreCase))
                 .AsImmutable();
         }
@@ -1181,11 +1182,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     // field redeclares its parent member, discard
                     continue;
-                }
-
-                if (PhpFieldSymbolExtension.IsInStaticsHolder(f))
-                {
-                    continue;   // this field has to be emitted within StaticsContainer
                 }
 
                 yield return f;

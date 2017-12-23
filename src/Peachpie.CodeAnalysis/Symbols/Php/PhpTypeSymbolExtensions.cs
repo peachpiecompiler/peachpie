@@ -38,13 +38,10 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var result = t.GetMembers().OfType<IPhpPropertySymbol>();
 
-            if (!(t.OriginalDefinition is SourceTypeSymbol))   // SourceTypeSymbol lists all its fields already, __statics must not be listed
+            var __statics = TryGetStaticsHolder(t);
+            if (__statics != null)
             {
-                var __statics = TryGetStaticsHolder(t);
-                if (__statics != null)
-                {
-                    result = result.Concat(EnumerateProperties(__statics));
-                }
+                result = result.Concat(EnumerateProperties(__statics));
             }
 
             var btype = t.BaseType;

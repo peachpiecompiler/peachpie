@@ -132,7 +132,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override Symbol AssociatedSymbol => null;
 
-        public override Symbol ContainingSymbol => /*RequiresHolder ? _containingType.StaticsContainer :*/ _containingType;
+        public override Symbol ContainingSymbol => ((IPhpPropertySymbol)this).ContainingStaticsHolder ?? _containingType;
 
         internal override PhpCompilation DeclaringCompilation => _containingType.DeclaringCompilation;
 
