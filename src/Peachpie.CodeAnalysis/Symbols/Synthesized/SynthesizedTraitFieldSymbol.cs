@@ -29,7 +29,7 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly IPhpPropertySymbol _traitmember;
         readonly FieldSymbol _traitInstanceField;
 
-        public SynthesizedTraitFieldSymbol(NamedTypeSymbol containing, FieldSymbol traitInstanceField, IPhpPropertySymbol sourceField)
+        public SynthesizedTraitFieldSymbol(SourceTypeSymbol containing, FieldSymbol traitInstanceField, IPhpPropertySymbol sourceField)
             : base(containing, null, sourceField.Name, sourceField.DeclaredAccessibility, isStatic: false, isReadOnly: false)
         {
             _traitInstanceField = traitInstanceField;

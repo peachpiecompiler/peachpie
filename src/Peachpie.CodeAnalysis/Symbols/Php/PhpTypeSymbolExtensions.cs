@@ -166,6 +166,16 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
             }
 
+            // constants on interfaces
+            foreach (var i in type.AllInterfaces)
+            {
+                var f = GetClassConstant(i, name);
+                if (f != null)
+                {
+                    return f;
+                }
+            }
+
             return null;
         }
 
