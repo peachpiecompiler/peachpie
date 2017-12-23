@@ -1468,7 +1468,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             var instancetype = InstanceCacheHolder.EmitInstance(instanceOpt, cg, Instance);
 
             // instance ?? proper field target:
-            EmitLoadTarget(cg, _field, instancetype, instanceTypeHint: Instance.TypeRefMask);
+            EmitLoadTarget(cg, _field, instancetype,
+                instanceTypeHint: (Instance != null) ? Instance.TypeRefMask : 0);
         }
 
         public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
