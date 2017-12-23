@@ -21,7 +21,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal bool RequiresHolder => PhpFieldSymbolExtension.RequiresHolder(this, this.FieldKind);
 
-        internal void EmitInit(CodeGenerator cg)
+        void IPhpPropertySymbol.EmitInit(CodeGenerator cg)
         {
             var fldplace = new FieldPlace(IsStatic ? null : new ArgPlace(ContainingType, 0), this, cg.Module);
 
@@ -42,9 +42,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
     partial class SynthesizedTraitFieldSymbol
     {
-        public bool RequiresContext => !IsConst;
-
-        internal void EmitInit(CodeGenerator cg)
+        void IPhpPropertySymbol.EmitInit(CodeGenerator cg)
         {
             // this.{FIELD} = {ORIGINAL_FIELD}
 
@@ -57,9 +55,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         TypeSymbol EmitLoadSourceValue(CodeGenerator cg)
         {
-            if (_traitmember.Symbol is FieldSymbol f)
+            if (_traitmember is FieldSymbol f)
             {
-                var __statics = f.TryGetStaticsContainer();
+                var phpf = (IPhpPropertySymbol)f;
+
+                var __statics = phpf.ContainingStaticsHolder;
                 if (__statics != null)
                 {
                     // Template: <ctx>.GetStatics<_statics>()
@@ -80,7 +80,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
             }
 
-            throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(_traitmember.Symbol);
+            throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(_traitmember);
         }
     }
 }

@@ -23,27 +23,33 @@ namespace Pchp.CodeAnalysis.Symbols
     /// Its CLR properties vary depending on <see cref="SourceFieldSymbol.Initializer"/> and its evaluation.
     /// Some expressions have to be evaluated in runtime which causes the field to be contained in <see cref="SynthesizedStaticFieldsHolder"/>.
     /// </remarks>
-    internal partial class SourceFieldSymbol : FieldSymbol
+    internal partial class SourceFieldSymbol : FieldSymbol, IPhpPropertySymbol
     {
-        /// <summary>
-        /// The field kind.
-        /// </summary>
-        public enum KindEnum
-        {
-            InstanceField,
-            StaticField,
-            AppStaticField,
-            ClassConstant,
-        }
-
-        readonly SourceTypeSymbol _containingType;
-        readonly string _fieldName;
+        #region IPhpPropertySymbol
 
         /// <summary>
         /// The PHP field kind - a class constant, an instance field or a static field.
         /// </summary>
-        public KindEnum FieldKind => _fieldKind;
-        readonly KindEnum _fieldKind;
+        public PhpPropertyKind FieldKind => _fieldKind;
+
+        TypeSymbol IPhpPropertySymbol.ContainingStaticsHolder
+        {
+            get
+            {
+                return RequiresHolder ? (TypeSymbol)_containingType.StaticsContainer : null;
+            }
+        }
+
+        bool IPhpPropertySymbol.RequiresContext => this.Initializer != null && this.Initializer.RequiresContext;
+
+        TypeSymbol IPhpPropertySymbol.DeclaringType => _containingType;
+
+        #endregion
+
+        readonly SourceTypeSymbol _containingType;
+        readonly string _fieldName;
+
+        readonly PhpPropertyKind _fieldKind;
 
         readonly Location _location;
 
@@ -73,7 +79,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (_originaldefinition == null)
                 {
                     // lookup base types whether this field declaration isn't a redefinition
-                    if (this.FieldKind == KindEnum.InstanceField)
+                    if (this.FieldKind == PhpPropertyKind.InstanceField)
                     {
                         for (var t = _containingType.BaseType; t != null; t = t.BaseType)
                         {
@@ -106,7 +112,7 @@ namespace Pchp.CodeAnalysis.Symbols
         }
         private FieldSymbol _originaldefinition;
 
-        public SourceFieldSymbol(SourceTypeSymbol type, string name, Location location, Accessibility accessibility, PHPDocBlock phpdoc, KindEnum kind, BoundExpression initializer = null)
+        public SourceFieldSymbol(SourceTypeSymbol type, string name, Location location, Accessibility accessibility, PHPDocBlock phpdoc, PhpPropertyKind kind, BoundExpression initializer = null)
         {
             Contract.ThrowIfNull(type);
             Contract.ThrowIfNull(name);
@@ -156,7 +162,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ConstantValue GetConstantValue(bool earlyDecodingWellKnownAttributes)
         {
-            return (_fieldKind == KindEnum.ClassConstant) ? Initializer?.ConstantValue.ToConstantValueOrNull() : null;
+            return (_fieldKind == PhpPropertyKind.ClassConstant) ? Initializer?.ConstantValue.ToConstantValueOrNull() : null;
         }
 
         internal override TypeSymbol GetFieldType(ConsList<FieldSymbol> fieldsBeingBound)
@@ -209,17 +215,17 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// <c>const</c> whether the field is a constant and its value can be resolved as constant value.
         /// </summary>
-        public override bool IsConst => _fieldKind == KindEnum.ClassConstant && GetConstantValue(false) != null;
+        public override bool IsConst => _fieldKind == PhpPropertyKind.ClassConstant && GetConstantValue(false) != null;
 
         /// <summary>
         /// <c>readonly</c> applies to class constants that have to be evaluated at runtime.
         /// </summary>
-        public override bool IsReadOnly => _fieldKind == KindEnum.ClassConstant && GetConstantValue(false) == null;
+        public override bool IsReadOnly => _fieldKind == PhpPropertyKind.ClassConstant && GetConstantValue(false) == null;
 
         /// <summary>
         /// Whether the field is real CLR static field.
         /// </summary>
-        public override bool IsStatic => _fieldKind == KindEnum.AppStaticField || IsConst; // either field is CLR static field or constant (Literal field must be Static).
+        public override bool IsStatic => _fieldKind == PhpPropertyKind.AppStaticField || IsConst; // either field is CLR static field or constant (Literal field must be Static).
 
         public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
         {

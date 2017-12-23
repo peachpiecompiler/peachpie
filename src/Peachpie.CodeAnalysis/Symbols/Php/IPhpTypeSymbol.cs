@@ -45,12 +45,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         IMethodSymbol InstanceConstructorFieldsOnly { get; }
 
-        /// <summary>
-        /// Optional.
-        /// A nested class <c>__statics</c> containing class static fields and constants which are bound to runtime context.
-        /// </summary>
-        INamedTypeSymbol StaticsContainer { get; }
-
         ///// <summary>
         ///// Gets enumeration of used traits.
         ///// </summary>

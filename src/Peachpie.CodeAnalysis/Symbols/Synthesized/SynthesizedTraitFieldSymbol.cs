@@ -4,32 +4,42 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.CodeGen;
 using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    partial class SynthesizedTraitFieldSymbol : SynthesizedFieldSymbol
+    partial class SynthesizedTraitFieldSymbol : SynthesizedFieldSymbol, IPhpPropertySymbol
     {
-        readonly PhpPropertyInfo _traitmember;
-        readonly SourceFieldSymbol.KindEnum _memberkind;
+        #region IPhpPropertySymbol
+
+        PhpPropertyKind IPhpPropertySymbol.FieldKind => _traitmember.FieldKind;
+
+        TypeSymbol IPhpPropertySymbol.ContainingStaticsHolder => PhpFieldSymbolExtension.RequiresHolder(this, _traitmember.FieldKind) ? this.ContainingType.TryGetStaticsHolder() : null;
+
+        bool IPhpPropertySymbol.RequiresContext => !IsConst;
+
+        TypeSymbol IPhpPropertySymbol.DeclaringType => this.ContainingType;
+
+        #endregion
+
+        readonly IPhpPropertySymbol _traitmember;
         readonly FieldSymbol _traitInstanceField;
 
-        public SourceFieldSymbol.KindEnum FieldKind => _memberkind;
-
-        public SynthesizedTraitFieldSymbol(NamedTypeSymbol containing, FieldSymbol traitInstanceField, PhpPropertyInfo info)
-            : base(containing, null, info.Symbol.Name, info.Symbol.DeclaredAccessibility, isStatic: false, isReadOnly: false)
+        public SynthesizedTraitFieldSymbol(NamedTypeSymbol containing, FieldSymbol traitInstanceField, IPhpPropertySymbol sourceField)
+            : base(containing, null, sourceField.Name, sourceField.DeclaredAccessibility, isStatic: false, isReadOnly: false)
         {
             _traitInstanceField = traitInstanceField;
-            _traitmember = info;
-            _memberkind = info.FieldKind;
+            _traitmember = sourceField;
         }
 
-        public override bool IsReadOnly => _traitmember.Symbol is FieldSymbol f && f.IsReadOnly;
-        public override bool IsStatic => IsConst || _memberkind == SourceFieldSymbol.KindEnum.AppStaticField;
-        public override bool IsConst => _traitmember.Symbol is FieldSymbol f && f.IsConst;
+        public override bool IsReadOnly => _traitmember is FieldSymbol f && f.IsReadOnly;
+        public override bool IsStatic => IsConst || _traitmember.FieldKind == PhpPropertyKind.AppStaticField;
+        public override bool IsConst => _traitmember is FieldSymbol f && f.IsConst;
+
         internal override ConstantValue GetConstantValue(bool earlyDecodingWellKnownAttributes)
         {
-            if (_traitmember.Symbol is FieldSymbol f)
+            if (_traitmember is FieldSymbol f)
             {
                 return f.GetConstantValue(earlyDecodingWellKnownAttributes);
             }
@@ -37,6 +47,6 @@ namespace Pchp.CodeAnalysis.Symbols
             return null;
         }
         
-        internal override TypeSymbol GetFieldType(ConsList<FieldSymbol> fieldsBeingBound) => _traitmember.Symbol.GetTypeOrReturnType();
+        internal override TypeSymbol GetFieldType(ConsList<FieldSymbol> fieldsBeingBound) => ((Symbol)_traitmember).GetTypeOrReturnType();
     }
 }

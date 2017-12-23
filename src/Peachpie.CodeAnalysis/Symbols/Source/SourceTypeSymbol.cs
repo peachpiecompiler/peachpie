@@ -870,10 +870,10 @@ namespace Pchp.CodeAnalysis.Symbols
             foreach (var flist in _syntax.Members.OfType<FieldDeclList>())
             {
                 var fkind = (flist.Modifiers & PhpMemberAttributes.Static) == 0
-                    ? SourceFieldSymbol.KindEnum.InstanceField
+                    ? PhpPropertyKind.InstanceField
                     : flist.IsAppStatic()
-                        ? SourceFieldSymbol.KindEnum.AppStaticField
-                        : SourceFieldSymbol.KindEnum.StaticField;
+                        ? PhpPropertyKind.AppStaticField
+                        : PhpPropertyKind.StaticField;
 
                 foreach (var f in flist.Fields)
                 {
@@ -893,7 +893,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     yield return new SourceFieldSymbol(this, c.Name.Name.Value,
                         CreateLocation(c.Name.Span),
                         Accessibility.Public, c.PHPDoc ?? clist.PHPDoc,
-                        SourceFieldSymbol.KindEnum.ClassConstant,
+                        PhpPropertyKind.ClassConstant,
                         binder.BindWholeExpression(c.Initializer, BoundAccess.Read).GetOnlyBoundElement());
                 }
             }
@@ -1183,7 +1183,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     continue;
                 }
 
-                if (PhpFieldSymbolExtension.RequiresHolder(f))
+                if (PhpFieldSymbolExtension.IsInStaticsHolder(f))
                 {
                     continue;   // this field has to be emitted within StaticsContainer
                 }

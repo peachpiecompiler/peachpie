@@ -34,15 +34,15 @@ namespace Pchp.CodeAnalysis.Symbols
                 il.EmitCall(module, diagnostic, ILOpCode.Call, this.BaseType.InstanceConstructors.Single());   // .ctor()
 
                 //
-                foreach (var fld in this.Fields)
+                foreach (var p in this.Fields.Cast<IPhpPropertySymbol>())
                 {
-                    if (PhpFieldSymbolExtension.RequiresContext(fld))
+                    if (p.RequiresContext)
                     {
                         requiresInit = true;
                     }
                     else
                     {
-                        PhpFieldSymbolExtension.EmitInit(fld, cg);
+                        p.EmitInit(cg);
                     }
                 }
 
@@ -79,11 +79,11 @@ namespace Pchp.CodeAnalysis.Symbols
                     CallerType = this.ContainingType,
                 };
 
-                foreach (var fld in this.Fields)
+                foreach (var p in this.Fields.Cast<IPhpPropertySymbol>())
                 {
-                    if (PhpFieldSymbolExtension.RequiresContext(fld))
+                    if (p.RequiresContext)
                     {
-                        PhpFieldSymbolExtension.EmitInit(fld, cg);
+                        p.EmitInit(cg);
                     }
                 }
 

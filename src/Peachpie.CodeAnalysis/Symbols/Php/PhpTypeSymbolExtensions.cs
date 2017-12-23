@@ -7,106 +7,21 @@ using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    #region PhpPropertyInfo
-
-    internal partial struct PhpPropertyInfo
-    {
-        readonly Symbol _symbol;
-
-        public PhpPropertyInfo(FieldSymbol f)
-        {
-            Debug.Assert(f != null);
-
-            _symbol = f;
-        }
-
-        public PhpPropertyInfo(PropertySymbol p)
-        {
-            Debug.Assert(p != null);
-
-            _symbol = p;
-        }
-
-        public static PhpPropertyInfo Create(FieldSymbol f) => new PhpPropertyInfo(f);
-
-        public static PhpPropertyInfo Create(PropertySymbol p) => new PhpPropertyInfo(p);
-
-        public static PhpPropertyInfo TryCreate(ISymbol s) => (s is FieldSymbol f) ? Create(f) : (s is PropertySymbol p ? Create(p) : default(PhpPropertyInfo));
-
-        public static bool IsValid(PhpPropertyInfo info) => info.Symbol != null;
-
-        public Symbol Symbol => _symbol;
-
-        public bool IsInStaticsContainer => _symbol.ContainingType.IsStaticsContainer();
-
-        public SourceFieldSymbol.KindEnum FieldKind
-        {
-            get
-            {
-                Symbol s = _symbol;
-
-                if (s is SubstitutedFieldSymbol sub)    // bound generic 
-                {
-                    s = sub.OriginalDefinition;
-                }
-
-                if (s is SourceFieldSymbol srcf)
-                {
-                    return srcf.FieldKind;
-                }
-
-                if (s is SynthesizedTraitFieldSymbol sf)
-                {
-                    return sf.FieldKind;
-                }
-
-                if (s is FieldSymbol f)
-                {
-                    // CLR static
-                    if (f.IsStatic) return SourceFieldSymbol.KindEnum.AppStaticField;
-
-                    // const
-                    if (f.IsConst) return SourceFieldSymbol.KindEnum.ClassConstant;
-
-                    if (IsInStaticsContainer)
-                    {
-                        // __statics { readonly }
-                        if (f.IsReadOnly) return SourceFieldSymbol.KindEnum.ClassConstant;
-
-                        // __statics
-                        return SourceFieldSymbol.KindEnum.StaticField;
-                    }
-
-                    // var
-                    return SourceFieldSymbol.KindEnum.InstanceField;
-                }
-
-                if (s is PropertySymbol p)
-                {
-                    if (p.IsStatic) return SourceFieldSymbol.KindEnum.AppStaticField;
-                    return SourceFieldSymbol.KindEnum.InstanceField;
-                }
-
-                throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(_symbol);
-            }
-        }
-
-        public NamedTypeSymbol DeclaringType
-        {
-            get
-            {
-                return IsInStaticsContainer
-                    ? _symbol.ContainingType.ContainingType
-                    : _symbol.ContainingType;
-            }
-        }
-    }
-
-    #endregion
-
     internal static class PhpTypeSymbolExtensions
     {
-        public static bool IsStaticsContainer(this NamedTypeSymbol t)
+        /// <summary>
+        /// Gets special <c>_statics</c> nested class holding static fields bound to context.
+        /// </summary>
+        /// <returns></returns>
+        public static NamedTypeSymbol TryGetStaticsHolder(this INamedTypeSymbol t)
+        {
+            if (t is SourceTypeSymbol srct) return (NamedTypeSymbol)srct.StaticsContainer;
+
+            // a nested class `_statics`:
+            return (NamedTypeSymbol)t.GetTypeMembers(WellKnownPchpNames.StaticsHolderClassName).Where(IsStaticsContainer).SingleOrDefault();
+        }
+
+        public static bool IsStaticsContainer(this INamedTypeSymbol t)
         {
             return
                 t.Name == WellKnownPchpNames.StaticsHolderClassName &&
@@ -119,15 +34,13 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Enumerates class fields and properties as declared in PHP.
         /// </summary>
-        public static IEnumerable<PhpPropertyInfo> EnumerateProperties(this INamedTypeSymbol t)
+        public static IEnumerable<IPhpPropertySymbol> EnumerateProperties(this INamedTypeSymbol t)
         {
-            var result = t.GetMembers()
-                .Select(PhpPropertyInfo.TryCreate)
-                .Where(PhpPropertyInfo.IsValid);
+            var result = t.GetMembers().OfType<IPhpPropertySymbol>();
 
-            if (t is IPhpTypeSymbol phpt && !(t is SourceTypeSymbol))   // SourceTypeSymbol lists all its fields already, __statics must not be listed
+            if (!(t.OriginalDefinition is SourceTypeSymbol))   // SourceTypeSymbol lists all its fields already, __statics must not be listed
             {
-                var __statics = phpt.StaticsContainer;
+                var __statics = TryGetStaticsHolder(t);
                 if (__statics != null)
                 {
                     result = result.Concat(EnumerateProperties(__statics));
@@ -147,8 +60,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             FieldSymbol field = null;
 
-            var phpt = t as IPhpTypeSymbol;
-            var statics = phpt?.StaticsContainer;
+            var statics = TryGetStaticsHolder(t);
             if (statics != null)
             {
                 // __statics.FIELD
@@ -169,8 +81,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             FieldSymbol field = null;
 
-            var phpt = t as IPhpTypeSymbol;
-            var statics = phpt?.StaticsContainer;
+            var statics = TryGetStaticsHolder(t);
             if (statics != null)
             {
                 // readonly __statics.CONSTANT

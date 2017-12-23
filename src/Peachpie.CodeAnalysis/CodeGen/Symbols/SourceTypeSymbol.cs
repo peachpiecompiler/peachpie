@@ -37,7 +37,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         void EmitFieldsCctor(Emit.PEModuleBuilder module)
         {
-            var sflds = GetMembers().OfType<FieldSymbol>().Where(f => !f.IsConst && f.IsStatic && !PhpFieldSymbolExtension.RequiresHolder(f)).ToList();
+            // list app static fields
+            var sflds = GetMembers().OfType<IPhpPropertySymbol>()
+                .Where(f => f.FieldKind == PhpPropertyKind.AppStaticField)
+                .ToList();
+
             if (sflds.Count != 0)
             {
                 // emit initialization of app static fields
@@ -51,7 +55,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 foreach (var f in sflds)
                 {
-                    PhpFieldSymbolExtension.EmitInit(f, cg);
+                    Debug.Assert(f.RequiresContext == false);
+                    Debug.Assert(f.ContainingStaticsHolder == null);
+
+                    f.EmitInit(cg);
                 }
             }
         }
@@ -211,10 +218,11 @@ namespace Pchp.CodeAnalysis.Symbols
                             EmitTraitInstanceInit(cg, ctor, t);
                         }
 
-                        // initialize class fields
-                        foreach (var f in this.GetMembers().OfType<FieldSymbol>().Where(fld => !PhpFieldSymbolExtension.RequiresHolder(fld) && !fld.IsStatic && !fld.IsConst))
+                        // initialize instance fields:
+                        foreach (var f in this.GetMembers().OfType<IPhpPropertySymbol>().Where(f => f.FieldKind == PhpPropertyKind.InstanceField))
                         {
-                            PhpFieldSymbolExtension.EmitInit(f, cg);
+                            Debug.Assert(f.ContainingStaticsHolder == null);
+                            f.EmitInit(cg);
                         }
                     }
                     else

@@ -6,11 +6,42 @@ using Roslyn.Utilities;
 using System.Globalization;
 using Microsoft.CodeAnalysis;
 using System.Diagnostics;
+using Pchp.CodeAnalysis.CodeGen;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    internal sealed class SubstitutedFieldSymbol : FieldSymbol
+    internal sealed class SubstitutedFieldSymbol : FieldSymbol, IPhpPropertySymbol
     {
+        #region IPhpPropertySymbol
+
+        PhpPropertyKind IPhpPropertySymbol.FieldKind => ((IPhpPropertySymbol)OriginalDefinition).FieldKind;
+
+        TypeSymbol IPhpPropertySymbol.ContainingStaticsHolder
+        {
+            get
+            {
+                if (_containingType.IsStaticsContainer())
+                {
+                    return _containingType;
+                }
+
+                if (PhpFieldSymbolExtension.IsInStaticsHolder(_originalDefinition))
+                {
+                    return _containingType.TryGetStaticsHolder();
+                }
+
+                return null;
+            }
+        }
+
+        bool IPhpPropertySymbol.RequiresContext => ((IPhpPropertySymbol)OriginalDefinition).RequiresContext;
+
+        TypeSymbol IPhpPropertySymbol.DeclaringType => throw new NotImplementedException();
+
+        void IPhpPropertySymbol.EmitInit(CodeGenerator cg) { throw new NotSupportedException(); }
+
+        #endregion
+
         NamedTypeSymbol _containingType;
         readonly FieldSymbol _originalDefinition;
         readonly object _token;
@@ -18,7 +49,7 @@ namespace Pchp.CodeAnalysis.Symbols
         private TypeSymbol _lazyType;
 
         internal SubstitutedFieldSymbol(NamedTypeSymbol containingType, FieldSymbol substitutedFrom)
-            :this(containingType, substitutedFrom, containingType)
+            : this(containingType, substitutedFrom, containingType)
         {
         }
 
@@ -233,7 +264,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                return _containingType.TypeSubstitution.SubstituteCustomModifiers(_originalDefinition.Type,_originalDefinition.CustomModifiers);
+                return _containingType.TypeSubstitution.SubstituteCustomModifiers(_originalDefinition.Type, _originalDefinition.CustomModifiers);
             }
         }
 

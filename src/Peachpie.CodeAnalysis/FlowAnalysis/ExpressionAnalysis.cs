@@ -1568,11 +1568,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     {
                         // TODO: visibility -> ErrCode
 
-                        Debug.Assert(
-                            field.IsConst ||    // .NET constant
-                            field.IsStatic ||   // .NET static
-                            field.ContainingType.TryGetStatics().LookupMember<FieldSymbol>(x.FieldName.NameValue.Value) != null); // or PHP context static
-
                         if (BindConstantValue(x, field))
                         {
                             Debug.Assert(x.Access.IsRead && !x.Access.IsWrite && !x.Access.IsEnsure);
