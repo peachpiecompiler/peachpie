@@ -55,6 +55,11 @@ namespace Pchp.CodeAnalysis.Symbols
                     return srcf.FieldKind;
                 }
 
+                if (s is SynthesizedTraitFieldSymbol sf)
+                {
+                    return sf.FieldKind;
+                }
+
                 if (s is FieldSymbol f)
                 {
                     // CLR static
