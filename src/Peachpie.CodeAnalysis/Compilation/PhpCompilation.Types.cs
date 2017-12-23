@@ -219,6 +219,41 @@ namespace Pchp.CodeAnalysis
 
         #endregion
 
+        #region Factory
+
+        Dictionary<Accessibility, AttributeData> _lazyPhpMemberVisibilityAttribute = null;
+
+        internal AttributeData GetPhpMemberVisibilityAttribute(Symbol member, Accessibility accessibility)
+        {
+            if (member is FieldSymbol || member is MethodSymbol || member is PropertySymbol)
+            {
+
+                if (_lazyPhpMemberVisibilityAttribute == null)
+                {
+                    _lazyPhpMemberVisibilityAttribute = new Dictionary<Accessibility, AttributeData>();
+                }
+
+                if (!_lazyPhpMemberVisibilityAttribute.TryGetValue(accessibility, out AttributeData attr))
+                {
+                    // [PhpMemberVisibilityAttribute( {(int)DeclaredAccessibility} )]
+                    attr = new SynthesizedAttributeData(
+                        CoreTypes.PhpMemberVisibilityAttribute.Ctor(CoreTypes.Int32),
+                        ImmutableArray.Create(new TypedConstant(CoreTypes.Int32.Symbol, TypedConstantKind.Primitive, (int)accessibility)),
+                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+
+                    _lazyPhpMemberVisibilityAttribute[accessibility] = attr;
+                }
+
+                return attr;
+            }
+            else
+            {
+                throw new ArgumentException();
+            }
+        }
+
+        #endregion
+
         /// <summary>
         /// Lookup member declaration in well known type used by this Compilation.
         /// </summary>

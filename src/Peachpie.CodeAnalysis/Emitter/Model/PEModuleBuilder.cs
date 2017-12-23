@@ -786,6 +786,18 @@ namespace Pchp.CodeAnalysis.Emit
         public static Cci.TypeMemberVisibility MemberVisibility(Symbol symbol)
         {
             //
+            // We need to make trait members and fields in synthesized _statics holder public:
+            //
+            if (symbol.DeclaredAccessibility != Accessibility.Public)
+            {
+                if (PhpFieldSymbolExtension.IsInStaticsHolder(symbol as FieldSymbol) || // field is generated within `_statics` holder class and must be accessed from outside // note: maybe internal?
+                    (symbol is MethodSymbol m && m.ContainingType.IsTraitType() && (m is SourceMethodSymbol || m is SynthesizedTraitMethodSymbol)))  // method is in trait and must be friend with any class (hence public)
+                {
+                    return Cci.TypeMemberVisibility.Public;
+                }
+            }
+
+            //
             // We need to relax visibility of members in interactive submissions since they might be emitted into multiple assemblies.
             // 
             // Top-level:

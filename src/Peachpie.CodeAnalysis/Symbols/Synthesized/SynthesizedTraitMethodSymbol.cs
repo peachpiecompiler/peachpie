@@ -44,18 +44,5 @@ namespace Pchp.CodeAnalysis.Symbols
                 return _parameters;
             }
         }
-
-        protected override TypeMemberVisibility VisibilityToEmit
-        {
-            get
-            {
-                if (ContainingType.IsTraitType())
-                {
-                    return TypeMemberVisibility.Public;
-                }
-
-                return base.VisibilityToEmit;
-            }
-        }
     }
 }

@@ -132,12 +132,14 @@ namespace Pchp.Core
     }
 
     /// <summary>
-    /// Specifies real trait member accessibility as it will be generated in containing class.
+    /// Specifies real member accessibility as it will appear in declaring class.
     /// </summary>
-    /// <remarks>All trait members have to be emitted as public to be accessible.
-    /// However; when used in a class, its real visibility has to be used for the synthesized member stub.</remarks>
+    /// <remarks>
+    /// Some members have to be emitted as public to be accessible from outside but appear non-public in PHP context.
+    /// This attribute specifies real visibility of the member - method, property or class constant.
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Property)]
-    public sealed class PhpTraitMemberVisibilityAttribute : Attribute
+    public sealed class PhpMemberVisibilityAttribute : Attribute
     {
         /// <summary>
         /// Declared member accessibility flag.
@@ -147,7 +149,7 @@ namespace Pchp.Core
         /// <summary>
         /// Initializes the attribute.
         /// </summary>
-        public PhpTraitMemberVisibilityAttribute(int accessibility) { this.Accessibility = accessibility; }
+        public PhpMemberVisibilityAttribute(int accessibility) { this.Accessibility = accessibility; }
     }
 
     /// <summary>

@@ -106,11 +106,11 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Name of <c>PhpTraitMemberVisibilityAttribute</c> class.
         /// </summary>
-        public const string PhpTraitMemberVisibilityAttributeName = "PhpTraitMemberVisibilityAttribute";
+        public const string PhpMemberVisibilityAttributeName = "PhpMemberVisibilityAttribute";
 
         public readonly CoreType
             Context, Operators, Convert, Comparison, StrictComparison, PhpException,
-            ScriptAttribute, PhpTraitAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, PhpTraitMemberVisibilityAttribute,
+            ScriptAttribute, PhpTraitAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, PhpMemberVisibilityAttribute,
             ScriptDiedException,
             IStaticInit, RoutineInfo,
             BinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
@@ -163,7 +163,7 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpTypeAttribute = Create("PhpTypeAttribute");
             PhpHiddenAttribute = Create("PhpHiddenAttribute");
             PhpFieldsOnlyCtorAttribute = Create(PhpFieldsOnlyCtorAttributeName);
-            PhpTraitMemberVisibilityAttribute = Create(PhpTraitMemberVisibilityAttributeName);
+            PhpMemberVisibilityAttribute = Create(PhpMemberVisibilityAttributeName);
             IStaticInit = Create("IStaticInit");
             RoutineInfo = Create("Reflection.RoutineInfo");
             stdClass = CreateFromFullName("stdClass");

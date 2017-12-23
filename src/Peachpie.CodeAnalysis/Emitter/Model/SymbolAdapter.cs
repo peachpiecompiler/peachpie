@@ -56,7 +56,19 @@ namespace Pchp.CodeAnalysis
 
         IEnumerable<Cci.ICustomAttribute> Cci.IReference.GetAttributes(EmitContext context)
         {
-            return GetCustomAttributesToEmit(((Emit.PEModuleBuilder)context.Module).CompilationState).Cast<Cci.ICustomAttribute>();
+            var attrs = GetCustomAttributesToEmit(((Emit.PEModuleBuilder)context.Module).CompilationState).Cast<Cci.ICustomAttribute>();
+
+            // add [PhpMemberVisibilityAttribute( DeclaredAccessibility )] for non-public members emitted as public
+            if ((DeclaredAccessibility == Accessibility.Private || DeclaredAccessibility == Accessibility.Protected) &&
+                Emit.PEModuleBuilder.MemberVisibility(this) == Cci.TypeMemberVisibility.Public)
+            {
+                attrs = attrs.Concat(new[]
+                {
+                    (Cci.ICustomAttribute)((Emit.PEModuleBuilder)context.Module).Compilation.GetPhpMemberVisibilityAttribute(this, DeclaredAccessibility)
+                });
+            }
+
+            return attrs;
         }
     }
 }

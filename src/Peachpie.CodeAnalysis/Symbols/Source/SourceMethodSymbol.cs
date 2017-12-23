@@ -104,44 +104,15 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal class SourceTraitMethodSymbol : SourceMethodSymbol
     {
-        AttributeData _lazyDeclaredVisibilityAtribute = null;
-
         public SourceTraitMethodSymbol(SourceTraitTypeSymbol type, MethodDecl syntax)
             : base(type, syntax)
         {
         }
-
-        // trait method is always emitted as `public`
-        protected override TypeMemberVisibility VisibilityToEmit => TypeMemberVisibility.Public;
 
         // abstract trait method must have an empty implementation
         public override bool IsAbstract => false;
 
         // abstract trait method must have an empty implementation
         internal override IList<Statement> Statements => base.IsAbstract ? Array.Empty<Statement>() : base.Statements;
-
-        internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(CommonModuleCompilationState compilationState)
-        {
-            foreach (var attr in base.GetCustomAttributesToEmit(compilationState))
-            {
-                yield return attr;
-            }
-
-            if (DeclaredAccessibility != Accessibility.Public)
-            {
-                if (_lazyDeclaredVisibilityAtribute == null)
-                {
-                    var ct = DeclaringCompilation.CoreTypes;
-
-                    // [PhpTraitMemberVisibilityAttribute( {(int)DeclaredAccessibility} )]
-                    _lazyDeclaredVisibilityAtribute = new SynthesizedAttributeData(
-                        ct.PhpTraitMemberVisibilityAttribute.Ctor(ct.Int32),
-                        ImmutableArray.Create(new TypedConstant(ct.Int32.Symbol, TypedConstantKind.Primitive, (int)DeclaredAccessibility)),
-                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
-                }
-
-                yield return _lazyDeclaredVisibilityAtribute;
-            }
-        }
     }
 }
