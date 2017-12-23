@@ -1410,25 +1410,21 @@ namespace Pchp.CodeAnalysis.CodeGen
             EmitOpCode(cg, Field.IsStatic ? ILOpCode.Stsfld : ILOpCode.Stfld);
         }
 
-        /// <summary>
-        /// Emits instance of the field containing class.
-        /// </summary>
-        protected void EmitLoadTarget(CodeGenerator cg, InstanceCacheHolder instanceOpt)
+        public static TypeSymbol EmitLoadTarget(CodeGenerator cg, FieldSymbol field, TypeSymbol instancetype, TypeRefMask instanceTypeHint = default(TypeRefMask))
         {
-            // instance
-            var instancetype = InstanceCacheHolder.EmitInstance(instanceOpt, cg, Instance);
-
             //
-            if (_field.IsStatic)
+            if (field.IsStatic)
             {
                 if (instancetype != null)
                 {
                     cg.EmitPop(instancetype);
                 }
+
+                return null;
             }
             else
             {
-                var statics = _field.ContainingStaticsHolder();   // in case field is a PHP static field
+                var statics = field.ContainingStaticsHolder();   // in case field is a PHP static field
                 if (statics != null)
                 {
                     // PHP static field contained in a holder class
@@ -1438,26 +1434,41 @@ namespace Pchp.CodeAnalysis.CodeGen
                         instancetype = null;
                     }
 
-                    statics = statics.ContainingType.EmitLoadStatics(cg);
-                    Debug.Assert(statics != null);
+                    // Template: <ctx>.GetStatics<_statics>()
+                    cg.EmitLoadContext();
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Context.GetStatic_T.Symbol.Construct(statics)).Expect(statics);
                 }
                 else
                 {
                     if (instancetype != null)
                     {
-                        cg.EmitConvert(instancetype, Instance.TypeRefMask, _field.ContainingType);
+                        cg.EmitConvert(instancetype, instanceTypeHint, field.ContainingType);
 
-                        if (_field.ContainingType.IsValueType)
+                        if (field.ContainingType.IsValueType)
                         {
                             throw new NotImplementedException(); // cg.EmitStructAddr(_field.ContainingType);   // value -> valueaddr
                         }
+
+                        return field.ContainingType;
                     }
                     else
                     {
-                        throw new NotImplementedException($"Non-static field {_field.ContainingType.Name}::${_field.MetadataName} accessed statically!");
+                        throw new NotImplementedException($"Non-static field {field.ContainingType.Name}::${field.MetadataName} accessed statically!");
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Emits instance of the field containing class.
+        /// </summary>
+        protected void EmitLoadTarget(CodeGenerator cg, InstanceCacheHolder instanceOpt)
+        {
+            // instance
+            var instancetype = InstanceCacheHolder.EmitInstance(instanceOpt, cg, Instance);
+
+            // instance ?? proper field target:
+            EmitLoadTarget(cg, _field, instancetype, instanceTypeHint: Instance.TypeRefMask);
         }
 
         public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)

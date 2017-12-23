@@ -2949,10 +2949,10 @@ namespace Pchp.CodeAnalysis.CodeGen
             return new ParamPlace(p).EmitLoad(il);
         }
 
-        public static TypeSymbol EmitLoad(this FieldSymbol f, ILBuilder il, IPlace holder = null)
+        public static TypeSymbol EmitLoad(this FieldSymbol f, CodeGenerator cg, IPlace holder = null)
         {
             Debug.Assert(f != null, nameof(f));
-            return new FieldPlace(holder, f).EmitLoad(il);
+            return new FieldPlace(holder, f, cg.Module).EmitLoad(cg.Builder);
         }
     }
 }

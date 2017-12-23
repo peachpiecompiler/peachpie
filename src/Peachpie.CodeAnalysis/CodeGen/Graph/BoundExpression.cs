@@ -2805,7 +2805,7 @@ namespace Pchp.CodeAnalysis.Semantics
             var idxfld = this.BoundLambdaMethod.EnsureRoutineInfoField(cg.Module);
 
             cg.EmitLoadContext();           // Context
-            idxfld.EmitLoad(cg.Builder);    // routine
+            idxfld.EmitLoad(cg);            // routine
             cg.EmitThisOrNull();            // $this
             cg.EmitCallerTypeHandle();      // scope
             EmitParametersArray(cg);        // "parameters"

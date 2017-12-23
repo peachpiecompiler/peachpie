@@ -14,23 +14,6 @@ namespace Pchp.CodeAnalysis.Symbols
     partial class NamedTypeSymbol
     {
         /// <summary>
-        /// Emits load of statics holder.
-        /// </summary>
-        internal TypeSymbol EmitLoadStatics(CodeGenerator cg)
-        {
-            var statics = this.TryGetStaticsHolder();
-            if (statics != null)
-            {
-                // Template: <ctx>.GetStatics<_statics>()
-                cg.EmitLoadContext();
-                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.GetStatic_T.Symbol.Construct(statics))
-                    .Expect(statics);
-            }
-
-            return null;
-        }
-
-        /// <summary>
         /// Provides information about a method and its override.
         /// </summary>
         [DebuggerDisplay("{Method.ContainingType,nq} {Method.RoutineName,nq}")]

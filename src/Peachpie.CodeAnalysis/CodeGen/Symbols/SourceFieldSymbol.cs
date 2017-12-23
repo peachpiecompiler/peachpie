@@ -2,6 +2,7 @@
 using Pchp.CodeAnalysis.Semantics;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
@@ -57,27 +58,26 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             if (_traitmember is FieldSymbol f)
             {
+                TypeSymbol instanceType;
                 var phpf = (IPhpPropertySymbol)f;
-
-                var __statics = phpf.ContainingStaticsHolder;
-                if (__statics != null)
+                if (phpf.FieldKind == PhpPropertyKind.InstanceField)
                 {
-                    // Template: <ctx>.GetStatics<_statics>()
-                    cg.EmitLoadContext();
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Context.GetStatic_T.Symbol.Construct(__statics));
-
-                    // LOAD {FIELD}
-                    cg.Builder.EmitOpCode(ILOpCode.Ldfld);
-                    cg.EmitSymbolToken(f, null);
-                    return f.Type;
+                    // Template: LOAD <>trait_T
+                    Debug.Assert(_traitInstanceField != null);
+                    instanceType = _traitInstanceField.EmitLoad(cg, cg.ThisPlaceOpt);
                 }
                 else
                 {
-                    // Template: LOAD <>trait_T.{FIELD}
-                    var traitPlace = new FieldPlace(cg.ThisPlaceOpt, _traitInstanceField, cg.Module);
-                    var srcplace = new FieldPlace(traitPlace, f, cg.Module);
-                    return srcplace.EmitLoad(cg.Builder);
+                    instanceType = null;
                 }
+
+                // 
+                BoundFieldPlace.EmitLoadTarget(cg, f, instanceType);
+
+                // LOAD {FIELD}
+                cg.Builder.EmitOpCode(ILOpCode.Ldfld);
+                cg.EmitSymbolToken(f, null);
+                return f.Type;
             }
 
             throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(_traitmember);
