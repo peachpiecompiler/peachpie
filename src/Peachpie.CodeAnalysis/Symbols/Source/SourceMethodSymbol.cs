@@ -122,24 +122,26 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(CommonModuleCompilationState compilationState)
         {
-            var attrs = base.GetCustomAttributesToEmit(compilationState);
+            foreach (var attr in base.GetCustomAttributesToEmit(compilationState))
+            {
+                yield return attr;
+            }
 
             if (DeclaredAccessibility != Accessibility.Public)
             {
                 if (_lazyDeclaredVisibilityAtribute == null)
                 {
-                    //// [DeclaredVisibility({private|protected})]
-                    //_lazyDeclaredVisibilityAtribute = new SynthesizedAttributeData(
-                    //    DeclaringCompilation.CoreMethods.Ctors.DeclaredVisibilityAtribute,
-                    //    ImmutableArray<TypedConstant>.Empty,
-                    //    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                    var ct = DeclaringCompilation.CoreTypes;
+
+                    // [PhpTraitMemberVisibilityAttribute( {(int)DeclaredAccessibility} )]
+                    _lazyDeclaredVisibilityAtribute = new SynthesizedAttributeData(
+                        ct.PhpTraitMemberVisibilityAttribute.Ctor(ct.Int32),
+                        ImmutableArray.Create(new TypedConstant(ct.Int32.Symbol, TypedConstantKind.Primitive, (int)DeclaredAccessibility)),
+                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
                 }
 
-                //attrs = attrs.Concat(_lazyDeclaredVisibilityAtribute);
+                yield return _lazyDeclaredVisibilityAtribute;
             }
-
-            //
-            return attrs;
         }
     }
 }

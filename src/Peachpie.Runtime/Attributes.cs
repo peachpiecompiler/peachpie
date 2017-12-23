@@ -132,6 +132,25 @@ namespace Pchp.Core
     }
 
     /// <summary>
+    /// Specifies real trait member accessibility as it will be generated in containing class.
+    /// </summary>
+    /// <remarks>All trait members have to be emitted as public to be accessible.
+    /// However; when used in a class, its real visibility has to be used for the synthesized member stub.</remarks>
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Property)]
+    public sealed class PhpTraitMemberVisibilityAttribute : Attribute
+    {
+        /// <summary>
+        /// Declared member accessibility flag.
+        /// </summary>
+        public int Accessibility { get; }
+
+        /// <summary>
+        /// Initializes the attribute.
+        /// </summary>
+        public PhpTraitMemberVisibilityAttribute(int accessibility) { this.Accessibility = accessibility; }
+    }
+
+    /// <summary>
     /// Denotates a function parameter of type <see cref="PhpArray"/>
     /// that will be referenced to the array of local PHP variables.
     /// </summary>
