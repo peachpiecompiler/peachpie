@@ -791,7 +791,7 @@ namespace Pchp.CodeAnalysis.Emit
             if (symbol.DeclaredAccessibility != Accessibility.Public)
             {
                 if (PhpFieldSymbolExtension.IsInStaticsHolder(symbol as FieldSymbol) || // field is generated within `_statics` holder class and must be accessed from outside // note: maybe internal?
-                    (symbol is MethodSymbol m && m.ContainingType.IsTraitType() && (m is SourceMethodSymbol || m is SynthesizedTraitMethodSymbol)))  // method is in trait and must be friend with any class (hence public)
+                    ((symbol.ContainingSymbol is SourceTraitTypeSymbol) && (symbol is SourceMethodSymbol || symbol is SourceFieldSymbol || symbol is SynthesizedTraitMethodSymbol || symbol is SynthesizedTraitFieldSymbol)))  // member is in trait => hence must be friend with any class (public)
                 {
                     return Cci.TypeMemberVisibility.Public;
                 }
