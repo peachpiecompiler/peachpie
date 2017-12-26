@@ -1522,13 +1522,19 @@ namespace Pchp.CodeAnalysis.Semantics
             => visitor.DefaultVisit(this, argument);
     }
 
+    /// <summary>
+    /// Represents a return from `yield from` expression.
+    /// That is the value returned from eventual `Generator` being yielded from.
+    /// </summary>
     public partial class BoundYieldFromEx : BoundExpression
     {
         public override OperationKind Kind => OperationKind.FieldReferenceExpression;
 
+        public BoundExpression Operand { get; private set; }
+
         public BoundYieldFromEx(BoundExpression expression)
         {
-            throw new NotImplementedException();
+            Operand = expression;
         }
 
         public override void Accept(PhpOperationVisitor visitor)

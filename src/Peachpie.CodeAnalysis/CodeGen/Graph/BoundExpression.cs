@@ -4128,8 +4128,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.CoreTypes.Void;
             }
 
-            bool isnull;
-            type = cg.EmitAsObject(type, out isnull);
+            type = cg.EmitAsObject(type, out bool isnull);
             Debug.Assert(type.IsReferenceType);
 
             //
@@ -4412,7 +4411,61 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(this.Access);
+                throw ExceptionUtilities.UnexpectedValue(this.Access);
+            }
+        }
+    }
+
+    partial class BoundYieldFromEx
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            if (Access.IsRead)
+            {
+                var t = cg.EmitAsObject(cg.Emit(Operand), out bool isnull);
+                Debug.Assert(t.IsReferenceType);
+
+                if (isnull || (
+                    !cg.CoreTypes.Generator.Symbol.IsOfType(t) &&
+                    !t.IsOfType(cg.CoreTypes.Generator)))
+                {
+                    cg.EmitPop(t);
+                    cg.Emit_PhpValue_Null();
+                }
+                else
+                {
+                    var il = cg.Builder;
+                    var lbl_End = new NamedLabel("Generator_Null");
+
+                    if (t != cg.CoreTypes.Generator)
+                    {
+                        // Template: (Operand as Generator)?.getReturn() : PhpValue
+                        cg.Builder.EmitOpCode(ILOpCode.Isinst);
+                        cg.EmitSymbolToken(cg.CoreTypes.Generator, null);
+
+                        var lbl_notnull = new NamedLabel("Generator_NotNull");
+                        il.EmitOpCode(ILOpCode.Dup);
+                        il.EmitBranch(ILOpCode.Brtrue, lbl_notnull);
+
+                        il.EmitOpCode(ILOpCode.Pop);
+                        cg.Emit_PhpValue_Null();
+                        il.EmitBranch(ILOpCode.Br, lbl_End);
+
+                        il.MarkLabel(lbl_notnull);
+                    }
+
+                    // Generator.getReturn() : PhpValue
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreTypes.Generator.Method("getReturn"));
+
+                    il.MarkLabel(lbl_End);
+                }
+
+                //
+                return cg.CoreTypes.PhpValue;
+            }
+            else
+            {
+                return cg.CoreTypes.Void;
             }
         }
     }

@@ -229,7 +229,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual void VisitYieldFromEx(BoundYieldFromEx x)
         {
-
+            Accept(x.Operand);
         }
 
         #endregion

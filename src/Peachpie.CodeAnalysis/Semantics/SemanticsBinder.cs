@@ -1297,14 +1297,8 @@ namespace Pchp.CodeAnalysis.Semantics
             // end:
             CurrentPreBoundBlock = end;
 
-            // GET_RETURN( tmp )
-            if (access.IsRead)
-            {
-                //return new BoundYieldFromEx(tmpVar)
-                _diagnostics.Add(_locals.Routine, expr, Errors.ErrorCode.ERR_NotYetImplemented, $"`yield from` as an expression");
-            }
-
-            return new BoundLiteral(null);
+            // GET_RETURN( tmp as Generator )
+            return new BoundYieldFromEx(tmpVar);
         }
 
         #endregion
