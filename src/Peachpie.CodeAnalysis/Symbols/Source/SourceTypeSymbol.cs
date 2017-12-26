@@ -322,11 +322,6 @@ namespace Pchp.CodeAnalysis.Symbols
                     isfinal: false);
             }
 
-            //FieldSymbol CreateTraitConstantImplementation(FieldSymbol field)
-            //{
-
-            //}
-
             public TraitUse(SourceTypeSymbol type, NamedTypeSymbol symbol, TraitsUse.TraitAdaptation[] adaptations)
             {
                 Debug.Assert(symbol != null);
@@ -881,7 +876,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         CreateLocation(f.NameSpan),
                         flist.Modifiers.GetAccessibility(), f.PHPDoc ?? flist.PHPDoc,
                         fkind,
-                        (f.Initializer != null) ? binder.BindWholeExpression(f.Initializer, BoundAccess.Read).GetOnlyBoundElement() : null);
+                        (f.Initializer != null) ? binder.BindWholeExpression(f.Initializer, BoundAccess.Read).SingleBoundElement() : null);
                 }
             }
 
@@ -894,7 +889,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         CreateLocation(c.Name.Span),
                         Accessibility.Public, c.PHPDoc ?? clist.PHPDoc,
                         PhpPropertyKind.ClassConstant,
-                        binder.BindWholeExpression(c.Initializer, BoundAccess.Read).GetOnlyBoundElement());
+                        binder.BindWholeExpression(c.Initializer, BoundAccess.Read).SingleBoundElement());
                 }
             }
         }
