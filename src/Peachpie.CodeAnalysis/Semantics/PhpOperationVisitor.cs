@@ -227,6 +227,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
         }
 
+        public virtual void VisitYieldFromEx(BoundYieldFromEx x)
+        {
+
+        }
+
         #endregion
 
         #region Statements

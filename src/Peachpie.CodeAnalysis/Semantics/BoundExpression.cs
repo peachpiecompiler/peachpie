@@ -1083,7 +1083,6 @@ namespace Pchp.CodeAnalysis.Semantics
     /// </remarks>
     public partial class BoundTemporalVariableRef : BoundVariableRef
     {
-
         // TODO: Maybe change to visitor.VisitSyntheticLocalReferenceExpression
         public override void Accept(OperationVisitor visitor)
             => base.Accept(visitor);
@@ -1504,13 +1503,15 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
-    #region BoundYieldEx
+    #region BoundYieldEx, BoundYieldFromEx
+
     /// <summary>
     /// Represents a reference to an item sent to the generator.
     /// </summary>
     public partial class BoundYieldEx : BoundExpression
     {
         public override OperationKind Kind => OperationKind.FieldReferenceExpression;
+
         public override void Accept(PhpOperationVisitor visitor)
             => visitor.VisitYieldEx(this);
 
@@ -1520,5 +1521,25 @@ namespace Pchp.CodeAnalysis.Semantics
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.DefaultVisit(this, argument);
     }
+
+    public partial class BoundYieldFromEx : BoundExpression
+    {
+        public override OperationKind Kind => OperationKind.FieldReferenceExpression;
+
+        public BoundYieldFromEx(BoundExpression expression)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void Accept(PhpOperationVisitor visitor)
+            => visitor.VisitYieldFromEx(this);
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.DefaultVisit(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.DefaultVisit(this, argument);
+    }
+
     #endregion
 }

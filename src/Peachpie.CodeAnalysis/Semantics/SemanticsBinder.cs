@@ -44,11 +44,15 @@ namespace Pchp.CodeAnalysis.Semantics
         public static BoundItemsBag<T> Empty => new BoundItemsBag<T>(null);
 
         /// <summary>
-        /// Returns bound elemenent and asserts that there are no <c>PreBoundStatements</c>.
+        /// Returns bound element and asserts that there are no <c>PreBoundStatements</c>.
         /// </summary>
-        public T GetOnlyBoundElement()
+        public T SingleBoundElement()
         {
-            Debug.Assert(IsOnlyBoundElement);
+            if (!IsOnlyBoundElement)
+            {
+                throw new InvalidOperationException();
+            }
+
             return BoundElement;
         }
 
@@ -105,11 +109,6 @@ namespace Pchp.CodeAnalysis.Semantics
             routine.Syntax.Properties.TryGetProperty(out ImmutableArray<AST.IYieldLikeEx> yields);  // routine binder sets this property
 
             var isGeneratorMethod = !yields.IsDefaultOrEmpty;
-            if (isGeneratorMethod)
-            {
-                // TODO: move this to SourceRoutineSymbol ctor?
-                routine.Flags |= FlowAnalysis.RoutineFlags.IsGenerator;
-            }
 
             //
             return (isGeneratorMethod)
@@ -994,14 +993,30 @@ namespace Pchp.CodeAnalysis.Semantics
         #endregion
 
         #region PreBoundBlocks
+
         private BoundBlock _preBoundBlockFirst;
         private BoundBlock _preBoundBlockLast;
 
+        BoundBlock NewBlock() => _newBlockFunc();
         Func<BoundBlock> _newBlockFunc;
+
+        BoundYieldStatement NewYieldStatement(BoundExpression valueExpression, BoundExpression keyExpression, AST.LangElement syntax = null)
+        {
+            var yieldStmt = new BoundYieldStatement(_yields.Count + 1, valueExpression, keyExpression).WithSyntax(syntax);
+
+            _yields.Add(yieldStmt);
+
+            return yieldStmt;
+        }
+
+        string GetTempVariableName()
+        {
+            return "<sm>" + _rewriterVariableIndex++;
+        }
 
         void InitPreBoundBlocks()
         {
-            _preBoundBlockFirst = _preBoundBlockFirst ?? _newBlockFunc();
+            _preBoundBlockFirst = _preBoundBlockFirst ?? NewBlock();
             _preBoundBlockLast = _preBoundBlockLast ?? _preBoundBlockFirst;
         }
 
@@ -1019,6 +1034,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 return _preBoundBlockFirst != null;
             }
         }
+
         #endregion
 
         #region Construction
@@ -1026,6 +1042,11 @@ namespace Pchp.CodeAnalysis.Semantics
         public GeneratorSemanticsBinder(ImmutableArray<AST.IYieldLikeEx> yields, LocalsTable locals, DiagnosticBag diagnostics)
             : base(locals, diagnostics)
         {
+            Debug.Assert(Routine != null);
+
+            // TODO: move this to SourceRoutineSymbol ctor?
+            Routine.Flags |= RoutineFlags.IsGenerator;
+
             // save all parents of all yieldLikeEx in current routine -> will need to realocate all expressions on path and in its children
             //  - the ones to the left from yieldLikeEx<>root path need to get moved in statements before yieldLikeEx
             //  - the ones on the path could be left alone but if we prepend the ones on the right we must also move the ones on the path as they should get executed before the right ones
@@ -1056,6 +1077,7 @@ namespace Pchp.CodeAnalysis.Semantics
         #endregion
 
         #region GeneralOverrides
+
         public override BoundItemsBag<BoundExpression> BindWholeExpression(AST.Expression expr, BoundAccess access)
         {
             Debug.Assert(!AnyPreBoundItems);
@@ -1228,11 +1250,7 @@ namespace Pchp.CodeAnalysis.Semantics
             var boundKeyExpr = (expr.KeyExpr != null) ? BindExpression(expr.KeyExpr) : null;
 
             // bind yield statement (represents return & continuation)
-            var boundYieldStatement = new BoundYieldStatement(_yields.Count + 1, boundValueExpr, boundKeyExpr)
-                .WithSyntax(expr); // need to explicitly set PhpSyntax because this element doesn't go trough BindExpression (BoundYieldEx gets returned instead)
-
-            _yields.Add(boundYieldStatement);
-            CurrentPreBoundBlock.Add(boundYieldStatement);
+            CurrentPreBoundBlock.Add(NewYieldStatement(boundValueExpr, boundKeyExpr, syntax: expr));
 
             // return BoundYieldEx representing a reference to a value sent to the generator
             return new BoundYieldEx();
@@ -1240,11 +1258,52 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected override BoundExpression BindYieldFromEx(AST.YieldFromEx expr, BoundAccess access)
         {
-            // Template: foreach (<expr> => <key> as <value>) yield <key> => <value>;
-            // return <expr>.getReturn()
+            var aliasedValues = _locals.Routine.SyntaxSignature.AliasReturn;
+            var tmpVar = MakeTmpCopyAndPrependAssigment(BindExpression(expr.ValueExpr), BoundAccess.Read);
 
-            //
-            _diagnostics.Add(_locals.Routine, expr, Errors.ErrorCode.ERR_NotYetImplemented, $"Expression of type '{expr.GetType().Name}'");
+            /* Template:
+             * foreach (<tmp> => <key> as <value>) {
+             *     yield <key> => <value>;
+             * }
+             * return <tmp>.getReturn()
+             */
+
+            string valueVarName = GetTempVariableName();
+            string keyVarName = valueVarName + "k";
+
+            var move = NewBlock();
+            var body = NewBlock();
+            var end = NewBlock();
+
+            var enumereeEdge = new ForeachEnumereeEdge(CurrentPreBoundBlock, move, tmpVar, aliasedValues);
+
+            // MoveNext()
+            var moveEdge = new ForeachMoveNextEdge(
+                move, body, end, enumereeEdge,
+                keyVar: new BoundTemporalVariableRef(keyVarName).WithAccess(BoundAccess.Write),
+                valueVar: new BoundTemporalVariableRef(valueVarName).WithAccess(aliasedValues ? BoundAccess.Write.WithWriteRef(0) : BoundAccess.Write),
+                moveSpan: default(Microsoft.CodeAnalysis.Text.TextSpan));
+
+            // body:
+            // Template: yield key => value
+            body.Add(
+                NewYieldStatement(
+                    valueExpression: new BoundTemporalVariableRef(valueVarName).WithAccess(aliasedValues ? BoundAccess.ReadRef : BoundAccess.Read),
+                    keyExpression: new BoundTemporalVariableRef(keyVarName).WithAccess(BoundAccess.Read)));
+
+            // goto move
+            new SimpleEdge(body, move);
+
+            // end:
+            CurrentPreBoundBlock = end;
+
+            // GET_RETURN( tmp )
+            if (access.IsRead)
+            {
+                //return new BoundYieldFromEx(tmpVar)
+                _diagnostics.Add(_locals.Routine, expr, Errors.ErrorCode.ERR_NotYetImplemented, $"`yield from` as an expression");
+            }
+
             return new BoundLiteral(null);
         }
 
@@ -1272,8 +1331,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // no need to do anything if the expression is constant because neither multiple evaluation nor different order of eval is a problem
             if (boundExpr.IsConstant()) { return boundExpr; }
 
-            var tmpVarName = $"<yieldRewriter>{_rewriterVariableIndex++}";
-            var assignVarTouple = CreateAndAssignSynthesizedVariable(boundExpr, access, tmpVarName);
+            var assignVarTouple = CreateAndAssignSynthesizedVariable(boundExpr, access, GetTempVariableName());
 
             CurrentPreBoundBlock.Add(new BoundExpressionStatement(assignVarTouple.Assignment)); // assigment
             return assignVarTouple.BoundExpr; // temp variable ref
@@ -1285,8 +1343,8 @@ namespace Pchp.CodeAnalysis.Semantics
             var refAccess = (access.IsReadRef || access.IsWrite);
 
             // bind assigment target variable with appropriate access
-            var targetVariable = new BoundTemporalVariableRef(name);
-            targetVariable.Access = (refAccess) ? targetVariable.Access.WithWriteRef(0) : targetVariable.Access.WithWrite(0);
+            var targetVariable = new BoundTemporalVariableRef(name)
+                .WithAccess(refAccess ? BoundAccess.Write.WithWriteRef(0) : BoundAccess.Write);
 
             // set appropriate access of the original value expression
             var valueBeingMoved = (refAccess) ? expr.WithAccess(BoundAccess.ReadRef) : expr.WithAccess(BoundAccess.Read);
@@ -1318,14 +1376,12 @@ namespace Pchp.CodeAnalysis.Semantics
                 falseBlockEnd = null;
             }
 
-            object _; // discard
-
-            var endBlock = _newBlockFunc();
+            var endBlock = NewBlock();
             falseBlockStart = falseBlockStart ?? endBlock;
 
-            _ = new ConditionalEdge(sourceBlock, trueBlockStart, falseBlockStart, condExpr);
-            _ = new SimpleEdge(trueBlockEnd, endBlock);
-            if (falseBlockStart != endBlock) { _ = new SimpleEdge(falseBlockEnd, endBlock); }
+            new ConditionalEdge(sourceBlock, trueBlockStart, falseBlockStart, condExpr);
+            new SimpleEdge(trueBlockEnd, endBlock);
+            if (falseBlockStart != endBlock) { new SimpleEdge(falseBlockEnd, endBlock); }
 
             return endBlock;
         }
@@ -1347,6 +1403,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             return currExprBag;
         }
+
         #endregion
     }
 }

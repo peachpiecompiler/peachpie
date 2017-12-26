@@ -191,7 +191,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             if (longlive && !immediateReturn && this.TemporalLocalsPlace != null)
             {
-                return new TemporaryLocalDefinition(this, $"<temp>{_tempLocalCounter++}", type);
+                return new TemporaryLocalDefinition(this, $"<>{_tempLocalCounter++}", type);
             }
             else
             {
