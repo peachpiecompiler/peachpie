@@ -22,7 +22,7 @@ function test_hash($algo, $init, $hmac = true)
   print_r(hash_final($h));
 
   echo "\n$algo, HMAC, from copied state: ";
-  var_dump(hash_final($h2));
+  print_r(hash_final($h2));
 
   echo "\n$algo, at once, short data: ";
   print_r(hash($algo, 'some string to be hashed ... ' . $init * 123 . ' ...'));
