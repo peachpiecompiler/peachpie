@@ -84,6 +84,10 @@ namespace Pchp.Library.PerlRegex
         internal const int ECMABoundary = 41;       //                          \b
         internal const int NonECMABoundary = 42;    //                          \B
 
+        // Extensions for PCRE
+
+        internal const int ResetMatchStart = 43;    //                          \K
+
         // Modifiers for alternate modes
         internal const int Mask = 63;   // Mask to get unmodified ordinary operator
         internal const int Rtl = 64;    // bit to indicate that we're reverse scanning.
@@ -178,6 +182,7 @@ namespace Pchp.Library.PerlRegex
                 case Backjump:
                 case Forejump:
                 case Stop:
+                case ResetMatchStart:
                     return 1;
 
                 case One:
@@ -228,9 +233,8 @@ namespace Pchp.Library.PerlRegex
             "Nullmark", "Setmark", "Capturemark", "Getmark",
             "Setjump", "Backjump", "Forejump", "Testref", "Goto",
             "Prune", "Stop",
-#if ECMA
             "ECMABoundary", "NonECMABoundary",
-#endif
+            "ResetMatchStart",
         };
 
         internal static string OperatorDescription(int Opcode)

@@ -560,6 +560,10 @@ namespace Pchp.Library.PerlRegex
                     Emit(node._type);
                     break;
 
+                case RegexNode.ResetMatchStart:
+                    Emit(node._type);
+                    break;
+
                 default:
                     throw new ArgumentException(SR.Format(SR.UnexpectedOpcode, nodetype.ToString(CultureInfo.CurrentCulture)));
             }

@@ -359,6 +359,14 @@ namespace Pchp.Library.PerlRegex
             return runtext[j];
         }
 
+        private void SetMatchStart(int newpos)
+        {
+            // The first instruction adding a value to runstack is always the Capturemark corresponding
+            // to the overall match. Therefore, by changing the value at the bottom of the runstack,
+            // the successful resulting match starts from newpos instead of the original text position.
+            runstack[runstack.Length - 1] = newpos;
+        }
+
         protected override bool FindFirstChar()
         {
             int i;
@@ -1163,6 +1171,11 @@ namespace Pchp.Library.PerlRegex
                             Advance(2);
                             continue;
                         }
+
+                    case RegexCode.ResetMatchStart:
+                        SetMatchStart(Textpos());
+                        Advance();
+                        continue;
 
                     default:
                         throw new NotImplementedException(SR.UnimplementedState);

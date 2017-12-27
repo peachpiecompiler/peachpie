@@ -519,6 +519,7 @@ namespace Pchp.Library.PerlRegex
                 case RegexNode.Start:
                 case RegexNode.EndZ:
                 case RegexNode.End:
+                case RegexNode.ResetMatchStart:
                     PushFC(new RegexFC(true));
                     break;
 
