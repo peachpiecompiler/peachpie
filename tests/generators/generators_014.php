@@ -13,4 +13,4 @@ function gen() {
     yield 4 => 4;
     yield 6;
 }
-var_dump(iterator_to_array(gen()));
+print_r(iterator_to_array(gen()));
