@@ -3608,6 +3608,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // Template: array[index]
 
             bool safeToUseIntStringKey = false;
+            bool canBeNull = true;
 
             //
             // LOAD Array
@@ -3648,13 +3649,15 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                throw new NotImplementedException($"LOAD {tArray.Name}[]");    // TODO: emit array access (IPhpArray)
+                // object -> IPhpArray
+                tArray = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_Object);
+                canBeNull = false;
             }
 
             if (this.Access.IsRead && this.Access.IsQuiet)  // TODO: analyse if Array can be NULL
             {
                 // ?? PhpArray.Empty
-                if (cg.CoreTypes.PhpArray.Symbol.IsOfType(tArray))
+                if (cg.CoreTypes.PhpArray.Symbol.IsOfType(tArray) && canBeNull)
                 {
                     cg.EmitNullCoalescing((_cg) =>
                     {
