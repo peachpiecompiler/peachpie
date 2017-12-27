@@ -117,9 +117,12 @@ namespace Pchp.Library.PerlRegex
 
             runtextpos = textstart;
 
-            // If previous match was empty or failed, advance by one before matching
+            // If previous match was empty or failed, advance by one before matching.
+            // If the expression contains \K, we can't use this optimization, because the emptiness doesn't imply that the
+            // text was already analysed from the offset of textstart. Therefore, we must run it from there and later skip
+            // the match if it is the same as the previous one.
 
-            if (prevlen == 0)
+            if (prevlen == 0 && !regex._code._containsResetMatchStart)
             {
                 if (runtextpos == stoppos)
                     return Match.Empty;
@@ -157,9 +160,11 @@ namespace Pchp.Library.PerlRegex
 #endif
                     Go();
 
-                    if (runmatch._matchcount[0] > 0)
+                    if (runmatch._matchcount[0] > 0 && (prevlen != 0 || runtextpos > textstart))
                     {
-                        // We'll return a match even if it touches a previous empty match
+                        // We'll return a match even if it touches a previous empty match.
+                        // In that case it mustn't be the same as the previous one,
+                        // which can happen due to \K.
                         return TidyMatch(quick);
                     }
 
