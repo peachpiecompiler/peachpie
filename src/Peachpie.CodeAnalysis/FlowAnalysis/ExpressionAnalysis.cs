@@ -1678,10 +1678,24 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         #endregion
 
         #region VisitYield
+
         public override void VisitYieldStatement(BoundYieldStatement x)
         {
             base.VisitYieldStatement(x);
         }
+
+        public override void VisitYieldEx(BoundYieldEx x)
+        {
+            base.VisitYieldEx(x);
+            x.TypeRefMask = TypeRefMask.AnyType;
+        }
+
+        public override void VisitYieldFromEx(BoundYieldFromEx x)
+        {
+            base.VisitYieldFromEx(x);
+            x.TypeRefMask = TypeRefMask.AnyType;
+        }
+
         #endregion
 
         #region Visit

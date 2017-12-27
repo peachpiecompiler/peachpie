@@ -226,6 +226,6 @@ public class Generator : Iterator
     }
 
     #endregion
-    
+
 }
 

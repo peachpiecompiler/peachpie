@@ -815,7 +815,7 @@ namespace Pchp.Core
                                     typeof(ValueTupleEnumerator<,>).MakeGenericType(item_type.GetGenericArguments()),
                                     enumerable);
                             }
-                            
+
                             // KeyValuePair<A, B>
                             if (item_type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
                             {
@@ -1354,6 +1354,7 @@ namespace Pchp.Core
         public static PhpValue GetGeneratorSentItem(Generator g) => g._currSendItem;
 
         public static void SetGeneratorReturnedValue(Generator g, PhpValue value) => g._returnValue = value;
+
         #endregion
 
         #region Dynamic
