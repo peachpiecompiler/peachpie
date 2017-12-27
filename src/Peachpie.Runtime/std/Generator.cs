@@ -92,6 +92,7 @@ public class Generator : Iterator
     #endregion
 
     #region IteratorMethods
+
     /// <summary>
     /// Rewinds the iterator to the first element.
     /// </summary>
@@ -189,9 +190,11 @@ public class Generator : Iterator
     {
         throw new Exception("Unserialization of 'Generator' is not allowed");
     }
+
     #endregion
 
     #region HelperMethods
+
     /// <summary>
     /// Moves the state machine to next element.
     /// </summary>
@@ -206,7 +209,6 @@ public class Generator : Iterator
         if (_currKey.IsInteger()) { _nextNumericalKey = (_currKey.ToLong() + 1); }
 
         _runToFirstYield = true;
-
     }
 
     /// <summary>
@@ -226,6 +228,5 @@ public class Generator : Iterator
     }
 
     #endregion
-
 }
 

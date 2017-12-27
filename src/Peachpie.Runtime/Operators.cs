@@ -1329,12 +1329,6 @@ namespace Pchp.Core
             }
         }
 
-        public static void SetGeneratorCurrValue(Generator g, PhpValue value) => g._currValue = value;
-
-        public static void SetGeneratorCurrKey(Generator g, PhpValue value) => g._currKey = value;
-
-        public static void SetGeneratorReturnedUserKey(Generator g, bool value) => g._userKeyReturned = value;
-
         /// <summary>Set yielded value from generator where key is not specified.</summary>
         public static void SetGeneratorCurrent(Generator g, PhpValue value)
         {

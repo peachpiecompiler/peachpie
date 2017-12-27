@@ -1000,9 +1000,15 @@ namespace Pchp.CodeAnalysis.Semantics
         BoundBlock NewBlock() => _newBlockFunc();
         Func<BoundBlock> _newBlockFunc;
 
-        BoundYieldStatement NewYieldStatement(BoundExpression valueExpression, BoundExpression keyExpression, AST.LangElement syntax = null)
+        BoundYieldStatement NewYieldStatement(BoundExpression valueExpression, BoundExpression keyExpression,
+            AST.LangElement syntax = null,
+            bool isYieldFrom = false)
         {
-            var yieldStmt = new BoundYieldStatement(_yields.Count + 1, valueExpression, keyExpression).WithSyntax(syntax);
+            var yieldStmt = new BoundYieldStatement(_yields.Count + 1, valueExpression, keyExpression)
+            {
+                IsYieldFrom = isYieldFrom,
+            }
+            .WithSyntax(syntax);
 
             _yields.Add(yieldStmt);
 
@@ -1289,7 +1295,8 @@ namespace Pchp.CodeAnalysis.Semantics
             body.Add(
                 NewYieldStatement(
                     valueExpression: new BoundTemporalVariableRef(valueVarName).WithAccess(aliasedValues ? BoundAccess.ReadRef : BoundAccess.Read),
-                    keyExpression: new BoundTemporalVariableRef(keyVarName).WithAccess(BoundAccess.Read)));
+                    keyExpression: new BoundTemporalVariableRef(keyVarName).WithAccess(BoundAccess.Read),
+                    isYieldFrom: true));
 
             // goto move
             new SimpleEdge(body, move);

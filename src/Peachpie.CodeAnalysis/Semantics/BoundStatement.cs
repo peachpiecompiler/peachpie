@@ -348,6 +348,12 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         public int YieldIndex { get; }
 
+        /// <summary>
+        /// Gets value indicating the `yield` is a part of `yield from` semantics.
+        /// In result, keys yielded by this statement do not update Generator auto-incremented keys.
+        /// </summary>
+        public bool IsYieldFrom { get; set; }
+
         public BoundYieldStatement(int index, BoundExpression valueExpression, BoundExpression keyExpression)
         {
             Debug.Assert(index > 0);
