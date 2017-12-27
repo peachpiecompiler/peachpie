@@ -256,17 +256,16 @@ namespace Pchp.CodeAnalysis.CodeGen
                             EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Object.Getter)
                                 .Expect(SpecialType.System_Object);
 
-                            // DEBUG:
-                            //if (tmask.IsSingleType)
-                            //{
-                            //    var tref = this.TypeRefContext.GetTypes(tmask)[0];
-                            //    var clrtype = (TypeSymbol)this.DeclaringCompilation.GlobalSemantics.GetType(tref.QualifiedName);
-                            //    if (clrtype != null && !clrtype.IsErrorType())
-                            //    {
-                            //        this.EmitCastClass(clrtype);
-                            //        return clrtype;
-                            //    }
-                            //}
+                            if (tmask.IsSingleType)
+                            {
+                                var tref = this.TypeRefContext.GetTypes(tmask)[0];
+                                var clrtype = (NamedTypeSymbol)this.DeclaringCompilation.GlobalSemantics.GetType(tref.QualifiedName);
+                                if (clrtype.IsValidType() && !clrtype.IsObjectType())
+                                {
+                                    this.EmitCastClass(clrtype);
+                                    return clrtype;
+                                }
+                            }
 
                             return this.CoreTypes.Object;
                         }
@@ -1954,11 +1953,16 @@ namespace Pchp.CodeAnalysis.CodeGen
             return EmitCall(getter.IsMetadataVirtual() ? ILOpCode.Callvirt : ILOpCode.Call, getter);
         }
 
-        internal void EmitCastClass(TypeSymbol from, TypeSymbol to)
+        internal TypeSymbol EmitCastClass(TypeSymbol from, TypeSymbol to)
         {
             if (!from.IsEqualToOrDerivedFrom(to))
             {
                 EmitCastClass(to);
+                return to;
+            }
+            else
+            {
+                return from;
             }
         }
 
