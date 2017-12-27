@@ -460,6 +460,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 HandleGeneratorException_Generator = ct.Operators.Method("HandleGeneratorException", ct.Generator);
                 SetGeneratorCurrent_Generator_PhpValue = ct.Operators.Method("SetGeneratorCurrent", ct.Generator, ct.PhpValue);
                 SetGeneratorCurrent_Generator_PhpValue_PhpValue = ct.Operators.Method("SetGeneratorCurrent", ct.Generator, ct.PhpValue, ct.PhpValue);
+                SetGeneratorCurrentFrom_Generator_PhpValue_PhpValue = ct.Operators.Method("SetGeneratorCurrentFrom", ct.Generator, ct.PhpValue, ct.PhpValue);
                 GetGeneratorSentItem_Generator = ct.Operators.Method("GetGeneratorSentItem", ct.Generator);
                 SetGeneratorReturnedValue_Generator_PhpValue = ct.Operators.Method("SetGeneratorReturnedValue", ct.Generator, ct.PhpValue);
 
@@ -537,7 +538,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate,
                 GetGeneratorState_Generator, SetGeneratorState_Generator_int, HandleGeneratorException_Generator,
-                SetGeneratorCurrent_Generator_PhpValue, SetGeneratorCurrent_Generator_PhpValue_PhpValue,
+                SetGeneratorCurrent_Generator_PhpValue, SetGeneratorCurrent_Generator_PhpValue_PhpValue, SetGeneratorCurrentFrom_Generator_PhpValue_PhpValue,
                 GetGeneratorSentItem_Generator, SetGeneratorReturnedValue_Generator_PhpValue,
 
                 offsetGet_ArrayAccess_PhpValue,

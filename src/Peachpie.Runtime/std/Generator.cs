@@ -35,6 +35,7 @@ public class Generator : Iterator
     #endregion
 
     #region StateVariables
+
     /// <summary>
     /// Current state of the state machine implemented by <see cref="_stateMachineMethod"/>
     /// </summary>
@@ -46,26 +47,20 @@ public class Generator : Iterator
     /// </remarks>
     internal int _state = 0;
 
-    /// <summary>
-    /// Did last yield returned user-specified key.
-    /// </summary>
-    internal bool _userKeyReturned = false;
-
     internal PhpValue _currValue, _currKey, _currSendItem, _returnValue;
     internal Exception _currException;
-    #endregion
 
-    #region HelperLocalVariables
     /// <summary>
-    /// Automatic numerical key for next yield.
+    /// Max numerical key for next auto-incremented yield.
     /// </summary>
-    long _nextNumericalKey = 0;
+    internal long _maxNumericalKey = -1;
 
     /// <summary>
     /// Helper variables used for <see cref="rewind"/> and <see cref="checkIfRunToFirstYieldIfNotRun"/>
     /// </summary>
-    bool _runToFirstYield = false; //Might get replaced by _state logic
+    bool _runToFirstYield = false; // Might get replaced by _state logic
     bool _runAfterFirstYield = false;
+
     #endregion
 
     #region HelperLocalProperties
@@ -204,9 +199,6 @@ public class Generator : Iterator
         checkIfMovingFromFirstYeild();
 
         _stateMachineMethod.Invoke(_ctx, _this, _locals, _tmpLocals, gen: this);
-
-        if (!_userKeyReturned) { _currKey = PhpValue.Create(_nextNumericalKey); }
-        if (_currKey.IsInteger()) { _nextNumericalKey = (_currKey.ToLong() + 1); }
 
         _runToFirstYield = true;
     }

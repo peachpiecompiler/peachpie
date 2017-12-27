@@ -140,7 +140,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             //
             cg.EmitConvert(Thrown, cg.CoreTypes.Exception);
-            
+
             // throw <stack>;
             cg.Builder.EmitThrow(false);
         }
@@ -343,8 +343,13 @@ namespace Pchp.CodeAnalysis.Semantics
             else
             {
                 cg.EmitConvertToPhpValue(cg.Emit(YieldedKey), YieldedKey.TypeRefMask);
-                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorCurrent_Generator_PhpValue_PhpValue)
-                    .Expect(SpecialType.System_Void);
+
+                var setcurrent = this.IsYieldFrom
+                    ? cg.CoreMethods.Operators.SetGeneratorCurrentFrom_Generator_PhpValue_PhpValue  // does not update auto-incremented key
+                    : cg.CoreMethods.Operators.SetGeneratorCurrent_Generator_PhpValue_PhpValue;     // updates Generator max key
+
+
+                cg.EmitCall(ILOpCode.Call, setcurrent).Expect(SpecialType.System_Void);
             }
 
             //generator._state = yieldIndex

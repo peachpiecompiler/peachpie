@@ -1333,16 +1333,29 @@ namespace Pchp.Core
         public static void SetGeneratorCurrent(Generator g, PhpValue value)
         {
             g._currValue = value;
-            g._currKey = PhpValue.Void;
-            g._userKeyReturned = false;
+            g._currKey = (PhpValue)(++g._maxNumericalKey);
+        }
+
+        /// <summary>
+        /// Sets yielded value from generator with key.
+        /// This operator does not update auto-incremented Generator key.
+        /// </summary>
+        public static void SetGeneratorCurrentFrom(Generator g, PhpValue value, PhpValue key)
+        {
+            g._currValue = value;
+            g._currKey = key;
         }
 
         /// <summary>Set yielded value from generator with key.</summary>
         public static void SetGeneratorCurrent(Generator g, PhpValue value, PhpValue key)
         {
-            g._currValue = value;
-            g._currKey = key;
-            g._userKeyReturned = true;
+            SetGeneratorCurrentFrom(g, value, key);
+
+            // update the Generator auto-increment key
+            if (key.IsLong(out long ikey) && ikey > g._maxNumericalKey)
+            {
+                g._maxNumericalKey = ikey;
+            }
         }
 
         public static PhpValue GetGeneratorSentItem(Generator g) => g._currSendItem;
