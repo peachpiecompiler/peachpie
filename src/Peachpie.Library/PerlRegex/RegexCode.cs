@@ -152,6 +152,7 @@ namespace Pchp.Library.PerlRegex
                 case Backjump:
                 case Forejump:
                 case Goto:
+                case ResetMatchStart:
                     return true;
 
                 default:

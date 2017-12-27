@@ -359,6 +359,13 @@ namespace Pchp.Library.PerlRegex
             return runtext[j];
         }
 
+        private int MatchStart()
+        {
+            // The first instruction adding a value to runstack is always the Capturemark corresponding
+            // to the overall match.
+            return runstack[runstack.Length - 1];
+        }
+
         private void SetMatchStart(int newpos)
         {
             // The first instruction adding a value to runstack is always the Capturemark corresponding
@@ -1173,9 +1180,15 @@ namespace Pchp.Library.PerlRegex
                         }
 
                     case RegexCode.ResetMatchStart:
-                        SetMatchStart(Textpos());
+                        TrackPush(MatchStart());        // Enable backtracking, saving the current match start
+                        SetMatchStart(Textpos());       // Set the match start to the current position in text
                         Advance();
                         continue;
+
+                    case RegexCode.ResetMatchStart | RegexCode.Back:
+                        TrackPop();
+                        SetMatchStart(TrackPeek());     // Restore the previously saved value as the match start
+                        break;                          // Continue backtracking
 
                     default:
                         throw new NotImplementedException(SR.UnimplementedState);
