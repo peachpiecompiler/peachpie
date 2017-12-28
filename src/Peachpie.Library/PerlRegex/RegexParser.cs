@@ -1174,6 +1174,7 @@ namespace Pchp.Library.PerlRegex
                 case 'G':
                 case 'Z':
                 case 'z':
+                case 'K':
                     MoveRight();
                     return new RegexNode(TypeFromCode(ch), _options);
 
@@ -1222,10 +1223,6 @@ namespace Pchp.Library.PerlRegex
                         cc.AddLowercase(_culture);
 
                     return new RegexNode(RegexNode.Set, _options, cc.ToStringClass());
-
-                case 'K':   // \K: reset the match start
-                    Debug.Fail("\\K is not implemented!");
-                    return new RegexNode(RegexNode.Nothing, _options);
 
                 default:
                     return ScanBasicBackslash();
@@ -1836,6 +1833,8 @@ namespace Pchp.Library.PerlRegex
                     return RegexNode.EndZ;
                 case 'z':
                     return RegexNode.End;
+                case 'K':
+                    return RegexNode.ResetMatchStart;
                 default:
                     return RegexNode.Nothing;
             }

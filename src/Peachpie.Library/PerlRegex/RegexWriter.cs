@@ -35,6 +35,8 @@ namespace Pchp.Library.PerlRegex
         private const int BeforeChild = 64;
         private const int AfterChild = 128;
 
+        private bool _resetMatchStartFound;
+
         /// <summary>
         /// This is the only function that should be called from outside.
         /// It takes a RegexTree and creates a corresponding RegexCode.
@@ -60,6 +62,7 @@ namespace Pchp.Library.PerlRegex
             _emitted = new int[32];
             _stringhash = new Dictionary<string, int>();
             _stringtable = new List<string>();
+            _resetMatchStartFound = false;
         }
 
         /// <summary>
@@ -300,7 +303,7 @@ namespace Pchp.Library.PerlRegex
 
             anchors = RegexFCD.Anchors(tree);
 
-            return new RegexCode(_emitted, _stringtable, _trackcount, _caps, capsize, bmPrefix, fcPrefix, anchors, rtl);
+            return new RegexCode(_emitted, _stringtable, _trackcount, _caps, capsize, bmPrefix, fcPrefix, anchors, rtl, _resetMatchStartFound);
         }
 
         /// <summary>
@@ -557,6 +560,11 @@ namespace Pchp.Library.PerlRegex
                 case RegexNode.Start:
                 case RegexNode.EndZ:
                 case RegexNode.End:
+                    Emit(node._type);
+                    break;
+
+                case RegexNode.ResetMatchStart:
+                    _resetMatchStartFound = true;
                     Emit(node._type);
                     break;
 

@@ -84,6 +84,10 @@ namespace Pchp.Library.PerlRegex
         internal const int ECMABoundary = 41;       //                          \b
         internal const int NonECMABoundary = 42;    //                          \B
 
+        // Extensions for PCRE
+
+        internal const int ResetMatchStart = 43;    //                          \K
+
         // Modifiers for alternate modes
         internal const int Mask = 63;   // Mask to get unmodified ordinary operator
         internal const int Rtl = 64;    // bit to indicate that we're reverse scanning.
@@ -100,11 +104,12 @@ namespace Pchp.Library.PerlRegex
         internal readonly RegexBoyerMoore _bmPrefix;        // the fixed prefix string as a Boyer-Moore machine (may be null)
         internal readonly int _anchors;                     // the set of zero-length start anchors (RegexFCD.Bol, etc)
         internal readonly bool _rightToLeft;                // true if right to left
+        internal readonly bool _containsResetMatchStart;    // true if it contains \K
 
         internal RegexCode(int[] codes, List<string> stringlist, int trackcount,
                            Dictionary<int, int> caps, int capsize,
                            RegexBoyerMoore bmPrefix, RegexPrefix fcPrefix,
-                           int anchors, bool rightToLeft)
+                           int anchors, bool rightToLeft, bool containsResetMatchStart)
         {
             Debug.Assert(codes != null, "codes cannot be null.");
             Debug.Assert(stringlist != null, "stringlist cannot be null.");
@@ -118,6 +123,7 @@ namespace Pchp.Library.PerlRegex
             _fcPrefix = fcPrefix;
             _anchors = anchors;
             _rightToLeft = rightToLeft;
+            _containsResetMatchStart = containsResetMatchStart;
         }
 
         internal static bool OpcodeBacktracks(int Op)
@@ -146,6 +152,7 @@ namespace Pchp.Library.PerlRegex
                 case Backjump:
                 case Forejump:
                 case Goto:
+                case ResetMatchStart:
                     return true;
 
                 default:
@@ -178,6 +185,7 @@ namespace Pchp.Library.PerlRegex
                 case Backjump:
                 case Forejump:
                 case Stop:
+                case ResetMatchStart:
                     return 1;
 
                 case One:
@@ -228,9 +236,8 @@ namespace Pchp.Library.PerlRegex
             "Nullmark", "Setmark", "Capturemark", "Getmark",
             "Setjump", "Backjump", "Forejump", "Testref", "Goto",
             "Prune", "Stop",
-#if ECMA
             "ECMABoundary", "NonECMABoundary",
-#endif
+            "ResetMatchStart",
         };
 
         internal static string OperatorDescription(int Opcode)

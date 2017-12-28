@@ -233,6 +233,37 @@ namespace Pchp.Library
                 }
             }
 
+            protected static void QuadWordToBigEndian(byte[] block, UInt64[] x, int digits)
+            {
+                int i;
+                int j;
+
+                for (i = 0, j = 0; i < digits; i++, j += 8)
+                {
+                    block[j] = (byte)((x[i] >> 56) & 0xff);
+                    block[j + 1] = (byte)((x[i] >> 48) & 0xff);
+                    block[j + 2] = (byte)((x[i] >> 40) & 0xff);
+                    block[j + 3] = (byte)((x[i] >> 32) & 0xff);
+                    block[j + 4] = (byte)((x[i] >> 24) & 0xff);
+                    block[j + 5] = (byte)((x[i] >> 16) & 0xff);
+                    block[j + 6] = (byte)((x[i] >> 8) & 0xff);
+                    block[j + 7] = (byte)(x[i] & 0xff);
+                }
+            }
+
+            protected static void QuadWordFromBigEndian(UInt64[] x, int digits, byte[] block)
+            {
+                int i;
+                int j;
+
+                for (i = 0, j = 0; i < digits; i++, j += 8)
+                    x[i] = (
+                             (((UInt64)block[j]) << 56) | (((UInt64)block[j + 1]) << 48) |
+                             (((UInt64)block[j + 2]) << 40) | (((UInt64)block[j + 3]) << 32) |
+                             (((UInt64)block[j + 4]) << 24) | (((UInt64)block[j + 5]) << 16) |
+                             (((UInt64)block[j + 6]) << 8) | ((UInt64)block[j + 7])
+                            );
+            }
 
             #endregion
 
@@ -299,7 +330,7 @@ namespace Pchp.Library
                         //algs["sha224"] = () => new SHA224();
                         algs["sha256"] = () => new SHA256();
                         //algs["sha384"] = () => new SHA384();
-                        //algs["sha512"] = () => new SHA512();
+                        algs["sha512"] = () => new SHA512();
 
                         //algs["whirlpool"] = () => new WHIRLPOOL();
 
@@ -1150,8 +1181,11 @@ namespace Pchp.Library
             /// <summary>
             /// Base class for SHA based hashing algorithms.
             /// </summary>
-            /// <typeparam name="T">Actual type of SHA class. Used to instantiate new one in <see cref="Clone"/> method.</typeparam>
-            public abstract class SHA<T> : HashPhpResource where T : SHA<T>, new()
+            /// <typeparam name="TSelf">Actual type of SHA class. Used to instantiate new one in <see cref="Clone"/> method.</typeparam>
+            /// <typeparam name="TNum">Integer type to use for the temporary buffer and the current hash state.</typeparam>
+            public abstract class SHA<TSelf, TNum> : HashPhpResource
+                where TSelf : SHA<TSelf, TNum>, new()
+                where TNum : struct
             {
                 #region state
 
@@ -1166,11 +1200,11 @@ namespace Pchp.Library
                 /// <summary>
                 /// Temporary buffer used internally by <see cref="_HashData"/> method.
                 /// </summary>
-                protected readonly uint[]/*!*/_tmp;
+                protected readonly TNum[]/*!*/_tmp;
                 /// <summary>
                 /// Current hash state.
                 /// </summary>
-                protected readonly uint[]/*!*/_state;
+                protected readonly TNum[]/*!*/_state;
 
                 #endregion
 
@@ -1183,8 +1217,8 @@ namespace Pchp.Library
                     Debug.Assert(stateSize > 0);
 
                     this._buffer = new byte[bufferSize];
-                    this._tmp = new uint[tmpSize];
-                    this._state = new uint[stateSize];
+                    this._tmp = new TNum[tmpSize];
+                    this._state = new TNum[stateSize];
 
                     // initialize the state:
                     this.InitializeState();
@@ -1249,7 +1283,7 @@ namespace Pchp.Library
 
                 public override HashPhpResource Clone()
                 {
-                    var clone = new T() { _count = this._count };
+                    var clone = new TSelf() { _count = this._count };
                     this.CloneHashState(clone);
 
                     this._buffer.CopyTo(clone._buffer, 0);
@@ -1266,7 +1300,7 @@ namespace Pchp.Library
 
                 #endregion
             }
-            public sealed class SHA1 : SHA<SHA1>
+            public sealed class SHA1 : SHA<SHA1, uint>
             {
                 #region SHA1 hashing internals
 
@@ -1441,7 +1475,7 @@ namespace Pchp.Library
 
                 #endregion
             }
-            public sealed class SHA256 : SHA<SHA256>
+            public sealed class SHA256 : SHA<SHA256, uint>
             {
                 #region SHA256 hashing internals
 
@@ -1588,6 +1622,235 @@ namespace Pchp.Library
                     }
                 }
 
+
+                #endregion
+            }
+            public sealed class SHA512 : SHA<SHA512, ulong>
+            {
+                #region SHA512 hashing internals
+
+                public SHA512()
+                    : base(128, 80, 8)
+                {
+                }
+
+                protected override void InitializeState()
+                {
+                    this._count = 0L;
+
+                    // initialize the state:
+                    this._state[0] = 0x6a09e667f3bcc908;
+                    this._state[1] = 0xbb67ae8584caa73b;
+                    this._state[2] = 0x3c6ef372fe94f82b;
+                    this._state[3] = 0xa54ff53a5f1d36f1;
+                    this._state[4] = 0x510e527fade682d1;
+                    this._state[5] = 0x9b05688c2b3e6c1f;
+                    this._state[6] = 0x1f83d9abfb41bd6b;
+                    this._state[7] = 0x5be0cd19137e2179;
+                }
+
+                /// <summary>
+                /// Finalize the hash.
+                /// </summary>
+                /// <returns>Hashed bytes.</returns>
+                protected override byte[] _EndHash()
+                {
+                    byte[] pad;
+                    int padLen;
+                    ulong bitCount;
+                    byte[] hash = new byte[64]; // HashSizeValue = 512
+
+                    /* Compute padding: 80 00 00 ... 00 00 <bit count>
+                     */
+
+                    padLen = 128 - (int)(_count & 0x7f);
+                    if (padLen <= 16)
+                        padLen += 128;
+
+                    pad = new byte[padLen];
+                    pad[0] = 0x80;
+
+                    //  Convert count to bit count
+                    bitCount = (ulong)_count * 8;
+
+                    // If we ever have UInt128 for bitCount, then these need to be uncommented.
+                    // Note that C# only looks at the low 6 bits of the shift value for ulongs,
+                    // so >>0 and >>64 are equal!
+
+                    //pad[padLen-16] = (byte) ((bitCount >> 120) & 0xff);
+                    //pad[padLen-15] = (byte) ((bitCount >> 112) & 0xff);
+                    //pad[padLen-14] = (byte) ((bitCount >> 104) & 0xff);
+                    //pad[padLen-13] = (byte) ((bitCount >> 96) & 0xff);
+                    //pad[padLen-12] = (byte) ((bitCount >> 88) & 0xff);
+                    //pad[padLen-11] = (byte) ((bitCount >> 80) & 0xff);
+                    //pad[padLen-10] = (byte) ((bitCount >> 72) & 0xff);
+                    //pad[padLen-9] = (byte) ((bitCount >> 64) & 0xff);
+                    pad[padLen - 8] = (byte)((bitCount >> 56) & 0xff);
+                    pad[padLen - 7] = (byte)((bitCount >> 48) & 0xff);
+                    pad[padLen - 6] = (byte)((bitCount >> 40) & 0xff);
+                    pad[padLen - 5] = (byte)((bitCount >> 32) & 0xff);
+                    pad[padLen - 4] = (byte)((bitCount >> 24) & 0xff);
+                    pad[padLen - 3] = (byte)((bitCount >> 16) & 0xff);
+                    pad[padLen - 2] = (byte)((bitCount >> 8) & 0xff);
+                    pad[padLen - 1] = (byte)((bitCount >> 0) & 0xff);
+
+                    /* Digest padding */
+                    _HashData(pad, 0, pad.Length);
+
+                    /* Store digest */
+                    QuadWordToBigEndian(hash, _state, 8);
+
+                    //HashValue = hash;
+                    return hash;
+                }
+
+                protected override bool _HashData(byte[] partIn, int ibStart, int cbSize)
+                {
+                    unchecked
+                    {
+                        int byteCount = cbSize;
+                        int srcOffsetBytes = ibStart;
+                        int dstOffsetBytes = (int)(this._count & 0x7fL);
+                        this._count += byteCount;
+
+                        if ((dstOffsetBytes > 0) && ((dstOffsetBytes + byteCount) >= 0x80))
+                        {
+                            Buffer.BlockCopy(partIn, srcOffsetBytes, this._buffer, dstOffsetBytes, 0x80 - dstOffsetBytes);
+                            srcOffsetBytes += 0x80 - dstOffsetBytes;
+                            byteCount -= 0x80 - dstOffsetBytes;
+                            SHATransform(_tmp, _state, _buffer);
+                            dstOffsetBytes = 0;
+                        }
+                        while (byteCount >= 0x80)
+                        {
+                            Buffer.BlockCopy(partIn, srcOffsetBytes, this._buffer, 0, 0x80);
+                            srcOffsetBytes += 0x80;
+                            byteCount -= 0x80;
+                            SHATransform(_tmp, _state, _buffer);
+                        }
+                        if (byteCount > 0)
+                        {
+                            Buffer.BlockCopy(partIn, srcOffsetBytes, this._buffer, dstOffsetBytes, byteCount);
+                        }
+                    }
+
+                    return true;
+                }
+
+                #region SHA512 internals
+                private static UInt64 ROTR64(UInt64 x, int n) { return (((x) >> (n)) | ((x) << (64 - (n)))); }
+                private static UInt64 SHA512_Ch(UInt64 x, UInt64 y, UInt64 z) { return ((x & y) ^ ((x ^ 0xffffffffffffffff) & z)); }
+                private static UInt64 SHA512_Maj(UInt64 x, UInt64 y, UInt64 z) { return ((x & y) ^ (x & z) ^ (y & z)); }
+                private static UInt64 SHA512_Sigma_0(UInt64 x) { return (ROTR64(x, 28) ^ ROTR64(x, 34) ^ ROTR64(x, 39)); }
+                private static UInt64 SHA512_Sigma_1(UInt64 x) { return (ROTR64(x, 14) ^ ROTR64(x, 18) ^ ROTR64(x, 41)); }
+                private static UInt64 SHA512_sigma_0(UInt64 x) { return (ROTR64(x, 1) ^ ROTR64(x, 8) ^ (x >> 7)); }
+                private static UInt64 SHA512_sigma_1(UInt64 x) { return (ROTR64(x, 19) ^ ROTR64(x, 61) ^ (x >> 6)); }
+                private static void SHA512Expand(UInt64[] x)
+                {
+                    for (int i = 16; i < 80; i++)
+                    {
+                        x[i] = SHA512_sigma_1(x[i - 2]) + x[i - 7] + SHA512_sigma_0(x[i - 15]) + x[i - 16];
+                    }
+                }
+                private readonly static UInt64[] SHA512_K = {
+                    0x428a2f98d728ae22, 0x7137449123ef65cd, 0xb5c0fbcfec4d3b2f, 0xe9b5dba58189dbbc,
+                    0x3956c25bf348b538, 0x59f111f1b605d019, 0x923f82a4af194f9b, 0xab1c5ed5da6d8118,
+                    0xd807aa98a3030242, 0x12835b0145706fbe, 0x243185be4ee4b28c, 0x550c7dc3d5ffb4e2,
+                    0x72be5d74f27b896f, 0x80deb1fe3b1696b1, 0x9bdc06a725c71235, 0xc19bf174cf692694,
+                    0xe49b69c19ef14ad2, 0xefbe4786384f25e3, 0x0fc19dc68b8cd5b5, 0x240ca1cc77ac9c65,
+                    0x2de92c6f592b0275, 0x4a7484aa6ea6e483, 0x5cb0a9dcbd41fbd4, 0x76f988da831153b5,
+                    0x983e5152ee66dfab, 0xa831c66d2db43210, 0xb00327c898fb213f, 0xbf597fc7beef0ee4,
+                    0xc6e00bf33da88fc2, 0xd5a79147930aa725, 0x06ca6351e003826f, 0x142929670a0e6e70,
+                    0x27b70a8546d22ffc, 0x2e1b21385c26c926, 0x4d2c6dfc5ac42aed, 0x53380d139d95b3df,
+                    0x650a73548baf63de, 0x766a0abb3c77b2a8, 0x81c2c92e47edaee6, 0x92722c851482353b,
+                    0xa2bfe8a14cf10364, 0xa81a664bbc423001, 0xc24b8b70d0f89791, 0xc76c51a30654be30,
+                    0xd192e819d6ef5218, 0xd69906245565a910, 0xf40e35855771202a, 0x106aa07032bbd1b8,
+                    0x19a4c116b8d2d0c8, 0x1e376c085141ab53, 0x2748774cdf8eeb99, 0x34b0bcb5e19b48a8,
+                    0x391c0cb3c5c95a63, 0x4ed8aa4ae3418acb, 0x5b9cca4f7763e373, 0x682e6ff3d6b2b8a3,
+                    0x748f82ee5defb2fc, 0x78a5636f43172f60, 0x84c87814a1f0ab72, 0x8cc702081a6439ec,
+                    0x90befffa23631e28, 0xa4506cebde82bde9, 0xbef9a3f7b2c67915, 0xc67178f2e372532b,
+                    0xca273eceea26619c, 0xd186b8c721c0c207, 0xeada7dd6cde0eb1e, 0xf57d4f7fee6ed178,
+                    0x06f067aa72176fba, 0x0a637dc5a2c898a6, 0x113f9804bef90dae, 0x1b710b35131c471b,
+                    0x28db77f523047d84, 0x32caab7b40c72493, 0x3c9ebe0a15c9bebc, 0x431d67c49c100d4c,
+                    0x4cc5d4becb3e42b6, 0x597f299cfc657e2a, 0x5fcb6fab3ad6faec, 0x6c44198c4a475817,
+                };
+                #endregion
+
+                private static void SHATransform(ulong[] expandedBuffer, ulong[] state, byte[] block)
+                {
+                    UInt64 a, b, c, d, e, f, g, h;
+                    UInt64 aa, bb, cc, dd, ee, ff, hh, gg;
+                    UInt64 T1;
+
+                    a = state[0];
+                    b = state[1];
+                    c = state[2];
+                    d = state[3];
+                    e = state[4];
+                    f = state[5];
+                    g = state[6];
+                    h = state[7];
+
+                    // fill in the first 16 blocks of W.
+                    QuadWordFromBigEndian(expandedBuffer, 16, block);
+                    SHA512Expand(expandedBuffer);
+
+                    /* Apply the SHA512 compression function */
+                    // We are trying to be smart here and avoid as many copies as we can
+                    // The perf gain with this method over the straightforward modify and shift 
+                    // forward is >= 20%, so it's worth the pain
+                    for (int j = 0; j < 80;)
+                    {
+                        T1 = h + SHA512_Sigma_1(e) + SHA512_Ch(e, f, g) + SHA512_K[j] + expandedBuffer[j];
+                        ee = d + T1;
+                        aa = T1 + SHA512_Sigma_0(a) + SHA512_Maj(a, b, c);
+                        j++;
+
+                        T1 = g + SHA512_Sigma_1(ee) + SHA512_Ch(ee, e, f) + SHA512_K[j] + expandedBuffer[j];
+                        ff = c + T1;
+                        bb = T1 + SHA512_Sigma_0(aa) + SHA512_Maj(aa, a, b);
+                        j++;
+
+                        T1 = f + SHA512_Sigma_1(ff) + SHA512_Ch(ff, ee, e) + SHA512_K[j] + expandedBuffer[j];
+                        gg = b + T1;
+                        cc = T1 + SHA512_Sigma_0(bb) + SHA512_Maj(bb, aa, a);
+                        j++;
+
+                        T1 = e + SHA512_Sigma_1(gg) + SHA512_Ch(gg, ff, ee) + SHA512_K[j] + expandedBuffer[j];
+                        hh = a + T1;
+                        dd = T1 + SHA512_Sigma_0(cc) + SHA512_Maj(cc, bb, aa);
+                        j++;
+
+                        T1 = ee + SHA512_Sigma_1(hh) + SHA512_Ch(hh, gg, ff) + SHA512_K[j] + expandedBuffer[j];
+                        h = aa + T1;
+                        d = T1 + SHA512_Sigma_0(dd) + SHA512_Maj(dd, cc, bb);
+                        j++;
+
+                        T1 = ff + SHA512_Sigma_1(h) + SHA512_Ch(h, hh, gg) + SHA512_K[j] + expandedBuffer[j];
+                        g = bb + T1;
+                        c = T1 + SHA512_Sigma_0(d) + SHA512_Maj(d, dd, cc);
+                        j++;
+
+                        T1 = gg + SHA512_Sigma_1(g) + SHA512_Ch(g, h, hh) + SHA512_K[j] + expandedBuffer[j];
+                        f = cc + T1;
+                        b = T1 + SHA512_Sigma_0(c) + SHA512_Maj(c, d, dd);
+                        j++;
+
+                        T1 = hh + SHA512_Sigma_1(f) + SHA512_Ch(f, g, h) + SHA512_K[j] + expandedBuffer[j];
+                        e = dd + T1;
+                        a = T1 + SHA512_Sigma_0(b) + SHA512_Maj(b, c, d);
+                        j++;
+                    }
+
+                    state[0] += a;
+                    state[1] += b;
+                    state[2] += c;
+                    state[3] += d;
+                    state[4] += e;
+                    state[5] += f;
+                    state[6] += g;
+                    state[7] += h;
+                }
 
                 #endregion
             }

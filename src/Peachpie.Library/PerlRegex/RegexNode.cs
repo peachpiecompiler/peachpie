@@ -79,6 +79,8 @@ namespace Pchp.Library.PerlRegex
         internal const int EndZ = RegexCode.EndZ;                       //          \Z
         internal const int End = RegexCode.End;                         //          \z
 
+        internal const int ResetMatchStart = RegexCode.ResetMatchStart; //          \K
+
         // Interior nodes do not correspond to primitive operations, but
         // control structures compositing other operations
 
@@ -608,7 +610,9 @@ namespace Pchp.Library.PerlRegex
             "Alternate", "Concatenate",
             "Loop", "Lazyloop",
             "Capture", "Group", "Require", "Prevent", "Greedy",
-            "Testref", "Testgroup"};
+            "Testref", "Testgroup",
+            null, null, null, null, null, null, null, null,
+            "ResetMatchStart"};
 
         internal string Description()
         {

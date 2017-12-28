@@ -314,10 +314,7 @@ namespace Pchp.Library
                 evaluator = (match) =>
                 {
                     var matches_arr = new PhpArray(0);
-                    foreach (PerlRegex.Group g in match.Groups)
-                    {
-                        matches_arr.Add((PhpValue)g.Value);
-                    }
+                    GroupsToPhpArray(match.PcreGroups, false, matches_arr);
 
                     return callback
                         .Invoke(ctx, (PhpValue)matches_arr)
@@ -413,21 +410,7 @@ namespace Pchp.Library
 
                 if (!matchAll)
                 {
-                    var groups = m.PcreGroups;
-                    for (int i = 0; i < groups.Count; i++)
-                    {
-                        var g = groups[i];
-                        var item = NewArrayItem(g.Value, g.Index, (flags & PREG_OFFSET_CAPTURE) != 0);
-
-                        // All groups should be named.
-                        if (g.IsNamedGroup)
-                        {
-                            matches[g.Name] = item.DeepCopy();
-                        }
-
-                        matches[i] = item;
-                    }
-
+                    GroupsToPhpArray(m.PcreGroups, (flags & PREG_OFFSET_CAPTURE) != 0, matches);
                     return 1;
                 }
 
@@ -756,6 +739,23 @@ namespace Pchp.Library
             arr.AddValue((PhpValue)item);
             arr.AddValue((PhpValue)index);
             return (PhpValue)arr;
+        }
+
+        static void GroupsToPhpArray(PcreGroupCollection groups, bool offsetCapture, PhpArray result)
+        {
+            for (int i = 0; i < groups.Count; i++)
+            {
+                var g = groups[i];
+                var item = NewArrayItem(g.Value, g.Index, offsetCapture);
+
+                // All groups should be named.
+                if (g.IsNamedGroup)
+                {
+                    result[g.Name] = item.DeepCopy();
+                }
+
+                result[i] = item;
+            }
         }
     }
 }
