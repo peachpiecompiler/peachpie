@@ -198,7 +198,7 @@ namespace Pchp.Library
                     name.Length > 2 &&
                     int.TryParse(name.Substring(2), out int codepage))
                 {
-                    return Encoding.GetEncoding(codepage);                    
+                    return Encoding.GetEncoding(codepage);
                 }
 
                 //
@@ -548,9 +548,31 @@ namespace Pchp.Library
         /// <summary>
         /// Check if the string is valid for the specified encoding
         /// </summary>
-        public static bool mb_check_encoding(PhpString var = null, string encoding = null/*mb_internal_encoding()*/)
+        public static bool mb_check_encoding(Context ctx, PhpString var = null, string encoding = null/*mb_internal_encoding()*/)
         {
-            PhpException.FunctionNotSupported("mb_check_encoding");
+            if (var == null)
+            {
+                // NS: check all the input from the beginning of the request
+                throw new NotSupportedException();
+            }
+
+            if (var.ContainsBinaryData)
+            {
+                var enc = GetEncoding(encoding) ?? ctx.StringEncoding;
+                
+                // create encoding with exception fallbacks:
+                enc = Encoding.GetEncoding(enc.CodePage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
+
+                try
+                {
+                    var.ToString(enc);
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+
             return true;
         }
 
