@@ -511,11 +511,6 @@ namespace Pchp.Library
 
         #region mb_convert_encoding 
 
-        public static string mb_convert_encoding(Context ctx, PhpString str, string to_encoding)
-        {
-            return mb_convert_encoding(ctx, str, to_encoding, PhpValue.Void /*mb_internal_encoding*/);
-        }
-
         /// <summary>
         /// Converts the character encoding of <paramref name="str"/> to <paramref name="to_encoding"/>.
         /// </summary>
@@ -527,18 +522,102 @@ namespace Pchp.Library
         /// It is either an array, or a comma separated enumerated list. If from_encoding is not specified, the internal encoding will be used.
         /// </param>
         /// <returns>Converted string.</returns>
-        public static string mb_convert_encoding(Context ctx, PhpString str, string to_encoding, PhpValue from_encoding)
+        public static PhpString mb_convert_encoding(Context ctx, PhpString str, string to_encoding, PhpValue from_encoding = default(PhpValue))
         {
-            PhpException.FunctionNotSupported("mb_convert_encoding");
+            string decoded;
 
-            if (from_encoding.IsNull)
+            if (str.ContainsBinaryData)
             {
-                // from_encoding = mb_internal_encoding;
+                // source encoding
+                Encoding from_enc = null;
+                IEnumerable<Encoding> from_encs = null;
+
+                if (Operators.IsSet(from_encoding))
+                {
+                    PhpArray from_arr;
+                    var from_str = from_encoding.AsString();
+                    if (from_str != null)
+                    {
+                        // TODO: "auto"
+
+                        if (from_str.IndexOf(',') >= 0)
+                        {
+                            // comma separated list (string)
+                            from_encs = from_str.Split(',').Select(name => name.Trim()).Select(GetEncoding);
+                        }
+                        else
+                        {
+                            // string
+                            from_enc = GetEncoding(from_str);
+                        }
+                    }
+                    else if ((from_arr = from_encoding.AsArray()) != null)
+                    {
+                        // array
+                        from_encs = from_arr.Values.Select(val => val.ToString().Trim()).Select(GetEncoding);
+                    }
+                    else
+                    {
+                        throw new ArgumentException(nameof(from_encoding));
+                    }
+                }
+                else
+                {
+                    // from_encoding is default or NULL:
+                    from_enc = GetConfig(ctx).InternalEncoding ?? ctx.StringEncoding;
+                }
+
+                if (from_enc != null)
+                {
+                    decoded = str.ToString(from_enc);
+                }
+                else if (from_encs != null)
+                {
+                    decoded = null;
+
+                    // autodetect encoding
+                    foreach (var enc in from_encs)
+                    {
+                        if (enc != null)
+                        {
+                            try
+                            {
+                                decoded = str.ToString(Encoding.GetEncoding(enc.CodePage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback));
+                                break;
+                            }
+                            catch
+                            {
+                                // continue;
+                            }
+                        }
+                    }
+
+                    if (decoded == null)
+                    {
+                        throw new ArgumentException();
+                    }
+                }
+                else
+                {
+                    throw new InvalidOperationException();
+                }
+            }
+            else
+            {
+                // already in UTF16
+                decoded = str.ToString();
             }
 
-            var target_enc = GetEncoding(to_encoding) ?? ctx.StringEncoding;
-            var bytes = ToBytes(ctx, str/*, from_encoding*/);   // TODO: try all encodings in {from_encoding}
-            return target_enc.GetString(bytes);
+            // target encoding:
+            var target_enc = GetEncoding(to_encoding);
+            if (target_enc == null)
+            {
+                return new PhpString(decoded);
+            }
+            else
+            {
+                return new PhpString(target_enc.GetBytes(decoded));
+            }
         }
 
         #endregion
@@ -559,7 +638,7 @@ namespace Pchp.Library
             if (var.ContainsBinaryData)
             {
                 var enc = GetEncoding(encoding) ?? ctx.StringEncoding;
-                
+
                 // create encoding with exception fallbacks:
                 enc = Encoding.GetEncoding(enc.CodePage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
 
