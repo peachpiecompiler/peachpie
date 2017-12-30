@@ -3007,13 +3007,16 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(target_place.TypeOpt == null || target_place.TypeOpt.SpecialType != SpecialType.System_Void);
 
             // T tmp; // in case access is Read
-            TypeSymbol t_value;
             LocalDefinition tmp = null;
 
             // <target> = <value>
             target_place.EmitStorePrepare(cg);
 
-            if (target_place.TypeOpt != null && !Value.Access.IsReadRef && Access.IsNone)
+            TypeSymbol t_value = target_place.TypeOpt;
+            if (t_value != null &&
+                !t_value.Is_PhpAlias() &&
+                !Value.Access.IsReadRef &&
+                Access.IsNone)
             {
                 // we can convert more efficiently here
                 t_value = target_place.TypeOpt;
