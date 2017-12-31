@@ -1371,6 +1371,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(field);
 
+            if (field is SourceFieldSymbol srcf)
+            {
+                // field redeclares its parent member, use the original def
+                // TODO: do not call it OriginalDefinition ... make some RealDefinition property ?
+                field = srcf.OriginalDefinition;
+            }
+
             _instance = instance;
             _field = field;
             _boundref = boundref;
@@ -1387,7 +1394,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Debug.Assert(_field != null);
             cg.Builder.EmitOpCode(code);
-            cg.EmitSymbolToken(_field.OriginalDefinition, null);
+            cg.EmitSymbolToken(_field, null);
         }
 
         public bool HasAddress => true;
