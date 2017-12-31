@@ -2236,7 +2236,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return;
                 }
 
-                if (this.Routine != null && ReferenceEquals((d as SourceTypeSymbol)?.ContainingFile, this.Routine.ContainingFile) && !ntype.IsConditional)
+                if (d.OriginalDefinition is SourceTypeSymbol srct && ReferenceEquals(srct.ContainingFile, this.ContainingFile) && !srct.Syntax.IsConditional)
                 {
                     // declared in same file unconditionally,
                     // we don't have to check anything
