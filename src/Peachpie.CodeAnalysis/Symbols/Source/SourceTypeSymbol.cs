@@ -708,7 +708,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var ambiguity = (types[i] as ErrorTypeSymbol).CandidateSymbols.Cast<T>().ToList();
 
             // in case there is an ambiguity that is declared in current scope unconditionally, pick this one and ignore the others
-            var best = ambiguity.FirstOrDefault(x => ReferenceEquals((x as SourceTypeSymbol)?.ContainingFile, containingFile) && !(x as SourceTypeSymbol)._syntax.IsConditional);
+            var best = ambiguity.FirstOrDefault(x => (object)x is SourceTypeSymbol srct && ReferenceEquals(srct.ContainingFile, containingFile) && !srct.Syntax.IsConditional);
             if (best != null)
             {
                 ambiguity = new List<T>(1) { best };
@@ -760,7 +760,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 yield return new TypeRefSymbol()
                 {
                     TypeRef = syntax.BaseClass,
-                    Symbol = (baseTypeName == type.FullName) ? type : (NamedTypeSymbol)compilation.GlobalSemantics.GetType(baseTypeName),
+                    Symbol = (baseTypeName == type.FullName) ? type : (NamedTypeSymbol)compilation.GlobalSemantics.ResolveType(baseTypeName),
                 };
             }
             else if ((syntax.MemberAttributes & (PhpMemberAttributes.Static | PhpMemberAttributes.Interface)) != 0) // a static class or an interface
@@ -782,7 +782,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     yield return new TypeRefSymbol()
                     {
                         TypeRef = i,
-                        Symbol = (qname == type.FullName) ? type : (NamedTypeSymbol)compilation.GlobalSemantics.GetType(qname),
+                        Symbol = (qname == type.FullName) ? type : (NamedTypeSymbol)compilation.GlobalSemantics.ResolveType(qname),
                         Attributes = PhpMemberAttributes.Interface,
                     };
                 }
@@ -798,7 +798,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     yield return new TypeRefSymbol()
                     {
                         TypeRef = namedt,
-                        Symbol = (NamedTypeSymbol)compilation.GlobalSemantics.GetType(namedt.ClassName),
+                        Symbol = (NamedTypeSymbol)compilation.GlobalSemantics.ResolveType(namedt.ClassName),
                         Attributes = PhpMemberAttributes.Trait,
                         TraitAdaptations = m.TraitAdaptationBlock?.Adaptations,
                     };

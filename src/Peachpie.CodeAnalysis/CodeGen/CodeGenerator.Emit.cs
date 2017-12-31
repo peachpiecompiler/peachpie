@@ -259,7 +259,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                             if (tmask.IsSingleType)
                             {
                                 var tref = this.TypeRefContext.GetTypes(tmask)[0];
-                                var clrtype = (NamedTypeSymbol)this.DeclaringCompilation.GlobalSemantics.GetType(tref.QualifiedName);
+                                var clrtype = (NamedTypeSymbol)this.DeclaringCompilation.GlobalSemantics.ResolveType(tref.QualifiedName);
                                 if (clrtype.IsValidType() && !clrtype.IsObjectType())
                                 {
                                     this.EmitCastClass(clrtype);

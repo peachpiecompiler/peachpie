@@ -192,13 +192,13 @@ namespace Pchp.CodeAnalysis
                 }
                 else if (tref is AST.INamedTypeRef)
                 {
-                    var t = (NamedTypeSymbol)GlobalSemantics.GetType(((AST.INamedTypeRef)tref).ClassName);
+                    var t = (NamedTypeSymbol)GlobalSemantics.ResolveType(((AST.INamedTypeRef)tref).ClassName);
                     return t.IsErrorTypeOrNull()
                         ? CoreTypes.Object.Symbol   // TODO: merge candidates if any
                         : t;
                 }
                 else if (tref is AST.ReservedTypeRef) throw new ArgumentException(); // NOTE: should be translated by parser to AliasedTypeRef
-                else if (tref is AST.AnonymousTypeRef) return (NamedTypeSymbol)GlobalSemantics.GetType(((AST.AnonymousTypeRef)tref).TypeDeclaration.GetAnonymousTypeQualifiedName());
+                else if (tref is AST.AnonymousTypeRef) return (NamedTypeSymbol)GlobalSemantics.ResolveType(((AST.AnonymousTypeRef)tref).TypeDeclaration.GetAnonymousTypeQualifiedName());
                 else if (tref is AST.MultipleTypeRef)
                 {
                     TypeSymbol result = null;

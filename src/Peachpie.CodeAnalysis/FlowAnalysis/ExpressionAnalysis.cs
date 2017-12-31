@@ -24,9 +24,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     {
         #region Fields
 
-        readonly ISymbolProvider _model;
-
-        internal ISymbolProvider Model => _model;
+        /// <summary>
+        /// Gets model for symbols resolution.
+        /// </summary>
+        internal ISymbolProvider/*!*/Model => _model;
+        readonly ISymbolProvider/*!*/_model;
 
         /// <summary>
         /// Reference to corresponding source routine.
@@ -99,7 +101,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 throw ExceptionUtilities.UnexpectedValue(dtype.ClassName);
             }
 
-            return (TypeSymbol)_model.GetType(dtype.ClassName);
+            return (TypeSymbol)_model.ResolveType(dtype.ClassName);
         }
 
         /// <summary>
@@ -132,7 +134,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public ExpressionAnalysis(Worklist<BoundBlock> worklist, ISymbolProvider model)
             : base(worklist)
         {
-            Contract.ThrowIfNull(model);
+            Debug.Assert(model != null);
             _model = model;
         }
 
@@ -1246,7 +1248,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         var classtype = typeref.Where(t => t.IsObject).AsImmutable().SingleOrDefault();
                         if (classtype != null)
                         {
-                            resolvedtype = (NamedTypeSymbol)_model.GetType(classtype.QualifiedName);
+                            resolvedtype = (NamedTypeSymbol)_model.ResolveType(classtype.QualifiedName);
                         }
                     }
                 }
@@ -1329,7 +1331,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             else if (tref is AnonymousTypeRef anonymousref)
             {
                 return ((TypeSymbol)_model
-                    .GetType(anonymousref.TypeDeclaration.GetAnonymousTypeQualifiedName()))
+                    .ResolveType(anonymousref.TypeDeclaration.GetAnonymousTypeQualifiedName()))
                     .ExpectValid();
             }
             else if (tref is IndirectTypeRef)
@@ -1339,7 +1341,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // string:
                 if (expr.ConstantValue.HasValue && expr.ConstantValue.Value is string tname)
                 {
-                    return (TypeSymbol)_model.GetType(NameUtils.MakeQualifiedName(tname, true));
+                    return (TypeSymbol)_model.ResolveType(NameUtils.MakeQualifiedName(tname, true));
                 }
                 else if (objectTypeInfoSemantic)
                 {
@@ -1424,7 +1426,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var value = targetExpr.ConstantValue.Value as string;
                 if (value != null)
                 {
-                    var targetFile = _model.GetFile(value);
+                    var targetFile = _model.ResolveFile(value);
                     if (targetFile != null)
                     {
                         x.Target = targetFile.MainMethod;
@@ -1497,7 +1499,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     var typerefs = TypeCtx.GetTypes(TypeCtx.WithoutNull(x.Instance.TypeRefMask));   // ignore NULL, would cause runtime exception in read access, will be ensured to non-null in write access
                     if (typerefs.Count == 1 && typerefs[0].IsObject)
                     {
-                        resolvedtype = (NamedTypeSymbol)_model.GetType(typerefs[0].QualifiedName);
+                        resolvedtype = (NamedTypeSymbol)_model.ResolveType(typerefs[0].QualifiedName);
                     }
                 }
 

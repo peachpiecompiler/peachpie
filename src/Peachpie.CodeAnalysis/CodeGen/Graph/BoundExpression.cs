@@ -3014,12 +3014,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
             TypeSymbol t_value = target_place.TypeOpt;
             if (t_value != null &&
-                !t_value.Is_PhpAlias() &&
+                t_value != cg.CoreTypes.PhpValue &&
+                t_value != cg.CoreTypes.PhpAlias &&
                 !Value.Access.IsReadRef &&
                 Access.IsNone)
             {
                 // we can convert more efficiently here
-                t_value = target_place.TypeOpt;
                 cg.EmitConvert(Value, t_value);
             }
             else

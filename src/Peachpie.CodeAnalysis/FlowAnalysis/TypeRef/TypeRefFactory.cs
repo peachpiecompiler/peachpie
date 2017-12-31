@@ -153,7 +153,6 @@ namespace Pchp.CodeAnalysis
         {
             Contract.ThrowIfNull(containingType);
 
-            var typeDecl = containingType.Syntax;
             return new TypeRefContext(
                 containingType, // scope
                 thisType: containingType.IsTrait ? null : containingType);

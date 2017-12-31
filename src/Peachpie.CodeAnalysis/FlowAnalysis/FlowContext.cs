@@ -41,6 +41,28 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         readonly SourceRoutineSymbol _routine;
 
         /// <summary>
+        /// Gets reference to containing file symbol.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        internal SourceFileSymbol ContainingFile
+        {
+            get
+            {
+                if (Routine != null)
+                {
+                    return Routine.ContainingFile;
+                }
+
+                if (_typeCtx.SelfType != null)
+                {
+                    return ((SourceTypeSymbol)_typeCtx.SelfType).ContainingFile;
+                }
+
+                throw new InvalidOperationException();
+            }
+        }
+
+        /// <summary>
         /// Map of variables name and their index.
         /// </summary>
         readonly Dictionary<VariableName, int>/*!*/_varsIndex;
