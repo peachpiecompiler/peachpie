@@ -2250,6 +2250,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return;
                 }
 
+                if (ntype.Arity != 0)
+                {
+                    // workaround for traits - constructed traits do not match the declaratin in Context
+                    // TODO: ctx.ExpectTypeDeclared(GetPhpTypeInfo(RuntimeTypeHandle(T<>)))
+                    return;
+                }
+
                 // Template: ctx.ExpectTypeDeclared<d>
                 EmitLoadContext();
                 EmitCall(ILOpCode.Call, CoreMethods.Context.ExpectTypeDeclared_T.Symbol.Construct(d));
