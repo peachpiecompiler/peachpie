@@ -1083,7 +1083,6 @@ namespace Pchp.CodeAnalysis.Semantics
     /// </remarks>
     public partial class BoundTemporalVariableRef : BoundVariableRef
     {
-
         // TODO: Maybe change to visitor.VisitSyntheticLocalReferenceExpression
         public override void Accept(OperationVisitor visitor)
             => base.Accept(visitor);
@@ -1154,8 +1153,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         FieldType _type;
 
-        BoundExpression _parentExpr;    // in case of instance field
-        BoundTypeRef _parentType;       // in case of class constant or static field
+        BoundExpression _instanceExpr;    // in case of instance field
+        BoundTypeRef _containingType;       // in case of class constant or static field
         BoundVariableName _fieldName;   // field name
 
         public bool IsInstanceField => _type == FieldType.InstanceField;
@@ -1165,9 +1164,9 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// In case of a non static field, gets its instance expression.
         /// </summary>
-        public BoundExpression Instance => IsInstanceField ? _parentExpr : null;
+        public BoundExpression Instance => IsInstanceField ? _instanceExpr : null;
 
-        public BoundTypeRef ParentType => _parentType;
+        public BoundTypeRef ContainingType => _containingType;
 
         public BoundVariableName FieldName => _fieldName;
 
@@ -1177,9 +1176,9 @@ namespace Pchp.CodeAnalysis.Semantics
         {
         }
 
-        public static BoundFieldRef CreateInstanceField(BoundExpression instance, BoundVariableName name) => new BoundFieldRef() { _parentExpr = instance, _fieldName = name, _type = FieldType.InstanceField };
-        public static BoundFieldRef CreateStaticField(BoundTypeRef parent, BoundVariableName name) => new BoundFieldRef() { _parentType = parent, _fieldName = name, _type = FieldType.StaticField };
-        public static BoundFieldRef CreateClassConst(BoundTypeRef parent, BoundVariableName name) => new BoundFieldRef() { _parentType = parent, _fieldName = name, _type = FieldType.ClassConstant };
+        public static BoundFieldRef CreateInstanceField(BoundExpression instance, BoundVariableName name) => new BoundFieldRef() { _instanceExpr = instance, _fieldName = name, _type = FieldType.InstanceField };
+        public static BoundFieldRef CreateStaticField(BoundTypeRef type, BoundVariableName name) => new BoundFieldRef() { _containingType = type, _fieldName = name, _type = FieldType.StaticField };
+        public static BoundFieldRef CreateClassConst(BoundTypeRef type, BoundVariableName name) => new BoundFieldRef() { _containingType = type, _fieldName = name, _type = FieldType.ClassConstant };
 
 
         public override void Accept(OperationVisitor visitor)
@@ -1504,13 +1503,15 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
-    #region BoundYieldEx
+    #region BoundYieldEx, BoundYieldFromEx
+
     /// <summary>
     /// Represents a reference to an item sent to the generator.
     /// </summary>
     public partial class BoundYieldEx : BoundExpression
     {
         public override OperationKind Kind => OperationKind.FieldReferenceExpression;
+
         public override void Accept(PhpOperationVisitor visitor)
             => visitor.VisitYieldEx(this);
 
@@ -1520,5 +1521,31 @@ namespace Pchp.CodeAnalysis.Semantics
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.DefaultVisit(this, argument);
     }
+
+    /// <summary>
+    /// Represents a return from `yield from` expression.
+    /// That is the value returned from eventual `Generator` being yielded from.
+    /// </summary>
+    public partial class BoundYieldFromEx : BoundExpression
+    {
+        public override OperationKind Kind => OperationKind.FieldReferenceExpression;
+
+        public BoundExpression Operand { get; private set; }
+
+        public BoundYieldFromEx(BoundExpression expression)
+        {
+            Operand = expression;
+        }
+
+        public override void Accept(PhpOperationVisitor visitor)
+            => visitor.VisitYieldFromEx(this);
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.DefaultVisit(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.DefaultVisit(this, argument);
+    }
+
     #endregion
 }

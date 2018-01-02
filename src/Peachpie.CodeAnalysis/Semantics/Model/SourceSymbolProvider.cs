@@ -20,7 +20,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             _table = table;
         }
 
-        public SourceFileSymbol GetFile(string path)
+        public SourceFileSymbol ResolveFile(string path)
         {
             // normalize path
             path = FileUtilities.NormalizeRelativePath(path, null, _table.Compilation.Options.BaseDirectory);
@@ -42,7 +42,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             return _table.GetFile(path);
         }
 
-        public INamedTypeSymbol GetType(QualifiedName name) => _table.GetType(name);
+        public INamedTypeSymbol ResolveType(QualifiedName name) => _table.GetType(name);
 
         public IPhpRoutineSymbol ResolveFunction(QualifiedName name)
         {
@@ -50,10 +50,5 @@ namespace Pchp.CodeAnalysis.Semantics.Model
         }
 
         public IPhpValue ResolveConstant(string name) => null;
-
-        public bool IsAssignableFrom(QualifiedName qname, INamedTypeSymbol from)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

@@ -10,7 +10,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{ED9DAD46
 		.travis.yml = .travis.yml
 		build\build.ps1 = build\build.ps1
 		MyGet.ps1 = MyGet.ps1
-		build\push.ps1 = build\push.ps1
 		build\Targets\Settings.props = build\Targets\Settings.props
 		build\update-cache.ps1 = build\update-cache.ps1
 	EndProjectSection

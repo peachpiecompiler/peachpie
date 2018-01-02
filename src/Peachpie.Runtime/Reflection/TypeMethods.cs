@@ -49,12 +49,19 @@ namespace Pchp.Core.Reflection
 
         #region Initialization
 
-        internal TypeMethods(TypeInfo type)
+        internal TypeMethods(PhpTypeInfo type)
         {
+            IEnumerable<MethodInfo> methods = type.Type
+                .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy);
+
+            // skip members of {System.Object} if we are in a PHP type
+            if (type.Type.AsType() != typeof(object))
+            {
+                methods = methods.Where(s_notObjectMember);
+            }
+
             // collect available methods (including methods on base classes)
-            foreach (var m in type
-                .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy)
-                .ToLookup(_MethodName, StringComparer.OrdinalIgnoreCase))
+            foreach (var m in methods.ToLookup(_MethodName, StringComparer.OrdinalIgnoreCase))
             {
                 if (!ReflectionUtils.IsAllowedPhpName(m.Key))   // .ctor, .phpnew, implicit interface implementation
                 {
@@ -66,7 +73,7 @@ namespace Pchp.Core.Reflection
                     _methods = new Dictionary<string, PhpMethodInfo>(StringComparer.OrdinalIgnoreCase);
                 }
 
-                var info = new PhpMethodInfo(_methods.Count + 1, m.Key, m.ToArray());
+                var info = PhpMethodInfo.Create(_methods.Count + 1, m.Key, m.ToArray(), type);
 
                 _methods[info.Name] = info;
 
@@ -95,6 +102,8 @@ namespace Pchp.Core.Reflection
         }
 
         static readonly Func<MethodInfo, string> _MethodName = m => m.Name;
+
+        static readonly Func<MethodInfo, bool> s_notObjectMember = m => m.DeclaringType != typeof(object);
 
         #endregion
 

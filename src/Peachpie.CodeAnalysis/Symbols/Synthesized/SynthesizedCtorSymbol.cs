@@ -87,37 +87,38 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public bool IsInitFieldsOnly { get; private set; }
 
-        private SynthesizedPhpCtorSymbol(SourceTypeSymbol containingType, Accessibility accessibility,
+        protected SynthesizedPhpCtorSymbol(SourceTypeSymbol containingType, Accessibility accessibility,
             bool isInitFieldsOnly,
             MethodSymbol basector, MethodSymbol __construct, int paramsLimit = int.MaxValue)
             : base(containingType, WellKnownMemberNames.InstanceConstructorName, false, false, containingType.DeclaringCompilation.CoreTypes.Void, accessibility)
         {
-            if (basector == null) throw new ArgumentNullException(nameof(basector));
-
-            _basector = basector;
+            _basector = basector ?? throw new ArgumentNullException(nameof(basector));
             _phpconstruct = __construct;
 
             this.IsInitFieldsOnly = isInitFieldsOnly;
 
             // clone parameters from __construct ?? basector
             var template = (__construct ?? basector).Parameters;
-            var ps = new List<ParameterSymbol>(template.Length)
-            {
-                new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, 0) // Context <ctx>
-            };
+
+            _parameters = CreateParameters(template.Take(paramsLimit)).ToImmutableArray();
+        }
+
+        protected virtual IEnumerable<ParameterSymbol> CreateParameters(IEnumerable<ParameterSymbol> baseparams)
+        {
+            int index = 0;
+
+            // Context <ctx>
+            yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
 
             // same parameters as PHP constructor
-            for (int i = 0; i < template.Length && i < paramsLimit; i++)
+            foreach (var p in baseparams)
             {
-                var p = template[i];
                 if (!SpecialParameterSymbol.IsContextParameter(p))
                 {
-                    ps.Add(new SynthesizedParameterSymbol(this, p.Type, ps.Count, p.RefKind, p.Name, p.IsParams,
-                        explicitDefaultConstantValue: p.ExplicitDefaultConstantValue));
+                    yield return new SynthesizedParameterSymbol(this, p.Type, index++, p.RefKind, p.Name, p.IsParams,
+                        explicitDefaultConstantValue: p.ExplicitDefaultConstantValue);
                 }
             }
-            
-            _parameters = ps.ToImmutableArray();
         }
 
         /// <summary>
@@ -292,6 +293,39 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             return attrs;
+        }
+    }
+
+    #endregion
+
+    #region SynthesizedPhpTraitCtorSymbol
+
+    internal class SynthesizedPhpTraitCtorSymbol : SynthesizedPhpCtorSymbol
+    {
+        public new SourceTraitTypeSymbol ContainingType => (SourceTraitTypeSymbol)base.ContainingType;
+
+        public SynthesizedPhpTraitCtorSymbol(SourceTraitTypeSymbol containingType)
+            : base(containingType, Accessibility.Public, false, containingType.BaseType.InstanceConstructors[0]/*Object..ctor()*/, null)
+        {
+
+        }
+
+        /// <summary>.ctor parameter <c>object @this</c>.</summary>
+        public ParameterSymbol ThisParameter => this.Parameters[1];
+
+        protected override IEnumerable<ParameterSymbol> CreateParameters(IEnumerable<ParameterSymbol> baseparams)
+        {
+            Debug.Assert(baseparams.Count() == 0);
+
+            int index = 0;
+
+            // note: the signature is very similar to global code routine <Main>
+
+            // Context <ctx>
+            yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
+
+            // !TSelf this
+            yield return new SpecialParameterSymbol(this, ContainingType.TSelfParameter, SpecialParameterSymbol.ThisName, index++);
         }
     }
 

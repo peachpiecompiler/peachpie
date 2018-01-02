@@ -20,5 +20,22 @@ namespace Pchp.CodeAnalysis.Semantics
             expr.PhpSyntax = syntax;
             return expr;
         }
+
+        /// <summary>
+        /// Gets value indicating the object will be an empty string after converting to string.
+        /// </summary>
+        public static bool IsEmptyStringValue(object value)
+        {
+            if (value == null)
+                return true;
+
+            if (value is string && ((string)value).Length == 0)
+                return true;
+
+            if (value is bool && ((bool)value) == false)
+                return true;
+
+            return false;
+        }
     }
 }

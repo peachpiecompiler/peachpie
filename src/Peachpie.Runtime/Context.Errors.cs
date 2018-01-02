@@ -46,7 +46,9 @@ namespace Pchp.Core
 
         public void Throw(PhpError error, string formatString, params string[] args)
         {
-            // TODO: when (if) this will get called, currently errors are passed to Context.DefaultErrorHandler
+            // TODO: once this method gets called, pass the error to actual error handler
+
+            PhpException.Throw(error, formatString, args);
         }
 
         /// <summary>

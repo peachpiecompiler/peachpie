@@ -28,23 +28,20 @@ namespace Pchp.Core.Dynamic
                 : Array.Empty<MethodInfo>();
         }
 
-        public static MethodInfo[] SelectVisible(this MethodInfo[] methods, Type classCtx)
+        public static IEnumerable<MethodInfo> SelectVisible(this MethodInfo[] methods, Type classCtx)
         {
-            if (methods.Length == 1)
+            if (methods.Length == 0)
+            {
+                return methods;
+            }
+            else if (methods.Length == 1)
             {
                 return methods[0].IsVisible(classCtx) ? methods : Array.Empty<MethodInfo>();
             }
-
-            var result = new List<MethodInfo>(methods.Length);
-            for (int i = 0; i < methods.Length; i++)
+            else
             {
-                if (methods[i].IsVisible(classCtx))
-                {
-                    result.Add(methods[i]);
-                }
+                return methods.Where(m => m.IsVisible(classCtx));
             }
-
-            return (result.Count == methods.Length) ? methods : result.ToArray();
         }
 
         public static IEnumerable<MethodBase> SelectVisible(this IEnumerable<MethodBase> candidates, Type classCtx)
@@ -63,22 +60,6 @@ namespace Pchp.Core.Dynamic
         public static IEnumerable<MethodBase> SelectStatic(this IEnumerable<MethodBase> candidates)
         {
             return candidates.Where(m => m.IsStatic);
-        }
-
-        /// <summary>
-        /// Gets value indicating the parameter is a special late static bound parameter.
-        /// </summary>
-        static bool IsStaticBoundParameter(ParameterInfo p)
-        {
-            return p.ParameterType == typeof(Type) && p.Name == "<static>";
-        }
-
-        /// <summary>
-        /// Gets value indicating the parameter is a special local parameters parameter.
-        /// </summary>
-        static bool IsLocalsParameter(ParameterInfo p)
-        {
-            return p.ParameterType == typeof(PhpArray) && p.Name == "<locals>";
         }
     }
 }

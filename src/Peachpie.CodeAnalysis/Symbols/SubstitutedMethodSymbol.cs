@@ -24,7 +24,6 @@ namespace Pchp.CodeAnalysis.Symbols
         private readonly TypeMap _inputMap;
         private readonly MethodSymbol _constructedFrom;
 
-        private TypeSymbol _lazyReturnType;
         private ImmutableArray<ParameterSymbol> _lazyParameters;
         private TypeMap _lazyMap;
         private ImmutableArray<TypeParameterSymbol> _lazyTypeParameters;
@@ -456,14 +455,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                var returnType = _lazyReturnType;
-                if (returnType != null)
-                {
-                    return returnType;
-                }
-
-                returnType = Map.SubstituteType(originalDefinition.ReturnType).Type;
-                return Interlocked.CompareExchange(ref _lazyReturnType, returnType, null) ?? returnType;
+                return Map.SubstituteType(originalDefinition.ReturnType).Type;
             }
         }
 

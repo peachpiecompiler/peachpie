@@ -52,7 +52,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public virtual INamedTypeSymbol GetTypeSymbol(PhpCompilation compilation)
         {
-            var resolved = (NamedTypeSymbol)compilation.GlobalSemantics.GetType(QualifiedName);
+            var resolved = (NamedTypeSymbol)compilation.GlobalSemantics.ResolveType(QualifiedName);
             return (resolved != null && !resolved.IsErrorType()) ? resolved : compilation.CoreTypes.Object.Symbol;
         }
 

@@ -870,6 +870,6 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public IEnumerable<TypeSymbol> TypeArgumentsNoUseSiteDiagnostics => TypeArguments;
+        public ImmutableArray<TypeSymbol> TypeArgumentsNoUseSiteDiagnostics => TypeArguments;
     }
 }

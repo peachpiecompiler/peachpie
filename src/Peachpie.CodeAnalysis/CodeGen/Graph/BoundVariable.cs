@@ -294,7 +294,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)
         {
-            return new BoundThisPlace(Place(il), access);
+            return new BoundThisPlace(_routine, access);
         }
 
         internal override IPlace Place(ILBuilder il)
@@ -302,7 +302,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // Get place of PHP $this variable in the routine.
             // This may vary in different symbols like global code, generator sm method, etc.
 
-            return _routine.PhpThisVariablePlace;
+            return _routine.GetPhpThisVariablePlace();
         }
     }
 

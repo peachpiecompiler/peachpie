@@ -786,6 +786,18 @@ namespace Pchp.CodeAnalysis.Emit
         public static Cci.TypeMemberVisibility MemberVisibility(Symbol symbol)
         {
             //
+            // We need to make trait members and fields in synthesized _statics holder public:
+            //
+            if (symbol.DeclaredAccessibility != Accessibility.Public)
+            {
+                if (PhpFieldSymbolExtension.IsInStaticsHolder(symbol as FieldSymbol) || // field is generated within `_statics` holder class and must be accessed from outside // note: maybe internal?
+                    ((symbol.ContainingSymbol is SourceTraitTypeSymbol) && (symbol is SourceMethodSymbol || symbol is SourceFieldSymbol || symbol is SynthesizedTraitMethodSymbol || symbol is SynthesizedTraitFieldSymbol)))  // member is in trait => hence must be friend with any class (public)
+                {
+                    return Cci.TypeMemberVisibility.Public;
+                }
+            }
+
+            //
             // We need to relax visibility of members in interactive submissions since they might be emitted into multiple assemblies.
             // 
             // Top-level:
@@ -1229,6 +1241,45 @@ namespace Pchp.CodeAnalysis.Emit
             }
 
             throw ExceptionUtilities.UnexpectedValue(typeSymbol.Kind);
+        }
+
+        internal Cci.IFieldReference Translate(
+            FieldSymbol fieldSymbol,
+            SyntaxNode syntaxNodeOpt,
+            DiagnosticBag diagnostics,
+            bool needDeclaration = false)
+        {
+            Debug.Assert(fieldSymbol.IsDefinitionOrDistinct());
+            // Debug.Assert(!fieldSymbol.IsTupleField, "tuple fields should be rewritten to underlying by now");
+
+            if (!fieldSymbol.IsDefinition)
+            {
+                Debug.Assert(!needDeclaration);
+
+                return fieldSymbol;
+            }
+            else if (!needDeclaration && IsGenericType(fieldSymbol.ContainingType))
+            {
+                object reference;
+                Cci.IFieldReference fieldRef;
+
+                if (_genericInstanceMap.TryGetValue(fieldSymbol, out reference))
+                {
+                    return (Cci.IFieldReference)reference;
+                }
+
+                fieldRef = new SpecializedFieldReference(fieldSymbol);
+                fieldRef = (Cci.IFieldReference)_genericInstanceMap.GetOrAdd(fieldSymbol, fieldRef);
+
+                return fieldRef;
+            }
+
+            //if (_embeddedTypesManagerOpt != null)
+            //{
+            //    return _embeddedTypesManagerOpt.EmbedFieldIfNeedTo(fieldSymbol, syntaxNodeOpt, diagnostics);
+            //}
+
+            return fieldSymbol;
         }
 
         internal Cci.ITypeReference Translate(

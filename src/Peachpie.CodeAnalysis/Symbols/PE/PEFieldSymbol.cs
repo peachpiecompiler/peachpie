@@ -21,8 +21,37 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// The class to represent all fields imported from a PE/module.
     /// </summary>
-    internal sealed class PEFieldSymbol : FieldSymbol
+    internal sealed class PEFieldSymbol : FieldSymbol, IPhpPropertySymbol
     {
+        #region IPhpPropertySymbol
+
+        PhpPropertyKind IPhpPropertySymbol.FieldKind
+        {
+            get
+            {
+                if (IsConst) return PhpPropertyKind.ClassConstant;
+                if (IsStatic) return PhpPropertyKind.AppStaticField;
+                
+                if (((IPhpPropertySymbol)this).ContainingStaticsHolder != null)
+                {
+                    if (IsReadOnly) return PhpPropertyKind.ClassConstant;
+                    return PhpPropertyKind.StaticField;
+                }
+
+                return PhpPropertyKind.InstanceField;
+            }
+        }
+
+        TypeSymbol IPhpPropertySymbol.ContainingStaticsHolder => _containingType.IsStaticsContainer() ? _containingType : null;
+
+        bool IPhpPropertySymbol.RequiresContext => false; // not relevant
+
+        TypeSymbol IPhpPropertySymbol.DeclaringType => _containingType.IsStaticsContainer() ? _containingType.ContainingType : _containingType;
+
+        void IPhpPropertySymbol.EmitInit(CodeGen.CodeGenerator cg) { throw new NotSupportedException(); } // not needed
+
+        #endregion
+
         private readonly FieldDefinitionHandle _handle;
         private readonly string _name;
         private readonly FieldAttributes _flags;

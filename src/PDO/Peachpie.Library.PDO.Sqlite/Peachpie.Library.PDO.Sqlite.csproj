@@ -18,9 +18,7 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
-    <PackageReference Include="System.Data.SQLite" Version="1.0.104" />
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
+    <PackageReference Include="System.Data.SQLite" Version="1.0.106" />
   </ItemGroup>
 
 </Project>

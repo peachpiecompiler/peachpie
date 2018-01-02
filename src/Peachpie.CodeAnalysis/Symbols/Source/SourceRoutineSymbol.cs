@@ -38,7 +38,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (_cfg == null && this.Statements != null) // ~ Statements => non abstract method
                 {
                     // create initial flow state
-                    var state = StateBinder.CreateInitialState(this);                    
+                    var state = StateBinder.CreateInitialState(this);
 
                     // build control flow graph
                     _cfg = new ControlFlowGraph(
@@ -108,14 +108,17 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var index = 0;
 
-            if (this.IsStatic)  // instance methods have <ctx> in <this>.<ctx> field, see SourceNamedTypeSymbol._lazyContextField
+            if (IsStatic)  // instance methods have <ctx> in <this>.<ctx> field, see SourceNamedTypeSymbol._lazyContextField
             {
                 // Context <ctx>
                 yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
             }
         }
 
-        internal bool RequiresLateStaticBoundParam => (this.Flags & RoutineFlags.UsesLateStatic) != 0 && !this.HasThis && (this is SourceMethodSymbol);
+        /// <summary>
+        /// Gets value indicating this routine requires a special {PhpTypeInfo static} parameter to resolve `static` reserved type inside the routine body.
+        /// </summary>
+        internal virtual bool RequiresLateStaticBoundParam => false;
 
         /// <summary>
         /// Constructs routine source parameters.
@@ -146,14 +149,10 @@ namespace Pchp.CodeAnalysis.Symbols
                     _implicitParams = BuildImplicitParams().ToList();
                 }
 
-                // late static bound parameter may be needed based on flow analysis,
-                // so we have to ensure it is in the list if it isn't yet
                 if (RequiresLateStaticBoundParam && !_implicitParams.Any(SpecialParameterSymbol.IsLateStaticParameter))
                 {
                     // PhpTypeInfo <static>
-                    _implicitParams.Add(
-                        new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpTypeInfo, SpecialParameterSymbol.StaticTypeName, _implicitParams.Count)
-                    );
+                    _implicitParams.Add(new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpTypeInfo, SpecialParameterSymbol.StaticTypeName, _implicitParams.Count));
                 }
 
                 //
@@ -290,9 +289,9 @@ namespace Pchp.CodeAnalysis.Symbols
         /// virtual = IsVirtual AND NewSlot 
         /// override = IsVirtual AND !NewSlot
         /// </summary>
-        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => !IsOverride && !IsStatic;
+        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => !IsOverride && IsMetadataVirtual(ignoreInterfaceImplementationChanges);
 
-        internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => IsVirtual;
+        internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => IsVirtual && (!ContainingType.IsSealed || IsOverride || IsAbstract); // do not make method virtual if not necessary
 
         public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
         {

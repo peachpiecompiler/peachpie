@@ -384,8 +384,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                     var item1 = valuetype.GetMembers("Item1").Single() as FieldSymbol;
                     var item2 = valuetype.GetMembers("Item2").Single() as FieldSymbol;
 
-                    var item1place = new FieldPlace(new LocalPlace(tmp), item1);
-                    var item2place = new FieldPlace(new LocalPlace(tmp), item2);
+                    var item1place = new FieldPlace(new LocalPlace(tmp), item1, cg.Module);
+                    var item2place = new FieldPlace(new LocalPlace(tmp), item2, cg.Module);
 
                     // value = tmp.Item2;
                     cg.EmitSequencePoint(valueVar.PhpSyntax);

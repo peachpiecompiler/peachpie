@@ -132,6 +132,27 @@ namespace Pchp.Core
     }
 
     /// <summary>
+    /// Specifies real member accessibility as it will appear in declaring class.
+    /// </summary>
+    /// <remarks>
+    /// Some members have to be emitted as public to be accessible from outside but appear non-public in PHP context.
+    /// This attribute specifies real visibility of the member - method, property or class constant.
+    /// </remarks>
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Property)]
+    public sealed class PhpMemberVisibilityAttribute : Attribute
+    {
+        /// <summary>
+        /// Declared member accessibility flag.
+        /// </summary>
+        public int Accessibility { get; }
+
+        /// <summary>
+        /// Initializes the attribute.
+        /// </summary>
+        public PhpMemberVisibilityAttribute(int accessibility) { this.Accessibility = accessibility; }
+    }
+
+    /// <summary>
     /// Denotates a function parameter of type <see cref="PhpArray"/>
     /// that will be referenced to the array of local PHP variables.
     /// </summary>

@@ -99,13 +99,19 @@ namespace Pchp.CodeAnalysis.Symbols
         public const string PhpTraitAttributeName = "PhpTraitAttribute";
 
         /// <summary>
-        /// Full name of <c>PhpFieldsOnlyCtorAttribute</c> class.
+        /// Name of <c>PhpFieldsOnlyCtorAttribute</c> class.
         /// </summary>
         public const string PhpFieldsOnlyCtorAttributeName = "PhpFieldsOnlyCtorAttribute";
 
+        /// <summary>
+        /// Name of <c>PhpTraitMemberVisibilityAttribute</c> class.
+        /// </summary>
+        public const string PhpMemberVisibilityAttributeName = "PhpMemberVisibilityAttribute";
+
         public readonly CoreType
-            Context, Operators, Convert, Comparison, StrictComparison,
-            ScriptAttribute, PhpTraitAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, ScriptDiedException,
+            Context, Operators, Convert, Comparison, StrictComparison, PhpException,
+            ScriptAttribute, PhpTraitAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, PhpMemberVisibilityAttribute,
+            ScriptDiedException,
             IStaticInit, RoutineInfo,
             BinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
             Dynamic_NameParam_T, Dynamic_TargetTypeParam, Dynamic_CallerTypeParam, Dynamic_UnpackingParam_T,
@@ -151,11 +157,13 @@ namespace Pchp.CodeAnalysis.Symbols
             Comparison = Create("Comparison");
             StrictComparison = Create("StrictComparison");
             Convert = Create("Convert");
+            PhpException = Create("PhpException");
             ScriptAttribute = Create("ScriptAttribute");
             PhpTraitAttribute = Create(PhpTraitAttributeName);
             PhpTypeAttribute = Create("PhpTypeAttribute");
             PhpHiddenAttribute = Create("PhpHiddenAttribute");
             PhpFieldsOnlyCtorAttribute = Create(PhpFieldsOnlyCtorAttributeName);
+            PhpMemberVisibilityAttribute = Create(PhpMemberVisibilityAttributeName);
             IStaticInit = Create("IStaticInit");
             RoutineInfo = Create("Reflection.RoutineInfo");
             stdClass = CreateFromFullName("stdClass");

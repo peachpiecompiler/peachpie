@@ -288,6 +288,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         public bool IsGlobalScope => _routine is SourceGlobalMethodSymbol;
 
         /// <summary>
+        /// Whether the code is generated inside method in a trait type.
+        /// </summary>
+        public bool IsInTrait => _routine is SourceMethodSymbol && _routine.ContainingType.IsTraitType();
+
+        /// <summary>
         /// Gets or sets value determining <see cref="BoundArrayEx"/> is being emitted.
         /// When set, array expression caching is disabled.
         /// </summary>
@@ -296,7 +301,15 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Type of the caller context (the class declaring current method) or null.
         /// </summary>
-        public TypeSymbol CallerType => (_routine is SourceMethodSymbol) ? _routine.ContainingType : null;
+        public TypeSymbol CallerType
+        {
+            get => GetSelfType(_callerType ?? (_routine is SourceMethodSymbol ? _routine.ContainingType : null));
+            set => _callerType = value;
+        }
+        TypeSymbol _callerType;
+        IPlace _callerTypePlace;
+
+        static TypeSymbol GetSelfType(TypeSymbol scope) => scope is SourceTraitTypeSymbol t ? t.TSelfParameter : scope;
 
         public SourceFileSymbol ContainingFile => _containingFile;
         SourceFileSymbol _containingFile;
@@ -352,7 +365,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         public CodeGenerator(SourceRoutineSymbol routine, ILBuilder il, PEModuleBuilder moduleBuilder, DiagnosticBag diagnostics, OptimizationLevel optimizations, bool emittingPdb)
-            : this(il, moduleBuilder, diagnostics, optimizations, emittingPdb, routine.ContainingType, routine.GetContextPlace(), routine.GetThisPlace(), routine)
+            : this(il, moduleBuilder, diagnostics, optimizations, emittingPdb, routine.ContainingType, routine.GetContextPlace(moduleBuilder), routine.GetThisPlace(), routine)
         {
             Contract.ThrowIfNull(routine);
 

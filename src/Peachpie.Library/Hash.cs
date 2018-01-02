@@ -2152,7 +2152,7 @@ namespace Pchp.Library
                 return true;
             }
         }
-        
+
         //[return: CastToFalse]
         public static PhpString hash_final(PhpResource context, bool raw_output = false)
         {
@@ -2220,9 +2220,9 @@ namespace Pchp.Library
             //
             return true;
         }
-        
+
         [return: CastToFalse]
-        public static int hash_update_stream(PhpResource context, PhpResource handle, int length =-1)
+        public static int hash_update_stream(PhpResource context, PhpResource handle, int length = -1)
         {
             // hashing context
             var h = ValidateHashResource(context);
@@ -2342,7 +2342,7 @@ namespace Pchp.Library
         /// <summary>
         /// Compares two strings using the same time whether they're equal or not.
         /// </summary>
-        public static bool hash_equals(string known_string , string user_string )
+        public static bool hash_equals(string known_string, string user_string)
         {
             if (known_string == null)
             {
@@ -2361,5 +2361,24 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        //#region hash_pbkdf2 (TODO)
+
+        ///// <summary>
+        ///// Generate a PBKDF2 key derivation of a supplied password.
+        ///// </summary>
+        //public static PhpString hash_pbkdf2(string algo, string password, byte[] salt, int iterations, int length = 0, bool raw_output = false)
+        //{
+        //    // TODO: algo != "sha1"
+
+        //    var pbkdf2 = new Rfc2898DeriveBytes(password, salt, iterations);    // NOTE: SHA1 implementation
+        //    var bytes = pbkdf2.GetBytes(length > 0 ? length : 160);
+
+        //    return raw_output
+        //        ? new PhpString(bytes)
+        //        : new PhpString(StringUtils.BinToHex(bytes, string.Empty));
+        //}
+
+        //#endregion
     }
 }

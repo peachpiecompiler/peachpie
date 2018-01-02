@@ -85,6 +85,13 @@ namespace Pchp.CodeAnalysis.Symbols
         public static bool IsLateStaticParameter(ParameterSymbol p)
             => p != null && p.Type != null && p.Type.MetadataName == "PhpTypeInfo" && !(p is SourceParameterSymbol) && p.Name == StaticTypeName; // TODO: && namespace == Pchp.Core.
 
+        /// <summary>
+        /// Determines whether given parameter is a special self parameter.
+        /// This parameter provides self type, of type <c>RuntimeTypeHandle</c>.
+        /// </summary>
+        public static bool IsSelfParameter(ParameterSymbol p)
+            => p != null && p.Type != null && p.Type.MetadataName == "RuntimeTypeHandle" && !(p is SourceParameterSymbol) && p.Name == SelfName;
+
         public static bool IsLocalsParameter(IParameterSymbol p)
             => p != null && p.Type != null && p.Type.MetadataName == "PhpArray" && p.GetAttributes().Any(attr => attr.AttributeClass.MetadataName == "ImportLocalsAttribute");
 

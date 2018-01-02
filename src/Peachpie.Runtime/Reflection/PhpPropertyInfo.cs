@@ -84,7 +84,34 @@ namespace Pchp.Core.Reflection
                 _staticsGetter = staticsGetter;
             }
 
-            public override FieldAttributes Attributes => _field.Attributes | FieldAttributes.Static;
+            public override FieldAttributes Attributes
+            {
+                get
+                {
+                    var attributes = _field.Attributes;
+
+                    var membervisibility = _field.GetCustomAttribute<PhpMemberVisibilityAttribute>(false);
+                    if (membervisibility != null)
+                    {
+                        var access = attributes & FieldAttributes.FieldAccessMask;
+
+                        switch (membervisibility.Accessibility)
+                        {
+                            case 1:
+                                access = FieldAttributes.Private;
+                                break;
+                            case 3:
+                                access = FieldAttributes.Family;
+                                break;
+                        }
+
+                        attributes = (attributes & ~FieldAttributes.FieldAccessMask) | access;
+                    }
+
+                    //
+                    return attributes | FieldAttributes.Static;
+                }
+            }
 
             public override bool IsReadOnly => _field.IsInitOnly || _field.IsLiteral;
 
@@ -170,7 +197,7 @@ namespace Pchp.Core.Reflection
             {
                 if (_property.GetMethod.IsStatic != (target == null))
                 {
-                    
+
                 }
 
                 return Expression.Property(target, _property);

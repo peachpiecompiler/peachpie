@@ -63,7 +63,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             // $this
-            if (_routine.PhpThisVariablePlace != null) // NOTE: even global code has $this  => routine.HasThis may be false
+            if (_routine.GetPhpThisVariablePlace() != null) // NOTE: even global code has $this  => routine.HasThis may be false
             {
                 _dict[VariableName.ThisVariableName] = new BoundThisParameter(_routine);
             }

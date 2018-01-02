@@ -353,7 +353,7 @@ namespace Pchp.CodeAnalysis.Emit
                         }
                         else
                         {
-                            consttype = new FieldPlace(null, c).EmitLoad(il);
+                            consttype = new FieldPlace(null, c, this).EmitLoad(il);
                         }
                         cg.EmitConvertToPhpValue(consttype, 0);
 

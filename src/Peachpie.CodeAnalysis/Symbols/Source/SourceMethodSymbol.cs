@@ -10,13 +10,14 @@ using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Syntax;
+using Microsoft.Cci;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
     /// Represents a PHP class method.
     /// </summary>
-    internal sealed partial class SourceMethodSymbol : SourceRoutineSymbol
+    internal partial class SourceMethodSymbol : SourceRoutineSymbol
     {
         readonly SourceTypeSymbol _type;
         readonly MethodDecl/*!*/_syntax;
@@ -31,7 +32,13 @@ namespace Pchp.CodeAnalysis.Symbols
             _type = type;
             _syntax = syntax;
         }
-        
+
+        internal override bool RequiresLateStaticBoundParam =>
+            IsStatic &&                             // `static` in instance method == typeof($this)
+            ControlFlowGraph != null &&             // cfg sets {Flags}
+            (this.Flags & RoutineFlags.UsesLateStatic) != 0 &&
+            (!_type.IsSealed || _type.IsTrait);     // `static` == `self` <=> self is sealed
+
         public override IMethodSymbol OverriddenMethod
         {
             get
@@ -73,13 +80,13 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public override bool IsStatic => _syntax.Modifiers.IsStatic();
+
         public override bool IsAbstract => !IsStatic && (_syntax.Modifiers.IsAbstract() || _type.IsInterface);
 
-        public override bool IsOverride => this.OverriddenMethod != null && this.SignaturesMatch((MethodSymbol)this.OverriddenMethod);
+        public override bool IsOverride => !IsStatic && this.OverriddenMethod != null && this.SignaturesMatch((MethodSymbol)this.OverriddenMethod);
 
-        public override bool IsSealed => !IsStatic && _syntax.Modifiers.IsSealed();
-
-        public override bool IsStatic => _syntax.Modifiers.IsStatic();
+        public override bool IsSealed => _syntax.Modifiers.IsSealed() && IsVirtual;
 
         public override bool IsVirtual => !IsStatic;    // every method in PHP is virtual except static methods
 
@@ -90,9 +97,22 @@ namespace Pchp.CodeAnalysis.Symbols
                 return ImmutableArray.Create(Location.Create(ContainingFile.SyntaxTree, _syntax.Span.ToTextSpan()));
             }
         }
+    }
 
-        internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => this.IsVirtual;
+    /// <summary>
+    /// Represents a PHP trait method.
+    /// </summary>
+    internal class SourceTraitMethodSymbol : SourceMethodSymbol
+    {
+        public SourceTraitMethodSymbol(SourceTraitTypeSymbol type, MethodDecl syntax)
+            : base(type, syntax)
+        {
+        }
 
-        internal override bool IsMetadataFinal => IsSealed && !IsStatic && base.IsMetadataFinal;
+        // abstract trait method must have an empty implementation
+        public override bool IsAbstract => false;
+
+        // abstract trait method must have an empty implementation
+        internal override IList<Statement> Statements => base.IsAbstract ? Array.Empty<Statement>() : base.Statements;
     }
 }

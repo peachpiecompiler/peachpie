@@ -155,7 +155,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual void VisitFieldRef(BoundFieldRef x)
         {
-            VisitTypeRef(x.ParentType); 
+            VisitTypeRef(x.ContainingType); 
             Accept(x.Instance);
             Accept(x.FieldName.NameExpression);
         }
@@ -225,6 +225,11 @@ namespace Pchp.CodeAnalysis.Semantics
         public virtual void VisitYieldEx(BoundYieldEx boundYieldEx)
         {
 
+        }
+
+        public virtual void VisitYieldFromEx(BoundYieldFromEx x)
+        {
+            Accept(x.Operand);
         }
 
         #endregion

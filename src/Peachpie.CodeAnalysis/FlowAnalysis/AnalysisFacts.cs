@@ -68,7 +68,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             var class_name = args[0].Value.ConstantValue.Value as string;
                             if (class_name != null)
                             {
-                                var tmp = analysis.Model.GetType(NameUtils.MakeQualifiedName(class_name, true));
+                                var tmp = analysis.Model.ResolveType(NameUtils.MakeQualifiedName(class_name, true));
                                 if (tmp is PENamedTypeSymbol)   // TODO: unconditional declaration ?
                                 {
                                     call.ConstantValue = ConstantValueExtensions.AsOptional(true);
@@ -86,7 +86,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             var function_name = args[1].Value.ConstantValue.Value as string;
                             if (class_name != null && function_name != null)
                             {
-                                var tmp = (NamedTypeSymbol)analysis.Model.GetType(NameUtils.MakeQualifiedName(class_name, true));
+                                var tmp = (NamedTypeSymbol)analysis.Model.ResolveType(NameUtils.MakeQualifiedName(class_name, true));
                                 if (tmp is PENamedTypeSymbol)
                                 {
                                     if (tmp.LookupMethods(function_name).Any())

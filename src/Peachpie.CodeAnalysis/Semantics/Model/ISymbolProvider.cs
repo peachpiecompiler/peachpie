@@ -19,13 +19,13 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Gets a file by its path relative to current context.
         /// </summary>
-        SourceFileSymbol GetFile(string path);
+        SourceFileSymbol ResolveFile(string path);
 
         /// <summary>
         /// Gets type symbol by its name in current context.
         /// Can be <c>null</c> if type cannot be found.
         /// </summary>
-        INamedTypeSymbol GetType(QualifiedName name);
+        INamedTypeSymbol ResolveType(QualifiedName name);
 
         /// <summary>
         /// Get global function symbol by its name in current context.
@@ -37,11 +37,5 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Resolves single global constant valid in current context.
         /// </summary>
         IPhpValue ResolveConstant(string name);
-
-        /// <summary>
-        /// Gets value determining whether <paramref name="qname"/> type can be assigned from <paramref name="from"/>.
-        /// </summary>
-        /// <remarks>Gets <c>true</c>, if <paramref name="qname"/> is equal to or is a base type of <paramref name="from"/>.</remarks>
-        bool IsAssignableFrom(QualifiedName qname, INamedTypeSymbol from);
     }
 }

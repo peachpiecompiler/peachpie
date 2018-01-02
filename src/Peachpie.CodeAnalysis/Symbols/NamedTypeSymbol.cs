@@ -114,7 +114,24 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public virtual NamedTypeSymbol EnumUnderlyingType => null;
 
-        public virtual bool IsGenericType => false;
+        /// <summary>
+        /// True if this type or some containing type has type parameters.
+        /// </summary>
+        public bool IsGenericType
+        {
+            get
+            {
+                for (var current = this; !ReferenceEquals(current, null); current = current.ContainingType)
+                {
+                    if (current.TypeArgumentsNoUseSiteDiagnostics.Length != 0)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
 
         public virtual bool IsImplicitClass => false;
 

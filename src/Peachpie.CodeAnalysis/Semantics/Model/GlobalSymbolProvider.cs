@@ -125,7 +125,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         #region ISemanticModel
 
-        public INamedTypeSymbol GetType(QualifiedName name)
+        public INamedTypeSymbol ResolveType(QualifiedName name)
         {
             Debug.Assert(!name.IsReservedClassName);
             Debug.Assert(!name.IsEmpty());
@@ -133,7 +133,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             return
                 ExportedTypes.TryGetOrDefault(name) ??
                 GetTypeFromNonExtensionAssemblies(name.ClrName()) ??
-                _next.GetType(name);
+                _next.ResolveType(name);
         }
 
         NamedTypeSymbol GetTypeFromNonExtensionAssemblies(string clrName)
@@ -154,7 +154,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             return null;
         }
 
-        public SourceFileSymbol GetFile(string path)
+        public SourceFileSymbol ResolveFile(string path)
         {
             // TODO: lookup referenced assemblies
 
@@ -163,7 +163,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
             // TODO: RoutineSemantics // relative to current script
 
-            return _next.GetFile(path);
+            return _next.ResolveFile(path);
         }
 
         public IPhpRoutineSymbol ResolveFunction(QualifiedName name)
@@ -209,11 +209,6 @@ namespace Pchp.CodeAnalysis.Semantics.Model
                 return null;    // TODO: ErrCode ambiguity
 
             return _next.ResolveConstant(name);
-        }
-
-        public bool IsAssignableFrom(QualifiedName qname, INamedTypeSymbol from)
-        {
-            throw new NotImplementedException();
         }
 
         #endregion

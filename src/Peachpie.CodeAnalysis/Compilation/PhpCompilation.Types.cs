@@ -192,13 +192,13 @@ namespace Pchp.CodeAnalysis
                 }
                 else if (tref is AST.INamedTypeRef)
                 {
-                    var t = (NamedTypeSymbol)GlobalSemantics.GetType(((AST.INamedTypeRef)tref).ClassName);
+                    var t = (NamedTypeSymbol)GlobalSemantics.ResolveType(((AST.INamedTypeRef)tref).ClassName);
                     return t.IsErrorTypeOrNull()
                         ? CoreTypes.Object.Symbol   // TODO: merge candidates if any
                         : t;
                 }
                 else if (tref is AST.ReservedTypeRef) throw new ArgumentException(); // NOTE: should be translated by parser to AliasedTypeRef
-                else if (tref is AST.AnonymousTypeRef) return (NamedTypeSymbol)GlobalSemantics.GetType(((AST.AnonymousTypeRef)tref).TypeDeclaration.GetAnonymousTypeQualifiedName());
+                else if (tref is AST.AnonymousTypeRef) return (NamedTypeSymbol)GlobalSemantics.ResolveType(((AST.AnonymousTypeRef)tref).TypeDeclaration.GetAnonymousTypeQualifiedName());
                 else if (tref is AST.MultipleTypeRef)
                 {
                     TypeSymbol result = null;
@@ -215,6 +215,41 @@ namespace Pchp.CodeAnalysis
             }
 
             return null;
+        }
+
+        #endregion
+
+        #region Factory
+
+        Dictionary<Accessibility, AttributeData> _lazyPhpMemberVisibilityAttribute = null;
+
+        internal AttributeData GetPhpMemberVisibilityAttribute(Symbol member, Accessibility accessibility)
+        {
+            if (member is FieldSymbol || member is MethodSymbol || member is PropertySymbol)
+            {
+
+                if (_lazyPhpMemberVisibilityAttribute == null)
+                {
+                    _lazyPhpMemberVisibilityAttribute = new Dictionary<Accessibility, AttributeData>();
+                }
+
+                if (!_lazyPhpMemberVisibilityAttribute.TryGetValue(accessibility, out AttributeData attr))
+                {
+                    // [PhpMemberVisibilityAttribute( {(int)DeclaredAccessibility} )]
+                    attr = new SynthesizedAttributeData(
+                        CoreTypes.PhpMemberVisibilityAttribute.Ctor(CoreTypes.Int32),
+                        ImmutableArray.Create(new TypedConstant(CoreTypes.Int32.Symbol, TypedConstantKind.Primitive, (int)accessibility)),
+                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+
+                    _lazyPhpMemberVisibilityAttribute[accessibility] = attr;
+                }
+
+                return attr;
+            }
+            else
+            {
+                throw new ArgumentException();
+            }
         }
 
         #endregion

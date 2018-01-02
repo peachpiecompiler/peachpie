@@ -503,14 +503,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             // bind reference expression for foreach key variable
             var keyVar = (x.KeyVariable != null)
-                ? (BoundReferenceExpression)_binder.BindWholeExpression(x.KeyVariable.Variable, BoundAccess.Write).GetOnlyBoundElement()
+                ? (BoundReferenceExpression)_binder.BindWholeExpression(x.KeyVariable.Variable, BoundAccess.Write).SingleBoundElement()
                 : null;
 
             // bind reference expression for foreach value variable 
             var valueVar = (BoundReferenceExpression)(_binder.BindWholeExpression(
                     (Expression)x.ValueVariable.Variable ?? x.ValueVariable.List,
                     x.ValueVariable.Alias ? BoundAccess.Write.WithWriteRef(FlowAnalysis.TypeRefMask.AnyType) : BoundAccess.Write)
-                .GetOnlyBoundElement());
+                .SingleBoundElement());
 
             // ForeachMoveNextEdge : ConditionalEdge
             var moveEdge = new ForeachMoveNextEdge(

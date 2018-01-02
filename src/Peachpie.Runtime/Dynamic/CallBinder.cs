@@ -16,7 +16,7 @@ namespace Pchp.Core.Dynamic
     abstract class CallBinder : DynamicMetaObjectBinder
     {
         protected readonly Type _returnType;
-        
+
         public override Type ReturnType => _returnType;
 
         protected abstract CallSiteContext CreateContext();
@@ -189,7 +189,7 @@ namespace Pchp.Core.Dynamic
 
             // resolve target expression:
             var isobject = bound.TargetType != null;
-            
+
             if (isobject == false)
             {
                 /* Template:
@@ -257,15 +257,22 @@ namespace Pchp.Core.Dynamic
             if (bound.Name != null)
             {
                 // candidates:
-                return bound.TargetType
+                IEnumerable<MethodBase> candidates =
+                    bound.TargetType
                     .SelectRuntimeMethods(bound.Name)
-                    .SelectVisible(bound.ClassContext)
-                    .SelectStatic()
-                    .ToArray();
+                    .SelectVisible(bound.ClassContext);
+
+                if (bound.TargetInstance == null)
+                {
+                    candidates = candidates.SelectStatic();
+                }
+
+                //
+                return candidates.ToArray();
             }
             else
             {
-                throw new NotImplementedException();
+                throw new ArgumentException();
             }
         }
 

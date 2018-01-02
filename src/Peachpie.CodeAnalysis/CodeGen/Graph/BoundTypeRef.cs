@@ -80,27 +80,22 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(cg != null);
 
-            TypeSymbol t;
-
             if (this.ResolvedType.IsValidType())
             {
-                t = EmitLoadPhpTypeInfo(cg, this.ResolvedType);
+                return EmitLoadPhpTypeInfo(cg, this.ResolvedType);
             }
             else if (_typeRef is ReservedTypeRef) // late static bound
             {
                 switch (((ReservedTypeRef)_typeRef).Type)
                 {
                     case ReservedTypeRef.ReservedType.@static:
-                        t = EmitLoadStaticPhpTypeInfo(cg);
-                        break;
+                        return EmitLoadStaticPhpTypeInfo(cg);
 
                     case ReservedTypeRef.ReservedType.self:
-                        t = EmitLoadSelf(cg);
-                        break;
+                        return EmitLoadSelf(cg);
 
                     case ReservedTypeRef.ReservedType.parent:
-                        t = EmitLoadParent(cg);
-                        break;
+                        return EmitLoadParent(cg);
 
                     default:
                         throw Roslyn.Utilities.ExceptionUtilities.Unreachable;
@@ -110,10 +105,10 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 if (_objectTypeInfoSemantic && this.TypeExpression != null) // type of object instance handled // only makes sense if type is indirect
                 {
-                    Debug.Assert(throwOnError); // expecting we throw on error
+                    // TODO: throwOnError
                     cg.EmitLoadContext();
                     cg.EmitConvertToPhpValue(this.TypeExpression);
-                    t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.TypeNameOrObjectToType_Context_PhpValue);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.TypeNameOrObjectToType_Context_PhpValue);
                 }
                 else
                 {
@@ -121,13 +116,11 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitLoadContext();
                     this.EmitClassName(cg);
                     cg.Builder.EmitBoolConstant(true);
-                    t = cg.EmitCall(ILOpCode.Call, throwOnError
+                    return cg.EmitCall(ILOpCode.Call, throwOnError
                         ? cg.CoreMethods.Context.GetDeclaredTypeOrThrow_string_bool
                         : cg.CoreMethods.Context.GetDeclaredType_string_bool);
                 }
             }
-
-            return t;
         }
 
         ITypeSymbol IBoundTypeRef.EmitLoadTypeInfo(CodeGenerator cg, bool throwOnError)
@@ -136,36 +129,75 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Emits <c>PhpTypeInfo</c> of late static bound type.
         /// </summary>
-        internal static TypeSymbol  EmitLoadStaticPhpTypeInfo(CodeGenerator cg)
+        internal static TypeSymbol EmitLoadStaticPhpTypeInfo(CodeGenerator cg)
         {
-            if (cg.ThisPlaceOpt != null)
+            if (cg.Routine != null)
             {
-                // Template: GetPhpTypeInfo(this)
-                cg.EmitThis();
-                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.GetPhpTypeInfo_Object);
+                var thisVariablePlace = cg.Routine.GetPhpThisVariablePlace(cg.Module);
+                if (thisVariablePlace != null)
+                {
+                    // Template: GetPhpTypeInfo(this)
+                    thisVariablePlace.EmitLoad(cg.Builder);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.GetPhpTypeInfo_Object);
+                }
+
+                var lateStaticParameter = cg.Routine.ImplicitParameters.FirstOrDefault(SpecialParameterSymbol.IsLateStaticParameter);
+                if (lateStaticParameter != null)
+                {
+                    // Template: LOAD @static   // ~ @static parameter passed by caller
+                    return lateStaticParameter.EmitLoad(cg.Builder);
+                }
+
+                var caller = cg.CallerType;
+                if (caller is SourceTypeSymbol srct && srct.IsSealed)
+                {
+                    // `static` == `self` <=> self is sealed
+                    // Template: GetPhpTypeInfo<CallerType>()
+                    return EmitLoadPhpTypeInfo(cg, caller);
+                }
             }
-            else if (cg.Routine != null)
+
+            throw new InvalidOperationException();
+        }
+
+        /// <summary>
+        /// Loads <c>PhpTypeInfo</c> of <c>self</c>.
+        /// </summary>
+        /// <param name="cg"></param>
+        /// <returns>Type symbol of PhpTypeInfo.</returns>
+        internal static TypeSymbol EmitLoadSelf(CodeGenerator cg)
+        {
+            var caller = cg.CallerType;
+            if (caller != null)
             {
-                // Template: LOAD @static   // ~ @static parameter passed by caller
-                return new ParamPlace(cg.Routine.ImplicitParameters.First(SpecialParameterSymbol.IsLateStaticParameter))
-                    .EmitLoad(cg.Builder);
+                // current scope is resolved in compile-time:
+                // Template: GetPhpTypeInfo<CallerType>()
+                return EmitLoadPhpTypeInfo(cg, caller);
             }
             else
             {
-                throw new InvalidOperationException();
+                // Template: Operators.GetSelf( {caller type handle} )
+                cg.EmitCallerTypeHandle();
+                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetSelf_RuntimeTypeHandle);
             }
-        }
-
-        static TypeSymbol EmitLoadSelf(CodeGenerator cg)
-        {
-            cg.EmitCallerTypeHandle();
-            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetSelf_RuntimeTypeHandle);
         }
 
         static TypeSymbol EmitLoadParent(CodeGenerator cg)
         {
-            cg.EmitCallerTypeHandle();
-            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetParent_RuntimeTypeHandle);
+            var caller = cg.CallerType;
+            if (caller != null)
+            {
+                // current scope is resolved in compile-time:
+                // Template: Operators.GetParent( GetPhpTypeInfo<CallerType>() )
+                EmitLoadPhpTypeInfo(cg, caller);
+                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetParent_PhpTypeInfo);
+            }
+            else
+            {
+                // Template: Operators.GetParent( {caller type handle} )
+                cg.EmitCallerTypeHandle();
+                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetParent_RuntimeTypeHandle);
+            }
         }
 
         internal static TypeSymbol EmitLoadPhpTypeInfo(CodeGenerator cg, ITypeSymbol t)

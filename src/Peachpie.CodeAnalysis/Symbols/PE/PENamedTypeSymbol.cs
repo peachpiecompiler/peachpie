@@ -106,20 +106,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public IMethodSymbol InstanceConstructorFieldsOnly => InstanceConstructors.Where(MethodSymbolExtensions.IsFieldsOnlyConstructor).SingleOrDefault();
 
-        /// <summary>
-        /// Optional.
-        /// A nested class <c>__statics</c> containing class static fields and constants which are bound to runtime context.
-        /// </summary>
-        public INamedTypeSymbol StaticsContainer
-        {
-            get
-            {
-                return this.GetTypeMembers(WellKnownPchpNames.StaticsHolderClassName)
-                    .Where(t => !t.IsStatic && t.DeclaredAccessibility == Accessibility.Public && t.Arity == 0)
-                    .SingleOrDefault();
-            }
-        }
-
         #endregion
 
         #region PENamedTypeSymbolNonGeneric

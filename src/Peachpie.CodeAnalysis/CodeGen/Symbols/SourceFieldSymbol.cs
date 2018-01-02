@@ -2,7 +2,9 @@
 using Pchp.CodeAnalysis.Semantics;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,42 +15,17 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Whteher the field initializer requires a reference to current <c>Context</c>.
         /// </summary>
-        internal bool RequiresContext
-        {
-            get
-            {
-                if (this.Initializer != null && !this.Initializer.ConstantValue.HasValue)
-                {
-                    return this.Initializer.RequiresContext;
-                }
-
-                return false;
-            }
-        }
+        internal bool RequiresContext => this.Initializer != null && this.Initializer.RequiresContext;
 
         /// <summary>
         /// Gets value indicating whether the field has to be contained in <see cref="SynthesizedStaticFieldsHolder"/>.
         /// </summary>
-        internal bool RequiresHolder
-        {
-            get
-            {
-                switch (this.FieldKind)
-                {
-                    case KindEnum.AppStaticField: return false;
-                    case KindEnum.StaticField: return true; // PHP static field is bound to Context and has to be instantiated within holder class
-                    case KindEnum.InstanceField: return false;
-                    case KindEnum.ClassConstant: return this.GetConstantValue(false) == null;   // if constant has to be evaluated in runtime, we have to evaluate its value for each context separatelly within holder
-                    default:
-                        throw Roslyn.Utilities.ExceptionUtilities.Unreachable;
-                }
-            }
-        }
+        internal bool RequiresHolder => PhpFieldSymbolExtension.RequiresHolder(this, this.FieldKind);
 
-        internal void EmitInit(CodeGenerator cg)
+        void IPhpPropertySymbol.EmitInit(CodeGenerator cg)
         {
-            var fldplace = new FieldPlace(IsStatic ? null : new ArgPlace(ContainingType, 0), this);
-            
+            var fldplace = new FieldPlace(IsStatic ? null : new ArgPlace(ContainingType, 0), this, cg.Module);
+
             if (this.Initializer != null)
             {
                 // fld = <initializer>
@@ -61,6 +38,49 @@ namespace Pchp.CodeAnalysis.Symbols
                 // fld = default(type)
                 cg.EmitInitializePlace(fldplace);
             }
+        }
+    }
+
+    partial class SynthesizedTraitFieldSymbol
+    {
+        void IPhpPropertySymbol.EmitInit(CodeGenerator cg)
+        {
+            // this.{FIELD} = {ORIGINAL_FIELD}
+
+            var fldplace = new FieldPlace(IsStatic ? null : new ArgPlace(ContainingType, 0), this, cg.Module);
+
+            fldplace.EmitStorePrepare(cg.Builder);
+            cg.EmitConvert(EmitLoadSourceValue(cg), 0, this.Type);
+            fldplace.EmitStore(cg.Builder);
+        }
+
+        TypeSymbol EmitLoadSourceValue(CodeGenerator cg)
+        {
+            if (_traitmember is FieldSymbol f)
+            {
+                TypeSymbol instanceType;
+                var phpf = (IPhpPropertySymbol)f;
+                if (phpf.FieldKind == PhpPropertyKind.InstanceField)
+                {
+                    // Template: LOAD <>trait_T
+                    Debug.Assert(_traitInstanceField != null);
+                    instanceType = _traitInstanceField.EmitLoad(cg, cg.ThisPlaceOpt);
+                }
+                else
+                {
+                    instanceType = null;
+                }
+
+                // 
+                BoundFieldPlace.EmitLoadTarget(cg, f, instanceType);
+
+                // LOAD {FIELD}
+                cg.Builder.EmitOpCode(ILOpCode.Ldfld);
+                cg.EmitSymbolToken(f, null);
+                return f.Type;
+            }
+
+            throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(_traitmember);
         }
     }
 }

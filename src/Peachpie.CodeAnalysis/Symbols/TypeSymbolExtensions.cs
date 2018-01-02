@@ -43,6 +43,11 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>Gets value indicating the type is not null, not ambiguous and not error type.</summary>
         public static bool IsValidType(this TypeSymbol type) => !IsErrorTypeOrNull(type);
 
+        public static bool IsTraitType(this TypeSymbol type)
+        {
+            return type is IPhpTypeSymbol phpt && phpt.IsTrait;
+        }
+
         public static bool ImplementsInterface(this TypeSymbol subType, TypeSymbol superInterface/*, ref HashSet<DiagnosticInfo> useSiteDiagnostics*/)
         {
             if (subType == superInterface)

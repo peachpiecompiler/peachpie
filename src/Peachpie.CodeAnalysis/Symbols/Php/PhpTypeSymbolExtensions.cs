@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -8,12 +9,55 @@ namespace Pchp.CodeAnalysis.Symbols
 {
     internal static class PhpTypeSymbolExtensions
     {
+        /// <summary>
+        /// Gets special <c>_statics</c> nested class holding static fields bound to context.
+        /// </summary>
+        /// <returns></returns>
+        public static NamedTypeSymbol TryGetStaticsHolder(this INamedTypeSymbol t)
+        {
+            if (t is SourceTypeSymbol srct) return (NamedTypeSymbol)srct.StaticsContainer;
+
+            // a nested class `_statics`:
+            return (NamedTypeSymbol)t.GetTypeMembers(WellKnownPchpNames.StaticsHolderClassName).Where(IsStaticsContainer).SingleOrDefault();
+        }
+
+        public static bool IsStaticsContainer(this INamedTypeSymbol t)
+        {
+            return
+                t.Name == WellKnownPchpNames.StaticsHolderClassName &&
+                t.DeclaredAccessibility == Accessibility.Public &&
+                t.Arity == 0 &&
+                !t.IsStatic &&
+                t.ContainingType != null;
+        }
+
+        /// <summary>
+        /// Enumerates class fields and properties as declared in PHP.
+        /// </summary>
+        public static IEnumerable<IPhpPropertySymbol> EnumerateProperties(this INamedTypeSymbol t)
+        {
+            var result = t.GetMembers().OfType<IPhpPropertySymbol>();
+
+            var __statics = TryGetStaticsHolder(t);
+            if (__statics != null)
+            {
+                result = result.Concat(EnumerateProperties(__statics));
+            }
+
+            var btype = t.BaseType;
+            if (btype != null && btype.SpecialType != SpecialType.System_Object)
+            {
+                result = result.Concat(EnumerateProperties(btype));
+            }
+
+            return result;
+        }
+
         static FieldSymbol GetStaticField(INamedTypeSymbol t, string name)
         {
             FieldSymbol field = null;
 
-            var phpt = t as IPhpTypeSymbol;
-            var statics = phpt?.StaticsContainer;
+            var statics = TryGetStaticsHolder(t);
             if (statics != null)
             {
                 // __statics.FIELD
@@ -34,8 +78,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             FieldSymbol field = null;
 
-            var phpt = t as IPhpTypeSymbol;
-            var statics = phpt?.StaticsContainer;
+            var statics = TryGetStaticsHolder(t);
             if (statics != null)
             {
                 // readonly __statics.CONSTANT
@@ -123,10 +166,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
             }
 
-            // const on an interface
-            foreach (var iface in type.AllInterfaces)
+            // constants on interfaces
+            foreach (var i in type.AllInterfaces)
             {
-                var f = GetClassConstant(iface, name);
+                var f = GetClassConstant(i, name);
                 if (f != null)
                 {
                     return f;

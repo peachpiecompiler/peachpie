@@ -110,7 +110,7 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         void EnqueueFieldsInitializer(SourceTypeSymbol type)
         {
-            type.GetMembers().OfType<SourceFieldSymbol>().Foreach(f =>
+            type.GetDeclaredMembers().OfType<SourceFieldSymbol>().Foreach(f =>
             {
                 if (f.Initializer != null)
                 {
@@ -144,12 +144,12 @@ namespace Pchp.CodeAnalysis
             // TODO: async
             // TODO: in parallel
 
-            block.Accept(AnalysisFactory());
+            block.Accept(AnalysisFactory(block.FlowState));
         }
 
-        ExpressionAnalysis AnalysisFactory()
+        ExpressionAnalysis AnalysisFactory(FlowState state)
         {
-            return new ExpressionAnalysis(_worklist, _compilation.GlobalSemantics);
+            return new ExpressionAnalysis(_worklist, new LocalSymbolProvider(_compilation.GlobalSemantics, state.FlowContext));
         }
 
         internal void DiagnoseMethods()

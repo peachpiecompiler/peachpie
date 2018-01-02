@@ -17,7 +17,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets place referring to <c>Pchp.Core.Context</c> object.
         /// </summary>
-        internal virtual IPlace GetContextPlace()
+        internal virtual IPlace GetContextPlace(PEModuleBuilder module)
         {
             var ps = ImplicitParameters;
             if (ps.Count != 0 && SpecialParameterSymbol.IsContextParameter(ps[0]))
@@ -43,26 +43,28 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets place of PHP <c>$this</c> variable.
         /// </summary>
-        public virtual IPlace PhpThisVariablePlace
+        public virtual IPlace GetPhpThisVariablePlace(PEModuleBuilder module = null)
         {
-            get
+            var thisPlace = GetThisPlace();
+            if (thisPlace != null)
             {
-                var thisPlace = GetThisPlace();
-                if (thisPlace != null)
+                if (this.IsGeneratorMethod())
                 {
-                    if (this.IsGeneratorMethod())
-                    {
-                        // $this ~ arg1
-                        thisPlace = new ArgPlace(thisPlace.TypeOpt, 1);
-                    }
+                    // $this ~ arg1
+                    thisPlace = new ArgPlace(thisPlace.TypeOpt, 1);
+                }
+                else if (this.ContainingType.IsTraitType())
+                {
+                    // $this ~ this.<>this
+                    thisPlace = new FieldPlace(thisPlace, ((SourceTraitTypeSymbol)this.ContainingType).RealThisField, module);
+                }
 
-                    //
-                    return thisPlace;
-                }
-                else
-                {
-                    return null;
-                }
+                //
+                return thisPlace;
+            }
+            else
+            {
+                return null;
             }
         }
 
@@ -263,7 +265,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
     partial class SourceMethodSymbol
     {
-        internal override IPlace GetContextPlace()
+        internal override IPlace GetContextPlace(PEModuleBuilder module)
         {
             var thisplace = GetThisPlace();
             if (thisplace != null)
@@ -274,7 +276,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 var ctx_field = t.ContextStore;
                 if (ctx_field != null)  // might be null in interfaces
                 {
-                    return new FieldPlace(thisplace, ctx_field);
+                    return new FieldPlace(thisplace, ctx_field, module);
                 }
                 else
                 {
@@ -284,7 +286,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             //
-            return base.GetContextPlace();
+            return base.GetContextPlace(module);
         }
 
         internal override void SynthesizeStubs(PEModuleBuilder module, DiagnosticBag diagnostic)
@@ -319,7 +321,7 @@ namespace Pchp.CodeAnalysis.Symbols
         internal void EmitInit(PEModuleBuilder module)
         {
             var cctor = module.GetStaticCtorBuilder(_file);
-            var field = new FieldPlace(null, this.EnsureRoutineInfoField(module));
+            var field = new FieldPlace(null, this.EnsureRoutineInfoField(module), module);
 
             // {RoutineInfoField} = RoutineInfo.CreateUserRoutine(name, handle)
             field.EmitStorePrepare(cctor);
@@ -334,25 +336,22 @@ namespace Pchp.CodeAnalysis.Symbols
 
     partial class SourceLambdaSymbol
     {
-        internal override IPlace GetContextPlace()
+        internal override IPlace GetContextPlace(PEModuleBuilder module)
         {
             // Template: Operators.Context(<closure>)
             return new OperatorPlace(DeclaringCompilation.CoreMethods.Operators.Context_Closure, new ParamPlace(ClosureParameter));
         }
 
-        public override IPlace PhpThisVariablePlace
+        public override IPlace GetPhpThisVariablePlace(PEModuleBuilder module = null)
         {
-            get
+            if (UseThis)
             {
-                if (UseThis)
-                {
-                    // Template: Operators.This(<closure>)
-                    return new OperatorPlace(DeclaringCompilation.CoreMethods.Operators.This_Closure, new ParamPlace(ClosureParameter));
-                }
-                else
-                {
-                    return null;
-                }
+                // Template: Operators.This(<closure>)
+                return new OperatorPlace(DeclaringCompilation.CoreMethods.Operators.This_Closure, new ParamPlace(ClosureParameter));
+            }
+            else
+            {
+                return null;
             }
         }
 
@@ -365,7 +364,7 @@ namespace Pchp.CodeAnalysis.Symbols
         internal void EmitInit(PEModuleBuilder module)
         {
             var cctor = module.GetStaticCtorBuilder(_container);
-            var field = new FieldPlace(null, this.EnsureRoutineInfoField(module));
+            var field = new FieldPlace(null, this.EnsureRoutineInfoField(module), module);
 
             var ct = module.Compilation.CoreTypes;
 

@@ -14,6 +14,8 @@ using System.Globalization;
 using System.Threading;
 using Microsoft.CodeAnalysis.Text;
 using static Pchp.CodeAnalysis.AstUtils;
+using Pchp.CodeAnalysis.Utilities;
+using Pchp.CodeAnalysis.Errors;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -46,7 +48,10 @@ namespace Pchp.CodeAnalysis.Symbols
                     //
                     if (_lazyContextField == null)
                     {
-                        _lazyContextField = new SynthesizedFieldSymbol(this, DeclaringCompilation.CoreTypes.Context.Symbol, SpecialParameterSymbol.ContextName, Accessibility.Protected, false, true);
+                        _lazyContextField = new SynthesizedFieldSymbol(this, DeclaringCompilation.CoreTypes.Context.Symbol, SpecialParameterSymbol.ContextName,
+                            accessibility: this.IsSealed ? Accessibility.Private : Accessibility.Protected,
+                            isStatic: false,
+                            isReadOnly: true);
                     }
                 }
 
@@ -63,7 +68,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                if (_lazyRuntimeFieldsField == null && !this.IsStatic && !this.IsInterface)
+                if (_lazyRuntimeFieldsField == null && !this.IsStatic && !this.IsInterface && !this.IsTrait)
                 {
                     const string fldname = "<runtime_fields>";
 
@@ -93,18 +98,257 @@ namespace Pchp.CodeAnalysis.Symbols
 
         #endregion
 
+        #region TraitUse
+
+        protected sealed class TraitUse
+        {
+            /// <summary>
+            /// Type using the trait.
+            /// </summary>
+            readonly SourceTypeSymbol ContainingType;
+
+            /// <summary>
+            /// Constructed trait type symbol.
+            /// </summary>
+            public readonly NamedTypeSymbol Symbol;
+            public readonly TraitsUse.TraitAdaptation[] Adaptations;
+
+            /// <summary>
+            /// private readonly T &lt;&gt;_t;
+            /// </summary>
+            public IFieldSymbol TraitInstanceField
+            {
+                get
+                {
+                    if (_lazyTraitInstanceField == null)
+                    {
+                        _lazyTraitInstanceField = new SynthesizedFieldSymbol(ContainingType, Symbol, "<>" + "trait_" + Symbol.Name,
+                            accessibility: Accessibility.Private,
+                            isStatic: false,
+                            isReadOnly: true);
+                    }
+
+                    return _lazyTraitInstanceField;
+                }
+            }
+            IFieldSymbol _lazyTraitInstanceField;
+
+            /// <summary>
+            /// Specifies implementation of a trait method in containing class.
+            /// </summary>
+            [DebuggerDisplay("{Visibility} {Name,nq} -> {SourceMethod}")]
+            struct DeclaredAs
+            {
+                /// <summary>
+                /// Trait method.
+                /// </summary>
+                public MethodSymbol SourceMethod;
+
+                /// <summary>
+                /// Method visibility in containing class.
+                /// </summary>
+                public Accessibility Accessibility;
+
+                /// <summary>
+                /// Method name in containing class.
+                /// </summary>
+                public string Name;
+            }
+
+            /// <summary>
+            /// Gets real accessibility (visibility) of trait member.
+            /// </summary>
+            Accessibility DeclaredAccessibility(MethodSymbol m)
+            {
+                if (m is SynthesizedMethodSymbol sm && sm.ForwardedCall != null)
+                {
+                    return DeclaredAccessibility(sm);
+                }
+                else
+                {
+                    return m.DeclaredAccessibility;
+                }
+            }
+
+            /// <summary>
+            /// Map of visible trait members how to be declared in containing class.
+            /// </summary>
+            Dictionary<Name, DeclaredAs> MembersMap
+            {
+                get
+                {
+                    if (_lazyMembersMap == null)
+                    {
+                        // collect source methods to be mapped to containing class:
+                        var sourcemembers = new Dictionary<MemberQualifiedName, MethodSymbol>();
+                        var map = new Dictionary<Name, DeclaredAs>();
+
+                        // mehods that will be mapped to containing class:
+                        IEnumerable<MethodSymbol> traitmethods = Symbol.GetMembers().OfType<MethodSymbol>();
+
+                        // methods from used traits:
+                        if (Symbol.OriginalDefinition is SourceTypeSymbol srct && !srct.TraitUses.IsEmpty)
+                        {
+                            // containing trait uses first (members will be overriden by this trait use)
+                            traitmethods = srct
+                                .TraitMembers.OfType<MethodSymbol>()
+                                .Select(m => m.AsMember(m.ContainingType.Construct(ContainingType)))
+                                .Concat(traitmethods);
+                        }
+
+                        // map of methods from trait:
+                        foreach (var m in traitmethods)
+                        {
+                            // {T::method_name} => method
+                            var phpt = (IPhpTypeSymbol)m.ContainingType.OriginalDefinition;
+                            sourcemembers[new MemberQualifiedName(phpt.FullName, new Name(m.RoutineName))] = m;
+
+                            // {method_name} => method
+                            map[new Name(m.RoutineName)] = new DeclaredAs()
+                            {
+                                Name = m.RoutineName,
+                                SourceMethod = m,
+                                Accessibility = DeclaredAccessibility(m),
+                            };
+                        }
+
+                        // adaptations
+                        if (Adaptations != null && Adaptations.Length != 0)
+                        {
+                            var phpt = (IPhpTypeSymbol)Symbol.OriginalDefinition;
+                            foreach (var a in Adaptations)
+                            {
+                                var membername = a.TraitMemberName.Item2.Name;
+
+                                if (a is TraitsUse.TraitAdaptationPrecedence precedence)
+                                {
+                                    if (map.TryGetValue(membername, out DeclaredAs declared) &&
+                                        precedence.IgnoredTypes.Select(t => t.QualifiedName.Value).Contains(((IPhpTypeSymbol)declared.SourceMethod.ContainingType.OriginalDefinition).FullName))
+                                    {
+                                        // member was hidden
+                                        map.Remove(membername);
+                                    }
+                                }
+                                else if (a is TraitsUse.TraitAdaptationAlias alias)
+                                {
+                                    // add an alias to the map:
+                                    var qname = a.TraitMemberName.Item1.HasValue ? a.TraitMemberName.Item1.QualifiedName : phpt.FullName;
+
+                                    if (sourcemembers.TryGetValue(new MemberQualifiedName(qname, membername), out MethodSymbol s))
+                                    {
+                                        if (map.TryGetValue(membername, out DeclaredAs declaredas) && declaredas.SourceMethod == s)
+                                        {
+                                            // aliasing the symbol, remove the old declaration
+                                            map.Remove(membername);
+                                        }
+
+                                        declaredas = new DeclaredAs()
+                                        {
+                                            SourceMethod = s,
+                                            Name = membername.Value,
+                                            Accessibility = DeclaredAccessibility(s),
+                                        };
+
+                                        if (alias.NewModifier.HasValue) declaredas.Accessibility = alias.NewModifier.Value.GetAccessibility();
+                                        if (alias.NewName.HasValue) declaredas.Name = alias.NewName.Name.Value;
+
+                                        // update map
+                                        map[new Name(declaredas.Name)] = declaredas;
+                                    }
+                                }
+                                else
+                                {
+                                    throw ExceptionUtilities.UnexpectedValue(a);
+                                }
+                            }
+                        }
+
+                        //
+                        _lazyMembersMap = map;
+                    }
+
+                    return _lazyMembersMap;
+                }
+            }
+            Dictionary<Name, DeclaredAs> _lazyMembersMap;
+
+            /// <summary>
+            /// Gets synthesized members (methods, properties, constants).
+            /// </summary>
+            public ImmutableArray<Symbol> GetMembers()
+            {
+                if (_lazyMembers.IsDefault)
+                {
+                    _lazyMembers = CreateMembers().AsImmutable();
+                }
+
+                return _lazyMembers;
+            }
+            ImmutableArray<Symbol> _lazyMembers;
+
+            IEnumerable<Symbol> CreateMembers()
+            {
+                foreach (var p in Symbol.EnumerateProperties())
+                {
+                    yield return new SynthesizedTraitFieldSymbol(ContainingType, (FieldSymbol)TraitInstanceField, p);
+                }
+
+                // methods
+                foreach (var m in MembersMap.Values)
+                {
+                    if (m.SourceMethod.IsAbstract)
+                    {
+                        // abstract methods must be implemented by containing class
+                        continue;
+                    }
+
+                    if (ContainingType.Syntax.Members.OfType<MethodDecl>().Any(x => x.Name.Name.Equals(m.Name)))
+                    {
+                        // "overriden" in containing class
+                        continue;
+                    }
+
+                    yield return CreateTraitMethodImplementation(m);
+                }
+
+                //
+                yield break;
+            }
+
+            SynthesizedMethodSymbol CreateTraitMethodImplementation(DeclaredAs declared)
+            {
+                return new SynthesizedTraitMethodSymbol(
+                    ContainingType, declared.Name, declared.SourceMethod, declared.Accessibility,
+                    isfinal: false);
+            }
+
+            public TraitUse(SourceTypeSymbol type, NamedTypeSymbol symbol, TraitsUse.TraitAdaptation[] adaptations)
+            {
+                Debug.Assert(symbol != null);
+                Debug.Assert(symbol.IsTraitType());
+
+                this.ContainingType = type;
+                this.Symbol = symbol.Construct(type is SourceTraitTypeSymbol tt ? tt.TSelfParameter : type);    // if contained in trait, pass its TSelf
+                this.Adaptations = adaptations;
+            }
+        }
+
+        #endregion
+
         readonly protected TypeDecl _syntax;
         readonly SourceFileSymbol _file;
 
         /// <summary>
         /// Resolved base type.
         /// </summary>
-        NamedTypeSymbol _lazyBaseType;
+        protected NamedTypeSymbol _lazyBaseType;
 
         /// <summary>
         /// Resolved base interfaces.
         /// </summary>
         ImmutableArray<NamedTypeSymbol> _lazyInterfacesType;
+
+        ImmutableArray<TraitUse> _lazyTraitUses;
 
         /// <summary>
         /// In case the declaration is ambiguous, this references symbol with alternative declaration.
@@ -162,16 +406,30 @@ namespace Pchp.CodeAnalysis.Symbols
 
         List<SourceLambdaSymbol> _lambdas;
 
-        /// <summary>[PhpTrait] attribute if this class is a trait. Initialized lazily.</summary>
-        BaseAttributeData _lazyPhpTraitAttribute;
-
         public SourceFileSymbol ContainingFile => _file;
 
         Location CreateLocation(TextSpan span) => Location.Create(ContainingFile.SyntaxTree, span);
 
+        Location CreateLocation(Devsense.PHP.Text.Span span) => CreateLocation(span.ToTextSpan());
+
         #region Construction
 
-        public SourceTypeSymbol(SourceFileSymbol file, TypeDecl syntax)
+        internal static SourceTypeSymbol Create(SourceFileSymbol file, TypeDecl syntax)
+        {
+            if (syntax is AnonymousTypeDecl at)
+            {
+                return new SourceAnonymousTypeSymbol(file, at);
+            }
+
+            if (syntax.MemberAttributes.IsTrait())
+            {
+                return new SourceTraitTypeSymbol(file, syntax);
+            }
+
+            return new SourceTypeSymbol(file, syntax);
+        }
+
+        protected SourceTypeSymbol(SourceFileSymbol file, TypeDecl syntax)
         {
             Contract.ThrowIfNull(file);
 
@@ -182,12 +440,23 @@ namespace Pchp.CodeAnalysis.Symbols
             _staticsContainer = new SynthesizedStaticFieldsHolder(this);
         }
 
-        private SourceTypeSymbol(SourceFileSymbol file, TypeDecl syntax, NamedTypeSymbol baseType, ImmutableArray<NamedTypeSymbol> ifacesType, int version)
-            : this(file, syntax)
+        /// <summary>
+        /// Creates instance of self to be used for creating new versions of the same type.
+        /// </summary>
+        protected virtual SourceTypeSymbol NewSelf() => new SourceTypeSymbol(_file, _syntax);
+
+        private SourceTypeSymbol NewSelf(NamedTypeSymbol baseType, ImmutableArray<NamedTypeSymbol> ifacesType, ImmutableArray<TraitUse> traitUses, int version, SourceTypeSymbol nextVersion)
         {
-            _lazyBaseType = baseType;
-            _lazyInterfacesType = ifacesType;
-            _version = version;
+            var self = NewSelf();
+
+            self._lazyBaseType = baseType;
+            self._lazyInterfacesType = ifacesType;
+            self._lazyTraitUses = traitUses;
+            self._version = version;
+            self._nextVersion = nextVersion;
+
+            //
+            return self;
         }
 
         /// <summary>
@@ -206,9 +475,46 @@ namespace Pchp.CodeAnalysis.Symbols
             diagnostics.Free();
         }
 
-        private void ResolveBaseTypes(DiagnosticBag diagnostics)
+        ImmutableArray<NamedTypeSymbol> SelectInterfaces(TypeRefSymbol[] tsignature, ImmutableArray<NamedTypeSymbol> boundtypes)
+        {
+            Debug.Assert(tsignature.Length == boundtypes.Length);
+            List<NamedTypeSymbol> list = null;
+
+            for (int i = 0; i < tsignature.Length; i++)
+            {
+                if (tsignature[i].Attributes.IsInterface())
+                {
+                    if (list == null) list = new List<NamedTypeSymbol>(1);
+                    list.Add(boundtypes[i]);
+                }
+            }
+
+            //
+            return (list != null) ? list.AsImmutableOrEmpty() : ImmutableArray<NamedTypeSymbol>.Empty;
+        }
+
+        ImmutableArray<TraitUse> SelectTraitUses(TypeRefSymbol[] tsignature, ImmutableArray<NamedTypeSymbol> boundtypes)
+        {
+            Debug.Assert(tsignature.Length == boundtypes.Length);
+            List<TraitUse> list = null;
+
+            for (int i = 0; i < tsignature.Length; i++)
+            {
+                if (tsignature[i].Attributes.IsTrait())
+                {
+                    if (list == null) list = new List<TraitUse>(1);
+                    list.Add(new TraitUse(this, boundtypes[i], tsignature[i].TraitAdaptations));
+                }
+            }
+
+            //
+            return (list != null) ? list.AsImmutableOrEmpty() : ImmutableArray<TraitUse>.Empty;
+        }
+
+        void ResolveBaseTypes(DiagnosticBag diagnostics)
         {
             Debug.Assert(_lazyInterfacesType.IsDefault);    // not resolved yet
+            Debug.Assert(_lazyTraitUses.IsDefault);         // not resolved yet
 
             // get possible type signature [ BaseType?, Interface1, ..., InterfaceN ]
             // Single slots may refer to a MissingTypeSymbol or an ambiguous type symbol
@@ -220,38 +526,59 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (t.Symbol != null)
                 {
-                    if (t.Symbol.Arity != 0) diagnostics.Add(CreateLocation(t.TypeRef.Span.ToTextSpan()), Errors.ErrorCode.ERR_NotYetImplemented, "Using generic types.");
+                    if (t.Symbol.Arity != 0 && !t.Attributes.IsTrait())
+                    {
+                        diagnostics.Add(CreateLocation(t.TypeRef.Span), ErrorCode.ERR_NotYetImplemented, "Using generic types");
+                    }
                     if (t.Symbol is ErrorTypeSymbol err && err.CandidateReason != CandidateReason.Ambiguous)
                     {
-                        diagnostics.Add(CreateLocation(t.TypeRef.Span.ToTextSpan()), Errors.ErrorCode.ERR_TypeNameCannotBeResolved, t.TypeRef.ClassName.ToString());
+                        diagnostics.Add(CreateLocation(t.TypeRef.Span), ErrorCode.ERR_TypeNameCannotBeResolved, t.TypeRef.ClassName.ToString());
                     }
                 }
             }
 
             if (!diagnostics.HasAnyErrors())
             {
+                var tmperrors = new List<Diagnostic>();
+
                 // collect variations of possible base types
                 var variations = Variations(tsignature.Select(t => t.Symbol).AsImmutable(), this.ContainingFile);
 
                 // instantiate versions
-                bool self = true;
+                bool self = true;       // first we update bound types in current instance, then we create versions
                 int lastVersion = 0;    // the SourceTypeSymbol version, 0 ~ a single version, >0 ~ multiple version
                 foreach (var v in variations)
                 {
+                    Debug.Assert(v.Length == tsignature.Length);
+
+                    // Since we create various versions,
+                    // some of them may be invalid (wrong base type etc.).
+                    // Only create valid version. If there is no valid version, report the errors.
+
+                    if (CheckForErrors(tmperrors, tsignature, v))
+                    {
+                        Debug.Assert(tmperrors.Count != 0);
+                        continue;
+                    }
+
+                    var v_base = v[0];
+                    var v_interfaces = SelectInterfaces(tsignature, v);
+                    var v_traituses = SelectTraitUses(tsignature, v);
+
+                    // create the variation:
+
                     if (self)
                     {
-                        _lazyBaseType = v[0];
-                        _lazyInterfacesType = v.RemoveAt(0);
+                        _lazyBaseType = v_base;
+                        _lazyInterfacesType = v_interfaces;
+                        _lazyTraitUses = v_traituses;
+
                         self = false;
                     }
                     else
                     {
                         // create next version of this type with already resolved type signature
-                        _nextVersion = new SourceTypeSymbol(_file, _syntax, v[0], v.RemoveAt(0), ++lastVersion)
-                        {
-                            //_lambdas = _lambdas,
-                            _nextVersion = _nextVersion
-                        };
+                        _nextVersion = NewSelf(v_base, v_interfaces, v_traituses, ++lastVersion, _nextVersion);
 
                         // clone lambdas that use $this
                         if (_lambdas != null)
@@ -263,25 +590,79 @@ namespace Pchp.CodeAnalysis.Symbols
                         }
                     }
                 }
+
+                if (self)   // no valid variation found, report errors
+                {
+                    Debug.Assert(tmperrors != null && tmperrors.Count != 0);
+                    var spansreported = new HashSet<TextSpan>();
+                    foreach (var err in tmperrors)
+                    {
+                        if (spansreported.Add(err.Location.SourceSpan))
+                        {
+                            diagnostics.Add(err);
+                        }
+                    }
+                }
+
                 if (lastVersion != 0)
                 {
                     _version = ++lastVersion;
 
-                    diagnostics.Add(CreateLocation(_syntax.HeadingSpan.ToTextSpan()), Errors.ErrorCode.WRN_AmbiguousDeclaration, this.FullName);
+                    diagnostics.Add(CreateLocation(_syntax.HeadingSpan), ErrorCode.WRN_AmbiguousDeclaration, this.FullName);
                 }
+            }
+
+            if (diagnostics.HasAnyErrors())
+            {
+                // default with unbound error types:
+                _lazyBaseType = tsignature[0].Symbol;
+                _lazyInterfacesType = tsignature.Where(x => x.Attributes.IsInterface()).Select(x => x.Symbol).AsImmutable();
+                _lazyTraitUses = ImmutableArray<TraitUse>.Empty;
             }
             else
             {
-                // default:
-                _lazyBaseType = tsignature[0].Symbol;
-                _lazyInterfacesType = tsignature.Skip(1).Select(t => t.Symbol).AsImmutable();
+                // check for circular bases in all versions
+                for (var t = this; t != null; t = t.NextVersion)
+                {
+                    CheckForCircularBase(t, diagnostics);
+                }
+            }
+        }
+
+        bool CheckForErrors(List<Diagnostic> errors, TypeRefSymbol[] tsignature, ImmutableArray<NamedTypeSymbol> boundtypes)
+        {
+            int count = errors.Count;
+
+            // check the base:
+            var v_base = boundtypes[0];
+            if (v_base != null)
+            {
+                if (v_base.IsInterface || v_base.IsTraitType() || v_base.IsStructType())
+                {
+                    errors.Add(MessageProvider.Instance.CreateDiagnostic(
+                        ErrorCode.ERR_CannotExtendFrom, CreateLocation(tsignature[0].TypeRef.Span),
+                        this.FullName, v_base.IsInterface ? "interface" : v_base.IsStructType() ? "struct" : "trait", v_base.MakeQualifiedName()));
+                }
             }
 
-            // check for circular bases in all versions
-            for (var t = this; t != null; t = t.NextVersion)
+            // check implements and use
+            for (int i = 0; i < tsignature.Length; i++)
             {
-                CheckForCircularBase(t, diagnostics);
+                var target = tsignature[i].Attributes;
+                var bound = boundtypes[i];
+
+                if ((target.IsInterface() && !bound.IsInterface) || // implements non-interface
+                    (target.IsTrait() && !bound.IsTraitType()))     // use non-trait
+                {
+                    errors.Add(MessageProvider.Instance.CreateDiagnostic(
+                        target.IsInterface() ? ErrorCode.ERR_CannotImplementNonInterface : ErrorCode.ERR_CannotUseNonTrait,
+                        CreateLocation(tsignature[i].TypeRef.Span),
+                        this.FullName, bound.MakeQualifiedName()));
+                }
             }
+
+            //
+            return count != errors.Count;
         }
 
         void CheckForCircularBase(SourceTypeSymbol t, DiagnosticBag diagnostics)
@@ -291,7 +672,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (set.Add(b) == false)
                 {
-                    diagnostics.Add(CreateLocation(_syntax.HeadingSpan.ToTextSpan()), Errors.ErrorCode.ERR_CircularBase, t.BaseType, t);
+                    diagnostics.Add(CreateLocation(_syntax.HeadingSpan), ErrorCode.ERR_CircularBase, t.BaseType, t);
                     break;
                 }
             }
@@ -327,7 +708,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var ambiguity = (types[i] as ErrorTypeSymbol).CandidateSymbols.Cast<T>().ToList();
 
             // in case there is an ambiguity that is declared in current scope unconditionally, pick this one and ignore the others
-            var best = ambiguity.FirstOrDefault(x => ReferenceEquals((x as SourceTypeSymbol)?.ContainingFile, containingFile) && !(x as SourceTypeSymbol)._syntax.IsConditional);
+            var best = ambiguity.FirstOrDefault(x => (object)x is SourceTypeSymbol srct && ReferenceEquals(srct.ContainingFile, containingFile) && !srct.Syntax.IsConditional);
             if (best != null)
             {
                 ambiguity = new List<T>(1) { best };
@@ -357,10 +738,15 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             public INamedTypeRef TypeRef;
             public NamedTypeSymbol Symbol;
+
+            public PhpMemberAttributes Attributes;
+
+            /// <summary>Optional. Trait adaptations.</summary>
+            public TraitsUse.TraitAdaptation[] TraitAdaptations;
         }
 
         /// <summary>
-        /// Gets type signature of the type [BaseType or NULL, Interface1, ..., InterfaceN]
+        /// Gets type signature of the type [BaseType or NULL, Interface1, ..., InterfaceN, Trait1, ..., TraitN]
         /// </summary>
         private static IEnumerable<TypeRefSymbol> ResolveTypeSignature(SourceTypeSymbol type, PhpCompilation compilation)
         {
@@ -374,7 +760,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 yield return new TypeRefSymbol()
                 {
                     TypeRef = syntax.BaseClass,
-                    Symbol = (baseTypeName == type.FullName) ? type : (NamedTypeSymbol)compilation.GlobalSemantics.GetType(baseTypeName)
+                    Symbol = (baseTypeName == type.FullName) ? type : (NamedTypeSymbol)compilation.GlobalSemantics.ResolveType(baseTypeName),
                 };
             }
             else if ((syntax.MemberAttributes & (PhpMemberAttributes.Static | PhpMemberAttributes.Interface)) != 0) // a static class or an interface
@@ -396,7 +782,25 @@ namespace Pchp.CodeAnalysis.Symbols
                     yield return new TypeRefSymbol()
                     {
                         TypeRef = i,
-                        Symbol = (qname == type.FullName) ? type : (NamedTypeSymbol)compilation.GlobalSemantics.GetType(qname)
+                        Symbol = (qname == type.FullName) ? type : (NamedTypeSymbol)compilation.GlobalSemantics.ResolveType(qname),
+                        Attributes = PhpMemberAttributes.Interface,
+                    };
+                }
+            }
+
+            // used traits // consider: move to semantic binder?
+            foreach (var m in syntax.Members.OfType<TraitsUse>())
+            {
+                foreach (var t in m.TraitsList)
+                {
+                    var namedt = (INamedTypeRef)t;
+
+                    yield return new TypeRefSymbol()
+                    {
+                        TypeRef = namedt,
+                        Symbol = (NamedTypeSymbol)compilation.GlobalSemantics.ResolveType(namedt.ClassName),
+                        Attributes = PhpMemberAttributes.Trait,
+                        TraitAdaptations = m.TraitAdaptationBlock?.Adaptations,
                     };
                 }
             }
@@ -446,13 +850,11 @@ namespace Pchp.CodeAnalysis.Symbols
             return _lazyMembers;
         }
 
+        protected virtual MethodSymbol CreateSourceMethod(MethodDecl m) => new SourceMethodSymbol(this, m);
+
         IEnumerable<MethodSymbol> LoadMethods()
         {
-            // source methods
-            foreach (var m in _syntax.Members.OfType<MethodDecl>())
-            {
-                yield return new SourceMethodSymbol(this, m);
-            }
+            return _syntax.Members.OfType<MethodDecl>().Select(CreateSourceMethod);
         }
 
         IEnumerable<FieldSymbol> LoadFields()
@@ -463,18 +865,18 @@ namespace Pchp.CodeAnalysis.Symbols
             foreach (var flist in _syntax.Members.OfType<FieldDeclList>())
             {
                 var fkind = (flist.Modifiers & PhpMemberAttributes.Static) == 0
-                    ? SourceFieldSymbol.KindEnum.InstanceField
+                    ? PhpPropertyKind.InstanceField
                     : flist.IsAppStatic()
-                        ? SourceFieldSymbol.KindEnum.AppStaticField
-                        : SourceFieldSymbol.KindEnum.StaticField;
+                        ? PhpPropertyKind.AppStaticField
+                        : PhpPropertyKind.StaticField;
 
                 foreach (var f in flist.Fields)
                 {
                     yield return new SourceFieldSymbol(this, f.Name.Value,
-                        CreateLocation(f.NameSpan.ToTextSpan()),
+                        CreateLocation(f.NameSpan),
                         flist.Modifiers.GetAccessibility(), f.PHPDoc ?? flist.PHPDoc,
                         fkind,
-                        (f.Initializer != null) ? binder.BindWholeExpression(f.Initializer, BoundAccess.Read).GetOnlyBoundElement() : null);
+                        (f.Initializer != null) ? binder.BindWholeExpression(f.Initializer, BoundAccess.Read).SingleBoundElement() : null);
                 }
             }
 
@@ -484,29 +886,31 @@ namespace Pchp.CodeAnalysis.Symbols
                 foreach (var c in clist.Constants)
                 {
                     yield return new SourceFieldSymbol(this, c.Name.Name.Value,
-                        CreateLocation(c.Name.Span.ToTextSpan()),
+                        CreateLocation(c.Name.Span),
                         Accessibility.Public, c.PHPDoc ?? clist.PHPDoc,
-                        SourceFieldSymbol.KindEnum.ClassConstant,
-                        binder.BindWholeExpression(c.Initializer, BoundAccess.Read).GetOnlyBoundElement());
+                        PhpPropertyKind.ClassConstant,
+                        binder.BindWholeExpression(c.Initializer, BoundAccess.Read).SingleBoundElement());
                 }
             }
         }
 
         public override ImmutableArray<MethodSymbol> StaticConstructors => ImmutableArray<MethodSymbol>.Empty;
 
-        public override ImmutableArray<MethodSymbol> InstanceConstructors
+        public sealed override ImmutableArray<MethodSymbol> InstanceConstructors
         {
             get
             {
                 var result = _lazyCtors;
                 if (result.IsDefault)
                 {
-                    _lazyCtors = result = SynthesizedPhpCtorSymbol.CreateCtors(this).ToImmutableArray();
+                    _lazyCtors = result = CreateInstanceConstructors().ToImmutableArray();
                 }
 
                 return result;
             }
         }
+
+        protected virtual IEnumerable<MethodSymbol> CreateInstanceConstructors() => SynthesizedPhpCtorSymbol.CreateCtors(this);
 
         /// <summary>
         /// Gets magic <c>__invoke</c> method or <c>null</c>.
@@ -587,7 +991,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     name += "`" + decls.TakeWhile(f => f.Syntax != this.Syntax).Count().ToString();   // index within types with the same name
                 }
-                
+
                 // #version
                 if (_version != 0)
                 {
@@ -618,7 +1022,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override bool IsInterface => (_syntax.MemberAttributes & PhpMemberAttributes.Interface) != 0;
 
-        public bool IsTrait => (_syntax.MemberAttributes & PhpMemberAttributes.Trait) != 0;
+        public virtual bool IsTrait => false;
 
         public override bool IsAbstract => _syntax.MemberAttributes.IsAbstract() || IsInterface;
 
@@ -626,7 +1030,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsStatic => _syntax.MemberAttributes.IsStatic();
 
-        public override ImmutableArray<Location> Locations => ImmutableArray.Create(CreateLocation(_syntax.Span.ToTextSpan()));
+        public override ImmutableArray<Location> Locations => ImmutableArray.Create(CreateLocation(_syntax.Span));
 
         internal override bool ShouldAddWinRTMembers => false;
 
@@ -642,14 +1046,68 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        internal override bool MangleName => false;
+        internal override bool MangleName => Arity != 0;
 
         public override ImmutableArray<NamedTypeSymbol> Interfaces => GetDeclaredInterfaces(null);
 
-        public override ImmutableArray<Symbol> GetMembers() => EnsureMembers().AsImmutable();
+        /// <summary>
+        /// Bound trait uses.
+        /// </summary>
+        protected ImmutableArray<TraitUse> TraitUses
+        {
+            get
+            {
+                ResolveBaseTypes();
+                Debug.Assert(!_lazyTraitUses.IsDefault);
+
+                return _lazyTraitUses;
+            }
+        }
+
+        public IEnumerable<Symbol> TraitMembers
+        {
+            get
+            {
+                if (TraitUses.IsEmpty)
+                {
+                    return Enumerable.Empty<SynthesizedMethodSymbol>();
+                }
+                else
+                {
+                    return TraitUses.SelectMany(t => t.GetMembers());
+                }
+            }
+        }
+
+        /// <summary>
+        /// Enumerates all members including fields that will be contained in <c>_statics</c> holder.
+        /// </summary>
+        internal IEnumerable<Symbol> GetDeclaredMembers()
+        {
+            IEnumerable<Symbol> members = EnsureMembers();
+
+            // lookup trait members
+            if (!TraitUses.IsEmpty)
+            {
+                members = members.Concat(TraitMembers);
+            }
+
+            return members;
+        }
+
+        public override ImmutableArray<Symbol> GetMembers()
+        {
+            return GetDeclaredMembers()
+                .Where(m => m.ContainingType == this)   // skips members contained in _statics holder
+                .AsImmutable();
+        }
 
         public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
-            => EnsureMembers().Where(s => s.Name.StringsEqual(name, ignoreCase)).AsImmutable();
+        {
+            return GetDeclaredMembers()
+                .Where(s => s.Name.StringsEqual(name, ignoreCase))
+                .AsImmutable();
+        }
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers()
         {
@@ -671,36 +1129,29 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var attrs = base.GetAttributes();
 
-            if (this.IsTrait)
-            {
-                // [PhpTraitAttribute()]
-                if (_lazyPhpTraitAttribute == null)
-                {
-                    _lazyPhpTraitAttribute = new SynthesizedAttributeData(
-                        DeclaringCompilation.CoreMethods.Ctors.PhpTraitAttribute,
-                        ImmutableArray<TypedConstant>.Empty,
-                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
-                }
-
-                attrs = attrs.Add(_lazyPhpTraitAttribute);
-            }
-            else
-            {
-                // [PhpTypeAttribute(FullName, FileName)]
-                attrs = attrs.Add(new SynthesizedAttributeData(
-                        DeclaringCompilation.CoreMethods.Ctors.PhpTypeAttribute_string_string,
-                        ImmutableArray.Create(
-                            new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, FullName.ToString()),
-                            new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, ContainingFile.RelativeFilePath.ToString())),
-                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
-            }
+            // [PhpTypeAttribute(FullName, FileName)]
+            attrs = attrs.Add(new SynthesizedAttributeData(
+                    DeclaringCompilation.CoreMethods.Ctors.PhpTypeAttribute_string_string,
+                    ImmutableArray.Create(
+                        new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, FullName.ToString()),
+                        new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, ContainingFile.RelativeFilePath.ToString())),
+                    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
 
             return attrs;
         }
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit()
         {
-            return this.Interfaces;
+            var ifaces = GetDeclaredInterfaces(null);
+
+            //
+            if (TryGetMagicInvoke() != null)
+            {
+                // __invoke => IPhpCallable
+                ifaces = ifaces.Add(DeclaringCompilation.CoreTypes.IPhpCallable);
+            }
+
+            return ifaces;
         }
 
         internal override ImmutableArray<NamedTypeSymbol> GetDeclaredInterfaces(ConsList<Symbol> basesBeingResolved)
@@ -708,16 +1159,7 @@ namespace Pchp.CodeAnalysis.Symbols
             ResolveBaseTypes();
 
             //
-            if (TryGetMagicInvoke() == null)
-            {
-                return _lazyInterfacesType;
-            }
-            else
-            {
-                // __invoke => IPhpCallable
-                return _lazyInterfacesType
-                    .Add(DeclaringCompilation.CoreTypes.IPhpCallable);
-            }
+            return _lazyInterfacesType;
         }
 
         internal override IEnumerable<IMethodSymbol> GetMethodsToEmit()
@@ -729,18 +1171,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()
         {
-            foreach (var f in EnsureMembers().OfType<IFieldSymbol>())
+            foreach (var f in GetMembers().OfType<FieldSymbol>())
             {
                 if (f.OriginalDefinition != f)
                 {
                     // field redeclares its parent member, discard
                     continue;
-                }
-
-                var srcf = f as SourceFieldSymbol;
-                if (srcf.RequiresHolder)
-                {
-                    continue;   // this field has to be emitted within StaticsContainer
                 }
 
                 yield return f;
@@ -755,6 +1191,12 @@ namespace Pchp.CodeAnalysis.Symbols
             if (ReferenceEquals(RuntimeFieldsStore?.ContainingType, this))
             {
                 yield return RuntimeFieldsStore;
+            }
+
+            // trait instances
+            foreach (var t in this.TraitUses)
+            {
+                yield return t.TraitInstanceField;
             }
         }
 
@@ -786,5 +1228,7 @@ namespace Pchp.CodeAnalysis.Symbols
             : base(file, syntax)
         {
         }
+
+        protected override SourceTypeSymbol NewSelf() => new SourceAnonymousTypeSymbol(ContainingFile, Syntax);
     }
 }

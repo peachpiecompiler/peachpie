@@ -26,7 +26,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             /// <summary>
             /// CallSite_T field.
             /// </summary>
-            public IPlace Place => new FieldPlace(null, _fld);
+            public IPlace Place => new FieldPlace(null, _fld, _cg.Module);
             SynthesizedFieldSymbol _fld;
 
             /// <summary>

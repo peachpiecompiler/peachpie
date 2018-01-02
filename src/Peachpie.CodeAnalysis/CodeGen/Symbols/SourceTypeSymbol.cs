@@ -30,21 +30,34 @@ namespace Pchp.CodeAnalysis.Symbols
 
             // System.ToString
             EmitToString(module);
+
+            // trait methods
+            EmitTraitImplementations(module);
         }
 
         void EmitFieldsCctor(Emit.PEModuleBuilder module)
         {
-            var sflds = GetMembers().OfType<SourceFieldSymbol>().Where(f => !f.IsConst && f.IsStatic && !f.RequiresHolder).ToList();
+            // list app static fields
+            var sflds = GetMembers().OfType<IPhpPropertySymbol>()
+                .Where(f => f.FieldKind == PhpPropertyKind.AppStaticField)
+                .ToList();
+
             if (sflds.Count != 0)
             {
                 // emit initialization of app static fields
                 // note, their initializers do not have Context available, since they are not bound to a Context
 
                 var cctor = module.GetStaticCtorBuilder(this);
-                var cg = new CodeGenerator(cctor, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, this, null, null);
+                var cg = new CodeGenerator(cctor, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, this, null, null)
+                {
+                    CallerType = this,
+                };
 
                 foreach (var f in sflds)
                 {
+                    Debug.Assert(f.RequiresContext == false);
+                    Debug.Assert(f.ContainingStaticsHolder == null);
+
                     f.EmitInit(cg);
                 }
             }
@@ -64,6 +77,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var invoke = new SynthesizedMethodSymbol(this, "IPhpCallable.Invoke", false, true, DeclaringCompilation.CoreTypes.PhpValue, isfinal: false)
             {
                 ExplicitOverride = (MethodSymbol)DeclaringCompilation.CoreTypes.IPhpCallable.Symbol.GetMembers("Invoke").Single(),
+                ForwardedCall = __invoke,
             };
             invoke.SetParameters(
                 new SpecialParameterSymbol(invoke, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, 0),
@@ -149,7 +163,7 @@ namespace Pchp.CodeAnalysis.Symbols
             module.SetMethodBody(tophpvalue, MethodGenerator.GenerateMethodBody(module, tophpvalue, il =>
             {
                 var thisPlace = new ArgPlace(this, 0);
-                var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, this, new FieldPlace(thisPlace, this.ContextStore), thisPlace);
+                var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, this, new FieldPlace(thisPlace, this.ContextStore, module), thisPlace);
 
                 // return PhpValue.FromClass(this)
                 cg.EmitThis();
@@ -181,7 +195,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         var ctxField = this.ContextStore;
                         if (ctxField != null && object.ReferenceEquals((object)ctxField.ContainingType, this))
                         {
-                            var ctxFieldPlace = new FieldPlace(cg.ThisPlaceOpt, ctxField);
+                            var ctxFieldPlace = new FieldPlace(cg.ThisPlaceOpt, ctxField, module);
 
                             // Debug.Assert(<ctx> != null)
                             cg.EmitDebugAssertNotNull(cg.ContextPlaceOpt, "Context cannot be null.");
@@ -192,10 +206,23 @@ namespace Pchp.CodeAnalysis.Symbols
                             ctxFieldPlace.EmitStore(il);
                         }
 
-                        // initialize class fields
-                        foreach (var fld in this.EnsureMembers().OfType<SourceFieldSymbol>().Where(fld => !fld.RequiresHolder && !fld.IsStatic && !fld.IsConst))
+                        // trait specific:
+                        if (ctor is SynthesizedPhpTraitCtorSymbol tctor)
                         {
-                            fld.EmitInit(cg);
+                            EmitTraitCtorInit(cg, tctor);
+                        }
+
+                        // trait instances:
+                        foreach (var t in this.TraitUses)
+                        {
+                            EmitTraitInstanceInit(cg, ctor, t);
+                        }
+
+                        // initialize instance fields:
+                        foreach (var f in this.GetMembers().OfType<IPhpPropertySymbol>().Where(f => f.FieldKind == PhpPropertyKind.InstanceField))
+                        {
+                            Debug.Assert(f.ContainingStaticsHolder == null);
+                            f.EmitInit(cg);
                         }
                     }
                     else
@@ -214,9 +241,49 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        static void EmitTraitCtorInit(CodeGenerator cg, SynthesizedPhpTraitCtorSymbol tctor)
+        {
+            var il = cg.Builder;
+
+            // this.<>this = @this
+            var thisFieldPlace = new FieldPlace(cg.ThisPlaceOpt, tctor.ContainingType.RealThisField, module: cg.Module);
+            thisFieldPlace.EmitStorePrepare(il);
+            tctor.ThisParameter.EmitLoad(il);
+            thisFieldPlace.EmitStore(il);
+        }
+
+        void EmitTraitInstanceInit(CodeGenerator cg, SynthesizedPhpCtorSymbol ctor, TraitUse t)
+        {
+            // Template: this.<>trait_T = new T(ctx, this, self)
+
+            // PLACE: this.<>trait_T
+            var instancePlace = new FieldPlace(cg.ThisPlaceOpt, t.TraitInstanceField, module: cg.Module);
+
+            // .ctor(Context, object @this, RuntimeTypeHandle self)
+            var tctor = t.Symbol.InstanceConstructors[0];
+            Debug.Assert(tctor.ParameterCount == 2);
+            Debug.Assert(tctor.Parameters[0].Type == cg.CoreTypes.Context);
+            //Debug.Assert(tctor.Parameters[1].Type == TSelfParameter);
+
+            // using trait in trait?
+            var ctort = ctor as SynthesizedPhpTraitCtorSymbol;
+
+            //
+            instancePlace.EmitStorePrepare(cg.Builder);
+            // Context:
+            cg.EmitLoadContext();
+            // this:
+            if (ctort != null) ctort.ThisParameter.EmitLoad(cg.Builder);    // this is passed from caller
+            else cg.EmitThis();
+            // new T<TSelf>(...)
+            cg.EmitCall(ILOpCode.Newobj, tctor);
+
+            instancePlace.EmitStore(cg.Builder);
+        }
+
         void EmitToString(Emit.PEModuleBuilder module)
         {
-            if (this.IsInterface)
+            if (this.IsInterface || this.IsTrait)
             {
                 return;
             }
@@ -229,12 +296,13 @@ namespace Pchp.CodeAnalysis.Symbols
                 var tostring = new SynthesizedMethodSymbol(this, "ToString", false, true, DeclaringCompilation.CoreTypes.String, Accessibility.Public, isfinal: false)
                 {
                     ExplicitOverride = (MethodSymbol)DeclaringCompilation.GetSpecialTypeMember(SpecialMember.System_Object__ToString),
+                    ForwardedCall = __tostring,
                 };
 
                 module.SetMethodBody(tostring, MethodGenerator.GenerateMethodBody(module, tostring, il =>
                 {
                     var thisPlace = new ArgPlace(this, 0);
-                    var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, this, new FieldPlace(thisPlace, this.ContextStore), thisPlace);
+                    var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, this, new FieldPlace(thisPlace, this.ContextStore, module), thisPlace);
 
                     if (__tostring != null)
                     {
@@ -243,7 +311,10 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
                     else
                     {
-                        // TODO: Throw object_could_not_be_converted
+                        // PhpException.ObjectToStringNotSupported(this)
+                        cg.EmitThis();
+                        cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreTypes.PhpException.Method("ObjectToStringNotSupported", cg.CoreTypes.Object)));
+
                         // return ""
                         cg.Builder.EmitStringConstant(string.Empty);
                     }
@@ -251,6 +322,52 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 }, null, DiagnosticBag.GetInstance(), false));
                 module.SynthesizedManager.AddMethod(this, tostring);
+            }
+        }
+
+        void EmitTraitImplementations(Emit.PEModuleBuilder module)
+        {
+            foreach (var t in TraitUses)
+            {
+                foreach (var m in t.GetMembers().OfType<SynthesizedMethodSymbol>())
+                {
+                    Debug.Assert(m.ForwardedCall != null);
+
+                    module.SetMethodBody(m, MethodGenerator.GenerateMethodBody(module, m, il =>
+                    {
+                        IPlace thisPlace = null;
+                        IPlace traitInstancePlace = null;
+                        IPlace ctxPlace;
+
+                        if (m.IsStatic)
+                        {
+                            // Template: return TRAIT.method(...)
+                            Debug.Assert(SpecialParameterSymbol.IsContextParameter(m.Parameters[0]));
+                            ctxPlace = new ParamPlace(m.Parameters[0]);
+                        }
+                        else
+                        {
+                            // Template: return this.<>trait.method(...)
+                            thisPlace = new ArgPlace(this, 0);  // this
+                            ctxPlace = new FieldPlace(thisPlace, this.ContextStore, module);    // this.<ctx>
+                            traitInstancePlace = new FieldPlace(thisPlace, t.TraitInstanceField, module); // this.<>trait
+                        }
+
+                        using (var cg = new CodeGenerator(il, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, this, ctxPlace, thisPlace)
+                        {
+                            CallerType = this,
+                        })
+                        {
+                            var forwarded_type = cg.EmitForwardCall(m.ForwardedCall, m, thisPlaceExplicit: traitInstancePlace);
+                            var target_type = m.ReturnType;
+
+                            cg.EmitConvert(forwarded_type, 0, target_type); // always (forwarded_type === target_type)
+                            cg.EmitRet(target_type);
+                        }
+
+                    }, null, DiagnosticBag.GetInstance(), false));
+                    module.SynthesizedManager.AddMethod(this, m);
+                }
             }
         }
 
@@ -306,6 +423,12 @@ namespace Pchp.CodeAnalysis.Symbols
                             this, module, diagnostics,
                             info.Method.ReturnType, info.Method.Parameters, info.Method);
                     }
+                }
+
+                // setup synthesized methods explicit override as resolved
+                if (info.Override is SynthesizedMethodSymbol sm && sm.ExplicitOverride == null && sm.ContainingType == this)
+                {
+                    sm.ExplicitOverride = info.Method;
                 }
             }
         }

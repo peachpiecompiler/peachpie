@@ -58,6 +58,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <param name="worklist">The worklist to be used to enqueue next blocks.</param>
         internal AnalysisVisitor(Worklist<BoundBlock> worklist)
         {
+            Debug.Assert(worklist != null);
             _worklist = worklist;
         }
 

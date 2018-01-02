@@ -56,7 +56,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 var place = RuntimeCallerTypePlace;
                 if (place != null)
                 {
-                     place.EmitLoad(_il).Expect(CoreTypes.RuntimeTypeHandle);
+                    place.EmitLoad(_il).Expect(CoreTypes.RuntimeTypeHandle);
                 }
                 else
                 {
@@ -64,7 +64,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     EmitLoadDefaultOfValueType(this.CoreTypes.RuntimeTypeHandle);
                 }
             }
-            
+
             //
             return CoreTypes.RuntimeTypeHandle;
         }
@@ -77,16 +77,23 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             get
             {
-                if (this.Routine is SourceGlobalMethodSymbol global)
+                if (_callerTypePlace == null)
                 {
-                    return new ParamPlace(global.SelfParameter);
-                }
-                else if (this.Routine is SourceLambdaSymbol lambda)
-                {
-                    return lambda.GetCallerTypePlace();
+                    if (this.Routine is SourceGlobalMethodSymbol global)
+                    {
+                        _callerTypePlace = new ParamPlace(global.SelfParameter);
+                    }
+                    else if (this.Routine is SourceLambdaSymbol lambda)
+                    {
+                        _callerTypePlace = lambda.GetCallerTypePlace();
+                    }
                 }
 
-                return null;
+                return _callerTypePlace;
+            }
+            set
+            {
+                _callerTypePlace = value;
             }
         }
 
@@ -137,6 +144,26 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 return (NamedTypeSymbol)_thisPlace.EmitLoad(_il);
             }
+        }
+
+        /// <summary>
+        /// Emits value of <c>$this</c>.
+        /// Available only within source routines.
+        /// In case no $this is available, nothing is emitted and function returns <c>null</c> reference.
+        /// </summary>
+        public TypeSymbol EmitPhpThis()
+        {
+            if (Routine != null)
+            {
+                var thisplace = Routine.GetPhpThisVariablePlace(this.Module);
+                if (thisplace != null)
+                {
+                    return thisplace.EmitLoad(_il);
+                }
+            }
+
+            //
+            return null;
         }
 
         public TypeSymbol EmitGeneratorInstance()
@@ -229,17 +256,16 @@ namespace Pchp.CodeAnalysis.CodeGen
                             EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Object.Getter)
                                 .Expect(SpecialType.System_Object);
 
-                            // DEBUG:
-                            //if (tmask.IsSingleType)
-                            //{
-                            //    var tref = this.TypeRefContext.GetTypes(tmask)[0];
-                            //    var clrtype = (TypeSymbol)this.DeclaringCompilation.GlobalSemantics.GetType(tref.QualifiedName);
-                            //    if (clrtype != null && !clrtype.IsErrorType())
-                            //    {
-                            //        this.EmitCastClass(clrtype);
-                            //        return clrtype;
-                            //    }
-                            //}
+                            if (tmask.IsSingleType)
+                            {
+                                var tref = this.TypeRefContext.GetTypes(tmask)[0];
+                                var clrtype = (NamedTypeSymbol)this.DeclaringCompilation.GlobalSemantics.ResolveType(tref.QualifiedName);
+                                if (clrtype.IsValidType() && !clrtype.IsObjectType())
+                                {
+                                    this.EmitCastClass(clrtype);
+                                    return clrtype;
+                                }
+                            }
 
                             return this.CoreTypes.Object;
                         }
@@ -1173,7 +1199,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 return Emit_ArgsArray(CoreTypes.PhpValue); // TODO: T
             }
             // class context
-            else if (SpecialParameterSymbol.IsCallerClassParameter(p))
+            else if (SpecialParameterSymbol.IsCallerClassParameter(p) || SpecialParameterSymbol.IsSelfParameter(p))
             {
                 if (p.Type == CoreTypes.PhpTypeInfo)
                 {
@@ -1188,18 +1214,16 @@ namespace Pchp.CodeAnalysis.CodeGen
                         ? ((IPhpTypeSymbol)this.CallerType).FullName.ToString()
                         : null);
                 }
+                else if (p.Type == CoreTypes.RuntimeTypeHandle)
+                {
+                    // LOAD <RuntimeTypeHandle>
+                    return EmitCallerTypeHandle();
+                }
                 else
                 {
-                    if (p.Type == CoreTypes.RuntimeTypeHandle)
-                    {
-                        // LOAD <RuntimeTypeHandle>
-                        return this.EmitLoadToken(this.CallerType, null);
-                    }
-                    else
-                    {
-                        throw ExceptionUtilities.UnexpectedValue(p.Type);
-                    }
+                    throw ExceptionUtilities.UnexpectedValue(p.Type);
                 }
+
                 return p.Type;
             }
             // current "static"
@@ -1408,8 +1432,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         /// <param name="target">Method to be called.</param>
         /// <param name="thismethod">Current method.</param>
+        /// <param name="thisPlaceExplicit">Optionaly specified place of object instance to call the method on.</param>
         /// <returns>Return of <paramref name="target"/>.</returns>
-        internal TypeSymbol EmitForwardCall(MethodSymbol target, MethodSymbol thismethod)
+        internal TypeSymbol EmitForwardCall(MethodSymbol target, MethodSymbol thismethod, IPlace thisPlaceExplicit = null)
         {
             if (target == null)
             {
@@ -1422,7 +1447,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 thisExpr = new BoundVariableRef(new BoundVariableName(VariableName.ThisVariableName))
                 {
-                    Variable = BoundLocal.CreateFromPlace(this.ThisPlaceOpt),
+                    Variable = BoundLocal.CreateFromPlace(thisPlaceExplicit ?? this.ThisPlaceOpt),
                     Access = BoundAccess.Read
                 };
             }
@@ -1928,11 +1953,16 @@ namespace Pchp.CodeAnalysis.CodeGen
             return EmitCall(getter.IsMetadataVirtual() ? ILOpCode.Callvirt : ILOpCode.Call, getter);
         }
 
-        internal void EmitCastClass(TypeSymbol from, TypeSymbol to)
+        internal TypeSymbol EmitCastClass(TypeSymbol from, TypeSymbol to)
         {
             if (!from.IsEqualToOrDerivedFrom(to))
             {
                 EmitCastClass(to);
+                return to;
+            }
+            else
+            {
+                return from;
             }
         }
 
@@ -1976,6 +2006,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void EmitEcho(BoundExpression expr)
         {
             Contract.ThrowIfNull(expr);
+
+            // check if the value won't be an empty string:
+            if (expr.ConstantValue.HasValue && ExpressionsExtension.IsEmptyStringValue(expr.ConstantValue.Value))
+            {
+                return;
+            }
 
             // Template: <ctx>.Echo(expr);
 
@@ -2163,9 +2199,21 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // autoloads if necessary
                 dependent.ForEach(EmitExpectTypeDeclared);
 
-                // <ctx>.DeclareType<T>()
-                EmitLoadContext();
-                EmitCall(ILOpCode.Call, CoreMethods.Context.DeclareType_T.Symbol.Construct(t));
+                if (t.Arity == 0)
+                {
+                    // <ctx>.DeclareType<T>()
+                    EmitLoadContext();
+                    EmitCall(ILOpCode.Call, CoreMethods.Context.DeclareType_T.Symbol.Construct(t));
+                }
+                else
+                {
+                    // <ctx>.DeclareType( PhpTypeInfo, Name )
+                    EmitLoadContext();
+                    EmitLoadToken(t.AsUnboundGenericType(), null);
+                    EmitCall(ILOpCode.Call, CoreMethods.Dynamic.GetPhpTypeInfo_RuntimeTypeHandle);
+                    Builder.EmitStringConstant(t.FullName.ToString());
+                    EmitCall(ILOpCode.Call, CoreMethods.Context.DeclareType_PhpTypeInfo_String);
+                }
             }
 
             //
@@ -2188,7 +2236,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return;
                 }
 
-                if (this.Routine != null && ReferenceEquals((d as SourceTypeSymbol)?.ContainingFile, this.Routine.ContainingFile) && !ntype.IsConditional)
+                if (d.OriginalDefinition is SourceTypeSymbol srct && ReferenceEquals(srct.ContainingFile, this.ContainingFile) && !srct.Syntax.IsConditional)
                 {
                     // declared in same file unconditionally,
                     // we don't have to check anything
@@ -2199,6 +2247,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     // the type is a sub-type of current class context, so it must be declared for sure
                     // e.g. self, parent
+                    return;
+                }
+
+                if (ntype.Arity != 0)
+                {
+                    // workaround for traits - constructed traits do not match the declaratin in Context
+                    // TODO: ctx.ExpectTypeDeclared(GetPhpTypeInfo(RuntimeTypeHandle(T<>)))
                     return;
                 }
 
@@ -2305,7 +2360,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (index == dependency_handle.Length || versions.Length == 1)
             {
                 Debug.Assert(versions.Length == 1);
-
+                Debug.Assert(versions[0].Arity == 0);   // declare as unbound generic type, see EmitDeclareType
                 // <ctx>.DeclareType<T>();
                 // goto DONE;
                 EmitLoadContext();
@@ -2683,7 +2738,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             // sequence point
             var body = AstUtils.BodySpanOrInvalid(Routine?.Syntax);
-            if (body.IsValid)
+            if (body.IsValid && EmitPdbSequencePoints)
             {
                 EmitSequencePoint(new Span(body.End - 1, 1));
                 EmitOpCode(ILOpCode.Nop);
@@ -2861,7 +2916,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public static void EmitSymbolToken(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics, FieldSymbol symbol, SyntaxNode syntaxNode)
         {
-            il.EmitToken(symbol, syntaxNode, diagnostics);
+            il.EmitToken(module.Translate(symbol, syntaxNode, diagnostics), syntaxNode, diagnostics);
         }
 
         public static void EmitValueDefault(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics, LocalDefinition tmp)
@@ -2905,10 +2960,10 @@ namespace Pchp.CodeAnalysis.CodeGen
             return new ParamPlace(p).EmitLoad(il);
         }
 
-        public static TypeSymbol EmitLoad(this FieldSymbol f, ILBuilder il, IPlace holder = null)
+        public static TypeSymbol EmitLoad(this FieldSymbol f, CodeGenerator cg, IPlace holder = null)
         {
             Debug.Assert(f != null, nameof(f));
-            return new FieldPlace(holder, f).EmitLoad(il);
+            return new FieldPlace(holder, f, cg.Module).EmitLoad(cg.Builder);
         }
     }
 }

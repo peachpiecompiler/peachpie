@@ -38,7 +38,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets value indicating the type is a trait.
         /// </summary>
-        public bool IsTrait => !IsInterface && _type.GetCustomAttribute<PhpTraitAttribute>(false) != null;
+        public bool IsTrait => !IsInterface && _type.IsSealed && _type.GetCustomAttribute<PhpTraitAttribute>(false) != null;
 
         /// <summary>
         /// Gets list of PHP extensions associated with the current type.
@@ -223,16 +223,21 @@ namespace Pchp.Core.Reflection
             return _lazyCreatorProtected;
         }
 
-        internal PhpTypeInfo(Type t)
+        internal PhpTypeInfo(TypeInfo t)
         {
             Debug.Assert(t != null);
-            _type = t.GetTypeInfo();
+            _type = t;
 
             var attr = _type.GetCustomAttribute<PhpTypeAttribute>(false);
             Name = ResolvePhpTypeName(_type, attr);
-            
+
             // register type in extension tables
             ExtensionsAppContext.ExtensionsTable.AddType(this);
+        }
+
+        internal PhpTypeInfo(Type t)
+            :this(t.GetTypeInfo())
+        {   
         }
 
         /// <summary>
@@ -291,7 +296,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets collection of PHP methods in this type and base types.
         /// </summary>
-        public TypeMethods RuntimeMethods => _runtimeMethods ?? (_runtimeMethods = new TypeMethods(_type));
+        public TypeMethods RuntimeMethods => _runtimeMethods ?? (_runtimeMethods = new TypeMethods(this));
         TypeMethods _runtimeMethods;
 
         /// <summary>
@@ -330,9 +335,15 @@ namespace Pchp.Core.Reflection
     [DebuggerNonUserCode]
     public static class PhpTypeInfoExtension
     {
-        static MethodInfo _lazyGetPhpTypeInfo_T;
+        /// <summary>
+        /// <see cref="MethodInfo"/> of <see cref="PhpTypeInfoExtension.GetPhpTypeInfo{TType}"/>.
+        /// </summary>
+        readonly static MethodInfo s_getPhpTypeInfo_T = typeof(PhpTypeInfoExtension).GetRuntimeMethod("GetPhpTypeInfo", Dynamic.Cache.Types.Empty);
 
-        readonly static Dictionary<RuntimeTypeHandle, PhpTypeInfo> _cache = new Dictionary<RuntimeTypeHandle, PhpTypeInfo>();
+        /// <summary>
+        /// Cache of resolved <see cref="PhpTypeInfo"/> corresponding to <see cref="RuntimeTypeHandle"/>.
+        /// </summary>
+        readonly static Dictionary<RuntimeTypeHandle, PhpTypeInfo> s_cache = new Dictionary<RuntimeTypeHandle, PhpTypeInfo>();
 
         /// <summary>
         /// Gets <see cref="PhpTypeInfo"/> of given <typeparamref name="TType"/>.
@@ -356,27 +367,31 @@ namespace Pchp.Core.Reflection
             var handle = type.TypeHandle;
 
             // lookup cache first
-            lock (_cache)    // TODO: RW lock
+            lock (s_cache)    // TODO: RW lock
             {
-                _cache.TryGetValue(handle, out result);
+                s_cache.TryGetValue(handle, out result);
             }
 
             // invoke GetPhpTypeInfo<TType>() dynamically and cache the result
             if (result == null)
             {
-                if (_lazyGetPhpTypeInfo_T == null)
+                if (type.GetTypeInfo().IsGenericTypeDefinition)
                 {
-                    _lazyGetPhpTypeInfo_T = typeof(PhpTypeInfoExtension).GetRuntimeMethod("GetPhpTypeInfo", Dynamic.Cache.Types.Empty);
+                    // generic type definition cannot be used as a type parameter for GetPhpTypeInfo<T>
+                    // just instantiate the type info and cache the result
+                    result = new PhpTypeInfo(type);
+                }
+                else
+                {
+                    // TypeInfoHolder<TType>.TypeInfo;
+                    result = (PhpTypeInfo)s_getPhpTypeInfo_T
+                        .MakeGenericMethod(type)
+                        .Invoke(null, Utilities.ArrayUtils.EmptyObjects);
                 }
 
-                // TypeInfoHolder<TType>.TypeInfo;
-                result = (PhpTypeInfo)_lazyGetPhpTypeInfo_T
-                    .MakeGenericMethod(type)
-                    .Invoke(null, Utilities.ArrayUtils.EmptyObjects);
-
-                lock (_cache)
+                lock (s_cache)
                 {
-                    _cache[handle] = result;
+                    s_cache[handle] = result;
                 }
             }
 
@@ -398,9 +413,9 @@ namespace Pchp.Core.Reflection
             }
 
             // lookup cache first
-            lock (_cache)   // TODO: RW lock
+            lock (s_cache)   // TODO: RW lock
             {
-                _cache.TryGetValue(handle, out result);
+                s_cache.TryGetValue(handle, out result);
             }
 
             return result ?? GetPhpTypeInfo(Type.GetTypeFromHandle(handle));
@@ -437,7 +452,6 @@ namespace Pchp.Core.Reflection
         }
     }
 
-
     /// <summary>
     /// Delegate for dynamic object creation.
     /// </summary>
@@ -459,12 +473,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Associated runtime type information.
         /// </summary>
-        public static readonly PhpTypeInfo TypeInfo = Create(typeof(TType));
-
-        static PhpTypeInfo Create(Type type)
-        {
-            return new PhpTypeInfo(type);
-        }
+        public static readonly PhpTypeInfo TypeInfo = new PhpTypeInfo(typeof(TType));
     }
 
     #endregion

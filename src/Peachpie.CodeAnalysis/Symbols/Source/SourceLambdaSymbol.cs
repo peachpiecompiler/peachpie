@@ -49,6 +49,8 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>Parameter containing reference to <c>Closure</c> object.</summary>
         internal ParameterSymbol ClosureParameter => ImplicitParameters[0];
 
+        internal override bool RequiresLateStaticBoundParam => false;   // <static> is passed from <closure>.scope
+
         protected override IEnumerable<ParameterSymbol> BuildImplicitParams()
         {
             return new[]

@@ -51,6 +51,11 @@ namespace Pchp.CodeAnalysis.Symbols
             _explicitDefaultConstantValue = explicitDefaultConstantValue;
         }
 
+        public static SynthesizedParameterSymbol Create(MethodSymbol container, ParameterSymbol p)
+        {
+            return new SynthesizedParameterSymbol(container, p.Type, p.Ordinal, p.RefKind, name: p.Name, isParams: p.IsParams);
+        }
+
         internal override TypeSymbol Type
         {
             get { return _type; }
@@ -110,7 +115,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsImplicitlyDeclared
         {
-            get { return SpecialParameterSymbol.IsContextParameter(this) || SpecialParameterSymbol.IsLateStaticParameter(this) || this.IsParams || base.IsImplicitlyDeclared; }
+            get { return SpecialParameterSymbol.IsContextParameter(this) || SpecialParameterSymbol.IsLateStaticParameter(this) || SpecialParameterSymbol.IsSelfParameter(this) || this.IsParams || base.IsImplicitlyDeclared; }
         }
 
         internal override ConstantValue ExplicitDefaultConstantValue => _explicitDefaultConstantValue;

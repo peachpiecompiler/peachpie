@@ -189,8 +189,9 @@ namespace Pchp.CodeAnalysis.CodeGen
     {
         readonly IPlace _holder;
         readonly FieldSymbol _field;
+        readonly Cci.IFieldReference _fieldref;
 
-        public FieldPlace(IPlace holder, IFieldSymbol field)
+        public FieldPlace(IPlace holder, IFieldSymbol field, Emit.PEModuleBuilder module = null)
         {
             Contract.ThrowIfNull(field);
 
@@ -203,6 +204,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             _holder = holder;
             _field = (FieldSymbol)field;
+            _fieldref = (module != null) ? module.Translate((FieldSymbol)field, null, DiagnosticBag.GetInstance()) : (Cci.IFieldReference)field;
 
             Debug.Assert(holder != null || field.IsStatic);
             Debug.Assert(holder == null || holder.TypeOpt.IsOfType(_field.ContainingType) || _field.ContainingType.IsValueType);
@@ -229,7 +231,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         void EmitOpCode(ILBuilder il, ILOpCode code)
         {
             il.EmitOpCode(code);
-            il.EmitToken(_field, null, DiagnosticBag.GetInstance());    // .{field}
+            il.EmitToken(_fieldref, null, DiagnosticBag.GetInstance());    // .{field}
         }
 
         public TypeSymbol TypeOpt => _field.Type;
@@ -929,24 +931,42 @@ namespace Pchp.CodeAnalysis.CodeGen
 
     internal sealed class BoundThisPlace : IBoundReference
     {
-        readonly IPlace _place;
+        readonly SourceRoutineSymbol _routine;
         readonly BoundAccess _access;
 
-        public BoundThisPlace(IPlace place, BoundAccess access)
+        public BoundThisPlace(SourceRoutineSymbol routine, BoundAccess access)
         {
-            Contract.ThrowIfNull(place);
+            Contract.ThrowIfNull(routine);
+            Debug.Assert(routine.GetPhpThisVariablePlace() != null);
 
-            _place = place;
+            _routine = routine;
             _access = access;
         }
 
-        public TypeSymbol TypeOpt => _place.TypeOpt;
+        public TypeSymbol TypeOpt => _routine.GetPhpThisVariablePlace().TypeOpt;
 
         public TypeSymbol EmitLoad(CodeGenerator cg)
         {
-            // TODO: EnsureArray
+            var place = _routine.GetPhpThisVariablePlace(cg.Module);
 
-            return _place.EmitLoad(cg.Builder);
+            // Ensure Array ($this[] =)
+            if (_access.EnsureArray)
+            {
+                if (TypeOpt?.IsOfType(cg.CoreTypes.ArrayAccess) == true)
+                {
+                    // Operators.EnsureArray(<place>)
+                    place.EmitLoad(cg.Builder);
+
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_ArrayAccess)
+                            .Expect(cg.CoreTypes.IPhpArray);
+                }
+
+                throw new NotImplementedException($"EnsureArray(this {{{TypeOpt?.Name}}})");
+            }
+            else
+            {
+                return place.EmitLoad(cg.Builder);
+            }
         }
 
         public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null) { }
@@ -1351,6 +1371,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(field);
 
+            if (field is SourceFieldSymbol srcf)
+            {
+                // field redeclares its parent member, use the original def
+                // TODO: do not call it OriginalDefinition ... make some RealDefinition property ?
+                field = srcf.OriginalDefinition;
+            }
+
             _instance = instance;
             _field = field;
             _boundref = boundref;
@@ -1367,7 +1394,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Debug.Assert(_field != null);
             cg.Builder.EmitOpCode(code);
-            cg.EmitSymbolToken(_field.OriginalDefinition, null);
+            cg.EmitSymbolToken(_field, null);
         }
 
         public bool HasAddress => true;
@@ -1390,25 +1417,21 @@ namespace Pchp.CodeAnalysis.CodeGen
             EmitOpCode(cg, Field.IsStatic ? ILOpCode.Stsfld : ILOpCode.Stfld);
         }
 
-        /// <summary>
-        /// Emits instance of the field containing class.
-        /// </summary>
-        protected void EmitLoadTarget(CodeGenerator cg, InstanceCacheHolder instanceOpt)
+        public static TypeSymbol EmitLoadTarget(CodeGenerator cg, FieldSymbol field, TypeSymbol instancetype, TypeRefMask instanceTypeHint = default(TypeRefMask))
         {
-            // instance
-            var instancetype = InstanceCacheHolder.EmitInstance(instanceOpt, cg, Instance);
-
             //
-            if (_field.IsStatic)
+            if (field.IsStatic)
             {
                 if (instancetype != null)
                 {
                     cg.EmitPop(instancetype);
                 }
+
+                return null;
             }
             else
             {
-                var statics = _field.TryGetStatics();   // in case field is a PHP static field
+                var statics = field.ContainingStaticsHolder();   // in case field is a PHP static field
                 if (statics != null)
                 {
                     // PHP static field contained in a holder class
@@ -1418,26 +1441,42 @@ namespace Pchp.CodeAnalysis.CodeGen
                         instancetype = null;
                     }
 
-                    statics = statics.ContainingType.EmitLoadStatics(cg);
-                    Debug.Assert(statics != null);
+                    // Template: <ctx>.GetStatics<_statics>()
+                    cg.EmitLoadContext();
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Context.GetStatic_T.Symbol.Construct(statics)).Expect(statics);
                 }
                 else
                 {
                     if (instancetype != null)
                     {
-                        cg.EmitConvert(instancetype, Instance.TypeRefMask, _field.ContainingType);
+                        cg.EmitConvert(instancetype, instanceTypeHint, field.ContainingType);
 
-                        if (_field.ContainingType.IsValueType)
+                        if (field.ContainingType.IsValueType)
                         {
                             throw new NotImplementedException(); // cg.EmitStructAddr(_field.ContainingType);   // value -> valueaddr
                         }
+
+                        return field.ContainingType;
                     }
                     else
                     {
-                        throw new NotImplementedException($"Non-static field {_field.ContainingType.Name}::${_field.MetadataName} accessed statically!");
+                        throw new NotImplementedException($"Non-static field {field.ContainingType.Name}::${field.MetadataName} accessed statically!");
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Emits instance of the field containing class.
+        /// </summary>
+        protected void EmitLoadTarget(CodeGenerator cg, InstanceCacheHolder instanceOpt)
+        {
+            // instance
+            var instancetype = InstanceCacheHolder.EmitInstance(instanceOpt, cg, Instance);
+
+            // instance ?? proper field target:
+            EmitLoadTarget(cg, _field, instancetype,
+                instanceTypeHint: (Instance != null) ? Instance.TypeRefMask : 0);
         }
 
         public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)

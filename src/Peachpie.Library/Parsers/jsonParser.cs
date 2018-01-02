@@ -11,13 +11,20 @@ using System.Diagnostics;
 using Pchp.Core;
 using Pchp.Library.Parsers;
 
+using Pair = System.Collections.Generic.KeyValuePair<string, Pchp.Core.PhpValue>;
+
+
 namespace Pchp.Library.Json
 {
 internal enum Tokens {ERROR=1,EOF=2,ARRAY_OPEN=3,ARRAY_CLOSE=4,ITEMS_SEPARATOR=5,NAMEVALUE_SEPARATOR=6,OBJECT_OPEN=7,OBJECT_CLOSE=8,TRUE=9,FALSE=10,NULL=11,INTEGER=12,DOUBLE=13,STRING=14,STRING_BEGIN=15,CHARS=16,UNICODECHAR=17,ESCAPEDCHAR=18,STRING_END=19};
 
 internal partial struct SemanticValueType
 {
-	public object obj; 
+    public object obj;
+    public PhpValue value;
+
+    public Parser.Node<Pair> members { get => (Parser.Node<Pair>)obj; set => obj = value; }
+    public Parser.Node<PhpValue> elements { get => (Parser.Node<PhpValue>)obj; set => obj = value; }
 }
 internal  partial class Parser: ShiftReduceParser<SemanticValueType,Position>
 {
@@ -109,93 +116,89 @@ internal  partial class Parser: ShiftReduceParser<SemanticValueType,Position>
     switch (action)
     {
       case 2: // start -> value 
-{ Result = (PhpValue)value_stack.array[value_stack.top-1].yyval.obj; }
+{ Result = value_stack.array[value_stack.top-1].yyval.value; }
         return;
       case 3: // object -> OBJECT_OPEN members OBJECT_CLOSE 
 {
-			var elements = (List<KeyValuePair<string, PhpValue>>)value_stack.array[value_stack.top-2].yyval.obj;				
-			var arr = new PhpArray(elements.Count);
+			var arr = new PhpArray(16);
 				
-			foreach (var item in elements)
+			for (var n = value_stack.array[value_stack.top-2].yyval.members; n != null; n = n.Next)
 			{
-				arr.Add( Core.Convert.StringToArrayKey(item.Key), item.Value );
+				arr.Add( Core.Convert.StringToArrayKey(n.Value.Key), n.Value.Value );
 			}
 					
 			if (decodeOptions.Assoc)
 			{
-				yyval.obj = PhpValue.Create(arr);
+				yyval.value = PhpValue.Create(arr);
 			}
 			else
 			{
-				yyval.obj = PhpValue.FromClass(arr.ToClass());
+				yyval.value = PhpValue.FromClass(arr.ToClass());
 			}
 		}
         return;
       case 4: // object -> OBJECT_OPEN OBJECT_CLOSE 
-{ yyval.obj = PhpValue.FromClass(new stdClass()); }
+{ yyval.value = PhpValue.FromClass(new stdClass()); }
         return;
       case 5: // members -> pair ITEMS_SEPARATOR members 
 {
-			var elements = (List<KeyValuePair<string, PhpValue>>)value_stack.array[value_stack.top-1].yyval.obj;
-			var result = new List<KeyValuePair<string, PhpValue>>( elements.Count + 1 ){ (KeyValuePair<string, PhpValue>)value_stack.array[value_stack.top-3].yyval.obj };
-			result.AddRange(elements);			
-			yyval.obj = result;
+			var node = value_stack.array[value_stack.top-3].yyval.members;
+            node.Next = value_stack.array[value_stack.top-1].yyval.members;
+            yyval.members = node;
 		}
         return;
       case 6: // members -> pair 
-{ yyval.obj = new List<KeyValuePair<string, PhpValue>>(){ (KeyValuePair<string,PhpValue>)value_stack.array[value_stack.top-1].yyval.obj }; }
+{ yyval.members = value_stack.array[value_stack.top-1].yyval.members; }
         return;
       case 7: // pair -> STRING NAMEVALUE_SEPARATOR value 
-{ yyval.obj = new KeyValuePair<string,PhpValue>((string)value_stack.array[value_stack.top-3].yyval.obj, (PhpValue)value_stack.array[value_stack.top-1].yyval.obj); }
+{ yyval.members = new Node<Pair>(new Pair((string)value_stack.array[value_stack.top-3].yyval.obj, value_stack.array[value_stack.top-1].yyval.value)); }
         return;
       case 8: // array -> ARRAY_OPEN elements ARRAY_CLOSE 
 {
-			var elements = (List<PhpValue>)value_stack.array[value_stack.top-2].yyval.obj;
-			var arr = new PhpArray( elements.Count );
+			var arr = new PhpArray(16);
 			
-			foreach (var item in elements)
-				arr.Add( item );
+            for (var n = value_stack.array[value_stack.top-2].yyval.elements; n != null; n = n.Next)
+            {
+                arr.Add( n.Value );
+            }
 				
-			yyval.obj = arr;
+			yyval.value = PhpValue.Create(arr);
 		}
         return;
       case 9: // array -> ARRAY_OPEN ARRAY_CLOSE 
-{ yyval.obj = PhpArray.NewEmpty(); }
+{ yyval.value = PhpValue.Create(PhpArray.NewEmpty()); }
         return;
       case 10: // elements -> value ITEMS_SEPARATOR elements 
 {
-			var elements = (List<PhpValue>)value_stack.array[value_stack.top-1].yyval.obj;
-			var result = new List<PhpValue>( elements.Count + 1 ){ (PhpValue)value_stack.array[value_stack.top-3].yyval.obj };
-			result.AddRange(elements);
-			yyval.obj = result;
+			yyval.elements = new Node<PhpValue>(value_stack.array[value_stack.top-3].yyval.value, value_stack.array[value_stack.top-1].yyval.elements);
 		}
         return;
       case 11: // elements -> value 
-{ yyval.obj = new List<PhpValue>(){ (PhpValue)value_stack.array[value_stack.top-1].yyval.obj }; }
+{ yyval.elements = new Node<PhpValue>(value_stack.array[value_stack.top-1].yyval.value); }
         return;
       case 12: // value -> STRING 
-{yyval.obj = PhpValue.Create((string)value_stack.array[value_stack.top-1].yyval.obj);}
+{yyval.value = PhpValue.Create((string)value_stack.array[value_stack.top-1].yyval.obj);}
         return;
       case 13: // value -> INTEGER 
-{yyval.obj = PhpValue.FromClr(value_stack.array[value_stack.top-1].yyval.obj);}
+{yyval.value = PhpValue.FromClr(value_stack.array[value_stack.top-1].yyval.obj);}
         return;
       case 14: // value -> DOUBLE 
-{yyval.obj = PhpValue.FromClr(value_stack.array[value_stack.top-1].yyval.obj);}
+{yyval.value = PhpValue.FromClr(value_stack.array[value_stack.top-1].yyval.obj);}
         return;
       case 15: // value -> object 
-{yyval.obj = (PhpValue)value_stack.array[value_stack.top-1].yyval.obj;}
+{yyval.value = value_stack.array[value_stack.top-1].yyval.value;}
         return;
       case 16: // value -> array 
-{yyval.obj = PhpValue.Create((PhpArray)value_stack.array[value_stack.top-1].yyval.obj);}
+{yyval.value = value_stack.array[value_stack.top-1].yyval.value;}
         return;
       case 17: // value -> TRUE 
-{yyval.obj = PhpValue.True;}
+{yyval.value = PhpValue.True;}
         return;
       case 18: // value -> FALSE 
-{yyval.obj = PhpValue.False;}
+{yyval.value = PhpValue.False;}
         return;
       case 19: // value -> NULL 
-{yyval.obj = PhpValue.Null;}
+{yyval.value = PhpValue.Null;}
         return;
     }
   }
@@ -213,15 +216,5 @@ internal  partial class Parser: ShiftReduceParser<SemanticValueType,Position>
 protected override int EofToken { get { return (int)Tokens.EOF; } }
 protected override int ErrorToken { get { return (int)Tokens.ERROR; } }
 
-readonly PhpSerialization.JsonSerializer.DecodeOptions/*!*/decodeOptions;
-
-internal Parser(PhpSerialization.JsonSerializer.DecodeOptions/*!*/decodeOptions)
-{
-	Debug.Assert(decodeOptions != null);
-	
-	this.decodeOptions = decodeOptions;
-}
-
-public PhpValue Result { get; private set; }
 }
 }

@@ -27,10 +27,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 containingtype, prefix + method.Name, method.IsStatic, explicitOverride != null, ghostreturn, method.DeclaredAccessibility)
             {
                 ExplicitOverride = explicitOverride,
+                ForwardedCall = method,
             };
 
-            ghost.SetParameters(ghostparams.Select(p =>
-                new SynthesizedParameterSymbol(ghost, p.Type, p.Ordinal, p.RefKind, p.Name, p.IsParams)).ToArray());
+            ghost.SetParameters(ghostparams.Select(p => SynthesizedParameterSymbol.Create(ghost, p)).ToArray());
 
             // save method symbol to module
             module.SynthesizedManager.AddMethod(containingtype, ghost);
@@ -54,7 +54,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                     // Context
                     var ctxPlace = thisPlace != null && ghost.ContainingType is SourceTypeSymbol sourcetype
-                        ? (sourcetype.ContextStore != null ? new FieldPlace(thisPlace, sourcetype.ContextStore) : null)
+                        ? (sourcetype.ContextStore != null ? new FieldPlace(thisPlace, sourcetype.ContextStore, module) : null)
                         : (IPlace)new ArgPlace(module.Compilation.CoreTypes.Context, 0);
 
                     var cg = new CodeGenerator(il, module, diagnostic, module.Compilation.Options.OptimizationLevel, false, containingtype, ctxPlace, thisPlace);

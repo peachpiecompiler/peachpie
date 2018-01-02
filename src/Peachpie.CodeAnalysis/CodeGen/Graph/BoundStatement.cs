@@ -30,10 +30,6 @@ namespace Pchp.CodeAnalysis.Semantics
             if (cg.EmitPdbSequencePoints)
             {
                 var span = _span;
-                //if (span.IsEmpty && PhpSyntax != null)
-                //{
-                //    span = PhpSyntax.Span.ToTextSpan();
-                //}
 
                 if (!span.IsEmpty)
                 {
@@ -145,25 +141,6 @@ namespace Pchp.CodeAnalysis.Semantics
             //
             cg.EmitConvert(Thrown, cg.CoreTypes.Exception);
 
-            //var t = cg.Emit(Thrown);
-            //if (t.IsReferenceType)
-            //{
-            //    //if (!t.IsEqualToOrDerivedFrom(cg.CoreTypes.Exception))
-            //    //{
-            //    //    throw new NotImplementedException();    // Wrap to System.Exception
-            //    //}
-            //    cg.EmitCastClass(t, cg.CoreTypes.Exception);
-            //}
-            //else
-            //{
-            //    //if (t == cg.CoreTypes.PhpValue)
-            //    //{
-
-            //    //}
-
-            //    throw new NotImplementedException();    // Wrap to System.Exception
-            //}
-
             // throw <stack>;
             cg.Builder.EmitThrow(false);
         }
@@ -256,7 +233,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     var cg = new CodeGenerator(il, module, diagnostic, compilation.Options.OptimizationLevel, false,
                         holder.ContainingType, new ArgPlace(compilation.CoreTypes.Context, 1), new ArgPlace(holder, 0));
 
-                    var valuePlace = new FieldPlace(cg.ThisPlaceOpt, holder.ValueField);
+                    var valuePlace = new FieldPlace(cg.ThisPlaceOpt, holder.ValueField, module);
 
                     // Template: this.value = <initilizer>;
 
@@ -284,7 +261,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     var cg = new CodeGenerator(il, module, diagnostic, compilation.Options.OptimizationLevel, false,
                         holder.ContainingType, null, new ArgPlace(holder, 0));
 
-                    var valuePlace = new FieldPlace(cg.ThisPlaceOpt, holder.ValueField);
+                    var valuePlace = new FieldPlace(cg.ThisPlaceOpt, holder.ValueField, module);
 
                     // Template: this.value = default(T);
 
@@ -366,8 +343,13 @@ namespace Pchp.CodeAnalysis.Semantics
             else
             {
                 cg.EmitConvertToPhpValue(cg.Emit(YieldedKey), YieldedKey.TypeRefMask);
-                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.SetGeneratorCurrent_Generator_PhpValue_PhpValue)
-                    .Expect(SpecialType.System_Void);
+
+                var setcurrent = this.IsYieldFrom
+                    ? cg.CoreMethods.Operators.SetGeneratorCurrentFrom_Generator_PhpValue_PhpValue  // does not update auto-incremented key
+                    : cg.CoreMethods.Operators.SetGeneratorCurrent_Generator_PhpValue_PhpValue;     // updates Generator max key
+
+
+                cg.EmitCall(ILOpCode.Call, setcurrent).Expect(SpecialType.System_Void);
             }
 
             //generator._state = yieldIndex

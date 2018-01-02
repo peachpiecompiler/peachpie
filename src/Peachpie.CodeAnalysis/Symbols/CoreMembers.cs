@@ -441,6 +441,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 GetSelf_RuntimeTypeHandle = ct.Operators.Method("GetSelf", ct.RuntimeTypeHandle);
                 GetParent_RuntimeTypeHandle = ct.Operators.Method("GetParent", ct.RuntimeTypeHandle);
+                GetParent_PhpTypeInfo = ct.Operators.Method("GetParent", ct.PhpTypeInfo);
                 TypeNameOrObjectToType_Context_PhpValue = ct.Operators.Method("TypeNameOrObjectToType", ct.Context, ct.PhpValue);
 
                 Clone_Context_Object = ct.Operators.Method("Clone", ct.Context, ct.Object);
@@ -459,6 +460,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 HandleGeneratorException_Generator = ct.Operators.Method("HandleGeneratorException", ct.Generator);
                 SetGeneratorCurrent_Generator_PhpValue = ct.Operators.Method("SetGeneratorCurrent", ct.Generator, ct.PhpValue);
                 SetGeneratorCurrent_Generator_PhpValue_PhpValue = ct.Operators.Method("SetGeneratorCurrent", ct.Generator, ct.PhpValue, ct.PhpValue);
+                SetGeneratorCurrentFrom_Generator_PhpValue_PhpValue = ct.Operators.Method("SetGeneratorCurrentFrom", ct.Generator, ct.PhpValue, ct.PhpValue);
                 GetGeneratorSentItem_Generator = ct.Operators.Method("GetGeneratorSentItem", ct.Generator);
                 SetGeneratorReturnedValue_Generator_PhpValue = ct.Operators.Method("SetGeneratorReturnedValue", ct.Generator, ct.PhpValue);
 
@@ -525,7 +527,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle,
                 GetForeachEnumerator_Iterator,
 
-                GetSelf_RuntimeTypeHandle, GetParent_RuntimeTypeHandle,
+                GetSelf_RuntimeTypeHandle, GetParent_RuntimeTypeHandle, GetParent_PhpTypeInfo,
                 TypeNameOrObjectToType_Context_PhpValue,
 
                 Clone_Context_Object,
@@ -536,7 +538,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate,
                 GetGeneratorState_Generator, SetGeneratorState_Generator_int, HandleGeneratorException_Generator,
-                SetGeneratorCurrent_Generator_PhpValue, SetGeneratorCurrent_Generator_PhpValue_PhpValue,
+                SetGeneratorCurrent_Generator_PhpValue, SetGeneratorCurrent_Generator_PhpValue_PhpValue, SetGeneratorCurrentFrom_Generator_PhpValue_PhpValue,
                 GetGeneratorSentItem_Generator, SetGeneratorReturnedValue_Generator_PhpValue,
 
                 offsetGet_ArrayAccess_PhpValue,
@@ -971,6 +973,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 DeclareFunction_RoutineInfo = ct.Context.Method("DeclareFunction", ct.RoutineInfo);
                 DeclareType_T = ct.Context.Method("DeclareType");
+                DeclareType_PhpTypeInfo_String = ct.Context.Method("DeclareType", ct.PhpTypeInfo, ct.String);
 
                 DisableErrorReporting = ct.Context.Method("DisableErrorReporting");
                 EnableErrorReporting = ct.Context.Method("EnableErrorReporting");
@@ -1003,7 +1006,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreMethod
                 AddScriptReference_TScript,
-                DeclareFunction_RoutineInfo, DeclareType_T,
+                DeclareFunction_RoutineInfo, DeclareType_T, DeclareType_PhpTypeInfo_String,
                 DisableErrorReporting, EnableErrorReporting,
                 CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_string_PhpArray_object_RuntimeTypeHandle_bool_bool,
                 ExpectTypeDeclared_T,
@@ -1028,7 +1031,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetFieldBinder = ct.BinderFactory.Method("GetField", ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.AccessMask);
                 SetFieldBinder = ct.BinderFactory.Method("SetField", ct.String, ct.RuntimeTypeHandle, ct.AccessMask);
                 GetClassConstBinder = ct.BinderFactory.Method("GetClassConst", ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.AccessMask);
-                
+
                 GetPhpTypeInfo_T = ct.PhpTypeInfoExtension.Method("GetPhpTypeInfo");
                 GetPhpTypeInfo_Object = ct.PhpTypeInfoExtension.Method("GetPhpTypeInfo", ct.Object);
                 GetPhpTypeInfo_RuntimeTypeHandle = ct.PhpTypeInfoExtension.Method("GetPhpTypeInfo", ct.RuntimeTypeHandle);

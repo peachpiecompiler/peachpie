@@ -24,9 +24,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     {
         #region Fields
 
-        readonly ISymbolProvider _model;
-
-        internal ISymbolProvider Model => _model;
+        /// <summary>
+        /// Gets model for symbols resolution.
+        /// </summary>
+        internal ISymbolProvider/*!*/Model => _model;
+        readonly ISymbolProvider/*!*/_model;
 
         /// <summary>
         /// Reference to corresponding source routine.
@@ -99,7 +101,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 throw ExceptionUtilities.UnexpectedValue(dtype.ClassName);
             }
 
-            return (TypeSymbol)_model.GetType(dtype.ClassName);
+            return (TypeSymbol)_model.ResolveType(dtype.ClassName);
         }
 
         /// <summary>
@@ -117,7 +119,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (x != null)
             {
                 if (x is BoundVariableRef v) return v.Name.IsDirect ? v : TryGetExpressionChainRoot(v.Name.NameExpression);
-                if (x is BoundFieldRef f) return TryGetExpressionChainRoot(f.Instance ?? f.ParentType?.TypeExpression);
+                if (x is BoundFieldRef f) return TryGetExpressionChainRoot(f.Instance ?? f.ContainingType?.TypeExpression);
                 if (x is BoundInstanceFunctionCall m) return TryGetExpressionChainRoot(m.Instance);
                 if (x is BoundArrayItemEx a) return TryGetExpressionChainRoot(a.Array);
             }
@@ -132,7 +134,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public ExpressionAnalysis(Worklist<BoundBlock> worklist, ISymbolProvider model)
             : base(worklist)
         {
-            Contract.ThrowIfNull(model);
+            Debug.Assert(model != null);
             _model = model;
         }
 
@@ -389,9 +391,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             else
             {
                 x.BeforeTypeRef = TypeRefMask.AnyType;
-
-                // indirect variable access:
-                Routine.Flags |= RoutineFlags.HasIndirectVar;
 
                 Accept(x.Name.NameExpression);
 
@@ -1249,7 +1248,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         var classtype = typeref.Where(t => t.IsObject).AsImmutable().SingleOrDefault();
                         if (classtype != null)
                         {
-                            resolvedtype = (NamedTypeSymbol)_model.GetType(classtype.QualifiedName);
+                            resolvedtype = (NamedTypeSymbol)_model.ResolveType(classtype.QualifiedName);
                         }
                     }
                 }
@@ -1288,7 +1287,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (tref is INamedTypeRef namedref)
             {
-                if (tref is TranslatedTypeRef translatedref)
+                if (tref is TranslatedTypeRef translatedref && translatedref.OriginalType is ReservedTypeRef)
                 {
                     // resolve self or parent directly
                     var resolved = ResolveTypeRef(translatedref.OriginalType);
@@ -1302,23 +1301,29 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else if (tref is ReservedTypeRef)
             {
+                if (TypeCtx.SelfType == null || TypeCtx.SelfType.IsTraitType())
+                {
+                    // no self, parent, static resolvable in compile-time:
+                    return new MissingMetadataTypeSymbol(tref.QualifiedName.ToString(), 0, false);
+                }
+
                 // resolve types that parser skipped
                 switch (((ReservedTypeRef)tref).Type)
                 {
                     case ReservedTypeRef.ReservedType.self:
-                        return TypeCtx.SelfType ?? new MissingMetadataTypeSymbol(tref.QualifiedName.ToString(), 0, false);
+                        return TypeCtx.SelfType;
 
                     case ReservedTypeRef.ReservedType.parent:
-                        return TypeCtx.SelfType?.BaseType ?? new MissingMetadataTypeSymbol(tref.QualifiedName.ToString(), 0, false);
+                        var btype = TypeCtx.SelfType.BaseType;
+                        return (btype == null || btype.IsObjectType()) // no "System.Object" in PHP, invalid parent
+                            ? new MissingMetadataTypeSymbol(tref.QualifiedName.ToString(), 0, false)
+                            : btype;
 
                     case ReservedTypeRef.ReservedType.@static:
-                        if (TypeCtx.SelfType != null && TypeCtx.SelfType.IsSealed)
+                        if (TypeCtx.SelfType.IsSealed)
                         {
+                            // `static` == `self` <=> self is sealed
                             return TypeCtx.SelfType;
-                        }
-                        else
-                        {
-                            this.Routine.Flags |= RoutineFlags.UsesLateStatic;
                         }
                         break;
                 }
@@ -1326,7 +1331,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             else if (tref is AnonymousTypeRef anonymousref)
             {
                 return ((TypeSymbol)_model
-                    .GetType(anonymousref.TypeDeclaration.GetAnonymousTypeQualifiedName()))
+                    .ResolveType(anonymousref.TypeDeclaration.GetAnonymousTypeQualifiedName()))
                     .ExpectValid();
             }
             else if (tref is IndirectTypeRef)
@@ -1336,14 +1341,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // string:
                 if (expr.ConstantValue.HasValue && expr.ConstantValue.Value is string tname)
                 {
-                    return (TypeSymbol)_model.GetType(NameUtils.MakeQualifiedName(tname, true));
+                    return (TypeSymbol)_model.ResolveType(NameUtils.MakeQualifiedName(tname, true));
                 }
                 else if (objectTypeInfoSemantic)
                 {
                     // $this:
                     if (expr is BoundVariableRef varref && varref.Name.NameValue.IsThisVariableName)
                     {
-                        return TypeCtx.ThisType; // $this, self
+                        if (TypeCtx.ThisType != null && TypeCtx.ThisType.IsSealed)
+                        {
+                            return TypeCtx.ThisType; // $this, self
+                        }
                     }
                     //else if (IsClassOnly(tref.TypeExpression.TypeRefMask))
                     //{
@@ -1382,7 +1390,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // resolve target type
             var type = (NamedTypeSymbol)x.TypeRef.ResolvedType;
-            if (type != null && !type.IsErrorType())
+            if (type.IsValidType())
             {
                 var candidates = type.InstanceConstructors.ToArray();
 
@@ -1404,8 +1412,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void VisitInclude(BoundIncludeEx x)
         {
-            this.Routine.Flags |= RoutineFlags.HasInclude;
-
             VisitRoutineCall(x);
 
             // resolve target script
@@ -1420,7 +1426,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var value = targetExpr.ConstantValue.Value as string;
                 if (value != null)
                 {
-                    var targetFile = _model.GetFile(value);
+                    var targetFile = _model.ResolveFile(value);
                     if (targetFile != null)
                     {
                         x.Target = targetFile.MainMethod;
@@ -1478,7 +1484,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override void VisitFieldRef(BoundFieldRef x)
         {
             Accept(x.Instance);
-            VisitTypeRef(x.ParentType);
+            VisitTypeRef(x.ContainingType);
             Accept(x.FieldName.NameExpression);
 
             if (x.IsInstanceField)  // {Instance}->FieldName
@@ -1493,7 +1499,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     var typerefs = TypeCtx.GetTypes(TypeCtx.WithoutNull(x.Instance.TypeRefMask));   // ignore NULL, would cause runtime exception in read access, will be ensured to non-null in write access
                     if (typerefs.Count == 1 && typerefs[0].IsObject)
                     {
-                        resolvedtype = (NamedTypeSymbol)_model.GetType(typerefs[0].QualifiedName);
+                        resolvedtype = (NamedTypeSymbol)_model.ResolveType(typerefs[0].QualifiedName);
                     }
                 }
 
@@ -1548,7 +1554,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // static fields or constants
             if (x.IsStaticField || x.IsClassConstant)    // {ClassName}::${StaticFieldName}, {ClassName}::{ConstantName}
             {
-                var ParentType = (NamedTypeSymbol)x.ParentType.ResolvedType;
+                var containingType = (NamedTypeSymbol)x.ContainingType.ResolvedType;
 
                 if (x.IsClassConstant)
                 {
@@ -1556,18 +1562,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     Debug.Assert(!x.Access.IsEnsure && !x.Access.IsWrite && !x.Access.IsReadRef);
                 }
 
-                if (ParentType != null && x.FieldName.IsDirect)
+                if (containingType != null && x.FieldName.IsDirect)
                 {
                     var fldname = x.FieldName.NameValue.Value;
-                    var field = x.IsStaticField ? ParentType.ResolveStaticField(fldname) : ParentType.ResolveClassConstant(fldname);
+                    var field = x.IsStaticField ? containingType.ResolveStaticField(fldname) : containingType.ResolveClassConstant(fldname);
                     if (field != null)
                     {
                         // TODO: visibility -> ErrCode
-
-                        Debug.Assert(
-                            field.IsConst ||    // .NET constant
-                            field.IsStatic ||   // .NET static
-                            field.ContainingType.TryGetStatics().LookupMember<FieldSymbol>(x.FieldName.NameValue.Value) != null); // or PHP context static
 
                         if (BindConstantValue(x, field))
                         {
@@ -1587,7 +1588,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     else if (x.IsStaticField)
                     {
                         // TODO: visibility
-                        var prop = ParentType.LookupMember<PropertySymbol>(fldname);
+                        var prop = containingType.LookupMember<PropertySymbol>(fldname);
                         if (prop != null && prop.IsStatic)
                         {
                             x.BoundReference = new BoundPropertyPlace(null, prop);
@@ -1601,7 +1602,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 // indirect field access:
                 // indirect field access with known class name:
-                x.BoundReference = new BoundIndirectStFieldPlace(x.ParentType, x.FieldName, x);
+                x.BoundReference = new BoundIndirectStFieldPlace(x.ContainingType, x.FieldName, x);
                 x.TypeRefMask = TypeRefMask.AnyType;
                 return;
             }
@@ -1679,10 +1680,24 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         #endregion
 
         #region VisitYield
+
         public override void VisitYieldStatement(BoundYieldStatement x)
         {
             base.VisitYieldStatement(x);
         }
+
+        public override void VisitYieldEx(BoundYieldEx x)
+        {
+            base.VisitYieldEx(x);
+            x.TypeRefMask = TypeRefMask.AnyType;
+        }
+
+        public override void VisitYieldFromEx(BoundYieldFromEx x)
+        {
+            base.VisitYieldFromEx(x);
+            x.TypeRefMask = TypeRefMask.AnyType;
+        }
+
         #endregion
 
         #region Visit
@@ -1725,9 +1740,27 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 case PseudoConstUse.Types.Class:
                 case PseudoConstUse.Types.Trait:
-                    value = (TypeCtx.SelfType is IPhpTypeSymbol)
-                        ? ((IPhpTypeSymbol)TypeCtx.SelfType).FullName.ToString()
-                        : string.Empty;
+                    if (TypeCtx.SelfType is IPhpTypeSymbol phpt)
+                    {
+                        value = phpt.FullName.ToString();
+
+                        if (phpt.IsTrait && x.Type == PseudoConstUse.Types.Class)
+                        {
+                            // __CLASS__ inside trait resolved in runtime
+                            x.TypeRefMask = TypeCtx.GetStringTypeMask();
+                            return;
+                        }
+
+                        if (!phpt.IsTrait && x.Type == PseudoConstUse.Types.Trait)
+                        {
+                            // __TRAIT__ inside class is empty string
+                            value = string.Empty;
+                        }
+                    }
+                    else
+                    {
+                        value = string.Empty;
+                    }
                     break;
 
                 case PseudoConstUse.Types.Method:
@@ -1860,7 +1893,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitEval(x);
 
             //
-            Routine.Flags |= RoutineFlags.HasEval;
             State.SetAllUnknown(true);
 
             //

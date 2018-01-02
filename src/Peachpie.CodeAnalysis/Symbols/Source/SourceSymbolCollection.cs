@@ -157,9 +157,7 @@ namespace Pchp.CodeAnalysis.Symbols
             // collect type declarations
             foreach (var t in tree.Types)
             {
-                var typesymbol = (t is AnonymousTypeDecl)
-                    ? new SourceAnonymousTypeSymbol(fsymbol, (AnonymousTypeDecl)t)
-                    : new SourceTypeSymbol(fsymbol, t);
+                var typesymbol = SourceTypeSymbol.Create(fsymbol, t);
 
                 t.SetProperty(typesymbol);    // remember bound type symbol
                 fsymbol.ContainedTypes.Add(typesymbol);

@@ -578,15 +578,21 @@ namespace Pchp.Core
         /// Gets <see cref="PhpTypeInfo"/> of parent.
         /// Throws in case of parent being used out of class context or within a parentless class.
         /// </summary>
-        public static PhpTypeInfo GetParent(RuntimeTypeHandle self)
+        public static PhpTypeInfo GetParent(RuntimeTypeHandle self) => GetParent(self.GetPhpTypeInfo());
+
+        /// <summary>
+        /// Gets <see cref="PhpTypeInfo"/> of parent.
+        /// Throws in case of parent being used out of class context or within a parentless class.
+        /// </summary>
+        public static PhpTypeInfo GetParent(PhpTypeInfo self)
         {
-            if (self.Equals(default(RuntimeTypeHandle)))
+            if (self == null)
             {
                 PhpException.Throw(PhpError.Error, Resources.ErrResources.parent_used_out_of_class);
             }
             else
             {
-                var t = self.GetPhpTypeInfo().BaseType;
+                var t = self.BaseType;
                 if (t != null)
                 {
                     return t;
@@ -809,7 +815,7 @@ namespace Pchp.Core
                                     typeof(ValueTupleEnumerator<,>).MakeGenericType(item_type.GetGenericArguments()),
                                     enumerable);
                             }
-                            
+
                             // KeyValuePair<A, B>
                             if (item_type.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
                             {
@@ -1323,31 +1329,39 @@ namespace Pchp.Core
             }
         }
 
-        public static void SetGeneratorCurrValue(Generator g, PhpValue value) => g._currValue = value;
-
-        public static void SetGeneratorCurrKey(Generator g, PhpValue value) => g._currKey = value;
-
-        public static void SetGeneratorReturnedUserKey(Generator g, bool value) => g._userKeyReturned = value;
-
         /// <summary>Set yielded value from generator where key is not specified.</summary>
         public static void SetGeneratorCurrent(Generator g, PhpValue value)
         {
             g._currValue = value;
-            g._currKey = PhpValue.Void;
-            g._userKeyReturned = false;
+            g._currKey = (PhpValue)(++g._maxNumericalKey);
+        }
+
+        /// <summary>
+        /// Sets yielded value from generator with key.
+        /// This operator does not update auto-incremented Generator key.
+        /// </summary>
+        public static void SetGeneratorCurrentFrom(Generator g, PhpValue value, PhpValue key)
+        {
+            g._currValue = value;
+            g._currKey = key;
         }
 
         /// <summary>Set yielded value from generator with key.</summary>
         public static void SetGeneratorCurrent(Generator g, PhpValue value, PhpValue key)
         {
-            g._currValue = value;
-            g._currKey = key;
-            g._userKeyReturned = true;
+            SetGeneratorCurrentFrom(g, value, key);
+
+            // update the Generator auto-increment key
+            if (key.IsLong(out long ikey) && ikey > g._maxNumericalKey)
+            {
+                g._maxNumericalKey = ikey;
+            }
         }
 
         public static PhpValue GetGeneratorSentItem(Generator g) => g._currSendItem;
 
         public static void SetGeneratorReturnedValue(Generator g, PhpValue value) => g._returnValue = value;
+
         #endregion
 
         #region Dynamic
