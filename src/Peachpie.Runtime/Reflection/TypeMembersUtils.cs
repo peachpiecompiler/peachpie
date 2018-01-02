@@ -244,21 +244,25 @@ namespace Pchp.Core.Reflection
         {
             Debug.Assert(tinfo != null);
 
-            var ctors = tinfo.Type.DeclaredConstructors;
             Func<Context, object> candidate = null;
 
-            foreach (var c in ctors)
+            if (!tinfo.IsInterface && !tinfo.IsTrait)
             {
-                if (c.IsStatic) continue;
+                var ctors = tinfo.Type.DeclaredConstructors;
 
-                if (c.IsPhpFieldsOnlyCtor())
+                foreach (var c in ctors)
                 {
-                    return (_ctx) => c.Invoke(new object[] { _ctx });
-                }
+                    if (c.IsStatic) continue;
 
-                var ps = c.GetParameters();
-                if (ps.Length == 0) candidate = (_ctx) => c.Invoke(Array.Empty<object>());
-                if (ps.Length == 1 && ps[0].ParameterType == typeof(Context)) candidate = (_ctx) => c.Invoke(new object[] { _ctx });
+                    if (c.IsPhpFieldsOnlyCtor())
+                    {
+                        return (_ctx) => c.Invoke(new object[] { _ctx });
+                    }
+
+                    var ps = c.GetParameters();
+                    if (ps.Length == 0) candidate = (_ctx) => c.Invoke(Array.Empty<object>());
+                    if (ps.Length == 1 && ps[0].ParameterType == typeof(Context)) candidate = (_ctx) => c.Invoke(new object[] { _ctx });
+                }
             }
 
             return candidate

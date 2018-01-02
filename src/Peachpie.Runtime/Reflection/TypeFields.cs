@@ -42,10 +42,8 @@ namespace Pchp.Core.Reflection
 
         #region Initialization
 
-        internal TypeFields(Type type)
+        internal TypeFields(TypeInfo tinfo)
         {
-            var tinfo = type.GetTypeInfo();
-
             _fields = tinfo.DeclaredFields.Where(_IsAllowedField).ToDictionary(_FieldName, StringComparer.Ordinal);
             if (_fields.Count == 0)
                 _fields = null;
@@ -53,6 +51,14 @@ namespace Pchp.Core.Reflection
             var staticscontainer = tinfo.GetDeclaredNestedType("_statics");
             if (staticscontainer != null)
             {
+                if (staticscontainer.IsGenericTypeDefinition)
+                {
+                    // _statics is always generic type definition (not constructed) in case enclosing type is generic.
+                    // Construct the type using enclosing class (trait) generic arguments (TSelf):
+                    Debug.Assert(tinfo.GenericTypeArguments.Length == staticscontainer.GenericTypeParameters.Length);   // <!TSelf>
+                    staticscontainer = staticscontainer.MakeGenericType(tinfo.GenericTypeArguments).GetTypeInfo();
+                }
+
                 _staticsFields = staticscontainer.DeclaredFields.ToDictionary(_FieldName, StringComparer.Ordinal);
             }
 
