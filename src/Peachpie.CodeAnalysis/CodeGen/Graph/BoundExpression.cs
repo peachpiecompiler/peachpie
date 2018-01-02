@@ -1847,8 +1847,17 @@ namespace Pchp.CodeAnalysis.Semantics
                     break;
 
                 case Operations.LogicNegation:
-                    //Template: !(bool)(x);                              
-                    cg.EmitConvertToBool(this.Operand, true);
+                    if (Operand is BoundUnaryEx op_un && op_un.Operation == Operations.LogicNegation)
+                    {
+                        // double negation !(!x), just convert to (bool)x:
+                        //Template: (bool)(x);
+                        cg.EmitConvertToBool(op_un.Operand, negation: false);
+                    }
+                    else
+                    {
+                        //Template: !(bool)(x);
+                        cg.EmitConvertToBool(this.Operand, negation: true);
+                    }
                     returned_type = cg.CoreTypes.Boolean;
                     break;
 
