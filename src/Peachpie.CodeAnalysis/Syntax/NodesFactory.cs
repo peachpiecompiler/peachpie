@@ -103,7 +103,9 @@ namespace Peachpie.CodeAnalysis.Syntax
 
         public override LangElement EncapsedExpression(Span span, LangElement expression, Tokens openDelimiter) => expression;
 
-        public override LangElement StringEncapsedExpression(Span span, LangElement expression, Tokens openDelimiter, string label) => expression;
+        public override LangElement StringEncapsedExpression(Span span, LangElement expression, Tokens openDelimiter) => expression;
+
+        public override LangElement HeredocExpression(Span span, LangElement expression, Tokens quoteStyle, string label) => expression;
 
         public NodesFactory(SourceUnit sourceUnit) : base(sourceUnit)
         {

@@ -79,7 +79,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     CannotInstantiate(x, "static", x.TypeRef);
                 }
-                else if (x.TypeRef.ResolvedType is IPhpTypeSymbol phpt && phpt.IsTrait)
+                else if (x.TypeRef.ResolvedType.IsTraitType())
                 {
                     CannotInstantiate(x, "trait", x.TypeRef);
                 }
