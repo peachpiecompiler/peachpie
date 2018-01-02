@@ -3338,7 +3338,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (this.IfTrue != null)
             {
                 // Cond ? True : False
-                cg.EmitConvert(this.Condition, cg.CoreTypes.Boolean);   // i4
+                cg.EmitConvertToBool(this.Condition, negation: false);   // i4
                 cg.Builder.EmitBranch(ILOpCode.Brtrue, trueLbl);
 
                 // false:

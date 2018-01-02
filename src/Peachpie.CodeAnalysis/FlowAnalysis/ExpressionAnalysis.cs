@@ -833,11 +833,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         : TypeCtx.GetObjectsFromMask(x.Operand.TypeRefMask);    // (object)T
 
                 case Operations.LogicNegation:
-                    if (x.Operand.ConstantValue.TryConvertToBool(out bool constBool) == true)
                     {
-                        x.ConstantValue = ConstantValueExtensions.AsOptional(!constBool);
+                        if (x.Operand.ConstantValue.TryConvertToBool(out bool constBool))
+                        {
+                            x.ConstantValue = ConstantValueExtensions.AsOptional(!constBool);
+                        }
+                        return TypeCtx.GetBooleanTypeMask();
                     }
-                    return TypeCtx.GetBooleanTypeMask();
 
                 case Operations.Minus:
                     var cvalue = ResolveUnaryMinus(x.Operand.ConstantValue.ToConstantValueOrNull());
@@ -870,7 +872,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     return TypeCtx.GetLongTypeMask();
 
                 case Operations.BoolCast:
-                    return TypeCtx.GetBooleanTypeMask();
+                    {
+                        if (x.Operand.ConstantValue.TryConvertToBool(out bool constBool))
+                        {
+                            x.ConstantValue = ConstantValueExtensions.AsOptional(constBool);
+                        }
+                        return TypeCtx.GetBooleanTypeMask();
+                    }
 
                 case Operations.Int8Cast:
                 case Operations.Int16Cast:
