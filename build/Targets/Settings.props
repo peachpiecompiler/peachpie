@@ -4,7 +4,7 @@
   <PropertyGroup>
 
     <!-- common version -->
-    <VersionPrefix Condition=" '$(VersionPrefix)'=='' ">0.8.0</VersionPrefix>
+    <VersionPrefix Condition=" '$(VersionPrefix)'=='' ">0.9.0</VersionPrefix>
     <VersionSuffix Condition=" '$(VersionSuffix)'=='' ">dev</VersionSuffix>
 
     <!-- metadata generation -->
