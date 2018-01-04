@@ -597,6 +597,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             var/*!*/label = GetLabelBlock(x.LabelName.Name.Value);
             label.Flags |= ControlFlowGraph.LabelBlockFlags.Used;   // label is used
 
+            if (!label.LabelSpan.IsValid)
+            {
+                // remember label span if not declared
+                label.LabelSpan = x.LabelName.Span;
+            }
+
             Connect(_current, label.TargetBlock);
 
             _current.NextEdge.PhpSyntax = x;
@@ -685,7 +691,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
 
             label.Flags |= ControlFlowGraph.LabelBlockFlags.Defined;        // label is defined
-            label.LabelSpan = x.Span;
+            label.LabelSpan = x.Name.Span;
 
             _current = WithNewOrdinal(Connect(_current, label.TargetBlock));
         }

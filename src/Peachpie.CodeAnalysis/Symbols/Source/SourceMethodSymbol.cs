@@ -106,6 +106,13 @@ namespace Pchp.CodeAnalysis.Symbols
                     diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.CloneCannotBeStatic, _type.FullName.ToString()));
                 }
             }
+            else if (name.IsCallStaticName)
+            {
+                if (!IsStatic || (_syntax.Modifiers & PhpMemberAttributes.VisibilityMask) != PhpMemberAttributes.Public)
+                {
+                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Warnings.CallStatMustBePublicStatic));
+                }
+            }
             // ...
 
             if (_syntax.Modifiers.IsAbstract())

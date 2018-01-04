@@ -54,7 +54,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             public string Label;
 
             /// <summary>
-            /// Positions of label definition and last label use.
+            /// Positions of label definition and/or last label use.
             /// </summary>
             public Span LabelSpan;
 

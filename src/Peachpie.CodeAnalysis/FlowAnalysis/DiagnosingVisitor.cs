@@ -28,6 +28,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         Stack<BoundBlock> endOfTryBlocks = new Stack<BoundBlock>();
 
+        void Add(Devsense.PHP.Text.Span span, Devsense.PHP.Errors.ErrorInfo err, params string[] args)
+        {
+            _diagnostics.Add(DiagnosticBagExtensions.ParserDiagnostic(_routine, span, err, args));
+        }
+
         void CannotInstantiate(IPhpOperation op, string kind, BoundTypeRef t)
         {
             _diagnostics.Add(_routine, op.PhpSyntax, ErrorCode.ERR_CannotInstantiateType, kind, t.ResolvedType);
@@ -47,8 +52,36 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             base.VisitCFG(x);
 
+            // analyse missing or redefined labels
+            CheckLabels(x.Labels);
+
             // TODO: Report also unreachable code caused by situations like if (false) { ... }
             CheckUnreachableCode(x);
+        }
+
+        void CheckLabels(ControlFlowGraph.LabelBlockState[] labels)
+        {
+            if (labels == null || labels.Length == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < labels.Length; i++)
+            {
+                var flags = labels[i].Flags;
+                if ((flags & ControlFlowGraph.LabelBlockFlags.Defined) == 0)
+                {
+                    Add(labels[i].LabelSpan, Devsense.PHP.Errors.Errors.UndefinedLabel, labels[i].Label);
+                }
+                if ((flags & ControlFlowGraph.LabelBlockFlags.Used) == 0)
+                {
+                    // Warning: label not used
+                }
+                if ((flags & ControlFlowGraph.LabelBlockFlags.Redefined) != 0)
+                {
+                    Add(labels[i].LabelSpan, Devsense.PHP.Errors.Errors.LabelRedeclared, labels[i].Label);
+                }
+            }
         }
 
         public override void VisitEval(BoundEvalEx x)
@@ -181,7 +214,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     {
                         if (x.Right.ConstantValue.IsZero())
                         {
-                            _diagnostics.Add(DiagnosticBagExtensions.ParserDiagnostic(_routine, x.Right.PhpSyntax.Span, Devsense.PHP.Errors.Warnings.DivisionByZero));
+                            Add(x.Right.PhpSyntax.Span, Devsense.PHP.Errors.Warnings.DivisionByZero);
                         }
                     }
                     break;
