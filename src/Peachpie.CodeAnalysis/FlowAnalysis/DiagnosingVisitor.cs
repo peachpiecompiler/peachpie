@@ -168,6 +168,26 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
+        public override void VisitBinaryExpression(BoundBinaryEx x)
+        {
+            base.VisitBinaryExpression(x);
+
+            //
+
+            switch (x.Operation)
+            {
+                case Operations.Div:
+                    if (x.Right.IsConstant())
+                    {
+                        if (x.Right.ConstantValue.IsZero())
+                        {
+                            _diagnostics.Add(DiagnosticBagExtensions.ParserDiagnostic(_routine, x.Right.PhpSyntax.Span, Devsense.PHP.Errors.Warnings.DivisionByZero));
+                        }
+                    }
+                    break;
+            }
+        }
+
         void CheckMethodCallTargetInstance(BoundExpression target, string methodName)
         {
             if (target == null)
