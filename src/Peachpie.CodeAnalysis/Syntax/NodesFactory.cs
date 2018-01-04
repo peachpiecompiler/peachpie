@@ -101,6 +101,11 @@ namespace Peachpie.CodeAnalysis.Syntax
             return AddAndReturn(ref _yieldNodes, base.YieldFrom(span, fromExpr));
         }
 
+        public override LangElement Literal(Span span, object value, string originalValue)
+        {
+            return base.Literal(span, value, originalValue: null);  // discard the original value string, not needed, free some memory
+        }
+
         public override LangElement EncapsedExpression(Span span, LangElement expression, Tokens openDelimiter) => expression;
 
         public override LangElement StringEncapsedExpression(Span span, LangElement expression, Tokens openDelimiter) => expression;

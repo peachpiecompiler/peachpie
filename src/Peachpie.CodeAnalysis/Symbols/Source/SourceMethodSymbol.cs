@@ -64,6 +64,87 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected override TypeRefContext CreateTypeRefContext() => TypeRefFactory.CreateTypeRefContext(_type);
 
+        protected override void GetDiagnostics(DiagnosticBag diagnostic)
+        {
+            var name = _syntax.Name.Name;
+
+            // diagnostics:
+            if (name.IsDestructName)    // __destruct()
+            {
+                if (_syntax.Signature.FormalParams.Length != 0)
+                {
+                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.DestructCannotTakeArguments, _type.FullName.ToString()));
+                }
+                if (IsStatic)
+                {
+                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.DestructCannotBeStatic, _type.FullName.ToString()));
+                }
+            }
+            else if (name.IsConstructName) // __construct()
+            {
+                if (IsStatic)
+                {
+                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.ConstructCannotBeStatic, _type.FullName.ToString()));
+                }
+            }
+            else if (name.IsToStringName)   // __tostring()
+            {
+                if ((IsStatic || (_syntax.Modifiers & PhpMemberAttributes.VisibilityMask) != PhpMemberAttributes.Public))
+                {
+                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Warnings.MagicMethodMustBePublicNonStatic, name.Value));
+                }
+
+                if (_syntax.Signature.FormalParams.Length != 0)
+                {
+                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.MethodCannotTakeArguments, _type.FullName.ToString(), name.Value));
+                }
+            }
+            else if (name.IsCloneName)
+            {
+                if (IsStatic)
+                {
+                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.CloneCannotBeStatic, _type.FullName.ToString()));
+                }
+            }
+            // ...
+
+            if (_syntax.Modifiers.IsAbstract())
+            {
+                // abstract member in non-abstract class
+                if ((_type.Syntax.MemberAttributes & (PhpMemberAttributes.Abstract | PhpMemberAttributes.Trait)) == 0)  // not abstract nor trait
+                {
+                    // TODO: ERR_AbstractMethodInNonAbstractClass
+                }
+
+                // abstract private
+                if ((_syntax.Modifiers & PhpMemberAttributes.VisibilityMask) == PhpMemberAttributes.Private)
+                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.HeadingSpan, Devsense.PHP.Errors.Errors.AbstractPrivateMethodDeclared));
+
+                // abstract final
+                if ((_syntax.Modifiers & PhpMemberAttributes.Final) != 0)
+                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.HeadingSpan, Devsense.PHP.Errors.Errors.AbstractFinalMethodDeclared));
+
+                // abstract method with body
+                if (_syntax.Body != null)
+                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this,
+                        _syntax.HeadingSpan,
+                        _type.IsInterface
+                            ? Devsense.PHP.Errors.Errors.InterfaceMethodWithBody
+                            : Devsense.PHP.Errors.Errors.AbstractMethodWithBody,
+                        _type.FullName.ToString(), name.Value));
+            }
+            else
+            {
+                if (_syntax.Body == null && !_type.IsInterface)
+                {
+                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.HeadingSpan, Devsense.PHP.Errors.Errors.NonAbstractMethodWithoutBody));
+                }
+            }
+            
+            //
+            base.GetDiagnostics(diagnostic);
+        }
+
         internal override SourceFileSymbol ContainingFile => _type.ContainingFile;
 
         public override string Name => _syntax.Name.Name.Value;
