@@ -1105,6 +1105,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
         {
             return GetDeclaredMembers()
+                .Where(m => m.ContainingType == this)   // skips members contained in _statics holder
                 .Where(s => s.Name.StringsEqual(name, ignoreCase))
                 .AsImmutable();
         }
