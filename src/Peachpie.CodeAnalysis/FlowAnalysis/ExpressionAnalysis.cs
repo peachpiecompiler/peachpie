@@ -1747,46 +1747,50 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 case PseudoConstUse.Types.Class:
                 case PseudoConstUse.Types.Trait:
-                    var containingtype = ((LangElement)Routine.Syntax).ContainingType;
-                    if (containingtype != null)
                     {
-                        var intrait = containingtype.MemberAttributes.IsTrait();
-
-                        value = containingtype.QualifiedName.ToString();
-
-                        if (intrait && x.Type == PseudoConstUse.Types.Class)
+                        var containingtype = x.PhpSyntax.ContainingType;
+                        if (containingtype != null)
                         {
-                            // __CLASS__ inside trait resolved in runtime
-                            x.TypeRefMask = TypeCtx.GetStringTypeMask();
-                            return;
+                            var intrait = containingtype.MemberAttributes.IsTrait();
+
+                            value = containingtype.QualifiedName.ToString();
+
+                            if (intrait && x.Type == PseudoConstUse.Types.Class)
+                            {
+                                // __CLASS__ inside trait resolved in runtime
+                                x.TypeRefMask = TypeCtx.GetStringTypeMask();
+                                return;
+                            }
+
+                            if (!intrait && x.Type == PseudoConstUse.Types.Trait)
+                            {
+                                // __TRAIT__ inside class is empty string
+                                value = string.Empty;
+                            }
                         }
-
-                        if (!intrait && x.Type == PseudoConstUse.Types.Trait)
+                        else
                         {
-                            // __TRAIT__ inside class is empty string
                             value = string.Empty;
                         }
-                    }
-                    else
-                    {
-                        value = string.Empty;
                     }
                     break;
 
                 case PseudoConstUse.Types.Method:
-
-                    if (Routine is SourceLambdaSymbol)
+                    if (Routine == null)
+                    {
+                        value = string.Empty;
+                    }
+                    else if (Routine is SourceLambdaSymbol)
                     {
                         // value = __CLASS__::"{closure}"; // PHP 5
                         value = "{closure}";    // PHP 7+
                     }
                     else
                     {
-                        value = Routine != null
-                            ? TypeCtx.SelfType is IPhpTypeSymbol
-                                ? ((IPhpTypeSymbol)TypeCtx.SelfType).FullName.ToString(new Name(Routine.Name), false)
-                                : Routine.Name
-                            : string.Empty;
+                        var containingtype = x.PhpSyntax.ContainingType;
+                        value = containingtype != null
+                            ? containingtype.QualifiedName.ToString(new Name(Routine.RoutineName), false)
+                            : Routine.RoutineName;
                     }
                     break;
 
@@ -1797,7 +1801,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     }
                     else
                     {
-                        value = Routine != null ? Routine.RoutineName : string.Empty;
+                        value = Routine != null
+                            ? Routine.RoutineName
+                            : string.Empty;
                     }
                     break;
 
