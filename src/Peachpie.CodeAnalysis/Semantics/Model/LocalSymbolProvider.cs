@@ -38,32 +38,6 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         SourceFileSymbol ContainingFile => _ctx.ContainingFile;
 
-        /// <summary>
-        /// Type symbol representing current <c>self</c>. Can be <c>null</c> or a generic parameter.
-        /// </summary>
-        TypeSymbol SelfType
-        {
-            get
-            {
-                var t = (TypeSymbol)ContainingType;
-                if (t != null)
-                {
-                    if (t is SourceTraitTypeSymbol trait)
-                    {
-                        t = trait.TSelfParameter;
-                    }
-                }
-                else
-                {
-                    // Lambda
-                    // Global code
-                    // ...
-                }
-
-                return t;
-            }
-        }
-
         public LocalSymbolProvider(ISymbolProvider/*!*/model, FlowContext/*!*/ctx)
         {
             Debug.Assert(model != null);
@@ -106,10 +80,11 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
             }
 
-            // construct trait (implicit type argument TSelf)
+            // construct standalone trait (implicit type argument TSelf)
             if (type.IsTraitType())
             {
-                type = type.Construct(SelfType ?? ContainingFile.DeclaringCompilation.CoreTypes.Object);
+                // !TSelf -> T<Object>
+                type = type.Construct(type.Construct(ContainingFile.DeclaringCompilation.CoreTypes.Object));
             }
 
             //

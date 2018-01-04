@@ -87,7 +87,8 @@ namespace Pchp.Core.Dynamic
         {
             if (TargetType != null && TargetType.Type.IsGenericTypeDefinition && TargetType.IsTrait)
             {
-                TargetType = TargetType.Type.MakeGenericType(ClassContext ?? typeof(object)).GetPhpTypeInfo();
+                var TSelf = TargetType.Type.MakeGenericType(typeof(object));
+                TargetType = TargetType.Type.MakeGenericType(TSelf).GetPhpTypeInfo();
             }
         }
 
