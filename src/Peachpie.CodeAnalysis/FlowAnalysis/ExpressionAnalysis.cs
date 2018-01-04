@@ -1747,18 +1747,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 case PseudoConstUse.Types.Class:
                 case PseudoConstUse.Types.Trait:
-                    if (TypeCtx.SelfType is IPhpTypeSymbol phpt)
+                    var containingtype = ((LangElement)Routine.Syntax).ContainingType;
+                    if (containingtype != null)
                     {
-                        value = phpt.FullName.ToString();
+                        var intrait = containingtype.MemberAttributes.IsTrait();
 
-                        if (phpt.IsTrait && x.Type == PseudoConstUse.Types.Class)
+                        value = containingtype.QualifiedName.ToString();
+
+                        if (intrait && x.Type == PseudoConstUse.Types.Class)
                         {
                             // __CLASS__ inside trait resolved in runtime
                             x.TypeRefMask = TypeCtx.GetStringTypeMask();
                             return;
                         }
 
-                        if (!phpt.IsTrait && x.Type == PseudoConstUse.Types.Trait)
+                        if (!intrait && x.Type == PseudoConstUse.Types.Trait)
                         {
                             // __TRAIT__ inside class is empty string
                             value = string.Empty;
@@ -1771,15 +1774,31 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     break;
 
                 case PseudoConstUse.Types.Method:
-                    value = Routine != null
-                        ? TypeCtx.SelfType is IPhpTypeSymbol
-                            ? ((IPhpTypeSymbol)TypeCtx.SelfType).FullName.ToString(new Name(Routine.Name), false)
-                            : Routine.Name
-                        : string.Empty;
+
+                    if (Routine is SourceLambdaSymbol)
+                    {
+                        // value = __CLASS__::"{closure}"; // PHP 5
+                        value = "{closure}";    // PHP 7+
+                    }
+                    else
+                    {
+                        value = Routine != null
+                            ? TypeCtx.SelfType is IPhpTypeSymbol
+                                ? ((IPhpTypeSymbol)TypeCtx.SelfType).FullName.ToString(new Name(Routine.Name), false)
+                                : Routine.Name
+                            : string.Empty;
+                    }
                     break;
 
                 case PseudoConstUse.Types.Function:
-                    value = Routine != null ? Routine.RoutineName : string.Empty;
+                    if (Routine is SourceLambdaSymbol)
+                    {
+                        value = "{closure}";
+                    }
+                    else
+                    {
+                        value = Routine != null ? Routine.RoutineName : string.Empty;
+                    }
                     break;
 
                 case PseudoConstUse.Types.Namespace:
