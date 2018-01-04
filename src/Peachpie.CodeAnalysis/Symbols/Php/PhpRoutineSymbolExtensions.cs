@@ -298,7 +298,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             var types = file.ContainedTypes.SelectMany(t => t.AllVersions());
             var methods = types.SelectMany(f => f.GetMembers().OfType<SourceRoutineSymbol>());
-            var lambdas = types.Cast<ILambdaContainerSymbol>().Concat(file).SelectMany(c => c.Lambdas);
+            var lambdas = ((ILambdaContainerSymbol)file).Lambdas;
 
             return funcs.Concat(main).Concat(methods).Concat(lambdas);
         }

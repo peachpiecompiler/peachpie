@@ -203,12 +203,8 @@ namespace Pchp.CodeAnalysis.Symbols
             //
             foreach (var l in tree.Lambdas)
             {
-                var containingtype = l.ContainingType;
-                var container = (containingtype != null) ? (NamedTypeSymbol)containingtype.GetProperty<SourceTypeSymbol>() : fsymbol;                
-
-                var lambdasymbol = new SourceLambdaSymbol(l, container, !l.Modifiers.IsStatic());
-                Debug.Assert(container is ILambdaContainerSymbol);
-                ((ILambdaContainerSymbol)container).AddLambda(lambdasymbol);
+                var lambdasymbol = new SourceLambdaSymbol(l, fsymbol, !l.Modifiers.IsStatic());
+                ((ILambdaContainerSymbol)fsymbol).AddLambda(lambdasymbol);
             }
 
             //
@@ -259,7 +255,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public IEnumerable<SourceLambdaSymbol> GetLambdas()
         {
-            return GetTypes().Cast<ILambdaContainerSymbol>().Concat(_files.Values).SelectMany(c => c.Lambdas);
+            return _files.Values.Cast<ILambdaContainerSymbol>().SelectMany(c => c.Lambdas);
         }
 
         /// <summary>

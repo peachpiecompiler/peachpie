@@ -1659,8 +1659,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void VisitLambda(BoundLambda x)
         {
-            Debug.Assert(Routine.ContainingType is ILambdaContainerSymbol);
-            var container = (ILambdaContainerSymbol)Routine.ContainingType;
+            var container = (ILambdaContainerSymbol)Routine.ContainingFile;
             var symbol = container.ResolveLambdaSymbol((LambdaFunctionExpr)x.PhpSyntax);
             if (symbol == null)
             {

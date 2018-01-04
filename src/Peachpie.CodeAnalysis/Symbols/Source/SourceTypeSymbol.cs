@@ -22,7 +22,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// PHP class as a CLR type.
     /// </summary>
-    internal partial class SourceTypeSymbol : NamedTypeSymbol, IPhpTypeSymbol, ILambdaContainerSymbol
+    internal partial class SourceTypeSymbol : NamedTypeSymbol, IPhpTypeSymbol
     {
         #region IPhpTypeSymbol
 
@@ -404,8 +404,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         List<Symbol> _lazyMembers;
 
-        List<SourceLambdaSymbol> _lambdas;
-
         public SourceFileSymbol ContainingFile => _file;
 
         Location CreateLocation(TextSpan span) => Location.Create(ContainingFile.SyntaxTree, span);
@@ -579,15 +577,6 @@ namespace Pchp.CodeAnalysis.Symbols
                     {
                         // create next version of this type with already resolved type signature
                         _nextVersion = NewSelf(v_base, v_interfaces, v_traituses, ++lastVersion, _nextVersion);
-
-                        // clone lambdas that use $this
-                        if (_lambdas != null)
-                        {
-                            foreach (var l in _lambdas.Where(l => l.UseThis))
-                            {
-                                ((ILambdaContainerSymbol)_nextVersion).AddLambda(new SourceLambdaSymbol((LambdaFunctionExpr)l.Syntax, _nextVersion, l.UseThis));
-                            }
-                        }
                     }
                 }
 
@@ -804,31 +793,6 @@ namespace Pchp.CodeAnalysis.Symbols
                     };
                 }
             }
-        }
-
-        #endregion
-
-        #region ILambdaContainerSymbol
-
-        void ILambdaContainerSymbol.AddLambda(SourceLambdaSymbol routine)
-        {
-            Contract.ThrowIfNull(routine);
-            if (_lambdas == null) _lambdas = new List<SourceLambdaSymbol>();
-            _lambdas.Add(routine);
-        }
-
-        IEnumerable<SourceLambdaSymbol> ILambdaContainerSymbol.Lambdas
-        {
-            get
-            {
-                return (IEnumerable<SourceLambdaSymbol>)_lambdas ?? Array.Empty<SourceLambdaSymbol>();
-            }
-        }
-
-        SourceLambdaSymbol ILambdaContainerSymbol.ResolveLambdaSymbol(LambdaFunctionExpr expr)
-        {
-            if (expr == null) throw new ArgumentNullException(nameof(expr));
-            return _lambdas.First(s => s.Syntax == expr);
         }
 
         #endregion
@@ -1166,8 +1130,7 @@ namespace Pchp.CodeAnalysis.Symbols
         internal override IEnumerable<IMethodSymbol> GetMethodsToEmit()
         {
             return EnsureMembers().OfType<IMethodSymbol>()
-                .Concat(InstanceConstructors)
-                .Concat(((ILambdaContainerSymbol)this).Lambdas);
+                .Concat(InstanceConstructors);
         }
 
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()
