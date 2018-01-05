@@ -105,6 +105,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.CloneCannotBeStatic, _type.FullName.ToString()));
                 }
+                if (_syntax.Signature.FormalParams.Length != 0)
+                {
+                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.CloneCannotTakeArguments, _type.FullName.ToString()));
+                }
             }
             else if (name.IsCallStaticName)
             {
