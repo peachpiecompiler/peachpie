@@ -16,6 +16,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public static bool IsErrorMethodOrNull(this MethodSymbol method) => method == null || method is IErrorMethodSymbol;
 
+        public static bool IsValidMethod(this MethodSymbol method) => method != null && !(method is IErrorMethodSymbol);
+
         public static bool IsMissingMethod(this MethodSymbol method) =>
             (method == null) ||
             (method is IErrorMethodSymbol errm && errm.ErrorKind == ErrorMethodKind.Missing);

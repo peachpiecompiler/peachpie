@@ -22,7 +22,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     /// </summary>
     internal class ExpressionAnalysis : AnalysisVisitor
     {
-        #region Fields
+        #region Fields & Properties
 
         /// <summary>
         /// Gets model for symbols resolution.
@@ -126,6 +126,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             return null;
         }
+
+        /// <summary>
+        /// Gets current visibility scope.
+        /// </summary>
+        protected OverloadsList.VisibilityScope VisibilityScope => OverloadsList.VisibilityScope.Create(TypeCtx.SelfType, Routine);
 
         #endregion
 
@@ -1224,7 +1229,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 // symbol might be ErrorSymbol
 
-                x.TargetMethod = new OverloadsList(AsMethodOverloads(symbol)).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, null);
+                x.TargetMethod = new OverloadsList(AsMethodOverloads(symbol)).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
 
                 //
                 AnalysisFacts.HandleFunctionCall(x, this, branch);
@@ -1264,7 +1269,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (resolvedtype != null)
                 {
                     var candidates = resolvedtype.LookupMethods(x.Name.NameValue.Name.Value);
-                    x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, this.TypeCtx.SelfType);
+                    x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
                 }
             }
 
@@ -1285,7 +1290,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var candidates = x.TypeRef.ResolvedType.LookupMethods(x.Name.NameValue.Name.Value);
                 // if (candidates.Any(c => c.HasThis)) throw new NotImplementedException("instance method called statically");
 
-                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, this.TypeCtx.SelfType);
+                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
             }
 
             BindTargetMethod(x);
@@ -1403,7 +1408,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var candidates = type.InstanceConstructors.ToArray();
 
                 //
-                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, this.TypeCtx.SelfType);
+                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
 
                 // reanalyse candidates
                 foreach (var c in candidates)
