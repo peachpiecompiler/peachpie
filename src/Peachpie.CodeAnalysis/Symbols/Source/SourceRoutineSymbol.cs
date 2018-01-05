@@ -125,7 +125,22 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         protected virtual void GetDiagnostics(DiagnosticBag diagnostic)
         {
-            // to be overriden
+            // check mandatory behind and optional parameter
+            bool foundopt = false;
+            foreach (var p in SyntaxSignature.FormalParams)
+            {
+                if (p.InitValue == null)
+                {
+                    if (foundopt && !p.IsVariadic)
+                    {
+                        diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, p.Span, Devsense.PHP.Errors.Warnings.MandatoryBehindOptionalParam, "$" + p.Name.Name.Value));
+                    }
+                }
+                else
+                {
+                    foundopt = true;
+                }
+            }
         }
 
         /// <summary>
