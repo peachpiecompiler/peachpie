@@ -125,6 +125,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     CannotInstantiate(x, "trait", x.TypeRef);
                 }
+                else // class
+                {
+                    // cannot instantiate Closure
+                    if (x.TypeRef.ResolvedType == DeclaringCompilation.CoreTypes.Closure)
+                    {
+                        Add(x.TypeRef.TypeRef.Span, Devsense.PHP.Errors.Errors.ClosureInstantiated, x.TypeRef.ResolvedType.Name);
+                    }
+                }
             }
 
             base.VisitNew(x);
