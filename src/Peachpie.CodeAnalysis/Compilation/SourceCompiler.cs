@@ -161,11 +161,7 @@ namespace Pchp.CodeAnalysis
         {
             Contract.ThrowIfNull(routine);
 
-            if (routine.ControlFlowGraph != null)   // non-abstract method
-            {
-                var diagnosingVisitor = new DiagnosingVisitor(_diagnostics, routine);
-                diagnosingVisitor.VisitCFG(routine.ControlFlowGraph);
-            }
+            DiagnosingVisitor.Analyse(_diagnostics, routine);
         }
 
         private void DiagnoseTypes()

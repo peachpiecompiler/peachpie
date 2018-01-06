@@ -151,7 +151,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.HeadingSpan, Devsense.PHP.Errors.Errors.NonAbstractMethodWithoutBody));
                 }
             }
-            
+
             //
             base.GetDiagnostics(diagnostic);
         }
@@ -169,6 +169,21 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 throw new NotImplementedException();
+            }
+        }
+
+        public override TypeSymbol ReturnType
+        {
+            get
+            {
+                // magic methods:
+                if (this.IsMagicToStringMethod())   // __tostring()
+                {
+                    return DeclaringCompilation.CoreTypes.String;   // NOTE: we may need PhpString instead in some cases, consider once we implement PhpString as struct
+                }
+
+                // default:
+                return base.ReturnType;
             }
         }
 

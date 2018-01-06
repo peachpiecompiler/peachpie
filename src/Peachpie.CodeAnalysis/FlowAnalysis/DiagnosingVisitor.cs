@@ -22,9 +22,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         PhpCompilation DeclaringCompilation => _routine.DeclaringCompilation;
 
-        int inTryLevel = 0;
-        int inCatchLevel = 0;
-        int inFinallyLevel = 0;
+        int _inTryLevel = 0;
+        int _inCatchLevel = 0;
+        int _inFinallyLevel = 0;
 
         Stack<BoundBlock> endOfTryBlocks = new Stack<BoundBlock>();
 
@@ -38,7 +38,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             _diagnostics.Add(_routine, op.PhpSyntax, ErrorCode.ERR_CannotInstantiateType, kind, t.ResolvedType);
         }
 
-        public DiagnosingVisitor(DiagnosticBag diagnostics, SourceRoutineSymbol routine)
+        public static void Analyse(DiagnosticBag diagnostics, SourceRoutineSymbol routine)
+        {
+            if (routine.ControlFlowGraph != null)   // non-abstract method
+            {
+                new DiagnosingVisitor(diagnostics, routine)
+                    .VisitCFG(routine.ControlFlowGraph);
+            }
+        }
+
+        private DiagnosingVisitor(DiagnosticBag diagnostics, SourceRoutineSymbol routine)
         {
             _diagnostics = diagnostics;
             _routine = routine;
@@ -119,6 +128,31 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             base.VisitNew(x);
+        }
+
+        public override void VisitReturn(BoundReturnStatement x)
+        {
+            if (_routine.IsMagicToStringMethod())
+            {
+                // __tostring() allows only strings to be returned
+                if (x.Returned == null || !IsAllowedToStringReturnType(x.Returned.TypeRefMask))
+                {
+                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.ERR_ToStringMustReturnString, ((IPhpTypeSymbol)_routine.ContainingType).FullName.ToString());
+                }
+            }
+
+            //
+            base.VisitReturn(x);
+        }
+
+        bool IsAllowedToStringReturnType(TypeRefMask tmask)
+        {
+            return
+                tmask.IsRef ||
+                tmask.IsAnyType ||  // dunno
+                _routine.TypeRefContext.IsAString(tmask);
+
+            // anything else (object (even convertible to string), array, number, boolean, ...) is not allowed
         }
 
         public override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
@@ -327,8 +361,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override void VisitCFGBlock(BoundBlock x)
         {
             // is current block directly after the end of some try block?
-            Debug.Assert(inTryLevel == 0 || endOfTryBlocks.Count > 0);
-            if (inTryLevel > 0 && endOfTryBlocks.Peek() == x) { --inTryLevel; endOfTryBlocks.Pop(); }
+            Debug.Assert(_inTryLevel == 0 || endOfTryBlocks.Count > 0);
+            if (_inTryLevel > 0 && endOfTryBlocks.Peek() == x) { --_inTryLevel; endOfTryBlocks.Pop(); }
 
             base.VisitCFGBlock(x);
         }
@@ -336,25 +370,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override void VisitCFGTryCatchEdge(TryCatchEdge x)
         {
             // .Accept() on BodyBlocks traverses not only the try block but also the rest of the code
-            ++inTryLevel;
+            ++_inTryLevel;
             var hasEndBlock = (x.NextBlock != null);                // if there's a block directly after try-catch-finally
             if (hasEndBlock) { endOfTryBlocks.Push(x.NextBlock); }  // -> add it as ending block
             x.BodyBlock.Accept(this);
-            if (!hasEndBlock) { --inTryLevel; }                     // if there isn't dicrease tryLevel after going trough the try & rest (nothing)
+            if (!hasEndBlock) { --_inTryLevel; }                     // if there isn't dicrease tryLevel after going trough the try & rest (nothing)
 
             foreach (var c in x.CatchBlocks)
             {
-                ++inCatchLevel;
+                ++_inCatchLevel;
                 c.Accept(this);
-                --inCatchLevel;
+                --_inCatchLevel;
             }
 
 
             if (x.FinallyBlock != null)
             {
-                ++inFinallyLevel;
+                ++_inFinallyLevel;
                 x.FinallyBlock.Accept(this);
-                --inFinallyLevel;
+                --_inFinallyLevel;
             }
         }
 
@@ -367,7 +401,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
 
             // TODO: Start supporting yielding from exception handling constructs.
-            if (inTryLevel > 0 || inCatchLevel > 0 || inFinallyLevel > 0)
+            if (_inTryLevel > 0 || _inCatchLevel > 0 || _inFinallyLevel > 0)
             {
                 _diagnostics.Add(_routine, boundYieldStatement.PhpSyntax, ErrorCode.ERR_NotYetImplemented, "Yielding from an exception handling construct (try, catch, finally)");
             }

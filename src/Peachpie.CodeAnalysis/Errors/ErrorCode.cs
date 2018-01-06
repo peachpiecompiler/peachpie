@@ -83,6 +83,8 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_CannotExtendFrom,
         /// <summary>"{0} cannot implement {1} - it is not an interface"</summary>
         ERR_CannotImplementNonInterface,
+        /// <summary>Method {0}::__toString() must return a string value</summary>
+        ERR_ToStringMustReturnString,
         
         //
         // Warnings

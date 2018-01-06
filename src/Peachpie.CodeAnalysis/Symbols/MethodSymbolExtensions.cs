@@ -65,5 +65,13 @@ namespace Pchp.CodeAnalysis.Symbols
 
             return false;
         }
+
+        /// <summary>
+        /// Gets value indicating the routine is magic <c>__toString</c> method.
+        /// </summary>
+        public static bool IsMagicToStringMethod(this SourceRoutineSymbol routine)
+        {
+            return routine is SourceMethodSymbol m && Devsense.PHP.Syntax.Name.SpecialMethodNames.Tostring.Equals(m.RoutineName);
+        }
     }
 }
