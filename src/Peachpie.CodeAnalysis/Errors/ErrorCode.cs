@@ -85,6 +85,10 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_CannotImplementNonInterface,
         /// <summary>Method {0}::__toString() must return a string value</summary>
         ERR_ToStringMustReturnString,
+        /// <summary>{0}::__clone() cannot declare a return type</summary>
+        ERR_CloneCannotDeclareReturnType,
+        /// <summary>A void function must not return a value</summary>
+        ERR_VoidFunctionCannotReturnValue,
         
         //
         // Warnings

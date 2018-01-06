@@ -207,4 +207,10 @@
   <data name="ERR_ToStringMustReturnString" xml:space="preserve">
     <value>Method {0}::__toString() must return a string value</value>
   </data>
+  <data name="ERR_CloneCannotDeclareReturnType" xml:space="preserve">
+    <value>{0}::__clone() cannot declare a return type</value>
+  </data>
+  <data name="ERR_VoidFunctionCannotReturnValue" xml:space="preserve">
+    <value>A void function must not return a value</value>
+  </data>
 </root>

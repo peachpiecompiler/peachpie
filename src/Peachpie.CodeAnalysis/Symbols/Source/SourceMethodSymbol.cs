@@ -109,6 +109,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.CloneCannotTakeArguments, _type.FullName.ToString()));
                 }
+                if (_syntax.ReturnType != null)
+                {
+                    // {0}::__clone() cannot declare a return type
+                    diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_CloneCannotDeclareReturnType, _type.FullName);
+                }
             }
             else if (name.IsCallStaticName)
             {
@@ -177,9 +182,13 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 // magic methods:
-                if (this.IsMagicToStringMethod())   // __tostring()
+                if (_syntax.Name.Name.IsToStringName)   // __tostring() : string
                 {
                     return DeclaringCompilation.CoreTypes.String;   // NOTE: we may need PhpString instead in some cases, consider once we implement PhpString as struct
+                }
+                else if (_syntax.Name.Name.IsCloneName) // __clone() : void
+                {
+                    return DeclaringCompilation.CoreTypes.Void;
                 }
 
                 // default:

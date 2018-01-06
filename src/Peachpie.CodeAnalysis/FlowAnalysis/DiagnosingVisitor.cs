@@ -148,12 +148,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void VisitReturn(BoundReturnStatement x)
         {
-            if (_routine.IsMagicToStringMethod())
+            if (_routine.Syntax is MethodDecl m)
             {
-                // __tostring() allows only strings to be returned
-                if (x.Returned == null || !IsAllowedToStringReturnType(x.Returned.TypeRefMask))
+                if (m.Name.Name.IsToStringName)
                 {
-                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.ERR_ToStringMustReturnString, ((IPhpTypeSymbol)_routine.ContainingType).FullName.ToString());
+                    // __tostring() allows only strings to be returned
+                    if (x.Returned == null || !IsAllowedToStringReturnType(x.Returned.TypeRefMask))
+                    {
+                        _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.ERR_ToStringMustReturnString, ((IPhpTypeSymbol)_routine.ContainingType).FullName.ToString());
+                    }
+                }
+            }
+
+            // "void" return type hint ?
+            if (_routine.SyntaxReturnType is Devsense.PHP.Syntax.Ast.PrimitiveTypeRef pt && pt.PrimitiveTypeName == Devsense.PHP.Syntax.Ast.PrimitiveTypeRef.PrimitiveType.@void)
+            {
+                if (x.Returned != null)
+                {
+                    // A void function must not return a value
+                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.ERR_VoidFunctionCannotReturnValue);
                 }
             }
 
