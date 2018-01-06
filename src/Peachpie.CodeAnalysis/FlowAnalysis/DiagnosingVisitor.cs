@@ -125,12 +125,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     CannotInstantiate(x, "trait", x.TypeRef);
                 }
-                else // class
+                else // class:
                 {
                     // cannot instantiate Closure
                     if (x.TypeRef.ResolvedType == DeclaringCompilation.CoreTypes.Closure)
                     {
+                        // Instantiation of '{0}' is not allowed
                         Add(x.TypeRef.TypeRef.Span, Devsense.PHP.Errors.Errors.ClosureInstantiated, x.TypeRef.ResolvedType.Name);
+                    }
+
+                    //
+                    else if (x.TypeRef.ResolvedType.IsAbstract)
+                    {
+                        // Cannot instantiate abstract class {0}
+                        CannotInstantiate(x, "abstract class", x.TypeRef);
                     }
                 }
             }
