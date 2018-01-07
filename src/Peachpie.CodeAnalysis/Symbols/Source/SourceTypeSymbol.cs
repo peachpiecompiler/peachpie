@@ -231,9 +231,22 @@ namespace Pchp.CodeAnalysis.Symbols
                                 }
                                 else if (a is TraitsUse.TraitAdaptationAlias alias)
                                 {
-                                    // add an alias to the map:
-                                    var qname = a.TraitMemberName.Item1.HasValue ? a.TraitMemberName.Item1.QualifiedName : phpt.FullName;
+                                    // Get the qualified name of the trait, respecting the current namespace
+                                    QualifiedName qname;
+                                    if (a.TraitMemberName.Item1.HasValue)
+                                    {
+                                        qname = a.TraitMemberName.Item1.QualifiedName;
+                                        if (ContainingType.FullName.Namespaces.Length > 0 && !qname.IsFullyQualifiedName)
+                                        {
+                                            qname = new QualifiedName(qname.Name, ContainingType.FullName.Namespaces.Append(qname.Namespaces), true);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        qname = phpt.FullName;
+                                    }
 
+                                    // add an alias to the map:
                                     if (sourcemembers.TryGetValue(new MemberQualifiedName(qname, membername), out MethodSymbol s))
                                     {
                                         if (map.TryGetValue(membername, out DeclaredAs declaredas) && declaredas.SourceMethod == s)
