@@ -121,6 +121,29 @@ namespace Pchp.CodeAnalysis.Symbols
         internal virtual bool RequiresLateStaticBoundParam => false;
 
         /// <summary>
+        /// Collects declaration diagnostics.
+        /// </summary>
+        protected virtual void GetDiagnostics(DiagnosticBag diagnostic)
+        {
+            // check mandatory behind and optional parameter
+            bool foundopt = false;
+            foreach (var p in SyntaxSignature.FormalParams)
+            {
+                if (p.InitValue == null)
+                {
+                    if (foundopt && !p.IsVariadic)
+                    {
+                        diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, p.Span, Devsense.PHP.Errors.Warnings.MandatoryBehindOptionalParam, "$" + p.Name.Name.Value));
+                    }
+                }
+                else
+                {
+                    foundopt = true;
+                }
+            }
+        }
+
+        /// <summary>
         /// Constructs routine source parameters.
         /// </summary>
         protected IEnumerable<SourceParameterSymbol> BuildSrcParams(IEnumerable<FormalParam> formalparams, PHPDocBlock phpdocOpt = null)
@@ -137,6 +160,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected virtual IEnumerable<SourceParameterSymbol> BuildSrcParams(Signature signature, PHPDocBlock phpdocOpt = null)
         {
+            // collect diagnostics
+            GetDiagnostics(DeclaringCompilation.DeclarationDiagnostics);
+
+            //
             return BuildSrcParams(signature.FormalParams, phpdocOpt);
         }
 

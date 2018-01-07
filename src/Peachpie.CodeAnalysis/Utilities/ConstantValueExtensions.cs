@@ -46,6 +46,22 @@ namespace Pchp.CodeAnalysis
         }
 
         /// <summary>
+        /// Gets value indicating the given constant is number zero.
+        /// </summary>
+        public static bool IsZero(this Optional<object> value)
+        {
+            if (value.HasValue)
+            {
+                var obj = value.Value;
+                if (obj is long l) return l == 0L;
+                if (obj is int i) return i == 0;
+                if (obj is double d) return d == 0.0;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Determines whether the specified optional value is equal to the current one.
         /// If <see cref="Optional{T}.HasValue"/> of both is set to false, they are considered equal.
         /// </summary>

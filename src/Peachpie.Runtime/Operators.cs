@@ -1090,12 +1090,7 @@ namespace Pchp.Core
                     value = newobj;
 
                     // __clone()
-                    var __clone = tinfo.RuntimeMethods[TypeMethods.MagicMethods.__clone];
-                    if (__clone != null)
-                    {
-                        // TODO: check __clone does not have parameters -> ErrResources.clone_cannot_take_arguments
-                        __clone.Invoke(ctx, value);
-                    }
+                    tinfo.RuntimeMethods[TypeMethods.MagicMethods.__clone]?.Invoke(ctx, value);
                 }
                 else
                 {

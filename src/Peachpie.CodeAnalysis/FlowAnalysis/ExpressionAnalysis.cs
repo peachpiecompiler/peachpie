@@ -22,7 +22,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     /// </summary>
     internal class ExpressionAnalysis : AnalysisVisitor
     {
-        #region Fields
+        #region Fields & Properties
 
         /// <summary>
         /// Gets model for symbols resolution.
@@ -126,6 +126,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             return null;
         }
+
+        /// <summary>
+        /// Gets current visibility scope.
+        /// </summary>
+        protected OverloadsList.VisibilityScope VisibilityScope => OverloadsList.VisibilityScope.Create(TypeCtx.SelfType, Routine);
 
         #endregion
 
@@ -833,11 +838,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         : TypeCtx.GetObjectsFromMask(x.Operand.TypeRefMask);    // (object)T
 
                 case Operations.LogicNegation:
-                    if (x.Operand.ConstantValue.TryConvertToBool(out bool constBool) == true)
                     {
-                        x.ConstantValue = ConstantValueExtensions.AsOptional(!constBool);
+                        if (x.Operand.ConstantValue.TryConvertToBool(out bool constBool))
+                        {
+                            x.ConstantValue = ConstantValueExtensions.AsOptional(!constBool);
+                        }
+                        return TypeCtx.GetBooleanTypeMask();
                     }
-                    return TypeCtx.GetBooleanTypeMask();
 
                 case Operations.Minus:
                     var cvalue = ResolveUnaryMinus(x.Operand.ConstantValue.ToConstantValueOrNull());
@@ -870,7 +877,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     return TypeCtx.GetLongTypeMask();
 
                 case Operations.BoolCast:
-                    return TypeCtx.GetBooleanTypeMask();
+                    {
+                        if (x.Operand.ConstantValue.TryConvertToBool(out bool constBool))
+                        {
+                            x.ConstantValue = ConstantValueExtensions.AsOptional(constBool);
+                        }
+                        return TypeCtx.GetBooleanTypeMask();
+                    }
 
                 case Operations.Int8Cast:
                 case Operations.Int16Cast:
@@ -1216,7 +1229,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 // symbol might be ErrorSymbol
 
-                x.TargetMethod = new OverloadsList(AsMethodOverloads(symbol)).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, null);
+                x.TargetMethod = new OverloadsList(AsMethodOverloads(symbol)).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
 
                 //
                 AnalysisFacts.HandleFunctionCall(x, this, branch);
@@ -1256,7 +1269,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (resolvedtype != null)
                 {
                     var candidates = resolvedtype.LookupMethods(x.Name.NameValue.Name.Value);
-                    x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, this.TypeCtx.SelfType);
+                    x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
                 }
             }
 
@@ -1277,7 +1290,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var candidates = x.TypeRef.ResolvedType.LookupMethods(x.Name.NameValue.Name.Value);
                 // if (candidates.Any(c => c.HasThis)) throw new NotImplementedException("instance method called statically");
 
-                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, this.TypeCtx.SelfType);
+                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
             }
 
             BindTargetMethod(x);
@@ -1395,7 +1408,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var candidates = type.InstanceConstructors.ToArray();
 
                 //
-                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, this.TypeCtx.SelfType);
+                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
 
                 // reanalyse candidates
                 foreach (var c in candidates)
@@ -1651,8 +1664,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void VisitLambda(BoundLambda x)
         {
-            Debug.Assert(Routine.ContainingType is ILambdaContainerSymbol);
-            var container = (ILambdaContainerSymbol)Routine.ContainingType;
+            var container = (ILambdaContainerSymbol)Routine.ContainingFile;
             var symbol = container.ResolveLambdaSymbol((LambdaFunctionExpr)x.PhpSyntax);
             if (symbol == null)
             {
@@ -1740,39 +1752,64 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 case PseudoConstUse.Types.Class:
                 case PseudoConstUse.Types.Trait:
-                    if (TypeCtx.SelfType is IPhpTypeSymbol phpt)
                     {
-                        value = phpt.FullName.ToString();
-
-                        if (phpt.IsTrait && x.Type == PseudoConstUse.Types.Class)
+                        var containingtype = x.PhpSyntax.ContainingType;
+                        if (containingtype != null)
                         {
-                            // __CLASS__ inside trait resolved in runtime
-                            x.TypeRefMask = TypeCtx.GetStringTypeMask();
-                            return;
+                            var intrait = containingtype.MemberAttributes.IsTrait();
+
+                            value = containingtype.QualifiedName.ToString();
+
+                            if (intrait && x.Type == PseudoConstUse.Types.Class)
+                            {
+                                // __CLASS__ inside trait resolved in runtime
+                                x.TypeRefMask = TypeCtx.GetStringTypeMask();
+                                return;
+                            }
+
+                            if (!intrait && x.Type == PseudoConstUse.Types.Trait)
+                            {
+                                // __TRAIT__ inside class is empty string
+                                value = string.Empty;
+                            }
                         }
-
-                        if (!phpt.IsTrait && x.Type == PseudoConstUse.Types.Trait)
+                        else
                         {
-                            // __TRAIT__ inside class is empty string
                             value = string.Empty;
                         }
-                    }
-                    else
-                    {
-                        value = string.Empty;
                     }
                     break;
 
                 case PseudoConstUse.Types.Method:
-                    value = Routine != null
-                        ? TypeCtx.SelfType is IPhpTypeSymbol
-                            ? ((IPhpTypeSymbol)TypeCtx.SelfType).FullName.ToString(new Name(Routine.Name), false)
-                            : Routine.Name
-                        : string.Empty;
+                    if (Routine == null)
+                    {
+                        value = string.Empty;
+                    }
+                    else if (Routine is SourceLambdaSymbol)
+                    {
+                        // value = __CLASS__::"{closure}"; // PHP 5
+                        value = "{closure}";    // PHP 7+
+                    }
+                    else
+                    {
+                        var containingtype = x.PhpSyntax.ContainingType;
+                        value = containingtype != null
+                            ? containingtype.QualifiedName.ToString(new Name(Routine.RoutineName), false)
+                            : Routine.RoutineName;
+                    }
                     break;
 
                 case PseudoConstUse.Types.Function:
-                    value = Routine != null ? Routine.RoutineName : string.Empty;
+                    if (Routine is SourceLambdaSymbol)
+                    {
+                        value = "{closure}";
+                    }
+                    else
+                    {
+                        value = Routine != null
+                            ? Routine.RoutineName
+                            : string.Empty;
+                    }
                     break;
 
                 case PseudoConstUse.Types.Namespace:

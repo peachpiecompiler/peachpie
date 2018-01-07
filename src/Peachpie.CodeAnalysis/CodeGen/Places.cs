@@ -1816,7 +1816,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (_lazyLoadCallSite == null)
                 _lazyLoadCallSite = cg.Factory.StartCallSite("get_" + this.NameValueOpt);
 
-            _lazyLoadCallSite.Prepare();
+            _lazyLoadCallSite.Prepare(cg);
 
             // callsite.Target callsite
             _lazyLoadCallSite.EmitLoadTarget();
@@ -1874,7 +1874,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (_lazyStoreCallSite == null)
                 _lazyStoreCallSite = cg.Factory.StartCallSite("set_" + this.NameValueOpt);
 
-            _lazyStoreCallSite.Prepare();
+            _lazyStoreCallSite.Prepare(cg);
 
             // callsite.Target callsite
             _lazyStoreCallSite.EmitLoadTarget();
@@ -1966,7 +1966,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (_lazyLoadCallSite == null)
                 _lazyLoadCallSite = cg.Factory.StartCallSite("get_" + this.NameValueOpt);
 
-            _lazyLoadCallSite.Prepare();
+            _lazyLoadCallSite.Prepare(cg);
 
             // callsite.Target callsite
             _lazyLoadCallSite.EmitLoadTarget();
@@ -2024,7 +2024,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (_lazyStoreCallSite == null)
                 _lazyStoreCallSite = cg.Factory.StartCallSite("set_" + this.NameValueOpt);
 
-            _lazyStoreCallSite.Prepare();
+            _lazyStoreCallSite.Prepare(cg);
 
             // callsite.Target callsite
             _lazyStoreCallSite.EmitLoadTarget();

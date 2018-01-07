@@ -32,6 +32,9 @@ namespace Pchp.Core.Dynamic
                 taken++;
             }
 
+            // bind trait definition !TSelf eventually
+            BindTraitSelf();
+
             // args[taken..count]
             this.Arguments = (taken == args.Length)
                 ? Array.Empty<Expression>()
@@ -74,6 +77,19 @@ namespace Pchp.Core.Dynamic
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// In case <see cref="TargetType"/> is a trait definition,
+        /// this method binds its <c>TSelf</c> generic parameter to current class context.
+        /// </summary>
+        void BindTraitSelf()
+        {
+            if (TargetType != null && TargetType.Type.IsGenericTypeDefinition && TargetType.IsTrait)
+            {
+                var TSelf = TargetType.Type.MakeGenericType(typeof(object));
+                TargetType = TargetType.Type.MakeGenericType(TSelf).GetPhpTypeInfo();
+            }
         }
 
         internal void AddRestriction(Expression restriction)

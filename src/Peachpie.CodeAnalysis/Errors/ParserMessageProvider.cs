@@ -25,7 +25,7 @@ namespace Pchp.CodeAnalysis.Errors
         {
         }
 
-        public override string CodePrefix => "PHPP";
+        public override string CodePrefix => "PHPX";
 
         public override Type ErrorCodeType => typeof(int);
 

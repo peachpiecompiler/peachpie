@@ -41,8 +41,10 @@ namespace Pchp.CodeAnalysis.CodeGen
             public ImmutableArray<TypeSymbol> Arguments => _arguments.AsImmutable();
             readonly List<TypeSymbol> _arguments = new List<TypeSymbol>();
 
-            public void Prepare()
+            public void Prepare(CodeGenerator cg)
             {
+                Debug.Assert(cg != null);
+                _factory = cg.Factory;  // update cg and factory instance
                 _arguments.Clear();
             }
 
@@ -95,7 +97,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 Place.EmitLoad(_cg.Builder);
             }
 
-            readonly DynamicOperationFactory _factory;
+            DynamicOperationFactory _factory;
 
             /// <summary><see cref="CodeGenerator"/> instance.</summary>
             CodeGenerator _cg => _factory._cg;

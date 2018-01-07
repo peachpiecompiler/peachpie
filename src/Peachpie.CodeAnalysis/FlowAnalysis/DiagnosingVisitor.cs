@@ -22,18 +22,32 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         PhpCompilation DeclaringCompilation => _routine.DeclaringCompilation;
 
-        int inTryLevel = 0;
-        int inCatchLevel = 0;
-        int inFinallyLevel = 0;
+        int _inTryLevel = 0;
+        int _inCatchLevel = 0;
+        int _inFinallyLevel = 0;
 
         Stack<BoundBlock> endOfTryBlocks = new Stack<BoundBlock>();
+
+        void Add(Devsense.PHP.Text.Span span, Devsense.PHP.Errors.ErrorInfo err, params string[] args)
+        {
+            _diagnostics.Add(DiagnosticBagExtensions.ParserDiagnostic(_routine, span, err, args));
+        }
 
         void CannotInstantiate(IPhpOperation op, string kind, BoundTypeRef t)
         {
             _diagnostics.Add(_routine, op.PhpSyntax, ErrorCode.ERR_CannotInstantiateType, kind, t.ResolvedType);
         }
 
-        public DiagnosingVisitor(DiagnosticBag diagnostics, SourceRoutineSymbol routine)
+        public static void Analyse(DiagnosticBag diagnostics, SourceRoutineSymbol routine)
+        {
+            if (routine.ControlFlowGraph != null)   // non-abstract method
+            {
+                new DiagnosingVisitor(diagnostics, routine)
+                    .VisitCFG(routine.ControlFlowGraph);
+            }
+        }
+
+        private DiagnosingVisitor(DiagnosticBag diagnostics, SourceRoutineSymbol routine)
         {
             _diagnostics = diagnostics;
             _routine = routine;
@@ -47,8 +61,36 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             base.VisitCFG(x);
 
+            // analyse missing or redefined labels
+            CheckLabels(x.Labels);
+
             // TODO: Report also unreachable code caused by situations like if (false) { ... }
             CheckUnreachableCode(x);
+        }
+
+        void CheckLabels(ControlFlowGraph.LabelBlockState[] labels)
+        {
+            if (labels == null || labels.Length == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < labels.Length; i++)
+            {
+                var flags = labels[i].Flags;
+                if ((flags & ControlFlowGraph.LabelBlockFlags.Defined) == 0)
+                {
+                    Add(labels[i].LabelSpan, Devsense.PHP.Errors.Errors.UndefinedLabel, labels[i].Label);
+                }
+                if ((flags & ControlFlowGraph.LabelBlockFlags.Used) == 0)
+                {
+                    // Warning: label not used
+                }
+                if ((flags & ControlFlowGraph.LabelBlockFlags.Redefined) != 0)
+                {
+                    Add(labels[i].LabelSpan, Devsense.PHP.Errors.Errors.LabelRedeclared, labels[i].Label);
+                }
+            }
         }
 
         public override void VisitEval(BoundEvalEx x)
@@ -79,13 +121,67 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     CannotInstantiate(x, "static", x.TypeRef);
                 }
-                else if (x.TypeRef.ResolvedType is IPhpTypeSymbol phpt && phpt.IsTrait)
+                else if (x.TypeRef.ResolvedType.IsTraitType())
                 {
                     CannotInstantiate(x, "trait", x.TypeRef);
+                }
+                else // class:
+                {
+                    // cannot instantiate Closure
+                    if (x.TypeRef.ResolvedType == DeclaringCompilation.CoreTypes.Closure)
+                    {
+                        // Instantiation of '{0}' is not allowed
+                        Add(x.TypeRef.TypeRef.Span, Devsense.PHP.Errors.Errors.ClosureInstantiated, x.TypeRef.ResolvedType.Name);
+                    }
+
+                    //
+                    else if (x.TypeRef.ResolvedType.IsAbstract)
+                    {
+                        // Cannot instantiate abstract class {0}
+                        CannotInstantiate(x, "abstract class", x.TypeRef);
+                    }
                 }
             }
 
             base.VisitNew(x);
+        }
+
+        public override void VisitReturn(BoundReturnStatement x)
+        {
+            if (_routine.Syntax is MethodDecl m)
+            {
+                if (m.Name.Name.IsToStringName)
+                {
+                    // __tostring() allows only strings to be returned
+                    if (x.Returned == null || !IsAllowedToStringReturnType(x.Returned.TypeRefMask))
+                    {
+                        _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.ERR_ToStringMustReturnString, ((IPhpTypeSymbol)_routine.ContainingType).FullName.ToString());
+                    }
+                }
+            }
+
+            // "void" return type hint ?
+            if (_routine.SyntaxReturnType is Devsense.PHP.Syntax.Ast.PrimitiveTypeRef pt && pt.PrimitiveTypeName == Devsense.PHP.Syntax.Ast.PrimitiveTypeRef.PrimitiveType.@void)
+            {
+                if (x.Returned != null)
+                {
+                    // A void function must not return a value
+                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.ERR_VoidFunctionCannotReturnValue);
+                }
+            }
+
+            //
+            base.VisitReturn(x);
+        }
+
+        bool IsAllowedToStringReturnType(TypeRefMask tmask)
+        {
+            return
+                tmask.IsRef ||
+                tmask.IsAnyType ||  // dunno
+                _routine.TypeRefContext.IsAString(tmask);
+
+            // anything else (object (even convertible to string), array, number, boolean, ...) is not allowed
         }
 
         public override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
@@ -165,6 +261,26 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 // assert() expects at least 1 parameter, 0 given
                 _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_MissingArguments, "assert", 1, 0);
+            }
+        }
+
+        public override void VisitBinaryExpression(BoundBinaryEx x)
+        {
+            base.VisitBinaryExpression(x);
+
+            //
+
+            switch (x.Operation)
+            {
+                case Operations.Div:
+                    if (x.Right.IsConstant())
+                    {
+                        if (x.Right.ConstantValue.IsZero())
+                        {
+                            Add(x.Right.PhpSyntax.Span, Devsense.PHP.Errors.Warnings.DivisionByZero);
+                        }
+                    }
+                    break;
             }
         }
 
@@ -274,8 +390,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override void VisitCFGBlock(BoundBlock x)
         {
             // is current block directly after the end of some try block?
-            Debug.Assert(inTryLevel == 0 || endOfTryBlocks.Count > 0);
-            if (inTryLevel > 0 && endOfTryBlocks.Peek() == x) { --inTryLevel; endOfTryBlocks.Pop(); }
+            Debug.Assert(_inTryLevel == 0 || endOfTryBlocks.Count > 0);
+            if (_inTryLevel > 0 && endOfTryBlocks.Peek() == x) { --_inTryLevel; endOfTryBlocks.Pop(); }
 
             base.VisitCFGBlock(x);
         }
@@ -283,25 +399,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override void VisitCFGTryCatchEdge(TryCatchEdge x)
         {
             // .Accept() on BodyBlocks traverses not only the try block but also the rest of the code
-            ++inTryLevel;
+            ++_inTryLevel;
             var hasEndBlock = (x.NextBlock != null);                // if there's a block directly after try-catch-finally
             if (hasEndBlock) { endOfTryBlocks.Push(x.NextBlock); }  // -> add it as ending block
             x.BodyBlock.Accept(this);
-            if (!hasEndBlock) { --inTryLevel; }                     // if there isn't dicrease tryLevel after going trough the try & rest (nothing)
+            if (!hasEndBlock) { --_inTryLevel; }                     // if there isn't dicrease tryLevel after going trough the try & rest (nothing)
 
             foreach (var c in x.CatchBlocks)
             {
-                ++inCatchLevel;
+                ++_inCatchLevel;
                 c.Accept(this);
-                --inCatchLevel;
+                --_inCatchLevel;
             }
 
 
             if (x.FinallyBlock != null)
             {
-                ++inFinallyLevel;
+                ++_inFinallyLevel;
                 x.FinallyBlock.Accept(this);
-                --inFinallyLevel;
+                --_inFinallyLevel;
             }
         }
 
@@ -314,7 +430,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
 
             // TODO: Start supporting yielding from exception handling constructs.
-            if (inTryLevel > 0 || inCatchLevel > 0 || inFinallyLevel > 0)
+            if (_inTryLevel > 0 || _inCatchLevel > 0 || _inFinallyLevel > 0)
             {
                 _diagnostics.Add(_routine, boundYieldStatement.PhpSyntax, ErrorCode.ERR_NotYetImplemented, "Yielding from an exception handling construct (try, catch, finally)");
             }

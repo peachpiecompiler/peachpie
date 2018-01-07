@@ -41,5 +41,21 @@ namespace Pchp.CodeAnalysis
             var diag = MessageProvider.Instance.CreateDiagnostic(code, location, args);
             diagnostics.Add(diag);
         }
+
+        public static Diagnostic ParserDiagnostic(SourceRoutineSymbol routine, Devsense.PHP.Text.Span span, Devsense.PHP.Errors.ErrorInfo info, params string[] argsOpt)
+        {
+            return ParserDiagnostic(routine.ContainingFile.SyntaxTree, span, info, argsOpt);
+        }
+
+        public static Diagnostic ParserDiagnostic(SyntaxTree tree, Devsense.PHP.Text.Span span, Devsense.PHP.Errors.ErrorInfo info, params string[] argsOpt)
+        {
+            ParserMessageProvider.Instance.RegisterError(info);
+
+            return ParserMessageProvider.Instance.CreateDiagnostic(
+                info.Severity == Devsense.PHP.Errors.ErrorSeverity.WarningAsError,
+                info.Id,
+                new SourceLocation(tree, span.ToTextSpan()),
+                argsOpt);
+        }
     }
 }

@@ -42,10 +42,8 @@ namespace Pchp.Core.Reflection
 
         #region Initialization
 
-        internal TypeFields(Type type)
+        internal TypeFields(TypeInfo tinfo)
         {
-            var tinfo = type.GetTypeInfo();
-
             _fields = tinfo.DeclaredFields.Where(_IsAllowedField).ToDictionary(_FieldName, StringComparer.Ordinal);
             if (_fields.Count == 0)
                 _fields = null;
@@ -53,6 +51,14 @@ namespace Pchp.Core.Reflection
             var staticscontainer = tinfo.GetDeclaredNestedType("_statics");
             if (staticscontainer != null)
             {
+                if (staticscontainer.IsGenericTypeDefinition)
+                {
+                    // _statics is always generic type definition (not constructed) in case enclosing type is generic.
+                    // Construct the type using enclosing class (trait) generic arguments (TSelf):
+                    Debug.Assert(tinfo.GenericTypeArguments.Length == staticscontainer.GenericTypeParameters.Length);   // <!TSelf>
+                    staticscontainer = staticscontainer.MakeGenericType(tinfo.GenericTypeArguments).GetTypeInfo();
+                }
+
                 _staticsFields = staticscontainer.DeclaredFields.ToDictionary(_FieldName, StringComparer.Ordinal);
             }
 
@@ -89,6 +95,21 @@ namespace Pchp.Core.Reflection
             return ctx => getter.Invoke(ctx, ArrayUtils.EmptyObjects);
         }
 
+        /// <summary>
+        /// Gets declaring type of given <c>_statics</c>.
+        /// The method properly constructs generic type containing <c>_statics</c> if it is a constructed generic type.
+        /// </summary>
+        static PhpTypeInfo GetStaticsDeclaringType(Type _statics)
+        {
+            var declaring = _statics.DeclaringType;
+            if (_statics.IsConstructedGenericType)
+            {
+                declaring = declaring.MakeGenericType(_statics.GenericTypeArguments);
+            }
+
+            return declaring.GetPhpTypeInfo();
+        }
+
         #endregion
 
         /// <summary>
@@ -116,7 +137,7 @@ namespace Pchp.Core.Reflection
                     fld =>
                     {
                         var __statics = fld.DeclaringType;
-                        return new PhpPropertyInfo.ContainedClrField(__statics.DeclaringType.GetPhpTypeInfo(), EnsureStaticsGetter(__statics), fld);
+                        return new PhpPropertyInfo.ContainedClrField(GetStaticsDeclaringType(__statics), EnsureStaticsGetter(__statics), fld);
                     }
                 ));
             }
@@ -154,7 +175,7 @@ namespace Pchp.Core.Reflection
             if (_staticsFields != null && _staticsFields.TryGetValue(name, out fld))
             {
                 var __statics = fld.DeclaringType;
-                yield return new PhpPropertyInfo.ContainedClrField(__statics.DeclaringType.GetPhpTypeInfo(), EnsureStaticsGetter(__statics), fld);
+                yield return new PhpPropertyInfo.ContainedClrField(GetStaticsDeclaringType(__statics), EnsureStaticsGetter(__statics), fld);
             }
 
             //
