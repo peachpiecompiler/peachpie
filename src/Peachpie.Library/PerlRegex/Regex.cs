@@ -908,8 +908,8 @@ namespace Pchp.Library.PerlRegex
             s_cacheLock.EnterWriteLock();
             try
             {
-                CachedCodeEntryKey lowestkey = default(CachedCodeEntryKey);
-                ulong loweststamp = uint.MaxValue;
+                var lowestkey = default(CachedCodeEntryKey);
+                var loweststamp = uint.MaxValue;
 
                 foreach (var entry in s_cache)
                 {
@@ -1018,7 +1018,7 @@ namespace Pchp.Library.PerlRegex
         internal int _capsize;
         internal ExclusiveReference _runnerref;
         internal SharedReference _replref;
-        internal ulong _usedstamp;
+        internal uint _usedstamp;
 
         internal CachedCodeEntry(Dictionary<string, int> capnames, string[] capslist, RegexCode code, Dictionary<int, int> caps, int capsize, ExclusiveReference runner, SharedReference repl)
         {
