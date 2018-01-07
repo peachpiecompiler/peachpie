@@ -261,10 +261,6 @@ namespace Pchp.CodeAnalysis.Symbols
                     {
                         return DeclaringCompilation.CoreTypes.String;   // NOTE: we may need PhpString instead in some cases, consider once we implement PhpString as struct
                     }
-                    else if (_syntax.Name.Name.IsCloneName) // __clone() : void
-                    {
-                        return DeclaringCompilation.CoreTypes.Void;
-                    }
                 }
 
                 // default:
