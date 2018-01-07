@@ -69,60 +69,98 @@ namespace Pchp.CodeAnalysis.Symbols
             var name = _syntax.Name.Name;
 
             // diagnostics:
-            if (name.IsDestructName)    // __destruct()
+            if (name.Value.StartsWith("__", StringComparison.Ordinal))
             {
-                if (_syntax.Signature.FormalParams.Length != 0)
+                // magic methods:
+                if (name.IsConstructName) // __construct()
                 {
-                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.DestructCannotTakeArguments, _type.FullName.ToString()));
+                    if (IsStatic)
+                    {
+                        diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.ConstructCannotBeStatic, _type.FullName.ToString()));
+                    }
+                    if (_syntax.ReturnType != null)
+                    {
+                        // {0} cannot declare a return type
+                        diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_CannotDeclareReturnType, "Constructor " + _type.FullName.ToString(name, false));
+                    }
                 }
-                if (IsStatic)
+                else if (name.IsDestructName)    // __destruct()
                 {
-                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.DestructCannotBeStatic, _type.FullName.ToString()));
+                    if (_syntax.Signature.FormalParams.Length != 0)
+                    {
+                        diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.DestructCannotTakeArguments, _type.FullName.ToString()));
+                    }
+                    if (IsStatic)
+                    {
+                        diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.DestructCannotBeStatic, _type.FullName.ToString()));
+                    }
+                    if (_syntax.ReturnType != null)
+                    {
+                        // {0} cannot declare a return type
+                        diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_CannotDeclareReturnType, "Destructor " + _type.FullName.ToString(name, false));
+                    }
                 }
-            }
-            else if (name.IsConstructName) // __construct()
-            {
-                if (IsStatic)
+                else if (name.IsToStringName)   // __tostring()
                 {
-                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.ConstructCannotBeStatic, _type.FullName.ToString()));
-                }
-            }
-            else if (name.IsToStringName)   // __tostring()
-            {
-                if ((IsStatic || (_syntax.Modifiers & PhpMemberAttributes.VisibilityMask) != PhpMemberAttributes.Public))
-                {
-                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Warnings.MagicMethodMustBePublicNonStatic, name.Value));
-                }
+                    if ((IsStatic || (_syntax.Modifiers & PhpMemberAttributes.VisibilityMask) != PhpMemberAttributes.Public))
+                    {
+                        diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Warnings.MagicMethodMustBePublicNonStatic, name.Value));
+                    }
 
-                if (_syntax.Signature.FormalParams.Length != 0)
-                {
-                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.MethodCannotTakeArguments, _type.FullName.ToString(), name.Value));
+                    if (_syntax.Signature.FormalParams.Length != 0)
+                    {
+                        diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.MethodCannotTakeArguments, _type.FullName.ToString(), name.Value));
+                    }
                 }
+                else if (name.IsCloneName)  // __clone()
+                {
+                    if (IsStatic)
+                    {
+                        diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.CloneCannotBeStatic, _type.FullName.ToString()));
+                    }
+                    if (_syntax.Signature.FormalParams.Length != 0)
+                    {
+                        diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.CloneCannotTakeArguments, _type.FullName.ToString()));
+                    }
+                    if (_syntax.ReturnType != null)
+                    {
+                        // {0} cannot declare a return type
+                        diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_CannotDeclareReturnType, _type.FullName.ToString(name, false));
+                    }
+                }
+                else if (name.IsCallStaticName) // __callstatic()
+                {
+                    if (!IsStatic || (_syntax.Modifiers & PhpMemberAttributes.VisibilityMask) != PhpMemberAttributes.Public)
+                    {
+                        diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Warnings.CallStatMustBePublicStatic));
+                    }
+                }
+                else if (name == Devsense.PHP.Syntax.Name.SpecialMethodNames.Set)   // __set($name, $value)
+                {
+                    if ((IsStatic || (_syntax.Modifiers & PhpMemberAttributes.VisibilityMask) != PhpMemberAttributes.Public))
+                    {
+                        diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Warnings.MagicMethodMustBePublicNonStatic, name.Value));
+                    }
+
+                    if (_syntax.Signature.FormalParams.Length != 2)
+                    {
+                        diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 2);
+                    }
+                }
+                else if (name == Devsense.PHP.Syntax.Name.SpecialMethodNames.Get)   // __get($name)
+                {
+                    if ((IsStatic || (_syntax.Modifiers & PhpMemberAttributes.VisibilityMask) != PhpMemberAttributes.Public))
+                    {
+                        diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Warnings.MagicMethodMustBePublicNonStatic, name.Value));
+                    }
+
+                    if (_syntax.Signature.FormalParams.Length != 1)
+                    {
+                        diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 1);
+                    }
+                }
+                // ...
             }
-            else if (name.IsCloneName)
-            {
-                if (IsStatic)
-                {
-                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.CloneCannotBeStatic, _type.FullName.ToString()));
-                }
-                if (_syntax.Signature.FormalParams.Length != 0)
-                {
-                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.CloneCannotTakeArguments, _type.FullName.ToString()));
-                }
-                if (_syntax.ReturnType != null)
-                {
-                    // {0}::__clone() cannot declare a return type
-                    diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_CloneCannotDeclareReturnType, _type.FullName);
-                }
-            }
-            else if (name.IsCallStaticName)
-            {
-                if (!IsStatic || (_syntax.Modifiers & PhpMemberAttributes.VisibilityMask) != PhpMemberAttributes.Public)
-                {
-                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Warnings.CallStatMustBePublicStatic));
-                }
-            }
-            // ...
 
             if (_syntax.Modifiers.IsAbstract())
             {
@@ -182,13 +220,16 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 // magic methods:
-                if (_syntax.Name.Name.IsToStringName)   // __tostring() : string
+                if (_syntax.Name.Name.Value.StartsWith("__", StringComparison.Ordinal))
                 {
-                    return DeclaringCompilation.CoreTypes.String;   // NOTE: we may need PhpString instead in some cases, consider once we implement PhpString as struct
-                }
-                else if (_syntax.Name.Name.IsCloneName) // __clone() : void
-                {
-                    return DeclaringCompilation.CoreTypes.Void;
+                    if (_syntax.Name.Name.IsToStringName)   // __tostring() : string
+                    {
+                        return DeclaringCompilation.CoreTypes.String;   // NOTE: we may need PhpString instead in some cases, consider once we implement PhpString as struct
+                    }
+                    else if (_syntax.Name.Name.IsCloneName) // __clone() : void
+                    {
+                        return DeclaringCompilation.CoreTypes.Void;
+                    }
                 }
 
                 // default:
