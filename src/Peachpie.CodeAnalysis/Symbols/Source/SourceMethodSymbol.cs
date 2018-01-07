@@ -159,6 +159,30 @@ namespace Pchp.CodeAnalysis.Symbols
                         diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 1);
                     }
                 }
+                else if (name == Devsense.PHP.Syntax.Name.SpecialMethodNames.Isset)   // __isset($name)
+                {
+                    if ((IsStatic || (_syntax.Modifiers & PhpMemberAttributes.VisibilityMask) != PhpMemberAttributes.Public))
+                    {
+                        diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Warnings.MagicMethodMustBePublicNonStatic, name.Value));
+                    }
+
+                    if (_syntax.Signature.FormalParams.Length != 1)
+                    {
+                        diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 1);
+                    }
+                }
+                else if (name == Devsense.PHP.Syntax.Name.SpecialMethodNames.Unset)   // __unset($name)
+                {
+                    if ((IsStatic || (_syntax.Modifiers & PhpMemberAttributes.VisibilityMask) != PhpMemberAttributes.Public))
+                    {
+                        diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Warnings.MagicMethodMustBePublicNonStatic, name.Value));
+                    }
+
+                    if (_syntax.Signature.FormalParams.Length != 1)
+                    {
+                        diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 1);
+                    }
+                }
                 // ...
             }
 
