@@ -23,7 +23,7 @@ namespace Pchp.Library.PerlRegex
     {
         protected internal string pattern;                   // The string pattern provided
         protected internal RegexOptions roptions;            // the top-level options from the options string
-        
+
         // *********** Match timeout fields { ***********
 
         // We need this because time is queried using Environment.TickCount for performance reasons
@@ -92,9 +92,6 @@ namespace Pchp.Library.PerlRegex
         internal RegexCode _code;                           // if interpreted, this is the code for RegexInterpreter
         internal bool _refsInitialized = false;
 
-        internal static LinkedList<CachedCodeEntry> s_livecode = new LinkedList<CachedCodeEntry>();// the cache of code and factories that are currently loaded
-        internal static int s_cacheSize = 15;
-
         internal const int MaxOptionShift = 10;
 
         protected Regex()
@@ -107,7 +104,7 @@ namespace Pchp.Library.PerlRegex
         /// expression.
         /// </summary>
         public Regex(string pattern)
-            : this(pattern, RegexOptions.CultureInvariant, DefaultMatchTimeout, false)
+            : this(pattern, RegexOptions.CultureInvariant, DefaultMatchTimeout, true)
         {
         }
 
@@ -116,23 +113,18 @@ namespace Pchp.Library.PerlRegex
         /// specified regular expression with options that modify the pattern.
         /// </summary>
         public Regex(string pattern, RegexOptions options)
-            : this(pattern, options, DefaultMatchTimeout, false)
+            : this(pattern, options, DefaultMatchTimeout, true)
         {
         }
 
         public Regex(string pattern, RegexOptions options, TimeSpan matchTimeout)
-            : this(pattern, options, matchTimeout, false)
+            : this(pattern, options, matchTimeout, true)
         {
         }
 
         private Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, bool useCache)
         {
-            RegexTree tree;
-            CachedCodeEntry cached = null;
-            string cultureKey = null;
-
-            if (pattern == null)
-                throw new ArgumentNullException(nameof(pattern));
+            // validate parameters:
             if (options < RegexOptions.None || (((int)options) >> MaxOptionShift) != 0)
                 throw new ArgumentOutOfRangeException(nameof(options));
             if ((options & RegexOptions.ECMAScript) != 0
@@ -148,25 +140,20 @@ namespace Pchp.Library.PerlRegex
 
             ValidateMatchTimeout(matchTimeout);
 
+            this.pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
+            this.roptions = options;
+
             // Try to look up this regex in the cache.  We do this regardless of whether useCache is true since there's
             // really no reason not to.
-            if ((options & RegexOptions.CultureInvariant) != 0)
-                cultureKey = CultureInfo.InvariantCulture.ToString(); // "English (United States)"
-            else
-                cultureKey = CultureInfo.CurrentCulture.ToString();
-
-            var key = new CachedCodeEntryKey(options, cultureKey, pattern);
-            cached = LookupCachedAndUpdate(key);
-
-            this.pattern = pattern;
-            roptions = options;
+            var key = new CachedCodeEntryKey(options, pattern);
+            var cached = LookupCachedAndUpdate(key);
 
             internalMatchTimeout = matchTimeout;
 
             if (cached == null)
             {
                 // Parse the input
-                tree = RegexParser.Parse(pattern, roptions);
+                var tree = RegexParser.Parse(pattern, roptions);
 
                 // Extract the relevant information
                 capnames = tree._capnames;
@@ -177,9 +164,10 @@ namespace Pchp.Library.PerlRegex
 
                 InitializeReferences();
 
-                tree = null;
                 if (useCache)
-                    cached = CacheCode(key);
+                {
+                    CacheCode(key);
+                }
             }
             else
             {
@@ -241,30 +229,6 @@ namespace Pchp.Library.PerlRegex
                 throw new ArgumentNullException(nameof(str));
 
             return RegexParser.Unescape(str);
-        }
-
-        [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread-safety")]
-        public static int CacheSize
-        {
-            get
-            {
-                return s_cacheSize;
-            }
-            set
-            {
-                if (value < 0)
-                    throw new ArgumentOutOfRangeException(nameof(value));
-
-                s_cacheSize = value;
-                if (s_livecode.Count > s_cacheSize)
-                {
-                    lock (s_livecode)
-                    {
-                        while (s_livecode.Count > s_cacheSize)
-                            s_livecode.RemoveLast();
-                    }
-                }
-            }
         }
 
         /// <summary>
@@ -851,7 +815,6 @@ namespace Pchp.Library.PerlRegex
             _replref = new SharedReference();
         }
 
-
         /*
          * Internal worker called by all the public APIs
          */
@@ -898,59 +861,71 @@ namespace Pchp.Library.PerlRegex
             return match;
         }
 
+        static readonly Dictionary<CachedCodeEntryKey, CachedCodeEntry> s_cache = new Dictionary<CachedCodeEntryKey, CachedCodeEntry>();
+        static uint s_recentstamp = 0;
+        static uint s_cacheSize = 256;   // number of cached items
+        static readonly ReaderWriterLockSlim s_cacheLock = new ReaderWriterLockSlim();
+
         /*
          * Find code cache based on options+pattern
          */
-        private static CachedCodeEntry LookupCachedAndUpdate(CachedCodeEntryKey key)
+        static CachedCodeEntry LookupCachedAndUpdate(CachedCodeEntryKey key)
         {
-            lock (s_livecode)
+            s_cacheLock.EnterReadLock();
+            if (s_cache.TryGetValue(key, out CachedCodeEntry entry))
             {
-                for (LinkedListNode<CachedCodeEntry> current = s_livecode.First; current != null; current = current.Next)
-                {
-                    if (current.Value._key == key)
-                    {
-                        // If we find an entry in the cache, move it to the head at the same time.
-                        s_livecode.Remove(current);
-                        s_livecode.AddFirst(current);
-                        return current.Value;
-                    }
-                }
+                entry._usedstamp = s_recentstamp;
             }
+            s_cacheLock.ExitReadLock();
 
-            return null;
+            //
+            return entry;
         }
 
         /*
          * Add current code to the cache
          */
-        private CachedCodeEntry CacheCode(CachedCodeEntryKey key)
+        private void CacheCode(CachedCodeEntryKey key)
         {
-            CachedCodeEntry newcached = null;
-
-            lock (s_livecode)
+            var newcached = new CachedCodeEntry(capnames, capslist, _code, caps, capsize, _runnerref, _replref)
             {
-                // first look for it in the cache and move it to the head
-                for (LinkedListNode<CachedCodeEntry> current = s_livecode.First; current != null; current = current.Next)
+                _usedstamp = s_recentstamp++,
+            };
+
+            s_cacheLock.EnterWriteLock();
+            s_cache[key] = newcached;
+            s_cacheLock.ExitWriteLock();
+
+            if (s_cache.Count > s_cacheSize)
+            {
+                DropEntryFromCache();
+            }
+        }
+
+        static void DropEntryFromCache()
+        {
+            // remove entries with lowest _usedstamp ~ O(n)
+            s_cacheLock.EnterWriteLock();
+            try
+            {
+                CachedCodeEntryKey lowestkey = default(CachedCodeEntryKey);
+                ulong loweststamp = uint.MaxValue;
+
+                foreach (var entry in s_cache)
                 {
-                    if (current.Value._key == key)
+                    if (entry.Value._usedstamp < loweststamp)
                     {
-                        s_livecode.Remove(current);
-                        s_livecode.AddFirst(current);
-                        return current.Value;
+                        loweststamp = entry.Value._usedstamp;
+                        lowestkey = entry.Key;
                     }
                 }
 
-                // it wasn't in the cache, so we'll add a new one.  Shortcut out for the case where cacheSize is zero.
-                if (s_cacheSize != 0)
-                {
-                    newcached = new CachedCodeEntry(key, capnames, capslist, _code, caps, capsize, _runnerref, _replref);
-                    s_livecode.AddFirst(newcached);
-                    if (s_livecode.Count > s_cacheSize)
-                        s_livecode.RemoveLast();
-                }
+                s_cache.Remove(lowestkey);
             }
-
-            return newcached;
+            finally
+            {
+                s_cacheLock.ExitWriteLock();
+            }
         }
 
         protected bool UseOptionC()
@@ -996,14 +971,12 @@ namespace Pchp.Library.PerlRegex
      */
     internal struct CachedCodeEntryKey : IEquatable<CachedCodeEntryKey>
     {
-        private readonly RegexOptions _options;
-        private readonly string _cultureKey;
-        private readonly string _pattern;
+        readonly RegexOptions _options;
+        readonly string _pattern;
 
-        internal CachedCodeEntryKey(RegexOptions options, string cultureKey, string pattern)
+        internal CachedCodeEntryKey(RegexOptions options, string pattern)
         {
             _options = options;
-            _cultureKey = cultureKey;
             _pattern = pattern;
         }
 
@@ -1019,7 +992,7 @@ namespace Pchp.Library.PerlRegex
 
         public static bool operator ==(CachedCodeEntryKey left, CachedCodeEntryKey right)
         {
-            return left._options == right._options && left._cultureKey == right._cultureKey && left._pattern == right._pattern;
+            return left._options == right._options && left._pattern == right._pattern;
         }
 
         public static bool operator !=(CachedCodeEntryKey left, CachedCodeEntryKey right)
@@ -1029,7 +1002,7 @@ namespace Pchp.Library.PerlRegex
 
         public override int GetHashCode()
         {
-            return ((int)_options) ^ _cultureKey.GetHashCode() ^ _pattern.GetHashCode();
+            return ((int)_options) ^ _pattern.GetHashCode();
         }
     }
 
@@ -1038,7 +1011,6 @@ namespace Pchp.Library.PerlRegex
      */
     internal sealed class CachedCodeEntry
     {
-        internal CachedCodeEntryKey _key;
         internal RegexCode _code;
         internal Dictionary<int, int> _caps;
         internal Dictionary<string, int> _capnames;
@@ -1046,10 +1018,10 @@ namespace Pchp.Library.PerlRegex
         internal int _capsize;
         internal ExclusiveReference _runnerref;
         internal SharedReference _replref;
+        internal ulong _usedstamp;
 
-        internal CachedCodeEntry(CachedCodeEntryKey key, Dictionary<string, int> capnames, string[] capslist, RegexCode code, Dictionary<int, int> caps, int capsize, ExclusiveReference runner, SharedReference repl)
+        internal CachedCodeEntry(Dictionary<string, int> capnames, string[] capslist, RegexCode code, Dictionary<int, int> caps, int capsize, ExclusiveReference runner, SharedReference repl)
         {
-            _key = key;
             _capnames = capnames;
             _capslist = capslist;
 
