@@ -128,11 +128,26 @@ namespace Pchp.CodeAnalysis.Symbols
                         diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_CannotDeclareReturnType, _type.FullName.ToString(name, false));
                     }
                 }
-                else if (name.IsCallStaticName) // __callstatic()
+                else if (name.IsCallName) // __call($name, $args)
                 {
                     if (!IsStatic || (_syntax.Modifiers & PhpMemberAttributes.VisibilityMask) != PhpMemberAttributes.Public)
                     {
                         diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Warnings.CallStatMustBePublicStatic));
+                    }
+                    if (_syntax.Signature.FormalParams.Length != 2)
+                    {
+                        diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 2);
+                    }
+                }
+                else if (name.IsCallStaticName) // __callstatic($name, $args)
+                {
+                    if (!IsStatic || (_syntax.Modifiers & PhpMemberAttributes.VisibilityMask) != PhpMemberAttributes.Public)
+                    {
+                        diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Warnings.CallStatMustBePublicStatic));
+                    }
+                    if (_syntax.Signature.FormalParams.Length != 2)
+                    {
+                        diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 2);
                     }
                 }
                 else if (name == Devsense.PHP.Syntax.Name.SpecialMethodNames.Set)   // __set($name, $value)
@@ -141,7 +156,6 @@ namespace Pchp.CodeAnalysis.Symbols
                     {
                         diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Warnings.MagicMethodMustBePublicNonStatic, name.Value));
                     }
-
                     if (_syntax.Signature.FormalParams.Length != 2)
                     {
                         diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 2);
@@ -153,7 +167,6 @@ namespace Pchp.CodeAnalysis.Symbols
                     {
                         diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Warnings.MagicMethodMustBePublicNonStatic, name.Value));
                     }
-
                     if (_syntax.Signature.FormalParams.Length != 1)
                     {
                         diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 1);
@@ -165,7 +178,6 @@ namespace Pchp.CodeAnalysis.Symbols
                     {
                         diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Warnings.MagicMethodMustBePublicNonStatic, name.Value));
                     }
-
                     if (_syntax.Signature.FormalParams.Length != 1)
                     {
                         diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 1);
@@ -177,7 +189,6 @@ namespace Pchp.CodeAnalysis.Symbols
                     {
                         diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Warnings.MagicMethodMustBePublicNonStatic, name.Value));
                     }
-
                     if (_syntax.Signature.FormalParams.Length != 1)
                     {
                         diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 1);
