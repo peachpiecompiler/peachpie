@@ -370,10 +370,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         HashSet<DiagnosticInfo> useSiteDiagnostic = null;
                         var t = _routine.DeclaringCompilation.SourceAssembly.GetTypeByMetadataName(tref.QualifiedName.ClrName(), true, false);
-                        if (t != null && !t.IsErrorType() && t.IsDerivedFrom(stack, false, ref useSiteDiagnostic)) // TODO: or interface
+                        if (t != null && !t.IsErrorType() && (stack.IsTypeParameter() || t.IsDerivedFrom(stack, false, ref useSiteDiagnostic))) // TODO: or interface
                         {
-                            EmitCastClass(t);
-                            return t;
+                            if (t.SpecialType != SpecialType.System_Object)
+                            {
+                                EmitCastClass(t);
+                                return t;
+                            }
                         }
                         else
                         {
