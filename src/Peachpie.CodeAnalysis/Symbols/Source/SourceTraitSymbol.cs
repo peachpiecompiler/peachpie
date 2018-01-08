@@ -68,7 +68,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Debug.Assert(syntax.MemberAttributes.IsTrait());
             Debug.Assert(syntax.BaseClass == null); // not expecting trait can extend another class
 
-            _typeParameters = ImmutableArray.Create<TypeParameterSymbol>(new AnonymousTypeParameterSymbol(this, 0, "TSelf"));
+            _typeParameters = ImmutableArray.Create<TypeParameterSymbol>(new AnonymousTypeParameterSymbol(this, 0, "TSelf", hasReferenceTypeConstraint: true));
         }
 
         protected override SourceTypeSymbol NewSelf() => new SourceTraitTypeSymbol(ContainingFile, Syntax);
