@@ -307,7 +307,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     if (__tostring != null)
                     {
                         // __tostring().ToString()
-                        cg.EmitConvert(cg.EmitForwardCall(__tostring, tostring), 0, tostring.ReturnType);
+                        cg.EmitConvert(cg.EmitForwardCall(__tostring, tostring, callvirt: true), 0, tostring.ReturnType);
                     }
                     else
                     {
