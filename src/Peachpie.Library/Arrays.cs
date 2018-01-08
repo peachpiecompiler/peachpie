@@ -440,13 +440,13 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="array">The array which slice to get.</param>
         /// <param name="offset">The relativized offset of the first item of the slice.</param>
-        /// <param name="length">The relativized length of the slice.</param>
+        /// <param name="length">The relativized length of the slice. Default <c>NULL</c> results in the maximum length.</param>
         /// <param name="preserveKeys">Whether to preserve integer keys. If <B>false</B>, the integer keys are reset.</param>
         /// <returns>The slice of <paramref name="array"/>.</returns>
         /// <remarks>
         /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> and <paramref name="length"/>.
         /// </remarks>
-        public static PhpArray array_slice(PhpArray array, int offset, int length = int.MaxValue, bool preserveKeys = false)
+        public static PhpArray array_slice(PhpArray array, int offset, PhpValue length = default(PhpValue), bool preserveKeys = false)
         {
             if (array == null)
             {
@@ -455,8 +455,10 @@ namespace Pchp.Library
                 throw new ArgumentNullException();
             }
 
+            int ilength = Operators.IsSet(length) ? (int)length.ToLong() : int.MaxValue;
+
             // absolutizes range:
-            PhpMath.AbsolutizeRange(ref offset, ref length, array.Count);
+            PhpMath.AbsolutizeRange(ref offset, ref ilength, array.Count);
 
             var iterator = array.GetFastEnumerator();
 
@@ -476,9 +478,9 @@ namespace Pchp.Library
             }
 
             // copies the slice:
-            PhpArray result = new PhpArray(length);
+            PhpArray result = new PhpArray(ilength);
             int ikey = 0;
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < ilength; i++)
             {
                 var entry = iterator.Current;
 
@@ -500,30 +502,9 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Removes a slice of an array.
-        /// </summary>
-        /// <param name="array">The array which slice to remove.</param>
-        /// <param name="offset">The relativized offset of a first item of the slice.</param>
-        /// <param name="length">The relativized length of the slice.</param>
-        /// <remarks>
-        /// <para><paramref name="length"/> items are removed from <paramref name="array"/> 
-        /// starting with the <paramref name="offset"/>-th one.</para>
-        /// </remarks>
-        /// <para>See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/>.</para>
-        public static PhpArray array_splice(PhpArray array, int offset, int length = int.MaxValue)
-        {
-            // Splice would be equivalent to SpliceDc if no replacement is specified (=> no SpliceDc):
-            return array_splice(array, offset, length, PhpValue.Null);
-        }
-
-        /// <summary>
         /// Replaces a slice of an array with specified item(s).
         /// </summary>
-        /// <remarks>
-        /// <para>The same as <see cref="Splice(PhpArray,int,int,object)"/> except for that
-        /// replacement items are deeply copied to the <paramref name="array"/>.</para>
-        /// </remarks>
-        public static PhpArray array_splice(PhpArray array, int offset, int length, PhpValue replacement)
+        public static PhpArray array_splice(PhpArray array, int offset, PhpValue length = default(PhpValue), PhpValue replacement = default(PhpValue))
         {
             if (array == null)
             {
@@ -534,14 +515,16 @@ namespace Pchp.Library
                 throw new ArgumentNullException();
             }
 
-            return SpliceInternal(array, offset, length, replacement, true);
+            int ilength = Operators.IsSet(length) ? (int)length.ToLong() : int.MaxValue;
+
+            return SpliceInternal(array, offset, ilength, replacement);
         }
 
         /// <summary>
         /// Implementation of <see cref="array_splice(PhpArray,int,int,object)"/> and <see cref="array_splice(PhpArray,int,int,object)"/>.
         /// </summary>
         /// <remarks>Whether to make a deep-copy of items in the replacement.</remarks>
-        internal static PhpArray SpliceInternal(PhpArray array, int offset, int length, PhpValue replacement, bool deepCopy)
+        internal static PhpArray SpliceInternal(PhpArray array, int offset, int length, PhpValue replacement)
         {
             Debug.Assert(array != null);
             int count = array.Count;
@@ -550,36 +533,32 @@ namespace Pchp.Library
             PhpMath.AbsolutizeRange(ref offset, ref length, count);
 
             PhpArray result = new PhpArray(length);
+            PhpArray arrtmp;
 
-            // replacement is an array:
-            if (replacement.IsArray)
+            if (Operators.IsEmpty(replacement)) // => not set or empty()
             {
-                // provides deep copies:
-                IEnumerable<PhpValue> e = replacement.Array.Values;
+                // replacement is null or empty:
 
-                if (deepCopy)
-                {
-                    e = e.Select(Operators.DeepCopy);
-                }
+                array.ReindexAndReplace(offset, length, null, result);
+            }
+            else if ((arrtmp = replacement.AsArray()) != null)
+            {
+                // replacement is an array:
+
+                // provides deep copies:
+                IEnumerable<PhpValue> e = arrtmp.Values;
+
+                e = e.Select(Operators.DeepCopy);
 
                 // does replacement:
                 array.ReindexAndReplace(offset, length, e, result);
-            }
-            else if (replacement.IsNull)
-            {
-                // replacement is null:
-
-                array.ReindexAndReplace(offset, length, null, result);
             }
             else
             {
                 // replacement is another type //
 
-                // creates a deep copy:
-                if (deepCopy) replacement = replacement.DeepCopy();
-
                 // does replacement:
-                array.ReindexAndReplace(offset, length, new[] { replacement }, result);
+                array.ReindexAndReplace(offset, length, new[] { replacement.DeepCopy() }, result);
             }
 
             return result;
@@ -3093,7 +3072,7 @@ namespace Pchp.Library
             // keys are preserved in a case of a single array and re-indexed otherwise:
             result = new PhpArray(arrays[0].Count);
 
-            for (;;)
+            for (; ; )
             {
                 bool hasvalid = false;
 
