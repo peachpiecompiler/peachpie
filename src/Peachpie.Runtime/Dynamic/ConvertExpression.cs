@@ -429,7 +429,7 @@ namespace Pchp.Core.Dynamic
             if (t == typeof(PhpArray)) return BindCostFromPhpArray(arg, target);
 
             // other types
-            if (t.GetTypeInfo().IsAssignableFrom(target.GetTypeInfo())) return Expression.Constant(ConversionCost.Pass);
+            if (target.GetTypeInfo().IsAssignableFrom(t.GetTypeInfo())) return Expression.Constant(ConversionCost.Pass);
 
             //
             throw new NotImplementedException($"costof({t} -> {target})");
