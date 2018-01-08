@@ -232,7 +232,7 @@ namespace Pchp.CodeAnalysis.Symbols
                                 else if (a is TraitsUse.TraitAdaptationAlias alias)
                                 {
                                     // add an alias to the map:
-                                    var qname = a.TraitMemberName.Item1.HasValue ? a.TraitMemberName.Item1.QualifiedName : phpt.FullName;
+                                    var qname = a.TraitMemberName.Item1 != null ? a.TraitMemberName.Item1.QualifiedName.Value : phpt.FullName;
 
                                     if (sourcemembers.TryGetValue(new MemberQualifiedName(qname, membername), out MethodSymbol s))
                                     {
