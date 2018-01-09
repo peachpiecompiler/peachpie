@@ -359,7 +359,30 @@ namespace Pchp.Library
         /// <summary>
         /// Get and/or set the current cache limiter
         /// </summary>
-        public static void session_cache_limiter() { throw new NotImplementedException(); }
+        public static string session_cache_limiter(Context ctx, string cache_limiter = null)
+        {
+            var webctx = GetHttpPhpContext(ctx);
+            if (webctx != null)
+            {
+                string result = webctx.CacheControl ?? "public";
+
+                if (!string.IsNullOrEmpty(cache_limiter))
+                {
+                    try
+                    {
+                        webctx.CacheControl = cache_limiter;
+                    }
+                    catch
+                    {
+                        PhpException.Throw(PhpError.Notice, Resources.LibResources.invalid_cache_limiter, cache_limiter);
+                    }
+                }
+
+                return result;
+            }
+
+            return null;
+        }
 
         /// <summary>
         /// Alias of session_write_close

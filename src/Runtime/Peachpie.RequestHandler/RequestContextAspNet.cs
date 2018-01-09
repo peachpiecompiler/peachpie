@@ -162,6 +162,12 @@ namespace Peachpie.RequestHandler
             }
         }
 
+        public string CacheControl
+        {
+            get => _httpctx.Response.CacheControl;
+            set => _httpctx.Response.CacheControl = value;    // TOOD: Response.Cache.SetCacheability
+        }
+
         public event Action HeadersSending
         {
             add

@@ -56,6 +56,12 @@ namespace Peachpie.Web
             return _httpctx.Response.Headers.Select(pair => new KeyValuePair<string, string>(pair.Key, pair.Value.ToString()));
         }
 
+        public string CacheControl
+        {
+            get => _httpctx.Response.Headers["cache-control"];
+            set => _httpctx.Response.Headers.Add("cache-control", new StringValues(value)); // TODO: set headers properly
+        }
+
         public event Action HeadersSending
         {
             add
