@@ -126,7 +126,7 @@ namespace Pchp.Library
 
         public virtual string create_sid()
         {
-            throw new NotImplementedException();
+            return Session.session_create_id();
         }
     }
 
@@ -172,7 +172,7 @@ namespace Pchp.Library
                 var str = _handler.read(GetSessionId(webctx));
                 if (str != null)
                 {
-                    return PhpSerialization.unserialize((Context)webctx, default(RuntimeTypeHandle), str).AsArray();
+                    return PhpSerialization.unserialize((Context)webctx, default(RuntimeTypeHandle), str).AsArray();    // TODO: session.serialize_handler
                 }
                 else
                 {
@@ -186,7 +186,7 @@ namespace Pchp.Library
 
                 //
                 return
-                    // 1. write
+                    // 1. write // TODO: session.serialize_handler
                     _handler.write(GetSessionId(webctx), PhpSerialization.serialize((Context)webctx, default(RuntimeTypeHandle), (PhpValue)session)) &&
                     // 2. close
                     _handler.close();
@@ -384,7 +384,20 @@ namespace Pchp.Library
         /// <summary>
         /// Decodes session data from a session encoded string
         /// </summary>
-        public static void session_decode() { throw new NotImplementedException(); }
+        public static bool session_decode(Context ctx, PhpString data)
+        {
+            var session_array = PhpSerialization.unserialize(ctx, default(RuntimeTypeHandle), data).AsArray();  // TODO: session.serialize_handler
+            if (session_array == null)
+            {
+                return false;
+            }
+
+            ctx.Session = session_array;
+            ctx.Globals[PhpSessionHandler.SESSION_Variable] = PhpValue.Create(session_array);
+
+            //
+            return true;
+        }
 
         /// <summary>
         /// Destroys all data registered to a session
@@ -401,7 +414,10 @@ namespace Pchp.Library
         /// <summary>
         /// Encodes the current session data as a session encoded string
         /// </summary>
-        public static void session_encode() { throw new NotImplementedException(); }
+        public static PhpString session_encode(Context ctx)
+        {
+            return PhpSerialization.serialize(ctx, default(RuntimeTypeHandle), (PhpValue)ctx.Session);  // TODO: session.serialize_handler
+        }
 
         /// <summary>
         /// Perform session data garbage collection
