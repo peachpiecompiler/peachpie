@@ -126,9 +126,18 @@ namespace Peachpie.Web
         /// </summary>
         PhpSessionHandler IHttpPhpContext.SessionHandler
         {
-            get => AspNetCoreSessionHandler.Default;
-            set => throw new NotSupportedException();
+            get => _sessionhandler ?? AspNetCoreSessionHandler.Default;
+            set
+            {
+                if (_sessionhandler != null && _sessionhandler != value)
+                {
+                    _sessionhandler.CloseSession(this, this, abandon: true);
+                }
+
+                _sessionhandler = value;
+            }
         }
+        PhpSessionHandler _sessionhandler;
 
         /// <summary>
         /// Gets or sets session state.
