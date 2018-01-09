@@ -1129,23 +1129,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override IEnumerable<IMethodSymbol> GetMethodsToEmit()
         {
-            return EnsureMembers().OfType<IMethodSymbol>()
-                .Concat(InstanceConstructors);
+            return InstanceConstructors.Concat(EnsureMembers().OfType<IMethodSymbol>());
         }
 
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()
         {
-            foreach (var f in GetMembers().OfType<FieldSymbol>())
-            {
-                if (f.OriginalDefinition != f)
-                {
-                    // field redeclares its parent member, discard
-                    continue;
-                }
-
-                yield return f;
-            }
-
             // special fields
             if (ReferenceEquals(ContextStore?.ContainingType, this))
             {
@@ -1161,6 +1149,17 @@ namespace Pchp.CodeAnalysis.Symbols
             foreach (var t in this.TraitUses)
             {
                 yield return t.TraitInstanceField;
+            }
+
+            foreach (var f in GetMembers().OfType<FieldSymbol>())
+            {
+                if (f.OriginalDefinition != f)
+                {
+                    // field redeclares its parent member, discard
+                    continue;
+                }
+
+                yield return f;
             }
         }
 
