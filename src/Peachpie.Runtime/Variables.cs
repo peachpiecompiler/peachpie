@@ -470,6 +470,19 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Converts given value to <see cref="PhpString"/> or gets containing <see cref="PhpString"/>.
+        /// </summary>
+        public static PhpString ToPhpString(this PhpValue value, Context ctx)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.WritableString: return value.WritableString;
+                case PhpTypeCode.Alias: return ToPhpString(value.Alias.Value, ctx);
+                default: return new PhpString(value.ToStringOrThrow(ctx));
+            }
+        }
+
+        /// <summary>
         /// In case given value contains an array (<see cref="PhpArray"/>),
         /// it is returned. Otherwise <c>null</c>.
         /// </summary>

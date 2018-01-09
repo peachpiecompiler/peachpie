@@ -134,24 +134,47 @@ namespace Pchp.Library
     [PhpExtension("session")]
     public static class Session
     {
-        #region Nested class: UserSessionHandler
+        #region Nested class: UserHandlerInternal
 
         /// <summary>
         /// Implementation of our <see cref="PhpSessionHandler"/> that uses provided <see cref="SessionHandlerInterface"/>.
         /// </summary>
-        sealed class UserSessionHandler : PhpSessionHandler
+        sealed class UserHandlerInternal : PhpSessionHandler
         {
+            // TODO: static: call _handler.gc() once in a time
+
             readonly SessionHandlerInterface/*!*/_handler;
 
-            public UserSessionHandler(SessionHandlerInterface handler)
+            public UserHandlerInternal(SessionHandlerInterface handler)
             {
                 _handler = handler;
             }
 
             public override string HandlerName => "user";
 
+            public override PhpArray Load(IHttpPhpContext webctx)
+            {
+                // 1. open
+                // 2. read
+
+                //var str = _handler.read(GetSessionId(webctx));
+                //return unserialize str;
+                throw new NotImplementedException();
+            }
+
+            public override bool Persist(IHttpPhpContext webctx, PhpArray session)
+            {
+                // 1. write
+                // 2. close
+
+                //_handler.write(GetSessionId(webctx), serialize session)
+                //_handler.close();
+                throw new NotImplementedException();
+            }
+
             public override void Abandon(IHttpPhpContext webctx)
             {
+                // destroy
                 _handler.destroy(GetSessionId(webctx));
             }
 
@@ -165,24 +188,61 @@ namespace Pchp.Library
                 throw new NotImplementedException();
             }
 
-            public override PhpArray Load(IHttpPhpContext webctx)
-            {
-                //var str = _handler.read(GetSessionId(webctx));
-                //return unserialize str;
-                throw new NotImplementedException();
-            }
-
-            public override bool Persist(IHttpPhpContext webctx, PhpArray session)
-            {
-                //_handler.write(GetSessionId(webctx), serialize session)
-                //_handler.close();
-                throw new NotImplementedException();
-            }
-
             public override bool SetSessionName(IHttpPhpContext webctx, string name)
             {
                 throw new NotImplementedException();
             }
+        }
+
+        #endregion
+
+        #region Nested class: CustomSessionHandler
+
+        /// <summary>
+        /// Implementats <see cref="SessionHandlerInterface"/> with callback functions.
+        /// </summary>
+        sealed class CustomSessionHandler : SessionHandlerInterface
+        {
+            readonly Context _ctx;
+            readonly IPhpCallable
+                _open, _close, _read, _write,
+                _destroy, _gc,
+                _create_sid, _validate_sid, _update_timestamp;
+
+            public CustomSessionHandler(
+                Context ctx,
+                IPhpCallable open, IPhpCallable close,
+                IPhpCallable read, IPhpCallable write,
+                IPhpCallable destroy, IPhpCallable gc,
+                IPhpCallable create_sid = null,
+                IPhpCallable validate_sid = null,
+                IPhpCallable update_timestamp = null)
+            {
+                _ctx = ctx;
+
+                _open = open;
+                _close = close;
+                _read = read;
+                _write = write;
+                _destroy = destroy;
+                _gc = gc;
+
+                _create_sid = create_sid;
+                _validate_sid = validate_sid;
+                _update_timestamp = update_timestamp;
+            }
+
+            public bool open(string save_path, string session_name) => (bool)_open.Invoke(_ctx, (PhpValue)save_path, (PhpValue)session_name);
+
+            public bool close() => (bool)_close.Invoke(_ctx, Array.Empty<PhpValue>());
+
+            public PhpString read(string session_id) => _read.Invoke(_ctx, (PhpValue)session_id).ToPhpString(_ctx);
+
+            public bool write(string session_id, PhpString session_data) => (bool)_write.Invoke(_ctx, (PhpValue)session_id, PhpValue.Create(session_data));
+
+            public bool destroy(string session_id) => (bool)_destroy.Invoke(_ctx, (PhpValue)session_id);
+
+            public bool gc(long maxlifetime) => (bool)_gc.Invoke(_ctx, (PhpValue)maxlifetime);
         }
 
         #endregion
@@ -427,7 +487,24 @@ namespace Pchp.Library
             IPhpCallable validate_sid = null,
             IPhpCallable update_timestamp = null)
         {
-            throw new NotImplementedException();
+            if (!ctx.IsWebApplication ||
+                !PhpVariable.IsValidBoundCallback(ctx, open) ||
+                !PhpVariable.IsValidBoundCallback(ctx, close) ||
+                !PhpVariable.IsValidBoundCallback(ctx, read) ||
+                !PhpVariable.IsValidBoundCallback(ctx, write) ||
+                !PhpVariable.IsValidBoundCallback(ctx, destroy) ||
+                !PhpVariable.IsValidBoundCallback(ctx, gc))
+            {
+                return false;
+            }
+
+            session_set_save_handler(
+                ctx,
+                sessionhandler: new CustomSessionHandler(ctx,
+                    open, close, read, write, destroy, gc,
+                    create_sid: create_sid, validate_sid: validate_sid, update_timestamp: update_timestamp),
+                register_shutdown: false);
+            return true;
         }
 
         /// <summary>
@@ -443,7 +520,7 @@ namespace Pchp.Library
             var webctx = ctx.HttpPhpContext;
             if (webctx != null)
             {
-                webctx.SessionHandler = new UserSessionHandler(sessionhandler);
+                webctx.SessionHandler = new UserHandlerInternal(sessionhandler);
 
                 if (register_shutdown)
                 {
