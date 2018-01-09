@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using Pchp.Core;
 
@@ -145,6 +146,7 @@ namespace Pchp.Library
 
             readonly SessionHandlerInterface/*!*/_handler;
 
+            bool _isnewsession;
             string _lazyid = null;
             string _name = "PEACHSESSID";
 
@@ -168,11 +170,21 @@ namespace Pchp.Library
 
                 // 2. read
                 var str = _handler.read(GetSessionId(webctx));
-                return PhpSerialization.unserialize((Context)webctx, default(RuntimeTypeHandle), str).AsArray();
+                if (str != null)
+                {
+                    return PhpSerialization.unserialize((Context)webctx, default(RuntimeTypeHandle), str).AsArray();
+                }
+                else
+                {
+                    return null;
+                }
             }
 
             public override bool Persist(IHttpPhpContext webctx, PhpArray session)
             {
+                webctx.AddCookie(_name, _lazyid, null); // TODO: lifespan
+
+                //
                 return
                     // 1. write
                     _handler.write(GetSessionId(webctx), PhpSerialization.serialize((Context)webctx, default(RuntimeTypeHandle), (PhpValue)session)) &&
@@ -182,6 +194,11 @@ namespace Pchp.Library
 
             public override void Abandon(IHttpPhpContext webctx)
             {
+                if (!_isnewsession)
+                {
+                    webctx.AddCookie(_name, string.Empty, DateTimeOffset.UtcNow);
+                }
+
                 // destroy
                 _handler.destroy(GetSessionId(webctx));
             }
@@ -191,8 +208,28 @@ namespace Pchp.Library
                 if (_lazyid == null)
                 {
                     // TODO: obtain the ID
-                    throw new NotImplementedException();
+                    var sessid = ((Context)webctx).Cookie[_name];
+                    if (Operators.IsEmpty(sessid))
+                    {
+                        _isnewsession = true;
+
+                        if (_handler is SessionHandler legacyhandler)
+                        {
+                            _lazyid = legacyhandler.create_sid();
+                        }
+                        else
+                        {
+                            _lazyid = session_create_id();
+                        }
+                    }
+                    else
+                    {
+                        _isnewsession = false;
+                        _lazyid = sessid.ToStringOrThrow((Context)webctx);
+                    }
                 }
+
+                Debug.Assert(_lazyid != null);
 
                 return _lazyid;
             }
@@ -339,7 +376,10 @@ namespace Pchp.Library
         /// <summary>
         /// Create new session id
         /// </summary>
-        public static void session_create_id() { throw new NotImplementedException(); }
+        public static string session_create_id(string prefix = null)
+        {
+            return string.Concat(prefix, Guid.NewGuid().ToString("N"));
+        }
 
         /// <summary>
         /// Decodes session data from a session encoded string
