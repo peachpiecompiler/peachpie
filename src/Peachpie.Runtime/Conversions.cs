@@ -256,7 +256,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets the underlying PHP string if present, a new PHP string representing the value otherwise.
         /// </summary>
-        public static PhpString ToPhpString(PhpValue value, Context ctx)
+        public static PhpString ToPhpString(this PhpValue value, Context ctx)
         {
             switch (value.TypeCode)
             {

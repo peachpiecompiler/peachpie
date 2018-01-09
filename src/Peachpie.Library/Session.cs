@@ -14,26 +14,6 @@ namespace Pchp.Library
     public interface SessionHandlerInterface
     {
         /// <summary>
-        /// Closes the current session. This function is automatically executed when closing the session, or explicitly via session_write_close().
-        /// </summary>
-        /// <returns>The return value (usually TRUE on success, FALSE on failure). Note this value is returned internally to PHP for processing.</returns>
-        bool close();
-
-        /// <summary>
-        /// Destroys a session. Called by session_regenerate_id() (with $destroy = TRUE), session_destroy() and when session_decode() fails.
-        /// </summary>
-        /// <param name="session_id">The session ID being destroyed.</param>
-        /// <returns>The return value (usually TRUE on success, FALSE on failure). Note this value is returned internally to PHP for processing.</returns>
-        bool destroy(string session_id);
-
-        /// <summary>
-        /// Cleans up expired sessions. Called by session_start(), based on session.gc_divisor, session.gc_probability and session.gc_maxlifetime settings.
-        /// </summary>
-        /// <param name="maxlifetime">Sessions that have not updated for the last maxlifetime seconds will be removed.</param>
-        /// <returns>The return value (usually TRUE on success, FALSE on failure). Note this value is returned internally to PHP for processing.</returns>
-        bool gc(long maxlifetime);
-
-        /// <summary>
         /// Re-initialize existing session, or creates a new one. Called when a session starts or when session_start() is invoked.
         /// </summary>
         /// <param name="save_path">The path where to store/retrieve the session.</param>
@@ -73,6 +53,26 @@ namespace Pchp.Library
         /// the $_SESSION superglobal to a serialized string and passing it as this parameter. Please note sessions use an alternative serialization method.</param>
         /// <returns>The return value (usually TRUE on success, FALSE on failure). Note this value is returned internally to PHP for processing.</returns>
         bool write(string session_id, PhpString session_data);
+
+        /// <summary>
+        /// Closes the current session. This function is automatically executed when closing the session, or explicitly via session_write_close().
+        /// </summary>
+        /// <returns>The return value (usually TRUE on success, FALSE on failure). Note this value is returned internally to PHP for processing.</returns>
+        bool close();
+
+        /// <summary>
+        /// Destroys a session. Called by session_regenerate_id() (with $destroy = TRUE), session_destroy() and when session_decode() fails.
+        /// </summary>
+        /// <param name="session_id">The session ID being destroyed.</param>
+        /// <returns>The return value (usually TRUE on success, FALSE on failure). Note this value is returned internally to PHP for processing.</returns>
+        bool destroy(string session_id);
+
+        /// <summary>
+        /// Cleans up expired sessions. Called by session_start(), based on session.gc_divisor, session.gc_probability and session.gc_maxlifetime settings.
+        /// </summary>
+        /// <param name="maxlifetime">Sessions that have not updated for the last maxlifetime seconds will be removed.</param>
+        /// <returns>The return value (usually TRUE on success, FALSE on failure). Note this value is returned internally to PHP for processing.</returns>
+        bool gc(long maxlifetime);
     }
 
     #endregion
@@ -93,21 +93,6 @@ namespace Pchp.Library
             _ctx = ctx;
         }
 
-        public virtual bool close()
-        {
-            throw new NotImplementedException();
-        }
-
-        public virtual bool destroy(string session_id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public virtual bool gc(long maxlifetime)
-        {
-            throw new NotImplementedException();
-        }
-
         public virtual bool open(string save_path, string session_name)
         {
             throw new NotImplementedException();
@@ -119,6 +104,21 @@ namespace Pchp.Library
         }
 
         public virtual bool write(string session_id, PhpString session_data)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual bool close()
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual bool destroy(string session_id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual bool gc(long maxlifetime)
         {
             throw new NotImplementedException();
         }
@@ -141,35 +141,43 @@ namespace Pchp.Library
         /// </summary>
         sealed class UserHandlerInternal : PhpSessionHandler
         {
-            // TODO: static: call _handler.gc() once in a time
+            // TODO: static: call _handler.gc() once in a time during closing
 
             readonly SessionHandlerInterface/*!*/_handler;
+
+            string _lazyid = null;
+            string _name = "PEACHSESSID";
 
             public UserHandlerInternal(SessionHandlerInterface handler)
             {
                 _handler = handler;
             }
 
+            /// <summary>
+            /// PHP name of the user session handler.
+            /// </summary>
             public override string HandlerName => "user";
 
             public override PhpArray Load(IHttpPhpContext webctx)
             {
                 // 1. open
-                // 2. read
+                if (!_handler.open(System.IO.Path.GetTempPath(), _name))
+                {
+                    return null;
+                }
 
-                //var str = _handler.read(GetSessionId(webctx));
-                //return unserialize str;
-                throw new NotImplementedException();
+                // 2. read
+                var str = _handler.read(GetSessionId(webctx));
+                return PhpSerialization.unserialize((Context)webctx, default(RuntimeTypeHandle), str).AsArray();
             }
 
             public override bool Persist(IHttpPhpContext webctx, PhpArray session)
             {
-                // 1. write
-                // 2. close
-
-                //_handler.write(GetSessionId(webctx), serialize session)
-                //_handler.close();
-                throw new NotImplementedException();
+                return
+                    // 1. write
+                    _handler.write(GetSessionId(webctx), PhpSerialization.serialize((Context)webctx, default(RuntimeTypeHandle), (PhpValue)session)) &&
+                    // 2. close
+                    _handler.close();
             }
 
             public override void Abandon(IHttpPhpContext webctx)
@@ -180,17 +188,27 @@ namespace Pchp.Library
 
             public override string GetSessionId(IHttpPhpContext webctx)
             {
-                throw new NotImplementedException();
+                if (_lazyid == null)
+                {
+                    // TODO: obtain the ID
+                    throw new NotImplementedException();
+                }
+
+                return _lazyid;
             }
 
-            public override string GetSessionName(IHttpPhpContext webctx)
-            {
-                throw new NotImplementedException();
-            }
+            public override string GetSessionName(IHttpPhpContext webctx) => _name;
 
             public override bool SetSessionName(IHttpPhpContext webctx, string name)
             {
-                throw new NotImplementedException();
+                if (webctx.SessionState != PhpSessionState.Closed)
+                {
+                    // session name cannot be changed after the session started
+                    throw new InvalidOperationException();
+                }
+
+                _name = name;
+                return true;
             }
         }
 
