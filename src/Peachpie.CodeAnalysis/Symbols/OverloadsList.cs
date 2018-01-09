@@ -41,7 +41,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return new VisibilityScope()
                 {
                     Scope = self,
-                    ScopeIsDynamic = self.IsTraitType() || routine is SourceLambdaSymbol || routine.IsGlobalScope,
+                    ScopeIsDynamic = self.IsTraitType() || routine is SourceLambdaSymbol || (routine?.IsGlobalScope == true),
                 };
             }
         }
