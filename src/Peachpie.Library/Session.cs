@@ -5,23 +5,188 @@ using Pchp.Core;
 
 namespace Pchp.Library
 {
+    #region SessionHandlerInterface
+
     /// <summary>
     /// Prototype for creating a custom session handler.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
     public interface SessionHandlerInterface
     {
+        /// <summary>
+        /// Closes the current session. This function is automatically executed when closing the session, or explicitly via session_write_close().
+        /// </summary>
+        /// <returns>The return value (usually TRUE on success, FALSE on failure). Note this value is returned internally to PHP for processing.</returns>
         bool close();
+
+        /// <summary>
+        /// Destroys a session. Called by session_regenerate_id() (with $destroy = TRUE), session_destroy() and when session_decode() fails.
+        /// </summary>
+        /// <param name="session_id">The session ID being destroyed.</param>
+        /// <returns>The return value (usually TRUE on success, FALSE on failure). Note this value is returned internally to PHP for processing.</returns>
         bool destroy(string session_id);
+
+        /// <summary>
+        /// Cleans up expired sessions. Called by session_start(), based on session.gc_divisor, session.gc_probability and session.gc_maxlifetime settings.
+        /// </summary>
+        /// <param name="maxlifetime">Sessions that have not updated for the last maxlifetime seconds will be removed.</param>
+        /// <returns>The return value (usually TRUE on success, FALSE on failure). Note this value is returned internally to PHP for processing.</returns>
         bool gc(long maxlifetime);
+
+        /// <summary>
+        /// Re-initialize existing session, or creates a new one. Called when a session starts or when session_start() is invoked.
+        /// </summary>
+        /// <param name="save_path">The path where to store/retrieve the session.</param>
+        /// <param name="session_name">The session name.</param>
+        /// <returns>The return value (usually TRUE on success, FALSE on failure). Note this value is returned internally to PHP for processing.</returns>
         bool open(string save_path, string session_name);
-        string read(string session_id);
-        bool write(string session_id, string session_data);
+
+        /// <summary>
+        /// Reads the session data from the session storage, and returns the results. Called right after the session starts
+        /// or when session_start() is called. Please note that before this method is called SessionHandlerInterface::open() is invoked.
+        /// 
+        /// This method is called by PHP itself when the session is started.This method should retrieve the session data
+        /// from storage by the session ID provided.The string returned by this method must be in the same serialized format
+        /// as when originally passed to the SessionHandlerInterface::write() If the record was not found, return an empty string.
+        /// 
+        /// The data returned by this method will be decoded internally by PHP using the unserialization method specified
+        /// in session.serialize_handler.The resulting data will be used to populate the $_SESSION superglobal.
+        /// 
+        /// Note that the serialization scheme is not the same as unserialize() and can be accessed by session_decode().
+        /// </summary>
+        /// <param name="session_id">The session id.</param>
+        /// <returns>Returns an encoded string of the read data. If nothing was read, it must return an empty string. Note this value is returned internally to PHP for processing.</returns>
+        PhpString read(string session_id);
+
+        /// <summary>
+        /// Writes the session data to the session storage. Called by session_write_close(), when session_register_shutdown() fails,
+        /// or during a normal shutdown. Note: SessionHandlerInterface::close() is called immediately after this function.
+        /// 
+        /// PHP will call this method when the session is ready to be saved and closed. It encodes the session data from
+        /// the $_SESSION superglobal to a serialized string and passes this along with the session ID to this method for storage.
+        /// The serialization method used is specified in the session.serialize_handler setting.
+        /// 
+        /// Note this method is normally called by PHP after the output buffers have been closed unless explicitly called by session_write_close()
+        /// </summary>
+        /// <param name="session_id">The session id.</param>
+        /// <param name="session_data">The encoded session data. This data is the result of the PHP internally encoding
+        /// the $_SESSION superglobal to a serialized string and passing it as this parameter. Please note sessions use an alternative serialization method.</param>
+        /// <returns>The return value (usually TRUE on success, FALSE on failure). Note this value is returned internally to PHP for processing.</returns>
+        bool write(string session_id, PhpString session_data);
     }
+
+    #endregion
+
+    #region SessionHandler // file-system based SessionHandlerInterface implementation
+
+    /// <summary>
+    /// Default file-system based session handler implementation.
+    /// Implements <see cref="SessionHandlerInterface"/> to be used in combination with <see cref="Session.session_set_save_handler(SessionHandlerInterface, bool)"/> function.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName)]
+    public class SessionHandler : SessionHandlerInterface
+    {
+        protected readonly Context _ctx;
+
+        public SessionHandler(Context ctx)
+        {
+            _ctx = ctx;
+        }
+
+        public virtual bool close()
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual bool destroy(string session_id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual bool gc(long maxlifetime)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual bool open(string save_path, string session_name)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual PhpString read(string session_id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual bool write(string session_id, PhpString session_data)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual string create_sid()
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    #endregion
 
     [PhpExtension("session")]
     public static class Session
     {
+        #region Nested class: UserSessionHandler
+
+        /// <summary>
+        /// Implementation of our <see cref="PhpSessionHandler"/> that uses provided <see cref="SessionHandlerInterface"/>.
+        /// </summary>
+        sealed class UserSessionHandler : PhpSessionHandler
+        {
+            readonly SessionHandlerInterface/*!*/_handler;
+
+            public UserSessionHandler(SessionHandlerInterface handler)
+            {
+                _handler = handler;
+            }
+
+            public override string HandlerName => "user";
+
+            public override void Abandon(IHttpPhpContext webctx)
+            {
+                _handler.destroy(GetSessionId(webctx));
+            }
+
+            public override string GetSessionId(IHttpPhpContext webctx)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override string GetSessionName(IHttpPhpContext webctx)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override PhpArray Load(IHttpPhpContext webctx)
+            {
+                //var str = _handler.read(GetSessionId(webctx));
+                //return unserialize str;
+                throw new NotImplementedException();
+            }
+
+            public override bool Persist(IHttpPhpContext webctx, PhpArray session)
+            {
+                //_handler.write(GetSessionId(webctx), serialize session)
+                //_handler.close();
+                throw new NotImplementedException();
+            }
+
+            public override bool SetSessionName(IHttpPhpContext webctx, string name)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        #endregion
+
         #region Constants
 
         /// <summary>
@@ -253,7 +418,39 @@ namespace Pchp.Library
         /// <summary>
         /// Sets user-level session storage functions
         /// </summary>
-        public static void session_set_save_handler() { throw new NotImplementedException(); }
+        public static bool session_set_save_handler(
+            Context ctx,
+            IPhpCallable open, IPhpCallable close,
+            IPhpCallable read, IPhpCallable write,
+            IPhpCallable destroy, IPhpCallable gc,
+            IPhpCallable create_sid = null,
+            IPhpCallable validate_sid = null,
+            IPhpCallable update_timestamp = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Sets user-level session storage functions
+        /// </summary>
+        public static void session_set_save_handler(Context ctx, SessionHandlerInterface sessionhandler, bool register_shutdown = true)
+        {
+            if (sessionhandler == null)
+            {
+                throw new ArgumentNullException(nameof(sessionhandler));
+            }
+
+            var webctx = ctx.HttpPhpContext;
+            if (webctx != null)
+            {
+                webctx.SessionHandler = new UserSessionHandler(sessionhandler);
+
+                if (register_shutdown)
+                {
+                    session_register_shutdown(ctx);
+                }
+            }
+        }
 
         /// <summary>
         /// Start new or resume existing session
