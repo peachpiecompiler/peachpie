@@ -234,6 +234,7 @@ namespace Pchp.CodeAnalysis.Symbols
                                     // add an alias to the map:
                                     var qname = a.TraitMemberName.Item1 != null ? a.TraitMemberName.Item1.QualifiedName.Value : phpt.FullName;
 
+                                    // add an alias to the map:
                                     if (sourcemembers.TryGetValue(new MemberQualifiedName(qname, membername), out MethodSymbol s))
                                     {
                                         if (map.TryGetValue(membername, out DeclaredAs declaredas) && declaredas.SourceMethod == s)
