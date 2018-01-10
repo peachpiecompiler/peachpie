@@ -56,6 +56,12 @@ namespace Peachpie.Web
             return _httpctx.Response.Headers.Select(pair => new KeyValuePair<string, string>(pair.Key, pair.Value.ToString()));
         }
 
+        public string CacheControl
+        {
+            get => _httpctx.Response.Headers["cache-control"];
+            set => _httpctx.Response.Headers.Add("cache-control", new StringValues(value)); // TODO: set headers properly
+        }
+
         public event Action HeadersSending
         {
             add
@@ -126,9 +132,18 @@ namespace Peachpie.Web
         /// </summary>
         PhpSessionHandler IHttpPhpContext.SessionHandler
         {
-            get => AspNetCoreSessionHandler.Default;
-            set => throw new NotSupportedException();
+            get => _sessionhandler ?? AspNetCoreSessionHandler.Default;
+            set
+            {
+                if (_sessionhandler != null && _sessionhandler != value)
+                {
+                    _sessionhandler.CloseSession(this, this, abandon: true);
+                }
+
+                _sessionhandler = value;
+            }
         }
+        PhpSessionHandler _sessionhandler;
 
         /// <summary>
         /// Gets or sets session state.

@@ -25,6 +25,9 @@ namespace Pchp.Core
         /// <summary>Enumerates HTTP headers in current response.</summary>
         IEnumerable<KeyValuePair<string, string>> GetHeaders();
 
+        /// <summary>Gets or sets current cache-control header.</summary>
+        string CacheControl { get; set; }
+
         /// <summary>
         /// Event fired before headers are sent.
         /// </summary>

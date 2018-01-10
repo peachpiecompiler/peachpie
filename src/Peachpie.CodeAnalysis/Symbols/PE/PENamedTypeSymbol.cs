@@ -50,22 +50,29 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                if (!this.IsStatic)
-                {
-                    // resolve <ctx> field
-                    var candidates = this.GetMembers(SpecialParameterSymbol.ContextName)    // TODO: _ctx, __ctx
-                        .OfType<FieldSymbol>()
-                        .Where(f => f.DeclaredAccessibility == Accessibility.Protected && !f.IsStatic && f.Type.MetadataName == "Context")
-                        .ToList();
+                IFieldSymbol resolved;
 
-                    Debug.Assert(candidates.Count <= 1);
-                    if (candidates.Count != 0)
+                if (this.IsStatic)
+                {
+                    resolved = null;
+                }
+                else
+                {
+                    resolved = (this.BaseType as IPhpTypeSymbol)?.ContextStore;
+                    if (resolved == null)
                     {
-                        return candidates[0];
+                        // resolve <ctx> field
+                        var possiblemembers =
+                            this.GetMembers(SpecialParameterSymbol.ContextName) // <ctx>
+                            .Concat(this.GetMembers("_ctx")); // _ctx
+
+                        resolved = possiblemembers
+                            .OfType<FieldSymbol>()
+                            .FirstOrDefault(f => f.DeclaredAccessibility == Accessibility.Protected && !f.IsStatic && f.Type.MetadataName == "Context");
                     }
                 }
 
-                return (this.BaseType as IPhpTypeSymbol)?.ContextStore;
+                return resolved;
             }
         }
 

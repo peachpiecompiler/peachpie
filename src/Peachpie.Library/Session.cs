@@ -1,27 +1,321 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using Pchp.Core;
 
 namespace Pchp.Library
 {
+    #region SessionHandlerInterface
+
     /// <summary>
     /// Prototype for creating a custom session handler.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
     public interface SessionHandlerInterface
     {
-        bool close();
-        bool destroy(string session_id);
-        bool gc(long maxlifetime);
+        /// <summary>
+        /// Re-initialize existing session, or creates a new one. Called when a session starts or when session_start() is invoked.
+        /// </summary>
+        /// <param name="save_path">The path where to store/retrieve the session.</param>
+        /// <param name="session_name">The session name.</param>
+        /// <returns>The return value (usually TRUE on success, FALSE on failure). Note this value is returned internally to PHP for processing.</returns>
         bool open(string save_path, string session_name);
-        string read(string session_id);
-        bool write(string session_id, string session_data);
+
+        /// <summary>
+        /// Reads the session data from the session storage, and returns the results. Called right after the session starts
+        /// or when session_start() is called. Please note that before this method is called SessionHandlerInterface::open() is invoked.
+        /// 
+        /// This method is called by PHP itself when the session is started.This method should retrieve the session data
+        /// from storage by the session ID provided.The string returned by this method must be in the same serialized format
+        /// as when originally passed to the SessionHandlerInterface::write() If the record was not found, return an empty string.
+        /// 
+        /// The data returned by this method will be decoded internally by PHP using the unserialization method specified
+        /// in session.serialize_handler.The resulting data will be used to populate the $_SESSION superglobal.
+        /// 
+        /// Note that the serialization scheme is not the same as unserialize() and can be accessed by session_decode().
+        /// </summary>
+        /// <param name="session_id">The session id.</param>
+        /// <returns>Returns an encoded string of the read data. If nothing was read, it must return an empty string. Note this value is returned internally to PHP for processing.</returns>
+        PhpString read(string session_id);
+
+        /// <summary>
+        /// Writes the session data to the session storage. Called by session_write_close(), when session_register_shutdown() fails,
+        /// or during a normal shutdown. Note: SessionHandlerInterface::close() is called immediately after this function.
+        /// 
+        /// PHP will call this method when the session is ready to be saved and closed. It encodes the session data from
+        /// the $_SESSION superglobal to a serialized string and passes this along with the session ID to this method for storage.
+        /// The serialization method used is specified in the session.serialize_handler setting.
+        /// 
+        /// Note this method is normally called by PHP after the output buffers have been closed unless explicitly called by session_write_close()
+        /// </summary>
+        /// <param name="session_id">The session id.</param>
+        /// <param name="session_data">The encoded session data. This data is the result of the PHP internally encoding
+        /// the $_SESSION superglobal to a serialized string and passing it as this parameter. Please note sessions use an alternative serialization method.</param>
+        /// <returns>The return value (usually TRUE on success, FALSE on failure). Note this value is returned internally to PHP for processing.</returns>
+        bool write(string session_id, PhpString session_data);
+
+        /// <summary>
+        /// Closes the current session. This function is automatically executed when closing the session, or explicitly via session_write_close().
+        /// </summary>
+        /// <returns>The return value (usually TRUE on success, FALSE on failure). Note this value is returned internally to PHP for processing.</returns>
+        bool close();
+
+        /// <summary>
+        /// Destroys a session. Called by session_regenerate_id() (with $destroy = TRUE), session_destroy() and when session_decode() fails.
+        /// </summary>
+        /// <param name="session_id">The session ID being destroyed.</param>
+        /// <returns>The return value (usually TRUE on success, FALSE on failure). Note this value is returned internally to PHP for processing.</returns>
+        bool destroy(string session_id);
+
+        /// <summary>
+        /// Cleans up expired sessions. Called by session_start(), based on session.gc_divisor, session.gc_probability and session.gc_maxlifetime settings.
+        /// </summary>
+        /// <param name="maxlifetime">Sessions that have not updated for the last maxlifetime seconds will be removed.</param>
+        /// <returns>The return value (usually TRUE on success, FALSE on failure). Note this value is returned internally to PHP for processing.</returns>
+        bool gc(long maxlifetime);
     }
+
+    #endregion
+
+    #region SessionHandler // file-system based SessionHandlerInterface implementation
+
+    /// <summary>
+    /// Default file-system based session handler implementation.
+    /// Implements <see cref="SessionHandlerInterface"/> to be used in combination with <see cref="Session.session_set_save_handler(SessionHandlerInterface, bool)"/> function.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName)]
+    public class SessionHandler : SessionHandlerInterface
+    {
+        protected readonly Context _ctx;
+
+        public SessionHandler(Context ctx)
+        {
+            _ctx = ctx;
+        }
+
+        public virtual bool open(string save_path, string session_name)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual PhpString read(string session_id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual bool write(string session_id, PhpString session_data)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual bool close()
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual bool destroy(string session_id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual bool gc(long maxlifetime)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual string create_sid()
+        {
+            return Session.session_create_id();
+        }
+    }
+
+    #endregion
 
     [PhpExtension("session")]
     public static class Session
     {
+        #region Nested class: UserHandlerInternal
+
+        /// <summary>
+        /// Implementation of our <see cref="PhpSessionHandler"/> that uses provided <see cref="SessionHandlerInterface"/>.
+        /// </summary>
+        sealed class UserHandlerInternal : PhpSessionHandler
+        {
+            // TODO: static: call _handler.gc() once in a time during closing
+
+            readonly SessionHandlerInterface/*!*/_handler;
+
+            bool _isnewsession;
+            string _lazyid = null;
+            string _name = "PEACHSESSID";
+
+            public UserHandlerInternal(SessionHandlerInterface handler)
+            {
+                _handler = handler;
+            }
+
+            /// <summary>
+            /// PHP name of the user session handler.
+            /// </summary>
+            public override string HandlerName => "user";
+
+            public override PhpArray Load(IHttpPhpContext webctx)
+            {
+                // 1. open
+                if (!_handler.open(System.IO.Path.GetTempPath(), _name))
+                {
+                    return null;
+                }
+
+                // 2. read
+                var str = _handler.read(GetSessionId(webctx));
+                if (str != null)
+                {
+                    return PhpSerialization.unserialize((Context)webctx, default(RuntimeTypeHandle), str).AsArray();    // TODO: session.serialize_handler
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            public override bool Persist(IHttpPhpContext webctx, PhpArray session)
+            {
+                webctx.AddCookie(_name, _lazyid, null); // TODO: lifespan
+
+                //
+                return
+                    // 1. write // TODO: session.serialize_handler
+                    _handler.write(GetSessionId(webctx), PhpSerialization.serialize((Context)webctx, default(RuntimeTypeHandle), (PhpValue)session)) &&
+                    // 2. close
+                    _handler.close();
+            }
+
+            public override void Abandon(IHttpPhpContext webctx)
+            {
+                if (!_isnewsession)
+                {
+                    webctx.AddCookie(_name, string.Empty, DateTimeOffset.UtcNow);
+                }
+
+                // destroy
+                _handler.destroy(GetSessionId(webctx));
+            }
+
+            public override string GetSessionId(IHttpPhpContext webctx)
+            {
+                if (_lazyid == null)
+                {
+                    // TODO: obtain the ID
+                    var sessid = ((Context)webctx).Cookie[_name];
+                    if (Operators.IsEmpty(sessid))
+                    {
+                        _isnewsession = true;
+
+                        if (_handler is SessionHandler legacyhandler)
+                        {
+                            _lazyid = legacyhandler.create_sid();
+                        }
+                        else
+                        {
+                            _lazyid = session_create_id();
+                        }
+                    }
+                    else
+                    {
+                        _isnewsession = false;
+                        _lazyid = sessid.ToStringOrThrow((Context)webctx);
+                    }
+                }
+
+                Debug.Assert(_lazyid != null);
+
+                return _lazyid;
+            }
+
+            public override bool SetSessionId(IHttpPhpContext webctx, string newid)
+            {
+                if (webctx.HeadersSent)
+                {
+                    return false;
+                }
+
+                //
+                _lazyid = newid;
+                _isnewsession = true;
+
+                return true;
+            }
+
+            public override string GetSessionName(IHttpPhpContext webctx) => _name;
+
+            public override bool SetSessionName(IHttpPhpContext webctx, string name)
+            {
+                if (webctx.SessionState != PhpSessionState.Closed)
+                {
+                    // session name cannot be changed after the session started
+                    throw new InvalidOperationException();
+                }
+
+                _name = name;
+                return true;
+            }
+        }
+
+        #endregion
+
+        #region Nested class: CustomSessionHandler
+
+        /// <summary>
+        /// Implementats <see cref="SessionHandlerInterface"/> with callback functions.
+        /// </summary>
+        sealed class CustomSessionHandler : SessionHandlerInterface
+        {
+            readonly Context _ctx;
+            readonly IPhpCallable
+                _open, _close, _read, _write,
+                _destroy, _gc,
+                _create_sid, _validate_sid, _update_timestamp;
+
+            public CustomSessionHandler(
+                Context ctx,
+                IPhpCallable open, IPhpCallable close,
+                IPhpCallable read, IPhpCallable write,
+                IPhpCallable destroy, IPhpCallable gc,
+                IPhpCallable create_sid = null,
+                IPhpCallable validate_sid = null,
+                IPhpCallable update_timestamp = null)
+            {
+                _ctx = ctx;
+
+                _open = open;
+                _close = close;
+                _read = read;
+                _write = write;
+                _destroy = destroy;
+                _gc = gc;
+
+                _create_sid = create_sid;
+                _validate_sid = validate_sid;
+                _update_timestamp = update_timestamp;
+            }
+
+            public bool open(string save_path, string session_name) => (bool)_open.Invoke(_ctx, (PhpValue)save_path, (PhpValue)session_name);
+
+            public bool close() => (bool)_close.Invoke(_ctx, Array.Empty<PhpValue>());
+
+            public PhpString read(string session_id) => _read.Invoke(_ctx, (PhpValue)session_id).ToPhpString(_ctx);
+
+            public bool write(string session_id, PhpString session_data) => (bool)_write.Invoke(_ctx, (PhpValue)session_id, PhpValue.Create(session_data));
+
+            public bool destroy(string session_id) => (bool)_destroy.Invoke(_ctx, (PhpValue)session_id);
+
+            public bool gc(long maxlifetime) => (bool)_gc.Invoke(_ctx, (PhpValue)maxlifetime);
+        }
+
+        #endregion
+
         #region Constants
 
         /// <summary>
@@ -79,7 +373,30 @@ namespace Pchp.Library
         /// <summary>
         /// Get and/or set the current cache limiter
         /// </summary>
-        public static void session_cache_limiter() { throw new NotImplementedException(); }
+        public static string session_cache_limiter(Context ctx, string cache_limiter = null)
+        {
+            var webctx = GetHttpPhpContext(ctx);
+            if (webctx != null)
+            {
+                string result = webctx.CacheControl ?? "public";
+
+                if (!string.IsNullOrEmpty(cache_limiter))
+                {
+                    try
+                    {
+                        webctx.CacheControl = cache_limiter;
+                    }
+                    catch
+                    {
+                        PhpException.Throw(PhpError.Notice, Resources.LibResources.invalid_cache_limiter, cache_limiter);
+                    }
+                }
+
+                return result;
+            }
+
+            return null;
+        }
 
         /// <summary>
         /// Alias of session_write_close
@@ -96,12 +413,28 @@ namespace Pchp.Library
         /// <summary>
         /// Create new session id
         /// </summary>
-        public static void session_create_id() { throw new NotImplementedException(); }
+        public static string session_create_id(string prefix = null)
+        {
+            return string.Concat(prefix, Guid.NewGuid().ToString("N"));
+        }
 
         /// <summary>
         /// Decodes session data from a session encoded string
         /// </summary>
-        public static void session_decode() { throw new NotImplementedException(); }
+        public static bool session_decode(Context ctx, PhpString data)
+        {
+            var session_array = PhpSerialization.unserialize(ctx, default(RuntimeTypeHandle), data).AsArray();  // TODO: session.serialize_handler
+            if (session_array == null)
+            {
+                return false;
+            }
+
+            ctx.Session = session_array;
+            ctx.Globals[PhpSessionHandler.SESSION_Variable] = PhpValue.Create(session_array);
+
+            //
+            return true;
+        }
 
         /// <summary>
         /// Destroys all data registered to a session
@@ -118,7 +451,10 @@ namespace Pchp.Library
         /// <summary>
         /// Encodes the current session data as a session encoded string
         /// </summary>
-        public static void session_encode() { throw new NotImplementedException(); }
+        public static PhpString session_encode(Context ctx)
+        {
+            return PhpSerialization.serialize(ctx, default(RuntimeTypeHandle), (PhpValue)ctx.Session);  // TODO: session.serialize_handler
+        }
 
         /// <summary>
         /// Perform session data garbage collection
@@ -152,7 +488,10 @@ namespace Pchp.Library
                         }
 
                         // change session id
-                        throw new NotSupportedException(nameof(newid));
+                        if (!webctx.SessionHandler.SetSessionId(webctx, newid))
+                        {
+                            throw new NotSupportedException(nameof(newid));
+                        }
                     }
                 }
             }
@@ -253,7 +592,56 @@ namespace Pchp.Library
         /// <summary>
         /// Sets user-level session storage functions
         /// </summary>
-        public static void session_set_save_handler() { throw new NotImplementedException(); }
+        public static bool session_set_save_handler(
+            Context ctx,
+            IPhpCallable open, IPhpCallable close,
+            IPhpCallable read, IPhpCallable write,
+            IPhpCallable destroy, IPhpCallable gc,
+            IPhpCallable create_sid = null,
+            IPhpCallable validate_sid = null,
+            IPhpCallable update_timestamp = null)
+        {
+            if (!ctx.IsWebApplication ||
+                !PhpVariable.IsValidBoundCallback(ctx, open) ||
+                !PhpVariable.IsValidBoundCallback(ctx, close) ||
+                !PhpVariable.IsValidBoundCallback(ctx, read) ||
+                !PhpVariable.IsValidBoundCallback(ctx, write) ||
+                !PhpVariable.IsValidBoundCallback(ctx, destroy) ||
+                !PhpVariable.IsValidBoundCallback(ctx, gc))
+            {
+                return false;
+            }
+
+            session_set_save_handler(
+                ctx,
+                sessionhandler: new CustomSessionHandler(ctx,
+                    open, close, read, write, destroy, gc,
+                    create_sid: create_sid, validate_sid: validate_sid, update_timestamp: update_timestamp),
+                register_shutdown: false);
+            return true;
+        }
+
+        /// <summary>
+        /// Sets user-level session storage functions
+        /// </summary>
+        public static void session_set_save_handler(Context ctx, SessionHandlerInterface sessionhandler, bool register_shutdown = true)
+        {
+            if (sessionhandler == null)
+            {
+                throw new ArgumentNullException(nameof(sessionhandler));
+            }
+
+            var webctx = ctx.HttpPhpContext;
+            if (webctx != null)
+            {
+                webctx.SessionHandler = new UserHandlerInternal(sessionhandler);
+
+                if (register_shutdown)
+                {
+                    session_register_shutdown(ctx);
+                }
+            }
+        }
 
         /// <summary>
         /// Start new or resume existing session

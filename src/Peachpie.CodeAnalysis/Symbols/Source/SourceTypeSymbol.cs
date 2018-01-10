@@ -231,20 +231,8 @@ namespace Pchp.CodeAnalysis.Symbols
                                 }
                                 else if (a is TraitsUse.TraitAdaptationAlias alias)
                                 {
-                                    // Get the qualified name of the trait, respecting the current namespace
-                                    QualifiedName qname;
-                                    if (a.TraitMemberName.Item1.HasValue)
-                                    {
-                                        qname = a.TraitMemberName.Item1.QualifiedName;
-                                        if (ContainingType.FullName.Namespaces.Length > 0 && !qname.IsFullyQualifiedName)
-                                        {
-                                            qname = new QualifiedName(qname.Name, ContainingType.FullName.Namespaces.Append(qname.Namespaces), true);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        qname = phpt.FullName;
-                                    }
+                                    // add an alias to the map:
+                                    var qname = a.TraitMemberName.Item1 != null ? a.TraitMemberName.Item1.QualifiedName.Value : phpt.FullName;
 
                                     // add an alias to the map:
                                     if (sourcemembers.TryGetValue(new MemberQualifiedName(qname, membername), out MethodSymbol s))
@@ -1142,23 +1130,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override IEnumerable<IMethodSymbol> GetMethodsToEmit()
         {
-            return EnsureMembers().OfType<IMethodSymbol>()
-                .Concat(InstanceConstructors);
+            return InstanceConstructors.Concat(EnsureMembers().OfType<IMethodSymbol>());
         }
 
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()
         {
-            foreach (var f in GetMembers().OfType<FieldSymbol>())
-            {
-                if (f.OriginalDefinition != f)
-                {
-                    // field redeclares its parent member, discard
-                    continue;
-                }
-
-                yield return f;
-            }
-
             // special fields
             if (ReferenceEquals(ContextStore?.ContainingType, this))
             {
@@ -1174,6 +1150,17 @@ namespace Pchp.CodeAnalysis.Symbols
             foreach (var t in this.TraitUses)
             {
                 yield return t.TraitInstanceField;
+            }
+
+            foreach (var f in GetMembers().OfType<FieldSymbol>())
+            {
+                if (f.OriginalDefinition != f)
+                {
+                    // field redeclares its parent member, discard
+                    continue;
+                }
+
+                yield return f;
             }
         }
 

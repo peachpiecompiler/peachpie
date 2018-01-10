@@ -162,6 +162,12 @@ namespace Peachpie.RequestHandler
             }
         }
 
+        public string CacheControl
+        {
+            get => _httpctx.Response.CacheControl;
+            set => _httpctx.Response.CacheControl = value;    // TOOD: Response.Cache.SetCacheability
+        }
+
         public event Action HeadersSending
         {
             add
@@ -240,9 +246,18 @@ namespace Peachpie.RequestHandler
         /// </summary>
         PhpSessionHandler IHttpPhpContext.SessionHandler
         {
-            get => AspNetSessionHandler.Default;
-            set => throw new NotSupportedException();
+            get => _sessionhandler ?? AspNetSessionHandler.Default;
+            set
+            {
+                if (_sessionhandler != null && _sessionhandler != value)
+                {
+                    _sessionhandler.CloseSession(this, this, abandon: true);
+                }
+
+                _sessionhandler = value;
+            }
         }
+        PhpSessionHandler _sessionhandler;
 
         /// <summary>
         /// Gets or sets session state.
