@@ -96,6 +96,11 @@ namespace Pchp.Core
         public abstract string GetSessionId(IHttpPhpContext webctx);
 
         /// <summary>
+        /// Sets the session ID (SID constant).
+        /// </summary>
+        public virtual bool SetSessionId(IHttpPhpContext webctx, string newid) => false;
+
+        /// <summary>
         /// Gets value indicating the sessions are configured and available to use.
         /// </summary>
         public virtual bool IsEnabled(IHttpPhpContext webctx) => true;

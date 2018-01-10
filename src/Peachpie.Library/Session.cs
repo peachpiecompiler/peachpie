@@ -234,6 +234,20 @@ namespace Pchp.Library
                 return _lazyid;
             }
 
+            public override bool SetSessionId(IHttpPhpContext webctx, string newid)
+            {
+                if (webctx.HeadersSent)
+                {
+                    return false;
+                }
+
+                //
+                _lazyid = newid;
+                _isnewsession = true;
+
+                return true;
+            }
+
             public override string GetSessionName(IHttpPhpContext webctx) => _name;
 
             public override bool SetSessionName(IHttpPhpContext webctx, string name)
@@ -474,7 +488,10 @@ namespace Pchp.Library
                         }
 
                         // change session id
-                        throw new NotSupportedException(nameof(newid));
+                        if (!webctx.SessionHandler.SetSessionId(webctx, newid))
+                        {
+                            throw new NotSupportedException(nameof(newid));
+                        }
                     }
                 }
             }
