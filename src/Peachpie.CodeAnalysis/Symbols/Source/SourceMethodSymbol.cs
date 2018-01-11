@@ -226,7 +226,8 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (_syntax.Body == null && !_type.IsInterface)
                 {
-                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.HeadingSpan, Devsense.PHP.Errors.Errors.NonAbstractMethodWithoutBody));
+                    diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.HeadingSpan, Devsense.PHP.Errors.Errors.NonAbstractMethodWithoutBody,
+                        _type.FullName.ToString(), name.Value));
                 }
             }
 
