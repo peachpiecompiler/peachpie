@@ -8,6 +8,8 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Pchp.Core.Reflection;
+using System.Text;
+using System.Net;
 
 namespace Pchp.Library.Streams
 {
@@ -463,8 +465,8 @@ namespace Pchp.Library.Streams
                 {
                     case FileStreamWrapper.scheme:
                         return (SystemStreamWrappers[scheme] = new FileStreamWrapper());
-                    //case HttpStreamWrapper.scheme:
-                    //    return (SystemStreamWrappers[scheme] = new HttpStreamWrapper());
+                    case HttpStreamWrapper.scheme:
+                        return (SystemStreamWrappers[scheme] = new HttpStreamWrapper());
                     case InputOutputStreamWrapper.scheme:
                         return (SystemStreamWrappers[scheme] = new InputOutputStreamWrapper());
                 }
@@ -606,7 +608,6 @@ namespace Pchp.Library.Streams
 
             return new NativeStream(ctx, stream, this, ao, path, context);
         }
-
 
         #endregion
 
@@ -1086,6 +1087,269 @@ namespace Pchp.Library.Streams
             }
             return false;
         }
+
+        #endregion
+    }
+
+    #endregion
+
+    #region HTTP Stream Wrapper
+
+    /// <summary>
+    /// Derived from <see cref="StreamWrapper"/>, this class provides access to 
+    /// remote files using the http protocol.
+    /// </summary>
+    public class HttpStreamWrapper : StreamWrapper
+    {
+        #region StreamWrapper overrides
+
+        public override PhpStream Open(Context ctx, ref string path, string mode, StreamOpenOptions options, StreamContext context)
+        {
+            //
+            // verify parameters
+            //
+            Debug.Assert(path != null);
+
+            if (mode[0] != 'r')
+            {
+                PhpException.Throw(PhpError.Warning, ErrResources.stream_open_write_unsupported, FileSystemUtils.StripPassword(path));
+                return null;
+            }
+
+            StreamAccessOptions ao;
+            if (!ParseMode(ctx, mode, options, out ao) || !CheckOptions(ao, FileAccess.Read, path))
+            {
+                return null;
+            }
+
+            try
+            {
+                //
+                // create HTTP request
+                //
+                var request = WebRequest.Create(path) as HttpWebRequest;
+                if (request == null)
+                {
+                    // Not a HTTP URL.
+                    PhpException.Throw(PhpError.Warning, ErrResources.stream_url_invalid, FileSystemUtils.StripPassword(path));
+                    return null;
+                }
+
+                //
+                // apply stream context parameters
+                //
+                ApplyContext(ctx, request, context, out double dtimeout);
+
+                //
+                // get response synchronously
+                //
+
+                var response_async = request.GetResponseAsync();
+                if (response_async.Wait((int)(dtimeout * 1000)))
+                {
+                    var httpResponse = response_async.Result;
+                    var httpStream = httpResponse.GetResponseStream();
+
+                    //
+                    // create the PhpStream
+                    //
+                    return new NativeStream(ctx, httpStream, this, ao, path, context)
+                    {
+                        WrapperSpecificData = CreateWrapperData((HttpWebResponse)httpResponse)
+                    };
+                }
+                else
+                {
+                    // timeout:
+                    PhpException.Throw(PhpError.Warning, ErrResources.stream_error, "timeout"); // TODO: correct error message
+                    return null;
+
+                }
+
+                // EX: check for StreamAccessOptions.Exclusive (N/A)
+            }
+            catch (UriFormatException)
+            {
+                PhpException.Throw(PhpError.Warning, ErrResources.stream_url_invalid, FileSystemUtils.StripPassword(path));
+            }
+            catch (NotSupportedException)
+            {
+                // "Any attempt is made to access the method, when the method is not overridden in a descendant class."
+                PhpException.Throw(PhpError.Warning, ErrResources.stream_url_method_invalid, FileSystemUtils.StripPassword(path));
+            }
+            catch (Exception e)
+            {
+                PhpException.Throw(PhpError.Warning, ErrResources.stream_error, FileSystemUtils.StripPassword(path), e.Message);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Init the parameters of the HttpWebRequest, use the StreamCOntext and/or default values.
+        /// </summary>
+        static void ApplyContext(Context ctx, HttpWebRequest request, StreamContext context, out double dtimeout)
+        {
+            var config = ctx.Configuration.Core;
+
+            //
+            // timeout.
+            //
+            var timeout = context.GetOption(scheme, "timeout");
+            dtimeout = (!timeout.IsEmpty) ? timeout.ToDouble() : config.DefaultSocketTimeout;
+            // request.ReadWriteTimeout = (int)(dtimeout * 1000); // to be used by Task.Wait
+
+            ////
+            //// TODO: max_redirects
+            ////
+            //var max_redirects = context.GetOption(scheme, "max_redirects");
+            //var imax_redirects = (!max_redirects.IsEmpty) ? max_redirects.ToLong() : 20;// default: 20
+            //if (imax_redirects > 1)
+            //    request.MaximumAutomaticRedirections = imax_redirects;
+            //else
+            //    request.AllowAutoRedirect = false;
+
+            ////
+            //// TODO: protocol_version
+            ////
+            //var protocol_version = context.GetOption(scheme, "protocol_version");
+            //double dprotocol_version = (!protocol_version.IsEmpty) ? protocol_version.ToDouble() : 1.0;// default: 1.0
+            //request.ProtocolVersion = new Version(dprotocol_version.ToString("F01", System.Globalization.CultureInfo.InvariantCulture));
+
+            //
+            // method - GET, POST, or any other HTTP method supported by the remote server.
+            //
+            string method = PhpVariable.AsString(context.GetOption(scheme, "method"));
+            if (method != null)
+            {
+                request.Method = method;
+            }
+
+            //
+            // user_agent - Value to send with User-Agent: header. This value will only be used if user-agent is not specified in the header context option above.  php.ini setting: user_agent  
+            //
+            var agent = context.GetOption(scheme, "user_agent").AsString() ?? config.UserAgent;
+            if (agent != null)
+            {
+                request.Headers["User-Agent"] = agent;
+            }
+
+            // TODO: proxy - URI specifying address of proxy server. (e.g. tcp://proxy.example.com:5100 ).    
+            // TODO: request_fulluri - When set to TRUE, the entire URI will be used when constructing the request. (i.e. GET http://www.example.com/path/to/file.html HTTP/1.0). While this is a non-standard request format, some proxy servers require it.  FALSE 
+            // TODO: ssl -> array(verify_peer,verify_host)
+            //
+            // header - Additional headers to be sent during request. Values in this option will override other values (such as User-agent:, Host:, and Authentication:).    
+            //
+            var header = context.GetOption(scheme, "header").AsString();
+            if (header != null)
+            {
+                // EX: Use the individual headers, respect the system restricted-header list?
+                string[] lines = header.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (string line in lines)
+                {
+                    int separator = line.IndexOf(':');
+                    if (separator <= 0) continue;
+                    string name = line.Substring(0, separator).Trim().ToLowerInvariant();
+                    string value = line.Substring(separator + 1, line.Length - separator - 1).Trim();
+
+                    switch (name)
+                    {
+                        case "content-type":
+                            request.ContentType = value;
+                            break;
+                        //case "content-length":
+                        //    request.ContentLength = long.Parse(value);
+                        //    break;
+                        //case "user-agent":
+                        //    request.UserAgent = value;
+                        //    break;
+                        case "accept":
+                            request.Accept = value;
+                            break;
+                        //case "connection":
+                        //    request.Connection = value;
+                        //    break;
+                        //case "expect":
+                        //    request.Expect = value;
+                        //    break;
+                        case "date":
+                            request.Headers["Date"] =
+                                System.DateTime.Parse(value, System.Globalization.CultureInfo.InvariantCulture)
+                                .ToUniversalTime()
+                                .ToString("R", System.Globalization.CultureInfo.InvariantCulture);
+                            break;
+                        //case "host":
+                        //    request.Host = value;
+                        //    break;
+                        //case "if-modified-since":
+                        //    request.IfModifiedSince = System.Convert.ToDateTime(value);
+                        //    break;
+                        //case "range":
+                        //    request.AddRange(System.Convert.ToInt32(value));
+                        //    break;
+                        //case "referer":
+                        //    request.Referer = value;
+                        //    break;
+                        //case "transfer-encoding":
+                        //    request.TransferEncoding = value;
+                        //    break;
+
+                        default:
+                            request.Headers[name] = value;
+                            break;
+                    }
+                }
+            }
+
+            //
+            // content - Additional data to be sent after the headers. Typically used with POST or PUT requests.    
+            //
+            var content = context.GetOption(scheme, "content").AsString();
+            if (content != null)
+            {
+                // Review - encoding?
+                byte[] formBytes = Encoding.UTF8.GetBytes(content);
+
+                using (var body = request.GetRequestStreamAsync().Result)
+                {
+                    body.Write(formBytes, 0, formBytes.Length);
+                }
+            }
+        }
+
+        /// <summary>
+        /// see stream_get_meta_data()["wrapper_data"]
+        /// </summary>
+        /// <param name="response"></param>
+        /// <returns></returns>
+        static object CreateWrapperData(HttpWebResponse response)
+        {
+            if (response == null)
+                return null;
+
+            var array = new PhpArray();
+
+            // TODO: actual protocol version from HttpWebResponse
+            array.Add("HTTP/" + "1.0"/*response.ProtocolVersion.ToString() */ + " " + (int)response.StatusCode + " " + response.StatusDescription);
+
+            foreach (string key in response.Headers.AllKeys)
+            {
+                array.Add(key + ": " + response.Headers[key]);
+            }
+
+            return array;
+        }
+
+        public override string Label { get { return "HTTP"; } }
+
+        public override string Scheme { get { return scheme; } }
+
+        public override bool IsUrl { get { return true; } }
+
+        /// <summary>
+        /// The protocol portion of URL handled by this wrapper.
+        /// </summary>
+        public const string scheme = "http";
 
         #endregion
     }
