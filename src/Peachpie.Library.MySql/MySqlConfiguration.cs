@@ -8,7 +8,7 @@ using static Pchp.Library.StandardPhpOptions;
 
 namespace Peachpie.Library.MySql
 {
-    class MySqlConfiguration : IPhpConfiguration
+    sealed class MySqlConfiguration : IPhpConfiguration
     {
         IPhpConfiguration IPhpConfiguration.Copy() => (MySqlConfiguration)this.MemberwiseClone();
 

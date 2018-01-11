@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using Pchp.Core;
+using static Pchp.Library.PhpSerialization;
+using static Pchp.Library.StandardPhpOptions;
 
 namespace Pchp.Library
 {
@@ -132,9 +134,49 @@ namespace Pchp.Library
 
     #endregion
 
-    [PhpExtension("session")]
+    #region SessionConfiguration
+
+    sealed class SessionConfiguration : IPhpConfiguration
+    {
+        public const string DefaultSessionName = "PEACHSESSID";
+
+        public string ExtensionName => "session";
+
+        public IPhpConfiguration Copy() => (IPhpConfiguration)this.MemberwiseClone();
+
+        public string SerializeHandler = "php";
+
+        public string SessionName = DefaultSessionName;
+
+        internal PhpValue Gsr(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
+        {
+            switch (option.ToLowerInvariant())
+            {
+                case "session.serialize_handler":
+                    return (PhpValue)GetSet(ref SerializeHandler, "php", value, action);
+
+                case "session.name":
+                    return (PhpValue)GetSet(ref SessionName, DefaultSessionName, value, action);
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(option));
+            }
+        }
+    }
+
+    #endregion
+
+    [PhpExtension("session", Registrator = typeof(Session.Registrator))]
     public static class Session
     {
+        internal class Registrator
+        {
+            public Registrator()
+            {
+                Context.RegisterConfiguration(new SessionConfiguration());
+            }
+        }
+
         #region Nested class: UserHandlerInternal
 
         /// <summary>
@@ -148,7 +190,7 @@ namespace Pchp.Library
 
             bool _isnewsession;
             string _lazyid = null;
-            string _name = "PEACHSESSID";
+            string _lazyname;
 
             public UserHandlerInternal(SessionHandlerInterface handler)
             {
@@ -163,7 +205,7 @@ namespace Pchp.Library
             public override PhpArray Load(IHttpPhpContext webctx)
             {
                 // 1. open
-                if (!_handler.open(System.IO.Path.GetTempPath(), _name))
+                if (!_handler.open(System.IO.Path.GetTempPath(), GetSessionName(webctx)))
                 {
                     return null;
                 }
@@ -172,7 +214,8 @@ namespace Pchp.Library
                 var str = _handler.read(GetSessionId(webctx));
                 if (str != null)
                 {
-                    return PhpSerialization.unserialize((Context)webctx, default(RuntimeTypeHandle), str).AsArray();    // TODO: session.serialize_handler
+                    var handler = GetSerializeHandler((Context)webctx);
+                    return handler.Deserialize((Context)webctx, str, default(RuntimeTypeHandle)).AsArray();
                 }
                 else
                 {
@@ -182,12 +225,15 @@ namespace Pchp.Library
 
             public override bool Persist(IHttpPhpContext webctx, PhpArray session)
             {
-                webctx.AddCookie(_name, _lazyid, null); // TODO: lifespan
+                webctx.AddCookie(GetSessionName(webctx), _lazyid, null); // TODO: lifespan
+
+                //
+                var handler = GetSerializeHandler((Context)webctx);
 
                 //
                 return
-                    // 1. write // TODO: session.serialize_handler
-                    _handler.write(GetSessionId(webctx), PhpSerialization.serialize((Context)webctx, default(RuntimeTypeHandle), (PhpValue)session)) &&
+                    // 1. write
+                    _handler.write(GetSessionId(webctx), handler.Serialize((Context)webctx, (PhpValue)session, default(RuntimeTypeHandle))) &&
                     // 2. close
                     _handler.close();
             }
@@ -196,7 +242,7 @@ namespace Pchp.Library
             {
                 if (!_isnewsession)
                 {
-                    webctx.AddCookie(_name, string.Empty, DateTimeOffset.UtcNow);
+                    webctx.AddCookie(GetSessionName(webctx), string.Empty, DateTimeOffset.UtcNow);
                 }
 
                 // destroy
@@ -207,8 +253,8 @@ namespace Pchp.Library
             {
                 if (_lazyid == null)
                 {
-                    // TODO: obtain the ID
-                    var sessid = ((Context)webctx).Cookie[_name];
+                    // obtain the ID from cookies:
+                    var sessid = ((Context)webctx).Cookie[GetSessionName(webctx)];
                     if (Operators.IsEmpty(sessid))
                     {
                         _isnewsession = true;
@@ -248,7 +294,15 @@ namespace Pchp.Library
                 return true;
             }
 
-            public override string GetSessionName(IHttpPhpContext webctx) => _name;
+            public override string GetSessionName(IHttpPhpContext webctx)
+            {
+                if (_lazyname == null)
+                {
+                    _lazyname = ((Context)webctx).Configuration.Get<SessionConfiguration>().SessionName ?? SessionConfiguration.DefaultSessionName;
+                }
+
+                return _lazyname;
+            }
 
             public override bool SetSessionName(IHttpPhpContext webctx, string name)
             {
@@ -258,7 +312,7 @@ namespace Pchp.Library
                     throw new InvalidOperationException();
                 }
 
-                _name = name;
+                _lazyname = name;
                 return true;
             }
         }
@@ -351,6 +405,32 @@ namespace Pchp.Library
             return webctx;
         }
 
+        /// <summary>
+        /// Gets handler to be used to serialize and deserialize session data.
+        /// </summary>
+        /// <returns><see cref="Serializer"/> to be used to serialize and deserialize session data. Cannot be <c>null</c>.</returns>
+        static Serializer GetSerializeHandler(Context ctx)
+        {
+            //var handlername = ctx.Configuration.Get<SessionConfiguration>().SerializeHandler;
+            //if (handlername != null)
+            //{
+            //    if (handlername.EqualsOrdinalIgnoreCase("php") ||
+            //        handlername.EqualsOrdinalIgnoreCase("php_binary") ||
+            //        handlername.EqualsOrdinalIgnoreCase("php_serialize"))
+            //    {
+            //        return PhpSerializer.Instance;
+            //    }
+
+            //    if (handlername.EqualsOrdinalIgnoreCase("json"))
+            //    {
+            //        return new JsonSerializer();
+            //    }
+            //}
+
+            // default:
+            return PhpSerializer.Instance;
+        }
+
         #endregion
 
         /// <summary>
@@ -423,7 +503,7 @@ namespace Pchp.Library
         /// </summary>
         public static bool session_decode(Context ctx, PhpString data)
         {
-            var session_array = PhpSerialization.unserialize(ctx, default(RuntimeTypeHandle), data).AsArray();  // TODO: session.serialize_handler
+            var session_array = GetSerializeHandler(ctx).Deserialize(ctx, data, default(RuntimeTypeHandle)).AsArray();
             if (session_array == null)
             {
                 return false;
@@ -453,7 +533,7 @@ namespace Pchp.Library
         /// </summary>
         public static PhpString session_encode(Context ctx)
         {
-            return PhpSerialization.serialize(ctx, default(RuntimeTypeHandle), (PhpValue)ctx.Session);  // TODO: session.serialize_handler
+            return GetSerializeHandler(ctx).Serialize(ctx, (PhpValue)ctx.Session, default(RuntimeTypeHandle));
         }
 
         /// <summary>
@@ -710,6 +790,5 @@ namespace Pchp.Library
         /// Write session data and end session
         /// </summary>
         public static void session_write_close(Context ctx) => session_commit(ctx);
-
     }
 }
