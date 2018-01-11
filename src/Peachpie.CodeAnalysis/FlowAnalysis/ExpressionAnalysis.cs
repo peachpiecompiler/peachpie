@@ -722,6 +722,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.Identical:
                 case Operations.NotIdentical:
 
+                    if (x.Left.IsConstant() && x.Right.IsConstant())
+                    {
+                        x.ConstantValue = ResolveComparison(x.Operation, x.Left.ConstantValue.Value, x.Right.ConstantValue.Value);
+                    }
+
                     if (branch != ConditionBranch.AnyResult)
                     {
                         if (x.Right.ConstantValue.HasValue && x.Left is BoundReferenceExpression boundLeft)
@@ -740,6 +745,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.LessThan:
                 case Operations.GreaterThanOrEqual:
                 case Operations.LessThanOrEqual:
+
+                    if (x.Left.IsConstant() && x.Right.IsConstant())
+                    {
+                        x.ConstantValue = ResolveComparison(x.Operation, x.Left.ConstantValue.Value, x.Right.ConstantValue.Value);
+                    }
 
                     // comparison with long value
                     if (branch == ConditionBranch.ToTrue && IsLongOnly(x.Right))
@@ -764,6 +774,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 default:
                     throw ExceptionUtilities.Unreachable;
             }
+        }
+
+        /// <summary>
+        /// If possible, resolve the comparison operation in compile-time.
+        /// </summary>
+        static Optional<object> ResolveComparison(Operations op, object lvalue, object rvalue)
+        {
+            // TODO
+
+            //
+            return default(Optional<object>);
         }
 
         /// <summary>

@@ -18,7 +18,7 @@ namespace Pchp.Library
         public const int PHP_VERSION_ID = PHP_MAJOR_VERSION * 10000 + PHP_MINOR_VERSION * 100 + PHP_RELEASE_VERSION;
         public static readonly string PHP_VERSION = PHP_MAJOR_VERSION + "." + PHP_MINOR_VERSION + "." + PHP_RELEASE_VERSION + PHP_EXTRA_VERSION;
 
-        public const string PHP_EXTRA_VERSION = "-peach";
+        public const string PHP_EXTRA_VERSION = "-peachpie";
         public static readonly string PHP_OS = CurrentPlatform.IsWindows ? "WINNT" : CurrentPlatform.IsLinux ? "Linux" : CurrentPlatform.IsOsx ? "Darwin" : "Unix";
 
         /// <summary>
