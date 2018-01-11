@@ -184,9 +184,11 @@ namespace Pchp.Library
         /// </summary>
         sealed class UserHandlerInternal : PhpSessionHandler
         {
-            // TODO: static: call _handler.gc() once in a time during closing
-
             readonly SessionHandlerInterface/*!*/_handler;
+
+            static System.DateTime _gc_last = System.DateTime.UtcNow;
+            static readonly object _gc_lock = new object();
+            const int _gc_maxlifetime = 1440;
 
             bool _isnewsession;
             string _lazyid = null;
@@ -198,19 +200,44 @@ namespace Pchp.Library
             }
 
             /// <summary>
+            /// Checks whether to perform gc.
+            /// </summary>
+            static bool GarbageCollectionCheck()
+            {
+                var perform_gc = _gc_last.AddSeconds(_gc_maxlifetime) < System.DateTime.UtcNow;
+                if (perform_gc)
+                {
+                    lock (_gc_lock) // double-checked lock
+                    {
+                        perform_gc = _gc_last.AddSeconds(_gc_maxlifetime) < System.DateTime.UtcNow;
+                        _gc_last = System.DateTime.UtcNow;
+                    }
+                }
+
+                //
+                return perform_gc;
+            }
+
+            /// <summary>
             /// PHP name of the user session handler.
             /// </summary>
             public override string HandlerName => "user";
 
             public override PhpArray Load(IHttpPhpContext webctx)
             {
-                // 1. open
+                // 1. gc
+                if (GarbageCollectionCheck())
+                {
+                    _handler.gc(_gc_maxlifetime);
+                }
+
+                // 2. open
                 if (!_handler.open(System.IO.Path.GetTempPath(), GetSessionName(webctx)))
                 {
                     return null;
                 }
 
-                // 2. read
+                // 3. read
                 var str = _handler.read(GetSessionId(webctx));
                 if (str != null)
                 {
