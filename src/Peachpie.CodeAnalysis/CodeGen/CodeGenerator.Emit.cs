@@ -2013,10 +2013,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(expr);
 
-            // check if the value won't be an empty string:
-            if (expr.ConstantValue.HasValue && ExpressionsExtension.IsEmptyStringValue(expr.ConstantValue.Value))
+            if (_optimizations == OptimizationLevel.Release)
             {
-                return;
+                // check if the value won't be an empty string:
+                if (expr.ConstantValue.HasValue && ExpressionsExtension.IsEmptyStringValue(expr.ConstantValue.Value))
+                {
+                    return;
+                }
             }
 
             // Template: <ctx>.Echo(expr);
