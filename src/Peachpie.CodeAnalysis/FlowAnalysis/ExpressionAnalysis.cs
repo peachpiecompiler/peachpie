@@ -1251,12 +1251,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // symbol might be ErrorSymbol
 
                 x.TargetMethod = new OverloadsList(AsMethodOverloads(symbol)).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
-
-                //
-                AnalysisFacts.HandleFunctionCall(x, this, branch);
             }
 
             BindTargetMethod(x);
+
+            // if possible resolve ConstantValue and TypeRefMask:
+            AnalysisFacts.HandleSpecialFunctionCall(x, this, branch);
         }
 
         public override void VisitInstanceFunctionCall(BoundInstanceFunctionCall x)

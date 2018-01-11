@@ -16,7 +16,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Resolves value of the function call in compile time if possible and updates the variable type if necessary
         /// </summary>
-        public static void HandleFunctionCall(BoundGlobalFunctionCall call, ExpressionAnalysis analysis, ConditionBranch branch)
+        public static void HandleSpecialFunctionCall(BoundGlobalFunctionCall call, ExpressionAnalysis analysis, ConditionBranch branch)
         {
             // Only direct function names
             if (!HasSimpleName(call, out string name))
@@ -94,6 +94,35 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                         call.ConstantValue = ConstantValueExtensions.AsOptional(true);
                                         return;
                                     }
+                                }
+                            }
+                        }
+                        break;
+
+                    case "defined":
+                    case "constant":
+                        if (args.Length == 1)
+                        {
+                            var const_name = args[0].Value.ConstantValue.Value as string;
+                            if (const_name != null)
+                            {
+                                // TODO: const_name in form of "{CLASS}::{NAME}"
+
+                                var tmp = analysis.Model.ResolveConstant(const_name);
+                                if (tmp is PEFieldSymbol symbol)    // TODO: also user constants defined in the same scope
+                                {
+                                    if (name == "defined")
+                                    {
+                                        call.ConstantValue = ConstantValueExtensions.AsOptional(true);
+                                    }
+                                    else // name == "constant"
+                                    {
+                                        var cvalue = symbol.GetConstantValue(false);
+                                        call.ConstantValue = (cvalue != null) ? new Optional<object>(cvalue.Value) : null;
+                                        call.TypeRefMask = TypeRefFactory.CreateMask(analysis.TypeCtx, symbol.Type);
+                                    }
+
+                                    return;
                                 }
                             }
                         }
@@ -385,8 +414,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (boundvar.Name != null)  // direct variable name
             {
-                if (boundvar.VariableKind == VariableKind.LocalVariable || 
-                    boundvar.VariableKind == VariableKind.Parameter || 
+                if (boundvar.VariableKind == VariableKind.LocalVariable ||
+                    boundvar.VariableKind == VariableKind.Parameter ||
                     boundvar.VariableKind == VariableKind.LocalTemporalVariable)
                 {
                     varHandle = state.GetLocalHandle(new VariableName(boundvar.Name));
