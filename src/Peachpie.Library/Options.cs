@@ -95,12 +95,14 @@ namespace Pchp.Library
                 DefaultValue;
         }
 
-        static readonly GetSetDelegate EmptyGsr = new GetSetDelegate((ctx, s, name, value, action) => PhpValue.Null);
+        static readonly GetSetDelegate s_emptyGsr = new GetSetDelegate((ctx, s, name, value, action) => PhpValue.Null);
 
         static PhpValue GsrCore(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
         {
             switch (option.ToLowerInvariant())
             {
+                case "allow_url_fopen":
+                    return (PhpValue)GetSet(ref config.Core.AllowUrlFopen, true, value, action);
                 case "include_path":
                     return (PhpValue)GetSet(ref config.Core.IncludePaths, ".", value, action);
 
@@ -157,107 +159,114 @@ namespace Pchp.Library
 
         static void RegisterStandard()
         {
-            Register("allow_call_time_pass_reference", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("allow_url_fopen", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("allow_webdav_methods", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("always_populate_raw_post_data", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("arg_separator.input", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("arg_separator.output", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
-            Register("asp_tags", IniFlags.Supported | IniFlags.Global, EmptyGsr);
-            Register("assert.active", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("assert.bail", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("assert.callback", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("assert.quiet_eval", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("assert.warning", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("async_send", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
-            Register("auto_append_file", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("auto_detect_line_endings", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
-            Register("auto_prepend_file", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("browscap", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("cgi.force_redirect", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("cgi.redirect_status_env", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("cgi.rfc2616_headers", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("child_terminate", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
-            Register("debugger.enabled", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("debugger.host", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("debugger.port", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("default_charset", IniFlags.Supported | IniFlags.Local | IniFlags.Http, EmptyGsr);
-            Register("default_mimetype", IniFlags.Supported | IniFlags.Local | IniFlags.Http, EmptyGsr);
-            Register("default_socket_timeout", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("define_syslog_variables", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
-            Register("disable_classes", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("disable_functions", IniFlags.Supported | IniFlags.Global, EmptyGsr);
-            Register("display_errors", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("display_startup_errors", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
-            Register("doc_root", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("enable_dl", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("engine", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
-            Register("error_append_string", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("error_log", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("error_prepend_string", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("error_reporting", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("expose_php", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("extension_dir", IniFlags.Supported | IniFlags.Global, EmptyGsr);
-            Register("fastcgi.impersonate", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("file_uploads", IniFlags.Supported | IniFlags.Global, EmptyGsr);
-            Register("from", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("gpc_order", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
-            Register("html_errors", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("ignore_repeated_errors", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
-            Register("ignore_repeated_source", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
-            Register("ignore_user_abort", IniFlags.Supported | IniFlags.Local | IniFlags.Http, EmptyGsr);
-            Register("implicit_flush", IniFlags.Supported | IniFlags.Global, EmptyGsr);
-            Register("include_path", IniFlags.Supported | IniFlags.Local, GsrCore);
-            Register("last_modified", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
-            Register("log_errors", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("log_errors_max_len", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
-            Register("magic_quotes_gpc", IniFlags.Supported | IniFlags.Global, EmptyGsr);
-            Register("magic_quotes_runtime", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("magic_quotes_sybase", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("max_execution_time", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("max_input_time", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("memory_limit", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("mime_magic.magicfile", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("open_basedir", IniFlags.Supported | IniFlags.Global, EmptyGsr);
-            Register("output_buffering", IniFlags.Supported | IniFlags.Global, EmptyGsr);
-            Register("output_handler", IniFlags.Supported | IniFlags.Global, EmptyGsr);
-            Register("post_max_size", IniFlags.Supported | IniFlags.Global | IniFlags.Http, GsrCore);
-            Register("precision", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
-            Register("register_argc_argv", IniFlags.Supported | IniFlags.Global, EmptyGsr);
-            Register("register_globals", IniFlags.Supported | IniFlags.Global, EmptyGsr);
-            Register("register_long_arrays", IniFlags.Supported | IniFlags.Global, EmptyGsr);
-            Register("report_memleaks", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("safe_mode", IniFlags.Supported | IniFlags.Global, EmptyGsr);
-            Register("safe_mode_allowed_env_vars", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("safe_mode_exec_dir", IniFlags.Supported | IniFlags.Global, EmptyGsr);
-            Register("safe_mode_gid", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("safe_mode_include_dir", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("safe_mode_protected_env_vars", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("session.auto_start", IniFlags.Supported | IniFlags.Global | IniFlags.Http, EmptyGsr);
-            Register("session.save_handler", IniFlags.Supported | IniFlags.Local | IniFlags.Http, EmptyGsr);
-            Register("session.serialize_handler", IniFlags.Supported | IniFlags.Local | IniFlags.Http, GsrSession);
-            Register("session.name", IniFlags.Supported | IniFlags.Global | IniFlags.Http, GsrSession);
-            Register("short_open_tag", IniFlags.Supported | IniFlags.Global, EmptyGsr);
-            Register("sql.safe_mode", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("track_errors", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
-            Register("unserialize_callback_func", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("upload_max_filesize", IniFlags.Supported | IniFlags.Global | IniFlags.Http, GsrCore);
-            Register("upload_tmp_dir", IniFlags.Supported | IniFlags.Global, EmptyGsr);
-            Register("url_rewriter.tags", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
-            Register("user_agent", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("user_dir", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("variables_order", IniFlags.Supported | IniFlags.Local, EmptyGsr);
-            Register("warn_plus_overloading", IniFlags.Unsupported | IniFlags.Global, EmptyGsr);
-            Register("xbithack", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
-            Register("y2k_compliance", IniFlags.Unsupported | IniFlags.Local, EmptyGsr);
-            Register("zend.ze1_compatibility_mode", IniFlags.Supported | IniFlags.Local, EmptyGsr);
+            // single instances of the delegate:
+            var gsrcore = new GetSetDelegate(GsrCore);
+            var gsrsession = new GetSetDelegate(GsrSession);
+            var gsrmail = new GetSetDelegate(GsrMail);
+
+            //
+
+            Register("allow_call_time_pass_reference", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("allow_url_fopen", IniFlags.Supported | IniFlags.Local, gsrcore);
+            Register("allow_webdav_methods", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("always_populate_raw_post_data", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("arg_separator.input", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("arg_separator.output", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
+            Register("asp_tags", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
+            Register("assert.active", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("assert.bail", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("assert.callback", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("assert.quiet_eval", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("assert.warning", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("async_send", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
+            Register("auto_append_file", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("auto_detect_line_endings", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
+            Register("auto_prepend_file", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("browscap", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("cgi.force_redirect", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("cgi.redirect_status_env", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("cgi.rfc2616_headers", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("child_terminate", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
+            Register("debugger.enabled", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("debugger.host", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("debugger.port", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("default_charset", IniFlags.Supported | IniFlags.Local | IniFlags.Http, s_emptyGsr);
+            Register("default_mimetype", IniFlags.Supported | IniFlags.Local | IniFlags.Http, s_emptyGsr);
+            Register("default_socket_timeout", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("define_syslog_variables", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
+            Register("disable_classes", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("disable_functions", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
+            Register("display_errors", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("display_startup_errors", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
+            Register("doc_root", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("enable_dl", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("engine", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
+            Register("error_append_string", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("error_log", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("error_prepend_string", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("error_reporting", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("expose_php", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("extension_dir", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
+            Register("fastcgi.impersonate", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("file_uploads", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
+            Register("from", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("gpc_order", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
+            Register("html_errors", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("ignore_repeated_errors", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
+            Register("ignore_repeated_source", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
+            Register("ignore_user_abort", IniFlags.Supported | IniFlags.Local | IniFlags.Http, s_emptyGsr);
+            Register("implicit_flush", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
+            Register("include_path", IniFlags.Supported | IniFlags.Local, gsrcore);
+            Register("last_modified", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
+            Register("log_errors", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("log_errors_max_len", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
+            Register("magic_quotes_gpc", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
+            Register("magic_quotes_runtime", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("magic_quotes_sybase", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("max_execution_time", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("max_input_time", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("memory_limit", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("mime_magic.magicfile", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("open_basedir", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
+            Register("output_buffering", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
+            Register("output_handler", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
+            Register("post_max_size", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrcore);
+            Register("precision", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
+            Register("register_argc_argv", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
+            Register("register_globals", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
+            Register("register_long_arrays", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
+            Register("report_memleaks", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("safe_mode", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
+            Register("safe_mode_allowed_env_vars", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("safe_mode_exec_dir", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
+            Register("safe_mode_gid", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("safe_mode_include_dir", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("safe_mode_protected_env_vars", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("session.auto_start", IniFlags.Supported | IniFlags.Global | IniFlags.Http, s_emptyGsr);
+            Register("session.save_handler", IniFlags.Supported | IniFlags.Local | IniFlags.Http, s_emptyGsr);
+            Register("session.serialize_handler", IniFlags.Supported | IniFlags.Local | IniFlags.Http, gsrsession);
+            Register("session.name", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
+            Register("short_open_tag", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
+            Register("sql.safe_mode", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("track_errors", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
+            Register("unserialize_callback_func", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("upload_max_filesize", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrcore);
+            Register("upload_tmp_dir", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
+            Register("url_rewriter.tags", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
+            Register("user_agent", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("user_dir", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("variables_order", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("warn_plus_overloading", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
+            Register("xbithack", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
+            Register("y2k_compliance", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
+            Register("zend.ze1_compatibility_mode", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
 
             // mail
-            Register("SMTP", IniFlags.Supported | IniFlags.Local, GsrMail);
-            Register("smtp_port", IniFlags.Supported | IniFlags.Local, GsrMail);
-            Register("sendmail_from", IniFlags.Supported | IniFlags.Local, GsrMail);
-            Register("mail.add_x_header", IniFlags.Supported | IniFlags.Local, GsrMail);
-            Register("mail.force_extra_parameters", IniFlags.Supported | IniFlags.Local, GsrMail);
+            Register("SMTP", IniFlags.Supported | IniFlags.Local, gsrmail);
+            Register("smtp_port", IniFlags.Supported | IniFlags.Local, gsrmail);
+            Register("sendmail_from", IniFlags.Supported | IniFlags.Local, gsrmail);
+            Register("mail.add_x_header", IniFlags.Supported | IniFlags.Local, gsrmail);
+            Register("mail.force_extra_parameters", IniFlags.Supported | IniFlags.Local, gsrmail);
         }
 
         /// <summary>
