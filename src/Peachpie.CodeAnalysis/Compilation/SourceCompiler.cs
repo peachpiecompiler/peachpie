@@ -164,6 +164,16 @@ namespace Pchp.CodeAnalysis
             DiagnosingVisitor.Analyse(_diagnostics, routine);
         }
 
+        internal void DiagnoseFiles()
+        {
+            _compilation.SourceSymbolCollection.GetFiles().ForEach(DiagnoseFile);
+        }
+
+        private void DiagnoseFile(SourceFileSymbol file)
+        {
+            file.GetDiagnostics(_diagnostics);
+        }
+
         private void DiagnoseTypes()
         {
             this.WalkTypes(DiagnoseType);
@@ -270,6 +280,7 @@ namespace Pchp.CodeAnalysis
             compiler.AnalyzeMethods();
             compiler.DiagnoseMethods();
             compiler.DiagnoseTypes();
+            compiler.DiagnoseFiles();
 
             //
             return diagnostics.AsEnumerable();

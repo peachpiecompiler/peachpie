@@ -7,6 +7,7 @@ using Roslyn.Utilities;
 using Pchp.CodeAnalysis.Utilities;
 using Devsense.PHP.Syntax.Ast;
 using static Pchp.CodeAnalysis.AstUtils;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -43,7 +44,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         readonly List<Symbol> _lazyMembers = new List<Symbol>();
         readonly List<SourceTypeSymbol> _containedTypes = new List<SourceTypeSymbol>();
-        
+
         public PhpSyntaxTree SyntaxTree => _syntaxTree;
 
         public SourceModuleSymbol SourceModule => _compilation.SourceModule;
@@ -90,6 +91,61 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             if (expr == null) throw new ArgumentNullException(nameof(expr));
             return _lazyMembers.OfType<SourceLambdaSymbol>().First(s => s.Syntax == expr);
+        }
+
+        /// <summary>
+        /// Collects declaration diagnostics.
+        /// </summary>
+        internal void GetDiagnostics(DiagnosticBag diagnostic)
+        {
+            // check functions duplicity
+            var funcs = this.Functions;
+            if (funcs.Length > 1)
+            {
+                var set = new HashSet<QualifiedName>();
+
+                // handle unconditionally declared functions:
+                foreach (var f in funcs)
+                {
+                    if (f.IsConditional)
+                    {
+                        continue;
+                    }
+
+                    if (!set.Add(f.QualifiedName))
+                    {
+                        diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(_syntaxTree, ((FunctionDecl)f.Syntax).HeadingSpan, Devsense.PHP.Errors.FatalErrors.FunctionRedeclared, f.QualifiedName.ToString()));
+                    }
+                }
+
+                //// handle conditionally declared functions: // NOTE: commented since we should allow to compile it
+                //foreach (var f in funcs.Where(f => f.IsConditional))
+                //{
+                //    if (set.Contains(f.QualifiedName))  // does not make sense to declare function if it is declared already unconditionally
+                //    {
+                //        diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(_syntaxTree, ((FunctionDecl)f.Syntax).HeadingSpan, Devsense.PHP.Errors.FatalErrors.FunctionRedeclared, f.PhpName));
+                //    }
+                //}
+            }
+
+            // check class/interface duplicity:
+            var types = this.ContainedTypes;
+            if (types.Count > 1)
+            {
+                var set = new HashSet<QualifiedName>();
+                foreach (var t in types)
+                {
+                    if (t.Syntax.IsConditional)
+                    {
+                        continue;
+                    }
+
+                    if (!set.Add(t.FullName))
+                    {
+                        diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(_syntaxTree, t.Syntax.HeadingSpan, Devsense.PHP.Errors.FatalErrors.TypeRedeclared, t.FullName.ToString()));
+                    }
+                }
+            }
         }
 
         internal string RelativeFilePath =>
