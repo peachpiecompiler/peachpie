@@ -33,7 +33,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         readonly List<AnalyzeBlockDelegate> _analyzers = new List<AnalyzeBlockDelegate>();
 
         //public event EventHandler MethodDone;
-        
+
         ///// <summary>
         ///// Set of blocks being analyzed.
         ///// Used for recursion prevention.
@@ -75,7 +75,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             if (routine.ControlFlowGraph == null)
             {
-                if (routine is SynthesizedMethodSymbol sr && sr.ForwardedCall is IPhpRoutineSymbol routine2)
+                var routine2 = routine is SynthesizedMethodSymbol sr
+                    ? sr.ForwardedCall
+                    : routine.OriginalDefinition as IPhpRoutineSymbol;
+
+                if (routine2 != null)
                 {
                     return EnqueueRoutine(routine2, caller);
                 }
