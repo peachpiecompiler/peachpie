@@ -81,6 +81,30 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        /// <summary>
+        /// Gets value indicating that if the parameters type is a reference type,
+        /// it is not allowed to pass a null value.
+        /// </summary>
+        public bool IsNotNull
+        {
+            get
+            {
+                if (_syntax.TypeHint != null)
+                {
+                    // when providing type hint, only allow null if explicitly specified:
+                    if (_syntax.TypeHint is NullableTypeRef)
+                    {
+                        return false;
+                    }
+
+                    return true;
+                }
+
+                //
+                return false;
+            }
+        }
+
         TypeSymbol ResolveType()
         {
             if (IsThis)
@@ -184,6 +208,14 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 yield return new SynthesizedAttributeData(
                     (MethodSymbol)DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_ParamArrayAttribute__ctor),
+                    ImmutableArray<TypedConstant>.Empty, ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+            }
+
+            if (IsNotNull && Type.IsReferenceType)
+            {
+                // [NotNull]
+                yield return new SynthesizedAttributeData(
+                    DeclaringCompilation.CoreMethods.Ctors.NotNullAttribute,
                     ImmutableArray<TypedConstant>.Empty, ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
             }
 

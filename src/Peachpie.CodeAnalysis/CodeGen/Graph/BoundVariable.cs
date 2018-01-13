@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using Devsense.PHP.Syntax.Ast;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.FlowAnalysis;
@@ -142,6 +143,24 @@ namespace Pchp.CodeAnalysis.Semantics
 
             var srcplace = new ParamPlace(_symbol);
             var routine = srcparam.Routine;
+
+            // check NotNull
+            if (srcparam.IsNotNull && srcparam.Type.IsReferenceType)
+            {
+                // Template: if (<param> == null) { PhpException.ArgumentNullError(param_name); }
+                var lbl_notnull = new object();
+                cg.EmitNotNull(srcplace);
+                cg.Builder.EmitBranch(ILOpCode.Brtrue_s, lbl_notnull);
+
+                // PhpException.ArgumentNullError(param_name);
+                // Consider: just Debug.Assert(<param> != null) for private methods
+                cg.Builder.EmitStringConstant(srcparam.Name);
+                cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreTypes.PhpException.Method("ArgumentNullError", cg.CoreTypes.String)));
+
+                cg.Builder.MarkLabel(lbl_notnull);
+            }
+
+            //
 
             if (cg.HasUnoptimizedLocals)
             {

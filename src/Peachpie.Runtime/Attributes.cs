@@ -237,4 +237,13 @@ namespace Pchp.Core
     {
 
     }
+
+    /// <summary>
+    /// Compiler generated attribute denoting that associated value cannot be <c>null</c>.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.ReturnValue | AttributeTargets.Field | AttributeTargets.Property)]
+    public sealed class NotNullAttribute : Attribute
+    {
+
+    }
 }

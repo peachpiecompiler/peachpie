@@ -36,7 +36,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             foreach (var p in parameters)
             {
                 var local = state.GetLocalHandle(new VariableName(p.Name));
-                state.SetLocalType(local, p.GetResultType(typeCtx));
+                var ptype = p.GetResultType(typeCtx);
+                if (p.IsNotNull)
+                {
+                    // remove 'null' type from the mask,
+                    // it cannot be null
+                    ptype = typeCtx.WithoutNull(ptype);
+                }
+
+                state.SetLocalType(local, ptype);
 
                 if (p.Syntax.PassedByRef && !p.Syntax.IsVariadic)
                 {

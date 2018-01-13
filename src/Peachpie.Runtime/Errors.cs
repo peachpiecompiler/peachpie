@@ -143,6 +143,14 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Argument type mismatch error.
+        /// </summary>
+        public static void ArgumentNullError(string argument)
+        {
+            throw new ArgumentNullException(argument);
+        }
+
+        /// <summary>
         /// The value of an argument is not invalid but unsupported.
         /// </summary>
         /// <param name="argument">The argument which value is unsupported.</param>
