@@ -216,4 +216,7 @@
   <data name="ERR_MustTakeArgs" xml:space="preserve">
     <value>{0} {1}() must take exactly {2} arguments</value>
   </data>
+  <data name="ERR_InvalidFunctionName" xml:space="preserve">
+    <value>Function name must be a string, {0} given</value>
+  </data>
 </root>

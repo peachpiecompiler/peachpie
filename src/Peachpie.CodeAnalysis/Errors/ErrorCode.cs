@@ -91,6 +91,8 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_VoidFunctionCannotReturnValue,
         /// <summary>{0} {1}() must take exactly {2} arguments</summary>
         ERR_MustTakeArgs,
+        /// <summary>Function name must be a string, {0} given</summary>
+        ERR_InvalidFunctionName,
         
         //
         // Warnings

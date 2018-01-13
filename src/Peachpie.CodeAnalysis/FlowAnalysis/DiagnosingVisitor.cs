@@ -22,6 +22,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         PhpCompilation DeclaringCompilation => _routine.DeclaringCompilation;
 
+        TypeRefContext TypeCtx => _routine.TypeRefContext;
+
         int _inTryLevel = 0;
         int _inCatchLevel = 0;
         int _inFinallyLevel = 0;
@@ -179,7 +181,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return
                 tmask.IsRef ||
                 tmask.IsAnyType ||  // dunno
-                _routine.TypeRefContext.IsAString(tmask);
+                TypeCtx.IsAString(tmask);
 
             // anything else (object (even convertible to string), array, number, boolean, ...) is not allowed
         }
@@ -187,6 +189,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
         {
             CheckUndefinedFunctionCall(x);
+
+            // calling indirectly:
+            if (x.Name.NameExpression != null)
+            {
+                // check whether expression can be used as a function callback (must be callable - string, array, object ...)
+                if (!TypeHelpers.IsCallable(TypeCtx, x.Name.NameExpression.TypeRefMask))
+                {
+                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.ERR_InvalidFunctionName, TypeCtx.ToString(x.Name.NameExpression.TypeRefMask));
+                }
+            }
+
             base.VisitGlobalFunctionCall(x);
         }
 
@@ -245,7 +258,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_AssertAlwaysFail);
                 }
 
-                if (_routine.TypeRefContext.IsAString(args[0].Value.TypeRefMask))
+                if (TypeCtx.IsAString(args[0].Value.TypeRefMask))
                 {
                     // deprecated and not supported
                     _diagnostics.Add(_routine, args[0].Value.PhpSyntax, ErrorCode.WRN_StringAssertionDeprecated);
@@ -321,9 +334,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             else
             {
                 var tmask = target.TypeRefMask;
-                if (!tmask.IsAnyType && !tmask.IsRef && !_routine.TypeRefContext.IsObject(tmask))
+                if (!tmask.IsAnyType && !tmask.IsRef && !TypeCtx.IsObject(tmask))
                 {
-                    nonobjtype = _routine.TypeRefContext.ToString(tmask);
+                    nonobjtype = TypeCtx.ToString(tmask);
                 }
             }
 

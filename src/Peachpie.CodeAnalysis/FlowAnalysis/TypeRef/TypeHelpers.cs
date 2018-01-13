@@ -34,7 +34,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         //{
         //    Debug.Assert(ctx != null);
         //    Debug.Assert(model != null);
-            
+
         //    if ((totype & fromtype & ~(ulong)TypeRefMask.FlagsMask) != 0)
         //        return true;    // types are equal (or at least one of them is Any Type)
 
@@ -45,7 +45,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         //    if (IsImplicitConversion(fromtype, totype, ctx, model))
         //        return true;
-            
+
         //    // cut off object types (primitive types do not have subclasses)
         //    var selfObjs = ctx.GetObjectTypes(totype);
         //    if (selfObjs.Count == 0)
@@ -77,7 +77,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         //        // TODO: check whether their element types are assignable,
         //        // avoid infinite recursion!
-                
+
         //        return true;
         //    }
 
@@ -97,7 +97,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         //    if (ctx.IsString(totype) && IsConversionToString(fromtype, ctx, model))
         //        return true;
-            
+
         //    //
         //    if (ctx.IsNull(fromtype) && ctx.IsNullable(totype))
         //        return true;    // NULL can be assigned to any nullable
@@ -123,29 +123,32 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         //    return false;
         //}
 
-        ///// <summary>
-        ///// Checks whether given type is callable.
-        ///// </summary>
-        //internal static bool IsCallable(TypeRefMask type, TypeRefContext/*!*/ctx, ISemanticModel/*!*/model)
-        //{
-        //    if (ctx.IsLambda(type) || ctx.IsString(type) || ctx.IsArray(type))
-        //        return true;
+        /// <summary>
+        /// Checks whether given type may be callable.
+        /// </summary>
+        internal static bool IsCallable(TypeRefContext/*!*/ctx, TypeRefMask type)
+        {
+            if (type.IsAnyType || type.IsRef ||
+                ctx.IsLambda(type) || ctx.IsAString(type) || ctx.IsArray(type) || ctx.IsObject(type))
+            {
+                return true;
+            }
 
-        //    // type has "__invoke" method
-        //    if (type.IsSingleType)  // just optimization
-        //    {
-        //        var tref = ctx.GetObjectTypes(type).FirstOrDefault();
-        //        if (tref != null)
-        //        {
-        //            var node = model.GetClass(tref.QualifiedName);
-        //            // type has __invoke method or is assignable from Closure
-        //            if (node.HasMethod(NameUtils.SpecialNames.__invoke, model) || model.IsAssignableFrom(NameUtils.SpecialNames.Closure, node))
-        //                return true;
-        //        }
-        //    }
+            //// type has "__invoke" method
+            //if (type.IsSingleType)  // just optimization
+            //{
+            //    var tref = ctx.GetObjectTypes(type).FirstOrDefault();
+            //    if (tref != null)
+            //    {
+            //        var node = model.GetClass(tref.QualifiedName);
+            //        // type has __invoke method or is assignable from Closure
+            //        if (node.HasMethod(NameUtils.SpecialNames.__invoke, model) || model.IsAssignableFrom(NameUtils.SpecialNames.Closure, node))
+            //            return true;
+            //    }
+            //}
 
-        //    return false;
-        //}
+            return false;
+        }
 
         ///// <summary>
         ///// Gets value indicating whether specified object of type <paramref name="type"/> can handle <c>[]</c> operator.
