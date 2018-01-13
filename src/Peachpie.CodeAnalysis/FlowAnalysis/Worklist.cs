@@ -79,7 +79,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     ? sr.ForwardedCall
                     : routine.OriginalDefinition as IPhpRoutineSymbol;
 
-                if (routine2 != null)
+                if (routine2 != null && !ReferenceEquals(routine, routine2))
                 {
                     return EnqueueRoutine(routine2, caller);
                 }
