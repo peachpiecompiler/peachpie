@@ -209,7 +209,7 @@ namespace Pchp.CodeAnalysis
                     }
                     return result;
                 }
-                else if (tref is AST.NullableTypeRef) MergeNull(GetTypeFromTypeRef(((AST.NullableTypeRef)tref).TargetType)); // ?((AST.NullableTypeRef)tref).TargetType
+                else if (tref is AST.NullableTypeRef) return MergeNull(GetTypeFromTypeRef(((AST.NullableTypeRef)tref).TargetType)); // ?((AST.NullableTypeRef)tref).TargetType
                 else if (tref is AST.GenericTypeRef) throw new NotImplementedException(); //((AST.GenericTypeRef)tref).TargetType
                 else if (tref is AST.IndirectTypeRef) throw new NotImplementedException();
             }
