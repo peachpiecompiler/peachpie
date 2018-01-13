@@ -92,7 +92,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (_syntax.TypeHint != null)
                 {
                     // when providing type hint, only allow null if explicitly specified:
-                    if (_syntax.TypeHint is NullableTypeRef)
+                    if (_syntax.TypeHint is NullableTypeRef ||
+                        (_initializer != null && _initializer.ConstantValue.IsNull()))
                     {
                         return false;
                     }
