@@ -2068,11 +2068,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                         Emit_PhpAlias_GetValue();
                         method = CoreMethods.Operators.Echo_PhpValue.Symbol;
                     }
-                    else if (type.IsOfType(CoreTypes.IPhpArray))
-                    {
-                        this.EmitConvertToString(type, 0);  // Array -> string
-                        method = CoreMethods.Operators.Echo_String.Symbol;
-                    }
                     else
                     {
                         // TODO: check expr.TypeRefMask if it is only NULL
