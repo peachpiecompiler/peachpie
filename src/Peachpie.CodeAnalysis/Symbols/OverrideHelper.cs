@@ -160,8 +160,14 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             for (; type != null; type = type.BaseType)
             {
-                var candidates = type.GetMembers(method.RoutineName).OfType<MethodSymbol>().Where(CanOverride);
-                var resolved = ResolveMethodImplementation(method, candidates);
+                var members = type.GetMembers(method.RoutineName).OfType<MethodSymbol>().Where(CanOverride);
+                if (method.ContainingType.IsInterface)
+                {
+                    // check explicit interface override
+                    members = members.Concat(type.GetMembers(method.ContainingType.GetFullName() + "." + method.RoutineName).OfType<MethodSymbol>());
+                }
+
+                var resolved = ResolveMethodImplementation(method, members);
                 if (resolved != null)
                 {
                     return resolved;
