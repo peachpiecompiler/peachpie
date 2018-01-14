@@ -181,10 +181,7 @@ namespace Pchp.CodeAnalysis
 
         private void DiagnoseType(SourceTypeSymbol type)
         {
-            // resolves base types in here
-            var btype = type.BaseType;
-
-            // ...
+            type.GetDiagnostics(_diagnostics);
         }
 
         internal void EmitMethodBodies()

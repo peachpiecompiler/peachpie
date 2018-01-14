@@ -798,6 +798,26 @@ namespace Pchp.CodeAnalysis.Symbols
 
         #endregion
 
+        /// <summary>
+        /// Collects declaration diagnostics.
+        /// </summary>
+        internal virtual void GetDiagnostics(DiagnosticBag diagnostic)
+        {
+            if (IsAbstract && IsSealed)
+            {
+                // Cannot use the final modifier on an abstract class
+                diagnostic.Add(CreateLocation(_syntax.HeadingSpan), ErrorCode.ERR_FinalAbstractClassDeclared);
+            }
+
+            if (BaseType != null && BaseType.IsSealed)
+            {
+                // Cannot inherit from final class '{0}'
+                diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(
+                    _file.SyntaxTree, _syntax.BaseClass.Span,
+                    Devsense.PHP.Errors.Errors.FinalClassExtended, ((IPhpTypeSymbol)BaseType).FullName.ToString()));
+            }
+        }
+
         List<Symbol> EnsureMembers()
         {
             if (_lazyMembers == null)

@@ -93,7 +93,8 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_MustTakeArgs,
         /// <summary>Function name must be a string, {0} given</summary>
         ERR_InvalidFunctionName,
-        
+        /// <summary>Cannot use the final modifier on an abstract class</summary>
+        ERR_FinalAbstractClassDeclared,
         //
         // Warnings
         //

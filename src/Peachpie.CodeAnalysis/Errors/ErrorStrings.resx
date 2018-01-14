@@ -219,4 +219,7 @@
   <data name="ERR_InvalidFunctionName" xml:space="preserve">
     <value>Function name must be a string, {0} given</value>
   </data>
+  <data name="ERR_FinalAbstractClassDeclared" xml:space="preserve">
+    <value>Cannot use the final modifier on an abstract class</value>
+  </data>
 </root>

@@ -423,6 +423,28 @@ namespace Pchp.CodeAnalysis.Symbols
                             this, module, diagnostics,
                             info.Method.ReturnType, info.Method.Parameters, info.Method);
                     }
+                    else
+                    {
+                        // synthesize abstract method implementing unresolved interface member
+                        if (info.IsUnresolvedAbstract && info.ImplementsInterface && this.IsAbstract && !this.IsInterface)
+                        {
+                            var method = info.Method;
+
+                            Debug.Assert(!method.IsStatic);
+                            Debug.Assert(method.DeclaredAccessibility != Accessibility.Private);
+                            Debug.Assert(method.ContainingType.IsInterface);
+
+                            // Template: abstract function {name}({parameters})
+                            var ghost = new SynthesizedMethodSymbol(this, method.RoutineName,
+                                isstatic: false, isvirtual: true, isabstract: true, isfinal: false,
+                                returnType: method.ReturnType,
+                                accessibility: method.DeclaredAccessibility);
+
+                            ghost.SetParameters(method.Parameters.Select(p => SynthesizedParameterSymbol.Create(ghost, p)).ToArray());
+
+                            module.SynthesizedManager.AddMethod(this, ghost);
+                        }
+                    }
                 }
 
                 // setup synthesized methods explicit override as resolved

@@ -168,13 +168,16 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // report unresolved abstracts
-            if (!this.IsInterface && !this.IsAbstract)
+            if (!this.IsAbstract && !this.IsInterface && this is SourceTypeSymbol srct)
             {
                 foreach (var m in overrides)
                 {
                     if (m.IsUnresolvedAbstract)
                     {
-                        // TODO: diagnostics.Add()
+                        // Class '{0}' doesn't implement abstract method {1}::{2}()
+                        diagnostics.Add(DiagnosticBagExtensions.ParserDiagnostic(srct.ContainingFile.SyntaxTree, srct.Syntax.HeadingSpan,
+                            Devsense.PHP.Errors.Errors.AbstractMethodNotImplemented,
+                            srct.FullName.ToString(), ((IPhpTypeSymbol)m.Method.ContainingType).FullName.ToString(), m.RoutineName));
                     }
                 }
             }
