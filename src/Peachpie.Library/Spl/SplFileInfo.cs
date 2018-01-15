@@ -60,6 +60,7 @@ namespace Pchp.Library.Spl
         public virtual string __toString() => _filename;
     }
 
+    [PhpType(PhpTypeAttribute.InheritName)]
     public class SplFileObject : SplFileInfo, SeekableIterator, RecursiveIterator
     {
         public const long DROP_NEW_LINE = 1;
@@ -146,6 +147,7 @@ namespace Pchp.Library.Spl
         public virtual void setMaxLineLen(int max_len) { throw new NotImplementedException(); }
     }
 
+    [PhpType(PhpTypeAttribute.InheritName)]
     public class SplTempFileObject : SplFileObject
     {
         public SplTempFileObject(Context ctx, long max_memory = 2 * 1024 * 1024 /*2MB*/)
