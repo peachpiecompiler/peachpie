@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using Pchp.Core;
+using Pchp.Library.Streams;
 
 namespace Pchp.Library
 {
@@ -59,12 +61,14 @@ namespace Pchp.Library
         /// <summary>
         /// Return information about a string buffer.
         /// </summary>
-        public static string finfo_buffer(finfo finfo, string @string = null, int options = FILEINFO_NONE, PhpResource context = null)
+        [return: CastToFalse]
+        public static string finfo_buffer(finfo finfo, byte[] @string = null, int options = FILEINFO_NONE, PhpResource context = null)
             => finfo?.buffer(@string, options, context);
 
         /// <summary>
         /// Return information about a file.
         /// </summary>
+        [return: CastToFalse]
         public static string finfo_file(finfo finfo, string file_name = null, int options = FILEINFO_NONE, PhpResource context = null)
             => finfo?.file(file_name, options, context);
 
@@ -76,11 +80,13 @@ namespace Pchp.Library
         /// <summary>
         /// Detect MIME Content-type for a file.
         /// </summary>
+        [return: CastToFalse]
         public static string mime_content_type(Context ctx, string filename) => new finfo(ctx).file(filename);
     }
 
     /// <summary>
     /// A file type descriptor.
+    /// TODO: refactor into a separate project
     /// </summary>
     [DebuggerDisplay(".{_extension,nq}, {_mime,nq}")]
     internal sealed class FileType
@@ -90,10 +96,20 @@ namespace Pchp.Library
         readonly string _extension;
         readonly string _mime;
 
+        /// <summary>
+        /// Mime type.
+        /// </summary>
+        public string Mime => _mime;
+
         static byte?[] EmptyHeader => Array.Empty<byte?>();
 
         /// <summary>
-        /// number of bytes we read from a file
+        /// Gets value indicating the file type has specified header information.
+        /// </summary>
+        public bool HasHeader => _header.Length != 0;
+
+        /// <summary>
+        /// Max number of bytes we read from a file.
         /// </summary>
         public const ushort MaxHeaderSize = 560;  // some file formats have headers offset to 512 bytes
 
@@ -284,12 +300,48 @@ namespace Pchp.Library
         /// <param name="offset">The header offset - how far into the file we need to read the header</param>
         /// <param name="extension">String with extension.</param>
         /// <param name="mime">The description of MIME.</param>
-        public FileType(byte?[] header, string extension, string mime, ushort offset = 0)
+        private FileType(byte?[] header, string extension, string mime, ushort offset = 0)
         {
+            Debug.Assert(string.IsNullOrEmpty(extension) || extension[0] != '.');
+
             _header = header ?? throw new ArgumentNullException();
             _headerOffset = offset;
             _extension = extension;
             _mime = mime;
+        }
+
+        /// <summary>
+        /// Determines if this file type header matches given file content.
+        /// </summary>
+        /// <param name="data">File content.</param>
+        public bool IsMatch(byte[] data)
+        {
+            if (data == null || data.Length < _headerOffset + _header.Length)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < _header.Length; i++)
+            {
+                if (_header[i].HasValue && _header[i].Value != data[i + _headerOffset])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Lists all file types that matches given file content.
+        /// Note file types without a header specified are ignored.
+        /// </summary>
+        public static IEnumerable<FileType> LookupFileTypes(byte[] data)
+        {
+            // TODO: lexicographical map
+            return (data != null && data.Length != 0)
+                ? s_mimeTypes.Where(t => t.HasHeader && t.IsMatch(data))
+                : Enumerable.Empty<FileType>();
         }
     }
 
@@ -326,14 +378,25 @@ namespace Pchp.Library
             _options = options;
         }
 
-        public virtual string buffer(string @string = null, int options = PhpFileInfo.FILEINFO_NONE, PhpResource context = null)
+        [return: CastToFalse]
+        public virtual string buffer(byte[] @string = null, int options = PhpFileInfo.FILEINFO_NONE, PhpResource context = null)
         {
-            throw new NotImplementedException();
+            // TODO: options
+            return FileType.LookupFileTypes(@string).FirstOrDefault()?.Mime;
         }
 
+        [return: CastToFalse]
         public virtual string file(string file_name = null, int options = PhpFileInfo.FILEINFO_NONE, PhpResource context = null)
         {
-            throw new NotImplementedException();
+            byte[] bytes;
+
+            using (var stream = PhpStream.Open(_ctx, file_name, "rb"/*ReadBinary*/, StreamOpenOptions.Empty, StreamContext.GetValid(context, allowNull: true)))
+            {
+                bytes = stream?.ReadBytes(FileType.MaxHeaderSize);
+            }
+
+            // TODO: options
+            return FileType.LookupFileTypes(bytes).FirstOrDefault()?.Mime;
         }
 
         public virtual bool set_flags(int options)
