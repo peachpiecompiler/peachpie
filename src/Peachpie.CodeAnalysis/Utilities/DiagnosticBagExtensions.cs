@@ -7,6 +7,7 @@ using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -21,6 +22,7 @@ namespace Pchp.CodeAnalysis
             ErrorCode code,
             params object[] args)
         {
+            Debug.Assert(syntax != null);
             Add(diagnostics, routine, syntax.Span.ToTextSpan(), code, args);
         }
 

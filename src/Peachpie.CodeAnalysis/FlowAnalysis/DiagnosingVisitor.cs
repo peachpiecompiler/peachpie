@@ -157,7 +157,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     // __tostring() allows only strings to be returned
                     if (x.Returned == null || !IsAllowedToStringReturnType(x.Returned.TypeRefMask))
                     {
-                        _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.ERR_ToStringMustReturnString, ((IPhpTypeSymbol)_routine.ContainingType).FullName.ToString());
+                        _diagnostics.Add(_routine, x.PhpSyntax ?? m, ErrorCode.ERR_ToStringMustReturnString, ((IPhpTypeSymbol)_routine.ContainingType).FullName.ToString());
                     }
                 }
             }
