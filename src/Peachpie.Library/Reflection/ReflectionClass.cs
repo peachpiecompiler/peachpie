@@ -122,7 +122,7 @@ namespace Pchp.Library.Reflection
         public string getDocComment() => null;
         public int getEndLine() { throw new NotImplementedException(); }
         //public ReflectionExtension getExtension() { throw new NotImplementedException(); }
-        public string getExtensionName() { throw new NotImplementedException(); }
+        public string getExtensionName() => _tinfo.Extensions.FirstOrDefault() ?? string.Empty;
 
         /// <summary>Gets the filename of the file in which the class has been defined</summary>
         /// <param name="ctx">Current runtime context</param>
