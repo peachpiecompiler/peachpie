@@ -156,6 +156,9 @@ namespace Pchp.CodeAnalysis.Symbols
             if (symbol is IPhpRoutineSymbol && ((IPhpRoutineSymbol)symbol).CastToFalse)
             {
                 mask |= ctx.GetBooleanTypeMask();    // the function may return FALSE
+
+                // remove NULL (NULL is changed to FALSE), note it also can't return -1
+                mask = ctx.WithoutNull(mask);
             }
 
             //
