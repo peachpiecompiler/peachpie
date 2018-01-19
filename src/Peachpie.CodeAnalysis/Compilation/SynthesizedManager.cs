@@ -130,6 +130,16 @@ namespace Pchp.CodeAnalysis.Emit
         }
 
         /// <summary>
+        /// Adds a synthedized property to the class.
+        /// </summary>
+        public void AddProperty(TypeSymbol container, PropertySymbol property)
+        {
+            Contract.ThrowIfNull(property);
+
+            EnsureList(container).Add(property);
+        }
+
+        /// <summary>
         /// Gets synthezised members contained in <paramref name="container"/>.
         /// </summary>
         /// <typeparam name="T">Type of members to enumerate.</typeparam>

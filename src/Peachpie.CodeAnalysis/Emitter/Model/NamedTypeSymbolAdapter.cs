@@ -621,15 +621,15 @@ namespace Pchp.CodeAnalysis.Symbols
                 yield return (Cci.IPropertyDefinition)property;
             }
 
-            //IEnumerable<Cci.IPropertyDefinition> generated = ((PEModuleBuilder)context.Module).GetSynthesizedProperties(this);
+            IEnumerable<Cci.IPropertyDefinition> generated = ((PEModuleBuilder)context.Module).GetSynthesizedProperties(this);
 
-            //if (generated != null)
-            //{
-            //    foreach (var m in generated)
-            //    {
-            //        yield return m;
-            //    }
-            //}
+            if (generated != null)
+            {
+                foreach (var p in generated)
+                {
+                    yield return p;
+                }
+            }
         }
 
         internal virtual IEnumerable<IPropertySymbol> GetPropertiesToEmit()

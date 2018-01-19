@@ -115,6 +115,13 @@ namespace Pchp.CodeAnalysis.Emit
         public IEnumerable<FieldSymbol> GetSynthesizedFields(TypeSymbol container) => _synthesized.GetMembers<FieldSymbol>(container);
 
         /// <summary>
+        /// Gets enumeration of synthesized properties for <paramref name="container"/>.
+        /// </summary>
+        /// <param name="container">Containing type symbol.</param>
+        /// <returns>Enumeration of synthesized properties.</returns>
+        public IEnumerable<PropertySymbol> GetSynthesizedProperties(TypeSymbol container) => _synthesized.GetMembers<PropertySymbol>(container);
+
+        /// <summary>
         /// Gets enumeration of synthesized methods for <paramref name="container"/>.
         /// </summary>
         /// <param name="container">Containing type symbol.</param>
