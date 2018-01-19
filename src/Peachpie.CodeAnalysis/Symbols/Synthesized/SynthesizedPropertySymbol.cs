@@ -29,7 +29,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _isStatic = isStatic;
         }
 
-        public override Symbol ContainingSymbol => _type;
+        public override Symbol ContainingSymbol => _containing;
 
         public override Accessibility DeclaredAccessibility => _accessibility;
 
