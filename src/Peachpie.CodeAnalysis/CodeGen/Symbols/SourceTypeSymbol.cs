@@ -453,6 +453,48 @@ namespace Pchp.CodeAnalysis.Symbols
                     sm.ExplicitOverride = info.Method;
                 }
             }
+
+            // synthesized field accessors:
+            foreach (var srcf in GetMembers().OfType<SourceFieldSymbol>())
+            {
+                var paccessor = srcf.FieldAccessorProperty;
+                if (paccessor != null)
+                {
+                    GenerateFieldAccessorProperty(module, diagnostics, srcf, paccessor);
+                }
+            }
+        }
+
+        void GenerateFieldAccessorProperty(Emit.PEModuleBuilder module, DiagnosticBag diagnostics, SourceFieldSymbol srcf, PropertySymbol paccessor)
+        {
+            //
+            module.SynthesizedManager.AddProperty(this, paccessor);
+
+            //
+            var get_body = MethodGenerator.GenerateMethodBody(module, paccessor.GetMethod, (il) =>
+            {
+                // Template: return field;
+                var place = new FieldPlace(new ArgPlace(this, 0), srcf.OverridenDefinition, module);
+                place.EmitLoad(il);
+                il.EmitRet(false);
+            }, null, diagnostics, false);
+
+            module.SetMethodBody(paccessor.GetMethod, get_body);
+            module.SynthesizedManager.AddMethod(this, paccessor.GetMethod);
+
+            //
+            var set_body = MethodGenerator.GenerateMethodBody(module, paccessor.SetMethod, (il) =>
+            {
+                // Template: field = value;
+                var place = new FieldPlace(new ArgPlace(this, 0), srcf.OverridenDefinition, module);
+                place.EmitStorePrepare(il);
+                new ArgPlace(this, 1).EmitLoad(il);
+                place.EmitStore(il);
+                il.EmitRet(true);
+            }, null, diagnostics, false);
+
+            module.SetMethodBody(paccessor.SetMethod, set_body);
+            module.SynthesizedManager.AddMethod(this, paccessor.SetMethod);
         }
     }
 }

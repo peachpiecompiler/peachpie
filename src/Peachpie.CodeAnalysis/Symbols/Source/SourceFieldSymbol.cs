@@ -107,13 +107,44 @@ namespace Pchp.CodeAnalysis.Symbols
                     var fld = candidates.FirstOrDefault();
                     if (fld != null)
                     {
-                        return fld;
+                        return fld is SourceFieldSymbol srcf ? srcf.OverridenDefinition ?? fld : fld;
                     }
                 }
             }
 
             return null;
         }
+
+        /// <summary>
+        /// Optional property that provides public access to <see cref="OverridenDefinition"/> if it is protected.
+        /// </summary>
+        public PropertySymbol FieldAccessorProperty
+        {
+            get
+            {
+                if (IsRedefinition && OverridenDefinition.DeclaredAccessibility < this.DeclaredAccessibility && _fieldAccessorProperty == null)
+                {
+                    // declare property accessing the field from outside:
+
+                    // TYPE get_NAME()
+                    var getter = new SynthesizedMethodSymbol(this.ContainingType, "get_" + this.Name, false, false, this.Type, this.DeclaredAccessibility);
+
+                    // void set_NAME(TYPE `value`)
+                    var setter = new SynthesizedMethodSymbol(this.ContainingType, "set_" + this.Name, false, false, DeclaringCompilation.CoreTypes.Void, this.DeclaredAccessibility);
+                    setter.SetParameters(new SynthesizedParameterSymbol(setter, this.Type, 0, RefKind.None, "value"));
+
+                    // TYPE NAME { get; set; }
+                    _fieldAccessorProperty =
+                        new SynthesizedPropertySymbol(
+                            this.ContainingType, this.Name, false,
+                            OverridenDefinition.Type, this.DeclaredAccessibility,
+                            getter: getter, setter: setter);
+                }
+
+                return _fieldAccessorProperty;
+            }
+        }
+        PropertySymbol _fieldAccessorProperty;
 
         public SourceFieldSymbol(SourceTypeSymbol type, string name, Location location, Accessibility accessibility, PHPDocBlock phpdoc, PhpPropertyKind kind, BoundExpression initializer = null)
         {

@@ -1541,33 +1541,52 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     if (x.FieldName.IsDirect)
                     {
-                        // TODO: visibility and resolution (model)
                         var fldname = x.FieldName.NameValue.Value;
                         var member = resolvedtype.ResolveInstanceProperty(fldname);
                         if (member != null && member.IsAccessible(this.TypeCtx.SelfType))
                         {
-                            Debug.Assert(member is FieldSymbol || member is PropertySymbol);
                             if (member is FieldSymbol)
                             {
                                 var field = (FieldSymbol)member;
-                                x.BoundReference = new BoundFieldPlace(x.Instance, field, x);
-                                x.TypeRefMask = field.GetResultType(TypeCtx);
-                                x.ResultType = field.Type;
+                                var srcf = field as SourceFieldSymbol;
+                                var overridenf = srcf?.OverridenDefinition;
+
+                                // field might be a redefinition with a different accessibility,
+                                // such field is not declared actually and the base definition is used instead:
+
+                                if (overridenf == null || overridenf.IsAccessible(this.TypeCtx.SelfType))
+                                {
+                                    x.BoundReference = new BoundFieldPlace(x.Instance, overridenf ?? field, x);
+                                    x.TypeRefMask = field.GetResultType(TypeCtx);
+                                    x.ResultType = field.Type;
+                                    return;
+                                }
+                                else if (srcf != null && srcf.FieldAccessorProperty != null && srcf.FieldAccessorProperty.IsAccessible(TypeCtx.SelfType))
+                                {
+                                    member = srcf.FieldAccessorProperty; // use the wrapping property that is accessible from current context
+                                    // -> continue
+                                }
+                                else
+                                {
+                                    member = null; // -> dynamic behavior
+                                    // -> continue
+                                }
                             }
-                            else if (member is PropertySymbol)
+
+                            if (member is PropertySymbol)
                             {
                                 var prop = (PropertySymbol)member;
                                 x.BoundReference = new BoundPropertyPlace(x.Instance, prop);
                                 x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, prop.Type);
                                 x.ResultType = prop.Type;
+                                return;
                             }
-                            else
+
+                            //
+                            if (member != null)
                             {
                                 throw ExceptionUtilities.UnexpectedValue(member);
                             }
-
-                            Debug.Assert(x.BoundReference != null);
-                            return; // bound
                         }
                         else
                         {

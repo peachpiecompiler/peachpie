@@ -195,7 +195,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             // field redeclares its parent member, use the original def
             return (field is SourceFieldSymbol srcf)
-                ? GetRealDefinition(srcf.OverridenDefinition) ?? field
+                ? srcf.OverridenDefinition ?? field
                 : field;
         }
 

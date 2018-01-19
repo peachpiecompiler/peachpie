@@ -24,6 +24,24 @@ class B extends A {
   }
 }
 
+function test() {
+	// in local:
+	$b = new B;
+	$b->x = 123;
+	echo $b->Aget() ."\n";
+
+	$b = new B;
+	$b->Bset(123);
+	echo $b->Aget() ."\n";
+	echo $b->Bget() ."\n";
+
+	$b = new B;
+	$b->Aset(123);
+	echo $b->Aget() ."\n";
+	echo $b->Bget() ."\n";
+}
+
+// in global:
 $b = new B;
 $b->x = 123;
 echo $b->Aget() ."\n";
@@ -37,3 +55,6 @@ $b = new B;
 $b->Aset(123);
 echo $b->Aget() ."\n";
 echo $b->Bget() ."\n";
+
+//
+test();
