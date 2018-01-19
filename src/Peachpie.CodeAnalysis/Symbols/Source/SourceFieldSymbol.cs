@@ -125,19 +125,20 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (IsRedefinition && OverridenDefinition.DeclaredAccessibility < this.DeclaredAccessibility && _fieldAccessorProperty == null)
                 {
                     // declare property accessing the field from outside:
+                    var type = OverridenDefinition.Type;
 
                     // TYPE get_NAME()
-                    var getter = new SynthesizedMethodSymbol(this.ContainingType, "get_" + this.Name, false, false, this.Type, this.DeclaredAccessibility);
+                    var getter = new SynthesizedMethodSymbol(this.ContainingType, "get_" + this.Name, false, false, type, this.DeclaredAccessibility);
 
                     // void set_NAME(TYPE `value`)
                     var setter = new SynthesizedMethodSymbol(this.ContainingType, "set_" + this.Name, false, false, DeclaringCompilation.CoreTypes.Void, this.DeclaredAccessibility);
-                    setter.SetParameters(new SynthesizedParameterSymbol(setter, this.Type, 0, RefKind.None, "value"));
+                    setter.SetParameters(new SynthesizedParameterSymbol(setter, type, 0, RefKind.None, "value"));
 
                     // TYPE NAME { get; set; }
                     _fieldAccessorProperty =
                         new SynthesizedPropertySymbol(
                             this.ContainingType, this.Name, false,
-                            OverridenDefinition.Type, this.DeclaredAccessibility,
+                            type, this.DeclaredAccessibility,
                             getter: getter, setter: setter);
                 }
 
