@@ -95,6 +95,8 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_InvalidFunctionName,
         /// <summary>Cannot use the final modifier on an abstract class</summary>
         ERR_FinalAbstractClassDeclared,
+        /// <summary>Access level to {0}::${1} must be {2} (as in class {3}) or weaker</summary>
+        ERR_PropertyAccessibilityError,
         //
         // Warnings
         //

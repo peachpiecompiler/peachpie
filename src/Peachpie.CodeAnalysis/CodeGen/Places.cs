@@ -198,8 +198,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (field is SourceFieldSymbol srcf)
             {
                 // field redeclares its parent member, use the original def
-                // TODO: do not call it OriginalDefinition ... make some RealDefinition property ?
-                field = srcf.OriginalDefinition;
+                field = srcf.OverridenDefinition ?? field;
             }
 
             _holder = holder;
@@ -1374,8 +1373,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (field is SourceFieldSymbol srcf)
             {
                 // field redeclares its parent member, use the original def
-                // TODO: do not call it OriginalDefinition ... make some RealDefinition property ?
-                field = srcf.OriginalDefinition;
+                field = srcf.OverridenDefinition ?? field;
             }
 
             _instance = instance;

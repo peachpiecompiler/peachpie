@@ -70,47 +70,50 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly BoundExpression _initializer;
 
         /// <summary>
-        /// Actual field symbol that should be used.
+        /// Gets value indicating whether this field redefines a field from a base type.
         /// </summary>
-        public override FieldSymbol OriginalDefinition
+        public bool IsRedefinition => !ReferenceEquals(OverridenDefinition, null);
+
+        /// <summary>
+        /// Gets field from a base type that is redefined by this field.
+        /// </summary>
+        public FieldSymbol OverridenDefinition
         {
             get
             {
-                if (_originaldefinition == null)
+                if (ReferenceEquals(_originaldefinition, null))
                 {
-                    // lookup base types whether this field declaration isn't a redefinition
-                    if (this.FieldKind == PhpPropertyKind.InstanceField)
-                    {
-                        for (var t = _containingType.BaseType; t != null; t = t.BaseType)
-                        {
-                            var candidates = t.GetMembers(_fieldName, false)
-                                .OfType<FieldSymbol>()
-                                .Where(f => f.IsStatic == this.IsStatic && f.DeclaredAccessibility != Accessibility.Private);
-
-                            foreach (var f in candidates)
-                            {
-                                // check accessibility
-                                if (this.DeclaredAccessibility != f.DeclaredAccessibility)
-                                {
-                                    // TODO: ERR
-                                    throw new ArgumentException($"Fatal error: Access level to ${_fieldName} must be {f.DeclaredAccessibility} (as in class {t.Name})");
-                                }
-
-                                //
-                                _originaldefinition = f.OriginalDefinition;
-                                return _originaldefinition;
-                            }
-                        }
-                    }
-
-                    //
-                    _originaldefinition = this;
+                    // resolve overriden field symbol
+                    _originaldefinition = ResolveOverridenDefinition() ?? this;
                 }
 
-                return _originaldefinition;
+                return ReferenceEquals(_originaldefinition, this) ? null : _originaldefinition;
             }
         }
-        private FieldSymbol _originaldefinition;
+        FieldSymbol _originaldefinition;
+
+        FieldSymbol ResolveOverridenDefinition()
+        {
+            // lookup base types whether this field declaration isn't a redefinition
+            if (this.FieldKind == PhpPropertyKind.InstanceField)
+            {
+                for (var t = _containingType.BaseType; t != null && t.SpecialType != SpecialType.System_Object; t = t.BaseType)
+                {
+                    var candidates = t.GetMembers(_fieldName, ignoreCase: false)
+                        .OfType<FieldSymbol>()
+                        .Where(f => f.IsStatic == false && f.DeclaredAccessibility != Accessibility.Private);
+
+                    //
+                    var fld = candidates.FirstOrDefault();
+                    if (fld != null)
+                    {
+                        return fld;
+                    }
+                }
+            }
+
+            return null;
+        }
 
         public SourceFieldSymbol(SourceTypeSymbol type, string name, Location location, Accessibility accessibility, PHPDocBlock phpdoc, PhpPropertyKind kind, BoundExpression initializer = null)
         {

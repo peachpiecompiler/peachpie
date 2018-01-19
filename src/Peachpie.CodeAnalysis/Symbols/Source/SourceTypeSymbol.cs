@@ -816,6 +816,17 @@ namespace Pchp.CodeAnalysis.Symbols
                     _file.SyntaxTree, _syntax.BaseClass.Span,
                     Devsense.PHP.Errors.Errors.FinalClassExtended, ((IPhpTypeSymbol)BaseType).FullName.ToString()));
             }
+
+            // fields re-definition:
+            foreach (var f in GetMembers().OfType<SourceFieldSymbol>())
+            {
+                var basedef = f.OverridenDefinition;
+                if (basedef != null && f.DeclaredAccessibility < basedef.DeclaredAccessibility)
+                {
+                    // ERR: Access level to {0}::${1} must be {2} (as in class {3}) or weaker
+                    diagnostic.Add(f.Locations[0], ErrorCode.ERR_PropertyAccessibilityError, FullName, f.Name, basedef.DeclaredAccessibility.ToString().ToLowerInvariant(), ((IPhpTypeSymbol)basedef.ContainingType).FullName);
+                }
+            }
         }
 
         List<Symbol> EnsureMembers()
@@ -1174,7 +1185,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             foreach (var f in GetMembers().OfType<FieldSymbol>())
             {
-                if (f.OriginalDefinition != f)
+                if (f is SourceFieldSymbol srcf && srcf.IsRedefinition)
                 {
                     // field redeclares its parent member, discard
                     continue;
