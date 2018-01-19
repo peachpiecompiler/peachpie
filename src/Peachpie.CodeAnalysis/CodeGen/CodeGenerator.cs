@@ -108,8 +108,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return;
                 }
 
-                if (block.IsDead)
+                if (block.IsDead || block.FlowState == null)
                 {
+                    // ignore dead/unreachable blocks
                     return;
                 }
 

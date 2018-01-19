@@ -724,10 +724,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 });
             }
 
-            if (NextBlock.FlowState != null)    // block has been analyzed <=> block is reachable
-            {
-                cg.Scope.ContinueWith(NextBlock);
-            }
+            cg.Scope.ContinueWith(NextBlock);
         }
 
         /// <summary>
