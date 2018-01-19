@@ -191,15 +191,19 @@ namespace Pchp.CodeAnalysis.CodeGen
         readonly FieldSymbol _field;
         readonly Cci.IFieldReference _fieldref;
 
+        internal static IFieldSymbol GetRealDefinition(IFieldSymbol field)
+        {
+            // field redeclares its parent member, use the original def
+            return (field is SourceFieldSymbol srcf)
+                ? GetRealDefinition(srcf.OverridenDefinition) ?? field
+                : field;
+        }
+
         public FieldPlace(IPlace holder, IFieldSymbol field, Emit.PEModuleBuilder module = null)
         {
             Contract.ThrowIfNull(field);
 
-            if (field is SourceFieldSymbol srcf)
-            {
-                // field redeclares its parent member, use the original def
-                field = srcf.OverridenDefinition ?? field;
-            }
+            field = GetRealDefinition(field);
 
             _holder = holder;
             _field = (FieldSymbol)field;
@@ -1370,11 +1374,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(field);
 
-            if (field is SourceFieldSymbol srcf)
-            {
-                // field redeclares its parent member, use the original def
-                field = srcf.OverridenDefinition ?? field;
-            }
+            field = (FieldSymbol)FieldPlace.GetRealDefinition(field);
 
             _instance = instance;
             _field = field;
