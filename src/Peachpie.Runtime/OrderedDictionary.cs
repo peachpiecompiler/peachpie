@@ -2250,6 +2250,9 @@ namespace Pchp.Core
 
                 Debug.Assert(other_table != null);
 
+                // perform the sort on the copied instance since it can be shared or used on another thread
+                other_table = new OrderedDictionary(other_table.owner, other_table);
+
                 // sorts other_head's list (doesn't modify Prevs and keeps list cyclic):
                 other_table.listHead = _merge_sort(comparer, other_table.entries, other_table.listHead, count, out next);
                 Debug.Assert(next < 0);
@@ -2257,8 +2260,8 @@ namespace Pchp.Core
                 // applies operation on the instance list and the other list:
                 _set_operation(op, other_table, comparer, deleted_dummy_next);
 
-                // rolls mergesort back:
-                other_table._link_nexts_by_prevs();
+                //// rolls mergesort back:
+                //other_table._link_nexts_by_prevs(); // other_table is disposed
 
                 // instance list is empty:
                 if (this.listHead < 0) break;
