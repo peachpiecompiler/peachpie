@@ -24,6 +24,7 @@ namespace Pchp.Core
         /// Union for possible value types.
         /// </summary>
         [StructLayout(LayoutKind.Explicit)]
+        [DebuggerNonUserCode]
         struct ValueField
         {
             [FieldOffset(0)]
@@ -44,6 +45,7 @@ namespace Pchp.Core
         /// Union for reference types.
         /// </summary>
         //[StructLayout(LayoutKind.Explicit)]
+        [DebuggerNonUserCode]
         struct ObjectField
         {
             //[FieldOffset(0)]

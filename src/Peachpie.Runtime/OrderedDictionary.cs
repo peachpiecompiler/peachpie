@@ -138,6 +138,7 @@ namespace Pchp.Core
     /// Dictionary preserving order of entries.
     /// Provides methods for access, ensuring, ordering and PHP library functions support.
     /// </summary>
+    [DebuggerNonUserCode]
     public sealed class OrderedDictionary : IDictionary<IntStringKey, PhpValue>, IDictionary
     {
         #region Fields
@@ -288,7 +289,8 @@ namespace Pchp.Core
         /// <summary>
         /// An element stored in the table.
         /// </summary>
-        private struct Entry
+        [DebuggerNonUserCode]
+        struct Entry
         {
             /// <summary>
             /// Key associated with the element.
