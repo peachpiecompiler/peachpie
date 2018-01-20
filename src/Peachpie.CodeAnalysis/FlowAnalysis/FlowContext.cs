@@ -91,7 +91,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         internal FlowContext(TypeRefContext/*!*/typeCtx, SourceRoutineSymbol routine)
         {
             Contract.ThrowIfNull(typeCtx);
-            
+
             _typeCtx = typeCtx;
             _routine = routine;
 
@@ -110,16 +110,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             Debug.Assert(name.IsValid());
 
+            // TODO: RW lock
+
             int index;
             if (!_varsIndex.TryGetValue(name, out index))
             {
-                lock (_varsType)
+                lock (_varsIndex)
                 {
                     index = _varsType.Length;
                     Array.Resize(ref _varsType, index + 1);
-                }
 
-                _varsIndex[name] = index;
+                    //
+                    _varsIndex[name] = index;
+                }
             }
 
             //
@@ -165,7 +168,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public TypeRefMask GetVarType(VariableName name)
         {
-            return _varsType[GetVarIndex(name)];
+            var idx = GetVarIndex(name);
+            return _varsType[idx];
         }
 
         /// <summary>
