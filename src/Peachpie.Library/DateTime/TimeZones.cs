@@ -133,7 +133,9 @@ namespace Pchp.Library.DateTime
 
         static bool IsAlias(string id)
         {
-            return id.Contains('/') || id.Contains("GMT");   // whether to display such tz within timezone_identifiers_list()
+            // whether to not display such tz within timezone_identifiers_list()
+            var isphpname = id.IndexOf('/') >= 0 || id.IndexOf("GMT", StringComparison.Ordinal) >= 0 && id.IndexOf(' ') < 0;
+            return !isphpname;
         }
 
         static IEnumerable<TimeZoneInfoItem>/*!!*/InitialTimeZones()
@@ -457,7 +459,7 @@ namespace Pchp.Library.DateTime
         /// </summary>
         public static PhpArray timezone_identifiers_list(int what = DateTimeZone.ALL, string country = null)
         {
-            if (what != DateTimeZone.ALL || !string.IsNullOrEmpty(country))
+            if ((what & DateTimeZone.PER_COUNTRY) == DateTimeZone.PER_COUNTRY || !string.IsNullOrEmpty(country))
             {
                 throw new NotImplementedException();
             }
