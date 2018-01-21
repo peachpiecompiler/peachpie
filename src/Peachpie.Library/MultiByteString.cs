@@ -9,10 +9,12 @@ using static Pchp.Library.StandardPhpOptions;
 
 namespace Pchp.Library
 {
-    [PhpExtension("mbstring", Registrator = typeof(MultiByteString.Registrator))]
+    [PhpExtension(ExtensionName, Registrator = typeof(Registrator))]
     public static class MultiByteString
     {
-        #region IconvConfig, Options
+        const string ExtensionName = "mbstring";
+
+        #region MbConfig, Options
 
         sealed class MbConfig : IPhpConfiguration
         {
@@ -20,7 +22,7 @@ namespace Pchp.Library
 
             public IPhpConfiguration Copy() => (MbConfig)this.MemberwiseClone();
 
-            public string ExtensionName => "mbstring";
+            public string ExtensionName => MultiByteString.ExtensionName;
 
             /// <summary>
             /// Gets or sets a value of a legacy configuration option.
@@ -302,6 +304,86 @@ namespace Pchp.Library
 
             //return encoding.BodyName;   // it seems to return right MIME
             return enc.WebName;
+        }
+
+        #endregion
+
+        #region mb_list_encodings
+
+        /// <summary>
+        /// Returns an array of all supported encodings.
+        /// </summary>
+        public static PhpArray mb_list_encodings()
+        {
+            return new PhpArray(64)
+            {
+                "auto",
+                "wchar",
+                //byte2be
+                //byte2le
+                //byte4be
+                //byte4le
+                //BASE64
+                //UUENCODE
+                //HTML-ENTITIES
+                //Quoted-Printable
+                //7bit
+                //8bit
+                //UCS-4
+                //UCS-4BE
+                //UCS-4LE
+                //UCS-2
+                //UCS-2BE
+                //UCS-2LE
+                "UTF-16",
+                "UTF-16LE",
+                "UTF-16BE",
+                "UTF-32BE",
+                //UTF-32LE
+                "UTF-32",
+                "UTF-8",
+                "UTF-7",
+                //UTF7-IMAP
+                "ASCII",
+                //"CP51932",
+                //"CP936",
+                //"CP866",
+                //"CP850",
+                //EUC-JP
+                //SJIS
+                //eucJP-win
+                //SJIS-win
+                //JIS
+                //ISO-2022-JP
+                //ISO-2022-JP-MS
+                //"Windows-1252",
+                //"Windows-1254",
+                //ISO-8859-1
+                //ISO-8859-2
+                //ISO-8859-3
+                //ISO-8859-4
+                //ISO-8859-5
+                //ISO-8859-6
+                //ISO-8859-7
+                //ISO-8859-8
+                //ISO-8859-9
+                //ISO-8859-10
+                //ISO-8859-13
+                //ISO-8859-14
+                //ISO-8859-15
+                //ISO-8859-16
+                //EUC-CN
+                //HZ
+                //EUC-TW
+                //BIG-5
+                //EUC-KR
+                //UHC
+                //ISO-2022-KR
+                //"Windows-1251",
+                //KOI8-R
+                //KOI8-U
+                //ArmSCII-8
+            };
         }
 
         #endregion
