@@ -150,10 +150,7 @@ namespace Pchp.Library.DateTime
         }
 
         //public static array listIdentifiers ([ int $what = DateTimeZone::ALL [, string $country = NULL ]] )
-        public static PhpArray listIdentifiers(Context/*!*/context, int what = DateTimeZone.ALL, string country = null)
-        {
-            throw new NotImplementedException();
-        }
+        public static PhpArray listIdentifiers(int what = DateTimeZone.ALL, string country = null) => PhpTimeZone.timezone_identifiers_list(what, country);
 
         #endregion
     }

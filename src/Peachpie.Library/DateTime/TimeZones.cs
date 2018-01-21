@@ -74,7 +74,7 @@ namespace Pchp.Library.DateTime
                 //{
                 //    info = TimeZoneInfo.CreateCustomTimeZone(phpName, info.BaseUtcOffset, info.DisplayName, info.StandardName, info.DaylightName, info.GetAdjustmentRules());
                 //}
-                
+
                 //
                 this.PhpName = phpName;
                 this.Info = info;
@@ -131,7 +131,12 @@ namespace Pchp.Library.DateTime
             return sortedTZ.ToArray();
         }
 
-        private static IEnumerable<TimeZoneInfoItem>/*!!*/InitialTimeZones()
+        static bool IsAlias(string id)
+        {
+            return id.Contains('/') || id.Contains("GMT");   // whether to display such tz within timezone_identifiers_list()
+        }
+
+        static IEnumerable<TimeZoneInfoItem>/*!!*/InitialTimeZones()
         {
             // time zone cache:
             var tzcache = new Dictionary<string, TimeZoneInfo>(128, StringComparer.OrdinalIgnoreCase);
@@ -159,33 +164,46 @@ namespace Pchp.Library.DateTime
             {
                 foreach (var x in tzns)
                 {
-                    bool isAlias = !x.Id.Contains('/') || x.Id.Contains("GMT");   // whether to display such tz within timezone_identifiers_list()                    
-                    yield return new TimeZoneInfoItem(x.Id, x, null, isAlias);
+                    tzcache[x.Id] = x;
+                    yield return new TimeZoneInfoItem(x.Id, x, null, IsAlias(x.Id));
                 }
             }
 
-            //// collect php time zone names and match them with Windows TZ IDs:
-            //var tzdoc = new XmlDocument();
-            //tzdoc.LoadXml(Resources.Resources.WindowsTZ);
-            //foreach (var tz in tzdoc.DocumentElement.SelectNodes(@"//windowsZones/mapTimezones/mapZone"))
-            //{
-            //    // <mapZone other="Dateline Standard Time" type="Etc/GMT+12"/>
-            //    // @other = Windows TZ ID
-            //    // @type = PHP TZ names, separated by space
+            // collect php time zone names and match them with Windows TZ IDs:
+            using (var xml = XmlReader.Create(new System.IO.StringReader(Resources.Resources.WindowsTZ)))
+            {
+                while (xml.Read())
+                {
+                    switch (xml.NodeType)
+                    {
+                        case XmlNodeType.Element:
+                            if (xml.Name == "mapZone")
+                            {
+                                // <mapZone other="Dateline Standard Time" type="Etc/GMT+12"/>
 
-            //    var windowsId = tz.Attributes["other"].Value;
-            //    var phpIds = tz.Attributes["type"].Value;
-
-            //    var windowsTZ = cachelookup(windowsId);
-            //    if (windowsTZ != null)  // TZ not defined in Windows registry, ignore such time zone // TODO: show a warning
-            //        foreach (var phpTzName in phpIds.Split(' '))
-            //        {
-            //            Debug.Assert(!string.IsNullOrWhiteSpace(phpTzName));
-
-            //            bool isAlias = !phpTzName.Contains('/') || phpTzName.Contains("GMT");   // whether to display such tz within timezone_identifiers_list()
-            //            yield return new TimeZoneInfoItem(phpTzName, windowsTZ, null, isAlias);
-            //        }
-            //}
+                                var windowsTZ = cachelookup(xml.GetAttribute("other"));  // Windows ID
+                                if (windowsTZ != null)
+                                {
+                                    var phpIds = xml.GetAttribute("type");
+                                    if (phpIds != null)
+                                    {
+                                        // map php TZ name to Windows TZ if not defined by OS (Unix)
+                                        foreach (var phpTzName in phpIds.Split(' '))
+                                        {
+                                            Debug.Assert(!string.IsNullOrWhiteSpace(phpTzName));
+                                            if (!tzcache.ContainsKey(phpTzName))
+                                            {
+                                                tzcache[phpTzName] = windowsTZ; //  write back to cache
+                                                yield return new TimeZoneInfoItem(phpTzName, windowsTZ, null, IsAlias(phpTzName));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                    }
+                }
+            }
 
             //
             //{ "US/Alaska"        
@@ -313,7 +331,7 @@ namespace Pchp.Library.DateTime
 
                 // convert current system time zone to PHP zone:
                 result = SystemToPhpTimeZone(TimeZoneInfo.Local);
-                
+
                 // UTC:
                 if (result == null)
                     result = DateTimeUtils.UtcTimeZone;// GetTimeZone("UTC");
@@ -380,7 +398,7 @@ namespace Pchp.Library.DateTime
                 int comparison = StringComparer.OrdinalIgnoreCase.Compare(timezones[x].PhpName, phpName);
                 if (comparison == 0)
                     return timezones[x].Info;
-                
+
                 if (comparison < 0)
                     a = x + 1;
                 else //if (comparison > 0)
@@ -434,8 +452,16 @@ namespace Pchp.Library.DateTime
 
         #region timezone_identifiers_list, timezone_version_get
 
-        public static PhpArray timezone_identifiers_list()
+        /// <summary>
+        /// Returns a numerically indexed array containing all defined timezone identifiers.
+        /// </summary>
+        public static PhpArray timezone_identifiers_list(int what = DateTimeZone.ALL, string country = null)
         {
+            if (what != DateTimeZone.ALL || !string.IsNullOrEmpty(country))
+            {
+                throw new NotImplementedException();
+            }
+
             var timezones = PhpTimeZone.timezones;
 
             // copy names to PHP array:
@@ -444,7 +470,7 @@ namespace Pchp.Library.DateTime
             {
                 if (!timezones[i].IsAlias)
                 {
-                    array.AddValue(PhpValue.Create(timezones[i].PhpName));
+                    array.Add(timezones[i].PhpName);
                 }
             }
 

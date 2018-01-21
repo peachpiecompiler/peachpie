@@ -66,23 +66,9 @@ namespace Pchp.Library.DateTime
 
             _ctx = ctx;
 
-            if (timezone == null)
-            {
-                TimeZone = PhpTimeZone.GetCurrentTimeZone(ctx);
-            }
-            else
-            {
-                //var datetimezone = timezone as DateTimeZone;
-                //if (datetimezone == null)
-                //{
-                //    PhpException.InvalidArgumentType("timezone", "DateTimeZone");
-                //    TimeZone = PhpTimeZone.CurrentTimeZone;
-                //}
-                //else
-                {
-                    TimeZone = timezone.timezone;
-                }
-            }
+            this.TimeZone = (timezone == null)
+                ? PhpTimeZone.GetCurrentTimeZone(ctx)
+                : timezone.timezone;
 
             if (TimeZone == null)
             {
