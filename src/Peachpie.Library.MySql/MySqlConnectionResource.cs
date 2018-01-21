@@ -20,7 +20,8 @@ namespace Peachpie.Library.MySql
         readonly MySqlConnectionManager _manager;
         readonly MySqlConnection _connection;
 
-        public MySqlConnectionResource(MySqlConnectionManager manager, string connectionString) : base(connectionString, "mysql connection")
+        public MySqlConnectionResource(MySqlConnectionManager manager, string connectionString)
+            : base(manager.Context, connectionString, "mysql connection")
         {
             _manager = manager;
             _connection = new MySqlConnection(this.ConnectionString);

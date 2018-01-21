@@ -11,9 +11,14 @@ namespace Pchp.Library.Database
     /// <summary>
 	/// Abstract base class for database connection managers.
 	/// </summary>
-    [PhpHidden]
-    public abstract class ConnectionManager<TConnection> where TConnection : ConnectionResource
+    public abstract class ConnectionManager<TConnection> : IStaticInit where TConnection : ConnectionResource
     {
+        /// <summary>
+        /// Associated runtime context.
+        /// </summary>
+        public Context Context => _ctx;
+        Context _ctx;
+
         /// <summary>
         /// List of connections established by the manager.
         /// </summary>
@@ -64,8 +69,9 @@ namespace Pchp.Library.Database
             if ((success = connection.Connect()) == true)
             {
                 _connections.Add(connection);
+                _ctx.RegisterDisposable(connection);
             }
-            
+
             return connection;
         }
 
@@ -85,23 +91,15 @@ namespace Pchp.Library.Database
         }
 
         /// <summary>
-        /// Removes last used connection from the list of active Connections.
-        /// </summary>
-        public void RemoveConnection()
-        {
-            if (_connections.Count > 0)
-            {
-                _connections.RemoveAt(_connections.Count - 1);
-                //Interlocked.Decrement(ref AppConnectionCount);
-            }
-        }
-
-        /// <summary>
         /// Removes specified connection from the list of active connections.
         /// </summary>
         /// <param name="connection">The connection to be removed.</param>
         public bool RemoveConnection(TConnection connection)
         {
+            //
+            _ctx.UnregisterDisposable(connection);
+
+            //
             if (_connections.Count != 0)
             {
                 if (_connections.Remove(connection))
@@ -120,5 +118,10 @@ namespace Pchp.Library.Database
         /// </summary>
         public TConnection GetLastConnection()
             => _connections.Count != 0 ? _connections[_connections.Count - 1] : null;
+
+        void IStaticInit.Init(Context ctx)
+        {
+            _ctx = ctx;
+        }
     }
 }

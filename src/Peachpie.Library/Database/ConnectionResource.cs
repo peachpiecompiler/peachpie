@@ -13,7 +13,6 @@ namespace Pchp.Library.Database
     /// <summary>
 	/// Abstract class implementing common functionality of PHP connection resources.
 	/// </summary>
-    [PhpHidden]
     public abstract class ConnectionResource : PhpResource
     {
         /// <summary>
@@ -62,9 +61,10 @@ namespace Pchp.Library.Database
         /// <summary>
         /// Constructs the connection resource.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="connectionString"></param>
         /// <param name="resourceTypeName"></param>
-        protected ConnectionResource(string connectionString, string resourceTypeName)
+        protected ConnectionResource(Context ctx, string connectionString, string resourceTypeName)
             : base(resourceTypeName)
         {
             Debug.Assert(connectionString != null);

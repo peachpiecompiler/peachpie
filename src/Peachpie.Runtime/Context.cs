@@ -476,6 +476,44 @@ namespace Pchp.Core
 
         #endregion
 
+        #region Resources // objects that need dispose
+
+        HashSet<IDisposable> _lazyDisposables = null;
+
+        public void RegisterDisposable(IDisposable obj)
+        {
+            if (_lazyDisposables == null)
+            {
+                _lazyDisposables = new HashSet<IDisposable>();
+            }
+
+            _lazyDisposables.Add(obj);
+        }
+
+        public void UnregisterDisposable(IDisposable obj)
+        {
+            if (_lazyDisposables != null)
+            {
+                _lazyDisposables.Remove(obj);
+            }
+        }
+
+        void ProcessDisposables()
+        {
+            var set = _lazyDisposables;
+            if (set != null && set.Count != 0)
+            {
+                _lazyDisposables = null;
+
+                foreach (var x in set)
+                {
+                    x.Dispose();
+                }
+            }
+        }
+
+        #endregion
+
         #region Temporary Per-Request Files
 
         /// <summary>
@@ -582,6 +620,7 @@ namespace Pchp.Core
                 try
                 {
                     ProcessShutdownCallbacks();
+                    ProcessDisposables();
                     ShutdownSessionHandler();
                     //this.GuardedCall<object, object>(this.FinalizePhpObjects, null, false);
                     FinalizeBufferedOutput();
