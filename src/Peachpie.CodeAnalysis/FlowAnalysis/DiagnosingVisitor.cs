@@ -354,7 +354,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var errmethod = (ErrorMethodSymbol)x.TargetMethod;
                 if (errmethod != null && errmethod.ErrorKind == ErrorMethodKind.Missing)
                 {
-                    _diagnostics.Add(_routine, ((FunctionCall)x.PhpSyntax).NameSpan.ToTextSpan(), ErrorCode.WRN_UndefinedFunctionCall, x.Name.NameValue.ToString());
+                    var span = x.PhpSyntax is FunctionCall fnc ? fnc.NameSpan : x.PhpSyntax.Span;
+                    _diagnostics.Add(_routine, span.ToTextSpan(), ErrorCode.WRN_UndefinedFunctionCall, x.Name.NameValue.ToString());
                 }
             }
         }
@@ -363,7 +364,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (name.IsDirect && x.TargetMethod.IsErrorMethodOrNull() && type != null && !type.IsErrorType())
             {
-                _diagnostics.Add(_routine, ((FunctionCall)x.PhpSyntax).NameSpan.ToTextSpan(), ErrorCode.WRN_UndefinedMethodCall, name.NameValue.ToString(), type.Name);
+                var span = x.PhpSyntax is FunctionCall fnc ? fnc.NameSpan : x.PhpSyntax.Span;
+                _diagnostics.Add(_routine, span.ToTextSpan(), ErrorCode.WRN_UndefinedMethodCall, name.NameValue.ToString(), type.Name);
             }
         }
 
