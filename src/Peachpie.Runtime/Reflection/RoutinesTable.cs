@@ -11,7 +11,7 @@ namespace Pchp.Core.Reflection
     [DebuggerNonUserCode]
     internal static class RoutinesAppContext
     {
-        public static readonly Dictionary<string, int> NameToIndex = new Dictionary<string, int>();
+        public static readonly Dictionary<string, int> NameToIndex = new Dictionary<string, int>(StringComparer.CurrentCultureIgnoreCase);
         public static readonly List<RoutineInfo> AppRoutines = new List<RoutineInfo>();
         public static readonly RoutinesTable.RoutinesCount ContextRoutinesCounter = new RoutinesTable.RoutinesCount();
 
