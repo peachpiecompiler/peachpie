@@ -454,6 +454,38 @@ namespace Pchp.Library.DateTime
 
         #region timezone_identifiers_list, timezone_version_get
 
+        static readonly Dictionary<string, int> s_what = new Dictionary<string, int>(10, StringComparer.OrdinalIgnoreCase)
+        {
+            {"africa", DateTimeZone.AFRICA},
+            {"america", DateTimeZone.AMERICA},
+            {"antarctica", DateTimeZone.ANTARCTICA},
+            {"artic", DateTimeZone.ARCTIC},
+            {"asia", DateTimeZone.ASIA},
+            {"atlantic", DateTimeZone.ATLANTIC},
+            {"australia", DateTimeZone.AUSTRALIA},
+            {"europe", DateTimeZone.EUROPE},
+            {"indian", DateTimeZone.INDIAN},
+            {"pacific", DateTimeZone.PACIFIC},
+            {"etc", DateTimeZone.UTC},
+        };
+
+        /// <summary>
+        /// Gets zone constant.
+        /// </summary>
+        static int GuessWhat(TimeZoneInfoItem tz)
+        {
+            int slash = tz.PhpName.IndexOf('/');
+            if (slash > 0)
+            {
+                s_what.TryGetValue(tz.PhpName.Remove(slash), out int code);
+                return code;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
         /// <summary>
         /// Returns a numerically indexed array containing all defined timezone identifiers.
         /// </summary>
@@ -470,7 +502,12 @@ namespace Pchp.Library.DateTime
             var array = new PhpArray(timezones.Length);
             for (int i = 0; i < timezones.Length; i++)
             {
-                if (!timezones[i].IsAlias)
+                if (timezones[i].IsAlias)
+                {
+                    continue;
+                }
+
+                if (what == DateTimeZone.ALL || what == DateTimeZone.ALL_WITH_BC || (what & GuessWhat(timezones[i])) != 0)
                 {
                     array.Add(timezones[i].PhpName);
                 }
