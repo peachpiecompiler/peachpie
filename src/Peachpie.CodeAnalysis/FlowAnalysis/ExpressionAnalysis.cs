@@ -1888,7 +1888,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var qname = x.TargetType.TypeRef.QualifiedName;
                 if (qname.HasValue)
                 {
-                    x.ConstantValue = new Optional<object>(qname.Value.ToString());
+                    if (qname.Value.IsReservedClassName) // self, static, parent
+                    {
+                        if (x.TargetType.ResolvedType.IsValidType() && x.TargetType.ResolvedType is IPhpTypeSymbol phpt)
+                        {
+                            x.ConstantValue = new Optional<object>(phpt.FullName.ToString());
+                        }
+                    }
+                    else
+                    {
+                        x.ConstantValue = new Optional<object>(qname.Value.ToString());
+                    }
                 }
             }
             else
