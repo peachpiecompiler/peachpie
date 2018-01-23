@@ -1885,9 +1885,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 x.TypeRefMask = TypeCtx.GetStringTypeMask();
 
-                if (x.TargetType.ResolvedType.IsValidType())
+                var qname = x.TargetType.TypeRef.QualifiedName;
+                if (qname.HasValue)
                 {
-                    x.ConstantValue = new Optional<object>(((IPhpTypeSymbol)x.TargetType.ResolvedType).FullName.ToString());
+                    x.ConstantValue = new Optional<object>(qname.Value.ToString());
                 }
             }
             else
