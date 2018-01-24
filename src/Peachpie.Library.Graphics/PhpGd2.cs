@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using ImageSharp;
+using ImageSharp.Drawing.Brushes;
 using ImageSharp.Formats;
 using ImageSharp.Processing;
 using Pchp.Core;
@@ -694,7 +695,69 @@ namespace Peachpie.Library.Graphics
 
         #endregion
 
-        #region imagecopy,imagecopymerge
+        #region imagefilledrectangle
+
+        /// <summary>
+        /// Draw a filled rectangle
+        /// </summary> 
+        public static bool imagefilledrectangle(PhpResource im, int x1, int y1, int x2, int y2, int col)
+        {
+            var img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+            {
+                return false;
+            }
+
+            // PHP adds 1 more pixel to the right bottom
+            x2++;
+            y2++;
+
+            var rect = new RectangleF(x1, y1, x2 - x1, y2 - y1);
+
+            if (col == (int)ColorValues.TILED)
+            {
+                if (img.tiled != null)
+                {
+                    img.Image.Fill(img.tiled, rect);
+                }
+            }
+            else
+            {
+                img.Image.Fill(new Rgba32((uint)col), rect);
+            }
+
+            return true;
+        }
+
+        #endregion
+
+        #region imagesettile
+
+        /// <summary>
+        /// Set the tile image to $tile when filling $image with the "IMG_COLOR_TILED" color
+        /// </summary> 
+        public static bool imagesettile(PhpResource image, PhpResource tile)
+        {
+            var img = PhpGdImageResource.ValidImage(image);
+            if (img == null)
+            {
+                return false;
+            }
+
+            var imgTile = PhpGdImageResource.ValidImage(tile);
+            if (imgTile == null)
+            {
+                return false;
+            }
+
+            img.tiled = new ImageBrush<Rgba32>(imgTile.Image);
+
+            return false;
+        }
+
+        #endregion
+
+        #region imagecopy, imagecopymerge
 
         /// <summary>
         /// Copy a part of <paramref name="src_im"/> onto <paramref name="dst_im"/> starting at the x,y coordinates src_x, src_y with a width of src_w and a height of src_h.

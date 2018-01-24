@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using ImageSharp;
+using ImageSharp.Drawing;
 using ImageSharp.Formats;
 using Pchp.Core;
 using TImage = ImageSharp.Image<ImageSharp.Rgba32>;
@@ -52,9 +53,9 @@ namespace Peachpie.Library.Graphics
         //internal Rgba32 transparentColor;
         internal bool IsTransparentColSet = false;
 
-        //internal TextureBrush styled;
-        //internal TextureBrush brushed;
-        //internal TextureBrush tiled;
+        internal IBrush<Rgba32> styled;
+        internal IBrush<Rgba32> brushed;
+        internal IBrush<Rgba32> tiled;
 
         internal int LineThickness = 1;
 
@@ -91,22 +92,6 @@ namespace Peachpie.Library.Graphics
                 _image.Dispose();
                 _image = null;
             }
-
-            //if (this.styled != null)
-            //{
-            //    this.styled.Dispose();
-            //    this.styled = null;
-            //}
-            //if (this.brushed != null)
-            //{
-            //    this.brushed.Dispose();
-            //    this.brushed = null;
-            //}
-            //if (this.tiled != null)
-            //{
-            //    this.tiled.Dispose();
-            //    this.tiled = null;
-            //}
 
             base.FreeManaged();
         }
