@@ -39,6 +39,7 @@ namespace Pchp.Core
                 "Peachpie.Library.PDO.IBM",
                 "Peachpie.Library.PDO.MySQL",
                 "Peachpie.Library.PDO.PgSQL",
+                "Peachpie.Library.PDO.Sqlite",
                 "Peachpie.Library.PDO.SqlSrv",
             };
 
