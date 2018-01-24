@@ -32,11 +32,11 @@ namespace Peachpie.Library.PDO
         /// <param name="attribute">The attribute.</param>
         /// <returns></returns>
         [PhpHidden]
-        public object getAttribute(PDO_ATTR attribute)
+        public PhpValue getAttribute(PDO_ATTR attribute)
         {
-            if (this.m_attributes.ContainsKey(attribute))
+            if (this.m_attributes.TryGetValue(attribute, out PhpValue value))
             {
-                return this.m_attributes[attribute];
+                return value;
             }
 
             //TODO : what to do on unknown attribute ?
@@ -91,14 +91,14 @@ namespace Peachpie.Library.PDO
                     //boolean
                     case PDO_ATTR.ATTR_AUTOCOMMIT:
                     case PDO_ATTR.ATTR_EMULATE_PREPARES:
-                        this.m_attributes.Set(attribute, value.ToBoolean());
+                        this.m_attributes.Set(attribute, value);
                         return true;
 
 
                     //strict positif integers
                     case PDO_ATTR.ATTR_PREFETCH:
                     case PDO_ATTR.ATTR_TIMEOUT:
-                        this.m_attributes.Set(attribute, (int)value.ToLong());
+                        this.m_attributes.Set(attribute, value);
                         return true;
 
                     //remaining
@@ -107,7 +107,7 @@ namespace Peachpie.Library.PDO
                         int errmodeValue = (int)value.ToLong();
                         if (Enum.IsDefined(typeof(PDO_ERRMODE), errmodeValue))
                         {
-                            this.m_attributes.Set(attribute, (PDO_ERRMODE)errmodeValue);
+                            this.m_attributes.Set(attribute, (PhpValue)errmodeValue);
                             return true;
                         }
                         return false;
@@ -115,7 +115,7 @@ namespace Peachpie.Library.PDO
                         int caseValue = (int)value.ToLong();
                         if (Enum.IsDefined(typeof(PDO_CASE), caseValue))
                         {
-                            this.m_attributes.Set(attribute, (PDO_CASE)caseValue);
+                            this.m_attributes.Set(attribute, (PhpValue)caseValue);
                             return true;
                         }
                         return false;
@@ -123,7 +123,7 @@ namespace Peachpie.Library.PDO
                         int cursorValue = (int)value.ToLong();
                         if (Enum.IsDefined(typeof(PDO_CURSOR), cursorValue))
                         {
-                            this.m_attributes.Set(attribute, (PDO_CURSOR)cursorValue);
+                            this.m_attributes.Set(attribute, (PhpValue)cursorValue);
                             return true;
                         }
                         return false;

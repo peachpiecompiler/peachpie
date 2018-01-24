@@ -30,7 +30,7 @@ namespace Peachpie.Library.PDO
         [PhpHidden]
         public void HandleError(System.Exception ex)
         {
-            PDO_ERRMODE mode = (PDO_ERRMODE)this.m_attributes[PDO_ATTR.ATTR_ERRMODE];
+            PDO_ERRMODE mode = (PDO_ERRMODE)this.m_attributes[PDO_ATTR.ATTR_ERRMODE].ToLong();
             //TODO : fill errorCode and errorInfo
             switch (mode)
             {

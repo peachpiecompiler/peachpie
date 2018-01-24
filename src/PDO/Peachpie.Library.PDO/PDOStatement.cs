@@ -19,7 +19,7 @@ namespace Peachpie.Library.PDO
 
         private readonly DbCommand m_cmd;
         private DbDataReader m_dr;
-        private readonly Dictionary<PDO.PDO_ATTR, object> m_attributes = new Dictionary<PDO.PDO_ATTR, object>();
+        private readonly Dictionary<PDO.PDO_ATTR, PhpValue> m_attributes = new Dictionary<PDO.PDO_ATTR, PhpValue>();
         private string[] m_dr_names;
 
 
@@ -42,7 +42,7 @@ namespace Peachpie.Library.PDO
 
         private void SetDefaultAttributes()
         {
-            this.m_attributes.Set(PDO.PDO_ATTR.ATTR_CURSOR, PDO.PDO_CURSOR.CURSOR_FWDONLY);
+            this.m_attributes.Set(PDO.PDO_ATTR.ATTR_CURSOR, (PhpValue)(int)PDO.PDO_CURSOR.CURSOR_FWDONLY);
         }
 
         /// <inheritDoc />
@@ -56,7 +56,7 @@ namespace Peachpie.Library.PDO
         {
             if (this.m_dr == null)
             {
-                PDO.PDO_CURSOR cursor = (PDO.PDO_CURSOR)this.m_attributes[PDO.PDO_ATTR.ATTR_CURSOR];
+                PDO.PDO_CURSOR cursor = (PDO.PDO_CURSOR)this.m_attributes[PDO.PDO_ATTR.ATTR_CURSOR].ToLong();
                 this.m_dr = this.m_pdo.Driver.OpenReader(this.m_pdo, this.m_cmd, cursor);
                 switch (cursor)
                 {

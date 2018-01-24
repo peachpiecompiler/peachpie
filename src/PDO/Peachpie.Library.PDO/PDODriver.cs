@@ -83,7 +83,7 @@ namespace Peachpie.Library.PDO
         public abstract string GetLastInsertId(PDO pdo, string name);
 
         /// <inheritDoc />
-        public virtual bool TrySetAttribute(Dictionary<PDO.PDO_ATTR, object> attributes, PDO.PDO_ATTR attribute, PhpValue value)
+        public virtual bool TrySetAttribute(Dictionary<PDO.PDO_ATTR, PhpValue> attributes, PDO.PDO_ATTR attribute, PhpValue value)
         {
             return false;
         }

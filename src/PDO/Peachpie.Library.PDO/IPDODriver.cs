@@ -74,7 +74,7 @@ namespace Peachpie.Library.PDO
         /// <param name="attribute">The attribute to set.</param>
         /// <param name="value">The value.</param>
         /// <returns>true if value is valid, or false if value can't be set.</returns>
-        bool TrySetAttribute(Dictionary<PDO.PDO_ATTR, object> attributes, PDO.PDO_ATTR attribute, PhpValue value);
+        bool TrySetAttribute(Dictionary<PDO.PDO_ATTR, PhpValue> attributes, PDO.PDO_ATTR attribute, PhpValue value);
 
         /// <summary>
         /// Quotes a string for use in a query.
