@@ -50,17 +50,15 @@ namespace Pchp.CodeAnalysis.Symbols
             var typeParameters = ArrayBuilder<TypeParameterSymbol>.GetInstance(parameterCount + (returnsVoid ? 0 : 1));
             if (parameterCount != 0)
             {
-                throw new NotImplementedException();
-                //for (int i = 0; i < parameterCount; i++)
-                //{
-                //    typeParameters.Add(new AnonymousTypeManager.AnonymousTypeParameterSymbol(this, i, "T" + (i + 1)));
-                //}
+                for (int i = 0; i < parameterCount; i++)
+                {
+                    typeParameters.Add(new AnonymousTypeParameterSymbol(this, i, "T" + (i + 1)));
+                }
             }
 
             if (!returnsVoid)
             {
-                //typeParameters.Add(new AnonymousTypeManager.AnonymousTypeParameterSymbol(this, parameterCount, "TResult"));
-                throw new NotImplementedException();
+                typeParameters.Add(new AnonymousTypeParameterSymbol(this, parameterCount, "TResult"));
             }
 
             return typeParameters.ToImmutableAndFree();
@@ -219,13 +217,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit()
         {
-            throw new NotImplementedException();
+            return CalculateInterfacesToEmit();
         }
-
-        //internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit()
-        //{
-        //    return CalculateInterfacesToEmit();
-        //}
 
         public override NamedTypeSymbol BaseType //NoUseSiteDiagnostics
         {
