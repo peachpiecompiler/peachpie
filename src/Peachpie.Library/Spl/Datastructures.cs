@@ -163,7 +163,7 @@ namespace Pchp.Library.Spl
             return result;
         }
 
-        public virtual object getSize() => count();
+        public virtual long getSize() => count();
 
         public virtual void setSize(long size)
         {
