@@ -91,4 +91,16 @@ namespace Pchp.Library.Spl
         {
         }
     }
+
+    [PhpType(PhpTypeAttribute.InheritName)]
+    public class TypeError : Error
+    {
+        [PhpFieldsOnlyCtor]
+        protected TypeError() { }
+
+        public TypeError(string message = "", long code = 0, Throwable previous = null)
+            : base(message, code, previous)
+        {
+        }
+    }
 }
