@@ -109,7 +109,7 @@ namespace Pchp.Library.Spl
 
         public sealed override void __construct(string message = "", long code = 0, Throwable previous = null)
             => __construct(message, code, -1, null, -1, (Exception)previous);
-        
+
         public virtual void __construct(string message = "", long code = 0, int severity = (int)PhpError.E_ERROR, string filename = null, int lineno = -1, Exception previous = null)
         {
             this.message = message;
@@ -162,6 +162,21 @@ namespace Pchp.Library.Spl
         protected OverflowException() { }
 
         public OverflowException(string message = "", long code = 0, Throwable previous = null)
+            : base(message, code, previous)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Exception thrown to indicate range errors during program execution.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class RangeException : RuntimeException
+    {
+        [PhpFieldsOnlyCtor]
+        protected RangeException() { }
+
+        public RangeException(string message = "", long code = 0, Throwable previous = null)
             : base(message, code, previous)
         {
         }
