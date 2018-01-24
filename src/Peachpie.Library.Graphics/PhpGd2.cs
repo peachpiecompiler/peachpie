@@ -695,7 +695,25 @@ namespace Peachpie.Library.Graphics
 
         #endregion
 
-        #region imagefilledrectangle
+        #region imagerectangle, imagefilledrectangle
+
+        /// <summary>
+        /// Draw a rectangle
+        /// </summary> 
+        public static bool imagerectangle(PhpResource im, int x1, int y1, int x2, int y2, int col)
+        {
+            var img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+            {
+                return false;
+            }
+
+            var rect = new RectangleF(x1, y1, x2 - x1, y2 - y1);
+
+            img.Image.Draw(new Rgba32((uint)col), 1.0f, rect);
+
+            return true;
+        }
 
         /// <summary>
         /// Draw a filled rectangle
@@ -708,11 +726,7 @@ namespace Peachpie.Library.Graphics
                 return false;
             }
 
-            // PHP adds 1 more pixel to the right bottom
-            x2++;
-            y2++;
-
-            var rect = new RectangleF(x1, y1, x2 - x1, y2 - y1);
+            var rect = new RectangleF(x1, y1, x2 - x1 + 1, y2 - y1 + 1);
 
             if (col == (int)ColorValues.TILED)
             {
