@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using ImageSharp;
 using ImageSharp.Drawing.Brushes;
@@ -8,6 +9,7 @@ using ImageSharp.Formats;
 using ImageSharp.Processing;
 using Pchp.Core;
 using Pchp.Library.Streams;
+using SixLabors.Fonts;
 using SixLabors.Primitives;
 
 namespace Peachpie.Library.Graphics
@@ -620,7 +622,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Allocate a color for an image
         /// </summary> 
-        public static int imagecolorallocate(PhpResource im, int red, int green, int blue)
+        public static long imagecolorallocate(PhpResource im, int red, int green, int blue)
         {
             var img = PhpGdImageResource.ValidImage(im);
             if (img == null)
@@ -633,7 +635,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Allocate a color with an alpha level.  Works for true color and palette based images.
         /// </summary>
-        public static int imagecolorallocatealpha(PhpResource im, int red, int green, int blue, int alpha)
+        public static long imagecolorallocatealpha(PhpResource im, int red, int green, int blue, int alpha)
         {
             var img = PhpGdImageResource.ValidImage(im);
             if (img == null)
@@ -646,12 +648,12 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// RGBA values to PHP Color format.
         /// </summary>
-        static int RGBA(int red, int green, int blue, int alpha = 0)
+        static long RGBA(long red, long green, long blue, long alpha = 0xff)
         {
             return (alpha << 24)
-                | (blue & 0x0000FF)
+                | ((red & 0x0000FF) << 16)
                 | ((green & 0x0000FF) << 8)
-                | ((red & 0x0000FF) << 16);
+                | (blue & 0x0000FF);
         }
 
         #endregion
@@ -700,7 +702,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Draw a rectangle
         /// </summary> 
-        public static bool imagerectangle(PhpResource im, int x1, int y1, int x2, int y2, int col)
+        public static bool imagerectangle(PhpResource im, int x1, int y1, int x2, int y2, long col)
         {
             var img = PhpGdImageResource.ValidImage(im);
             if (img == null)
@@ -718,7 +720,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Draw a filled rectangle
         /// </summary> 
-        public static bool imagefilledrectangle(PhpResource im, int x1, int y1, int x2, int y2, int col)
+        public static bool imagefilledrectangle(PhpResource im, int x1, int y1, int x2, int y2, long col)
         {
             var img = PhpGdImageResource.ValidImage(im);
             if (img == null)
@@ -767,6 +769,123 @@ namespace Peachpie.Library.Graphics
             img.tiled = new ImageBrush<Rgba32>(imgTile.Image);
 
             return false;
+        }
+
+        #endregion
+
+        #region imagettftext
+
+        /// <summary>
+        /// Write text to the image using a TrueType font
+        /// </summary> 
+        [return: CastToFalse]
+        public static PhpArray imagettftext(Context ctx, PhpResource im, double size, double angle, int x, int y, long color, string font_file, string text)
+        {
+            var img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+            {
+                return null;
+            }
+
+            if (string.IsNullOrEmpty(font_file))
+            {
+                PhpException.Throw(PhpError.Warning, Resources.filename_cannot_be_empty);
+                return null;
+            }
+
+            var font_stream = PhpStream.Open(ctx, font_file, "rb");
+            if (font_stream == null)
+            {
+                PhpException.Throw(PhpError.Warning, Resources.invalid_font_filename, font_file);
+                return null;
+            }
+
+            // Font preparation
+            FontFamily family;
+
+            try
+            {
+                family = new FontCollection().Install(font_stream.RawStream); // TODO: perf: global font collection cache
+
+                if (ReferenceEquals(family, null))
+                {
+                    throw new InvalidOperationException();
+                }
+            }
+            catch
+            {
+                PhpException.Throw(PhpError.Warning, Resources.invalid_font_filename, font_file);
+                return null;
+            }
+            finally
+            {
+                font_stream.Dispose();
+            }
+
+            FontStyle style;
+
+            if (family.IsStyleAvailible(FontStyle.Regular))
+            {
+                style = FontStyle.Regular;
+            }
+            else if (family.IsStyleAvailible(FontStyle.Bold))
+            {
+                style = FontStyle.Bold;
+            }
+            else if (family.IsStyleAvailible(FontStyle.Italic))
+            {
+                style = FontStyle.Italic;
+            }
+            else if (family.IsStyleAvailible(FontStyle.BoldItalic))
+            {
+                style = FontStyle.BoldItalic;
+            }
+            else
+            {
+                return null;
+            }
+            
+            var font = new Font(family, (float)size, style);
+            var textsize = TextMeasurer.Measure(text, new RendererOptions(font));
+
+            // text transformation:
+            var matrix = (angle == 0.0) ? Matrix3x2.Identity : Matrix3x2.CreateRotation((float)(angle * -2.0 * Math.PI / 360.0f));
+            matrix.Translation = new Vector2(x, y);
+
+            var path = new SixLabors.Shapes.PathBuilder(matrix).AddLine(0, 0, textsize.Width, 0).Build();
+
+            // draw the text:
+            // TODO: col < 0 => turn off antialiasing
+            img.Image.DrawText(text, font, new Rgba32((uint)Math.Abs(color)), path);
+
+            // calculate drawen text boundaries:
+            var pts = new Vector2[]
+            {
+                new Vector2(0, textsize.Height), // lower left
+                new Vector2(textsize.Width, textsize.Height), // lower right
+                new Vector2(textsize.Width, 0), // upper right
+                new Vector2(0, 0), // upper left
+            };
+            
+            for (int i = 0; i < pts.Length; i++)
+            {
+                pts[i] = Vector2.Transform(pts[i], matrix);
+            }
+
+            return new PhpArray(8)
+            {
+                pts[0].X,
+                pts[0].Y,
+
+                pts[1].X,
+                pts[1].Y,
+
+                pts[2].X,
+                pts[2].Y,
+
+                pts[3].X,
+                pts[3].Y,
+            };
         }
 
         #endregion
@@ -920,7 +1039,7 @@ namespace Peachpie.Library.Graphics
                 var filename = to.ToStringOrNull();
                 if (filename != null)
                 {
-                    using (var stream = File.OpenWrite(Path.Combine(ctx.WorkingDirectory, filename)))
+                    using (var stream = File.OpenWrite(System.IO.Path.Combine(ctx.WorkingDirectory, filename)))
                     {
                         saveaction(img.Image, stream);
                     }
