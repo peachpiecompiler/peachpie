@@ -483,6 +483,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Compare_bool_bool = ct.Comparison.Method("Compare", ct.Boolean, ct.Boolean);
                 Compare_number_value = ct.Comparison.Method("Compare", ct.PhpNumber, ct.PhpValue);
                 Compare_long_value = ct.Comparison.Method("Compare", ct.Long, ct.PhpValue);
+                Compare_value_long = ct.Comparison.Method("Compare", ct.PhpValue, ct.Long);
                 Compare_double_value = ct.Comparison.Method("Compare", ct.Double, ct.PhpValue);
                 Compare_bool_value = ct.Comparison.Method("Compare", ct.Boolean, ct.PhpValue);
                 Compare_value_value = ct.Comparison.Method("Compare", ct.PhpValue, ct.PhpValue);
@@ -550,7 +551,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Ceq_long_double, Ceq_long_bool, Ceq_long_string, Ceq_double_string, Ceq_string_long, Ceq_string_double, Ceq_string_bool, CeqNull_value,
                 Clt_long_double, Cgt_long_double,
                 Compare_bool_bool, Compare_number_value,
-                Compare_long_value, Compare_value_value, Compare_double_value, Compare_bool_value, Compare_string_string, Compare_string_long, Compare_string_double, Compare_string_value,
+                Compare_long_value, Compare_value_long, Compare_value_value, Compare_double_value, Compare_bool_value, Compare_string_string, Compare_string_long, Compare_string_double, Compare_string_value,
 
                 StrictCeq_bool_PhpValue, StrictCeq_long_PhpValue, StrictCeq_double_PhpValue, StrictCeq_PhpValue_PhpValue,
                 StrictCeq_PhpValue_bool,

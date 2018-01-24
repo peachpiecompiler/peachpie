@@ -254,7 +254,7 @@ namespace Pchp.Core
             if (count_x != 0)
             {
                 if (count_y == 0) return count_x;
-                
+
                 var enumerator = arr_x.GetFastEnumerator();
                 while (enumerator.MoveNext())
                 {
@@ -290,6 +290,8 @@ namespace Pchp.Core
         public static int Compare(PhpNumber x, PhpValue y) => x.IsLong ? Compare(x.Long, y) : Compare(x.Double, y);
 
         public static int Compare(PhpValue x, PhpValue y) => x.Compare(y);
+
+        public static int Compare(PhpValue x, long ly) => -Compare(ly, x);
 
         /// <summary>
 		/// Compares two long integer values.

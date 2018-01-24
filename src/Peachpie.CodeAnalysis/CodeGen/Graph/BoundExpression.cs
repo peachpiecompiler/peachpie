@@ -1437,13 +1437,21 @@ namespace Pchp.CodeAnalysis.Semantics
                         ytype = cg.Emit(right);
 
                         // TODO: if (ytype.SpecialType == SpecialType.System_Boolean) ...
-                        // TODO: if (ytype.SpecialType == SpecialType.System_Int64) ...
                         // TODO: if (ytype.SpecialType == SpecialType.System_String) ...
                         // TODO: if (ytype.SpecialType == SpecialType.System_Double) ...
 
-                        // compare(value, value)
-                        ytype = cg.EmitConvertToPhpValue(ytype, right.TypeRefMask);
-                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_value_value);
+                        if (ytype.SpecialType == SpecialType.System_Int64 || ytype.SpecialType == SpecialType.System_Int32)
+                        {
+                            // compare(value, i8)
+                            ytype = cg.EmitConvertIntToLong(ytype);
+                            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_value_long);
+                        }
+                        else
+                        {
+                            // compare(value, value)
+                            ytype = cg.EmitConvertToPhpValue(ytype, right.TypeRefMask);
+                            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_value_value);
+                        }
 
                         // <> 0
                         il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
