@@ -317,7 +317,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     {
                         vartype |= TypeCtx.GetSystemObjectTypeMask();
                     }
-                    if (x.Access.EnsureArray)
+                    if (x.Access.EnsureArray && !TypeHelpers.HasArrayAccess(vartype, TypeCtx, model: Model))
                     {
                         vartype |= TypeCtx.GetArrayTypeMask();
                     }

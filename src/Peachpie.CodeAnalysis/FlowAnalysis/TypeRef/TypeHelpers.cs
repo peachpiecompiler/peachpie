@@ -1,5 +1,6 @@
 ﻿using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -150,31 +151,49 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return false;
         }
 
-        ///// <summary>
-        ///// Gets value indicating whether specified object of type <paramref name="type"/> can handle <c>[]</c> operator.
-        ///// </summary>
-        ///// <param name="type">Type of the object.</param>
-        ///// <param name="ctx">Type context.</param>
-        ///// <param name="model">Type graph.</param>
-        ///// <returns>True iff <c>[]</c> operator is allowed.</returns>
-        //internal static bool HasArrayAccess(TypeRefMask type, TypeRefContext/*!*/ctx, ISemanticModel/*!*/model)
-        //{
-        //    //
-        //    if (type.IsAnyType || type.IsVoid || ctx.IsArray(type) || ctx.IsString(type))
-        //        return true;
+        /// <summary>
+        /// Gets value indicating whether specified object of type <paramref name="type"/> handles <c>[]</c> operator.
+        /// In case of ambiguity, all ambiguities must support the array access operator.
+        /// </summary>
+        /// <param name="type">Type of the object.</param>
+        /// <param name="ctx">Type context.</param>
+        /// <param name="model">Type provider.</param>
+        /// <returns>True iff <c>[]</c> operator is allowed.</returns>
+        internal static bool HasArrayAccess(TypeRefMask type, TypeRefContext/*!*/ctx, ISymbolProvider/*!*/model)
+        {
+            // quick check:
+            if (type.IsAnyType || type.IsVoid || type.IsRef)
+            {
+                return false;
+            }
 
-        //    // object implementing ArrayAccess
-        //    if (ctx.IsObject(type))
-        //    {
-        //        var types = ctx.GetObjectTypes(type);
-        //        foreach (var t in types)
-        //            if (model.IsAssignableFrom(NameUtils.SpecialNames.ArrayAccess, t.QualifiedName))
-        //                return true;
-        //    }
+            // check types with array access operator support:
+            foreach (var t in ctx.GetTypes(type))
+            {
+                switch (t.TypeCode)
+                {
+                    case PhpTypeCode.String:
+                    case PhpTypeCode.WritableString:
+                    case PhpTypeCode.PhpArray:
+                        break;  // ok
 
-        //    //
-        //    return false;
-        //}
+                    case PhpTypeCode.Object:
+                        // object implementing ArrayAccess
+                        var symbol = (NamedTypeSymbol)model.ResolveType(t.QualifiedName);
+                        if (symbol.IsValidType() && symbol.IsOfType((TypeSymbol)model.ResolveType(NameUtils.SpecialNames.ArrayAccess)))
+                        {
+                            break; // ok
+                        }
+                        goto default;
+
+                    default:
+                        return false;
+                }
+            }
+
+            // passed all checks:
+            return true;
+        }
 
         ///// <summary>
         ///// Gets value indicating whether specified object of type <paramref name="type"/> can be used as <c>foreach</c> enumerable variable.
