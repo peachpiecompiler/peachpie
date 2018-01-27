@@ -106,8 +106,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (typeRef != null)
             {
-                CheckUndefinedType(typeRef);
-                base.VisitTypeRef(typeRef);
+                if (typeRef.HasClassNameRestriction && typeRef.TypeRef is Devsense.PHP.Syntax.Ast.PrimitiveTypeRef)
+                {
+                    // error: use of primitive type {0} is misused // primitive type does not make any sense in this context
+                    _diagnostics.Add(_routine, typeRef.TypeRef, ErrorCode.ERR_PrimitiveTypeNameMisused, typeRef.TypeRef);
+                }
+                else
+                {
+                    CheckUndefinedType(typeRef);
+                    base.VisitTypeRef(typeRef);
+                }
             }
         }
 

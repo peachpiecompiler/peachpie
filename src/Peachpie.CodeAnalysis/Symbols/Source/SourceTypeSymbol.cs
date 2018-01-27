@@ -781,10 +781,8 @@ namespace Pchp.CodeAnalysis.Symbols
             // used traits // consider: move to semantic binder?
             foreach (var m in syntax.Members.OfType<TraitsUse>())
             {
-                foreach (var t in m.TraitsList)
+                foreach (var namedt in m.TraitsList.OfType<INamedTypeRef>())
                 {
-                    var namedt = (INamedTypeRef)t;
-
                     yield return new TypeRefSymbol()
                     {
                         TypeRef = namedt,
@@ -825,6 +823,18 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     // ERR: Access level to {0}::${1} must be {2} (as in class {3}) or weaker
                     diagnostic.Add(f.Locations[0], ErrorCode.ERR_PropertyAccessibilityError, FullName, f.Name, basedef.DeclaredAccessibility.ToString().ToLowerInvariant(), ((IPhpTypeSymbol)basedef.ContainingType).FullName);
+                }
+            }
+
+            // trait use check
+            foreach (var m in Syntax.Members.OfType<TraitsUse>())
+            {
+                foreach (var t in m.TraitsList)
+                {
+                    if (t is Devsense.PHP.Syntax.Ast.PrimitiveTypeRef)
+                    {
+                        diagnostic.Add(CreateLocation(t.Span), ErrorCode.ERR_PrimitiveTypeNameMisused, t);
+                    }
                 }
             }
         }

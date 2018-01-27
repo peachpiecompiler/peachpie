@@ -225,4 +225,7 @@
   <data name="ERR_PropertyAccessibilityError" xml:space="preserve">
     <value>Access level to {0}::${1} must be {2} (as in class {3}) or weaker</value>
   </data>
+  <data name="ERR_PrimitiveTypeNameMisused" xml:space="preserve">
+    <value>Use of primitive type '{0}' is misused</value>
+  </data>
 </root>

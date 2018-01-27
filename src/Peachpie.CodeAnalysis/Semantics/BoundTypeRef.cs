@@ -75,6 +75,12 @@ namespace Pchp.CodeAnalysis.Semantics
         public bool ObjectTypeInfoSemantic => _objectTypeInfoSemantic;
         readonly bool _objectTypeInfoSemantic;
 
+        /// <summary>
+        /// Whether the type can represents a class only (not a primitive type).
+        /// </summary>
+        public bool HasClassNameRestriction => _isClassName;
+        readonly bool _isClassName;
+
         string DebugView
         {
             get
@@ -108,10 +114,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
         ITypeSymbol IBoundTypeRef.Symbol => this.ResolvedType;
 
-        public BoundTypeRef(TypeRef tref, bool objAsTypeInfo)
+        public BoundTypeRef(TypeRef tref, bool objAsTypeInfo, bool isClassName)
         {
             _typeRef = tref;
             _objectTypeInfoSemantic = objAsTypeInfo;
+            _isClassName = isClassName;
         }
     }
 
@@ -140,8 +147,8 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        public BoundMultipleTypeRef(ImmutableArray<BoundTypeRef> boundTypes, TypeRef tref, bool objAsTypeInfo)
-            : base(tref, objAsTypeInfo)
+        public BoundMultipleTypeRef(ImmutableArray<BoundTypeRef> boundTypes, TypeRef tref, bool objAsTypeInfo, bool isClassName)
+            : base(tref, objAsTypeInfo, isClassName)
         {
             Debug.Assert(boundTypes.Length > 1);
             Debug.Assert(!boundTypes.Any(t => t is BoundMultipleTypeRef));

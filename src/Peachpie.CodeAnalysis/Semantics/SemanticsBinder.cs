@@ -433,7 +433,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (x is AST.ClassConstUse)
             {
                 var cx = (AST.ClassConstUse)x;
-                var typeref = BindTypeRef(cx.TargetType, objectTypeInfoSemantic: true);
+                var typeref = BindTypeRef(cx.TargetType, objectTypeInfoSemantic: true, isClassName: true);
 
                 if (cx.Name.Equals("class"))   // pseudo class constant
                 {
@@ -487,7 +487,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindInstanceOfEx(AST.InstanceOfEx x)
         {
-            return new BoundInstanceOfEx(BindExpression(x.Expression, BoundAccess.Read), BindTypeRef(x.ClassNameRef, objectTypeInfoSemantic: true));
+            return new BoundInstanceOfEx(BindExpression(x.Expression, BoundAccess.Read), BindTypeRef(x.ClassNameRef, objectTypeInfoSemantic: true, isClassName: true));
         }
 
         protected BoundExpression BindIncludeEx(AST.IncludingEx x)
@@ -580,25 +580,25 @@ namespace Pchp.CodeAnalysis.Semantics
                     ? new BoundRoutineName(new QualifiedName(stmtd.MethodName))
                     : new BoundRoutineName(new BoundUnaryEx(BindExpression(((AST.IndirectStMtdCall)f).MethodNameExpression), AST.Operations.StringCast));
 
-                return new BoundStaticFunctionCall(BindTypeRef(f.TargetType, objectTypeInfoSemantic: true), boundname, boundArguments);
+                return new BoundStaticFunctionCall(BindTypeRef(f.TargetType, objectTypeInfoSemantic: true, isClassName: true), boundname, boundArguments);
             }
 
             //
             throw new NotImplementedException(x.GetType().FullName);
         }
 
-        public BoundTypeRef BindTypeRef(AST.TypeRef tref, bool objectTypeInfoSemantic = false)
+        public BoundTypeRef BindTypeRef(AST.TypeRef tref, bool objectTypeInfoSemantic = false, bool isClassName = false)
         {
             if (tref is AST.MultipleTypeRef mref)
             {
                 return new BoundMultipleTypeRef(
-                    mref.MultipleTypes.Select(r => BindTypeRef(r, objectTypeInfoSemantic)).AsImmutable(),
+                    mref.MultipleTypes.Select(r => BindTypeRef(r, objectTypeInfoSemantic, isClassName)).AsImmutable(),
                     tref,
-                    objectTypeInfoSemantic);
+                    objectTypeInfoSemantic, isClassName);
             }
             else
             {
-                var bound = new BoundTypeRef(tref, objectTypeInfoSemantic);
+                var bound = new BoundTypeRef(tref, objectTypeInfoSemantic, isClassName);
 
                 if (tref is AST.IndirectTypeRef)
                 {
@@ -647,7 +647,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(access.IsRead || access.IsReadRef || access.IsNone);
 
-            return new BoundNewEx(BindTypeRef(x.ClassNameRef), BindArguments(x.CallSignature.Parameters))
+            return new BoundNewEx(BindTypeRef(x.ClassNameRef, isClassName: true), BindArguments(x.CallSignature.Parameters))
                 .WithAccess(access);
         }
 
@@ -777,7 +777,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindFieldUse(AST.StaticFieldUse x, BoundAccess access)
         {
-            var typeref = BindTypeRef(x.TargetType, objectTypeInfoSemantic: true);
+            var typeref = BindTypeRef(x.TargetType, objectTypeInfoSemantic: true, isClassName: true);
             BoundVariableName varname;
 
             if (x is AST.DirectStFldUse)

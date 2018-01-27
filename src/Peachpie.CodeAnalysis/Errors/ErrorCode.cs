@@ -97,6 +97,9 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_FinalAbstractClassDeclared,
         /// <summary>Access level to {0}::${1} must be {2} (as in class {3}) or weaker</summary>
         ERR_PropertyAccessibilityError,
+        /// <summary>Use of primitive type '{0}' is misused</summary>
+        ERR_PrimitiveTypeNameMisused,
+
         //
         // Warnings
         //
