@@ -602,8 +602,6 @@ namespace Peachpie.Library.XmlDom
 
         #region Internal overrides: Conversions, Dump, and Cloning
 
-        PhpTypeCode IPhpConvertible.TypeCode => PhpTypeCode.Object;
-
         string IPhpConvertible.ToString(Context ctx) => ToString();
 
         string IPhpConvertible.ToStringOrThrow(Context ctx) => ToString();
