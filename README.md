@@ -78,6 +78,9 @@ We can use all the help we can get. You can contribute to our repository, spread
 
 However, please read the [Contribution Guidelines](https://github.com/peachpiecompiler/peachpie/blob/master/CONTRIBUTING.md) first and ensure you are following them. Also, we kindly ask you to respect our [Code of Conduct](https://github.com/peachpiecompiler/peachpie/blob/master/CODE_OF_CONDUCT.md) when posting or interacting with other users. 
 
+You can also contribute by donating any amount of money to the development of Peachpie:
+<p align="center"> <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=BY2V98VY57K2E" target="_blank"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif"/></a> </p>  
+
 ## Providing feedback
 If you found a bug, have a question or if you have an improvement suggestion, the easiest way of providing feedback is to post it on [Gitter](https://gitter.im/iolevel/peachpie) or submit an issue here on GitHub. We try to respond as quickly as possible.
 
