@@ -174,8 +174,6 @@ namespace Pchp.Core
 
         #region IPhpConvertible
 
-        PhpTypeCode IPhpConvertible.TypeCode => PhpTypeCode.Resource;
-
         double IPhpConvertible.ToDouble() => (double)((IPhpConvertible)this).ToLong();
 
         long IPhpConvertible.ToLong() => IsValid ? Id : 0;

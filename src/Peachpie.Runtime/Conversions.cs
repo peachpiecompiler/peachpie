@@ -18,11 +18,6 @@ namespace Pchp.Core
     public interface IPhpConvertible
     {
         /// <summary>
-        /// Gets the object type code.
-        /// </summary>
-        PhpTypeCode TypeCode { get; }
-
-        /// <summary>
         /// Converts the object to <see cref="double"/>.
         /// </summary>
         /// <returns></returns>

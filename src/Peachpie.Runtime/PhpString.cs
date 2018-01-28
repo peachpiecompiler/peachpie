@@ -44,25 +44,29 @@ namespace Pchp.Core
         //    public bool IsPhpString => _obj != null && _obj.GetType() == typeof(PhpString);
         //}
 
-        [Flags]
-        enum Flags : byte
+        internal sealed class Blob
         {
-            None = 0,
+            #region enum Flags
 
-            ContainsBinary = 1,
+            [Flags]
+            enum Flags : byte
+            {
+                None = 0,
 
-            IsNonEmpty = 2,
+                ContainsBinary = 1,
 
-            IsArrayOfChunks = 4,
+                IsNonEmpty = 2,
 
-            /// <summary>
-            /// Whether the blob contains mutable instances that have to be cloned when copying.
-            /// </summary>
-            ContainsMutables = 8,
-        }
+                IsArrayOfChunks = 4,
 
-        sealed class Blob
-        {
+                /// <summary>
+                /// Whether the blob contains mutable instances that have to be cloned when copying.
+                /// </summary>
+                ContainsMutables = 8,
+            }
+
+            #endregion
+            
             #region Fields
 
             /// <summary>
@@ -783,8 +787,6 @@ namespace Pchp.Core
         // Prepend
 
         #region IPhpConvertible
-
-        public PhpTypeCode TypeCode => PhpTypeCode.WritableString;
 
         public bool ToBoolean() => _blob.ToBoolean();
 
