@@ -1651,7 +1651,15 @@ namespace Pchp.CodeAnalysis.CodeGen
                     break;
 
                 default:
-                    if (t.IsValueType || t == CoreTypes.PhpAlias)   // PhpValue, PhpNumber, PhpAlias
+                    // uninitialized:
+                    if (t == CoreTypes.PhpString)
+                    {
+                        Debug.Assert(t.IsValueType);
+                        break;
+                    }
+
+                    // PhpValue, PhpNumber, PhpAlias:
+                    if (t.IsValueType || t == CoreTypes.PhpAlias)
                     {
                         // fld = default(T)
                         place.EmitStorePrepare(_il);
