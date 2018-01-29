@@ -954,6 +954,11 @@ namespace Pchp.Core.Dynamic
                     // Template: test = x >= 0.0
                     test = Expression.GreaterThanOrEqual(assign, Expression.Constant(0.0));
                 }
+                else if (expr.Type == typeof(PhpString))
+                {
+                    // Template: test = !x.IsDefault
+                    test = Expression.Not(Expression.Property(assign, Cache.PhpString.IsDefault));
+                }
                 else if (expr.Type.GetTypeInfo().IsValueType == false)  // reference type
                 {
                     // Template: test = x != null

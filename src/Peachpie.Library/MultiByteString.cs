@@ -233,7 +233,7 @@ namespace Pchp.Library
             switch (value.TypeCode)
             {
                 case PhpTypeCode.String: return value.String;
-                case PhpTypeCode.WritableString: return ToString(ctx, value.WritableString, forceencoding);
+                case PhpTypeCode.MutableString: return ToString(ctx, value.MutableString, forceencoding);
                 case PhpTypeCode.Alias: return ToString(ctx, value.Alias.Value, forceencoding);
                 default: return value.ToStringOrThrow(ctx);
             }
@@ -709,9 +709,9 @@ namespace Pchp.Library
         /// <summary>
         /// Check if the string is valid for the specified encoding
         /// </summary>
-        public static bool mb_check_encoding(Context ctx, PhpString var = null, string encoding = null/*mb_internal_encoding()*/)
+        public static bool mb_check_encoding(Context ctx, PhpString var = default(PhpString), string encoding = null/*mb_internal_encoding()*/)
         {
-            if (var == null)
+            if (var.IsDefault)
             {
                 // NS: check all the input from the beginning of the request
                 throw new NotSupportedException();

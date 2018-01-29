@@ -42,7 +42,7 @@ namespace Pchp.Core
                         case PhpTypeCode.Object: return _value.Object;
                         case PhpTypeCode.PhpArray: return _value.Array;
                         case PhpTypeCode.String: return _value.String;
-                        case PhpTypeCode.WritableString: return _value.WritableString.ToString();
+                        case PhpTypeCode.MutableString: return _value.MutableString.ToString();
                         default: return null;
                     }
                 }

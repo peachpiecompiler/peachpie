@@ -588,7 +588,7 @@ namespace Pchp.Library
             var stream = PhpStream.GetValid(handle);
             if (stream == null)
             {
-                return null;
+                return default(PhpString);
             }
 
             return stream.IsText
@@ -606,7 +606,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpString fgetc(Context ctx, PhpResource handle)
         {
-            return feof(handle) ? null : fread(ctx, handle, 1);
+            return feof(handle) ? default(PhpString) : fread(ctx, handle, 1);
         }
 
         /// <summary>
@@ -658,7 +658,7 @@ namespace Pchp.Library
                 return -1;
             }
 
-            if (data == null || data.IsEmpty)
+            if (data.IsEmpty)
             {
                 return 0;
             }
@@ -761,7 +761,7 @@ namespace Pchp.Library
         public static PhpString fgets(PhpResource handle)
         {
             PhpStream stream = PhpStream.GetValid(handle);
-            if (stream == null) return null;
+            if (stream == null) return default(PhpString);
 
             // Use the default accessor to the stream breaking at \n, no superfluous conversion.
             //return Core.Convert.Quote(stream.ReadData(-1, true), ScriptContext.CurrentContext);
@@ -802,7 +802,7 @@ namespace Pchp.Library
             }
 
             PhpStream stream = PhpStream.GetValid(handle);
-            if (stream == null) return null;
+            if (stream == null) return default(PhpString);
 
             // Use the default accessor to the stream breaking at \n, no superfluous conversion.
             //return Core.Convert.Quote(stream.ReadData(length, true), ScriptContext.CurrentContext);
@@ -915,11 +915,16 @@ namespace Pchp.Library
         {
             var sc = StreamContext.GetValid(context, true);
             if (sc == null)
-                return null;
+            {
+                return default(PhpString);
+            }
 
             using (PhpStream stream = PhpStream.Open(ctx, path, "rb", ProcessOptions(ctx, flags), sc))
             {
-                if (stream == null) return null;
+                if (stream == null)
+                {
+                    return default(PhpString);
+                }
 
                 // when HTTP protocol requested, store responded headers into local variable $http_response_header:
                 if (string.Compare(stream.Wrapper.Scheme, "http", StringComparison.OrdinalIgnoreCase) == 0)

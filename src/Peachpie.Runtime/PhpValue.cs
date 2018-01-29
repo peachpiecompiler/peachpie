@@ -132,7 +132,7 @@ namespace Pchp.Core
                     case PhpTypeCode.Long:
                     case PhpTypeCode.Double:
                     case PhpTypeCode.String:
-                    case PhpTypeCode.WritableString:
+                    case PhpTypeCode.MutableString:
                     case PhpTypeCode.Null:
                         return true;
 
@@ -173,10 +173,15 @@ namespace Pchp.Core
         public string String { get { Debug.Assert(_obj.Obj is string || _obj.Obj == null); return _obj.String; } }
 
         /// <summary>
+        /// Gets underlaying <see cref="PhpString.Blob"/> object.
+        /// </summary>
+        internal PhpString.Blob MutableStringBlob { get { Debug.Assert(_obj.Obj is PhpString.Blob); return (PhpString.Blob)_obj.Obj; } }
+
+        /// <summary>
         /// Gets the object field of the value as PHP writable string.
         /// Does not perform a conversion, expects the value is of type (writable UTF16 or single-byte) string.
         /// </summary>
-        public PhpString WritableString { get { Debug.Assert(_obj.Obj is PhpString); return (PhpString)_obj.Obj; } }
+        public PhpString MutableString { get { return new PhpString(MutableStringBlob); } }
 
         /// <summary>
         /// Gets underlaying reference object.
@@ -437,7 +442,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Object: return Object;
                 case PhpTypeCode.PhpArray: return Array;
                 case PhpTypeCode.String: return String;
-                case PhpTypeCode.WritableString: return WritableString.ToString();
+                case PhpTypeCode.MutableString: return MutableString.ToString();
                 case PhpTypeCode.Alias: return Alias.Value.ToClr();
                 default:
                     throw new ArgumentException();
@@ -548,6 +553,13 @@ namespace Pchp.Core
             _obj.Obj = obj;
         }
 
+        private PhpValue(PhpString.Blob blob) : this()
+        {
+            Debug.Assert(blob != null);
+            _type = TypeTable.MutableStringTable;
+            _obj.Obj = blob;
+        }
+
         private PhpValue(TypeTable type) : this()
         {
             _type = type;
@@ -569,7 +581,9 @@ namespace Pchp.Core
 
         public static PhpValue Create(string value) => new PhpValue(TypeTable.StringTable, value);
 
-        public static PhpValue Create(PhpString value) => new PhpValue(TypeTable.WritableStringTable, value);
+        public static PhpValue Create(PhpString value) => value.AsPhpValue(value);
+
+        internal static PhpValue Create(PhpString.Blob blob) => new PhpValue(blob);
 
         public static PhpValue Create(PhpArray value) => new PhpValue(TypeTable.ArrayTable, value);
 

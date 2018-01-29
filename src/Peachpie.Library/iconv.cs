@@ -260,9 +260,9 @@ namespace Pchp.Library
                         string
                             strChar = line.Substring(0, t1),
                             str = line.Substring(t1 + 1, t2 - t1);
-                        
+
                         int charNumber = int.Parse(strChar, System.Globalization.NumberStyles.HexNumber);
-                        
+
                         if (transliterationsMaxCharCount < str.Length)
                             transliterationsMaxCharCount = str.Length;
 
@@ -498,7 +498,7 @@ namespace Pchp.Library
         /// <returns>Returns the character count of str, as an integer.</returns>
         public static int iconv_strlen(Context ctx, PhpString str, string charset = null/*=iconv.internal_encoding*/)
         {
-            if (str == null || str.IsEmpty)
+            if (str.IsEmpty)
             {
                 return 0;
             }
@@ -529,7 +529,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static int iconv_strpos(Context ctx, PhpString haystack, PhpString needle, int offset = 0, string charset = null/*= ini_get("iconv.internal_encoding")*/)
         {
-            if (haystack == null || needle == null)
+            if (haystack.IsEmpty || needle.IsEmpty)
                 return -1;
 
             var encoding = ResolveEncoding(ctx, charset);
@@ -551,7 +551,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static int iconv_strrpos(Context ctx, PhpString haystack, PhpString needle, string charset = null /*= ini_get("iconv.internal_encoding")*/)
         {
-            if (haystack == null || needle == null)
+            if (haystack.IsEmpty || needle.IsEmpty)
                 return -1;
 
             var encoding = ResolveEncoding(ctx, charset);
@@ -577,7 +577,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static string iconv_substr(Context ctx, PhpString str, int offset, int length = int.MaxValue /*= iconv_strlen($str, $charset)*/ , string charset = null /*= ini_get("iconv.internal_encoding")*/)
         {
-            if (str == null)
+            if (str.IsEmpty)
                 return null;
 
             if (str.ContainsBinaryData)
@@ -613,15 +613,15 @@ namespace Pchp.Library
         public static PhpString iconv(Context ctx, string in_charset, string out_charset, PhpString str)
         {
             // check args
-            if (str == null)
+            if (str.IsDefault)
             {
                 PhpException.ArgumentNull("str");
-                return null;
+                return default(PhpString);
             }
             if (out_charset == null)
             {
                 PhpException.ArgumentNull("out_charset");
-                return null;
+                return default(PhpString);
             }
 
             // resolve out_charset
@@ -631,7 +631,7 @@ namespace Pchp.Library
             if (out_encoding == null)
             {
                 PhpException.Throw(PhpError.Notice, Resources.LibResources.wrong_charset, out_charset, in_charset, out_charset);
-                return null;
+                return default(PhpString);
             }
 
             // encoding fallback
@@ -644,7 +644,7 @@ namespace Pchp.Library
                 enc_fallback = new IgnoreEncoderFallback();    // ignore character and continue
             else
                 enc_fallback = new StopEncoderFallback(out_result);    // throw notice and discard all remaining characters
-            
+
             //// out_encoding.Clone() ensures it is NOT readOnly
             //// then set EncoderFallback to catch handle unconvertable characters
 
@@ -660,13 +660,13 @@ namespace Pchp.Library
                     if (in_charset == null)
                     {
                         PhpException.ArgumentNull("in_charset");
-                        return null;
+                        return default(PhpString);
                     }
                     var in_encoding = ResolveEncoding(ctx, in_charset);
                     if (in_encoding == null)
                     {
                         PhpException.Throw(PhpError.Notice, Resources.LibResources.wrong_charset, in_charset, in_charset, out_charset);
-                        return null;
+                        return default(PhpString);
                     }
 
                     // TODO: in_encoding.Clone() ensures it is NOT readOnly, then set DecoderFallback to catch invalid byte sequences
@@ -675,7 +675,7 @@ namespace Pchp.Library
                     return new PhpString(out_encoding.GetBytes(str.ToString(in_encoding)));
                 }
                 else
-                { 
+                {
                     // convert UTF16 to <out_charset>
                     return new PhpString(str.ToBytes(out_encoding));
                 }

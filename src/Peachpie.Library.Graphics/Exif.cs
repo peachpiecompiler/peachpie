@@ -306,7 +306,7 @@ namespace Peachpie.Library.Graphics
             if (string.IsNullOrEmpty(filename))
             {
                 PhpException.Throw(PhpError.Warning, Resources.filename_cannot_be_empty);
-                return null;
+                return default(PhpString);
             }
 
             Image<Rgba32> thumbnail = null;
@@ -316,7 +316,7 @@ namespace Peachpie.Library.Graphics
             var bytes = Utils.ReadPhpBytes(ctx, filename);
 
             if (bytes == null)
-                return null;
+                return default(PhpString);
 
             // get thumbnail from <filename>'s content:
             using (var ms = new MemoryStream(bytes))
@@ -331,13 +331,13 @@ namespace Peachpie.Library.Graphics
                 }
                 catch
                 {
-                    return null;
+                    return default(PhpString);
                 }
             }
 
             if (thumbnail == null)
             {
-                return null;
+                return default(PhpString);
             }
 
             //

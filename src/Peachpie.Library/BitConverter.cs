@@ -515,7 +515,7 @@ namespace Pchp.Library
         public static PhpArray unpack(Context ctx, string format, PhpString data)
         {
             if (format == null) return null;
-            byte[] buffer = (data != null) ? data.ToBytes(ctx) : ArrayUtils.EmptyBytes;
+            byte[] buffer = data.ToBytes(ctx);
 
             var encoding = ctx.StringEncoding;
             byte[] reversed = new byte[4]; // used for reversing the order of bytes in buffer

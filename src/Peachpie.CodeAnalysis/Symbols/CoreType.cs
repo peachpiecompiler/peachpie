@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 
 namespace Pchp.CodeAnalysis.Symbols
@@ -116,7 +117,7 @@ namespace Pchp.CodeAnalysis.Symbols
             BinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
             Dynamic_NameParam_T, Dynamic_TargetTypeParam, Dynamic_CallerTypeParam, Dynamic_UnpackingParam_T,
             PhpTypeInfoExtension, PhpTypeInfo,
-            PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable, IPhpConvertible,
+            PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable, IPhpConvertible, PhpString_Blob,
             IntStringKey, PhpHashtable,
             Void, Object, Int32, Long, Double, Boolean, String, Exception,
             RuntimeTypeHandle, RuntimeMethodHandle,
@@ -149,6 +150,7 @@ namespace Pchp.CodeAnalysis.Symbols
             IPhpEnumerable = Create("IPhpEnumerable");
             IPhpCallable = Create("IPhpCallable");
             IPhpConvertible = Create("IPhpConvertible");
+            PhpString_Blob = Create("PhpString+Blob");
             IntStringKey = Create("IntStringKey");
             PhpHashtable = Create("PhpHashtable");
             ScriptDiedException = Create("ScriptDiedException");
@@ -249,10 +251,25 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (t.Symbol == null)
                 {
-                    var mdname = MetadataTypeName.FromFullName(t.FullName, false); ;
+                    // nested types: todo: in Lookup
+                    string nested = null;
+                    string fullname = t.FullName;
+                    int plus = fullname.IndexOf('+');
+                    if (plus > 0)
+                    {
+                        nested = fullname.Substring(plus + 1);
+                        fullname = fullname.Remove(plus);
+                    }
+
+                    var mdname = MetadataTypeName.FromFullName(fullname, false);
                     var symbol = coreass.LookupTopLevelMetadataType(ref mdname, true);
                     if (symbol != null && !symbol.IsErrorType())
                     {
+                        if (nested != null)
+                        {
+                            symbol = symbol.GetTypeMembers(nested).Single();
+                        }
+
                         _typetable[symbol] = t;
                         t.Update(symbol);
 

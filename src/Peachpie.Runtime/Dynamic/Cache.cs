@@ -84,6 +84,7 @@ namespace Pchp.Core.Dynamic
             public static ConstructorInfo ctor_ByteArray = typeof(Core.PhpString).GetCtor(typeof(byte[]));
             public static readonly MethodInfo ToString_Context = typeof(Core.PhpString).GetMethod("ToString", typeof(Context));
             public static readonly MethodInfo ToBytes_Context = typeof(Core.PhpString).GetMethod("ToBytes", typeof(Context));
+            public static readonly PropertyInfo IsDefault = Types.PhpString[0].GetTypeInfo().GetDeclaredProperty("IsDefault");
         }
 
         public static class IntStringKey

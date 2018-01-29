@@ -239,15 +239,13 @@ namespace Pchp.Library
 
                 // 3. read
                 var str = _handler.read(GetSessionId(webctx));
-                if (str != null)
-                {
-                    var handler = GetSerializeHandler((Context)webctx);
-                    return handler.Deserialize((Context)webctx, str, default(RuntimeTypeHandle)).AsArray();
-                }
-                else
+                if (str.IsEmpty)
                 {
                     return null;
                 }
+
+                var handler = GetSerializeHandler((Context)webctx);
+                return handler.Deserialize((Context)webctx, str, default(RuntimeTypeHandle)).AsArray();
             }
 
             public override bool Persist(IHttpPhpContext webctx, PhpArray session)

@@ -317,7 +317,7 @@ namespace Pchp.Library
                     return true;
 
                 case "string":
-                    if (variable.TypeCode != PhpTypeCode.WritableString)    // already a string with possible binary data
+                    if (variable.TypeCode != PhpTypeCode.MutableString)    // already a string with possible binary data
                     {
                         variable = PhpValue.Create(variable.ToString(ctx));
                     }
@@ -413,7 +413,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is string.</returns>
-        public static bool is_string(PhpValue variable) => variable.TypeCode == PhpTypeCode.String || variable.TypeCode == PhpTypeCode.WritableString || (variable.IsAlias && is_string(variable.Alias.Value));
+        public static bool is_string(PhpValue variable) => variable.TypeCode == PhpTypeCode.String || variable.TypeCode == PhpTypeCode.MutableString || (variable.IsAlias && is_string(variable.Alias.Value));
 
         /// <summary>
         /// Checks whether a dereferenced variable is an <see cref="PhpArray"/>.
@@ -491,7 +491,7 @@ namespace Pchp.Library
                     return true;
 
                 case PhpTypeCode.String:
-                case PhpTypeCode.WritableString:
+                case PhpTypeCode.MutableString:
                     PhpNumber tmp;
                     return (variable.ToNumber(out tmp) & Core.Convert.NumberInfo.IsNumber) != 0;
 
@@ -765,7 +765,7 @@ namespace Pchp.Library
             readonly protected Context _ctx;
             readonly protected string _nl;
 
-            protected PhpString _output;
+            protected PhpString.Blob _output;
             protected int _indent;
 
             protected const string RECURSION = "*RECURSION*";
@@ -779,13 +779,13 @@ namespace Pchp.Library
 
             public virtual PhpString Serialize(PhpValue value)
             {
-                _output = new PhpString();
+                _output = new PhpString.Blob();
                 _indent = 0;
 
                 //
                 Accept(value);
 
-                return _output;
+                return new PhpString(_output);
             }
 
             /// <summary>
@@ -1060,9 +1060,9 @@ namespace Pchp.Library
 
             public override PhpString Serialize(PhpValue value)
             {
-                var output = base.Serialize(value);
-                output.Append(_nl);
-                return output;
+                base.Serialize(value);
+                _output.Append(_nl);
+                return new PhpString(_output);
             }
 
             public override void Accept(bool obj)

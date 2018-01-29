@@ -268,7 +268,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Double: return TypeNameDouble;
                 case PhpTypeCode.Boolean: return TypeNameBoolean;
                 case PhpTypeCode.String:
-                case PhpTypeCode.WritableString: return TypeNameString;
+                case PhpTypeCode.MutableString: return TypeNameString;
                 case PhpTypeCode.Alias: return GetTypeName(value.Alias.Value);
                 case PhpTypeCode.PhpArray: return PhpArray.PhpTypeName;
                 case PhpTypeCode.Object:
@@ -426,7 +426,7 @@ namespace Pchp.Core
             switch (value.TypeCode)
             {
                 case PhpTypeCode.String: return value.String;
-                case PhpTypeCode.WritableString: return value.WritableString.ToString();
+                case PhpTypeCode.MutableString: return value.MutableString.ToString();
                 case PhpTypeCode.Alias: return ToStringOrNull(value.Alias.Value);
                 default: return null;
             }
@@ -442,7 +442,7 @@ namespace Pchp.Core
             switch (value.TypeCode)
             {
                 case PhpTypeCode.String: return Encoding.UTF8.GetBytes(value.String);
-                case PhpTypeCode.WritableString: return value.WritableString.ToBytes(Encoding.UTF8);
+                case PhpTypeCode.MutableString: return value.MutableString.ToBytes(Encoding.UTF8);
                 case PhpTypeCode.Alias: return ToBytesOrNull(value.Alias.Value);
                 default: return null;
             }
@@ -452,7 +452,7 @@ namespace Pchp.Core
         {
             switch (value.TypeCode)
             {
-                case PhpTypeCode.WritableString: return value.WritableString.ToBytes(ctx);
+                case PhpTypeCode.MutableString: return value.MutableString.ToBytes(ctx);
                 case PhpTypeCode.Alias: return ToBytes(value.Alias.Value, ctx);
                 default: return ctx.StringEncoding.GetBytes(value.ToString(ctx));
             }
@@ -463,7 +463,7 @@ namespace Pchp.Core
         /// </summary>
         public static byte[] AsBytesOrNull(this PhpValue value, Context ctx)
         {
-            var phpstr = (value.IsAlias ? value.Alias.Value.Object : value.Object) as PhpString;
+            var phpstr = (value.IsAlias ? value.Alias.Value.Object : value.Object) as PhpString.Blob;
             return (phpstr != null && phpstr.ContainsBinaryData)
                 ? phpstr.ToBytes(ctx)
                 : null;

@@ -259,7 +259,7 @@ namespace Pchp.Library.Spl
         {
             // x:{count_int};{item0},{value0};;...;;m:{members_array}
 
-            var result = new PhpString();
+            var result = new PhpString.Blob();
             var serializer = PhpSerialization.PhpSerializer.Instance;
 
             // x:i:{count};
@@ -281,7 +281,7 @@ namespace Pchp.Library.Spl
             result.Append(serializer.Serialize(_ctx, (PhpValue)(__peach__runtimeFields ?? PhpArray.Empty), default(RuntimeTypeHandle)));
 
             //
-            return result;
+            return new PhpString(result);
         }
 
         /// <summary>

@@ -70,7 +70,7 @@ namespace Pchp.Core
     [DebuggerNonUserCode]
     public static class Convert
     {
-        #region ToString
+        #region ToString, ToBytes
 
         /// <summary>
         /// Gets string representation of a boolean value (according to PHP, it is <c>"1"</c> or <c>""</c>).
@@ -111,6 +111,16 @@ namespace Pchp.Core
                 return value.ToString();
             }
         }
+
+        /// <summary>
+        /// Converts mutable string to string.
+        /// </summary>
+        public static string ToString(PhpString value, Context ctx) => value.ToString(ctx);
+
+        /// <summary>
+        /// Converts mutable string to byte[].
+        /// </summary>
+        public static byte[] ToBytes(PhpString value, Context ctx) => value.ToBytes(ctx);
 
         #endregion
 
@@ -172,6 +182,11 @@ namespace Pchp.Core
             // not "0"
             return value != null && value.Length != 0 && (value.Length != 1 || value[0] != '0');
         }
+
+        /// <summary>
+        /// Converts string to boolean according to PHP.
+        /// </summary>
+        public static bool ToBoolean(PhpString value) => value.ToBoolean();
 
         /// <summary>
         /// Converts class instance to boolean according to PHP.
@@ -258,8 +273,8 @@ namespace Pchp.Core
                 case PhpTypeCode.Alias:
                     return ToPhpString(value.Alias.Value, ctx);
 
-                case PhpTypeCode.WritableString:
-                    return value.WritableString;
+                case PhpTypeCode.MutableString:
+                    return value.MutableString;
                 case PhpTypeCode.String:
                     return new PhpString(value.String);
                 default:
@@ -358,6 +373,11 @@ namespace Pchp.Core
 
             return n;
         }
+
+        /// <summary>
+        /// Performs conversion of a value to a number.
+        /// </summary>
+        public static PhpNumber ToNumber(PhpString value) => value.ToNumber();
 
         #endregion
 

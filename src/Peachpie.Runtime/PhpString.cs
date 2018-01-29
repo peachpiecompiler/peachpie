@@ -1,5 +1,6 @@
 ﻿using Pchp.Core.Utilities;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -9,13 +10,32 @@ using System.Threading.Tasks;
 
 namespace Pchp.Core
 {
+    #region IMutableString
+
+    /// <summary>
+    /// Provides access to <see cref="PhpString"/> with write access.
+    /// </summary>
+    public interface IMutableString : IPhpArray
+    {
+        void Add(string value);
+        void Add(byte[] value);
+        void Add(PhpString value);
+        void Add(PhpValue value, Context ctx);
+
+        char this[int index] { get; set; }
+
+        int Length { get; }
+    }
+
+    #endregion
+
     /// <summary>
     /// String builder providing fast concatenation and character replacements for hybrid strings (both unicode and binary).
     /// </summary>
     /// <remarks>Optimized for concatenation and output.</remarks>
     [DebuggerDisplay("{ToString()}", Type = PhpVariable.TypeNameString)]
     [DebuggerNonUserCode]
-    public sealed partial class PhpString : IPhpConvertible, IPhpArray
+    public struct PhpString : IPhpConvertible
     {
         //[StructLayout(LayoutKind.Explicit)]
         //struct Chunk
@@ -44,7 +64,8 @@ namespace Pchp.Core
         //    public bool IsPhpString => _obj != null && _obj.GetType() == typeof(PhpString);
         //}
 
-        internal sealed class Blob
+        [DebuggerDisplay("{DebugString}")]
+        public sealed class Blob : IMutableString
         {
             #region enum Flags
 
@@ -66,11 +87,11 @@ namespace Pchp.Core
             }
 
             #endregion
-            
+
             #region Fields
 
             /// <summary>
-            /// One string or concatenated string chunks of either <see cref="string"/>, <see cref="byte"/>[], <see cref="char"/>[] or <see cref="PhpString"/>.
+            /// One string or concatenated string chunks of either <see cref="string"/>, <see cref="byte"/>[], <see cref="char"/>[] or <see cref="Blob"/>.
             /// </summary>
             object _chunks;
 
@@ -101,6 +122,41 @@ namespace Pchp.Core
 
             #endregion
 
+            #region DebugString
+
+            string DebugString
+            {
+                get
+                {
+                    if (ContainsBinaryData)
+                    {
+                        var bytes = ToBytes(Encoding.UTF8);
+                        var str = new StringBuilder(bytes.Length);
+
+                        foreach (var b in bytes)
+                        {
+                            if (b < 0x7f && b >= 0x20)
+                            {
+                                str.Append((char)b);
+                            }
+                            else
+                            {
+                                str.Append("\\x");
+                                str.Append(b.ToString("x2"));
+                            }
+                        }
+
+                        return str.ToString();
+                    }
+                    else
+                    {
+                        return ToString(Encoding.UTF8);
+                    }
+                }
+            }
+
+            #endregion
+
             /// <summary>
             /// Gets value indicating the string contains <see cref="byte"/> instead of unicode <see cref="string"/>.
             /// </summary>
@@ -117,13 +173,11 @@ namespace Pchp.Core
             private bool IsArrayOfChunks => (_flags & Flags.IsArrayOfChunks) != 0;
 
             /// <summary>
-            /// Gets value indicating that this instance of data is shared accross more <see cref="PhpString"/> instances and cannot be written to.
+            /// Gets value indicating that this instance of data is shared and cannot be written to.
             /// </summary>
             public bool IsShared => _refs > 1;
 
             #region Construction
-
-            public static readonly Blob Empty = new Blob() { _refs = 999 };
 
             public Blob()
             {
@@ -136,11 +190,11 @@ namespace Pchp.Core
             {
                 if (string.IsNullOrEmpty(y))
                 {
-                    Append(x);
+                    Add(x);
                 }
                 else if (string.IsNullOrEmpty(x))
                 {
-                    Append(y);
+                    Add(y);
                 }
                 else
                 {
@@ -152,12 +206,12 @@ namespace Pchp.Core
 
             public Blob(string value)
             {
-                Append(value);
+                Add(value);
             }
 
             public Blob(byte[] value)
             {
-                Append(value);
+                Add(value);
             }
 
             private Blob(Blob blob)
@@ -221,7 +275,7 @@ namespace Pchp.Core
             {
                 AssertChunkObject(chunk);
                 if (chunk.GetType() == typeof(string)) { }  // immutable
-                else if (chunk.GetType() == typeof(PhpString)) chunk = ((PhpString)chunk).Clone();
+                else if (chunk.GetType() == typeof(Blob)) chunk = ((Blob)chunk).AddRef();
                 else chunk = ((Array)chunk).Clone();   // byte[], char[]
             }
 
@@ -270,7 +324,7 @@ namespace Pchp.Core
 
                 if (chunk.GetType() == typeof(string)) return ((string)chunk).Length;
                 if (chunk.GetType() == typeof(byte[])) return ((byte[])chunk).Length;
-                if (chunk.GetType() == typeof(PhpString)) return ((PhpString)chunk).Length;
+                if (chunk.GetType() == typeof(Blob)) return ((Blob)chunk).Length;
                 if (chunk.GetType() == typeof(char[])) return ((char[])chunk).Length;
                 throw new ArgumentException();
             }
@@ -289,9 +343,12 @@ namespace Pchp.Core
 
             #endregion
 
-            #region Append
+            #region Add, Append
 
-            public void Append(string value)
+            public void Append(string value) => Add(value);
+            public void Append(PhpString value) => Add(value);
+
+            public void Add(string value)
             {
                 if (!string.IsNullOrEmpty(value))
                 {
@@ -299,29 +356,28 @@ namespace Pchp.Core
                 }
             }
 
-            public void Append(PhpString value)
+            public void Add(Blob value)
             {
-                if (value != null && !value.IsEmpty)
+                Debug.Assert(value != null);
+                Debug.Assert(!value.IsEmpty);
+                Debug.Assert(value._chunks != null);
+
+                if (value.IsArrayOfChunks)
                 {
-                    Debug.Assert(value._blob._chunks != null);
-
-                    if (value._blob.IsArrayOfChunks)
-                    {
-                        AddChunk(value.DeepCopy());
-                    }
-                    else
-                    {
-                        // if containing only one chunk, add it directly
-                        var chunk = value._blob._chunks;
-                        InplaceDeepCopy(ref chunk);
-                        AddChunk(chunk);
-                    }
-
-                    _flags |= (value._blob._flags & (Flags.ContainsBinary | Flags.ContainsMutables));    // maintain the binary data flag
+                    AddChunk(value.AddRef());
                 }
+                else
+                {
+                    // if containing only one chunk, add it directly
+                    var chunk = value._chunks;
+                    InplaceDeepCopy(ref chunk);
+                    AddChunk(chunk);
+                }
+
+                _flags |= (value._flags & (Flags.ContainsBinary | Flags.ContainsMutables));    // maintain the binary data flag
             }
 
-            public void Append(byte[] value)
+            public void Add(byte[] value)
             {
                 if (value != null && value.Length != 0)
                 {
@@ -330,13 +386,44 @@ namespace Pchp.Core
                 }
             }
 
+            public void Add(PhpString value)
+            {
+                if (!value.IsEmpty)
+                {
+                    Add(value._blob);
+                }
+            }
+
+            public void Add(PhpValue value, Context ctx)
+            {
+                switch (value.TypeCode)
+                {
+                    case PhpTypeCode.String:
+                        Add(value.String);
+                        break;
+
+                    case PhpTypeCode.MutableString:
+                        Add(value.MutableStringBlob);
+                        break;
+
+                    case PhpTypeCode.Alias:
+                        Add(value.Alias.Value, ctx);
+                        break;
+
+                    default:
+                        Add(value.ToStringOrThrow(ctx));
+                        break;
+                }
+            }
+
             #endregion
 
             #region AddChunk
 
+            [Conditional("DEBUG")]
             static void AssertChunkObject(object chunk)
             {
-                Debug.Assert(chunk is byte[] || chunk is string || chunk is char[] || chunk is PhpString);
+                Debug.Assert(chunk is byte[] || chunk is string || chunk is char[] || chunk is Blob);
             }
 
             void AddChunk(object newchunk)
@@ -419,7 +506,7 @@ namespace Pchp.Core
 
                 if (chunk.GetType() == typeof(string)) ctx.Output.Write((string)chunk);
                 else if (chunk.GetType() == typeof(byte[])) ctx.OutputStream.Write((byte[])chunk);
-                else if (chunk.GetType() == typeof(PhpString)) ((PhpString)chunk).Output(ctx);
+                else if (chunk.GetType() == typeof(Blob)) ((Blob)chunk).Output(ctx);
                 else if (chunk.GetType() == typeof(char[])) ctx.Output.Write((char[])chunk);
                 else throw new ArgumentException();
             }
@@ -478,7 +565,7 @@ namespace Pchp.Core
 
                 if (chunk.GetType() == typeof(string)) return (string)chunk;
                 if (chunk.GetType() == typeof(byte[])) return encoding.GetString((byte[])chunk);
-                if (chunk.GetType() == typeof(PhpString)) return ((PhpString)chunk).ToString(encoding);
+                if (chunk.GetType() == typeof(Blob)) return ((Blob)chunk).ToString(encoding);
                 if (chunk.GetType() == typeof(char[])) return new string((char[])chunk);
                 throw new ArgumentException(chunk.GetType().ToString());
             }
@@ -532,7 +619,7 @@ namespace Pchp.Core
 
                 if (chunk.GetType() == typeof(byte[])) return (byte[])chunk;
                 if (chunk.GetType() == typeof(string)) return encoding.GetBytes((string)chunk);
-                if (chunk.GetType() == typeof(PhpString)) return ((PhpString)chunk).ToBytes(encoding);
+                if (chunk.GetType() == typeof(Blob)) return ((Blob)chunk).ToBytes(encoding);
                 if (chunk.GetType() == typeof(char[])) return encoding.GetBytes((char[])chunk);
                 throw new ArgumentException(chunk.GetType().ToString());
             }
@@ -580,11 +667,11 @@ namespace Pchp.Core
                     {
                         if (index == this.Length)
                         {
-                            this.Append(value.ToString());
+                            this.Add(value.ToString());
                         }
                         else
                         {
-                            this.Append(new string('\0', index - this.Length) + value.ToString());
+                            this.Add(new string('\0', index - this.Length) + value.ToString());
                         }
                     }
                     else if (index >= 0)
@@ -628,7 +715,7 @@ namespace Pchp.Core
 
                 if (chunk.GetType() == typeof(string)) return ((string)chunk)[index];
                 if (chunk.GetType() == typeof(byte[])) return (char)((byte[])chunk)[index];
-                if (chunk.GetType() == typeof(PhpString)) return ((PhpString)chunk)[index];
+                if (chunk.GetType() == typeof(Blob)) return ((Blob)chunk)[index];
                 if (chunk.GetType() == typeof(char[])) return ((char[])chunk)[index];
 
                 throw new ArgumentException(chunk.GetType().ToString());
@@ -645,7 +732,7 @@ namespace Pchp.Core
                     chunk = chars;
                 }
                 else if (chunk.GetType() == typeof(byte[])) ((byte[])chunk)[index] = (byte)ch;
-                else if (chunk.GetType() == typeof(PhpString)) ((PhpString)chunk)[index] = ch;
+                else if (chunk.GetType() == typeof(Blob)) ((Blob)chunk)[index] = ch;
                 else if (chunk.GetType() == typeof(char[])) ((char[])chunk)[index] = ch;
                 else throw new ArgumentException(chunk.GetType().ToString());
             }
@@ -678,10 +765,125 @@ namespace Pchp.Core
 
                 if (chunk.GetType() == typeof(string)) return Convert.ToBoolean((string)chunk);
                 if (chunk.GetType() == typeof(byte[])) return Convert.ToBoolean((byte[])chunk);
-                if (chunk.GetType() == typeof(PhpString)) return ((PhpString)chunk).ToBoolean();
+                if (chunk.GetType() == typeof(Blob)) return ((Blob)chunk).ToBoolean();
                 if (chunk.GetType() == typeof(char[])) return Convert.ToBoolean((char[])chunk);
                 throw new ArgumentException();
             }
+
+            #endregion
+
+            #region IPhpArray
+
+            /// <summary>
+            /// Gets number of items in the collection.
+            /// </summary>
+            int IPhpArray.Count => this.Length;
+
+            /// <summary>
+            /// Gets value at given index.
+            /// Gets <c>void</c> value in case the key is not found.
+            /// </summary>
+            PhpValue IPhpArray.GetItemValue(IntStringKey key)
+            {
+                int index = key.IsInteger ? key.Integer : (int)Convert.StringToLongInteger(key.String);
+
+                return (index >= 0 && index < this.Length)
+                    ? PhpValue.Create(this[index].ToString())
+                    : PhpValue.Create(string.Empty);
+            }
+
+            PhpValue IPhpArray.GetItemValue(PhpValue index)
+            {
+                if (index.TryToIntStringKey(out IntStringKey key))
+                {
+                    return ((IPhpArray)this).GetItemValue(key);
+                }
+
+                return PhpValue.Create(string.Empty);
+            }
+
+            void IPhpArray.SetItemValue(PhpValue index, PhpValue value)
+            {
+                if (index.TryToIntStringKey(out IntStringKey key))
+                {
+                    ((IPhpArray)this).SetItemValue(key, value);
+                }
+                else
+                {
+                    throw new ArgumentException();
+                }
+            }
+
+            /// <summary>
+            /// Sets value at specific index. Value must not be an alias.
+            /// </summary>
+            void IPhpArray.SetItemValue(IntStringKey key, PhpValue value)
+            {
+                int index = key.IsInteger ? key.Integer : (int)Convert.StringToLongInteger(key.String);
+
+                char ch;
+
+                switch (value.TypeCode)
+                {
+                    case PhpTypeCode.Long:
+                        ch = (char)value.Long;
+                        break;
+
+                    case PhpTypeCode.String:
+                        ch = (value.String.Length != 0) ? value.String[0] : '\0';
+                        break;
+
+                    case PhpTypeCode.MutableString:
+                        ch = value.MutableStringBlob[0];
+                        break;
+
+                    // TODO: other types
+
+                    default:
+                        throw new NotSupportedException(value.TypeCode.ToString());
+                }
+
+                this[key.Integer] = ch;
+            }
+
+            /// <summary>
+            /// Writes aliased value at given index.
+            /// </summary>
+            void IPhpArray.SetItemAlias(IntStringKey key, PhpAlias alias) { throw new NotSupportedException(); }
+
+            void IPhpArray.SetItemAlias(PhpValue index, PhpAlias alias) { throw new NotSupportedException(); }
+
+            /// <summary>
+            /// Add a value to the end of array.
+            /// Value can be an alias.
+            /// </summary>
+            void IPhpArray.AddValue(PhpValue value) { throw new NotSupportedException(); }
+
+            /// <summary>
+            /// Removes a value matching given key.
+            /// In case the value is not found, the method does nothing.
+            /// </summary>
+            void IPhpArray.RemoveKey(IntStringKey key) { throw new NotSupportedException(); }
+
+            void IPhpArray.RemoveKey(PhpValue index)
+            {
+                throw new NotImplementedException();
+            }
+
+            /// <summary>
+            /// Ensures the item at given index is alias.
+            /// </summary>
+            PhpAlias IPhpArray.EnsureItemAlias(IntStringKey key) { throw new NotSupportedException(); }
+
+            /// <summary>
+            /// Ensures the item at given index is class object.
+            /// </summary>
+            object IPhpArray.EnsureItemObject(IntStringKey key) { throw new NotSupportedException(); }
+
+            /// <summary>
+            /// Ensures the item at given index is array.
+            /// </summary>
+            IPhpArray IPhpArray.EnsureItemArray(IntStringKey key) { throw new NotSupportedException(); }
 
             #endregion
         }
@@ -690,7 +892,7 @@ namespace Pchp.Core
         /// Content of the string, may be shared.
         /// Cannot be <c>null</c>.
         /// </summary>
-        Blob _blob;
+        Blob _blob; // TODO: allow union of "null|string|byte[]|Blob"
 
         /// <summary>
         /// Gets the count of characters and binary characters.
@@ -705,34 +907,39 @@ namespace Pchp.Core
         /// <summary>
         /// Gets value indicating the string is empty.
         /// </summary>
-        public bool IsEmpty => _blob.IsEmpty;
+        public bool IsEmpty => ReferenceEquals(_blob, null) || _blob.IsEmpty;
+
+        /// <summary>
+        /// The value is not initialized.
+        /// </summary>
+        public bool IsDefault => ReferenceEquals(_blob, null);
 
         /// <summary>
         /// Empty immutable string.
         /// </summary>
-        public static readonly PhpString Empty = new PhpString();
+        public static PhpString Empty => default(PhpString);
 
-        #region Construction, Append, DeepCopy
+        #region Construction, DeepCopy
 
-        public PhpString()
+        public PhpString(Blob blob)
         {
-            _blob = Blob.Empty.AddRef();
+            _blob = blob;
         }
 
         public PhpString(PhpString from)
+            : this(from._blob?.AddRef())
         {
-            _blob = from._blob.AddRef();
         }
 
         public PhpString(PhpValue x, Context ctx)
         {
             _blob = new Blob();
-            Append(x, ctx);
+            _blob.Add(x, ctx);
         }
 
         public PhpString(string value)
         {
-            _blob = new Blob(value);
+            _blob = new Blob(value);    // TODO: _blob = string
         }
 
         public PhpString(byte[] value)
@@ -745,39 +952,14 @@ namespace Pchp.Core
             _blob = new Blob(x, y);
         }
 
-        public void Append(string value) => EnsureWritable().Append(value);
-
-        public void Append(PhpString value) => EnsureWritable().Append(value);
-
-        public void Append(byte[] value) => EnsureWritable().Append(value);
-
-        public void Append(PhpValue value, Context ctx)
-        {
-            switch (value.TypeCode)
-            {
-                case PhpTypeCode.String:
-                    Append(value.String);
-                    break;
-
-                case PhpTypeCode.WritableString:
-                    Append(value.WritableString.DeepCopy());
-                    break;
-
-                case PhpTypeCode.Alias:
-                    Append(value.Alias.Value, ctx);
-                    break;
-
-                default:
-                    Append(value.ToStringOrThrow(ctx));
-                    break;
-            }
-        }
-
         public PhpString DeepCopy() => new PhpString(this);
 
         #endregion
 
-        Blob EnsureWritable() => _blob.IsShared ? (_blob = _blob.ReleaseOne()) : _blob;
+        /// <summary>
+        /// Gets mutable access to the string value.
+        /// </summary>
+        public Blob EnsureWritable() => _blob.IsShared ? (_blob = _blob.ReleaseOne()) : _blob;
 
         /// <summary>
         /// Outputs the string content to the context output streams.
@@ -788,7 +970,7 @@ namespace Pchp.Core
 
         #region IPhpConvertible
 
-        public bool ToBoolean() => _blob.ToBoolean();
+        public bool ToBoolean() => _blob != null && _blob.ToBoolean();
 
         public double ToDouble() => Convert.StringToDouble(ToString());
 
@@ -819,121 +1001,6 @@ namespace Pchp.Core
 
         #endregion
 
-        #region IPhpArray
-
-        /// <summary>
-        /// Gets number of items in the collection.
-        /// </summary>
-        int IPhpArray.Count => this.Length;
-
-        /// <summary>
-        /// Gets value at given index.
-        /// Gets <c>void</c> value in case the key is not found.
-        /// </summary>
-        PhpValue IPhpArray.GetItemValue(IntStringKey key)
-        {
-            int index = key.IsInteger ? key.Integer : (int)Convert.StringToLongInteger(key.String);
-
-            return (index >= 0 && index < this.Length)
-                ? PhpValue.Create(this[index].ToString())
-                : PhpValue.Create(string.Empty);
-        }
-
-        PhpValue IPhpArray.GetItemValue(PhpValue index)
-        {
-            if (index.TryToIntStringKey(out IntStringKey key))
-            {
-                return ((IPhpArray)this).GetItemValue(key);
-            }
-
-            return PhpValue.Create(string.Empty);
-        }
-
-        void IPhpArray.SetItemValue(PhpValue index, PhpValue value)
-        {
-            if (index.TryToIntStringKey(out IntStringKey key))
-            {
-                ((IPhpArray)this).SetItemValue(key, value);
-            }
-            else
-            {
-                throw new ArgumentException();
-            }
-        }
-
-        /// <summary>
-        /// Sets value at specific index. Value must not be an alias.
-        /// </summary>
-        void IPhpArray.SetItemValue(IntStringKey key, PhpValue value)
-        {
-            int index = key.IsInteger ? key.Integer : (int)Convert.StringToLongInteger(key.String);
-
-            char ch;
-
-            switch (value.TypeCode)
-            {
-                case PhpTypeCode.Long:
-                    ch = (char)value.Long;
-                    break;
-
-                case PhpTypeCode.String:
-                    ch = (value.String.Length != 0) ? value.String[0] : '\0';
-                    break;
-
-                case PhpTypeCode.WritableString:
-                    ch = value.WritableString[0];
-                    break;
-
-                // TODO: other types
-
-                default:
-                    throw new NotSupportedException(value.TypeCode.ToString());
-            }
-
-            this[key.Integer] = ch;
-        }
-
-        /// <summary>
-        /// Writes aliased value at given index.
-        /// </summary>
-        void IPhpArray.SetItemAlias(IntStringKey key, PhpAlias alias) { throw new NotSupportedException(); }
-
-        void IPhpArray.SetItemAlias(PhpValue index, PhpAlias alias) { throw new NotSupportedException(); }
-
-        /// <summary>
-        /// Add a value to the end of array.
-        /// Value can be an alias.
-        /// </summary>
-        void IPhpArray.AddValue(PhpValue value) { throw new NotSupportedException(); }
-
-        /// <summary>
-        /// Removes a value matching given key.
-        /// In case the value is not found, the method does nothing.
-        /// </summary>
-        void IPhpArray.RemoveKey(IntStringKey key) { throw new NotSupportedException(); }
-
-        void IPhpArray.RemoveKey(PhpValue index)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Ensures the item at given index is alias.
-        /// </summary>
-        PhpAlias IPhpArray.EnsureItemAlias(IntStringKey key) { throw new NotSupportedException(); }
-
-        /// <summary>
-        /// Ensures the item at given index is class object.
-        /// </summary>
-        object IPhpArray.EnsureItemObject(IntStringKey key) { throw new NotSupportedException(); }
-
-        /// <summary>
-        /// Ensures the item at given index is array.
-        /// </summary>
-        IPhpArray IPhpArray.EnsureItemArray(IntStringKey key) { throw new NotSupportedException(); }
-
-        #endregion
-
         #region this[int]
 
         /// <summary>
@@ -947,15 +1014,32 @@ namespace Pchp.Core
             {
                 return _blob[index];
             }
-            set
-            {
-                EnsureWritable()[index] = value;
-            }
         }
 
         #endregion
 
         public object Clone() => DeepCopy();
+
+        /// <summary>
+        /// Operator that checks the string is default/uninitialized not containing any value.
+        /// </summary>
+        public static bool IsNull(PhpString value) => value.IsDefault;
+
+        /// <summary>
+        /// Gets instance of blob that is not shared.
+        /// </summary>
+        public static Blob AsWritable(PhpString str) => str.EnsureWritable();
+
+        /// <summary>
+        /// Gets read-only array access to the string.
+        /// For write access, use <see cref="EnsureWritable()"/>.
+        /// </summary>
+        public static Blob AsArray(PhpString str) => str._blob ?? new Blob();
+
+        /// <summary>
+        /// Wraps the string into <see cref="PhpValue"/>.
+        /// </summary>
+        public PhpValue AsPhpValue(PhpString str) => str.IsEmpty ? PhpValue.Create(string.Empty) : PhpValue.Create(str._blob);
 
         public override string ToString() => _blob.ToString(Encoding.UTF8);
 
@@ -963,7 +1047,7 @@ namespace Pchp.Core
 
         public byte[] ToBytes(Context ctx) => ToBytes(ctx.StringEncoding);
 
-        public byte[] ToBytes(Encoding encoding) => _blob.ToBytes(encoding);
+        public byte[] ToBytes(Encoding encoding) => IsEmpty ? Array.Empty<byte>() : _blob.ToBytes(encoding);
 
         public PhpNumber ToNumber()
         {

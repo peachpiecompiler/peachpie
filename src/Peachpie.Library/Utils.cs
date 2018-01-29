@@ -173,14 +173,14 @@ namespace Pchp.Library
         /// <returns>String representation of <paramref name="str"/>.</returns>
         internal static string ToString(this PhpString str, string charSet)
         {
-            if (str == null)
+            if (str.IsEmpty)
             {
                 return string.Empty;
             }
 
             Encoding encoding;
 
-            if (str != null && str.ContainsBinaryData)
+            if (str.ContainsBinaryData)
             {
                 encoding = Encoding.GetEncoding(charSet);
 
