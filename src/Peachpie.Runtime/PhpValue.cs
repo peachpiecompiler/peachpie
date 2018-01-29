@@ -553,6 +553,13 @@ namespace Pchp.Core
             _obj.Obj = obj;
         }
 
+        private PhpValue(PhpString.Blob blob) : this()
+        {
+            Debug.Assert(blob != null);
+            _type = TypeTable.WritableStringTable;
+            _obj.Obj = blob;
+        }
+
         private PhpValue(TypeTable type) : this()
         {
             _type = type;
@@ -574,7 +581,9 @@ namespace Pchp.Core
 
         public static PhpValue Create(string value) => new PhpValue(TypeTable.StringTable, value);
 
-        public static PhpValue Create(PhpString value) => value.IsEmpty ? new PhpValue(TypeTable.StringTable, string.Empty) : new PhpValue(TypeTable.WritableStringTable, value.ContainingBlob);
+        public static PhpValue Create(PhpString value) => value.AsPhpValue(value);
+
+        internal static PhpValue Create(PhpString.Blob blob) => new PhpValue(blob);
 
         public static PhpValue Create(PhpArray value) => new PhpValue(TypeTable.ArrayTable, value);
 

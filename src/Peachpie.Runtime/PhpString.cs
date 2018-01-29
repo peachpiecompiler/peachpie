@@ -895,11 +895,6 @@ namespace Pchp.Core
         Blob _blob; // TODO: allow union of "null|string|byte[]|Blob"
 
         /// <summary>
-        /// Content of the string.
-        /// </summary>
-        internal Blob ContainingBlob => _blob;
-
-        /// <summary>
         /// Gets the count of characters and binary characters.
         /// </summary>
         public int Length => _blob.Length;
@@ -1044,6 +1039,11 @@ namespace Pchp.Core
         /// For write access, use <see cref="EnsureWritable()"/>.
         /// </summary>
         public static Blob AsArray(PhpString str) => str._blob ?? new Blob();
+
+        /// <summary>
+        /// Wraps the string into <see cref="PhpValue"/>.
+        /// </summary>
+        public PhpValue AsPhpValue(PhpString str) => str.IsEmpty ? PhpValue.Create(string.Empty) : PhpValue.Create(str._blob);
 
         public override string ToString() => _blob.ToString(Encoding.UTF8);
 

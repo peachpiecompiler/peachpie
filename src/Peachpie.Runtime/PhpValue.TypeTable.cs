@@ -361,11 +361,13 @@ namespace Pchp.Core
             }
             public override IPhpArray EnsureArray(ref PhpValue me)
             {
-                var arr = new PhpString(me.String);
+                var str = new PhpString(me.String); // upgrade to mutable string
+                var arr = str.EnsureWritable();     // ensure its internal blob
 
-                me = PhpValue.Create(arr);
+                me = PhpValue.Create(str);          // copy back new value
 
-                return arr.ContainingBlob;
+                //
+                return arr;
             }
             public override IPhpArray GetArrayAccess(ref PhpValue me) => EnsureArray(ref me);
             public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => PhpValue.Create(Operators.GetItemValue(me.String, index, quiet));
@@ -419,7 +421,7 @@ namespace Pchp.Core
             }
             public override IPhpArray EnsureArray(ref PhpValue me) => (IPhpArray)(me._obj.Obj = me.WritableString.EnsureWritable());
             public override IPhpArray GetArrayAccess(ref PhpValue me) => me.StringBlob;
-            public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => ((IPhpArray)me.WritableString.ContainingBlob).GetItemValue(index); // quiet);
+            public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => ((IPhpArray)me.StringBlob).GetItemValue(index); // quiet);
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) { throw new NotSupportedException(); } // TODO: Err
             public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.WritableString.DeepCopy());
             public override PhpArray ToArray(ref PhpValue me) => me.WritableString.ToArray();
