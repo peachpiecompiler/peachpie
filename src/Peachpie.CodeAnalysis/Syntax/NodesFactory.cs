@@ -119,7 +119,7 @@ namespace Peachpie.CodeAnalysis.Syntax
             if (name.OriginalName.IsSimpleName)
             {
                 var namestr = name.OriginalName.Name.Value;
-                if (_defines.TryGetValue(namestr, out string value))
+                if (_defines != null && _defines.Count != 0 && _defines.TryGetValue(namestr, out string value))
                 {
                     // replace the constant use with literal:
                     if (long.TryParse(value, out long l)) return new LongIntLiteral(span, l);
