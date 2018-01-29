@@ -3937,6 +3937,10 @@ namespace Pchp.CodeAnalysis.Semantics
                 // ok
                 safeToUseIntStringKey = true;
             }
+            else if (tArray.IsOfType(cg.CoreTypes.ArrayAccess)) // ArrayAccess
+            {
+                // ok
+            }
             else if (this.Array.Access.EnsureArray)
             {
                 if (tArray == cg.CoreTypes.PhpAlias)
@@ -4016,7 +4020,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 throw new NotImplementedException($"STORE {tArray.Name}[]");    // TODO: emit convert as PhpArray
             }
 
-            Debug.Assert(tArray.IsOfType(cg.CoreTypes.IPhpArray));
+            Debug.Assert(tArray.IsOfType(cg.CoreTypes.IPhpArray) || tArray.IsOfType(cg.CoreTypes.ArrayAccess));
 
             //
             // LOAD [Index]
@@ -4121,6 +4125,28 @@ namespace Pchp.CodeAnalysis.Semantics
                         else
                             cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.AddValue_PhpValue);
                     }
+                }
+            }
+            else if (stack.tArray.IsOfType(cg.CoreTypes.ArrayAccess))
+            {
+                if (Access.IsUnset)
+                {
+                    Debug.Assert(valueType == null);
+
+                    // Template: <STACK>.offsetUnset( key )
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Operators.offsetGet_ArrayAccess_PhpValue);
+                }
+                else if (Access.IsWrite)
+                {
+                    Debug.Assert(stack.tIndex == cg.CoreTypes.PhpValue);
+                    
+                    // Template: <STACK>.offsetSet( key, value )
+                    cg.EmitConvertToPhpValue(valueType, 0);
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Operators.offsetSet_ArrayAccess_PhpValue_PhpValue);
+                }
+                else
+                {
+                    throw ExceptionUtilities.UnexpectedValue(Access);
                 }
             }
             else

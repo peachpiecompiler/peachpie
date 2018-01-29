@@ -467,6 +467,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 SetGeneratorReturnedValue_Generator_PhpValue = ct.Operators.Method("SetGeneratorReturnedValue", ct.Generator, ct.PhpValue);
 
                 offsetGet_ArrayAccess_PhpValue = ct.ArrayAccess.Method("offsetGet", ct.PhpValue);
+                offsetSet_ArrayAccess_PhpValue_PhpValue = ct.ArrayAccess.Method("offsetSet", ct.PhpValue, ct.PhpValue);
+                offsetUnset_ArrayAccess_PhpValue = ct.ArrayAccess.Method("offsetUnset", ct.PhpValue);
 
                 ReadConstant_Context_String_Int = ct.Operators.Method("ReadConstant", ct.Context, ct.String, ct.Int32);
                 ReadConstant_Context_String_Int_String = ct.Operators.Method("ReadConstant", ct.Context, ct.String, ct.Int32, ct.String);
@@ -544,7 +546,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 SetGeneratorCurrent_Generator_PhpValue, SetGeneratorCurrent_Generator_PhpValue_PhpValue, SetGeneratorCurrentFrom_Generator_PhpValue_PhpValue,
                 GetGeneratorSentItem_Generator, SetGeneratorReturnedValue_Generator_PhpValue,
 
-                offsetGet_ArrayAccess_PhpValue,
+                offsetGet_ArrayAccess_PhpValue, offsetSet_ArrayAccess_PhpValue_PhpValue, offsetUnset_ArrayAccess_PhpValue,
 
                 ReadConstant_Context_String_Int,
                 ReadConstant_Context_String_Int_String,

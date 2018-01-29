@@ -709,10 +709,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 else if (type.IsOfType(cg.CoreTypes.ArrayAccess))
                 {
                     // Operators.EnsureArray(<place>)
-                    _place.EmitLoad(cg.Builder);
-
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_ArrayAccess)
-                            .Expect(cg.CoreTypes.IPhpArray);
+                    return _place.EmitLoad(cg.Builder);
                 }
 
                 throw new NotImplementedException("EnsureArray(" + type.Name + ")");
