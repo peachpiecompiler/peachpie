@@ -121,7 +121,7 @@ namespace Pchp.CodeAnalysis
             var result = new PhpSyntaxTree(unit);
 
             var errorSink = new ErrorSink(result);
-            var factory = new NodesFactory(unit);
+            var factory = new NodesFactory(unit, parseOptions.Defines);
 
             //
             unit.Parse(factory, errorSink);

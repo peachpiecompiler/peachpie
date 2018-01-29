@@ -125,6 +125,11 @@
     </GetFrameworkPath>
 
     <ItemGroup>
+      <!-- convert DefineConstants to item list -->
+      <DefineConstants Include="$(DefineConstants)" />
+      <DefineConstants Include="DEBUG" Condition=" '$(Configuration)' == 'Debug' " />
+
+      <!-- compose RSP file content -->
       <RspLine Include="--temp-output:$(TempOutputDir)" />
       <RspLine Include="--out:$(TempOutputDir)%(IntermediateAssembly.Filename)%(IntermediateAssembly.Extension)" />
       <RspLine Include="--output-name:%(IntermediateAssembly.Filename)" />
@@ -134,12 +139,12 @@
       <RspLine Include="--shortopentag+" Condition=" '$(ShortOpenTag)' == 'true' " />
       <RspLine Include="--xmldoc:$(DocumentationFile)" Condition=" '$(GenerateDocumentation)' == 'true'" />
       <RspLine Include="--debug-type:$(DebugType)" />
-      <RspLine Include="--define:DEBUG" Condition=" '$(Configuration)' == 'Debug' " />
       <RspLine Include="--emit-entry-point:$(EmitEntryPoint)" />
       <RspLine Include="--main:$(StartupObject)" Condition=" '$(StartupObject)' != '' " />
       <RspLine Include="--pdb:$(PdbFile)" Condition=" '$(PdbFile)' != '' " />
       <RspLine Include="--target-framework:$(TargetFramework)" />
       <RspLine Include="--sdk-dir:$(NetFrameworkPath)" Condition=" '$(NetFrameworkPath)' != '' " />
+      <RspLine Include="@(DefineConstants->'--define:%(Identity)')" />
       <RspLine Include="@(ReferencePath->'--reference:%(FullPath)')" />
       <RspLine Include="@(Compile)" />
     </ItemGroup>

@@ -122,7 +122,7 @@ namespace Pchp.CodeAnalysis.CommandLine
         {
             // we don't care about empty folders reported as file not found,
             // this error is ment for cases where no files are enumerated at all
-            
+
             return ParseFileArgument(path, dir, new ConditionalList<Diagnostic>(errors, (err) => err.Code != MessageProvider.ERR_FileNotFound));
         }
 
@@ -138,6 +138,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             var analyzers = new List<CommandLineAnalyzerReference>();
             var additionalFiles = new List<CommandLineSourceFile>();
             var managedResources = new List<ResourceDescription>();
+            var defines = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             string outputDirectory = baseDirectory;
             string outputFileName = null;
             string documentationPath = null;
@@ -176,6 +177,11 @@ namespace Pchp.CodeAnalysis.CommandLine
                     case "?":
                     case "help":
                         displayHelp = true;
+                        continue;
+
+                    case "d":
+                    case "define":
+                        ParseDefine(value, defines);
                         continue;
 
                     case "r":
@@ -465,12 +471,12 @@ namespace Pchp.CodeAnalysis.CommandLine
 
             var parseOptions = new PhpParseOptions
             (
+                documentationMode: DocumentationMode.Diagnose, // always diagnose
+                kind: SourceCodeKind.Regular,
                 languageVersion: languageVersion,
                 shortOpenTags: shortOpenTags,
-                //preprocessorSymbols: defines.ToImmutableAndFree(),
-                documentationMode: DocumentationMode.Diagnose, // always diagnose
-                kind: SourceCodeKind.Regular//,
-                                            //features: parsedFeatures
+                features: ImmutableDictionary<string, string>.Empty, // features: parsedFeatures
+                defines: defines.ToImmutableDictionary()
             );
 
             var scriptParseOptions = parseOptions.WithKind(SourceCodeKind.Script);
@@ -632,6 +638,23 @@ namespace Pchp.CodeAnalysis.CommandLine
                     //AddDiagnostic(diagnostics, ErrorCode.FTL_InvalidTarget);
                     //return OutputKind.ConsoleApplication;
                     throw new ArgumentException("value");
+            }
+        }
+
+        private static void ParseDefine(string value, Dictionary<string, string> defines)
+        {
+            foreach (var pair in value.Split(new char[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                // NAME=VALUE
+                var eq = pair.IndexOf('=');
+                if (eq < 0)
+                {
+                    defines.Add(pair, string.Empty);
+                }
+                else
+                {
+                    defines.Add(pair.Remove(eq), pair.Substring(eq + 1));
+                }
             }
         }
 
