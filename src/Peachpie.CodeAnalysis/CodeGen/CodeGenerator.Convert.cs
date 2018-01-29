@@ -132,11 +132,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                         }
                         break;
                     }
-                    //else if (from == CoreTypes.PhpString)
-                    //{
-                    //    EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToBoolean);
-                    //    break;
-                    //}
+                    else if (from == CoreTypes.PhpString)
+                    {
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToBoolean);
+                        break;
+                    }
                     //else if (from.IsOfType(CoreTypes.IPhpArray))
                     //{
                     //    // TODO: != null && .Count != 0
@@ -554,7 +554,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (stack == CoreTypes.PhpString)
             {
-                return EmitCall(ILOpCode.Callvirt, CoreMethods.PhpString.ToNumber)
+                return EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToNumber)
                     .Expect(CoreTypes.PhpNumber);
             }
 
@@ -1263,6 +1263,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         EmitConvertToPhpNumber(from, fromHint);
                     }
+                    else if (to == CoreTypes.PhpString)
+                    {
+                        // -> PhpString
+                        EmitConvertToPhpString(from, fromHint);
+                    }
                     else if (to.IsReferenceType)
                     {
                         if (to == CoreTypes.PhpArray || to == CoreTypes.IPhpArray || to == CoreTypes.IPhpEnumerable || to == CoreTypes.PhpHashtable)
@@ -1270,11 +1275,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                             // -> PhpArray
                             // TODO: try unwrap "value.Object as T"
                             EmitConvertToPhpArray(from, fromHint);
-                        }
-                        else if (to == CoreTypes.PhpString)
-                        {
-                            // -> PhpString
-                            EmitConvertToPhpString(from, fromHint);
                         }
                         else
                         {
@@ -1352,7 +1352,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
 
                     if (from.IsReferenceType &&
-                        from != CoreTypes.PhpString &&
                         !from.IsOfType(CoreTypes.PhpResource))
                     {
                         Debug.Assert(from != CoreTypes.PhpAlias);

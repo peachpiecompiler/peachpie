@@ -683,6 +683,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                             .Expect(cg.CoreTypes.IPhpArray);
                     }
                 }
+                else if (type == cg.CoreTypes.PhpString)
+                {
+                    Debug.Assert(type.IsValueType);
+                    // <place>.EnsureWritable() : IPhpArray
+                    _place.EmitLoadAddress(cg.Builder); // LOAD ref PhpString
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpString.EnsureWritable);
+                }
                 else if (type.IsOfType(cg.CoreTypes.IPhpArray))
                 {
                     // Operators.EnsureArray(ref <place>)
@@ -1540,6 +1547,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                     EmitOpCode_LoadAddress(cg);
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureArray)
                             .Expect(cg.CoreTypes.IPhpArray);
+                }
+                else if (type == cg.CoreTypes.PhpString)
+                {
+                    Debug.Assert(type.IsValueType);
+                    // <place>.EnsureWritable() : IPhpArray
+                    EmitOpCode_LoadAddress(cg); // LOAD ref PhpString
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpString.EnsureWritable);
                 }
                 else if (type.IsOfType(cg.CoreTypes.IPhpArray))
                 {

@@ -827,12 +827,12 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             public PhpStringHolder(CoreTypes ct)
             {
-                ToBoolean = ct.PhpString.Method("ToBoolean");
-                ToLong = ct.PhpString.Method("ToLong");
-                ToDouble = ct.PhpString.Method("ToDouble");
-                ToString_Context = ct.PhpString.Method("ToString", ct.Context);
-                ToNumber = ct.PhpString.Method("ToNumber");
-                ToBytes_Context = ct.PhpString.Method("ToBytes", ct.Context);
+                ToBoolean = ct.Convert.Method("ToBoolean", ct.PhpString);
+                ToLong = ct.Convert.Method("ToLong", ct.PhpString);
+                ToDouble = ct.Convert.Method("ToDouble", ct.PhpString);
+                ToString_Context = ct.Convert.Method("ToString", ct.PhpString, ct.Context);
+                ToNumber = ct.Convert.Method("ToNumber", ct.PhpString);
+                ToBytes_Context = ct.Convert.Method("ToBytes", ct.PhpString, ct.Context);
 
                 EnsureWritable = ct.PhpString.Method("EnsureWritable");
                 EnsureWritable_PhpString = ct.PhpString.Method("EnsureWritable", ct.PhpString);

@@ -975,7 +975,7 @@ namespace Pchp.Core
 
         #region IPhpConvertible
 
-        public bool ToBoolean() => _blob.ToBoolean();
+        public bool ToBoolean() => _blob != null && _blob.ToBoolean();
 
         public double ToDouble() => Convert.StringToDouble(ToString());
 
