@@ -417,8 +417,8 @@ namespace Pchp.Core
                 //return obj;
                 throw new NotImplementedException();
             }
-            public override IPhpArray EnsureArray(ref PhpValue me) => me.WritableString.EnsureWritable();
-            public override IPhpArray GetArrayAccess(ref PhpValue me) => me.WritableString.EnsureWritable();
+            public override IPhpArray EnsureArray(ref PhpValue me) => (IPhpArray)(me._obj.Obj = me.WritableString.EnsureWritable());
+            public override IPhpArray GetArrayAccess(ref PhpValue me) => me.StringBlob;
             public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => ((IPhpArray)me.WritableString.ContainingBlob).GetItemValue(index); // quiet);
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) { throw new NotSupportedException(); } // TODO: Err
             public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.WritableString.DeepCopy());

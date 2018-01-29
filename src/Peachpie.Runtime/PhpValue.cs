@@ -173,10 +173,15 @@ namespace Pchp.Core
         public string String { get { Debug.Assert(_obj.Obj is string || _obj.Obj == null); return _obj.String; } }
 
         /// <summary>
+        /// Gets underlaying <see cref="PhpString.Blob"/> object.
+        /// </summary>
+        internal PhpString.Blob StringBlob { get { Debug.Assert(_obj.Obj is PhpString.Blob); return (PhpString.Blob)_obj.Obj; } }
+
+        /// <summary>
         /// Gets the object field of the value as PHP writable string.
         /// Does not perform a conversion, expects the value is of type (writable UTF16 or single-byte) string.
         /// </summary>
-        public PhpString WritableString { get { Debug.Assert(_obj.Obj is PhpString.Blob); return new PhpString((PhpString.Blob)_obj.Obj); } }
+        public PhpString WritableString { get { return new PhpString(StringBlob); } }
 
         /// <summary>
         /// Gets underlaying reference object.

@@ -957,7 +957,7 @@ namespace Pchp.Core.Dynamic
                 else if (expr.Type == typeof(PhpString))
                 {
                     // Template: test = !x.IsDefault
-                    test = Expression.Negate(Expression.Property(assign, Cache.PhpString.IsDefault));
+                    test = Expression.Not(Expression.Property(assign, Cache.PhpString.IsDefault));
                 }
                 else if (expr.Type.GetTypeInfo().IsValueType == false)  // reference type
                 {

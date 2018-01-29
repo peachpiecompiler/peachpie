@@ -3212,7 +3212,7 @@ namespace Pchp.CodeAnalysis.Semantics
             else
             {
                 // CALL EnsureWritable(x) : Blob
-                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpString.EnsureWritable_PhpString); // Blob
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpString.AsWritable_PhpString); // Blob
 
                 // <STACK>.Append (Y)
                 cg.Builder.EmitOpCode(ILOpCode.Dup);
@@ -3643,6 +3643,13 @@ namespace Pchp.CodeAnalysis.Semantics
             else if (tArray == cg.CoreTypes.String)
             {
                 // ok
+                safeToUseIntStringKey = true;
+            }
+            else if (tArray == cg.CoreTypes.PhpString)
+            {
+                // <PhpString>.AsArray
+                tArray = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpString.AsArray_PhpString);
+                safeToUseIntStringKey = true;
             }
             else if (tArray == cg.CoreTypes.Void)
             {

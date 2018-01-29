@@ -403,7 +403,7 @@ namespace Pchp.Core
                         break;
 
                     case PhpTypeCode.WritableString:
-                        Add(value.WritableString.ContainingBlob);
+                        Add(value.StringBlob);
                         break;
 
                     case PhpTypeCode.Alias:
@@ -834,7 +834,7 @@ namespace Pchp.Core
                         break;
 
                     case PhpTypeCode.WritableString:
-                        ch = value.WritableString[0];
+                        ch = value.StringBlob[0];
                         break;
 
                     // TODO: other types
@@ -1037,7 +1037,13 @@ namespace Pchp.Core
         /// <summary>
         /// Gets instance of blob that is not shared.
         /// </summary>
-        public static Blob EnsureWritable(PhpString str) => str.EnsureWritable();
+        public static Blob AsWritable(PhpString str) => str.EnsureWritable();
+
+        /// <summary>
+        /// Gets read-only array access to the string.
+        /// For write access, use <see cref="EnsureWritable()"/>.
+        /// </summary>
+        public static Blob AsArray(PhpString str) => str._blob ?? new Blob();
 
         public override string ToString() => _blob.ToString(Encoding.UTF8);
 

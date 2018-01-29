@@ -835,14 +835,15 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToBytes_Context = ct.Convert.Method("ToBytes", ct.PhpString, ct.Context);
 
                 EnsureWritable = ct.PhpString.Method("EnsureWritable");
-                EnsureWritable_PhpString = ct.PhpString.Method("EnsureWritable", ct.PhpString);
+                AsWritable_PhpString = ct.PhpString.Method("AsWritable", ct.PhpString);
+                AsArray_PhpString = ct.PhpString.Method("AsArray", ct.PhpString);
 
                 IsNull_PhpString = ct.PhpString.Method("IsNull", ct.PhpString);
             }
 
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToNumber, ToBytes_Context,
-                EnsureWritable, EnsureWritable_PhpString,
+                EnsureWritable, AsWritable_PhpString, AsArray_PhpString,
                 IsNull_PhpString;
         }
 
