@@ -317,9 +317,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     {
                         vartype |= TypeCtx.GetSystemObjectTypeMask();
                     }
-                    if (x.Access.EnsureArray && !TypeHelpers.HasArrayAccess(vartype, TypeCtx, model: Model))
+                    if (x.Access.EnsureArray)
                     {
-                        vartype |= TypeCtx.GetArrayTypeMask();
+                        if (!TypeHelpers.HasArrayAccess(vartype, TypeCtx, model: Model))
+                        {
+                            vartype |= TypeCtx.GetArrayTypeMask();
+                        }
+                        else if (TypeCtx.IsReadonlyString(vartype))
+                        {
+                            vartype |= TypeCtx.GetWritableStringTypeMask();
+                        }
                     }
 
                     State.SetLocalType(local, vartype);
