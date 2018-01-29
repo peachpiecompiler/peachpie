@@ -1014,10 +1014,6 @@ namespace Pchp.Core
             {
                 return _blob[index];
             }
-            set
-            {
-                EnsureWritable()[index] = value;
-            }
         }
 
         #endregion
