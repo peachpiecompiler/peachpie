@@ -4134,7 +4134,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     Debug.Assert(valueType == null);
 
                     // Template: <STACK>.offsetUnset( key )
-                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Operators.offsetGet_ArrayAccess_PhpValue);
+                    cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Operators.offsetUnset_ArrayAccess_PhpValue);
                 }
                 else if (Access.IsWrite)
                 {
