@@ -141,6 +141,11 @@ namespace Pchp.Core
             public virtual PhpValue DeepCopy(ref PhpValue me) => me;
 
             /// <summary>
+            /// Performs dereferencing and deep copying of the value inplace.
+            /// </summary>
+            public virtual void PassValue(ref PhpValue me) { }
+
+            /// <summary>
             /// Outputs current value to the <see cref="Context.Output"/> or <see cref="Context.OutputStream"/>.
             /// </summary>
             public abstract void Output(ref PhpValue me, Context ctx);
@@ -423,7 +428,8 @@ namespace Pchp.Core
             public override IPhpArray GetArrayAccess(ref PhpValue me) => me.MutableStringBlob;
             public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => ((IPhpArray)me.MutableStringBlob).GetItemValue(index); // quiet);
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) { throw new NotSupportedException(); } // TODO: Err
-            public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.MutableString.DeepCopy());
+            public override PhpValue DeepCopy(ref PhpValue me) => new PhpValue(me.MutableStringBlob.AddRef());
+            public override void PassValue(ref PhpValue me) => me = new PhpValue(me.MutableStringBlob.AddRef());    // ~ DeepCopy
             public override PhpArray ToArray(ref PhpValue me) => me.MutableString.ToArray();
             public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx) => PhpCallback.Create(me.MutableString.ToString(), callerCtx);
             public override string DisplayString(ref PhpValue me) => $"'{me.MutableString.ToString()}'";
@@ -590,7 +596,8 @@ namespace Pchp.Core
             public override IPhpArray GetArrayAccess(ref PhpValue me) => me.Array;
             public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => me.Array.GetItemValue(index); // , quiet);
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) => Operators.EnsureItemAlias(me.Array, index, quiet);
-            public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.Array.DeepCopy());
+            public override PhpValue DeepCopy(ref PhpValue me) => new PhpValue(me.Array.DeepCopy());
+            public override void PassValue(ref PhpValue me) => me = new PhpValue(me.Array.DeepCopy());
             public override PhpArray ToArray(ref PhpValue me) => me.Array;
             public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx)
             {
@@ -641,6 +648,7 @@ namespace Pchp.Core
             public override PhpAlias EnsureAlias(ref PhpValue me) => me.Alias;
             public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => me.Alias.Value.GetArrayItem(index, quiet);
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) => me.Alias.Value.EnsureItemAlias(index, quiet);
+            public override void PassValue(ref PhpValue me) => me = me.Alias.Value.DeepCopy();
             public override PhpArray ToArray(ref PhpValue me) => me.Alias.Value.ToArray();
             public override object AsObject(ref PhpValue me) => me.Alias.Value.AsObject();
             public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx) => me.Alias.Value.AsCallable(callerCtx);

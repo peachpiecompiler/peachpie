@@ -587,6 +587,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 DeepCopy = ct.PhpValue.Method("DeepCopy");
                 GetValue = ct.PhpValue.Method("GetValue");
+                PassValue = ct.PhpValue.Method("PassValue");
                 ToArray = ct.PhpValue.Method("ToArray");
                 AsObject = ct.PhpValue.Method("AsObject");
 
@@ -617,7 +618,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToClass, EnsureObject, EnsureArray, EnsureAlias, ToArray,
                 AsObject,
-                DeepCopy, GetValue,
+                DeepCopy, GetValue, PassValue,
                 Eq_PhpValue_PhpValue, Eq_PhpValue_String,
                 get_Long, get_Double, get_Boolean, get_String, get_Array,
                 Create_Boolean, Create_Long, Create_Double, Create_String, Create_PhpString, Create_PhpNumber, Create_PhpAlias, Create_PhpArray, Create_IntStringKey,

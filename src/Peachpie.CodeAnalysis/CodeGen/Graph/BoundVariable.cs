@@ -255,14 +255,10 @@ namespace Pchp.CodeAnalysis.Semantics
                 {
                     if (_symbol.Type == cg.CoreTypes.PhpValue)
                     {
-                        srcplace.EmitStorePrepare(cg.Builder);
-
                         // dereference & copy
-                        // <param> = <param>.GetValue().DeepCopy()
+                        // (ref <param>).PassValue()
                         srcplace.EmitLoadAddress(cg.Builder);
-                        cg.EmitDeepCopy(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.GetValue));
-
-                        srcplace.EmitStore(cg.Builder);
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.PassValue);
                     }
                     else if (cg.IsCopiable(_symbol.Type))
                     {

@@ -423,6 +423,12 @@ namespace Pchp.Core
         public PhpValue DeepCopy() => _type.DeepCopy(ref this);
 
         /// <summary>
+        /// Dereferences and deep copies in-place.
+        /// Called when this has been passed by value and inplace dereferencing and copying is necessary.
+        /// </summary>
+        public void PassValue() => _type.PassValue(ref this);
+
+        /// <summary>
         /// Outputs current value to <see cref="Context"/>.
         /// Handles byte (8bit) strings and allows for chunked text to be streamed without costly concatenation.
         /// </summary>
@@ -558,6 +564,13 @@ namespace Pchp.Core
             Debug.Assert(blob != null);
             _type = TypeTable.MutableStringTable;
             _obj.Obj = blob;
+        }
+
+        private PhpValue(PhpArray array) : this()
+        {
+            Debug.Assert(array != null);
+            _type = TypeTable.ArrayTable;
+            _obj.Obj = array;
         }
 
         private PhpValue(TypeTable type) : this()
