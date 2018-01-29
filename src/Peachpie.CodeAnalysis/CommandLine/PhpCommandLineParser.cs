@@ -268,6 +268,10 @@ namespace Pchp.CodeAnalysis.CommandLine
                             throw new ArgumentException("langversion");
                             //AddDiagnostic(diagnostics, ErrorCode.ERR_SwitchNeedsString, MessageID.IDS_Text.Localize(), "/langversion:");
                         }
+                        else if (string.Equals(value, "default", StringComparison.OrdinalIgnoreCase) || string.Equals(value, "latest", StringComparison.OrdinalIgnoreCase))
+                        {
+                            languageVersion = null; // latest
+                        }
                         else if (!Version.TryParse(value, out languageVersion))
                         {
                             throw new ArgumentException("langversion");

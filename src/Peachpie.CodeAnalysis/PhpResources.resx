@@ -118,13 +118,68 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="IDS_Help" xml:space="preserve">
-    <value>Peachpie HELP.</value>
+    <value>
+                            PeachPie PHP Compiler Options
+                            
+                    - OUTPUT FILES -
+/out:&lt;file&gt;                 Specify output file name (default: base name of
+                            file with main class or first file)
+/target:exe                 Build a console executable (default) (Short
+                            form: /t:exe)
+/target:winexe              Build a Windows executable (Short form:
+                            /t:winexe)
+/target:library             Build a library (Short form: /t:library)
+/target:module              Build a module that can be added to another
+                            assembly (Short form: /t:module)
+/target:appcontainerexe     Build an Appcontainer executable (Short form:
+                            /t:appcontainerexe)
+/doc:&lt;file&gt;                 XML Documentation file to generate
+
+                     - INPUT FILES -                        
+/reference:&lt;file list&gt;      Reference metadata from the specified assembly
+                            files (Short form: /r)
+&lt;file&gt;                      Source file to be compiled
+&lt;wildcards&gt;                 Pattern matching files to be compiled
+
+                    - CODE GENERATION -
+/debug[+|-]                 Emit debugging information
+/debug:{full|pdbonly|portable|embedded}
+                            Specify debugging type ('full' is default,
+                            'portable' is a cross-platform format,
+                            'embedded' is a cross-platform format embedded into
+                            the target .dll or .exe)
+/optimize[+|-]              Enable optimizations (Short form: /o)
+
+                    - LANGUAGE -
+/langversion:&lt;string&gt;       Specify language version such as
+                            `default` (latest major version)
+                            or specific versions like `5.6.` or `7.0`
+/shortopentag[+|-]          Whether to enable PHP short open tag syntax (&lt;?).
+                            Disabled by default.
+/phpdoctypes:&lt;string&gt;       Specifies what PHPDoc is used for strict type
+                            information. Possible values are:
+                            None, FieldTypes, ParameterTypes, ReturnTypes, All
+                            or their combination using vertical bar |.
+/phpdoctypes[+|-]           Shortcut for /phpdoctypes:All or /phpdoctypes:None.
+
+                    - MISCELLANEOUS -
+@&lt;file&gt;                     Read response file for more options
+/help                       Display this usage message (Short form: /?)
+/nologo                     Suppress compiler copyright message
+/parallel[+|-]              Concurrent build.
+
+                    - ADVANCED -
+/main:&lt;type&gt;                Specify the script file, class or function
+                            representing the entry point (Short form: /m)
+/pdb:&lt;file&gt;                 Specify debug information file name (default:
+                            output file name with .pdb extension)
+/modulename:&lt;string&gt;        Specify the name of the source module</value>
   </data>
   <data name="IDS_Logo" xml:space="preserve">
-    <value>Peachpie PHP Compiler.</value>
+    <value>{0} version {1}</value>
   </data>
   <data name="IDS_ToolName" xml:space="preserve">
-    <value>Peachpie PHP Compiler</value>
+    <value>PeachPie PHP Compiler</value>
   </data>
   <data name="XmlDoc_ContextParamDescription" xml:space="preserve">
     <value>Runtime context.</value>

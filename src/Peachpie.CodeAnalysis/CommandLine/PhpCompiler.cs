@@ -15,6 +15,7 @@ using Devsense.PHP.Errors;
 using Devsense.PHP.Text;
 using Pchp.CodeAnalysis.Errors;
 using Devsense.PHP.Syntax.Ast;
+using System.Reflection;
 
 namespace Pchp.CodeAnalysis.CommandLine
 {
@@ -30,7 +31,7 @@ namespace Pchp.CodeAnalysis.CommandLine
         protected internal new PhpCommandLineArguments Arguments { get { return (PhpCommandLineArguments)base.Arguments; } }
 
         public PhpCompiler(CommandLineParser parser, string responseFile, string[] args, string clientDirectory, string baseDirectory, string sdkDirectory, string additionalReferenceDirectories, IAnalyzerAssemblyLoader analyzerLoader)
-            :base(parser, responseFile, args, clientDirectory, baseDirectory, sdkDirectory, additionalReferenceDirectories, analyzerLoader)
+            : base(parser, responseFile, args, clientDirectory, baseDirectory, sdkDirectory, additionalReferenceDirectories, analyzerLoader)
         {
 
         }
@@ -145,8 +146,11 @@ namespace Pchp.CodeAnalysis.CommandLine
 
         public override void PrintLogo(TextWriter consoleOutput)
         {
-            consoleOutput.WriteLine(PhpResources.IDS_Logo);
+            // {ToolName} version {ProductVersion}
+            consoleOutput.WriteLine(PhpResources.IDS_Logo, GetToolName(), GetAssemblyFileVersion());
         }
+
+        internal new string GetAssemblyFileVersion() => typeof(PhpCompiler).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 
         protected override void CompilerSpecificSqm(IVsSqmMulti sqm, uint sqmSession)
         {
