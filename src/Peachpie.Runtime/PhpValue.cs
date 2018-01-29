@@ -132,7 +132,7 @@ namespace Pchp.Core
                     case PhpTypeCode.Long:
                     case PhpTypeCode.Double:
                     case PhpTypeCode.String:
-                    case PhpTypeCode.WritableString:
+                    case PhpTypeCode.MutableString:
                     case PhpTypeCode.Null:
                         return true;
 
@@ -175,13 +175,13 @@ namespace Pchp.Core
         /// <summary>
         /// Gets underlaying <see cref="PhpString.Blob"/> object.
         /// </summary>
-        internal PhpString.Blob StringBlob { get { Debug.Assert(_obj.Obj is PhpString.Blob); return (PhpString.Blob)_obj.Obj; } }
+        internal PhpString.Blob MutableStringBlob { get { Debug.Assert(_obj.Obj is PhpString.Blob); return (PhpString.Blob)_obj.Obj; } }
 
         /// <summary>
         /// Gets the object field of the value as PHP writable string.
         /// Does not perform a conversion, expects the value is of type (writable UTF16 or single-byte) string.
         /// </summary>
-        public PhpString WritableString { get { return new PhpString(StringBlob); } }
+        public PhpString MutableString { get { return new PhpString(MutableStringBlob); } }
 
         /// <summary>
         /// Gets underlaying reference object.
@@ -442,7 +442,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Object: return Object;
                 case PhpTypeCode.PhpArray: return Array;
                 case PhpTypeCode.String: return String;
-                case PhpTypeCode.WritableString: return WritableString.ToString();
+                case PhpTypeCode.MutableString: return MutableString.ToString();
                 case PhpTypeCode.Alias: return Alias.Value.ToClr();
                 default:
                     throw new ArgumentException();
@@ -556,7 +556,7 @@ namespace Pchp.Core
         private PhpValue(PhpString.Blob blob) : this()
         {
             Debug.Assert(blob != null);
-            _type = TypeTable.WritableStringTable;
+            _type = TypeTable.MutableStringTable;
             _obj.Obj = blob;
         }
 

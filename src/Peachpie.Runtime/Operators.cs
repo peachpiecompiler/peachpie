@@ -120,7 +120,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Alias: return BitNot(ref x.Alias.Value);
 
                 case PhpTypeCode.String:
-                case PhpTypeCode.WritableString:
+                case PhpTypeCode.MutableString:
                     throw new NotImplementedException();    // bitwise negation of each character in string
 
                 case PhpTypeCode.Object:

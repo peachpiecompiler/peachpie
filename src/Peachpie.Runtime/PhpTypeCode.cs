@@ -49,10 +49,10 @@ namespace Pchp.Core
         /// <summary>
         /// Both Unicode and Binary writable string value. Encapsulates two-byte (UTF16), single-byte (binary) string and string builder.
         /// </summary>
-        WritableString,
+        MutableString,
 
         /// <summary>
-        /// A class type, including <c>NULL</c>, <c>resource</c>, <c>Closure</c> or generic <c>Object</c>.
+        /// A class type, <c>resource</c>, <c>Closure</c> or generic <c>Object</c>. Does not represent <c>NULL</c>.
         /// </summary>
         Object,
 

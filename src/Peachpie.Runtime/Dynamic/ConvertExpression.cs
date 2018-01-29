@@ -591,7 +591,7 @@ namespace Pchp.Core.Dynamic
                 case PhpTypeCode.Int32:
                 case PhpTypeCode.Long:
                 case PhpTypeCode.Double:
-                case PhpTypeCode.WritableString:
+                case PhpTypeCode.MutableString:
                 case PhpTypeCode.String:
                     return ConversionCost.LoosingPrecision;
 
@@ -617,7 +617,7 @@ namespace Pchp.Core.Dynamic
                     return ConversionCost.ImplicitCast;
 
                 case PhpTypeCode.Double:
-                case PhpTypeCode.WritableString:
+                case PhpTypeCode.MutableString:
                 case PhpTypeCode.String:
                     return ConversionCost.LoosingPrecision;
 
@@ -640,8 +640,8 @@ namespace Pchp.Core.Dynamic
                 case PhpTypeCode.Object:
                     return ConversionCost.ImplicitCast;
 
-                case PhpTypeCode.WritableString:
-                    return value.WritableString.ContainsBinaryData ? ConversionCost.LoosingPrecision : ConversionCost.PassCostly;
+                case PhpTypeCode.MutableString:
+                    return value.MutableString.ContainsBinaryData ? ConversionCost.LoosingPrecision : ConversionCost.PassCostly;
 
                 case PhpTypeCode.String:
                     return ConversionCost.Pass;
@@ -665,7 +665,7 @@ namespace Pchp.Core.Dynamic
                 case PhpTypeCode.Object:
                     return ConversionCost.ImplicitCast;
 
-                case PhpTypeCode.WritableString:
+                case PhpTypeCode.MutableString:
                     return ConversionCost.Pass;
 
                 case PhpTypeCode.String:
@@ -691,7 +691,7 @@ namespace Pchp.Core.Dynamic
                 case PhpTypeCode.Double:
                     return ConversionCost.Pass;
 
-                case PhpTypeCode.WritableString:
+                case PhpTypeCode.MutableString:
                 case PhpTypeCode.String:
                     return ConversionCost.LoosingPrecision;
 
@@ -715,7 +715,7 @@ namespace Pchp.Core.Dynamic
                 case PhpTypeCode.Boolean:
                     return ConversionCost.ImplicitCast;
 
-                case PhpTypeCode.WritableString:
+                case PhpTypeCode.MutableString:
                 case PhpTypeCode.String:
                     return ConversionCost.LoosingPrecision;
 
@@ -735,7 +735,7 @@ namespace Pchp.Core.Dynamic
                 case PhpTypeCode.Long:
                 case PhpTypeCode.Double:
                 case PhpTypeCode.Boolean:
-                case PhpTypeCode.WritableString:
+                case PhpTypeCode.MutableString:
                 case PhpTypeCode.String:
                     return ConversionCost.Warning;
 

@@ -273,8 +273,8 @@ namespace Pchp.Core
                 case PhpTypeCode.Alias:
                     return ToPhpString(value.Alias.Value, ctx);
 
-                case PhpTypeCode.WritableString:
-                    return value.WritableString;
+                case PhpTypeCode.MutableString:
+                    return value.MutableString;
                 case PhpTypeCode.String:
                     return new PhpString(value.String);
                 default:

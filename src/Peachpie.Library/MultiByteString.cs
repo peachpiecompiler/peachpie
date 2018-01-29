@@ -233,7 +233,7 @@ namespace Pchp.Library
             switch (value.TypeCode)
             {
                 case PhpTypeCode.String: return value.String;
-                case PhpTypeCode.WritableString: return ToString(ctx, value.WritableString, forceencoding);
+                case PhpTypeCode.MutableString: return ToString(ctx, value.MutableString, forceencoding);
                 case PhpTypeCode.Alias: return ToString(ctx, value.Alias.Value, forceencoding);
                 default: return value.ToStringOrThrow(ctx);
             }

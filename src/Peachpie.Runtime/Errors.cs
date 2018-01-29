@@ -251,7 +251,7 @@ namespace Pchp.Core
             {
                 Throw(PhpError.Warning, ErrResources.array_used_as_object);
             }
-            else if (var.TypeCode == PhpTypeCode.String || var.TypeCode == PhpTypeCode.WritableString)
+            else if (var.TypeCode == PhpTypeCode.String || var.TypeCode == PhpTypeCode.MutableString)
             {
                 Throw(PhpError.Warning, reference ? ErrResources.string_item_used_as_reference : ErrResources.string_used_as_object);
             }

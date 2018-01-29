@@ -402,8 +402,8 @@ namespace Pchp.Core
                         Add(value.String);
                         break;
 
-                    case PhpTypeCode.WritableString:
-                        Add(value.StringBlob);
+                    case PhpTypeCode.MutableString:
+                        Add(value.MutableStringBlob);
                         break;
 
                     case PhpTypeCode.Alias:
@@ -833,8 +833,8 @@ namespace Pchp.Core
                         ch = (value.String.Length != 0) ? value.String[0] : '\0';
                         break;
 
-                    case PhpTypeCode.WritableString:
-                        ch = value.StringBlob[0];
+                    case PhpTypeCode.MutableString:
+                        ch = value.MutableStringBlob[0];
                         break;
 
                     // TODO: other types

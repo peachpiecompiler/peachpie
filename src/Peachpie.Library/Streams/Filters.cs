@@ -94,8 +94,8 @@ namespace Pchp.Library.Streams
                     }
                     goto default;
 
-                case PhpTypeCode.WritableString:
-                    return new TextElement(value.WritableString, ctx.StringEncoding);
+                case PhpTypeCode.MutableString:
+                    return new TextElement(value.MutableString, ctx.StringEncoding);
 
                 default:
                     return new TextElement(value.ToStringOrThrow(ctx));

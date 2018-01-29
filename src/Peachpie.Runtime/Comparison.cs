@@ -46,8 +46,8 @@ namespace Pchp.Core
                 case PhpTypeCode.String:
                     return x.String.Length == 0;
 
-                case PhpTypeCode.WritableString:
-                    return x.WritableString.IsEmpty;
+                case PhpTypeCode.MutableString:
+                    return x.MutableString.IsEmpty;
 
                 case PhpTypeCode.Alias:
                     return CeqNull(x.Alias.Value);
@@ -65,7 +65,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Boolean: return Compare(lx != 0, y.Boolean);
                 case PhpTypeCode.Double: return Compare((double)lx, y.Double);
                 case PhpTypeCode.String: return -Compare(y.String, lx);
-                case PhpTypeCode.WritableString: return -Compare(y.WritableString.ToString(), lx);
+                case PhpTypeCode.MutableString: return -Compare(y.MutableString.ToString(), lx);
                 case PhpTypeCode.PhpArray: return -1;
                 case PhpTypeCode.Alias: return Compare(lx, y.Alias.Value);
                 case PhpTypeCode.Null:
@@ -86,7 +86,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Long: return Compare(dx, (double)y.Long);
                 case PhpTypeCode.Boolean: return Compare(dx != 0.0, y.Boolean);
                 case PhpTypeCode.String: return -Compare(y.String, dx);
-                case PhpTypeCode.WritableString: return -Compare(y.WritableString.ToString(), dx);
+                case PhpTypeCode.MutableString: return -Compare(y.MutableString.ToString(), dx);
                 case PhpTypeCode.PhpArray: return -1;
                 case PhpTypeCode.Alias: return Compare(dx, y.Alias.Value);
                 case PhpTypeCode.Null:
@@ -111,7 +111,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Long: return Compare(sx, y.Long);
                 case PhpTypeCode.Boolean: return Compare(Convert.ToBoolean(sx), y.Boolean);
                 case PhpTypeCode.String: return Compare(sx, y.String);
-                case PhpTypeCode.WritableString: return Compare(sx, y.WritableString.ToString());
+                case PhpTypeCode.MutableString: return Compare(sx, y.MutableString.ToString());
                 case PhpTypeCode.Alias: return Compare(sx, y.Alias.Value);
                 case PhpTypeCode.PhpArray: return -1;   // - 1 * (array.CompareTo(string))
                 case PhpTypeCode.Null:
@@ -275,7 +275,7 @@ namespace Pchp.Core
                 case PhpTypeCode.Long: return y.Long == 0 ? 0 : -1;
                 case PhpTypeCode.Double: return y.Double == 0 ? 0 : -1;
                 case PhpTypeCode.String: return y.String.Length == 0 ? 0 : -1;
-                case PhpTypeCode.WritableString: return y.WritableString.Length == 0 ? 0 : -1;
+                case PhpTypeCode.MutableString: return y.MutableString.Length == 0 ? 0 : -1;
                 case PhpTypeCode.PhpArray: return -y.Array.Count;
                 case PhpTypeCode.Alias: return CompareNull(y.Alias.Value);
                 case PhpTypeCode.Undefined:

@@ -24,7 +24,7 @@ namespace Pchp.Core
             public static readonly DoubleTable DoubleTable = new DoubleTable();
             public static readonly BoolTable BoolTable = new BoolTable();
             public static readonly StringTable StringTable = new StringTable();
-            public static readonly TypeTable WritableStringTable = new WritableStringTable();
+            public static readonly TypeTable MutableStringTable = new MutableStringTable();
             public static readonly ClassTable ClassTable = new ClassTable();
             public static readonly ArrayTable ArrayTable = new ArrayTable();
             public static readonly AliasTable AliasTable = new AliasTable();
@@ -341,8 +341,8 @@ namespace Pchp.Core
                 if (right.TypeCode == PhpTypeCode.String)
                     return right.String == me.String;
 
-                if (right.TypeCode == PhpTypeCode.WritableString)
-                    return right.WritableString.ToString() == me.String;
+                if (right.TypeCode == PhpTypeCode.MutableString)
+                    return right.MutableString.ToString() == me.String;
 
                 if (right.TypeCode == PhpTypeCode.Alias)
                     return StrictEquals(ref me, right.Alias.Value);
@@ -380,28 +380,28 @@ namespace Pchp.Core
         }
 
         [DebuggerNonUserCode]
-        sealed class WritableStringTable : TypeTable
+        sealed class MutableStringTable : TypeTable
         {
-            public override PhpTypeCode Type => PhpTypeCode.WritableString;
+            public override PhpTypeCode Type => PhpTypeCode.MutableString;
             public override bool IsNull(ref PhpValue me) => false;
             public override object ToClass(ref PhpValue me) => new stdClass(DeepCopy(ref me));	// new stdClass(){ $scalar = VALUE }
-            public override string ToStringQuiet(ref PhpValue me) => me.WritableString.ToString();
-            public override string ToString(ref PhpValue me, Context ctx) => me.WritableString.ToString(ctx);
-            public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.WritableString.ToStringOrThrow(ctx);
-            public override long ToLong(ref PhpValue me) => me.WritableString.ToLong();
-            public override double ToDouble(ref PhpValue me) => me.WritableString.ToDouble();
-            public override bool ToBoolean(ref PhpValue me) => me.WritableString.ToBoolean();
-            public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.WritableString.ToNumber(out number);
-            public override bool TryToIntStringKey(ref PhpValue me, out IntStringKey key) { key = Core.Convert.StringToArrayKey(me.WritableString.ToString()); return true; }
+            public override string ToStringQuiet(ref PhpValue me) => me.MutableString.ToString();
+            public override string ToString(ref PhpValue me, Context ctx) => me.MutableString.ToString(ctx);
+            public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.MutableString.ToStringOrThrow(ctx);
+            public override long ToLong(ref PhpValue me) => me.MutableString.ToLong();
+            public override double ToDouble(ref PhpValue me) => me.MutableString.ToDouble();
+            public override bool ToBoolean(ref PhpValue me) => me.MutableString.ToBoolean();
+            public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.MutableString.ToNumber(out number);
+            public override bool TryToIntStringKey(ref PhpValue me, out IntStringKey key) { key = Core.Convert.StringToArrayKey(me.MutableString.ToString()); return true; }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => Operators.GetEmptyForeachEnumerator();
-            public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.WritableString.ToString(), right);
+            public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.MutableString.ToString(), right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right)
             {
                 if (right.TypeCode == PhpTypeCode.String)
-                    return right.String == me.WritableString.ToString();
+                    return right.String == me.MutableString.ToString();
 
-                if (right.TypeCode == PhpTypeCode.WritableString)
-                    return right.WritableString.ToString() == me.WritableString.ToString();
+                if (right.TypeCode == PhpTypeCode.MutableString)
+                    return right.MutableString.ToString() == me.MutableString.ToString();
 
                 if (right.TypeCode == PhpTypeCode.Alias)
                     return StrictEquals(ref me, right.Alias.Value);
@@ -411,7 +411,7 @@ namespace Pchp.Core
             public override object EnsureObject(ref PhpValue me)
             {
                 //var obj = PhpValue.Create(new stdClass(ctx));
-                //if (me.WritableString.IsEmpty)
+                //if (me.MutableString.IsEmpty)
                 //{
                 //    // me is changed if value is empty
                 //    me = obj;
@@ -419,16 +419,16 @@ namespace Pchp.Core
                 //return obj;
                 throw new NotImplementedException();
             }
-            public override IPhpArray EnsureArray(ref PhpValue me) => (IPhpArray)(me._obj.Obj = me.WritableString.EnsureWritable());
-            public override IPhpArray GetArrayAccess(ref PhpValue me) => me.StringBlob;
-            public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => ((IPhpArray)me.StringBlob).GetItemValue(index); // quiet);
+            public override IPhpArray EnsureArray(ref PhpValue me) => (IPhpArray)(me._obj.Obj = me.MutableString.EnsureWritable());
+            public override IPhpArray GetArrayAccess(ref PhpValue me) => me.MutableStringBlob;
+            public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => ((IPhpArray)me.MutableStringBlob).GetItemValue(index); // quiet);
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) { throw new NotSupportedException(); } // TODO: Err
-            public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.WritableString.DeepCopy());
-            public override PhpArray ToArray(ref PhpValue me) => me.WritableString.ToArray();
-            public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx) => PhpCallback.Create(me.WritableString.ToString(), callerCtx);
-            public override string DisplayString(ref PhpValue me) => $"'{me.WritableString.ToString()}'";
-            public override void Output(ref PhpValue me, Context ctx) => me.WritableString.Output(ctx);
-            public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.WritableString);
+            public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.MutableString.DeepCopy());
+            public override PhpArray ToArray(ref PhpValue me) => me.MutableString.ToArray();
+            public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx) => PhpCallback.Create(me.MutableString.ToString(), callerCtx);
+            public override string DisplayString(ref PhpValue me) => $"'{me.MutableString.ToString()}'";
+            public override void Output(ref PhpValue me, Context ctx) => me.MutableString.Output(ctx);
+            public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.MutableString);
         }
 
         [DebuggerNonUserCode]
