@@ -351,6 +351,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public readonly PhpNumberHolder PhpNumber;
         public readonly OperatorsHolder Operators;
         public readonly PhpStringHolder PhpString;
+        public readonly PhpStringBlobHolder PhpStringBlob;
         public readonly ConstructorsHolder Ctors;
         public readonly ContextHolder Context;
         public readonly DynamicHolder Dynamic;
@@ -367,6 +368,7 @@ namespace Pchp.CodeAnalysis.Symbols
             IPhpConvertible = new IPhpConvertibleHolder(types);
             PhpNumber = new PhpNumberHolder(types);
             PhpString = new PhpStringHolder(types);
+            PhpStringBlob = new PhpStringBlobHolder(types);
             Operators = new OperatorsHolder(types);
             Ctors = new ConstructorsHolder(types);
             Context = new ContextHolder(types);
@@ -832,17 +834,29 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToNumber = ct.PhpString.Method("ToNumber");
                 ToBytes_Context = ct.PhpString.Method("ToBytes", ct.Context);
 
-                Append_String = ct.PhpString.Method("Append", ct.String);
-                Append_PhpString = ct.PhpString.Method("Append", ct.PhpString);
-                Append_PhpValue_Context = ct.PhpString.Method("Append", ct.PhpValue, ct.Context);
+                EnsureWritable = ct.PhpString.Method("EnsureWritable");
+                EnsureWritable_PhpString = ct.PhpString.Method("EnsureWritable", ct.PhpString);
 
-                DeepCopy = ct.PhpString.Method("DeepCopy");
+                IsNull_PhpString = ct.PhpString.Method("IsNull", ct.PhpString);
             }
 
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToNumber, ToBytes_Context,
-                Append_String, Append_PhpString, Append_PhpValue_Context,
-                DeepCopy;
+                EnsureWritable, EnsureWritable_PhpString,
+                IsNull_PhpString;
+        }
+
+        public struct PhpStringBlobHolder
+        {
+            public PhpStringBlobHolder(CoreTypes ct)
+            {
+                Add_String = ct.PhpString_Blob.Method("Add", ct.String);
+                Add_PhpString = ct.PhpString_Blob.Method("Add", ct.PhpString);
+                Add_PhpValue_Context = ct.PhpString_Blob.Method("Add", ct.PhpValue, ct.Context);
+            }
+
+            public readonly CoreMethod
+                Add_String, Add_PhpString, Add_PhpValue_Context;
         }
 
         public struct IPhpArrayHolder
@@ -937,11 +951,12 @@ namespace Pchp.CodeAnalysis.Symbols
             public ConstructorsHolder(CoreTypes ct)
             {
                 PhpAlias_PhpValue_int = ct.PhpAlias.Ctor(ct.PhpValue, ct.Int32);
-                PhpString = ct.PhpString.Ctor();
+                PhpString_Blob = ct.PhpString.Ctor(ct.PhpString_Blob);
                 PhpString_string = ct.PhpString.Ctor(ct.String);
                 PhpString_string_string = ct.PhpString.Ctor(ct.String, ct.String);
                 PhpString_PhpValue_Context = ct.PhpString.Ctor(ct.PhpValue, ct.Context);
                 PhpString_PhpString = ct.PhpString.Ctor(ct.PhpString);
+                Blob = ct.PhpString_Blob.Ctor();
                 PhpArray = ct.PhpArray.Ctor();
                 PhpArray_int = ct.PhpArray.Ctor(ct.Int32);
                 IntStringKey_int = ct.IntStringKey.Ctor(ct.Int32);
@@ -960,7 +975,8 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreConstructor
                 PhpAlias_PhpValue_int,
                 PhpArray, PhpArray_int,
-                PhpString, PhpString_string, PhpString_PhpString, PhpString_string_string, PhpString_PhpValue_Context,
+                PhpString_Blob, PhpString_string, PhpString_PhpString, PhpString_string_string, PhpString_PhpValue_Context,
+                Blob,
                 IntStringKey_int, IntStringKey_string,
                 ScriptAttribute_string, PhpTraitAttribute, PhpTypeAttribute_string_string, PhpFieldsOnlyCtorAttribute, NotNullAttribute,
                 ScriptDiedException, ScriptDiedException_Long, ScriptDiedException_PhpValue;

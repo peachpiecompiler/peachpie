@@ -463,7 +463,7 @@ namespace Pchp.Core
         /// </summary>
         public static byte[] AsBytesOrNull(this PhpValue value, Context ctx)
         {
-            var phpstr = (value.IsAlias ? value.Alias.Value.Object : value.Object) as PhpString;
+            var phpstr = (value.IsAlias ? value.Alias.Value.Object : value.Object) as PhpString.Blob;
             return (phpstr != null && phpstr.ContainsBinaryData)
                 ? phpstr.ToBytes(ctx)
                 : null;

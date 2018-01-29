@@ -72,7 +72,7 @@ namespace Pchp.Library
         /// </returns>
         public static string bin2hex(Context ctx, PhpString str)
         {
-            if (str == null || str.IsEmpty)
+            if (str.IsEmpty)
             {
                 return string.Empty;
             }
@@ -309,7 +309,7 @@ namespace Pchp.Library
 
         public static PhpString convert_cyr_string(byte[] bytes, string srcCharset, string dstCharset)
         {
-            if (bytes == null) return null;
+            if (bytes == null) return default(PhpString);
             if (bytes.Length == 0) return new PhpString();
 
             // checks srcCharset argument:
@@ -417,7 +417,7 @@ namespace Pchp.Library
         /// <returns>The array of characters frequency.</returns>
         public static PhpArray count_chars(Context ctx, PhpString bytes)
         {
-            if (bytes == null || bytes.IsEmpty)
+            if (bytes.IsEmpty)
             {
                 return PhpArray.NewEmpty();
             }
@@ -816,25 +816,25 @@ namespace Pchp.Library
             bool not_first = false;                       // not the first iteration
 
             var glue_element = Streams.TextElement.FromValue(ctx, glue);    // convert it once
-            var result = new PhpString();
+            var result = new PhpString.Blob();
 
             using (var x = pieces.GetFastEnumerator())
                 while (x.MoveNext())
                 {
                     if (not_first)
                     {
-                        if (glue_element.IsText) result.Append(glue_element.GetText());
-                        else result.Append(glue_element.GetBytes());
+                        if (glue_element.IsText) result.Add(glue_element.GetText());
+                        else result.Add(glue_element.GetBytes());
                     }
                     else
                     {
                         not_first = true;
                     }
 
-                    result.Append(x.CurrentValue, ctx);
+                    result.Add(x.CurrentValue, ctx);
                 }
 
-            return result;
+            return new PhpString(result);
         }
 
         #endregion
@@ -1597,10 +1597,10 @@ namespace Pchp.Library
                 return new PhpArray();
             }
 
-            var phpstr = obj.GetValue().Object as PhpString;
-            if (phpstr != null && phpstr.ContainsBinaryData)
+            var bytes = obj.AsBytesOrNull(ctx);
+            if (bytes != null)
             {
-                return Split(phpstr.ToBytes(ctx.StringEncoding), splitLength);
+                return Split(bytes, splitLength);
             }
             else
             {

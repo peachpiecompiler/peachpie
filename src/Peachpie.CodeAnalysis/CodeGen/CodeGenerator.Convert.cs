@@ -730,7 +730,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else if (from.SpecialType == SpecialType.System_Void)
             {
-                EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString);
+                // Template: new PhpString("")
+                _il.EmitStringConstant(string.Empty);
+                EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString_string);
             }
             else if (from == CoreTypes.PhpValue)
             {

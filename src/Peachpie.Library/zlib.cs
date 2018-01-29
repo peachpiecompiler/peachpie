@@ -122,7 +122,7 @@ namespace Pchp.Library
             if (level < -1 || level > 9)
             {
                 PhpException.Throw(PhpError.Warning, String.Format("compression level ({0}) must be within -1..9", level));
-                return null;
+                return default(PhpString);
             }
 
             var zs = new ZStream();
@@ -163,7 +163,7 @@ namespace Pchp.Library
             else
             {
                 PhpException.Throw(PhpError.Warning, zError(status));
-                return null;
+                return default(PhpString);
             }
         }
 
@@ -199,7 +199,7 @@ namespace Pchp.Library
             if (status != zlibConst.Z_OK)
             {
                 PhpException.Throw(PhpError.Warning, zError(status));
-                return null;
+                return default(PhpString);
             }
 
             do
@@ -220,7 +220,7 @@ namespace Pchp.Library
                 catch (OutOfMemoryException)
                 {
                     zs.inflateEnd();
-                    return null;
+                    return default(PhpString);
                 }
 
                 zs.next_out_index = (int)zs.total_out;
@@ -245,7 +245,7 @@ namespace Pchp.Library
             else
             {
                 PhpException.Throw(PhpError.Warning, zError(status));
-                return null;
+                return default(PhpString);
             }
         }
 
@@ -305,7 +305,7 @@ namespace Pchp.Library
             if ((level < -1) || (level > 9))
             {
                 PhpException.Throw(PhpError.Warning, String.Format("compression level ({0}) must be within -1..9", level));
-                return null;
+                return default(PhpString);
             }
 
             if (data == null)
@@ -323,7 +323,7 @@ namespace Pchp.Library
             }
             catch (OutOfMemoryException)
             {
-                return null;
+                return default(PhpString);
             }
 
             int status;
@@ -337,7 +337,7 @@ namespace Pchp.Library
             else
             {
                 PhpException.Throw(PhpError.Warning, zError(status));
-                return null;
+                return default(PhpString);
             }
         }
 
@@ -361,7 +361,7 @@ namespace Pchp.Library
             if (length < 0)
             {
                 PhpException.Throw(PhpError.Warning, String.Format("length {0} must be greater or equal zero", length));
-                return null;
+                return default(PhpString);
             }
 
             int ilength;
@@ -379,7 +379,7 @@ namespace Pchp.Library
                 }
                 catch (OutOfMemoryException)
                 {
-                    return null;
+                    return default(PhpString);
                 }
 
                 status = ZlibUncompress(ref output, data);
@@ -393,7 +393,7 @@ namespace Pchp.Library
             else
             {
                 PhpException.Throw(PhpError.Warning, zError(status));
-                return null;
+                return default(PhpString);
             }
         }
 
@@ -484,7 +484,7 @@ namespace Pchp.Library
         public static PhpString gzdecode(byte[] data, int length = 0)
         {
             PhpException.FunctionNotSupported("gzdecode");
-            return null;
+            return default(PhpString);
         }
 
         /// <summary>
@@ -509,7 +509,7 @@ namespace Pchp.Library
             if ((level < -1) || (level > 9))
             {
                 PhpException.Throw(PhpError.Warning, "compression level ({0}) must be within -1..9", level.ToString());
-                return null;
+                return default(PhpString);
             }
 
             ZStream zs = new ZStream();
@@ -528,14 +528,14 @@ namespace Pchp.Library
                     if ((status = zs.deflateInit(level, -MAX_WBITS)) != zlibConst.Z_OK)
                     {
                         PhpException.Throw(PhpError.Warning, zError(status));
-                        return null;
+                        return default(PhpString);
                     }
                     break;
                 case (int)ForceConstants.FORCE_DEFLATE:
                     if ((status = zs.deflateInit(level)) != zlibConst.Z_OK)
                     {
                         PhpException.Throw(PhpError.Warning, zError(status));
-                        return null;
+                        return default(PhpString);
                     }
                     break;
             }
@@ -595,7 +595,7 @@ namespace Pchp.Library
             else
             {
                 PhpException.Throw(PhpError.Warning, zError(status));
-                return null;
+                return default(PhpString);
             }
         }
 

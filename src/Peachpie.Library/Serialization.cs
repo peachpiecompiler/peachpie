@@ -48,7 +48,7 @@ namespace Pchp.Library
                 catch (Exception e)
                 {
                     PhpException.Throw(PhpError.Notice, LibResources.serialization_failed, e.Message);
-                    return null;
+                    return default(PhpString);
                 }
             }
 
@@ -186,14 +186,14 @@ namespace Pchp.Library
                 /// <summary>
                 /// Result data.
                 /// </summary>
-                readonly PhpString _result = new PhpString();
+                readonly PhpString.Blob _result = new PhpString.Blob();
 
                 readonly Context _ctx;
                 readonly RuntimeTypeHandle _caller;
 
                 void Write(char ch) => Write(ch.ToString());
-                void Write(string str) => _result.Append(str);
-                void Write(byte[] bytes) => _result.Append(bytes);
+                void Write(string str) => _result.Add(str);
+                void Write(byte[] bytes) => _result.Add(bytes);
                 void Write(PhpString str)
                 {
                     if (!str.IsEmpty)
@@ -216,7 +216,7 @@ namespace Pchp.Library
                 {
                     ObjectWriter writer;
                     variable.Accept(writer = new ObjectWriter(ctx, caller));
-                    return writer._result;
+                    return new PhpString(writer._result);
                 }
 
                 public override void AcceptNull()
@@ -388,7 +388,7 @@ namespace Pchp.Library
                     if (serializable != null)
                     {
                         var res = serializable.serialize();
-                        if (res == null)
+                        if (res.IsDefault)
                         {
                             AcceptNull();
                             return;

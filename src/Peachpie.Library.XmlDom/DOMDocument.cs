@@ -712,7 +712,7 @@ namespace Peachpie.Library.XmlDom
                 }
                 else
                 {
-                    return null;
+                    return default(PhpString);
                 }
             }
         }

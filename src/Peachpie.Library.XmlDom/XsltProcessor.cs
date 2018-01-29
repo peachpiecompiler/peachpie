@@ -233,7 +233,7 @@ namespace Peachpie.Library.XmlDom
             {
                 if (!TransformInternal(doc.XmlNode, stream))
                 {
-                    return null;
+                    return default(PhpString);
                 }
 
                 return new PhpString(stream.ToArray());

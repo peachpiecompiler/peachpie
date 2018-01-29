@@ -365,9 +365,9 @@ namespace Pchp.Core
 
                 me = PhpValue.Create(arr);
 
-                return arr;
+                return arr.ContainingBlob;
             }
-            public override IPhpArray GetArrayAccess(ref PhpValue me) => new PhpString(me.String);
+            public override IPhpArray GetArrayAccess(ref PhpValue me) => EnsureArray(ref me);
             public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => PhpValue.Create(Operators.GetItemValue(me.String, index, quiet));
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) { throw new NotSupportedException(); } // TODO: Err
             public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me);
@@ -417,9 +417,9 @@ namespace Pchp.Core
                 //return obj;
                 throw new NotImplementedException();
             }
-            public override IPhpArray EnsureArray(ref PhpValue me) => me.WritableString;
-            public override IPhpArray GetArrayAccess(ref PhpValue me) => me.WritableString;
-            public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => ((IPhpArray)me.WritableString).GetItemValue(index); // quiet);
+            public override IPhpArray EnsureArray(ref PhpValue me) => me.WritableString.EnsureWritable();
+            public override IPhpArray GetArrayAccess(ref PhpValue me) => me.WritableString.EnsureWritable();
+            public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => ((IPhpArray)me.WritableString.ContainingBlob).GetItemValue(index); // quiet);
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) { throw new NotSupportedException(); } // TODO: Err
             public override PhpValue DeepCopy(ref PhpValue me) => PhpValue.Create(me.WritableString.DeepCopy());
             public override PhpArray ToArray(ref PhpValue me) => me.WritableString.ToArray();

@@ -2681,8 +2681,10 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            // new PhpString()
-            cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpString);
+            // Template: new PhpString( new PhpString.Blob() { a1, a2, ..., aN } )
+
+            // new PhpString.Blob()
+            cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.Blob);
 
             // TODO: overload for 2, 3, 4 parameters directly
 
@@ -2696,15 +2698,19 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
 
                 //
-                cg.Builder.EmitOpCode(ILOpCode.Dup);    // PhpString
-                cg.Emit_PhpString_Append(cg.Emit(expr));
+                cg.Builder.EmitOpCode(ILOpCode.Dup);        // <Blob>
+                cg.Emit_PhpStringBlob_Append(cg.Emit(expr));// .Append( ... )
 
                 //
-                cg.Builder.EmitOpCode(ILOpCode.Nop);
+                if (cg.IsDebug)
+                {
+                    cg.Builder.EmitOpCode(ILOpCode.Nop);
+                }
             }
 
-            //
-            return cg.CoreTypes.PhpString;
+            // new PhpString( <Blob> )
+            return cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpString_Blob)
+                .Expect(cg.CoreTypes.PhpString);
         }
 
         static bool IsEmpty(BoundExpression x) => x.ConstantValue.HasValue && ExpressionsExtension.IsEmptyStringValue(x.ConstantValue.Value);
@@ -3101,6 +3107,8 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(Access.IsRead || Access.IsNone);
 
+            // TODO: A .= B; where A : PhpString and target_place.HasAddress -> "A.EnsureWritable().Append(B)"
+
             // target X= value;
 
             var target_place = this.Target.BindPlace(cg);
@@ -3194,44 +3202,25 @@ namespace Pchp.CodeAnalysis.Semantics
 
         static TypeSymbol EmitAppend(CodeGenerator cg, TypeSymbol xtype, BoundExpression y)
         {
-            // LOAD PhpString (X)
+            // x -> PhpString
+            cg.EmitConvertToPhpString(xtype, 0);
 
-            // dereference
-            if (xtype == cg.CoreTypes.PhpAlias)
+            if (y.ConstantValue.HasValue && ExpressionsExtension.IsEmptyStringValue(y.ConstantValue.Value))
             {
-                xtype = cg.Emit_PhpAlias_GetValue();
+                // nothing to append
             }
-
-            if (xtype == cg.CoreTypes.PhpString)
-            {
-                // keep PhpString on STACK
-            }
-            else if (xtype.SpecialType == SpecialType.System_String ||
-                xtype.SpecialType == SpecialType.System_Double ||
-                xtype.SpecialType == SpecialType.System_Boolean ||
-                xtype.SpecialType == SpecialType.System_Int64 ||
-                xtype.SpecialType == SpecialType.System_Object)
-            {
-                // new PhpString(string)
-                cg.EmitConvertToString(xtype, 0);
-                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpString_string);
-            }
-            //else if (xtype == cg.CoreTypes.PhpString)
-            //{
-            //    // new PhpString(phpstring)
-            //    cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpString_PhpString);
-            //}
             else
             {
-                // new PhpString(value, Context)
-                cg.EmitConvertToPhpValue(xtype, 0);
-                cg.EmitLoadContext();
-                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpString_PhpValue_Context);
-            }
+                // CALL EnsureWritable(x) : Blob
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpString.EnsureWritable_PhpString); // Blob
 
-            // <STACK>.Append (Y)
-            cg.Builder.EmitOpCode(ILOpCode.Dup);
-            cg.Emit_PhpString_Append(cg.Emit(y));
+                // <STACK>.Append (Y)
+                cg.Builder.EmitOpCode(ILOpCode.Dup);
+                cg.Emit_PhpStringBlob_Append(cg.Emit(y));
+
+                // new PhpString(blob)
+                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpString_Blob);
+            }
 
             //
             return cg.CoreTypes.PhpString;

@@ -176,7 +176,7 @@ namespace Pchp.Core
         /// Gets the object field of the value as PHP writable string.
         /// Does not perform a conversion, expects the value is of type (writable UTF16 or single-byte) string.
         /// </summary>
-        public PhpString WritableString { get { Debug.Assert(_obj.Obj is PhpString); return (PhpString)_obj.Obj; } }
+        public PhpString WritableString { get { Debug.Assert(_obj.Obj is PhpString.Blob); return new PhpString((PhpString.Blob)_obj.Obj); } }
 
         /// <summary>
         /// Gets underlaying reference object.
@@ -569,7 +569,7 @@ namespace Pchp.Core
 
         public static PhpValue Create(string value) => new PhpValue(TypeTable.StringTable, value);
 
-        public static PhpValue Create(PhpString value) => new PhpValue(TypeTable.WritableStringTable, value);
+        public static PhpValue Create(PhpString value) => value.IsEmpty ? new PhpValue(TypeTable.StringTable, string.Empty) : new PhpValue(TypeTable.WritableStringTable, value.ContainingBlob);
 
         public static PhpValue Create(PhpArray value) => new PhpValue(TypeTable.ArrayTable, value);
 

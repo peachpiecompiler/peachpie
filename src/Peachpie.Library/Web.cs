@@ -37,7 +37,7 @@ namespace Pchp.Library
         {
             if (encoded_data == null)
             {
-                return null;
+                return default(PhpString);
             }
 
             try
@@ -55,11 +55,6 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static string base64_encode(Context ctx, PhpString data_to_encode)
         {
-            if (data_to_encode == null)
-            {
-                return null;
-            }
-
             return System.Convert.ToBase64String(data_to_encode.ToBytes(ctx.StringEncoding));
         }
 

@@ -29,10 +29,10 @@ namespace Pchp.CodeAnalysis.Semantics
             if (value == null)
                 return true;
 
-            if (value is string && ((string)value).Length == 0)
+            if (value is string str && str.Length == 0)
                 return true;
 
-            if (value is bool && ((bool)value) == false)
+            if (value is bool b && b == false)
                 return true;
 
             return false;

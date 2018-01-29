@@ -1980,7 +1980,7 @@ namespace Pchp.Library
         /// </summary>
         static PhpString HashBytes(Context ctx, HashAlgorithm/*!*/ algorithm, PhpString bytes, bool rawOutput = false)
         {
-            if (bytes == null) return null;
+            if (bytes.IsDefault) return default(PhpString);
 
             byte[] hash = algorithm.ComputeHash(bytes.ToBytes(ctx));
 
@@ -2002,18 +2002,18 @@ namespace Pchp.Library
                 //using (FileStream file = new FileStream(ctx, fileName, FileMode.Open, FileAccess.Read))
                 {
                     if (stream == null)
-                        return null;
+                        return default(PhpString);
 
                     var data = stream.ReadContents();
                     if (data.IsNull)
                     {
-                        return null;
+                        return default(PhpString);
                     }
 
                     var bytes = data.AsBytes(ctx.StringEncoding);
                     if (bytes == null)
                     {
-                        return null;
+                        return default(PhpString);
                     }
 
                     hash = algorithm.ComputeHash(bytes);
@@ -2021,7 +2021,7 @@ namespace Pchp.Library
             }
             catch (System.Exception)
             {
-                return null;
+                return default(PhpString);
             }
 
             return rawOutput
@@ -2159,7 +2159,7 @@ namespace Pchp.Library
             var h = ValidateHashResource(context);
             if (h == null)
             {
-                return null;
+                return default(PhpString);
             }
 
             byte[] hash = h.Final();
@@ -2289,7 +2289,7 @@ namespace Pchp.Library
             var h = hash_init(algo);
             if (h == null || !hash_update(h, data))
             {
-                return null;
+                return default(PhpString);
             }
 
             return hash_final(h, raw_output);
@@ -2301,7 +2301,7 @@ namespace Pchp.Library
             var h = hash_init(algo);
             if (h == null || !hash_update_file(ctx, h, filename))
             {
-                return null;
+                return default(PhpString);
             }
 
             return hash_final(h, raw_output);
@@ -2317,7 +2317,7 @@ namespace Pchp.Library
             var h = hash_init(algo, HashInitOptions.HASH_HMAC, key);
             if (h == null || !hash_update(h, data))
             {
-                return null;
+                return default(PhpString);
             }
 
             return hash_final(h, raw_output);
@@ -2329,7 +2329,7 @@ namespace Pchp.Library
             var h = hash_init(algo, HashInitOptions.HASH_HMAC, key);
             if (h == null || !hash_update_file(ctx, h, filename))
             {
-                return null;
+                return default(PhpString);
             }
 
             return hash_final(h, raw_output);

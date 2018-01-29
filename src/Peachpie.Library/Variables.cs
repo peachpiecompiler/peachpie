@@ -765,7 +765,7 @@ namespace Pchp.Library
             readonly protected Context _ctx;
             readonly protected string _nl;
 
-            protected PhpString _output;
+            protected PhpString.Blob _output;
             protected int _indent;
 
             protected const string RECURSION = "*RECURSION*";
@@ -779,13 +779,13 @@ namespace Pchp.Library
 
             public virtual PhpString Serialize(PhpValue value)
             {
-                _output = new PhpString();
+                _output = new PhpString.Blob();
                 _indent = 0;
 
                 //
                 Accept(value);
 
-                return _output;
+                return new PhpString(_output);
             }
 
             /// <summary>
@@ -1060,9 +1060,9 @@ namespace Pchp.Library
 
             public override PhpString Serialize(PhpValue value)
             {
-                var output = base.Serialize(value);
-                output.Append(_nl);
-                return output;
+                base.Serialize(value);
+                _output.Append(_nl);
+                return new PhpString(_output);
             }
 
             public override void Accept(bool obj)

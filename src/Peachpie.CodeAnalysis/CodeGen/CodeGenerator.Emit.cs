@@ -1573,6 +1573,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                 _il.EmitDoubleConstant(0.0);    // 0.0
                 _il.EmitBranch(ILOpCode.Blt, lblfalse);
             }
+            else if (stack == CoreTypes.PhpString)
+            {
+                EmitCall(ILOpCode.Call, CoreMethods.PhpString.IsNull_PhpString);    // PhpString.IsDefault
+                _il.EmitBranch(ILOpCode.Brtrue, lblfalse);
+            }
             else if (stack.IsReferenceType)
             {
                 _il.EmitNullConstant(); // null
@@ -1980,10 +1985,10 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
-        /// Emits <c>PhpString.Append</c> expecting <c>PhpString</c> and <paramref name="ytype"/> on top of evaluation stack.
+        /// Emits <c>PhpString.Blob.Append</c> expecting <c>PhpString.Blob</c> and <paramref name="ytype"/> on top of evaluation stack.
         /// </summary>
         /// <param name="ytype">Type of argument loaded on stack.</param>
-        internal void Emit_PhpString_Append(TypeSymbol ytype)
+        internal void Emit_PhpStringBlob_Append(TypeSymbol ytype)
         {
             if (ytype == CoreTypes.PhpAlias)
             {
@@ -1993,19 +1998,19 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (ytype == CoreTypes.PhpString)
             {
                 // Append(PhpString)
-                EmitCall(ILOpCode.Callvirt, CoreMethods.PhpString.Append_PhpString);
+                EmitCall(ILOpCode.Callvirt, CoreMethods.PhpStringBlob.Add_PhpString);
             }
             else if (ytype == CoreTypes.PhpValue)
             {
                 // Append(PhpValue, Context)
                 EmitLoadContext();
-                EmitCall(ILOpCode.Callvirt, CoreMethods.PhpString.Append_PhpValue_Context);
+                EmitCall(ILOpCode.Callvirt, CoreMethods.PhpStringBlob.Add_PhpValue_Context);
             }
             else
             {
                 // Append(string)
                 EmitConvertToString(ytype, 0);
-                EmitCall(ILOpCode.Callvirt, CoreMethods.PhpString.Append_String);
+                EmitCall(ILOpCode.Callvirt, CoreMethods.PhpStringBlob.Add_String);
             }
         }
 
@@ -2827,7 +2832,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (t == CoreTypes.PhpString)
                 {
-                    t = EmitCall(ILOpCode.Callvirt, CoreMethods.PhpString.DeepCopy);
+                    Debug.Assert(t.IsStructType());
+                    // Template: new PhpString( <STACK> )
+                    t = EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString_PhpString);                    
                 }
                 else if (t == CoreTypes.PhpArray)
                 {

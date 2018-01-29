@@ -283,7 +283,7 @@ namespace Peachpie.Library.MySql
         public static PhpResource mysql_query(Context ctx, PhpString query, PhpResource link = null)
         {
             var connection = ValidConnection(ctx, link);
-            if (query == null || connection == null || query.IsEmpty)
+            if (connection == null || query.IsEmpty)
             {
                 return null;
             }
@@ -1044,7 +1044,7 @@ namespace Peachpie.Library.MySql
         /// <returns>Escaped string.</returns>
         public static PhpString mysql_escape_string(Context ctx, PhpString unescaped_str)
         {
-            if (unescaped_str == null || unescaped_str.IsEmpty)
+            if (unescaped_str.IsEmpty)
             {
                 return PhpString.Empty;
             }

@@ -799,7 +799,7 @@ namespace Pchp.Library.Streams
             var stream = PhpStream.GetValid(handle, FileAccess.Read);
             if (stream == null)
             {
-                return null;
+                return default(PhpString);
             }
 
             return stream.ReadContents(maxLength, offset).ToPhpString();

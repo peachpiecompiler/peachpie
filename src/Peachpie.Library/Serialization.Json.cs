@@ -85,7 +85,7 @@ namespace Pchp.Library
                 /// <summary>
                 /// Result data.
                 /// </summary>
-                readonly PhpString _result = new PhpString();
+                readonly PhpString.Blob _result = new PhpString.Blob();
 
                 readonly Context _ctx;
                 readonly RuntimeTypeHandle _caller;
@@ -115,7 +115,7 @@ namespace Pchp.Library
                 {
                     ObjectWriter writer;
                     variable.Accept(writer = new ObjectWriter(ctx, encodeOptions, caller));
-                    return writer._result;
+                    return new PhpString(writer._result);
                 }
 
                 bool PushObject(object obj)
