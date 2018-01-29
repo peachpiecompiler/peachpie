@@ -115,7 +115,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     else
                     {
                         // return by value
-                        //if (this.Returned.TypeRefMask.IsRef)
+                        if (this.Returned.TypeRefMask.IsRef)
                         {
                             // dereference
                             t = cg.EmitDereference(t);
