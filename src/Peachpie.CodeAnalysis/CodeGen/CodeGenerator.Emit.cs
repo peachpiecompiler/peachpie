@@ -1206,20 +1206,35 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (p.Type == CoreTypes.PhpTypeInfo)
                 {
-                    BoundTypeRef.EmitLoadSelf(this);
+                    if (this.CallerType == null && this.RuntimeCallerTypePlace == null)
+                    {
+                        // null
+                        _il.EmitNullConstant();
+                    }
+                    else
+                    {
+                        BoundTypeRef.EmitLoadSelf(this, throwOnError: false);
+                    }
                 }
                 else if (p.Type.SpecialType == SpecialType.System_String)
                 {
-                    if (this.CallerType is IPhpTypeSymbol phpt)
+                    if (this.CallerType == null && this.RuntimeCallerTypePlace == null)
+                    {
+                        // null
+                        Builder.EmitNullConstant();
+                    }
+                    else if (this.CallerType is IPhpTypeSymbol phpt)
                     {
                         // type known in compile-time:
                         Builder.EmitStringConstant(phpt.FullName.ToString());
                     }
                     else
                     {
-                        // {LOAD PhpTypeInfo}.Name
-                        BoundTypeRef.EmitLoadSelf(this);
-                        EmitCall(ILOpCode.Call, CoreMethods.Operators.GetName_PhpTypeInfo.Getter).Expect(SpecialType.System_String);
+                        // {LOAD PhpTypeInfo}?.Name
+                        BoundTypeRef.EmitLoadSelf(this, throwOnError: false);
+                        EmitNullCoalescing(
+                            () => EmitCall(ILOpCode.Call, CoreMethods.Operators.GetName_PhpTypeInfo.Getter).Expect(SpecialType.System_String),
+                            () => Builder.EmitNullConstant());
                     }
                 }
                 else if (p.Type == CoreTypes.RuntimeTypeHandle)
@@ -1633,6 +1648,27 @@ namespace Pchp.CodeAnalysis.CodeGen
             nullemitter(this);
 
             _il.MarkLabel(lbl_notnull);
+        }
+
+        /// <summary>
+        /// Emits <c>?:</c> operation against the value on top of the evaluation stack.
+        /// </summary>
+        internal void EmitNullCoalescing(Action notnullemitter, Action nullemitter)
+        {
+            var lbl_notnull = new NamedLabel("NotNull");
+            var lbl_end = new object();
+
+            _il.EmitOpCode(ILOpCode.Dup);
+            _il.EmitBranch(ILOpCode.Brtrue, lbl_notnull);
+
+            _il.EmitOpCode(ILOpCode.Pop);
+            nullemitter();
+            _il.EmitBranch(ILOpCode.Br, lbl_end);
+
+            _il.MarkLabel(lbl_notnull);
+            notnullemitter();
+
+            _il.MarkLabel(lbl_end);
         }
 
         /// <summary>

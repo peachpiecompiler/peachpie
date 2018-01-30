@@ -84,7 +84,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         return EmitLoadStaticPhpTypeInfo(cg);
 
                     case ReservedTypeRef.ReservedType.self:
-                        return EmitLoadSelf(cg);
+                        return EmitLoadSelf(cg, throwOnError: true);
 
                     case ReservedTypeRef.ReservedType.parent:
                         return EmitLoadParent(cg);
@@ -156,8 +156,9 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Loads <c>PhpTypeInfo</c> of <c>self</c>.
         /// </summary>
         /// <param name="cg"></param>
+        /// <param name="throwOnError">Whether to expect only valid scope.</param>
         /// <returns>Type symbol of PhpTypeInfo.</returns>
-        internal static TypeSymbol EmitLoadSelf(CodeGenerator cg)
+        internal static TypeSymbol EmitLoadSelf(CodeGenerator cg, bool throwOnError = false)
         {
             var caller = cg.CallerType;
             if (caller != null)
@@ -170,7 +171,9 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 // Template: Operators.GetSelf( {caller type handle} )
                 cg.EmitCallerTypeHandle();
-                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetSelf_RuntimeTypeHandle);
+                return cg.EmitCall(ILOpCode.Call, throwOnError
+                    ? cg.CoreMethods.Operators.GetSelf_RuntimeTypeHandle
+                    : cg.CoreMethods.Operators.GetSelfOrNull_RuntimeTypeHandle);
             }
         }
 

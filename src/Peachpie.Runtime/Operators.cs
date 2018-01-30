@@ -575,6 +575,11 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Gets <see cref="PhpTypeInfo"/> of self or <c>null</c>.
+        /// </summary>
+        public static PhpTypeInfo GetSelfOrNull(RuntimeTypeHandle self) => self.GetPhpTypeInfo();
+
+        /// <summary>
         /// Gets <see cref="PhpTypeInfo"/> of parent.
         /// Throws in case of parent being used out of class context or within a parentless class.
         /// </summary>
