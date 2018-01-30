@@ -424,7 +424,7 @@ namespace Pchp.Core
                 //return obj;
                 throw new NotImplementedException();
             }
-            public override IPhpArray EnsureArray(ref PhpValue me) => (IPhpArray)(me._obj.Obj = me.MutableString.EnsureWritable());
+            public override IPhpArray EnsureArray(ref PhpValue me) => (IPhpArray)(me._obj = me.MutableString.EnsureWritable());
             public override IPhpArray GetArrayAccess(ref PhpValue me) => me.MutableStringBlob;
             public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => ((IPhpArray)me.MutableStringBlob).GetItemValue(index); // quiet);
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) { throw new NotSupportedException(); } // TODO: Err

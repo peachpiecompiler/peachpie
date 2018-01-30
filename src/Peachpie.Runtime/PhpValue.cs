@@ -39,29 +39,6 @@ namespace Pchp.Core
 
         #endregion
 
-        #region Nested struct: ObjectField
-
-        /// <summary>
-        /// Union for reference types.
-        /// </summary>
-        //[StructLayout(LayoutKind.Explicit)]
-        [DebuggerNonUserCode]
-        struct ObjectField
-        {
-            //[FieldOffset(0)]
-            public object Obj;
-            //[FieldOffset(0)]
-            public string String => (string)Obj;
-            //[FieldOffset(0)]
-            public PhpArray Array => (PhpArray)Obj;
-            //[FieldOffset(0)]
-            public PhpAlias Alias => (PhpAlias)Obj;
-
-            public override int GetHashCode() => (Obj != null) ? Obj.GetHashCode() : 0;
-        }
-
-        #endregion
-
         #region Fields
 
         /// <summary>
@@ -72,7 +49,7 @@ namespace Pchp.Core
         /// <summary>
         /// A reference type container.
         /// </summary>
-        ObjectField _obj;
+        object _obj;
 
         /// <summary>
         /// A value type container.
@@ -170,12 +147,12 @@ namespace Pchp.Core
         /// Gets the object field of the value as string.
         /// Does not perform a conversion, expects the value is of type (readonly UTF16) string.
         /// </summary>
-        public string String { get { Debug.Assert(_obj.Obj is string || _obj.Obj == null); return _obj.String; } }
+        public string String { get { Debug.Assert(_obj is string); return (string)_obj; } }
 
         /// <summary>
         /// Gets underlaying <see cref="PhpString.Blob"/> object.
         /// </summary>
-        internal PhpString.Blob MutableStringBlob { get { Debug.Assert(_obj.Obj is PhpString.Blob); return (PhpString.Blob)_obj.Obj; } }
+        internal PhpString.Blob MutableStringBlob { get { Debug.Assert(_obj is PhpString.Blob); return (PhpString.Blob)_obj; } }
 
         /// <summary>
         /// Gets the object field of the value as PHP writable string.
@@ -186,17 +163,17 @@ namespace Pchp.Core
         /// <summary>
         /// Gets underlaying reference object.
         /// </summary>
-        public object Object { get { return _obj.Obj; } }
+        public object Object { get { return _obj; } }
 
         /// <summary>
         /// Gets underlaying array object.
         /// </summary>
-        public PhpArray Array { get { Debug.Assert(TypeCode == PhpTypeCode.PhpArray); return _obj.Array; } }
+        public PhpArray Array { get { Debug.Assert(TypeCode == PhpTypeCode.PhpArray); return (PhpArray)_obj; } }
 
         /// <summary>
         /// Gets underlaying alias object.
         /// </summary>
-        public PhpAlias Alias { get { Debug.Assert(_obj.Obj is PhpAlias); return _obj.Alias; } }
+        public PhpAlias Alias { get { Debug.Assert(_obj is PhpAlias); return (PhpAlias)_obj; } }
 
         #endregion
 
@@ -553,36 +530,42 @@ namespace Pchp.Core
             _value.Bool = value;
         }
 
-        private PhpValue(TypeTable type, object obj) : this()
+        private PhpValue(TypeTable type, object obj)
         {
             _type = (obj != null) ? type : TypeTable.NullTable;
-            _obj.Obj = obj;
+            _value = default(ValueField);
+            _obj = obj;
         }
 
-        private PhpValue(PhpString.Blob blob) : this()
+        private PhpValue(PhpString.Blob blob)
         {
             Debug.Assert(blob != null);
             _type = TypeTable.MutableStringTable;
-            _obj.Obj = blob;
+            _value = default(ValueField);
+            _obj = blob;
         }
 
-        internal PhpValue(string value) : this()
+        internal PhpValue(string value)
         {
             Debug.Assert(value != null);
             _type = TypeTable.StringTable;
-            _obj.Obj = value;
+            _value = default(ValueField);
+            _obj = value;
         }
 
-        private PhpValue(PhpArray array) : this()
+        private PhpValue(PhpArray array)
         {
             Debug.Assert(array != null);
             _type = TypeTable.ArrayTable;
-            _obj.Obj = array;
+            _value = default(ValueField);
+            _obj = array;
         }
 
-        private PhpValue(TypeTable type) : this()
+        private PhpValue(TypeTable type)
         {
             _type = type;
+            _value = default(ValueField);
+            _obj = null;
             Debug.Assert(IsNull || !IsSet);
         }
 
