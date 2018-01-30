@@ -165,6 +165,28 @@ namespace Pchp.Library
         public static string BinToHex(byte[] bytes, string separator = null) => Core.Utilities.StringUtils.BinToHex(bytes, separator);
 
         /// <summary>
+        /// Converts 16 based digit to decimal number.
+        /// </summary>
+        /// <param name="c">0-9, a-z.</param>
+        /// <returns>Decimal number or <c>-1</c> if input is out of range.</returns>
+        public static int HexToNumber(char c)
+        {
+            if (c >= '0') // '0' 48
+            {
+                if (c <= '9') return c - '0'; // '9' 57
+
+                if (c >= 'A') // 'A' 65
+                {
+                    if (c <= 'F') return c - 'A' + 10; // 'F' 70
+                    if (c >= 'a' && c <= 'f') return c - 'a' + 10; // 97 - 102
+                }
+            }
+
+            //
+            return -1;
+        }
+
+        /// <summary>
         /// Converts binary string <paramref name="str"/> to <see cref="string"/>.
         /// In case if binary string, the conversion routine respects given <paramref name="charSet"/>.
         /// </summary>

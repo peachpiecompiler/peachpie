@@ -37,7 +37,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region ord, chr, bin2hex
+        #region ord, chr, bin2hex, hex2bin
 
         /// <summary>
         /// Returns ASCII code of the first character of a string of bytes or <c>0</c> if string is empty.
@@ -96,6 +96,34 @@ namespace Pchp.Library
             //return result.ToString();
 
             return StringUtils.BinToHex(str.ToBytes(ctx), null);
+        }
+
+        /// <summary>
+        /// Decodes a hexadecimally encoded binary string.
+        /// </summary>
+        public static PhpString hex2bin(string str)
+        {
+            if ((str.Length % 2) != 0)
+            {
+                throw new ArgumentException();
+            }
+
+            var result = new byte[str.Length / 2];
+
+            for (int i = 0, b = 0; i < str.Length; i += 2)
+            {
+                var x = StringUtils.HexToNumber(str[i]);
+                var y = StringUtils.HexToNumber(str[i + 1]);
+
+                if ((x | y) < 0)
+                {
+                    throw new ArgumentException();
+                }
+
+                result[b++] = (byte)((x << 4) | y);
+            }
+
+            return new PhpString(result);
         }
 
         #endregion
