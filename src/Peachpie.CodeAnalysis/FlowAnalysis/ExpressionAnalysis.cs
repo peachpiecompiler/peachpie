@@ -1952,8 +1952,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // merge both states
             State = trueState.Merge(falseState);
 
-            //
-            x.TypeRefMask = trueExpr.TypeRefMask | x.IfFalse.TypeRefMask;
+            // merge resulting types
+            var trueTypeMask = trueExpr.TypeRefMask;
+            if (x.Condition == trueExpr)
+            {
+                // condition != false => condition != null => trueExpr cannot be NULL:
+                trueTypeMask = TypeCtx.WithoutNull(trueTypeMask);
+            }
+
+            x.TypeRefMask = trueTypeMask | x.IfFalse.TypeRefMask;
         }
 
         public override void VisitExpressionStatement(BoundExpressionStatement x)

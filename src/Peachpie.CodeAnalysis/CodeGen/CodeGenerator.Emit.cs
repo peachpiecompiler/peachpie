@@ -2946,7 +2946,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // copy
 
-            return EmitDeepCopy(type);
+            return EmitDeepCopy(type, thint);
         }
     }
 
