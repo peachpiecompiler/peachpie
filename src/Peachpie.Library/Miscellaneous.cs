@@ -471,6 +471,12 @@ namespace Pchp.Library
         /// </summary>
         public static void gc_collect_cycles() => GC.Collect();
 
+        /// <summary>Ignored.</summary>
+        public static void gc_enable() { }
+
+        /// <summary>Ignored.</summary>
+        public static void gc_disable() { }
+
         /// <summary>
         /// Returns a unique identifier for the current thread.
         /// </summary>
