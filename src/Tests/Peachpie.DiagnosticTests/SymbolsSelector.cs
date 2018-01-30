@@ -55,7 +55,7 @@ namespace Peachpie.DiagnosticTests
 
             foreach (var p in routine.Parameters)
             {
-                if (p.IsImplicitlyDeclared) continue;
+                if (p.IsImplicitlyDeclared || p.Locations.Length == 0) continue;    // ignore compiler generated parameters
                 var textSpan = p.Locations[0].SourceSpan;
                 yield return new SymbolStat(typeCtx, textSpan.ToSpan(), null, p);
             }
