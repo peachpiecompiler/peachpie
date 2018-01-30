@@ -38,7 +38,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 var classname = ((INamedTypeRef)_typeRef).ClassName;
                 cg.Builder.EmitStringConstant(classname.ToString());
             }
-            else if (this.ResolvedType != null)
+            else if (this.ResolvedType.IsValidType())
             {
                 // type was resolved by analysis
                 cg.Builder.EmitStringConstant(((IPhpTypeSymbol)this.ResolvedType).FullName.ToString());
