@@ -1206,16 +1206,21 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (p.Type == CoreTypes.PhpTypeInfo)
                 {
-                    if (this.CallerType != null)
-                        BoundTypeRef.EmitLoadPhpTypeInfo(this, this.CallerType);
-                    else
-                        Builder.EmitNullConstant();
+                    BoundTypeRef.EmitLoadSelf(this);
                 }
                 else if (p.Type.SpecialType == SpecialType.System_String)
                 {
-                    Builder.EmitStringConstant(this.CallerType != null
-                        ? ((IPhpTypeSymbol)this.CallerType).FullName.ToString()
-                        : null);
+                    if (this.CallerType is IPhpTypeSymbol phpt)
+                    {
+                        // type known in compile-time:
+                        Builder.EmitStringConstant(phpt.FullName.ToString());
+                    }
+                    else
+                    {
+                        // {LOAD PhpTypeInfo}.Name
+                        BoundTypeRef.EmitLoadSelf(this);
+                        EmitCall(ILOpCode.Call, CoreMethods.Operators.GetName_PhpTypeInfo.Getter).Expect(SpecialType.System_String);
+                    }
                 }
                 else if (p.Type == CoreTypes.RuntimeTypeHandle)
                 {
