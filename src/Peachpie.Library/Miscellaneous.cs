@@ -467,6 +467,11 @@ namespace Pchp.Library
         }
 
         /// <summary>
+        /// Forces collection of any existing garbage cycles.
+        /// </summary>
+        public static void gc_collect_cycles() => GC.Collect();
+
+        /// <summary>
         /// Returns a unique identifier for the current thread.
         /// </summary>
         public static int zend_thread_id() => System.Threading.Thread.CurrentThread.ManagedThreadId;
