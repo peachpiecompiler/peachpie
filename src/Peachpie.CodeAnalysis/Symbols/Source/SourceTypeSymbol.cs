@@ -136,7 +136,7 @@ namespace Pchp.CodeAnalysis.Symbols
             /// <summary>
             /// Specifies implementation of a trait method in containing class.
             /// </summary>
-            [DebuggerDisplay("{Visibility} {Name,nq} -> {SourceMethod}")]
+            [DebuggerDisplay("{Accessibility} {Name,nq} -> {SourceMethod}")]
             struct DeclaredAs
             {
                 /// <summary>
@@ -297,7 +297,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 // methods
                 foreach (var m in MembersMap.Values)
                 {
-                    if (m.SourceMethod.IsAbstract)
+                    // abstract trait member must be overriden in the containing class (even by its base)
+                    // -> ignore abstract trait members
+                    if (m.SourceMethod.IsAbstract || (m.SourceMethod.OriginalDefinition is SourceMethodSymbol srcm && ((MethodDecl)srcm.Syntax).Modifiers.IsAbstract())) // TODO: determine abstract method better
                     {
                         // abstract methods must be implemented by containing class
                         continue;
