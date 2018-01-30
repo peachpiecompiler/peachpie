@@ -787,9 +787,7 @@ namespace Pchp.Core
             {
                 int index = key.IsInteger ? key.Integer : (int)Convert.StringToLongInteger(key.String);
 
-                return (index >= 0 && index < this.Length)
-                    ? PhpValue.Create(this[index].ToString())
-                    : PhpValue.Create(string.Empty);
+                return new PhpValue((index >= 0 && index < this.Length) ? this[index].ToString() : string.Empty);
             }
 
             PhpValue IPhpArray.GetItemValue(PhpValue index)
@@ -799,7 +797,7 @@ namespace Pchp.Core
                     return ((IPhpArray)this).GetItemValue(key);
                 }
 
-                return PhpValue.Create(string.Empty);
+                return new PhpValue(string.Empty);
             }
 
             void IPhpArray.SetItemValue(PhpValue index, PhpValue value)
