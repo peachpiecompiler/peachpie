@@ -566,6 +566,13 @@ namespace Pchp.Core
             _obj.Obj = blob;
         }
 
+        internal PhpValue(string value) : this()
+        {
+            Debug.Assert(value != null);
+            _type = TypeTable.StringTable;
+            _obj.Obj = value;
+        }
+
         private PhpValue(PhpArray array) : this()
         {
             Debug.Assert(array != null);
