@@ -55,8 +55,8 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             return new[]
             {
-                // Closure <closure>
-                new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Closure, "<closure>", 0)
+                // Closure <closure> // treated as synthesized not implicit
+                new SynthesizedParameterSymbol(this, DeclaringCompilation.CoreTypes.Closure, 0, RefKind.None, name: "<closure>"),
             };
         }
 
