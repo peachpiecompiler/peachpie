@@ -45,18 +45,10 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else if (_typeRef is ReservedTypeRef)
             {
-                // a reserved type, handle separately
-                switch (((ReservedTypeRef)_typeRef).Type)
-                {
-                    case ReservedTypeRef.ReservedType.@static:
-                        EmitLoadStaticPhpTypeInfo(cg);
-                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetName_PhpTypeInfo.Getter)
-                            .Expect(SpecialType.System_String);
-                        return;
-
-                    default:
-                        throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(((ReservedTypeRef)_typeRef).Type);
-                }
+                // Template: {LOAD PhpTypeInfo}.Name
+                EmitLoadTypeInfo(cg, true);
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetName_PhpTypeInfo.Getter)
+                    .Expect(SpecialType.System_String);
             }
             else if (TypeExpression != null)
             {
