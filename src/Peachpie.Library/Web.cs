@@ -326,7 +326,7 @@ namespace Pchp.Library
             {
                 return false;
             }
-            
+
             DateTimeOffset? expires;
             if (expire > 0)
             {
@@ -448,6 +448,32 @@ namespace Pchp.Library
 
                 // TODO: cookies, session
             }
+        }
+
+        #endregion
+
+        #region http_response_code
+
+        /// <summary>
+        /// Get or Set the HTTP response code.
+        /// </summary>
+        public static int http_response_code(Context ctx, int response_code = 0)
+        {
+            var webctx = ctx.HttpPhpContext;
+            if (webctx == null)
+            {
+                return -1; // TRUE|FALSE
+            }
+
+            //
+            var code = webctx.StatusCode;
+            if (response_code > 0)
+            {
+                webctx.StatusCode = response_code;
+            }
+
+            //
+            return code;
         }
 
         #endregion
@@ -751,7 +777,7 @@ namespace Pchp.Library
         public static bool move_uploaded_file(Context ctx, string path, string destination)
         {
             if (path == null || !ctx.IsTemporaryFile(path)) return false;
-            
+
             try { System.IO.File.Delete(destination); } catch { }
             System.IO.File.Move(path, destination);
 
