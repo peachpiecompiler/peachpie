@@ -2883,7 +2883,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     Debug.Assert(t.IsStructType());
                     // Template: new PhpString( <STACK> )
-                    t = EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString_PhpString);                    
+                    t = EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString_PhpString);
                 }
                 else if (t == CoreTypes.PhpArray)
                 {
@@ -2933,9 +2933,12 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (type == CoreTypes.PhpValue)
             {
-                // ref.GetValue().DeepCopy()
-                EmitPhpValueAddr();
-                type = EmitCall(ILOpCode.Call, CoreMethods.PhpValue.GetValue);
+                if (thint.IsRef || thint.IsUninitialized)
+                {
+                    // ref.GetValue().DeepCopy()
+                    EmitPhpValueAddr();
+                    type = EmitCall(ILOpCode.Call, CoreMethods.PhpValue.GetValue);
+                }
             }
             else if (type == CoreTypes.PhpAlias)
             {
