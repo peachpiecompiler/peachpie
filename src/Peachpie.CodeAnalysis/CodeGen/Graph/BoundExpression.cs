@@ -3899,6 +3899,14 @@ namespace Pchp.CodeAnalysis.Semantics
                 // Template: ArrayAccess.offsetGet(<index>)
                 var t = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Operators.offsetGet_ArrayAccess_PhpValue);
 
+                if (Access.EnsureArray)
+                {
+                    Debug.Assert(t == cg.CoreTypes.PhpValue);
+                    // Template: (ref PhpValue).EnsureArray()
+                    cg.EmitPhpValueAddr();
+                    t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureArray);
+                }
+
                 if (Access.IsReadCopy)
                 {
                     t = cg.EmitReadCopy(Access.TargetType, t);
