@@ -1,4 +1,5 @@
 ﻿using Pchp.Core;
+using Pchp.Core.Reflection;
 using Pchp.Library.Resources;
 using System;
 using System.Collections.Generic;
@@ -43,19 +44,47 @@ namespace Pchp.Library
         /// <returns>The returned value.</returns>
         public static PhpValue call_user_func_array(Context ctx, IPhpCallable function, PhpArray args)
         {
-            PhpValue[] args_array;
+            return call_user_func(ctx, function, PhpArrayToArray(args));
+        }
 
+        /// <summary>
+        /// Calls a user defined function or method given by the function parameter, with the following arguments.
+        /// This function must be called within a method context, it can't be used outside a class.
+        /// It uses the late static binding.
+        /// </summary>
+        public static PhpValue forward_static_call(Context ctx, [ImportCallerStaticClass]PhpTypeInfo @static, IPhpCallable function, params PhpValue[] args)
+        {
+            return (function is PhpCallback phpc)
+                ? phpc.BindToStatic(ctx, @static)(ctx, args)
+                : call_user_func(ctx, function, args);
+        }
+
+        /// <summary>
+        /// Calls a user defined function or method given by the function parameter.
+        /// This function must be called within a method context, it can't be used outside a class.
+        /// It uses the late static binding.
+        /// All arguments of the forwarded method are passed as values, and as an array, similarly to <see cref="call_user_func_array"/>.
+        /// </summary>
+        public static PhpValue forward_static_call_array(Context ctx, [ImportCallerStaticClass]PhpTypeInfo @static, IPhpCallable function, PhpArray args)
+        {
+            return forward_static_call(ctx, @static, function, PhpArrayToArray(args));
+        }
+
+        /// <summary>
+        /// Copies entries of given <see cref="PhpValue"/> into one dimensional array.
+        /// </summary>
+        static PhpValue[] PhpArrayToArray(PhpArray args)
+        {
             if (args != null && args.Count != 0)
             {
-                args_array = new PhpValue[args.Count];
+                var args_array = new PhpValue[args.Count];
                 args.CopyValuesTo(args_array, 0);
+                return args_array;
             }
             else
             {
-                args_array = Core.Utilities.ArrayUtils.EmptyValues;
+                return Core.Utilities.ArrayUtils.EmptyValues;
             }
-
-            return call_user_func(ctx, function, args_array);
         }
 
         #endregion

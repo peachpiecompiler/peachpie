@@ -71,7 +71,7 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="other">The other instance to compare with.</param>
         /// <returns>Both callbacks represents the same routine.</returns>
-        public virtual bool Equals(PhpCallback other) => other != null && object.ReferenceEquals(_lazyResolved, other?._lazyResolved) && _lazyResolved != null;
+        public virtual bool Equals(PhpCallback other) => other != null && ReferenceEquals(_lazyResolved, other._lazyResolved) && _lazyResolved != null;
         public override bool Equals(object obj) => Equals(obj as PhpCallback);
         public override int GetHashCode() => this.GetType().GetHashCode();
 
@@ -142,9 +142,8 @@ namespace Pchp.Core
 
             public override PhpValue ToPhpValue() => PhpValue.Create(new PhpArray(2) { (PhpValue)_class, (PhpValue)_method });
 
-            protected override PhpCallable BindCore(Context ctx)
+            PhpCallable BindCore(PhpTypeInfo tinfo)
             {
-                var tinfo = ctx.ResolveType(_class, _callerCtx, true);
                 var routine = (PhpMethodInfo)tinfo?.RuntimeMethods[_method];
                 if (routine != null)
                 {
@@ -160,6 +159,25 @@ namespace Pchp.Core
                 }
 
                 return null;
+            }
+
+            PhpTypeInfo ResolveType(Context ctx) => ctx.ResolveType(_class, _callerCtx, true);
+
+            protected override PhpCallable BindCore(Context ctx)
+            {
+                return BindCore(ResolveType(ctx));
+            }
+
+            public override PhpCallable BindToStatic(Context ctx, PhpTypeInfo @static)
+            {
+                var tinfo = ResolveType(ctx);
+
+                if (@static != null && tinfo != null && @static.Type.IsSubclassOf(tinfo.Type.AsType()))
+                {
+                    tinfo = @static;
+                }
+
+                return BindCore(tinfo);
             }
 
             public override bool Equals(PhpCallback other) => base.Equals(other) || Equals(other as MethodCallback);
@@ -183,20 +201,8 @@ namespace Pchp.Core
 
             public override PhpValue ToPhpValue() => PhpValue.Create(new PhpArray(2) { _item1, _item2 });
 
-            protected override PhpCallable BindCore(Context ctx)
+            PhpCallable BindCore(Context ctx, PhpTypeInfo tinfo, object target)
             {
-                PhpTypeInfo tinfo;
-                object target = null;
-
-                if ((target = _item1.AsObject()) != null)
-                {
-                    tinfo = target.GetPhpTypeInfo();
-                }
-                else
-                {
-                    tinfo = ctx.ResolveType(_item1.ToString(ctx), _callerCtx, true);
-                }
-
                 if (tinfo != null)
                 {
                     var method = _item2.ToString(ctx);
@@ -239,6 +245,40 @@ namespace Pchp.Core
                 }
 
                 return null;
+            }
+
+            void ResolveType(Context ctx, out PhpTypeInfo tinfo, out object target)
+            {
+                if ((target = _item1.AsObject()) != null)
+                {
+                    tinfo = target.GetPhpTypeInfo();
+                }
+                else
+                {
+                    tinfo = ctx.ResolveType(_item1.ToString(ctx), _callerCtx, true);
+                }
+            }
+
+            protected override PhpCallable BindCore(Context ctx)
+            {
+                ResolveType(ctx, out PhpTypeInfo tinfo, out object target);
+                return BindCore(ctx, tinfo, target);
+            }
+
+            public override PhpCallable BindToStatic(Context ctx, PhpTypeInfo @static)
+            {
+                ResolveType(ctx, out PhpTypeInfo tinfo, out object target);
+
+                //
+
+                if (@static != null && tinfo != null && target == null && @static.Type.IsSubclassOf(tinfo.Type.AsType()))
+                {
+                    tinfo = @static;
+                }
+
+                //
+
+                return BindCore(ctx, tinfo, target);
             }
 
             public override bool Equals(PhpCallback other) => base.Equals(other) || Equals(other as ArrayCallback);
@@ -346,6 +386,11 @@ namespace Pchp.Core
         /// </summary>
         /// <returns>Actual delegate or <c>null</c> if routine cannot be bound.</returns>
         protected abstract PhpCallable BindCore(Context ctx);
+
+        /// <summary>
+        /// Binds callback to given late static bound type.
+        /// </summary>
+        public virtual PhpCallable BindToStatic(Context ctx, PhpTypeInfo @static) => Bind(ctx);
 
         #endregion
 
