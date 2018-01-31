@@ -13,7 +13,7 @@ namespace Pchp.Library.DateTime
     /// <summary>
     /// Representation of date and time.
     /// </summary>
-    [PhpType("DateTime")]
+    [PhpType(PhpTypeAttribute.InheritName)]
     public class DateTime : DateTimeInterface
     {
         #region Constants
@@ -56,11 +56,7 @@ namespace Pchp.Library.DateTime
         #region Construction
 
         // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
-        public DateTime(Context ctx) : this(ctx, "now", null) { }
-
-        public DateTime(Context ctx, string time) : this(ctx, time, null) { }
-
-        public DateTime(Context ctx, string time, DateTimeZone timezone)
+        public DateTime(Context ctx, string time = "now", DateTimeZone timezone = null)
         {
             Debug.Assert(ctx != null);
 
@@ -88,7 +84,7 @@ namespace Pchp.Library.DateTime
 
         #region Methods
 
-        static System_DateTime StrToTime(Context ctx, string timestr, System_DateTime time)
+        internal static System_DateTime StrToTime(Context ctx, string timestr, System_DateTime time)
         {
             if (string.IsNullOrEmpty(timestr) || timestr.Equals("now", StringComparison.OrdinalIgnoreCase))
             {
@@ -283,5 +279,101 @@ namespace Pchp.Library.DateTime
         //}
 
         #endregion
+    }
+
+    /// <summary>
+    /// Representation of date and time.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName)]
+    public class DateTimeImmutable : DateTimeInterface
+    {
+        readonly protected Context _ctx;
+
+        /// <summary>
+        /// Get the date-time value, stored in UTC
+        /// </summary>
+        internal System_DateTime Time { get; private set; }
+
+        /// <summary>
+        /// Get the time zone for this DateTime object
+        /// </summary>
+        internal TimeZoneInfo TimeZone { get; private set; }
+
+        // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
+        public DateTimeImmutable(Context ctx, string time = "now", DateTimeZone timezone = null)
+        {
+            Debug.Assert(ctx != null);
+
+            _ctx = ctx;
+
+            this.TimeZone = (timezone == null)
+                ? PhpTimeZone.GetCurrentTimeZone(ctx)
+                : timezone.timezone;
+
+            if (TimeZone == null)
+            {
+                //PhpException.InvalidArgument("timezone");
+                //return null;
+                throw new ArgumentException();
+            }
+
+            this.Time = DateTime.StrToTime(ctx, time, System_DateTime.UtcNow);
+
+            //this.date.Value = this.Time.ToString("yyyy-mm-dd HH:mm:ss");
+            //this.timezone_type.Value = 3;
+            //this.timezone.Value = TimeZone.Id;
+        }
+
+        #region DateTimeInterface
+
+        [return: CastToFalse]
+        public string format(string format)
+        {
+            if (format == null)
+            {
+                //PhpException.ArgumentNull("format");
+                //return false;
+                throw new ArgumentNullException();
+            }
+
+            return DateTimeFunctions.FormatDate(format, this.Time, this.TimeZone);
+        }
+
+        public long getOffset()
+        {
+            if (this.TimeZone == null)
+                //return false;
+                throw new InvalidOperationException();
+
+            return (long)this.TimeZone.BaseUtcOffset.TotalSeconds;
+        }
+
+        public long getTimestamp()
+        {
+            return DateTimeUtils.UtcToUnixTimeStamp(Time);
+        }
+
+        public DateTimeZone getTimezone()
+        {
+            return new DateTimeZone(_ctx, this.TimeZone);
+        }
+
+        public void __wakeup() { }
+
+        #endregion
+
+        public virtual DateTimeImmutable add(DateInterval interval) => throw new NotImplementedException();
+        public static DateTimeImmutable createFromFormat(string format, string time, DateTimeZone timezone = null) => throw new NotImplementedException();
+        public static DateTimeImmutable createFromMutable(DateTime datetime) => throw new NotImplementedException();
+        public static PhpArray getLastErrors() => throw new NotImplementedException();
+        public virtual DateTimeImmutable modify(string modify) => throw new NotImplementedException();
+        public static DateTimeImmutable __set_state(PhpArray array) => throw new NotImplementedException();
+        public virtual DateTimeImmutable setDate(int year, int month, int day) => throw new NotImplementedException();
+        public virtual DateTimeImmutable setISODate(int year, int week, int day = 1) => throw new NotImplementedException();
+        public virtual DateTimeImmutable setTime(int hour, int minute, int second = 0, int microseconds = 0) => throw new NotImplementedException();
+        public virtual DateTimeImmutable setTimestamp(int unixtimestamp) => throw new NotImplementedException();
+        public virtual DateTimeImmutable setTimezone(DateTimeZone timezone) => throw new NotImplementedException();
+        public virtual DateTimeImmutable sub(DateInterval interval) => throw new NotImplementedException();
+        public virtual DateInterval diff(DateTimeInterface datetime2, bool absolute = false) => throw new NotImplementedException();
     }
 }
