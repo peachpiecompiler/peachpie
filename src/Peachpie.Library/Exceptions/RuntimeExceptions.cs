@@ -21,4 +21,19 @@ namespace Pchp.Library.Spl
             __construct(message, code, previous);
         }
     }
+
+    /// <summary>
+    /// Exception thrown if an argument is not of the expected type.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class InvalidArgumentException : RuntimeException
+    {
+        [PhpFieldsOnlyCtor]
+        protected InvalidArgumentException() { }
+
+        public InvalidArgumentException(string message = "", long code = 0, Throwable previous = null)
+        {
+            __construct(message, code, previous);
+        }
+    }
 }

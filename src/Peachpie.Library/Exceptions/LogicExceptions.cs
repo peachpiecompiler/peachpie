@@ -6,21 +6,6 @@ using Pchp.Core;
 namespace Pchp.Library.Spl
 {
     /// <summary>
-    /// Exception thrown if an argument is not of the expected type.
-    /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
-    public class InvalidArgumentException : RuntimeException
-    {
-        [PhpFieldsOnlyCtor]
-        protected InvalidArgumentException() { }
-
-        public InvalidArgumentException(string message = "", long code = 0, Throwable previous = null)
-        {
-            __construct(message, code, previous);
-        }
-    }
-
-    /// <summary>
     /// Exception thrown if a callback refers to an undefined function or if some arguments are missing.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
@@ -60,6 +45,21 @@ namespace Pchp.Library.Spl
         protected DomainException() { }
 
         public DomainException(string message = "", long code = 0, Throwable previous = null)
+        {
+            __construct(message, code, previous);
+        }
+    }
+
+    /// <summary>
+    /// Exception thrown if a length is invalid.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class LengthException : LogicException
+    {
+        [PhpFieldsOnlyCtor]
+        protected LengthException() { }
+
+        public LengthException(string message = "", long code = 0, Throwable previous = null)
         {
             __construct(message, code, previous);
         }
