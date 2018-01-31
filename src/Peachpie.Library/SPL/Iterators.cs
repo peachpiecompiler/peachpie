@@ -687,6 +687,32 @@ namespace Pchp.Library.Spl
         public abstract bool accept();
     }
 
+    public class CallbackFilterIterator : FilterIterator
+    {
+        readonly protected Context _ctx;
+        IPhpCallable _callback;
+
+        [PhpFieldsOnlyCtor]
+        protected CallbackFilterIterator(Context ctx) { _ctx = ctx; }
+
+        public CallbackFilterIterator(Context ctx, Traversable iterator, IPhpCallable callback)
+            : base(iterator)
+        {
+            _ctx = ctx;
+            _callback = callback;
+        }
+
+        public sealed override void __construct(Traversable iterator, string classname = null) => base.__construct(iterator, classname);
+
+        public virtual void __construct(Traversable iterator, IPhpCallable callback)
+        {
+            base.__construct(iterator);
+            _callback = callback;
+        }
+
+        public override bool accept() => _callback.Invoke(_ctx, current(), key(), PhpValue.FromClass(this)).ToBoolean();
+    }
+
     /// <summary>
     /// This abstract iterator filters out unwanted values.
     /// This class should be extended to implement custom iterator filters.
