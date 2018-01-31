@@ -56,7 +56,7 @@ namespace Pchp.Library.DateTime
         #region Construction
 
         // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
-        public DateTime(Context ctx, string time = "now", DateTimeZone timezone = null)
+        public DateTime(Context ctx, string time = null, DateTimeZone timezone = null)
         {
             Debug.Assert(ctx != null);
 
@@ -300,7 +300,7 @@ namespace Pchp.Library.DateTime
         internal TimeZoneInfo TimeZone { get; private set; }
 
         // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
-        public DateTimeImmutable(Context ctx, string time = "now", DateTimeZone timezone = null)
+        public DateTimeImmutable(Context ctx, string time = null, DateTimeZone timezone = null)
         {
             Debug.Assert(ctx != null);
 

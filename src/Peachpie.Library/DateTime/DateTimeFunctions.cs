@@ -47,7 +47,7 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
-        #region date_format, date_create, date_offset_get, date_modify
+        #region date_format, date_create, date_create_immutable, date_offset_get, date_modify
 
         [return: CastToFalse]
         public static string date_format(DateTime datetime, string format)
@@ -63,6 +63,14 @@ namespace Pchp.Library.DateTime
         public static DateTime date_create(Context/*!*/context, string time = null, DateTimeZone timezone = null)
         {
             return new Library.DateTime.DateTime(context, time, timezone);
+        }
+
+        /// <summary>
+        /// Alias of new <see cref="DateTimeImmutable"/>.
+        /// </summary>
+        public static DateTimeImmutable date_create_immutable(Context/*!*/context, string time = null, DateTimeZone timezone = null)
+        {
+            return new Library.DateTime.DateTimeImmutable(context, time, timezone);
         }
 
         /// <summary>
