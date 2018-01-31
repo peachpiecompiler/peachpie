@@ -24,6 +24,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         internal void EmitPhpNumberAddr() => EmitStructAddr(CoreTypes.PhpNumber);
 
         /// <summary>
+        /// Copies <c>PhpString</c> into a temp variable and loads its address.
+        /// </summary>
+        internal void EmitPhpStringAddr() => EmitStructAddr(CoreTypes.PhpString);
+
+        /// <summary>
         /// Copies <c>PhpValue</c> into a temp variable and loads its address.
         /// </summary>
         internal void EmitPhpValueAddr() => EmitStructAddr(CoreTypes.PhpValue);
@@ -134,6 +139,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else if (from == CoreTypes.PhpString)
                     {
+                        EmitPhpStringAddr();
                         EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToBoolean);
                         break;
                     }
@@ -493,6 +499,14 @@ namespace Pchp.CodeAnalysis.CodeGen
                         EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToDouble);
                         return dtype;
                     }
+                    else if (from == CoreTypes.PhpString)
+                    {
+                        Debug.Assert(from.IsValueType);
+                        // (ref <PhpString>).ToDouble()
+                        EmitPhpStringAddr();
+                        return EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToDouble)
+                            .Expect(SpecialType.System_Double);
+                    }
                     else if (from.IsOfType(CoreTypes.IPhpArray))
                     {
                         // (double)IPhpArray.Count
@@ -554,6 +568,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (stack == CoreTypes.PhpString)
             {
+                EmitPhpStringAddr();
                 return EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToNumber)
                     .Expect(CoreTypes.PhpNumber);
             }
@@ -675,6 +690,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else if (from == CoreTypes.PhpString)
                     {
+                        EmitPhpStringAddr();
                         EmitLoadContext();  // Context
                         EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToString_Context)
                             .Expect(SpecialType.System_String);
@@ -927,6 +943,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         // Template: (PhpString).ToBytes(Context)
                         EmitConvertToPhpString(from, fromHint); // PhpString
+                        EmitPhpStringAddr();
                         this.EmitLoadContext();                 // Context
                         EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToBytes_Context)
                             .Expect(to);  // ToBytes()
