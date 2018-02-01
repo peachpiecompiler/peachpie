@@ -66,7 +66,7 @@ namespace Pchp.CodeAnalysis.Symbols
         void EmitPhpCallable(Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
         {
             var __invoke = TryGetMagicInvoke();
-            if (__invoke == null || __invoke.OverriddenMethod != null)
+            if (__invoke == null || (__invoke.OverriddenMethod != null && __invoke.OverriddenMethod.ContainingType.TypeKind != TypeKind.Interface))
             {
                 return;
             }
