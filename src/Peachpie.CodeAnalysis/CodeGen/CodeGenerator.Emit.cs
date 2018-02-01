@@ -1500,7 +1500,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (p.IsParams)
                 {
-                    Debug.Assert(parameters.Length == param_index - 1); // p is last one
+                    Debug.Assert(parameters.Length == param_index + 1); // p is last one
                     Debug.Assert(p.Type.IsArray());
 
                     if (arg_params_index >= 0)
