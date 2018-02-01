@@ -485,6 +485,11 @@ namespace Pchp.CodeAnalysis.Symbols
                     //returnType = @event.Type;
                     //returnTypeCustomModifiers = ImmutableArray<CustomModifier>.Empty;
                     //break;
+                case SymbolKind.Parameter:
+                    var p = (ParameterSymbol)member;
+                    returnType = p.Type;
+                    returnTypeCustomModifiers = p.CustomModifiers;
+                    break;
                 default:
                     throw ExceptionUtilities.UnexpectedValue(member.Kind);
             }

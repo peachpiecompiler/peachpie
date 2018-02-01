@@ -72,7 +72,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             //
-            // IPhpCallable.Invoke(Context, PhpVaue[])
+            // IPhpCallable.Invoke(Context <ctx>, PhpVaue[] arguments)
             //
             var invoke = new SynthesizedMethodSymbol(this, "IPhpCallable.Invoke", false, true, DeclaringCompilation.CoreTypes.PhpValue, isfinal: false)
             {
@@ -81,71 +81,16 @@ namespace Pchp.CodeAnalysis.Symbols
             };
             invoke.SetParameters(
                 new SpecialParameterSymbol(invoke, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, 0),
-                new SynthesizedParameterSymbol(invoke, ArrayTypeSymbol.CreateSZArray(ContainingAssembly, DeclaringCompilation.CoreTypes.PhpValue.Symbol), 1, RefKind.None, "arguments"));
+                new SynthesizedParameterSymbol(invoke, ArrayTypeSymbol.CreateSZArray(ContainingAssembly, DeclaringCompilation.CoreTypes.PhpValue.Symbol), 1, RefKind.None, name: "arguments", isParams: true));
 
             module.SetMethodBody(invoke, MethodGenerator.GenerateMethodBody(module, invoke, il =>
             {
-                var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, this, new ParamPlace(invoke.Parameters[0]), new ArgPlace(this, 0));
-
-                var argsplace = new ParamPlace(invoke.Parameters[1]);
-                var args_element = ((ArrayTypeSymbol)argsplace.TypeOpt).ElementType;
-                var ps = __invoke.Parameters;
-
-                // Template: this.__invoke(args[0], args[1], ...)
-
-                cg.EmitThis();
-
-                for (int i = 0; i < ps.Length; i++)
+                var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, this, new ParamPlace(invoke.Parameters[0]), new ArgPlace(this, 0))
                 {
-                    var p = ps[i];
+                    CallerType = this,
+                };
 
-                    // LOAD args[i]
-                    // Template: (i < args.Length) ? (T)args[i] : default(T)
-
-                    var lbldefault = new NamedLabel("args_default");
-                    var lblend = new NamedLabel("args_end");
-
-                    cg.Builder.EmitIntConstant(i);  // <i>
-                    argsplace.EmitLoad(cg.Builder); // <args>
-                    cg.EmitArrayLength();           // .Length
-                    cg.Builder.EmitBranch(ILOpCode.Bge, lbldefault);
-
-                    // (T)args[i]
-                    if (p.IsImplicitlyDeclared)
-                    {
-                        throw new NotImplementedException();
-                    }
-                    else if (p.Type == cg.CoreTypes.PhpAlias)
-                    {
-                        // args[i].EnsureAlias()
-                        argsplace.EmitLoad(cg.Builder); // <args>
-                        cg.Builder.EmitIntConstant(i);  // <i>
-                        cg.Builder.EmitOpCode(ILOpCode.Ldelema);    // ref args[i]
-                        cg.EmitSymbolToken(args_element, null);
-                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureAlias);
-                    }
-                    else
-                    {
-                        // (T)args[i]
-                        argsplace.EmitLoad(cg.Builder); // <args>
-                        cg.Builder.EmitIntConstant(i);  // <i>
-                        cg.Builder.EmitOpCode(ILOpCode.Ldelem); // args[i]
-                        cg.EmitSymbolToken(args_element, null);
-                        cg.EmitConvert(args_element, 0, p.Type);
-                    }
-
-                    cg.Builder.EmitBranch(ILOpCode.Br, lblend);
-
-                    // default(T)
-                    cg.Builder.MarkLabel(lbldefault);
-                    cg.EmitParameterDefaultValue(p);
-
-                    //
-                    cg.Builder.MarkLabel(lblend);
-                }
-
-                cg.EmitCall(ILOpCode.Callvirt, __invoke);
-                cg.EmitRet(invoke.ReturnType);
+                cg.EmitRet(cg.EmitForwardCall(__invoke, invoke, callvirt: true));
 
             }, null, diagnostics, false));
 

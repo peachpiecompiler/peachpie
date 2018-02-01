@@ -1381,8 +1381,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(method);
 
-            Debug.Assert(arguments.All(a => !a.IsUnpacking), "Unpacking does not allow us to call the method directly.");
-
             // {this}
             var thisType = (code != ILOpCode.Newobj) ? LoadTargetInstance(thisExpr, method) : null;
 
@@ -1399,6 +1397,11 @@ namespace Pchp.CodeAnalysis.CodeGen
             var param_index = 0;    // loaded parameters
             var writebacks = new List<WriteBackInfo>();
 
+            int arg_params_index = (arguments.Length != 0 && arguments[arguments.Length - 1].IsUnpacking) ? arguments.Length - 1 : -1; // index of params argument, otherwise -1
+            int arg_params_consumed = 0; // count of items consumed from arg_params if any
+
+            Debug.Assert(arg_params_index < 0 || (arguments[arg_params_index].Value is BoundVariableRef v && v.Variable.Symbol.GetTypeOrReturnType().IsSZArray()));
+
             for (; param_index < parameters.Length; param_index++)
             {
                 var p = parameters[param_index];
@@ -1413,14 +1416,104 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
 
                 // load arguments
+
+                if (arg_index == arg_params_index) // arg is params
+                {
+                    #region LOAD params PhpValue[]
+
+                    //
+                    // treat argument as "params PhpValue[]"
+                    //
+
+                    var arg_type = (ArrayTypeSymbol)arguments[arg_index].Value.Emit(this); // {args}
+                    Debug.Assert(arg_type.ElementType == CoreTypes.PhpValue);
+
+                    // {args} on STACK:
+
+                    if (p.IsParams)
+                    {
+                        // Template: {args}
+                        if (arg_type != p.Type || arg_params_consumed > 0)  // we need to create new array from args
+                        {
+                            // PhpValue[] arrtmp = {arrtmp};
+                            var arrtmp = GetTemporaryLocal(arg_type, false);
+                            _il.EmitLocalStore(arrtmp);
+
+                            // {args}.Skip({arg_params_consumed}) -> new T[]
+                            this.ArrayToNewArray(new LocalPlace(arrtmp), arg_params_consumed, ((ArrayTypeSymbol)p.Type).ElementType);
+
+                            //
+                            ReturnTemporaryLocal(arrtmp);
+                        }
+                    }
+                    else
+                    {
+                        // Template: {args}.Length <= {arg_params_consumed} ? default(T) : (T)args[arg_params_consumed]
+
+                        if (p.RefKind != RefKind.None)
+                        {
+                            throw new NotImplementedException($"p.RefKind == {p.RefKind}");
+                        }
+
+                        var lbldefault = new object();
+                        var lblend = new object();
+
+                        this.EmitArrayLength();                     // .Length
+                        _il.EmitIntConstant(arg_params_consumed);   // {arg_params_consumed}
+                        _il.EmitBranch(ILOpCode.Ble, lbldefault);
+
+                        arguments[arg_index].Value.Emit(this);      // <args>
+                        _il.EmitIntConstant(arg_params_consumed);   // <i>
+
+                        if (p.Type == CoreTypes.PhpAlias)
+                        {
+                            // {args}[i].EnsureAlias()
+                            _il.EmitOpCode(ILOpCode.Ldelema);               // ref args[i]
+                            EmitSymbolToken(arg_type.ElementType, null);    // PhpValue
+                            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.EnsureAlias);
+                        }
+                        else
+                        {
+                            // (T)args[i]
+                            _il.EmitOpCode(ILOpCode.Ldelem); // args[i]
+                            EmitSymbolToken(arg_type.ElementType, null);
+                            EmitConvert(arg_type.ElementType, 0, p.Type);
+                        }
+
+                        _il.EmitBranch(ILOpCode.Br, lblend);
+
+                        // default(T)
+                        _il.MarkLabel(lbldefault);
+                        EmitParameterDefaultValue(p);
+
+                        //
+                        _il.MarkLabel(lblend);
+
+                        //
+                        arg_params_consumed++;
+                    }
+
+                    #endregion
+
+                    continue;
+                }
+
                 if (p.IsParams)
                 {
+                    Debug.Assert(parameters.Length == param_index - 1); // p is last one
                     Debug.Assert(p.Type.IsArray());
+
+                    if (arg_params_index >= 0)
+                    {
+                        // we have to load { arg_i, ..., arg_params[] }
+                        throw new NotImplementedException();
+                    }
 
                     // wrap remaining arguments to array
                     var values = (arg_index < arguments.Length) ? arguments.Skip(arg_index).AsImmutable() : ImmutableArray<BoundArgument>.Empty;
                     arg_index += values.Length;
                     Emit_NewArray(((ArrayTypeSymbol)p.Type).ElementType, values);
+
                     break;  // p is last one
                 }
 
@@ -1435,7 +1528,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             // emit remaining not used arguments
-            for (; arg_index < arguments.Length; arg_index++)
+            for (; arg_index < arguments.Length && arg_index != arg_params_index; arg_index++)
             {
                 EmitPop(Emit(arguments[arg_index].Value));
             }
@@ -1487,7 +1580,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             for (int i = 0; i < givenps.Length; i++)
             {
                 var p = givenps[i];
-                if (p.IsImplicitlyDeclared && !p.IsParams)
+                if (arguments.Count == 0 && p.IsImplicitlyDeclared && !p.IsParams)
                 {
                     if (SpecialParameterSymbol.IsLateStaticParameter(p))
                     {
@@ -1504,8 +1597,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 };
 
                 var arg = p.IsParams
-                    ? BoundArgument.CreateUnpacking(expr)
-                    : BoundArgument.Create(expr);
+                    ? BoundArgument.CreateUnpacking(expr)   // treated as "params PhpArray[]" by EmitCall
+                    : BoundArgument.Create(expr);           // treated as ordinary parameter
 
                 arguments.Add(arg);
             }
@@ -1514,9 +1607,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             ILOpCode opcode = callvirt ? ILOpCode.Callvirt : ILOpCode.Call;
 
             // emit call of target
-            return arguments.Any(arg => arg.IsUnpacking)
-                ? EmitCall_UnpackingArgs(opcode, target, thisExpr, arguments.AsImmutableOrEmpty(), staticTypeRef)
-                : EmitCall(opcode, target, thisExpr, arguments.AsImmutableOrEmpty(), staticTypeRef);
+            return EmitCall(opcode, target, thisExpr, arguments.AsImmutableOrEmpty(), staticTypeRef);
         }
 
         /// <summary>
