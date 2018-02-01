@@ -66,6 +66,8 @@ namespace Pchp.Library.Spl
 
         readonly protected Context @_ctx;
 
+        // private PhpValue storage => ...
+
         PhpArray _underlayingArray;
         object _underlayingObject;
 
@@ -73,7 +75,7 @@ namespace Pchp.Library.Spl
         /// Name of the class instantiated by <see cref="getIterator"/>. The class must inherit from <see cref="Iterator"/>.
         /// Default value is <see cref="ArrayIterator"/>.
         /// </summary>
-        string _iteratorClass;
+        internal string _iteratorClass;
 
         const string DefaultIteratorClass = "ArrayIterator";
 
@@ -87,33 +89,41 @@ namespace Pchp.Library.Spl
             }
             set
             {
-                //
-                var arr = value.ArrayOrNull();
-                if (arr != null)
+                if (Operators.IsSet(value))
                 {
-                    _underlayingArray = arr;
-                    _underlayingObject = null;
-                }
-                else
-                {
-                    var obj = value.AsObject();
-                    if (obj != null)
+                    //
+                    var arr = value.ArrayOrNull();
+                    if (arr != null)
                     {
-                        if (obj.GetType() == typeof(stdClass))
-                        {
-                            _underlayingArray = ((stdClass)obj).GetRuntimeFields();
-                            _underlayingObject = null;
-                        }
-                        else
-                        {
-                            _underlayingArray = null;
-                            _underlayingObject = obj;
-                        }
+                        _underlayingArray = arr;
+                        _underlayingObject = null;
                     }
                     else
                     {
-                        throw new ArgumentException(nameof(value));
+                        var obj = value.AsObject();
+                        if (obj != null)
+                        {
+                            if (obj.GetType() == typeof(stdClass))
+                            {
+                                _underlayingArray = ((stdClass)obj).GetRuntimeFields();
+                                _underlayingObject = null;
+                            }
+                            else
+                            {
+                                _underlayingArray = null;
+                                _underlayingObject = obj;
+                            }
+                        }
+                        else
+                        {
+                            throw new ArgumentException(nameof(value));
+                        }
                     }
+                }
+                else
+                {
+                    _underlayingArray = new PhpArray();
+                    _underlayingObject = null;
                 }
             }
         }
@@ -131,7 +141,7 @@ namespace Pchp.Library.Spl
             _ctx = ctx;
         }
 
-        public ArrayObject(Context ctx, PhpValue input, int flags = 0, string iterator_class = null/*ArrayIterator*/)
+        public ArrayObject(Context ctx, PhpValue input = default(PhpValue), int flags = 0, string iterator_class = null/*ArrayIterator*/)
             : this(ctx)
         {
             __construct(input, flags, iterator_class);
