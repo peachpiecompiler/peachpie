@@ -4036,6 +4036,13 @@ namespace Pchp.CodeAnalysis.Semantics
 
             var tIndex = EmitLoadIndex(cg, instanceOpt, safeToUseIntStringKey);
 
+            if (tIndex == null && tArray.IsOfType(cg.CoreTypes.ArrayAccess))
+            {
+                // we need "NULL" key
+                Debug.Assert(!safeToUseIntStringKey);
+                tIndex = cg.Emit_PhpValue_Null();
+            }
+
             // remember for EmitLoad
             PushEmittedArray(tArray, tIndex);
         }
@@ -4139,6 +4146,7 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 if (Access.IsUnset)
                 {
+                    Debug.Assert(stack.tIndex == cg.CoreTypes.PhpValue);
                     Debug.Assert(valueType == null);
 
                     // Template: <STACK>.offsetUnset( key )

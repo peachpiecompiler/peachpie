@@ -167,10 +167,17 @@ namespace Pchp.Library.Spl
         {
             if (_underlayingArray != null)
             {
-                if (newval.IsAlias)
-                    _underlayingArray.SetItemAlias(index, newval.Alias);
+                if (index.IsNull)
+                {
+                    _underlayingArray.AddValue(newval);
+                }
                 else
-                    _underlayingArray.SetItemValue(index, newval);
+                {
+                    if (newval.IsAlias)
+                        _underlayingArray.SetItemAlias(index, newval.Alias);
+                    else
+                        _underlayingArray.SetItemValue(index, newval);
+                }
             }
             else
             {

@@ -251,10 +251,7 @@ namespace Pchp.Core
                 }
             }
 
-            public void AddValue(PhpValue value)
-            {
-                throw new NotSupportedException();
-            }
+            public void AddValue(PhpValue value) => SetItemValue(PhpValue.Null, value);
 
             public PhpAlias EnsureItemAlias(IntStringKey key)
             {
