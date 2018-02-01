@@ -921,10 +921,16 @@ namespace Pchp.CodeAnalysis.Symbols
         protected virtual IEnumerable<MethodSymbol> CreateInstanceConstructors() => SynthesizedPhpCtorSymbol.CreateCtors(this);
 
         /// <summary>
-        /// Gets magic <c>__invoke</c> method or <c>null</c>.
+        /// Gets magic <c>__invoke</c> method of class or <c>null</c>.
+        /// Gets <c>null</c> if the type is trait or interface or <c>__invoke</c> is not defined.
         /// </summary>
         MethodSymbol TryGetMagicInvoke()
         {
+            if (this.IsInterface || this.IsTrait)
+            {
+                return null;
+            }
+
             return GetMembers(Devsense.PHP.Syntax.Name.SpecialMethodNames.Invoke.Value, true)
                 .OfType<MethodSymbol>()
                 .Where(m => !m.IsStatic)
