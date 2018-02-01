@@ -13,7 +13,7 @@ namespace Peachpie.Library.PDO
     /// Represents a connection between PHP and a database server
     /// </summary>
     /// <seealso cref="Pchp.Core.PhpResource" />
-    [PhpType("PDO")]
+    [PhpType(PhpTypeAttribute.InheritName)]
     public partial class PDO : IDisposable, IPDO
     {
         private readonly Context m_ctx;
@@ -189,7 +189,7 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public bool rollback()
+        public bool rollBack()
         {
             if (this.m_tx == null)
                 throw new PDOException("No active transaction");

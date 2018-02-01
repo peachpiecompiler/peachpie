@@ -89,7 +89,7 @@ namespace Peachpie.Library.PDO
         /// Rolls back a transaction.
         /// </summary>
         /// <returns></returns>
-        bool rollback();
+        bool rollBack();
         /// <summary>
         /// Set an attribute.
         /// </summary>
