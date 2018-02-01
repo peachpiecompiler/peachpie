@@ -444,15 +444,32 @@ namespace Pchp.CodeAnalysis.CodeGen
                         _il.EmitOpCode(ILOpCode.Conv_i8);   // Int32 -> Int64
                         return;
                     }
+                    else if (from.IsReferenceType)
+                    {
+                        if (from.IsOfType(CoreTypes.IPhpConvertible))
+                        {
+                            // <stack>.ToLong()
+                            EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpConvertible.ToLong)
+                                .Expect(SpecialType.System_Int64);
+                            return;
+                        }
+                    }
+                    else if (from == CoreTypes.PhpString)
+                    {
+                        Debug.Assert(from.IsValueType);
+                        // (ref <PhpString>).ToLong()
+                        EmitPhpStringAddr();
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToLong)
+                            .Expect(SpecialType.System_Int64);
+                        return;
+                    }
                     else if (from == CoreTypes.PhpValue)
                     {
                         EmitCall(ILOpCode.Call, CoreMethods.Operators.ToLong_PhpValue);
                         return;
                     }
-                    else
-                    {
-                        throw new NotImplementedException();
-                    }
+
+                    throw new NotImplementedException($"(long){from.Name}");
             }
         }
 
