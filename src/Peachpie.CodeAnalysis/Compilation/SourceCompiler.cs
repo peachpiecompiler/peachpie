@@ -293,8 +293,8 @@ namespace Pchp.CodeAnalysis
             // 1. Bind Syntax & Symbols to Operations (CFG)
             //   a. construct CFG, bind AST to Operation
             //   b. declare table of local variables
-            compiler.WalkMethods(compiler.EnqueueRoutine, allowParallel: true);
-            compiler.WalkTypes(compiler.EnqueueFieldsInitializer, allowParallel: true);
+            compiler.WalkMethods(compiler.EnqueueRoutine);
+            compiler.WalkTypes(compiler.EnqueueFieldsInitializer);
 
             // 2. Analyze Operations
             //   a. type analysis (converge type - mask), resolve symbols
