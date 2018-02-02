@@ -11,17 +11,17 @@ public class Generator : Iterator
     /// <summary>
     /// Context associated in which the generator is run.
     /// </summary>
-    readonly Context _ctx;
+    readonly internal Context _ctx;
 
     /// <summary>
     /// Delegate to a static method implementing the state machine itself. 
     /// </summary>
-    readonly GeneratorStateMachineDelegate _stateMachineMethod;
+    readonly internal GeneratorStateMachineDelegate _stateMachineMethod;
 
     /// <summary>
     /// Bounded this for non-static enumerator methods, null for static ones.
     /// </summary>
-    readonly object _this;
+    readonly internal object _this;
 
     /// <summary>
     /// Lifted local variables from the state machine function.

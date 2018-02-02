@@ -1359,6 +1359,12 @@ namespace Pchp.Core
 
         public static void SetGeneratorReturnedValue(Generator g, PhpValue value) => g._returnValue = value;
 
+        public static object GetGeneratorThis(Generator g) => g._this;
+
+        public static Context GetGeneratorContext(Generator g) => g._ctx;
+
+        public static GeneratorStateMachineDelegate GetGeneratorMethod(Generator g) => g._stateMachineMethod;
+
         #endregion
 
         #region Dynamic

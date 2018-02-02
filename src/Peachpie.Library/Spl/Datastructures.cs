@@ -15,7 +15,6 @@ namespace Pchp.Library.Spl
     //SplMaxHeap
     //SplMinHeap
     //SplPriorityQueue
-    //SplObjectStorage
 
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplFixedArray : ArrayAccess, Iterator, Countable
