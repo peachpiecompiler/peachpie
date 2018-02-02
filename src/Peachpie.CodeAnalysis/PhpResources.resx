@@ -150,6 +150,9 @@
                             the target .dll or .exe)
 /optimize[+|-]              Enable optimizations (Short form: /o)
 
+                     - ERRORS AND WARNINGS -
+/nowarn:&lt;warn list&gt;         Disable specific warning messages
+
                     - LANGUAGE -
 /langversion:&lt;string&gt;       Specify language version such as
                             `default` (latest major version)
