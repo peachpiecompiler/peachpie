@@ -99,6 +99,8 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_PropertyAccessibilityError,
         /// <summary>Use of primitive type '{0}' is misused</summary>
         ERR_PrimitiveTypeNameMisused,
+        /// <summary>Missing value for '{0}' option</summary>
+        ERR_SwitchNeedsValue,
 
         //
         // Warnings

@@ -138,6 +138,7 @@
       <RspLine Include="--phpdoctypes:$(PhpDocTypes)" Condition=" '$(PhpDocTypes)' != '' " />
       <RspLine Include="--shortopentag+" Condition=" '$(ShortOpenTag)' == 'true' " />
       <RspLine Include="--xmldoc:$(DocumentationFile)" Condition=" '$(GenerateDocumentation)' == 'true'" />
+      <RspLine Include="--nowarn:$(NoWarn)" Condition=" '$(NoWarn)' != '' " />
       <RspLine Include="--debug-type:$(DebugType)" />
       <RspLine Include="--emit-entry-point:$(EmitEntryPoint)" />
       <RspLine Include="--main:$(StartupObject)" Condition=" '$(StartupObject)' != '' " />

@@ -228,4 +228,7 @@
   <data name="ERR_PrimitiveTypeNameMisused" xml:space="preserve">
     <value>Use of primitive type '{0}' is misused</value>
   </data>
+  <data name="ERR_SwitchNeedsValue" xml:space="preserve">
+    <value>Missing value for '{0}' option</value>
+  </data>
 </root>

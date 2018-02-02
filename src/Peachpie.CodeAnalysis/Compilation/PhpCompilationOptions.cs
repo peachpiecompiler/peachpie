@@ -641,7 +641,25 @@ namespace Pchp.CodeAnalysis
 
         internal override Diagnostic FilterDiagnostic(Diagnostic diagnostic)
         {
-            return diagnostic; // return PhpDiagnosticFilter.Filter(diagnostic, WarningLevel, GeneralDiagnosticOption, SpecificDiagnosticOptions);
+            // return PhpDiagnosticFilter.Filter(diagnostic, WarningLevel, GeneralDiagnosticOption, SpecificDiagnosticOptions);
+
+            if (diagnostic == null)
+            {
+                return null;
+            }
+
+            ReportDiagnostic reportAction;
+
+            if (SpecificDiagnosticOptions != null && SpecificDiagnosticOptions.TryGetValue(diagnostic.Id, out ReportDiagnostic d))
+            {
+                reportAction = d;
+            }
+            else
+            {
+                reportAction = ReportDiagnostic.Default;
+            }
+
+            return  diagnostic.WithReportDiagnostic(reportAction);
         }
     }
 }

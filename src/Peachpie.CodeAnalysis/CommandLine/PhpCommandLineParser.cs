@@ -147,6 +147,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             string compilationName = null;
             bool optimize = false;
             bool concurrentBuild = true;
+            var diagnosticOptions = new Dictionary<string, ReportDiagnostic>();
             PhpDocTypes phpdocTypes = PhpDocTypes.None;
             OutputKind outputKind = OutputKind.ConsoleApplication;
             bool optionsEnded = false;
@@ -267,12 +268,25 @@ namespace Pchp.CodeAnalysis.CommandLine
                         concurrentBuild = false;
                         continue;
 
+                    case "nowarn":
+                        if (string.IsNullOrEmpty(value))
+                        {
+                            diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_SwitchNeedsValue, Location.None, name));
+                        }
+                        else
+                        {
+                            foreach (var warn in value.Split(new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries))
+                            {
+                                diagnosticOptions[warn] = ReportDiagnostic.Suppress;
+                            }
+                        }
+                        continue;
+
                     case "langversion":
                         value = RemoveQuotesAndSlashes(value);
                         if (string.IsNullOrEmpty(value))
                         {
-                            throw new ArgumentException("langversion");
-                            //AddDiagnostic(diagnostics, ErrorCode.ERR_SwitchNeedsString, MessageID.IDS_Text.Localize(), "/langversion:");
+                            diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_SwitchNeedsValue, Location.None, name));
                         }
                         else if (string.Equals(value, "default", StringComparison.OrdinalIgnoreCase) || string.Equals(value, "latest", StringComparison.OrdinalIgnoreCase))
                         {
@@ -309,19 +323,18 @@ namespace Pchp.CodeAnalysis.CommandLine
                         var unquoted = RemoveQuotesAndSlashes(value);
                         if (string.IsNullOrEmpty(unquoted))
                         {
-                            //AddDiagnostic(diagnostics, ErrorCode.ERR_SwitchNeedsString, "<text>", name);
-                            //continue;
-                            throw new ArgumentException("main");    // TODO: ErrorCode
+                            diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_SwitchNeedsValue, Location.None, name));
                         }
-
-                        mainTypeName = unquoted;
+                        else
+                        {
+                            mainTypeName = unquoted;
+                        }
                         continue;
 
                     case "pdb":
                         if (string.IsNullOrEmpty(value))
                         {
-                            //AddDiagnostic(diagnostics, ErrorCode.ERR_NoFileSpec, arg);
-                            throw new ArgumentException("pdb"); // TODO: ErrorCode
+                            diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_SwitchNeedsValue, Location.None, name));
                         }
                         else
                         {
@@ -332,8 +345,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                     case "out":
                         if (string.IsNullOrWhiteSpace(value))
                         {
-                            //AddDiagnostic(diagnostics, ErrorCode.ERR_NoFileSpec, arg);
-                            throw new ArgumentException("out"); // TODO: ErrorCode
+                            diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_SwitchNeedsValue, Location.None, name));
                         }
                         else
                         {
@@ -351,8 +363,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                         if (string.IsNullOrEmpty(value))
                         {
-                            //AddDiagnostic(diagnostics, ErrorCode.FTL_InvalidTarget);
-                            throw new ArgumentException("target"); // TODO: ErrorCode
+                            diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_SwitchNeedsValue, Location.None, name));
                         }
                         else
                         {
@@ -387,9 +398,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                         var unquotedModuleName = RemoveQuotesAndSlashes(value);
                         if (string.IsNullOrEmpty(unquotedModuleName))
                         {
-                            //AddDiagnostic(diagnostics, ErrorCode.ERR_SwitchNeedsString, MessageID.IDS_Text.Localize(), "modulename");
-                            //continue;
-                            throw new ArgumentException("modulename"); // TODO: ErrorCode
+                            diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_SwitchNeedsValue, Location.None, name));
                         }
                         else
                         {
@@ -402,12 +411,12 @@ namespace Pchp.CodeAnalysis.CommandLine
                         unquoted = RemoveQuotesAndSlashes(value);
                         if (string.IsNullOrEmpty(unquoted))
                         {
-                            //AddDiagnostic(diagnostics, ErrorCode.ERR_SwitchNeedsString, "<text>", name);
-                            //continue;
-                            throw new ArgumentException("runtimemetadataversion"); // TODO: ErrorCode
+                            diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_SwitchNeedsValue, Location.None, name));
                         }
-
-                        runtimeMetadataVersion = unquoted;
+                        else
+                        {
+                            runtimeMetadataVersion = unquoted;
+                        }
                         continue;
 
                     case "res":
@@ -496,6 +505,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 phpdocTypes: phpdocTypes,
                 parseOptions: parseOptions,
                 diagnostics: diagnostics.AsImmutable(),
+                specificDiagnosticOptions: diagnosticOptions,
                 //usings: usings,
                 optimizationLevel: optimize ? OptimizationLevel.Release : OptimizationLevel.Debug,
                 checkOverflow: false, // checkOverflow,
