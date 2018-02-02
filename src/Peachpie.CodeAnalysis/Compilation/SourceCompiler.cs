@@ -32,6 +32,8 @@ namespace Pchp.CodeAnalysis
 
         readonly Worklist<BoundBlock> _worklist;
 
+        public bool ConcurrentBuild => _compilation.Options.ConcurrentBuild;
+
         private SourceCompiler(PhpCompilation compilation, PEModuleBuilder moduleBuilder, bool emittingPdb, DiagnosticBag diagnostics, CancellationToken cancellationToken)
         {
             Contract.ThrowIfNull(compilation);
@@ -49,17 +51,32 @@ namespace Pchp.CodeAnalysis
             // semantic model
         }
 
-        void WalkMethods(Action<SourceRoutineSymbol> action)
+        void WalkMethods(Action<SourceRoutineSymbol> action, bool allowParallel = false)
         {
-            // DEBUG
-            _compilation.SourceSymbolCollection.AllRoutines.ForEach(action);
+            var routines = _compilation.SourceSymbolCollection.AllRoutines;
 
-            // TODO: methodsWalker.VisitNamespace(_compilation.SourceModule.GlobalNamespace)
+            if (ConcurrentBuild && allowParallel)
+            {
+                Parallel.ForEach(routines, action);
+            }
+            else
+            {
+                routines.ForEach(action);
+            }
         }
 
-        void WalkTypes(Action<SourceTypeSymbol> action)
+        void WalkTypes(Action<SourceTypeSymbol> action, bool allowParallel = false)
         {
-            _compilation.SourceSymbolCollection.GetTypes().Foreach(action);
+            var types = _compilation.SourceSymbolCollection.GetTypes();
+
+            if (ConcurrentBuild && allowParallel)
+            {
+                Parallel.ForEach(types, action);
+            }
+            else
+            {
+                types.ForEach(action);
+            }
         }
 
         /// <summary>
@@ -154,7 +171,7 @@ namespace Pchp.CodeAnalysis
 
         internal void DiagnoseMethods()
         {
-            this.WalkMethods(DiagnoseRoutine);
+            this.WalkMethods(DiagnoseRoutine, allowParallel: true);
         }
 
         private void DiagnoseRoutine(SourceRoutineSymbol routine)
@@ -166,7 +183,16 @@ namespace Pchp.CodeAnalysis
 
         internal void DiagnoseFiles()
         {
-            _compilation.SourceSymbolCollection.GetFiles().ForEach(DiagnoseFile);
+            var files = _compilation.SourceSymbolCollection.GetFiles();
+
+            if (ConcurrentBuild)
+            {
+                Parallel.ForEach(files, DiagnoseFile);
+            }
+            else
+            {
+                files.ForEach(DiagnoseFile);
+            }
         }
 
         private void DiagnoseFile(SourceFileSymbol file)
@@ -176,7 +202,7 @@ namespace Pchp.CodeAnalysis
 
         private void DiagnoseTypes()
         {
-            this.WalkTypes(DiagnoseType);
+            this.WalkTypes(DiagnoseType, allowParallel: true);
         }
 
         private void DiagnoseType(SourceTypeSymbol type)
@@ -267,8 +293,8 @@ namespace Pchp.CodeAnalysis
             // 1. Bind Syntax & Symbols to Operations (CFG)
             //   a. construct CFG, bind AST to Operation
             //   b. declare table of local variables
-            compiler.WalkMethods(compiler.EnqueueRoutine);
-            compiler.WalkTypes(compiler.EnqueueFieldsInitializer);
+            compiler.WalkMethods(compiler.EnqueueRoutine, allowParallel: true);
+            compiler.WalkTypes(compiler.EnqueueFieldsInitializer, allowParallel: true);
 
             // 2. Analyze Operations
             //   a. type analysis (converge type - mask), resolve symbols
