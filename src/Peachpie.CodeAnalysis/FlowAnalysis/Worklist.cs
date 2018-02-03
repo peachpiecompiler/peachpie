@@ -97,29 +97,49 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return false;
         }
 
-        /// <summary>
-        /// Processes all tasks until the queue is not empty.
-        /// </summary>
-        public void DoAll()
+        void Process(T block)
         {
-            for (; DoNext();) ;
+            var list = _analyzers;
+            for (int i = 0; i < list.Count; i++)
+            {
+                list[i](block);
+            }
         }
 
         /// <summary>
-        /// Pop next item from the queue and process it.
+        /// Processes all tasks until the queue is not empty.
         /// </summary>
-        /// <returns><c>true</c> if there was an item, otherwise <c>false</c>.</returns>
-        public bool DoNext()
+        public void DoAll(bool concurrent = false)
         {
-            T block;
-            if (!_queue.TryDequeue(out block))
-                return false;
+            // deque batch of blocks and analyse them in parallel
+            var todo = new T[256];
+            int n;
+            
+            while ((n = Dequeue(todo)) != 0)
+            {
+                if (concurrent)
+                {
+                    Parallel.For(0, n, (i) => Process(todo[i]));
+                }
+                else
+                {
+                    for (int i = 0; i < n; i++)
+                    {
+                        Process(todo[i]);
+                    }
+                }
+            }
+        }
 
-            //
-            _analyzers.ForEach(a => a(block));
+        int Dequeue(T[] blocks)
+        {
+            int n = 0;
+            while (n < blocks.Length && _queue.TryDequeue(out T block))
+            {
+                blocks[n++] = block;
+            }
 
-            //
-            return true;
+            return n;
         }
     }
 }

@@ -341,7 +341,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (rtype != exit._lastReturnTypeMask)
                 {
                     exit._lastReturnTypeMask = rtype;
-                    exit.Subscribers.ForEach(_worklist.Enqueue);
+                    var subscribers = exit.Subscribers;
+                    if (subscribers.Count != 0)
+                    {
+                        lock (subscribers)
+                        {
+                            subscribers.ForEach(_worklist.Enqueue);
+                        }
+                    }
                 }
             }
         }

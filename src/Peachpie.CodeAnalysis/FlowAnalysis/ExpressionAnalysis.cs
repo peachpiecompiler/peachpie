@@ -1437,14 +1437,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 //
                 x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
-
-                // reanalyse candidates
-                foreach (var c in candidates)
-                {
-                    // analyze TargetMethod with x.Arguments
-                    this.Worklist.EnqueueRoutine(c, CurrentBlock);
-                }
-
                 x.ResultType = type;
             }
 

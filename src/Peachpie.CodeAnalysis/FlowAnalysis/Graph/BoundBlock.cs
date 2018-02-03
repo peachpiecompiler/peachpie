@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using Peachpie.CodeAnalysis.Utilities;
+using System.Collections.Concurrent;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
@@ -32,12 +33,20 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         internal void Subscribe(BoundBlock x)
         {
             if (_subscribers == null)
-                _subscribers = new HashSet<BoundBlock>();
+            {
+                lock (this)
+                {
+                    _subscribers = _subscribers ?? new HashSet<BoundBlock>();
+                }
+            }
 
-            _subscribers.Add(x);
+            lock (_subscribers)
+            {
+                _subscribers.Add(x);
+            }
         }
 
-        internal IEnumerable<BoundBlock> Subscribers => (IEnumerable<BoundBlock>)_subscribers ?? ImmutableArray<BoundBlock>.Empty;
+        internal ICollection<BoundBlock> Subscribers => (ICollection<BoundBlock>)_subscribers ?? Array.Empty<BoundBlock>();
 
         /// <summary>
         /// Set of blocks making call to this routine (callers) (may be from another CFG) waiting for return type of this routine.
