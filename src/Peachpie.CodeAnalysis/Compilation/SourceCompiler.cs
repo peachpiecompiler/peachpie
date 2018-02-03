@@ -152,7 +152,7 @@ namespace Pchp.CodeAnalysis
             // LowerBody(block)
 
             // analyse blocks
-            _worklist.DoAll();
+            _worklist.DoAll(concurrent: false/*TODO: ConcurrentBuild*/);
         }
 
         void AnalyzeBlock(BoundBlock block) // TODO: driver
@@ -215,7 +215,7 @@ namespace Pchp.CodeAnalysis
             Debug.Assert(_moduleBuilder != null);
 
             // source routines
-            this.WalkMethods(this.EmitMethodBody);
+            this.WalkMethods(this.EmitMethodBody, allowParallel: false); // TODO: in parallel
         }
 
         internal void EmitSynthesized()
@@ -293,8 +293,8 @@ namespace Pchp.CodeAnalysis
             // 1. Bind Syntax & Symbols to Operations (CFG)
             //   a. construct CFG, bind AST to Operation
             //   b. declare table of local variables
-            compiler.WalkMethods(compiler.EnqueueRoutine);
-            compiler.WalkTypes(compiler.EnqueueFieldsInitializer);
+            compiler.WalkMethods(compiler.EnqueueRoutine, allowParallel: true);
+            compiler.WalkTypes(compiler.EnqueueFieldsInitializer, allowParallel: true);
 
             // 2. Analyze Operations
             //   a. type analysis (converge type - mask), resolve symbols
