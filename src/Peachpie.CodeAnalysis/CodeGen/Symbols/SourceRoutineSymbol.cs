@@ -321,16 +321,19 @@ namespace Pchp.CodeAnalysis.Symbols
         internal void EmitInit(PEModuleBuilder module)
         {
             var cctor = module.GetStaticCtorBuilder(_file);
-            var field = new FieldPlace(null, this.EnsureRoutineInfoField(module), module);
+            lock (cctor)
+            {
+                var field = new FieldPlace(null, this.EnsureRoutineInfoField(module), module);
 
-            // {RoutineInfoField} = RoutineInfo.CreateUserRoutine(name, handle)
-            field.EmitStorePrepare(cctor);
+                // {RoutineInfoField} = RoutineInfo.CreateUserRoutine(name, handle)
+                field.EmitStorePrepare(cctor);
 
-            cctor.EmitStringConstant(this.QualifiedName.ToString());
-            cctor.EmitLoadToken(module, DiagnosticBag.GetInstance(), this, null);
-            cctor.EmitCall(module, DiagnosticBag.GetInstance(), ILOpCode.Call, module.Compilation.CoreMethods.Reflection.CreateUserRoutine_string_RuntimeMethodHandle);
+                cctor.EmitStringConstant(this.QualifiedName.ToString());
+                cctor.EmitLoadToken(module, DiagnosticBag.GetInstance(), this, null);
+                cctor.EmitCall(module, DiagnosticBag.GetInstance(), ILOpCode.Call, module.Compilation.CoreMethods.Reflection.CreateUserRoutine_string_RuntimeMethodHandle);
 
-            field.EmitStore(cctor);
+                field.EmitStore(cctor);
+            }
         }
     }
 
@@ -364,18 +367,21 @@ namespace Pchp.CodeAnalysis.Symbols
         internal void EmitInit(PEModuleBuilder module)
         {
             var cctor = module.GetStaticCtorBuilder(_container);
-            var field = new FieldPlace(null, this.EnsureRoutineInfoField(module), module);
+            lock (cctor)
+            {
+                var field = new FieldPlace(null, this.EnsureRoutineInfoField(module), module);
 
-            var ct = module.Compilation.CoreTypes;
+                var ct = module.Compilation.CoreTypes;
 
-            // {RoutineInfoField} = new PhpAnonymousRoutineInfo(name, handle)
-            field.EmitStorePrepare(cctor);
+                // {RoutineInfoField} = new PhpAnonymousRoutineInfo(name, handle)
+                field.EmitStorePrepare(cctor);
 
-            cctor.EmitStringConstant(this.MetadataName);
-            cctor.EmitLoadToken(module, DiagnosticBag.GetInstance(), this, null);
-            cctor.EmitCall(module, DiagnosticBag.GetInstance(), ILOpCode.Call, ct.Operators.Method("AnonymousRoutine", ct.String, ct.RuntimeMethodHandle));
+                cctor.EmitStringConstant(this.MetadataName);
+                cctor.EmitLoadToken(module, DiagnosticBag.GetInstance(), this, null);
+                cctor.EmitCall(module, DiagnosticBag.GetInstance(), ILOpCode.Call, ct.Operators.Method("AnonymousRoutine", ct.String, ct.RuntimeMethodHandle));
 
-            field.EmitStore(cctor);
+                field.EmitStore(cctor);
+            }
         }
     }
 

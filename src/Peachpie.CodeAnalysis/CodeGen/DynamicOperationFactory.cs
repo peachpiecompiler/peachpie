@@ -61,18 +61,26 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // create callsite
 
                 // static .cctor {
+
                 var cctor = _factory.CctorBuilder;
+                lock (cctor)
+                {
+                    // fld = CallSite<T>.Create( <BINDER> )
+                    var fldPlace = this.Place;
+                    fldPlace.EmitStorePrepare(cctor);
 
-                // fld = CallSite<T>.Create( <BINDER> )
-                var fldPlace = this.Place;
-                fldPlace.EmitStorePrepare(cctor);
+                    var cg = _factory._cg;
+                    using (var cctor_cg = new CodeGenerator(cctor, cg.Module, cg.Diagnostics, cg.DeclaringCompilation.Options.OptimizationLevel, false, _factory._container, null, null, cg.Routine)
+                    {
+                        CallerType = cg.CallerType,
+                    })
+                    {
+                        binder_builder(cctor_cg);
+                        cctor.EmitCall(_factory._cg.Module, _factory._cg.Diagnostics, ILOpCode.Call, this.CallSite_Create);
 
-                var cg = _factory._cg;
-                var cctor_cg = new CodeGenerator(cctor, cg.Module, cg.Diagnostics, cg.DeclaringCompilation.Options.OptimizationLevel, false, _factory._container, null, null, cg.Routine);
-                binder_builder(cctor_cg);
-                cctor.EmitCall(_factory._cg.Module, _factory._cg.Diagnostics, ILOpCode.Call, this.CallSite_Create);
-
-                fldPlace.EmitStore(cctor);
+                        fldPlace.EmitStore(cctor);
+                    }
+                }
 
                 // }
             }

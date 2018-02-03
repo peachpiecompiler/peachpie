@@ -77,26 +77,28 @@ namespace Pchp.CodeAnalysis.Emit
         /// </summary>
         public SynthesizedFieldSymbol/*!*/GetOrCreateSynthesizedField(NamedTypeSymbol container, TypeSymbol type, string name, Accessibility accessibility, bool isstatic, bool @readonly, bool autoincrement = false)
         {
-            var members = EnsureList(container);
-
-            if (autoincrement)
-            {
-                name += "`" + members.Count.ToString("x");
-            }
-
             SynthesizedFieldSymbol field = null;
 
-            if (!autoincrement)
+            var members = EnsureList(container);
+            lock (members)
             {
-                field = members
-                    .OfType<SynthesizedFieldSymbol>()
-                    .FirstOrDefault(f => f.Name == name && f.IsStatic == isstatic && f.Type == type && f.IsReadOnly == @readonly);
-            }
+                if (autoincrement)
+                {
+                    name += "`" + members.Count.ToString("x");
+                }
 
-            if (field == null)
-            {
-                field = new SynthesizedFieldSymbol(container, type, name, accessibility, isstatic, @readonly);
-                members.Add(field);
+                if (!autoincrement)
+                {
+                    field = members
+                        .OfType<SynthesizedFieldSymbol>()
+                        .FirstOrDefault(f => f.Name == name && f.IsStatic == isstatic && f.Type == type && f.IsReadOnly == @readonly);
+                }
+
+                if (field == null)
+                {
+                    field = new SynthesizedFieldSymbol(container, type, name, accessibility, isstatic, @readonly);
+                    members.Add(field);
+                }
             }
 
             Debug.Assert(field.IsImplicitlyDeclared);

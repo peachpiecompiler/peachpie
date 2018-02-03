@@ -48,17 +48,21 @@ namespace Pchp.CodeAnalysis.Symbols
                 // note, their initializers do not have Context available, since they are not bound to a Context
 
                 var cctor = module.GetStaticCtorBuilder(this);
-                var cg = new CodeGenerator(cctor, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, this, null, null)
+                lock (cctor)
                 {
-                    CallerType = this,
-                };
+                    using (var cg = new CodeGenerator(cctor, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, this, null, null)
+                    {
+                        CallerType = this,
+                    })
+                    {
+                        foreach (var f in sflds)
+                        {
+                            Debug.Assert(f.RequiresContext == false);
+                            Debug.Assert(f.ContainingStaticsHolder == null);
 
-                foreach (var f in sflds)
-                {
-                    Debug.Assert(f.RequiresContext == false);
-                    Debug.Assert(f.ContainingStaticsHolder == null);
-
-                    f.EmitInit(cg);
+                            f.EmitInit(cg);
+                        }
+                    }
                 }
             }
         }
