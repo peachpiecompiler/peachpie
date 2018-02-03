@@ -61,7 +61,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             NamedTypeSymbol result1 = null;
             result1 = _emittedNameToTypeMap.GetOrAdd(emittedName.ToKey(), result);
-            Debug.Assert(result1 == result); // object identity may differ in error cases
+            Debug.Assert(result1 == result || (result.IsErrorType() && result1.IsErrorType())); // object identity may differ in error cases
         }
 
         /// <summary>

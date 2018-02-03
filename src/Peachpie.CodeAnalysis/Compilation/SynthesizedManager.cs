@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Symbols;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -18,7 +19,7 @@ namespace Pchp.CodeAnalysis.Emit
 
         public PhpCompilation DeclaringCompilation => _module.Compilation;
 
-        readonly Dictionary<TypeSymbol, List<Symbol>> _membersByType = new Dictionary<TypeSymbol, List<Symbol>>();
+        readonly ConcurrentDictionary<TypeSymbol, List<Symbol>> _membersByType = new ConcurrentDictionary<TypeSymbol, List<Symbol>>();
 
         public SynthesizedManager(PEModuleBuilder module)
         {
@@ -31,14 +32,7 @@ namespace Pchp.CodeAnalysis.Emit
 
         List<Symbol> EnsureList(TypeSymbol type)
         {
-            List<Symbol> list;
-            if (!_membersByType.TryGetValue(type, out list))
-            {
-                _membersByType[type] = list = new List<Symbol>();
-            }
-
-            //
-            return list;
+            return _membersByType.GetOrAdd(type, (_) => new List<Symbol>());
         }
 
         /// <summary>
@@ -59,17 +53,19 @@ namespace Pchp.CodeAnalysis.Emit
 
             //
             var members = EnsureList(container);
-
-            //
-            var cctor = members.OfType<SynthesizedCctorSymbol>().FirstOrDefault();
-            if (cctor == null)
+            lock (members)
             {
-                cctor = new SynthesizedCctorSymbol(container);
-                members.Add(cctor);
+                //
+                var cctor = members.OfType<SynthesizedCctorSymbol>().FirstOrDefault();
+                if (cctor == null)
+                {
+                    cctor = new SynthesizedCctorSymbol(container);
+                    members.Add(cctor);
+                }
+                return cctor;
             }
 
             //
-            return cctor;
         }
 
         /// <summary>

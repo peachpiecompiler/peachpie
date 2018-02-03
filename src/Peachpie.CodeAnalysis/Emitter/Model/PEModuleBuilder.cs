@@ -362,10 +362,14 @@ namespace Pchp.CodeAnalysis.Emit
         public ILBuilder GetStaticCtorBuilder(NamedTypeSymbol container)
         {
             ILBuilder il;
-            if (!_cctorBuilders.TryGetValue(container, out il))
+
+            lock (container)
             {
-                var cctor = SynthesizedManager.EnsureStaticCtor(container); // ensure .cctor is declared
-                _cctorBuilders[container] = il = new ILBuilder(this, new LocalSlotManager(null), _compilation.Options.OptimizationLevel);
+                if (!_cctorBuilders.TryGetValue(container, out il))
+                {
+                    var cctor = SynthesizedManager.EnsureStaticCtor(container); // ensure .cctor is declared
+                    _cctorBuilders[container] = il = new ILBuilder(this, new LocalSlotManager(null), _compilation.Options.OptimizationLevel);
+                }
             }
 
             return il;
