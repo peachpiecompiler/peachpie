@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using Pchp.Core;
+using Pchp.Core.Reflection;
 using Pchp.Library.Spl;
 
 namespace Pchp.Library.Reflection
@@ -30,12 +31,12 @@ namespace Pchp.Library.Reflection
         public virtual string getExecutingFile()
         {
             var m = Operators.GetGeneratorMethod(_g).GetMethodInfo();
-            var t = m.DeclaringType;
+            var t = m.DeclaringType.GetTypeInfo();
 
             string path = null;
 
             // [PhpType(FileName = ...)]
-            var phpt = t.GetTypeInfo().GetCustomAttribute<PhpTypeAttribute>();
+            var phpt = t.GetCustomAttribute<PhpTypeAttribute>();
             if (phpt != null)
             {
                 path = phpt.FileName;
@@ -43,7 +44,7 @@ namespace Pchp.Library.Reflection
             else
             {
                 // [Script(Path = ...)]
-                var scrt = t.GetTypeInfo().GetCustomAttribute<ScriptAttribute>();
+                var scrt = t.GetCustomAttribute<ScriptAttribute>();
                 if (scrt != null)
                 {
                     path = scrt.Path;
@@ -55,7 +56,38 @@ namespace Pchp.Library.Reflection
         }
         public virtual Generator getExecutingGenerator() => _g;
         public virtual int getExecutingLine() { throw new NotImplementedException(); }
-        public virtual ReflectionFunctionAbstract getFunction() { throw new NotImplementedException(); }
+        public virtual ReflectionFunctionAbstract getFunction()
+        {
+            var owner = Operators.GetGeneratorOwnerMethod(_g);
+            if (owner != null)
+            {
+
+                var container = owner.DeclaringType.GetTypeInfo();
+                var phpt = container.GetCustomAttribute<PhpTypeAttribute>();
+                if (phpt != null) // declared inside class
+                {
+                    // method
+                    var tinfo = container.GetPhpTypeInfo();
+                    var routine = tinfo.RuntimeMethods[owner.Name];
+
+                    return new ReflectionMethod(tinfo, routine);
+                }
+                else if (owner.IsStatic) // global function (?)
+                {
+                    // [Script(Path = ...)] => global function declared inside script
+                    var scrt = container.GetCustomAttribute<ScriptAttribute>();
+                    if (scrt != null)
+                    {
+                        // function
+                        return new ReflectionFunction(_ctx.GetDeclaredFunction(owner.Name));
+                    }
+                }
+
+            }
+
+            //
+            throw new NotSupportedException();
+        }
         public virtual object getThis() => Operators.GetGeneratorThis(_g);
         public virtual PhpArray getTrace(int options = 1/*DEBUG_BACKTRACE_PROVIDE_OBJECT*/) { throw new NotImplementedException(); }
     }

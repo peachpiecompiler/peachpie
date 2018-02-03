@@ -1304,7 +1304,7 @@ namespace Pchp.Core
         /// <summary>
         /// Create <see cref="Generator"/> with specified state machine function and parameters.
         /// </summary>
-        public static Generator BuildGenerator(Context ctx, object @this, PhpArray locals, PhpArray tmpLocals, GeneratorStateMachineDelegate method) => new Generator(ctx, @this, locals, tmpLocals, method);
+        public static Generator BuildGenerator(Context ctx, object @this, PhpArray locals, PhpArray tmpLocals, GeneratorStateMachineDelegate smmethod, RuntimeMethodHandle ownerhandle) => new Generator(ctx, @this, locals, tmpLocals, smmethod, ownerhandle);
 
         public static int GetGeneratorState(Generator g) => g._state;
 
@@ -1364,6 +1364,8 @@ namespace Pchp.Core
         public static Context GetGeneratorContext(Generator g) => g._ctx;
 
         public static GeneratorStateMachineDelegate GetGeneratorMethod(Generator g) => g._stateMachineMethod;
+
+        public static MethodInfo GetGeneratorOwnerMethod(Generator g) => (MethodInfo)MethodBase.GetMethodFromHandle(g._ownerhandle);
 
         #endregion
 

@@ -110,9 +110,8 @@ namespace Pchp.Library.Reflection
         public bool isVariadic() { throw new NotImplementedException(); }
         public bool returnsReference() => _routine.Methods.Any(m => m.ReturnType == typeof(PhpAlias));
 
-        public string __toString()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual string __toString() { throw new NotImplementedException(); }
+
+        public override string ToString() => __toString();
     }
 }

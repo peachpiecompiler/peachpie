@@ -18,6 +18,8 @@ public class Generator : Iterator
     /// </summary>
     readonly internal GeneratorStateMachineDelegate _stateMachineMethod;
 
+    readonly internal RuntimeMethodHandle _ownerhandle;
+
     /// <summary>
     /// Bounded this for non-static enumerator methods, null for static ones.
     /// </summary>
@@ -68,16 +70,17 @@ public class Generator : Iterator
     #endregion  
 
     #region Constructors
-    internal Generator(Context ctx, object @this, PhpArray locals, PhpArray tmpLocals, GeneratorStateMachineDelegate method)
+    internal Generator(Context ctx, object @this, PhpArray locals, PhpArray tmpLocals, GeneratorStateMachineDelegate method, RuntimeMethodHandle ownerhandle)
     {
         Debug.Assert(ctx != null);
         Debug.Assert(method != null);
 
-        _stateMachineMethod = method;
         _ctx = ctx;
+        _this = @this;
         _locals = locals;
         _tmpLocals = tmpLocals;
-        _this = @this;
+        _stateMachineMethod = method;
+        _ownerhandle = ownerhandle;
 
         _currValue = PhpValue.Null;
         _currKey = PhpValue.Null;

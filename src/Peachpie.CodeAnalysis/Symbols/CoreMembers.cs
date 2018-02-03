@@ -457,7 +457,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Scope_Closure = ct.Operators.Method("Scope", ct.Closure);
                 Context_Closure = ct.Operators.Method("Context", ct.Closure);
 
-                BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate = ct.Operators.Method("BuildGenerator", ct.Context, ct.Object, ct.PhpArray, ct.PhpArray, ct.GeneratorStateMachineDelegate);
+                BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate_RuntimeMethodHandle = ct.Operators.Method("BuildGenerator", ct.Context, ct.Object, ct.PhpArray, ct.PhpArray, ct.GeneratorStateMachineDelegate, ct.RuntimeMethodHandle);
                 GetGeneratorState_Generator = ct.Operators.Method("GetGeneratorState", ct.Generator);
                 SetGeneratorState_Generator_int = ct.Operators.Method("SetGeneratorState", ct.Generator, ct.Int32);
                 HandleGeneratorException_Generator = ct.Operators.Method("HandleGeneratorException", ct.Generator);
@@ -542,7 +542,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 BuildClosure_Context_IPhpCallable_Object_RuntimeTypeHandle_PhpArray_PhpArray,
                 This_Closure, Scope_Closure, Context_Closure,
 
-                BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate,
+                BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate_RuntimeMethodHandle,
                 GetGeneratorState_Generator, SetGeneratorState_Generator_int, HandleGeneratorException_Generator,
                 SetGeneratorCurrent_Generator_PhpValue, SetGeneratorCurrent_Generator_PhpValue_PhpValue, SetGeneratorCurrentFrom_Generator_PhpValue_PhpValue,
                 GetGeneratorSentItem_Generator, SetGeneratorReturnedValue_Generator_PhpValue,
