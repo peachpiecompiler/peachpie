@@ -48,14 +48,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             cg.Builder.DefineInitialHiddenSequencePoint();
 
-            // first brace sequence point
-            var body = cg.Routine.Syntax.BodySpanOrInvalid();
-            if (body.IsValid && cg.IsDebug)
-            {
-                cg.EmitSequencePoint(new Span(body.Start, 1));
-                cg.EmitOpCode(ILOpCode.Nop);
-            }
-
             //
             if (cg.IsDebug)
             {
@@ -107,6 +99,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 {
                     loc.EmitInit(cg);
                 }
+            }
+
+            // first brace sequence point
+            var body = cg.Routine.Syntax.BodySpanOrInvalid();
+            if (body.IsValid && cg.IsDebug)
+            {
+                cg.EmitSequencePoint(new Span(body.Start, 1));
+                cg.EmitOpCode(ILOpCode.Nop);
             }
 
             // if generator method: emit switch table for continuation & change state to -1 (running)

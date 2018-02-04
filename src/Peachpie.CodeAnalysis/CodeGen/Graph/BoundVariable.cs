@@ -147,6 +147,8 @@ namespace Pchp.CodeAnalysis.Semantics
             // check NotNull
             if (srcparam.IsNotNull && srcparam.Type.IsReferenceType)
             {
+                cg.EmitSequencePoint(srcparam.Syntax);
+
                 // Template: if (<param> == null) { PhpException.ArgumentNullError(param_name); }
                 var lbl_notnull = new object();
                 cg.EmitNotNull(srcplace);
@@ -156,6 +158,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 // Consider: just Debug.Assert(<param> != null) for private methods
                 cg.Builder.EmitStringConstant(srcparam.Name);
                 cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreTypes.PhpException.Method("ArgumentNullError", cg.CoreTypes.String)));
+
+                //
+                cg.Builder.EmitOpCode(ILOpCode.Nop);
 
                 cg.Builder.MarkLabel(lbl_notnull);
             }
