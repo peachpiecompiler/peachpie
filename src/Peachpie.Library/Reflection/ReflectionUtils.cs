@@ -63,6 +63,13 @@ namespace Pchp.Library.Reflection
                     int index = pi - implicitps;
                     if (index == parameters.Count)
                     {
+                        if (mi != 0) // we are adding and optional parameter!
+                        {
+                            if (defaultValue.IsDefault) // optional parameter has not specified default value, set void so it is treated as optional
+                            {
+                                defaultValue = PhpValue.Void;
+                            }
+                        }
 
                         parameters.Add(new ReflectionParameter(function, index, p.ParameterType, allowsNull, p.Name, defaultValue));
                     }
