@@ -81,7 +81,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 var name = base.MetadataName;
 
                 if (_syntax.IsConditional)
-                    name += "@" + _file.Functions.TakeWhile(f => f != this).Where(f => f.QualifiedName == this.QualifiedName).Count().ToString();   // index of this function within functions with the same name
+                {
+                    // ?order
+                    name += "?" + _file.Functions.TakeWhile(f => f != this).Where(f => f.QualifiedName == this.QualifiedName).Count().ToString();   // index of this function within functions with the same name
+                }
 
                 return name;
             }

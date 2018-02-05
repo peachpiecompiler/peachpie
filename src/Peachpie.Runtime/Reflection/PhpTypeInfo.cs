@@ -277,7 +277,7 @@ namespace Pchp.Core.Reflection
         /// Array of characters used to separate class name from its metadata indexes (order, generics, etc).
         /// These characters and suffixed text has to be ignored.
         /// </summary>
-        private static readonly char[] _metadataSeparators = new[] { '#', '@', '`', '<' };
+        private static readonly char[] _metadataSeparators = new[] { '#', '@', '`', '<', '?' };
 
         #region Reflection
 

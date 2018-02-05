@@ -80,7 +80,7 @@ namespace Pchp.CodeAnalysis.Emit
             {
                 if (autoincrement)
                 {
-                    name += "`" + members.Count.ToString("x");
+                    name += "?" + members.Count.ToString("x");
                 }
 
                 if (!autoincrement)

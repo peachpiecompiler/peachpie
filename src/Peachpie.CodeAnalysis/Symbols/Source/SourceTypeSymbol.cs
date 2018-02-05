@@ -992,18 +992,17 @@ namespace Pchp.CodeAnalysis.Symbols
                 var decls = this.DeclaringCompilation.SourceSymbolCollection.GetDeclaredTypes(this.FullName).ToList();
                 Debug.Assert(decls.Count != 0);
 
-                // name<>`num#version
+                // name?num#version
 
-                // <>
-                if (_syntax.IsConditional)
-                {
-                    name += "<>";
-                }
-
-                // `order
                 if (decls.Count != 1)
                 {
-                    name += "`" + decls.TakeWhile(f => f.Syntax != this.Syntax).Count().ToString();   // index within types with the same name
+                    // ?order
+                    name += "?" + decls.TakeWhile(f => f.Syntax != this.Syntax).Count().ToString();   // index within types with the same name
+                }
+                else if (Syntax.IsConditional)
+                {
+                    // ?
+                    name += "?";
                 }
 
                 // #version

@@ -21,7 +21,7 @@ namespace Pchp.Core.Reflection
         /// </summary>
         public const string PhpDestructorName = "__destruct";
 
-        readonly static char[] _disallowedNameChars = new char[] { '`', '<', '>', '.', '\'', '"', '#', '!' };
+        readonly static char[] _disallowedNameChars = new char[] { '`', '<', '>', '.', '\'', '"', '#', '!', '?' };
 
         /// <summary>
         /// Determines whether given name is valid PHP field, function or class name.
