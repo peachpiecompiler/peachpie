@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Devsense.Php.Parser" Version="1.4.47" />
+    <PackageReference Include="Devsense.Php.Parser" Version="1.4.48" />
     <PackageReference Include="Peachpie.Microsoft.CodeAnalysis" Version="0.6.0" />
     <PackageReference Include="System.Collections.Immutable" Version="1.3.1" />
     <PackageReference Include="System.Reflection.Metadata" Version="1.4.2" />
