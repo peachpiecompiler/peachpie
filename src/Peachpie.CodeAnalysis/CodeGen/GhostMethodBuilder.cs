@@ -15,7 +15,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Creates ghost stub that calls method.
         /// </summary>
-        public static void CreateGhostOverload(this MethodSymbol method, NamedTypeSymbol containingtype, PEModuleBuilder module, DiagnosticBag diagnostic,
+        public static MethodSymbol CreateGhostOverload(this MethodSymbol method, NamedTypeSymbol containingtype, PEModuleBuilder module, DiagnosticBag diagnostic,
             TypeSymbol ghostreturn, IEnumerable<ParameterSymbol> ghostparams,
             MethodSymbol explicitOverride = null)
         {
@@ -41,6 +41,9 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // generate method body
             GenerateGhostBody(module, diagnostic, method, ghost);
+
+            //
+            return ghost;
         }
 
         /// <summary>
