@@ -71,6 +71,11 @@ namespace Pchp.Core
         public bool IsEmpty => _type.IsEmpty(ref this);
 
         /// <summary>
+        /// The structure was not initialized.
+        /// </summary>
+        public bool IsDefault => ReferenceEquals(_type, null);
+
+        /// <summary>
         /// Gets value indicating whether the value is set.
         /// </summary>
         public bool IsSet => (_type != null && TypeCode != PhpTypeCode.Undefined);

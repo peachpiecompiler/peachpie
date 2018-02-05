@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Reflection;
+using System.Diagnostics;
 
 namespace Pchp.Library.Reflection
 {
@@ -63,32 +64,17 @@ namespace Pchp.Library.Reflection
         /// <returns>The parameters, as <see cref="ReflectionParameter"/> objects.</returns>
         public PhpArray getParameters()
         {
-            int minParamsCount;         // To track the least number of parameters among all the overloads
-            int skippedParamsCount;     // The number of initial implicit parameters, which are not retrieved
-            ParameterInfo[] parameters;
-            if (_routine.Methods.Length == 1)
+            var parameters = ReflectionUtils.ResolveReflectionParameters(this, _routine.Methods);
+            
+            //
+
+            var arr = new PhpArray(parameters.Count);
+            for (int i = 0; i < parameters.Count; i++)
             {
-                // The most common and simplest case
-                parameters = _routine.Methods[0].GetParameters();
-                skippedParamsCount = Core.Reflection.ReflectionUtils.ImplicitParametersCount(parameters);
-                minParamsCount = parameters.Length - skippedParamsCount;
-            }
-            else
-            {
-                ReflectionUtils.ProcessParametersOfOverloads(_routine.Methods, out minParamsCount, out parameters, out skippedParamsCount);
+                arr.Add(PhpValue.FromClass(parameters[i]));
             }
 
-            var result = new PhpArray(parameters.Length - skippedParamsCount);
-            for (int i = skippedParamsCount; i < parameters.Length; i++)
-            {
-                // If the parameter is not present in an overload, it is effectively optional
-                var realPosition = i - skippedParamsCount;
-                bool forceOptional = realPosition >= minParamsCount;
-
-                result.Add(new ReflectionParameter(parameters[i], forceOptional));
-            }
-
-            return result;
+            return arr;
         }
 
         //public ReflectionType getReturnType() { throw new NotImplementedException(); }

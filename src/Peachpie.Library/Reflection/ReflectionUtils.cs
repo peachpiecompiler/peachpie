@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -42,40 +43,46 @@ namespace Pchp.Library.Reflection
             }
         }
 
-        /// <summary>
-        /// Analyses all the overloads, selects one as the canonical for the reflection purposes
-        /// and retrieves information about its parameters.
-        /// </summary>
-        public static void ProcessParametersOfOverloads(
-            MethodInfo[] overloads,
-            out int minParamsCount,
-            out ParameterInfo[] canonicalParams,
-            out int canonicalSkippedParams)
+        public static List<ReflectionParameter> ResolveReflectionParameters(ReflectionFunctionAbstract function, MethodInfo[] overloads)
         {
-            var overloadParameters = new ParameterInfo[overloads.Length][];
-            var skippedParamsCounts = new int[overloads.Length];
-            int canonicalI = 0;
-            for (int i = 0; i < overloads.Length; i++)
+            var parameters = new List<ReflectionParameter>();
+
+            for (int mi = 0; mi < overloads.Length; mi++)
             {
-                // Cache parameters for the particular overload
-                overloadParameters[i] = overloads[i].GetParameters();
+                var ps = overloads[mi].GetParameters();
+                var implicitps = Core.Reflection.ReflectionUtils.ImplicitParametersCount(ps);   // number of implicit compiler-generated parameters
+                int pi = implicitps;
 
-                // Count skipped (implicit) first parameters
-                skippedParamsCounts[i] = Core.Reflection.ReflectionUtils.ImplicitParametersCount(overloadParameters[i]);
-
-                // Consider the last defined overload with the maximum number of parameters as canonical
-                int paramsCount = overloadParameters[i].Length - skippedParamsCounts[i];
-                if (i != canonicalI && overloadParameters[canonicalI].Length - skippedParamsCounts[canonicalI] <= paramsCount)
+                for (; pi < ps.Length; pi++)
                 {
-                    canonicalI = i;
+                    var p = ps[pi];
+
+                    var allowsNull = p.GetCustomAttribute<NotNullAttribute>() == null;
+                    var defaultValue = p.HasDefaultValue ? PhpValue.FromClr(p.RawDefaultValue) : default(PhpValue);
+
+                    int index = pi - implicitps;
+                    if (index == parameters.Count)
+                    {
+
+                        parameters.Add(new ReflectionParameter(function, index, p.ParameterType, allowsNull, p.Name, defaultValue));
+                    }
+                    else
+                    {
+                        // update existing
+                        Debug.Assert(index < parameters.Count);
+                        parameters[index].AddOverload(p.ParameterType, allowsNull, p.Name, defaultValue);
+                    }
+                }
+
+                // remaining parameters have to be marked as optional
+                for (var index = pi - implicitps; index < parameters.Count; index++)
+                {
+                    parameters[index].SetOptional();
                 }
             }
 
-            // Find the least number of real (not implicit) parameters among all the overloads
-            minParamsCount = Enumerable.Range(0, overloads.Length).Min(i => overloadParameters[i].Length - skippedParamsCounts[i]);
-
-            canonicalParams = overloadParameters[canonicalI];
-            canonicalSkippedParams = skippedParamsCounts[canonicalI];
+            //
+            return parameters;
         }
     }
 }

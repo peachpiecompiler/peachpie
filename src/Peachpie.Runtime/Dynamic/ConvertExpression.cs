@@ -460,7 +460,7 @@ namespace Pchp.Core.Dynamic
             }
 
             //
-            if (ReflectionUtils.IsClassType(target_type))
+            if (ReflectionUtils.IsPhpClassType(target_type))
             {
                 var toclass_T = typeof(CostOf).GetTypeInfo().GetDeclaredMethod("ToClass").MakeGenericMethod(target);
                 return Expression.Call(toclass_T, arg); // CostOf.ToClass<T>(arg)
@@ -767,6 +767,31 @@ namespace Pchp.Core.Dynamic
 
                 case PhpTypeCode.Alias:
                     return ToClass<T>(value.Alias.Value);
+
+                default:
+                    return ConversionCost.NoConversion;
+            }
+        }
+
+        public static ConversionCost ToIPhpCallable(object value)
+        {
+            return (value is IPhpCallable) ? ConversionCost.Pass : ConversionCost.NoConversion;
+        }
+
+        public static ConversionCost ToIPhpCallable(PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.String:
+                case PhpTypeCode.MutableString:
+                case PhpTypeCode.PhpArray:
+                    return ConversionCost.LoosingPrecision;
+
+                case PhpTypeCode.Object:
+                    return ToIPhpCallable(value.Object);
+
+                case PhpTypeCode.Alias:
+                    return ToIPhpCallable(value.Alias.Value);
 
                 default:
                     return ConversionCost.NoConversion;
