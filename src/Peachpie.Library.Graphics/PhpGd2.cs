@@ -656,7 +656,32 @@ namespace Peachpie.Library.Graphics
                 | (blue & 0x0000FF);
         }
 
+        static Rgba32 FromRGBA(long color) => new Rgba32((uint)color);
+
         #endregion
+
+        /// <summary>
+        /// Draws a pixel at the specified coordinate.
+        /// </summary>
+        public static bool imagesetpixel(PhpResource im, int x, int y, long color)
+        {
+            var img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+            {
+                return false;
+            }
+
+            var image = img.Image;
+
+            if (x < 0 || y < 0 || x >= image.Width || y >= image.Height)
+            {
+                return false;
+            }
+
+            image[x, y] = FromRGBA(color);
+
+            return true;
+        }
 
         #region imagesavealpha
 
@@ -712,7 +737,7 @@ namespace Peachpie.Library.Graphics
 
             var rect = new RectangleF(x1, y1, x2 - x1, y2 - y1);
 
-            img.Image.Draw(new Rgba32((uint)col), 1.0f, rect);
+            img.Image.Draw(FromRGBA(col), 1.0f, rect);
 
             return true;
         }
@@ -739,7 +764,7 @@ namespace Peachpie.Library.Graphics
             }
             else
             {
-                img.Image.Fill(new Rgba32((uint)col), rect);
+                img.Image.Fill(FromRGBA(col), rect);
             }
 
             return true;
@@ -856,7 +881,7 @@ namespace Peachpie.Library.Graphics
 
             // draw the text:
             // TODO: col < 0 => turn off antialiasing
-            img.Image.DrawText(text, font, new Rgba32((uint)Math.Abs(color)), path);
+            img.Image.DrawText(text, font, FromRGBA(Math.Abs(color)), path);
 
             // calculate drawen text boundaries:
             var pts = new Vector2[]
