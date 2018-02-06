@@ -266,6 +266,9 @@ namespace Peachpie.RequestHandler
 
         #endregion
 
+        /// <summary>Debug display string.</summary>
+        protected override string DebugDisplay => _httpctx.Request.RawUrl;
+
         public override IHttpPhpContext HttpPhpContext => this;
 
         /// <summary>

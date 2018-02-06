@@ -17,13 +17,10 @@ namespace Peachpie.Web
     /// <summary>
     /// Runtime context for ASP.NET Core request.
     /// </summary>
-    [DebuggerDisplay("RequestContextCore({DebugRequestDisplay,nq})")]
     sealed class RequestContextCore : Context, IHttpPhpContext
     {
-        /// <summary>
-        /// Debug display string.
-        /// </summary>
-        string DebugRequestDisplay => $"{_httpctx.Request.Path.Value}{_httpctx.Request.QueryString.Value}";
+        /// <summary>Debug display string.</summary>
+        protected override string DebugDisplay => $"{_httpctx.Request.Path.Value}{_httpctx.Request.QueryString.Value}";
 
         #region IHttpPhpContext
 

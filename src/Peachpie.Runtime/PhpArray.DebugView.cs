@@ -7,13 +7,12 @@ using System.Threading.Tasks;
 
 namespace Pchp.Core
 {
-    [DebuggerDisplay("array(length = {Count})", Type = PhpArray.PhpTypeName)]
+    [DebuggerDisplay("array(length = {Count})", Type = PhpTypeName)]
     [DebuggerTypeProxy(typeof(PhpArrayDebugView))]
     [DebuggerNonUserCode]
     partial class PhpArray
     {
-        [DebuggerDisplay("array(length = {array.Count})", Type = "array")]
-        internal sealed class PhpArrayDebugView
+        sealed class PhpArrayDebugView
         {
             readonly PhpArray _array;
 
@@ -42,7 +41,7 @@ namespace Pchp.Core
         }
 
         [DebuggerDisplay("{_value.DisplayString,nq}", Name = "[{Key}]", Type = "{KeyType,nq} => {ValueType,nq}")]
-        internal sealed class PhpHashEntryDebugView
+        sealed class PhpHashEntryDebugView
         {
             [DebuggerDisplay("{Key}", Name = "Key", Type = "{KeyType,nq}")]
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -53,10 +52,10 @@ namespace Pchp.Core
             public PhpValue Value { get { return _value; } }
 
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-            IntStringKey _key;
+            readonly IntStringKey _key;
 
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-            PhpValue _value;
+            readonly PhpValue _value;
 
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
             public string KeyType

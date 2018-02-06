@@ -21,7 +21,6 @@ namespace Pchp.Core
     /// Its instance is passed to all PHP function.
     /// The context is not thread safe.
     /// </remarks>
-    [DebuggerNonUserCode]
     public partial class Context : IDisposable
     {
         #region Create
