@@ -477,6 +477,9 @@ namespace Pchp.Library
         /// <summary>Ignored.</summary>
         public static void gc_disable() { }
 
+        /// <summary>Ignored.</summary>
+        public static int gc_mem_caches() => 0;
+
         /// <summary>
         /// Returns a unique identifier for the current thread.
         /// </summary>
