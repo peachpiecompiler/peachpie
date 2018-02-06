@@ -683,6 +683,22 @@ namespace Peachpie.Library.Graphics
             return true;
         }
 
+        /// <summary>
+        /// Returns the index of the color of the pixel at the specified location in the image specified by image.
+        /// </summary>
+        public static long imagecolorat(PhpResource im, int x, int y)
+        {
+            var img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+            {
+                return -1;
+            }
+
+            var image = img.Image;
+
+            return (long)image[x, y].Rgba;
+        }
+
         #region imagesavealpha
 
         /// <summary>
