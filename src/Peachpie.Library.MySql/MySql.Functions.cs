@@ -94,7 +94,7 @@ namespace Peachpie.Library.MySql
         /// <summary>
         /// Gets last active connection.
         /// </summary>
-        static MySqlConnectionResource LastConnection(Context ctx) => MySqlConnectionManager.GetInstance(ctx).GetLastConnection();
+        static MySqlConnectionResource LastConnection(Context ctx) => ctx != null ? MySqlConnectionManager.GetInstance(ctx).GetLastConnection() : null;
 
         static MySqlConnectionResource ValidConnection(Context ctx, PhpResource link)
         {
@@ -153,7 +153,7 @@ namespace Peachpie.Library.MySql
 
             if (success)
             {
-
+                connection.Server = server ?? config.Server;
             }
             else
             {
@@ -994,21 +994,69 @@ namespace Peachpie.Library.MySql
 
         #endregion
 
-        #region mysql_get_client_info, mysql_get_server_info
+        #region mysql_get_client_info, mysql_get_server_info, mysql_get_host_info, mysql_get_proto_info
 
         /// <summary>
         /// Gets a version of the client library.
         /// </summary>
+        /// <returns>Equivalent native library varsion.</returns>
         public static string mysql_get_client_info() => EquivalentNativeLibraryVersion;
 
         /// <summary>
         /// Gets server version.
         /// </summary>
         /// <returns>Server version</returns>
-        public static string mysql_get_server_info(Context ctx, PhpResource link = null)
+        public static string mysql_get_server_info(Context ctx) => mysql_get_server_info(LastConnection(ctx) ?? mysql_connect(ctx));
+        
+        /// <summary>
+        /// Gets server version.
+        /// </summary>
+        /// <returns>Server version</returns>
+        public static string mysql_get_server_info(PhpResource link)
         {
-            var connection = ValidConnection(ctx, link);
-            return connection?.ServerVersion;
+            var connection = ValidConnection(null, link);
+            if (connection == null) return null;
+
+            return connection.ServerVersion;
+        }
+
+        /// <summary>
+        /// Gets information about the server.
+        /// </summary>
+        /// <returns>Server name and protocol type.</returns>
+        public static string mysql_get_host_info(Context ctx) => mysql_get_host_info(LastConnection(ctx) ?? mysql_connect(ctx));
+
+        /// <summary>
+        /// Gets information about the server.
+        /// </summary>
+        /// <param name="link">Connection resource.</param>
+        /// <returns>Server name and protocol type.</returns>
+        public static string mysql_get_host_info(PhpResource link)
+        {
+            var connection = ValidConnection(null, link);
+            if (connection == null) return null;
+
+            return string.Concat(connection.Server, " via TCP/IP"); // TODO: how to get the protocol?
+        }
+
+        /// <summary>
+        /// Gets version of the protocol.
+        /// </summary>
+        /// <returns>Protocol version.</returns>
+        public static string mysql_get_proto_info(Context ctx) => mysql_get_proto_info(LastConnection(ctx) ?? mysql_connect(ctx));
+
+        /// <summary>
+        /// Gets version of the protocol.
+        /// </summary>
+        /// <param name="link">Connection resource.</param>
+        /// <returns>Protocol version.</returns>
+        public static string mysql_get_proto_info(PhpResource link)
+        {
+            var connection = ValidConnection(null, link);
+            if (connection == null) return null;
+
+            object value = connection.QueryGlobalVariable("protocol_version");
+            return (value != null) ? value.ToString() : DefaultProtocolVersion;
         }
 
         #endregion

@@ -20,6 +20,11 @@ namespace Peachpie.Library.MySql
         readonly MySqlConnectionManager _manager;
         readonly MySqlConnection _connection;
 
+        /// <summary>
+        /// Lazily set server name used to initiate connection.
+        /// </summary>
+        internal string Server { get; set; }
+
         public MySqlConnectionResource(MySqlConnectionManager manager, string connectionString)
             : base(manager.Context, connectionString, "mysql connection")
         {
