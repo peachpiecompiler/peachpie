@@ -465,16 +465,23 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         private void ResolveBaseTypes()
         {
-            if (_lazyInterfacesType.IsDefault == false) // or _nextVersion != null or _lazyBaseType != null
+            lock (_basetypes_sync) // critical section:
             {
-                return; // resolved
-            }
+                if (_lazyInterfacesType.IsDefault) // or _nextVersion == null or _lazyBaseType == null
+                {
+                    DiagnosticBag diagnostics = DiagnosticBag.GetInstance();
+                    ResolveBaseTypesNoLock(diagnostics);
+                    AddDeclarationDiagnostics(diagnostics);
+                    diagnostics.Free();
 
-            DiagnosticBag diagnostics = DiagnosticBag.GetInstance();
-            ResolveBaseTypes(diagnostics);
-            AddDeclarationDiagnostics(diagnostics);
-            diagnostics.Free();
+                    //
+                    Debug.Assert(_lazyInterfacesType.IsDefault == false);
+                    Debug.Assert(_lazyTraitUses.IsDefault == false);
+                }
+            }
         }
+
+        readonly object _basetypes_sync = new object();
 
         ImmutableArray<NamedTypeSymbol> SelectInterfaces(TypeRefSymbol[] tsignature, ImmutableArray<NamedTypeSymbol> boundtypes)
         {
@@ -512,15 +519,15 @@ namespace Pchp.CodeAnalysis.Symbols
             return (list != null) ? list.AsImmutableOrEmpty() : ImmutableArray<TraitUse>.Empty;
         }
 
-        void ResolveBaseTypes(DiagnosticBag diagnostics)
+        void ResolveBaseTypesNoLock(DiagnosticBag diagnostics)
         {
-            Debug.Assert(_lazyInterfacesType.IsDefault);    // not resolved yet
-            Debug.Assert(_lazyTraitUses.IsDefault);         // not resolved yet
+            Debug.Assert(_lazyInterfacesType.IsDefault, "_lazyInterfacesType should not be resolved yet");    // not resolved yet
+            Debug.Assert(_lazyTraitUses.IsDefault, "_lazyTraitUses should not be resolved yet");         // not resolved yet
 
             // get possible type signature [ BaseType?, Interface1, ..., InterfaceN ]
             // Single slots may refer to a MissingTypeSymbol or an ambiguous type symbol
             var tsignature = ResolveTypeSignature(this, this.DeclaringCompilation).ToArray();
-            Debug.Assert(tsignature.Length >= 1);   // [0] is base class
+            Debug.Assert(tsignature.Length >= 1, "at least base type should be in tsignature");   // [0] is base class
 
             // check all types are supported
             foreach (var t in tsignature)
@@ -550,7 +557,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 int lastVersion = 0;    // the SourceTypeSymbol version, 0 ~ a single version, >0 ~ multiple version
                 foreach (var v in variations)
                 {
-                    Debug.Assert(v.Length == tsignature.Length);
+                    Debug.Assert(v.Length == tsignature.Length, "variation should be the same length as tsignature");
 
                     // Since we create various versions,
                     // some of them may be invalid (wrong base type etc.).
@@ -558,7 +565,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     if (CheckForErrors(tmperrors, tsignature, v))
                     {
-                        Debug.Assert(tmperrors.Count != 0);
+                        Debug.Assert(tmperrors.Count != 0, "expecting errors");
                         continue;
                     }
 
@@ -585,7 +592,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 if (self)   // no valid variation found, report errors
                 {
-                    Debug.Assert(tmperrors != null && tmperrors.Count != 0);
+                    Debug.Assert(tmperrors != null && tmperrors.Count != 0, "expecting some errors if we did not resolve anything");
                     var spansreported = new HashSet<TextSpan>();
                     foreach (var err in tmperrors)
                     {
