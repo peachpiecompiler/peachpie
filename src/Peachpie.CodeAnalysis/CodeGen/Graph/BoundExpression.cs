@@ -751,7 +751,7 @@ namespace Pchp.CodeAnalysis.Semantics
             var result_type = cg.DeclaringCompilation.Merge(left_type, right_type);
             cg.EmitConvert(right_type, this.Right.TypeRefMask, result_type);
             cg.Builder.EmitBranch(ILOpCode.Br, endLbl);
-            cg.Builder.AdjustStack(-1); // workarounds assert in ILBuilder.MarkLabel, we're doing something wrong with ILBuilder
+            cg.Builder.AdjustStack(-1);
 
             // trueLbl:
             cg.Builder.MarkLabel(trueLbl);
@@ -791,7 +791,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // GOTO end;
             il.EmitBranch(ILOpCode.Br, end_label);
-            il.AdjustStack(-1); // workarounds assert in ILBuilder.MarkLabel, we're doing something wrong with ILBuilder
+            il.AdjustStack(-1);
 
             // partial_eval:
             il.MarkLabel(partial_eval_label);
@@ -2773,7 +2773,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                     if (!isvoid)
                     {
-                        cg.Builder.AdjustStack(-1); // workarounds assert in ILBuilder.MarkLabel, we're doing something wrong with ILBuilder
+                        cg.Builder.AdjustStack(-1);
                     }
 
                     // : PhpValue.Create(true)
@@ -3341,7 +3341,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 // false:
                 cg.EmitConvert(this.IfFalse, result_type);
                 cg.Builder.EmitBranch(ILOpCode.Br, endLbl);
-                cg.Builder.AdjustStack(-1); // workarounds assert in ILBuilder.MarkLabel, we're doing something wrong with ILBuilder
+                cg.Builder.AdjustStack(-1);
                                             // trueLbl:
                 cg.Builder.MarkLabel(trueLbl);
                 cg.EmitConvert(this.IfTrue, result_type);
@@ -3365,7 +3365,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 // false:
                 cg.EmitConvert(this.IfFalse, result_type);
                 cg.Builder.EmitBranch(ILOpCode.Br, endLbl);
-                cg.Builder.AdjustStack(-1); // workarounds assert in ILBuilder.MarkLabel, we're doing something wrong with ILBuilder
+                cg.Builder.AdjustStack(-1);
 
                 // trueLbl:
                 cg.Builder.MarkLabel(trueLbl);
@@ -3384,11 +3384,6 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 cg.EmitPop(result_type);
                 result_type = cg.CoreTypes.Void;
-            }
-            else if (Access.IsReadCopy)
-            {
-                // read by value (dereference if needed) and copy
-                result_type = cg.EmitReadCopy(this.ResultType, result_type, this.TypeRefMask);
             }
 
             //

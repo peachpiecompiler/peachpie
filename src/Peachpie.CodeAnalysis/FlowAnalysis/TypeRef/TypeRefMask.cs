@@ -84,7 +84,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public bool IsVoid { get { return (_mask & ~(ulong)(MaskFlags.Mask)) == 0; } }
 
         /// <summary>
-        /// Gets or sets value indicating whether the type represents an alias.
+        /// Gets or sets value indicating whether the type might represent an alias.
         /// </summary>
         public bool IsRef
         {

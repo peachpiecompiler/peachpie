@@ -381,7 +381,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.AssignEx) return BindAssignEx((AST.AssignEx)expr, access);
             if (expr is AST.UnaryEx) return BindUnaryEx((AST.UnaryEx)expr, access);
             if (expr is AST.IncDecEx) return BindIncDec((AST.IncDecEx)expr).WithAccess(access);
-            if (expr is AST.ConditionalEx) return BindConditionalEx((AST.ConditionalEx)expr).WithAccess(access);
+            if (expr is AST.ConditionalEx) return BindConditionalEx((AST.ConditionalEx)expr, access);
             if (expr is AST.ConcatEx) return BindConcatEx((AST.ConcatEx)expr).WithAccess(access);
             if (expr is AST.IncludingEx) return BindIncludeEx((AST.IncludingEx)expr).WithAccess(access);
             if (expr is AST.InstanceOfEx) return BindInstanceOfEx((AST.InstanceOfEx)expr).WithAccess(access);
@@ -614,12 +614,19 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        protected virtual BoundExpression BindConditionalEx(AST.ConditionalEx expr)
+        protected virtual BoundExpression BindConditionalEx(AST.ConditionalEx expr, BoundAccess access)
         {
-            return new BoundConditionalEx(
-                BindExpression(expr.CondExpr),
-                (expr.TrueExpr != null) ? BindExpression(expr.TrueExpr) : null,
-                BindExpression(expr.FalseExpr));
+            Debug.Assert(access.IsRead || access.IsNone);
+
+            // ternary operator C ? T : F
+            // T can be omitted
+
+            var bound = (expr.TrueExpr == null)
+                ? new BoundConditionalEx(BindExpression(expr.CondExpr, access.WithRead()), null, BindExpression(expr.FalseExpr, access))
+                : new BoundConditionalEx(BindExpression(expr.CondExpr), BindExpression(expr.TrueExpr, access), BindExpression(expr.FalseExpr, access));
+
+            //
+            return bound.WithAccess(access);
         }
 
         protected BoundExpression BindIncDec(AST.IncDecEx expr)
@@ -831,14 +838,20 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected virtual BoundExpression BindBinaryEx(AST.BinaryEx expr)
         {
+            BoundAccess laccess = BoundAccess.Read;
+
             switch (expr.Operation)
             {
                 case AST.Operations.Concat:     // Left . Right
                     return BindConcatEx(new[] { expr.LeftExpr, expr.RightExpr });
 
+                case AST.Operations.Coalesce:
+                    laccess = BoundAccess.Read.WithQuiet(); // Template: A ?? B; // read A quietly
+                    goto default;
+
                 default:
                     return new BoundBinaryEx(
-                        BindExpression(expr.LeftExpr, BoundAccess.Read),
+                        BindExpression(expr.LeftExpr, laccess),
                         BindExpression(expr.RightExpr, BoundAccess.Read),
                         expr.Operation);
             }
@@ -1211,7 +1224,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 expr.Operation);
         }
 
-        protected override BoundExpression BindConditionalEx(AST.ConditionalEx expr)
+        protected override BoundExpression BindConditionalEx(AST.ConditionalEx expr, BoundAccess access)
         {
             var condExpr = BindExpression(expr.CondExpr);
 
@@ -1219,8 +1232,8 @@ namespace Pchp.CodeAnalysis.Semantics
             var currBlock = CurrentPreBoundBlock;
 
             // get expressions and their pre-bound elements for both branches
-            var trueExprBag = BindExpressionWithSeparatePreBoundStatements(expr.TrueExpr, BoundAccess.Read);
-            var falseExprBag = BindExpressionWithSeparatePreBoundStatements(expr.FalseExpr, BoundAccess.Read);
+            var trueExprBag = BindExpressionWithSeparatePreBoundStatements(expr.TrueExpr, access);
+            var falseExprBag = BindExpressionWithSeparatePreBoundStatements(expr.FalseExpr, access);
 
             // if at least branch has any pre-bound statements we need to condition them
             if (!trueExprBag.IsOnlyBoundElement || !falseExprBag.IsOnlyBoundElement)
