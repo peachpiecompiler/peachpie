@@ -1887,15 +1887,15 @@ namespace Pchp.Library
         /// <summary>
         /// Calculate the md5 hash of a string.
         /// </summary>
-        /// <param name="str">Input string.</param>
+        /// <param name="bytes">Input string.</param>
         /// <param name="raw_output">If the optional raw_output is set to TRUE, then the md5 digest is instead returned in raw binary format with a length of 16.</param>
         /// <returns>Returns the hash as a 32-character hexadecimal number.</returns>
-        public static PhpString md5(PhpString str, bool raw_output = false)
+        public static PhpString md5(byte[] bytes, bool raw_output = false)
         {
-            var bytes = MD5.Create().ComputeHash(str.ToBytes(Encoding.UTF8));
+            var hash = MD5.Create().ComputeHash(bytes);
             return raw_output
-                ? new PhpString(bytes)
-                : new PhpString(StringUtils.BinToHex(bytes, string.Empty));
+                ? new PhpString(hash)
+                : new PhpString(StringUtils.BinToHex(hash, string.Empty));
         }
 
         /// <summary>
@@ -1918,22 +1918,21 @@ namespace Pchp.Library
         /// <param name="bytes">The string of bytes to compute SHA1 of.</param>
         /// a sequence of hexadecimal numbers.</param>
         /// <returns>md5 of <paramref name="bytes"/>.</returns>
-        public static string sha1(Context ctx, PhpString bytes)
+        public static string sha1(Context ctx, byte[] bytes)
         {
-            return StringUtils.BinToHex(SHA1.Create().ComputeHash(bytes.ToBytes(ctx)));
+            return StringUtils.BinToHex(SHA1.Create().ComputeHash(bytes));
         }
 
         /// <summary>
         /// Calculate the SHA1 hash of a string of bytes.
         /// </summary>
-        /// <param name="ctx">Runtime context used for unicode conversions.</param>
         /// <param name="bytes">The string of bytes to compute SHA1 of.</param>
         /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
         /// a sequence of hexadecimal numbers.</param>
         /// <returns>md5 of <paramref name="bytes"/>.</returns>
-        public static PhpString sha1(Context ctx, PhpString bytes, bool rawOutput = false)
+        public static PhpString sha1(byte[] bytes, bool rawOutput = false)
         {
-            return HashBytes(ctx, SHA1.Create(), bytes, rawOutput);
+            return HashBytes(SHA1.Create(), bytes, rawOutput);
         }
 
         /// <summary>
@@ -1952,14 +1951,13 @@ namespace Pchp.Library
         /// <summary>
         /// Calculate the SHA256 hash of a string of bytes.
         /// </summary>
-        /// <param name="ctx">Runtime context used for unicode conversions.</param>
         /// <param name="bytes">The string of bytes to compute SHA1 of.</param>
         /// <param name="rawOutput">If <B>true</B>, returns raw binary hash, otherwise returns hash as 
         /// a sequence of hexadecimal numbers.</param>
         /// <returns>md5 of <paramref name="bytes"/>.</returns>
-        public static PhpString sha256(Context ctx, PhpString bytes, bool rawOutput = false)
+        public static PhpString sha256(byte[] bytes, bool rawOutput = false)
         {
-            return HashBytes(ctx, SHA256.Create(), bytes, rawOutput);
+            return HashBytes(SHA256.Create(), bytes, rawOutput);
         }
 
         /// <summary>
@@ -1978,11 +1976,14 @@ namespace Pchp.Library
         /// <summary>
         /// Computes a hash of a string of bytes using specified algorithm.
         /// </summary>
-        static PhpString HashBytes(Context ctx, HashAlgorithm/*!*/ algorithm, PhpString bytes, bool rawOutput = false)
+        static PhpString HashBytes(HashAlgorithm/*!*/ algorithm, byte[] bytes, bool rawOutput = false)
         {
-            if (bytes.IsDefault) return default(PhpString);
+            if (bytes == null)
+            {
+                return default(PhpString);
+            }
 
-            byte[] hash = algorithm.ComputeHash(bytes.ToBytes(ctx));
+            byte[] hash = algorithm.ComputeHash(bytes);
 
             return (rawOutput)
                 ? new PhpString(hash)
