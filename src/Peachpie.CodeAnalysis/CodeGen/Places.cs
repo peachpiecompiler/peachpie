@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Symbols;
+using Peachpie.CodeAnalysis.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -581,8 +582,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         public BoundLocalPlace(IPlace place, BoundAccess access, TypeRefMask thint)
         {
             Contract.ThrowIfNull(place);
-            Debug.Assert(place.HasAddress);
-
+            
             _place = place;
             _access = access;
             _thint = thint;
@@ -607,6 +607,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (type == cg.CoreTypes.PhpValue)
                 {
+                    if (!_place.HasAddress) throw cg.NotImplementedException("unreachable: variable does not have an address");
+
                     _place.EmitLoadAddress(cg.Builder);
                     cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureObject)
                         .Expect(SpecialType.System_Object);
@@ -635,7 +637,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     if (type.IsReferenceType)
                     {
-                        if (type == cg.CoreTypes.Object && cg.TypeRefContext.IsNull(_thint))
+                        if (type == cg.CoreTypes.Object && cg.TypeRefContext.IsNull(_thint) && _place.HasAddress)
                         {
                             // Operators.EnsureObject(ref <place>)
                             _place.EmitLoadAddress(cg.Builder);
@@ -712,7 +714,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return _place.EmitLoad(cg.Builder);
                 }
 
-                throw new NotImplementedException("EnsureArray(" + type.Name + ")");
+                throw cg.NotImplementedException("EnsureArray(" + type.Name + ")");
             }
             // Ensure Alias (&$x)
             else if (_access.IsReadRef)
@@ -745,7 +747,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // Read Copy
                 if (_access.IsReadCopy)
                 {
-                    if (type == cg.CoreTypes.PhpValue)
+                    if (type == cg.CoreTypes.PhpValue && _place.HasAddress)
                     {
                         _place.EmitLoadAddress(cg.Builder);
 
@@ -774,17 +776,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // Read Value
                 else
                 {
-                    if (type == cg.CoreTypes.PhpValue)
-                    {
-                        if (_access.TargetType == cg.CoreTypes.PhpArray)
-                        {
-                            // <place>.ToArray()
-                            _place.EmitLoadAddress(cg.Builder);
-                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToArray)
-                                .Expect(cg.CoreTypes.PhpArray);
-                        }
-                    }
-
                     return _place.EmitLoad(cg.Builder);
                 }
             }
@@ -1031,7 +1022,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             else if (_name == VariableName.FilesName) prop = c.Files;
             else if (_name == VariableName.SessionName) prop = c.Session;
             else if (_name == VariableName.HttpRawPostDataName) prop = c.HttpRawPostData;
-            else throw new NotImplementedException($"Superglobal ${_name.Value}");
+            else throw cg.NotImplementedException($"Superglobal ${_name.Value}");
 
             return prop;
         }
@@ -1242,7 +1233,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else
                 {
-                    throw new NotImplementedException($"Non-static property {_property.ContainingType.Name}::${_property.MetadataName} accessed statically!");
+                    throw cg.NotImplementedException($"Non-static property {_property.ContainingType.Name}::${_property.MetadataName} accessed statically!", _instance);
                 }
             }
         }
@@ -1409,7 +1400,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else
                     {
-                        throw new NotImplementedException($"Non-static field {field.ContainingType.Name}::${field.MetadataName} accessed statically!");
+                        throw cg.NotImplementedException($"Non-static field {field.ContainingType.Name}::${field.MetadataName} accessed statically!");
                     }
                 }
             }

@@ -4,7 +4,7 @@ using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
-using Roslyn.Utilities;
+using Peachpie.CodeAnalysis.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -160,7 +160,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     goto default;
 
                 default:
-                    throw new NotImplementedException($"(bool){from.Name}");
+                    throw this.NotImplementedException($"(bool){from.Name}");
             }
 
             // !<i4>
@@ -291,7 +291,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else
                     {
-                        throw new NotImplementedException($"{from.Name}");
+                        throw ExceptionUtilities.NotImplementedException(il, $"{from.Name}");
                     }
             }
 
@@ -353,7 +353,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else
                     {
-                        throw new NotImplementedException($"{from} -> PhpNumber");
+                        throw this.NotImplementedException($"{from} -> PhpNumber");
                     }
             }
         }
@@ -469,7 +469,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         return;
                     }
 
-                    throw new NotImplementedException($"(long){from.Name}");
+                    throw this.NotImplementedException($"(long){from.Name}");
             }
         }
 
@@ -737,7 +737,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                             .Expect(SpecialType.System_String);
                         break;
                     }
-                    throw new NotImplementedException($"(string){from}");
+
+                    throw this.NotImplementedException($"(string){from}");
             }
         }
 
@@ -800,6 +801,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 from.SpecialType != SpecialType.None ||
                 from.IsOfType(CoreTypes.PhpResource) || from == CoreTypes.PhpNumber || from == CoreTypes.PhpString)
             {
+                // Template: new PhpArray(1){ VALUE }
                 EmitConvertToPhpValue(from, fromHint);
                 return EmitCall(ILOpCode.Call, CoreMethods.PhpArray.New_PhpValue);
             }
@@ -967,10 +969,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                         return;
                     }
 
-                    throw new NotImplementedException($"Conversion from {from.Name} to {arrt.ElementType.Name}[] is not implemented.");
+                    throw this.NotImplementedException($"Conversion from {from.Name} to {arrt.ElementType.Name}[] is not implemented.");
                 }
 
-                throw new NotImplementedException($"Conversion from {from.Name} to array {to.Name} is not implemented.");
+                throw this.NotImplementedException($"Conversion from {from.Name} to array {to.Name} is not implemented.");
             }
 
             // dereference
@@ -1332,7 +1334,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             //
-            throw new NotImplementedException($"{to}");
+            throw this.NotImplementedException($"{to}");
         }
 
         /// <summary>

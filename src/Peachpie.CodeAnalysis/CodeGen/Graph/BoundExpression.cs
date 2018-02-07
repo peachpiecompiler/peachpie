@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.CodeGen;
 using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Symbols;
-using Roslyn.Utilities;
+using Peachpie.CodeAnalysis.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -242,7 +242,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
 
                 //
-                throw new NotImplementedException($"Add(number, {ytype.Name})");
+                throw cg.NotImplementedException($"Add(number, {ytype.Name})", Right);
             }
             else if (xtype.SpecialType == SpecialType.System_Double)
             {
@@ -262,7 +262,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
 
                 //
-                throw new NotImplementedException($"Add(double, {ytype.Name})");
+                throw cg.NotImplementedException($"Add(double, {ytype.Name})", Right);
             }
             else if (xtype.SpecialType == SpecialType.System_Int64)
             {
@@ -305,7 +305,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
 
                 //
-                throw new NotImplementedException($"Add(int64, {ytype.Name})");
+                throw cg.NotImplementedException($"Add(int64, {ytype.Name})", Right);
             }
             else if (xtype == cg.CoreTypes.PhpArray)
             {
@@ -326,7 +326,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
 
                 //
-                throw new NotImplementedException($"Add(PhpArray, {ytype.Name})");
+                throw cg.NotImplementedException($"Add(PhpArray, {ytype.Name})", Right);
             }
             else if (xtype == cg.CoreTypes.PhpValue)
             {
@@ -364,11 +364,11 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
 
                 //
-                throw new NotImplementedException($"Add(PhpValue, {ytype.Name})");
+                throw cg.NotImplementedException($"Add(PhpValue, {ytype.Name})", Right);
             }
 
             //
-            throw new NotImplementedException($"Add({xtype.Name}, ...)");
+            throw cg.NotImplementedException($"Add({xtype.Name}, ...)", Right);
         }
 
         /// <summary>
@@ -472,7 +472,7 @@ namespace Pchp.CodeAnalysis.Semantics
                                 .Expect(cg.CoreTypes.PhpNumber);
                         }
 
-                        throw new NotImplementedException($"Sub(PhpNumber, {ytype.Name})");
+                        throw cg.NotImplementedException($"Sub(PhpNumber, {ytype.Name})", right);
                     }
                     else if (xtype == cg.CoreTypes.PhpValue)
                     {
@@ -504,10 +504,10 @@ namespace Pchp.CodeAnalysis.Semantics
                                 .Expect(cg.CoreTypes.PhpNumber);
                         }
 
-                        throw new NotImplementedException($"Sub(PhpValue, {ytype.Name})");
+                        throw cg.NotImplementedException($"Sub(PhpValue, {ytype.Name})", right);
                     }
 
-                    throw new NotImplementedException($"Sub({xtype.Name},...)");
+                    throw cg.NotImplementedException($"Sub({xtype.Name},...)", right);
             }
         }
 
@@ -1497,7 +1497,7 @@ namespace Pchp.CodeAnalysis.Semantics
                                 .Expect(SpecialType.System_Double);
                     }
                     //
-                    throw new NotImplementedException($"Mul(double, {ytype.Name})");
+                    throw cg.NotImplementedException($"Mul(double, {ytype.Name})", right);
                 case SpecialType.System_Int64:
                     ytype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(cg.Emit(right)));
 
@@ -1532,7 +1532,7 @@ namespace Pchp.CodeAnalysis.Semantics
                                 .Expect(cg.CoreTypes.PhpNumber);
                     }
                     //
-                    throw new NotImplementedException($"Mul(int64, {ytype.Name})");
+                    throw cg.NotImplementedException($"Mul(int64, {ytype.Name})", right);
                 default:
                     if (xtype == cg.CoreTypes.PhpNumber)
                     {
@@ -1577,7 +1577,7 @@ namespace Pchp.CodeAnalysis.Semantics
                                 .Expect(cg.CoreTypes.PhpNumber);
                         }
                         //
-                        throw new NotImplementedException($"Mul(PhpNumber, {ytype.Name})");
+                        throw cg.NotImplementedException($"Mul(PhpNumber, {ytype.Name})", right);
                     }
                     else if (xtype == cg.CoreTypes.PhpValue)
                     {
@@ -1614,11 +1614,11 @@ namespace Pchp.CodeAnalysis.Semantics
                                 .Expect(SpecialType.System_Double);
                         }
                         //
-                        throw new NotImplementedException($"Mul(PhpValue, {ytype.Name})");
+                        throw cg.NotImplementedException($"Mul(PhpValue, {ytype.Name})", right);
                     }
 
                     //
-                    throw new NotImplementedException($"Mul({xtype.Name}, ...)");
+                    throw cg.NotImplementedException($"Mul({xtype.Name}, ...)", right);
             }
         }
 
@@ -1715,7 +1715,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         }
 
                         //
-                        throw new NotImplementedException($"Div(number, {ytype.Name})");
+                        throw cg.NotImplementedException($"Div(number, {ytype.Name})", right);
                     }
 
                     // x -> PhpValue
@@ -3923,7 +3923,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                throw new NotImplementedException($"LOAD {stack.tArray.Name}[]");
+                throw cg.NotImplementedException($"LOAD {stack.tArray.Name}[]");
             }
         }
 
@@ -3959,7 +3959,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 else
                 {
                     // Array should be ensured already
-                    throw new NotImplementedException($"(ensure) STORE {tArray.Name}[]");
+                    throw cg.NotImplementedException($"(ensure) STORE {tArray.Name}[]");
                 }
             }
             else if (this.Array.Access.IsQuiet)
@@ -4020,12 +4020,12 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
                 else
                 {
-                    throw new NotImplementedException($"(quiet) STORE {tArray.Name}[]");    // TODO: emit convert as PhpArray
+                    throw cg.NotImplementedException($"(quiet) STORE {tArray.Name}[]");    // TODO: emit convert as PhpArray
                 }
             }
             else
             {
-                throw new NotImplementedException($"STORE {tArray.Name}[]");    // TODO: emit convert as PhpArray
+                throw cg.NotImplementedException($"STORE {tArray.Name}[]");    // TODO: emit convert as PhpArray
             }
 
             Debug.Assert(tArray.IsOfType(cg.CoreTypes.IPhpArray) || tArray.IsOfType(cg.CoreTypes.ArrayAccess));
@@ -4167,7 +4167,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                throw new NotImplementedException($"STORE {stack.tArray.Name}[]");
+                throw cg.NotImplementedException($"STORE {stack.tArray.Name}[]");
             }
         }
 

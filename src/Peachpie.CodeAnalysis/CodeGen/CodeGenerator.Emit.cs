@@ -10,7 +10,7 @@ using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
-using Roslyn.Utilities;
+using Peachpie.CodeAnalysis.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -1452,7 +1452,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                         if (p.RefKind != RefKind.None)
                         {
-                            throw new NotImplementedException($"p.RefKind == {p.RefKind}");
+                            throw this.NotImplementedException($"p.RefKind == {p.RefKind}", thisExpr);
                         }
 
                         var lbldefault = new object();
