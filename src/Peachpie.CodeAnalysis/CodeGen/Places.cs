@@ -635,7 +635,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     if (type.IsReferenceType)
                     {
-                        if (type == cg.CoreTypes.Object)
+                        if (type == cg.CoreTypes.Object && cg.TypeRefContext.IsNull(_thint))
                         {
                             // Operators.EnsureObject(ref <place>)
                             _place.EmitLoadAddress(cg.Builder);
@@ -708,7 +708,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (type.IsOfType(cg.CoreTypes.ArrayAccess))
                 {
-                    // Operators.EnsureArray(<place>)
+                    // LOAD <place> : ArrayAccess
                     return _place.EmitLoad(cg.Builder);
                 }
 
@@ -934,59 +934,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         void IPlace.EmitLoadAddress(ILBuilder il) => _place.EmitLoadAddress(il);
 
         #endregion
-    }
-
-    internal sealed class BoundThisPlace : IBoundReference
-    {
-        readonly SourceRoutineSymbol _routine;
-        readonly BoundAccess _access;
-
-        public BoundThisPlace(SourceRoutineSymbol routine, BoundAccess access)
-        {
-            Contract.ThrowIfNull(routine);
-            Debug.Assert(routine.GetPhpThisVariablePlace() != null);
-
-            _routine = routine;
-            _access = access;
-        }
-
-        public TypeSymbol TypeOpt => _routine.GetPhpThisVariablePlace().TypeOpt;
-
-        public TypeSymbol EmitLoad(CodeGenerator cg)
-        {
-            var place = _routine.GetPhpThisVariablePlace(cg.Module);
-
-            // Ensure Array ($this[] =)
-            if (_access.EnsureArray)
-            {
-                if (TypeOpt?.IsOfType(cg.CoreTypes.ArrayAccess) == true)
-                {
-                    // Operators.EnsureArray(<place>)
-                    place.EmitLoad(cg.Builder);
-
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_ArrayAccess)
-                            .Expect(cg.CoreTypes.IPhpArray);
-                }
-
-                throw new NotImplementedException($"EnsureArray(this {{{TypeOpt?.Name}}})");
-            }
-            else
-            {
-                return place.EmitLoad(cg.Builder);
-            }
-        }
-
-        public void EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null) { }
-
-        public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
-        {
-            throw new InvalidOperationException();
-        }
-
-        public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null)
-        {
-            throw new InvalidOperationException();
-        }
     }
 
     internal class BoundSuperglobalPlace : IBoundReference

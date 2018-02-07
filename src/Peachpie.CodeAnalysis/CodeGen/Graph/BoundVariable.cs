@@ -314,7 +314,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)
         {
-            return new BoundThisPlace(_routine, access);
+            return new BoundLocalPlace(Place(il), access, thint);
         }
 
         internal override IPlace Place(ILBuilder il)
