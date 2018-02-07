@@ -326,8 +326,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public void FinalizeMethodTable(Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
         {
-            List<MethodSymbol> lazyghosts = null; // set of ghost stubs defined here // TODO: we should handle this in ResolveOverrides or in SourceTypeSymbol already
-
             // creates ghost stubs for overrides that do not match the signature
 
             foreach (var info in this.ResolveOverrides(diagnostics))
@@ -370,12 +368,9 @@ namespace Pchp.CodeAnalysis.Symbols
                          */
 
                         // override method with a ghost that calls the override
-                        var ghost = (info.Override ?? info.OverrideCandidate).CreateGhostOverload(
+                        (info.Override ?? info.OverrideCandidate).CreateGhostOverload(
                             this, module, diagnostics,
                             info.Method.ReturnType, info.Method.Parameters, info.Method);
-
-                        if (lazyghosts == null) { lazyghosts = new List<MethodSymbol>(); }
-                        lazyghosts.Add(ghost);
                     }
                     else
                     {
@@ -395,19 +390,7 @@ namespace Pchp.CodeAnalysis.Symbols
                                 accessibility: method.DeclaredAccessibility);
 
                             ghost.SetParameters(method.Parameters.Select(p => SynthesizedParameterSymbol.Create(ghost, p)).ToArray());
-
-                            if (lazyghosts != null && lazyghosts.Any(g => OverrideHelper.SignaturesMatch(g, ghost)))
-                            {
-                                // ghost with the same signature already defined, skip
-                                // if we would define it twice, the subclass would not implement the duplicate ghost method
-                            }
-                            else
-                            {
-                                module.SynthesizedManager.AddMethod(this, ghost);
-
-                                if (lazyghosts == null) { lazyghosts = new List<MethodSymbol>(); }
-                                lazyghosts.Add(ghost);
-                            }
+                            module.SynthesizedManager.AddMethod(this, ghost);
                         }
                     }
                 }

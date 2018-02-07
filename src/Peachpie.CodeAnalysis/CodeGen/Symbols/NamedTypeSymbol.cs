@@ -152,6 +152,12 @@ namespace Pchp.CodeAnalysis.Symbols
                         continue;
                     }
 
+                    // ignore interface method that is already implemented:
+                    if (overrides.Any(o => OverrideHelper.SignaturesMatch(o.Method, m.Method)))
+                    {
+                        continue;
+                    }
+
                     // add interface member,
                     // resolve its override
                     overrides.Add(new OverrideInfo(m.Method, this.IsInterface ? null : OverrideHelper.ResolveMethodImplementation(m.Method, this)) { ImplementsInterface = true });
