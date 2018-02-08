@@ -113,6 +113,16 @@ namespace Peachpie.Library.MySql.MySqli
         public static string mysqli_character_set_name(mysqli link) => link.character_set_name();
 
         /// <summary>
+        /// Check if there are any more query results from a multi query.
+        /// </summary>
+        public static bool mysqli_more_results(mysqli link) => link.more_results();
+
+        /// <summary>
+        /// Prepare next result from multi_query.
+        /// </summary>
+        public static bool mysqli_next_result(mysqli link) => link.next_result();
+
+        /// <summary>
         /// Returns the thread ID for the current connection.
         /// </summary>
         public static int mysqli_thread_id(mysqli link) => link.thread_id;

@@ -165,9 +165,28 @@ namespace Peachpie.Library.MySql.MySqli
         public static mysqli init() => new mysqli();
 
         //bool kill(int $processid )
-        //bool more_results(void )
-        //bool multi_query(string $query )
-        //bool next_result(void )
+
+        /// <summary>
+        /// Check if there are any more query results from a multi query.
+        /// </summary>
+        public bool more_results() => false; // TODO
+
+        /// <summary>
+        /// Performs a query on the database.
+        /// </summary>
+        public bool multi_query(PhpString query)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Prepare next result from multi_query
+        /// </summary>
+        /// <returns></returns>
+        public bool next_result()
+        {
+            return false; // TODO
+        }
 
         /// <summary>
         /// Set options.
