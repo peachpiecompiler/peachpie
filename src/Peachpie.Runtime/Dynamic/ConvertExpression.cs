@@ -200,6 +200,12 @@ namespace Pchp.Core.Dynamic
         {
             var source = expr.Type;
 
+            //
+            if (source == typeof(PhpString))
+            {
+                return expr;
+            }
+
             // string -> PhpString
             if (source == typeof(int) ||
                 source == typeof(uint) ||
