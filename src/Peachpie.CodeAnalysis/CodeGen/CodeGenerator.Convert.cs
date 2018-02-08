@@ -121,7 +121,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToBoolean);
                         break;
                     }
-                    else if (from.IsOfType(CoreTypes.IPhpConvertible))
+                    else if (from.IsOfType(CoreTypes.IPhpConvertible) && from.IsReferenceType)
                     {
                         // (IPhpConvertible).ToBoolean()
                         if (CanBeNull(fromHint))
@@ -444,15 +444,12 @@ namespace Pchp.CodeAnalysis.CodeGen
                         _il.EmitOpCode(ILOpCode.Conv_i8);   // Int32 -> Int64
                         return;
                     }
-                    else if (from.IsReferenceType)
+                    else if (from.IsOfType(CoreTypes.IPhpConvertible) && from.IsReferenceType)
                     {
-                        if (from.IsOfType(CoreTypes.IPhpConvertible))
-                        {
-                            // <stack>.ToLong()
-                            EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpConvertible.ToLong)
-                                .Expect(SpecialType.System_Int64);
-                            return;
-                        }
+                        // <stack>.ToLong()
+                        EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpConvertible.ToLong)
+                            .Expect(SpecialType.System_Int64);
+                        return;
                     }
                     else if (from == CoreTypes.PhpString)
                     {

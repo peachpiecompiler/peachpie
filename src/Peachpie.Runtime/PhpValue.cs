@@ -310,7 +310,7 @@ namespace Pchp.Core
 
         public override bool Equals(object obj) => Equals((obj is PhpValue) ? (PhpValue)obj : FromClr(obj));
 
-        public override int GetHashCode() => _obj.GetHashCode() ^ (int)_value.Long;
+        public override int GetHashCode() => _obj != null ? _obj.GetHashCode() : (int)_value.Long;
 
         public bool TryToIntStringKey(out IntStringKey key) => _type.TryToIntStringKey(ref this, out key);
 
