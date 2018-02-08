@@ -409,7 +409,7 @@ namespace Pchp.Library.Database
 
         #region GetSchemaTable, GetSchemaRowInfo, GetFieldName, GetFieldType, GetFieldLength, GetFieldValue
 
-        private List<DataTable> schemaTables = null;
+        private List<DataTable> _schemaTables = null;
 
         /// <summary>
         /// Gets information about schema of the current result set.
@@ -418,25 +418,24 @@ namespace Pchp.Library.Database
         public DataTable GetSchemaTable()
         {
             // loads schema if not loaded yet:
-            if (schemaTables == null)
+            if (_schemaTables == null)
             {
                 connection.ReexecuteSchemaQuery(this);
                 if (reader.IsClosed)
                 {
-                    //PhpException.Throw(PhpError.Warning, LibResources.GetString("cannot_retrieve_schema"));
-                    //return null;
-                    throw new NotImplementedException();
+                    PhpException.Throw(PhpError.Warning, Resources.LibResources.cannot_retrieve_schema);
+                    return null;
                 }
 
-                schemaTables = new List<DataTable>();
+                _schemaTables = new List<DataTable>();
                 do
                 {
-                    schemaTables.Add(reader.GetSchemaTable());
+                    _schemaTables.Add(reader.GetSchemaTable());
                 }
                 while (reader.NextResult());
             }
 
-            return schemaTables[currentSetIndex];
+            return _schemaTables[currentSetIndex];
         }
 
         ///// <summary>
