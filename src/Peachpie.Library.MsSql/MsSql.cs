@@ -357,7 +357,7 @@ namespace Peachpie.Library.MsSql
             var result = PhpSqlDbResult.ValidResult(resultHandle);
             if (result == null) return null;
 
-            return result.FetchObject();
+            return result.FetchStdClass();
         }
 
         /// <summary>

@@ -48,6 +48,10 @@ namespace Pchp.Library.Database
         internal protected IDataReader Reader { get { return reader; } set { reader = value; } }
         private IDataReader reader;
 
+        /// <summary>
+        /// Gets underlaying connection.
+        /// </summary>
+        protected ConnectionResource Connection => connection;
         private ConnectionResource connection;
         private List<ResultSet> resultSets;
 
@@ -145,14 +149,8 @@ namespace Pchp.Library.Database
         protected ResultResource(ConnectionResource/*!*/ connection, IDataReader/*!*/ reader, string/*!*/ name, bool convertTypes)
             : base(name)
         {
-            if (connection == null)
-                throw new ArgumentNullException("connection");
-
-            if (reader == null)
-                throw new ArgumentNullException("reader");
-
-            this.reader = reader;
-            this.connection = connection;
+            this.reader = reader ?? throw new ArgumentNullException("reader");
+            this.connection = connection ?? throw new ArgumentNullException("connection");
 
             LoadData(convertTypes);
         }
@@ -262,7 +260,7 @@ namespace Pchp.Library.Database
 
         #endregion
 
-        #region SeekRow, SeekField, FetchNextField, FetchArray, FetchObject
+        #region SeekRow, SeekField, FetchNextField, FetchArray, FetchStdClass, FetchFields
 
         /// <summary>
         /// Moves the internal cursor to the specified row. 
@@ -323,22 +321,23 @@ namespace Pchp.Library.Database
         /// <returns>A PHP array containing the data.</returns>
         public PhpArray FetchArray(bool intKeys, bool stringKeys)
         {
-            // no more data
-            if (!this.ReadRow()) return null;
-
-            Debug.Assert(currentRowIndex >= 0 && currentRowIndex < RowCount);
-
-            var oa = CurrentSet.Rows[currentRowIndex];
-            var row = new PhpArray(FieldCount);
-
-            for (int i = 0; i < FieldCount; i++)
+            if (TryReadRow(out object[] oa, out string[] names))
             {
-                var quoted = PhpValue.FromClr(oa[i]); //  Core.Utilities.StringUtils.AddDbSlashes(oa[i].ToString());
-                if (intKeys) row[i] = quoted;
-                if (stringKeys) row[CurrentSet.Names[i]] = quoted;
-            }
+                var array = new PhpArray(names.Length);
+                for (int i = 0; i < names.Length; i++)
+                {
+                    var quoted = PhpValue.FromClr(oa[i]); //  Core.Utilities.StringUtils.AddDbSlashes(oa[i].ToString());
 
-            return row;
+                    if (intKeys) array[i] = quoted;
+                    if (stringKeys) array[names[i]] = quoted;
+                }
+
+                return array;
+            }
+            else
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -350,28 +349,67 @@ namespace Pchp.Library.Database
         /// Works like FetchArray but instead of storing data to associative array,
         /// FetchObject use object fields. Note, that field names are case sensitive.
         /// </remarks>
-        public stdClass FetchObject()
+        public stdClass FetchStdClass()
+        {
+            var array = FetchAssocArray();
+
+            return array != null
+                ? (stdClass)array.ToClass()
+                : null;
+        }
+
+        /// <summary>
+        /// Gets fields as PHP array with associative string keys.
+        /// </summary>
+        public PhpArray FetchAssocArray()
+        {
+            if (TryReadRow(out object[] oa, out string[] names))
+            {
+                var array = new PhpArray(names.Length);
+                for (int i = 0; i < names.Length; i++)
+                {
+                    array[names[i]] = PhpValue.FromClr(oa[i]);
+                }
+
+                return array;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Reads next row in the result.
+        /// </summary>
+        /// <param name="oa">Row CLR values.</param>
+        /// <param name="names">Column names.</param>
+        /// <returns>Whether the row was fetched.</returns>
+        public bool TryReadRow(out object[] oa, out string[] names)
         {
             // no more data
-            if (!this.ReadRow()) return null;
+            if (!this.ReadRow())
+            {
+                oa = null;
+                names = null;
+                return false;
+            }
 
             Debug.Assert(currentRowIndex >= 0 && currentRowIndex < RowCount);
 
-            object[] oa = CurrentSet.Rows[currentRowIndex];
-            var runtimeFields = new PhpArray(FieldCount);
-            for (int i = 0; i < FieldCount; i++)
-            {
-                runtimeFields[CurrentSet.Names[i]] = PhpValue.FromClr(oa[i]);
-            }
+            var set = CurrentSet;
 
-            return (stdClass)runtimeFields.ToClass();
+            oa = set.Rows[currentRowIndex];
+            names = set.Names;
+
+            return true;
         }
 
         #endregion
 
         #region GetSchemaTable, GetSchemaRowInfo, GetFieldName, GetFieldType, GetFieldLength, GetFieldValue
 
-        private List<DataTable> schemaTables = null;       // GENERICS: List<DataTable>
+        private List<DataTable> schemaTables = null;
 
         /// <summary>
         /// Gets information about schema of the current result set.

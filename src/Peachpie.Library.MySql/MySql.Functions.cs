@@ -26,9 +26,11 @@ namespace Peachpie.Library.MySql
             }
         }
 
-        const string EquivalentNativeLibraryVersion = "7.0.6";
-        const string DefaultProtocolVersion = "10";
-        const string DefaultClientCharset = "latin1";
+        internal static Version EquivalentNativeLibraryVersion = new Version(7, 0, 6);
+
+        internal const string DefaultProtocolVersion = "10";
+
+        internal const string DefaultClientCharset = "latin1";
 
 
         #region Enums
@@ -37,7 +39,7 @@ namespace Peachpie.Library.MySql
         /// Connection flags.
         /// </summary>
         [Flags, PhpHidden]
-        enum ConnectFlags
+        public enum ConnectFlags
         {
             /// <summary>
             /// No flags.
@@ -145,7 +147,7 @@ namespace Peachpie.Library.MySql
             var config = ctx.Configuration.Get<MySqlConfiguration>();
             Debug.Assert(config != null);
 
-            var connection_string = BuildConnectionString(config, server, username, password, (ConnectFlags)client_flags);
+            var connection_string = BuildConnectionString(config, ref server, username, password, (ConnectFlags)client_flags);
 
             bool success;
             var connection = MySqlConnectionManager.GetInstance(ctx)
@@ -153,7 +155,7 @@ namespace Peachpie.Library.MySql
 
             if (success)
             {
-                connection.Server = server ?? config.Server;
+                connection.Server = server;
             }
             else
             {
@@ -177,7 +179,7 @@ namespace Peachpie.Library.MySql
             return mysql_connect(ctx, server, username, password, new_link, client_flags);
         }
 
-        static string BuildConnectionString(MySqlConfiguration config, string server, string user, string password, ConnectFlags flags)
+        internal static string BuildConnectionString(MySqlConfiguration config, ref string server, string user, string password, ConnectFlags flags, int connectiontimeout = 0)
         {
             // connection strings:
             if (server == null && user == null && password == null && flags == ConnectFlags.None && !string.IsNullOrEmpty(config.ConnectionString))
@@ -205,7 +207,7 @@ namespace Peachpie.Library.MySql
             return BuildConnectionString(
               server, user, password,
               string.Format("allowzerodatetime=true;allow user variables=true;connect timeout={0};Port={1};SSL Mode={2};Use Compression={3}{4}{5};Max Pool Size={6}{7}",
-                (config.ConnectTimeout > 0) ? config.ConnectTimeout : Int32.MaxValue,
+                (connectiontimeout > 0) ? connectiontimeout : (config.ConnectTimeout > 0) ? config.ConnectTimeout : 15,
                 port,
                 (flags & ConnectFlags.SSL) != 0 ? "Preferred" : "None",     // (since Connector 6.2.1.) ssl mode={None|Preferred|Required|VerifyCA|VerifyFull}   // (Jakub) use ssl={true|false} has been deprecated
                 (flags & ConnectFlags.Compress) != 0 ? "true" : "false",    // Use Compression={true|false}
@@ -568,7 +570,7 @@ namespace Peachpie.Library.MySql
             var result = MySqlResultResource.ValidResult(resultHandle);
             if (result == null) return null;
 
-            return result.FetchObject();
+            return result.FetchStdClass();
         }
 
         #endregion
@@ -1000,7 +1002,7 @@ namespace Peachpie.Library.MySql
         /// Gets a version of the client library.
         /// </summary>
         /// <returns>Equivalent native library varsion.</returns>
-        public static string mysql_get_client_info() => EquivalentNativeLibraryVersion;
+        public static string mysql_get_client_info() => EquivalentNativeLibraryVersion.ToString();
 
         /// <summary>
         /// Gets server version.

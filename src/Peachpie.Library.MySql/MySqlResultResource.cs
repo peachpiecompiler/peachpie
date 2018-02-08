@@ -35,6 +35,10 @@ namespace Peachpie.Library.MySql
         //    public int ColumnSize;
         //}
 
+        public new MySqlCommand Command => (MySqlCommand)base.Command;
+
+        public new MySqlConnectionResource Connection => (MySqlConnectionResource)base.Connection;
+
         /// <summary>
         /// Creates an instance of a result resource.
         /// </summary>

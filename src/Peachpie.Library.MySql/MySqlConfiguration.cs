@@ -71,11 +71,21 @@ namespace Peachpie.Library.MySql
                 // local:
 
                 case "mysql.connect_timeout": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.ConnectTimeout, 0, value, action);
+
+                case "mysqli.default_port":
                 case "mysql.default_port": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.Port, 3306, value, action);
+
+                case "mysqli.default_host":
                 case "mysql.default_host": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.Server, null, value, action);
+
+                case "mysqli.default_user":
                 case "mysql.default_user": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.User, "root", value, action);
+
+                case "mysqli.default_pw":
                 case "mysql.default_password": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.Password, "", value, action);
+
                 case "mysql.default_command_timeout": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.DefaultCommandTimeout, -1, value, action);
+
                 case "mysql.connection_string": return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.ConnectionString, null, value, action);
 
                 // global:
@@ -83,6 +93,7 @@ namespace Peachpie.Library.MySql
                 case "mysql.max_links":
                     Debug.Assert(action == IniAction.Get);
                     return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.MaxConnections, -1, value, action);
+
                 case "mysql.max_pool_size":
                     return (PhpValue)Pchp.Library.StandardPhpOptions.GetSet(ref local.MaxPoolSize, 100, value, action);
             }
@@ -101,10 +112,15 @@ namespace Peachpie.Library.MySql
 
             // local:
             Register("mysql.trace_mode", IniFlags.Unsupported | IniFlags.Local, d, s);
+            Register("mysqli.default_port", IniFlags.Supported | IniFlags.Local, d, s);
             Register("mysql.default_port", IniFlags.Supported | IniFlags.Local, d, s);
+            Register("mysqli.default_socket", IniFlags.Unsupported | IniFlags.Local, d, s);
             Register("mysql.default_socket", IniFlags.Unsupported | IniFlags.Local, d, s);
+            Register("mysqli.default_host", IniFlags.Supported | IniFlags.Local, d, s);
             Register("mysql.default_host", IniFlags.Supported | IniFlags.Local, d, s);
+            Register("mysqli.default_user", IniFlags.Supported | IniFlags.Local, d, s);
             Register("mysql.default_user", IniFlags.Supported | IniFlags.Local, d, s);
+            Register("mysqli.default_pw", IniFlags.Supported | IniFlags.Local, d, s);
             Register("mysql.default_password", IniFlags.Supported | IniFlags.Local, d, s);
             Register("mysql.connect_timeout", IniFlags.Supported | IniFlags.Local, d, s);
             Register("mysql.default_command_timeout", IniFlags.Supported | IniFlags.Local, d, s);
