@@ -22,7 +22,11 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// A number that represents given version in format: main_version*10000 + minor_version *100 + sub_version.
         /// </summary>
+        /// 
         static int VersionAsInteger(Version v) => v.Major * 10000 + v.Minor * 100 + v.Build;
+
+        internal static string ClientInfo => MySql.EquivalentNativeLibraryVersion.ToString();
+        internal static int ClientVersion => VersionAsInteger(MySql.EquivalentNativeLibraryVersion);
 
         /// <summary>
         /// Empty ctor.
@@ -70,12 +74,12 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Get MySQL client info.
         /// </summary>
-        public string client_info => MySql.EquivalentNativeLibraryVersion.ToString();
+        public string client_info => ClientInfo;
 
         /// <summary>
         /// Returns the MySQL client version as an integer.
         /// </summary>
-        public int client_version => VersionAsInteger(MySql.EquivalentNativeLibraryVersion);
+        public int client_version => ClientVersion;
 
         /// <summary>
         /// Returns a string representing the type of connection used.
@@ -124,7 +128,15 @@ namespace Peachpie.Library.MySql.MySqli
 
         //bool autocommit(bool $mode )
         //bool change_user(string $user , string $password , string $database )
-        //string character_set_name(void )
+
+        /// <summary>
+        /// Returns the default character set for the database connection.
+        /// </summary>
+        public string character_set_name()
+        {
+            object value = _connection.QueryGlobalVariable("character_set_client");
+            return (value != null) ? value.ToString() : MySql.DefaultClientCharset;
+        }
 
         /// <summary>
         /// Closes a previously opened database connection.

@@ -589,11 +589,8 @@ namespace Pchp.Library.Database
         {
             if (fieldIndex < 0 || fieldIndex >= FieldCount)
             {
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("invalid_data_result_field_index",
-                //        fieldIndex, this.TypeName, this.Id));
-
-                //return false;
-                throw new ArgumentException();
+                PhpException.Throw(PhpError.Warning, Resources.LibResources.invalid_data_result_field_index, fieldIndex.ToString(), this.TypeName, this.Id.ToString());
+                return false;
             }
 
             return true;
@@ -609,10 +606,8 @@ namespace Pchp.Library.Database
         {
             if (rowIndex < 0 || rowIndex >= RowCount)
             {
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("invalid_data_result_row_index",
-                //  rowIndex, this.TypeName, this.Id));
-                //return false;
-                throw new ArgumentException();
+                PhpException.Throw(PhpError.Warning, Resources.LibResources.invalid_data_result_row_index, rowIndex.ToString(), this.TypeName, this.Id.ToString());
+                return false;
             }
 
             return true;

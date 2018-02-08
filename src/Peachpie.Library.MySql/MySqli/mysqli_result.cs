@@ -70,9 +70,84 @@ namespace Peachpie.Library.MySql.MySqli
         /// </summary>
         public PhpArray fetch_assoc() => _result.FetchAssocArray();
 
-        //object fetch_field_direct(int $fieldnr )
-        //object fetch_field(void )
-        //array fetch_fields(void )
+        stdClass fetch_field_internal(int field)
+        {
+            if (!_result.CheckFieldIndex(field))
+            {
+                return null;
+            }
+
+            Debug.Assert(_result.GetRowCustomData() != null);
+
+            //name The name of the column
+            //orgname Original column name if an alias was specified
+            //table   The name of the table this field belongs to(if not calculated)
+            //orgtable Original table name if an alias was specified
+            //def Reserved for default value, currently always ""
+            //db  Database(since PHP 5.3.6)
+            //catalog The catalog name, always "def"(since PHP 5.3.6)
+            //max_length  The maximum width of the field for the result set.
+            //length  The width of the field, as specified in the table definition.
+            //charsetnr   The character set number for the field.
+            //flags   An integer representing the bit - flags for the field.
+            //type    The data type used for this field
+            //decimals    The number of decimals used(for integer fields)
+
+            //PhpMyDbResult.FieldCustomData data = ((PhpMyDbResult.FieldCustomData[])result.GetRowCustomData())[fieldIndex];
+            //ColumnFlags flags = data.Flags;//result.GetFieldFlags(fieldIndex);
+
+            // create an array of runtime fields with specified capacity:
+            var objFields = new PhpArray(13);
+
+            // add fields into the hastable directly:
+            // no duplicity check, since array is already valid
+            objFields.Add("name", _result.GetFieldName(field));
+            //objFields.Add("table", (/*info["BaseTableName"] as string*/data.RealTableName) ?? string.Empty);
+            objFields.Add("def", "");
+            //objFields.Add("max_length", /*result.GetFieldLength(fieldIndex)*/data.ColumnSize);
+
+            //objFields.Add("not_null", ((flags & ColumnFlags.NOT_NULL) != 0) /*(!(bool)info["AllowDBNull"])*/ ? 1 : 0);
+            //objFields.Add("primary_key", ((flags & ColumnFlags.PRIMARY_KEY) != 0) /*((bool)info["IsKey"])*/ ? 1 : 0);
+            //objFields.Add("multiple_key", ((flags & ColumnFlags.MULTIPLE_KEY) != 0) /*((bool)info["IsMultipleKey"])*/ ? 1 : 0);
+            //objFields.Add("unique_key", ((flags & ColumnFlags.UNIQUE_KEY) != 0) /*((bool)info["IsUnique"])*/ ? 1 : 0);
+            //objFields.Add("numeric", result.IsNumericType(php_type) ? 1 : 0);
+            //objFields.Add("blob", ((flags & ColumnFlags.BLOB) != 0) /*((bool)info["IsBlob"])*/ ? 1 : 0);
+
+            objFields.Add("type", _result.GetPhpFieldType(field));
+            //objFields.Add("unsigned", ((flags & ColumnFlags.UNSIGNED) != 0) /*((bool)info["IsUnsigned"])*/ ? 1 : 0);
+            //objFields.Add("zerofill", ((flags & ColumnFlags.ZERO_FILL) != 0) /*((bool)info["ZeroFill"])*/ ? 1 : 0);
+
+            // create new stdClass with runtime fields initialized above:
+            return (stdClass)objFields.ToClass();
+        }
+
+        /// <summary>
+        /// Fetch meta-data for a single field.
+        /// </summary>
+        [return: CastToFalse]
+        public stdClass fetch_field_direct(int fieldnr) => fetch_field_internal(fieldnr);
+
+        /// <summary>
+        /// Returns the next field in the result set.
+        /// </summary>
+        [return: CastToFalse]
+        public stdClass fetch_field() => fetch_field_internal(_result.FetchNextField());
+
+        /// <summary>
+        /// Returns an array of objects representing the fields in a result set.
+        /// </summary>
+        public PhpArray fetch_fields()
+        {
+            var n = _result.FieldCount;
+            var arr = new PhpArray(n);
+
+            for (int i = 0; i < n; i++)
+            {
+                arr.Add(PhpValue.FromClass(fetch_field_internal(i)));
+            }
+
+            return arr;
+        }
 
         /// <summary>
         /// Returns the current row of a result set as an object.

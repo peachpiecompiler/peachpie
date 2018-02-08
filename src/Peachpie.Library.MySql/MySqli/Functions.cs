@@ -95,7 +95,22 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Get MySQL client info.
         /// </summary>
-        public static string mysqli_get_client_info(mysqli link) => link.client_info;
+        public static string mysqli_get_client_info(mysqli link = null) => mysqli.ClientInfo;
+
+        /// <summary>
+        /// Returns the MySQL client version as an integer.
+        /// </summary>
+        public static int mysqli_get_client_version(mysqli link = null) => mysqli.ClientVersion;
+
+        /// <summary>
+        /// Returns the default character set for the database connection.
+        /// </summary>
+        public static string mysqli_client_encoding(mysqli link) => link.character_set_name();
+
+        /// <summary>
+        /// Returns the default character set for the database connection.
+        /// </summary>
+        public static string mysqli_character_set_name(mysqli link) => link.character_set_name();
 
         /// <summary>
         /// Returns the thread ID for the current connection.
@@ -136,6 +151,23 @@ namespace Peachpie.Library.MySql.MySqli
         /// Returns the current row of a result set as an object.
         /// </summary>
         public static object mysqli_fetch_object(mysqli_result result, string class_name = null, PhpArray class_params = null) => result.fetch_object(class_name, class_params);
+
+        /// <summary>
+        /// Returns an array of objects representing the fields in a result set.
+        /// </summary>
+        public static PhpArray mysqli_fetch_fields(mysqli_result result) => result.fetch_fields();
+
+        /// <summary>
+        /// Returns the next field in the result set.
+        /// </summary>
+        [return: CastToFalse]
+        public static stdClass mysqli_fetch_field(mysqli_result result) => result.fetch_field();
+
+        /// <summary>
+        /// Fetch meta-data for a single field.
+        /// </summary>
+        [return: CastToFalse]
+        public static stdClass mysqli_fetch_field_direct(mysqli_result result, int fieldnr) => result.fetch_field_direct(fieldnr);
 
         /// <summary>
         /// Get the number of fields in a result.
