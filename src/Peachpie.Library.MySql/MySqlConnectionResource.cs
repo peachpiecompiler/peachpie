@@ -25,6 +25,11 @@ namespace Peachpie.Library.MySql
         /// </summary>
         internal string Server { get; set; }
 
+        /// <summary>
+        /// Gets associated runtime <see cref="Context"/>.
+        /// </summary>
+        internal Context Context => _manager.Context;
+
         public MySqlConnectionResource(MySqlConnectionManager manager, string connectionString)
             : base(manager.Context, connectionString, "mysql connection")
         {

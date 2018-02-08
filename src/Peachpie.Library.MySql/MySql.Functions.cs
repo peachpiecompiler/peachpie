@@ -306,7 +306,7 @@ namespace Peachpie.Library.MySql
         /// <param name="query">Query.</param>
         /// <param name="connection">Connection resource.</param>
         /// <returns>Query resource or a <B>null</B> reference (<B>null</B> in PHP) on failure.</returns>
-        private static PhpResource QueryBinary(Encoding encoding, byte[] query, MySqlConnectionResource connection)
+        internal static PhpResource QueryBinary(Encoding encoding, byte[] query, MySqlConnectionResource connection)
         {
             Debug.Assert(query != null);
             Debug.Assert(connection != null && connection.IsValid);
@@ -1007,7 +1007,7 @@ namespace Peachpie.Library.MySql
         /// </summary>
         /// <returns>Server version</returns>
         public static string mysql_get_server_info(Context ctx) => mysql_get_server_info(LastConnection(ctx) ?? mysql_connect(ctx));
-        
+
         /// <summary>
         /// Gets server version.
         /// </summary>
@@ -1162,6 +1162,34 @@ namespace Peachpie.Library.MySql
             return (value != null) ? value.ToString() : DefaultClientCharset;
         }
 
+        internal static bool MysqlValidateCharset(string charset)
+        {
+            if (string.IsNullOrEmpty(charset))
+            {
+                return false;
+            }
+
+            // validate the charset (only a-z, 0-9, _ allowed, see mysqlnd_find_charset_name):
+            for (int i = 0; i < charset.Length; i++)
+            {
+                var c = charset[i];
+
+                if ((c >= 'a' && c <= 'z') ||
+                    (c >= 'A' && c <= 'Z') ||
+                    (c >= '0' && c <= '9') ||
+                    (c == '_'))
+                {
+                    continue;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Sets the client character set.
         /// </summary>
@@ -1174,12 +1202,7 @@ namespace Peachpie.Library.MySql
             var connection = ValidConnection(ctx, linkIdentifier);
             if (connection == null) return false;
 
-            // validate the charset (only a-z, 0-9, _ allowed, see mysqlnd_find_charset_name):
-            if (string.IsNullOrEmpty(charset) || !charset.All(c =>
-                (c >= 'a' && c <= 'z') ||
-                (c >= 'A' && c <= 'Z') ||
-                (c >= '0' && c <= '9') ||
-                (c == '_')))
+            if (!MysqlValidateCharset(charset))
             {
                 PhpException.InvalidArgument(nameof(charset));
                 return false;
