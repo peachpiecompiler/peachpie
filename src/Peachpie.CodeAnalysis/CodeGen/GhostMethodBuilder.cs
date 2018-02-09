@@ -22,10 +22,12 @@ namespace Pchp.CodeAnalysis.CodeGen
             string prefix = null;
             string name = explicitOverride?.Name ?? method.Name;
 
-            if (explicitOverride != null && explicitOverride.ContainingType.IsInterface)
-            {
-                prefix = explicitOverride.ContainingType.GetFullName() + ".";   // explicit interface override
-            }
+            //if (explicitOverride != null && explicitOverride.ContainingType.IsInterface)
+            //{
+            //    // it is nice to generate an explicit override that is not publically visible
+            //    // TODO: this causes issues when we already generated abstract override or if there are more abstract/interface methods that will be implemented by this ghost
+            //    prefix = explicitOverride.ContainingType.GetFullName() + ".";   // explicit interface override
+            //}
 
             var ghost = new SynthesizedMethodSymbol(
                 containingtype, prefix + name, method.IsStatic, explicitOverride != null, ghostreturn, method.DeclaredAccessibility)
