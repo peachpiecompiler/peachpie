@@ -47,7 +47,7 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
-        #region date_format, date_create, date_create_immutable, date_offset_get, date_modify
+        #region date_format, date_create, date_create_immutable, date_offset_get, date_modify, date_add, date_sub, date_diff
 
         [return: CastToFalse]
         public static string date_format(DateTime datetime, string format)
@@ -109,9 +109,41 @@ namespace Pchp.Library.DateTime
         /// Alias of DateTime::modify().
         /// </summary>
         [return: CastToFalse]
-        public static DateTime date_modify(Context/*!*/context, Library.DateTime.DateTime datetime, string modify)
+        public static DateTime date_modify(Context/*!*/context, Library.DateTime.DateTime datetime, string modify) => datetime.modify(modify);
+
+        /// <summary>
+        /// Alias of <see cref="DateTime.add(DateInterval)"/>
+        /// </summary>
+        //[return: CastToFalse]
+        public static DateTime date_add(Library.DateTime.DateTime @object, DateInterval interval) => @object.add(interval);
+
+        /// <summary>
+        /// Subtracts an amount of days, months, years, hours, minutes and seconds from a DateTime object.
+        /// </summary>
+        //[return:CastToFalse]
+        public static DateTime date_sub(DateTime @object, DateInterval interval) => @object.sub(interval);
+
+        static System_DateTime TimeFromInterface(this DateTimeInterface dti)
         {
-            return datetime.modify(modify);
+            if (dti is Library.DateTime.DateTime dt) return dt.Time;
+            if (dti is DateTimeImmutable dtimmutable) return dtimmutable.Time;
+
+            throw new ArgumentException();
+        }
+
+        /// <summary>
+        /// Returns the difference between two DateTime objects.
+        /// </summary>
+        public static DateInterval date_diff(DateTimeInterface datetime1 , DateTimeInterface datetime2, bool absolute = false)
+        {
+            var interval = new DateInterval(TimeFromInterface(datetime1) - TimeFromInterface(datetime2));
+
+            if (absolute)
+            {
+                interval.invert = 0;
+            }
+
+            return interval;
         }
 
         #endregion

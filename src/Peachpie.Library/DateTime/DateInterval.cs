@@ -24,18 +24,28 @@ namespace Pchp.Library.DateTime
         public int invert;
         public PhpValue days = PhpValue.False;
 
+        internal TimeSpan AsTimeSpan()
+        {
+            var ts = new TimeSpan(d, h, i, s, (int)(f * 1000.0));
+
+            if (invert != 0)
+            {
+                ts = ts.Negate();
+            }
+
+            return ts;
+        }
+
         [PhpFieldsOnlyCtor]
         protected DateInterval() { }
 
-        public DateInterval(string interval_spec)
+        internal DateInterval(TimeSpan ts)
         {
-            __construct(interval_spec);
+            FromTimeSpan(ts);
         }
 
-        public void __construct(string interval_spec)
+        internal void FromTimeSpan(TimeSpan ts)
         {
-            var ts = System.Xml.XmlConvert.ToTimeSpan(interval_spec);
-
             f = ts.Milliseconds * 0.001;
             s = ts.Seconds;
             i = ts.Minutes;
@@ -45,6 +55,16 @@ namespace Pchp.Library.DateTime
             // y
 
             invert = ts.Ticks >= 0 ? 0 : 1;
+        }
+
+        public DateInterval(string interval_spec)
+        {
+            __construct(interval_spec);
+        }
+
+        public void __construct(string interval_spec)
+        {
+            FromTimeSpan(System.Xml.XmlConvert.ToTimeSpan(interval_spec));
         }
 
         public static DateInterval createFromDateString(string time)

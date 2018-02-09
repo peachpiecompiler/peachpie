@@ -11,10 +11,10 @@ namespace Pchp.Library.DateTime
     [PhpType(PhpTypeAttribute.InheritName)]
     public interface DateTimeInterface
     {
-        ///// <summary>
-        ///// Returns the difference between two DateTime objects
-        ///// </summary>
-        //DateInterval diff(DateTimeInterface datetime2, bool absolute = false);
+        /// <summary>
+        /// Returns the difference between two DateTime objects
+        /// </summary>
+        DateInterval diff(DateTimeInterface datetime2, bool absolute = false);
 
         /// <summary>
         /// Returns date formatted according to given format.
