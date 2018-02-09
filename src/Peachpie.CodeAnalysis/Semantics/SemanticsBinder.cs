@@ -1226,7 +1226,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected override BoundExpression BindConditionalEx(AST.ConditionalEx expr, BoundAccess access)
         {
-            var condExpr = BindExpression(expr.CondExpr);
+            var hastruebranch = (expr.TrueExpr != null);
+
+            var condExpr = BindExpression(expr.CondExpr, hastruebranch ? BoundAccess.Read : access.WithRead());
 
             // create/get a source block defensively before potential true/falseExprBag.PreBoundBlocks (it needs to have a smaller Ordinal)
             var currBlock = CurrentPreBoundBlock;
@@ -1252,7 +1254,8 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundConditionalEx(
                 condExpr,
                 trueExprBag.BoundElement,
-                falseExprBag.BoundElement);
+                falseExprBag.BoundElement)
+                .WithAccess(access);
         }
 
         protected override BoundYieldEx BindYieldEx(AST.YieldEx expr, BoundAccess access)
