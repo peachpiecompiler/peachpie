@@ -390,7 +390,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region ip2long, long2ip
+        #region ip2long, long2ip, inet_ntop, inet_pton
 
         /// <summary>
         /// Converts a string containing an (IPv4) Internet Protocol dotted address into a proper address.
@@ -437,6 +437,46 @@ namespace Pchp.Library
             }
             return addr.ToString();
         }
+
+        /// <summary>
+        /// Converts a human readable IP address to its packed in_addr representation.
+        /// </summary>
+        [return: CastToFalse]
+        public static PhpString inet_pton(string address)
+        {
+            IPAddress addr;
+            try
+            {
+                addr = IPAddress.Parse(address);
+            }
+            catch (FormatException)
+            {
+                return default(PhpString);
+            }
+
+            return new PhpString(addr.GetAddressBytes());
+        }
+
+        /// <summary>
+        /// Converts a packed internet address to a human readable representation.
+        /// </summary>
+        /// 
+        [return: CastToFalse]
+        public static string inet_ntop(byte[] in_addr)
+        {
+            IPAddress addr;
+            try
+            {
+                addr = new IPAddress(in_addr);
+            }
+            catch (FormatException)
+            {
+                return null;
+            }
+
+            return addr.ToString();
+        }
+
 
         #endregion
     }
