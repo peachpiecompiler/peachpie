@@ -53,7 +53,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public static SynthesizedParameterSymbol Create(MethodSymbol container, ParameterSymbol p)
         {
-            return new SynthesizedParameterSymbol(container, p.Type, p.Ordinal, p.RefKind, name: p.Name, isParams: p.IsParams);
+            return new SynthesizedParameterSymbol(container, p.Type, p.Ordinal, p.RefKind,
+                name: p.Name,
+                isParams: p.IsParams,
+                explicitDefaultConstantValue: p.ExplicitDefaultConstantValue);
         }
 
         internal override TypeSymbol Type

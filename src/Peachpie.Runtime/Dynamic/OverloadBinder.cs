@@ -29,7 +29,19 @@ namespace Pchp.Core.Dynamic
 
         static int MandatoryParametersCount(ParameterInfo[] ps, int from)
         {
-            return ps.Skip(from).TakeWhile(BinderHelpers.IsMandatoryParameter).Count();
+            // gets count of parameters that are mandatory (last parameter that does not have a default value(is not optional))
+
+            int lastmandatory = -1;
+
+            for (int i = from; i < ps.Length; i++)
+            {
+                if (BinderHelpers.IsMandatoryParameter(ps[i]))
+                {
+                    lastmandatory = i;
+                }
+            }
+
+            return lastmandatory - from + 1;
         }
 
         static Expression BinaryOr<T>(IList<Expression> ops, Func<T, T, T> combine, MethodInfo or_method)
