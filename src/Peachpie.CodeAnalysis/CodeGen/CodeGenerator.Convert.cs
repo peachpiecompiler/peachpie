@@ -174,6 +174,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(expr);
 
+            expr.Access = expr.Access.WithRead(CoreTypes.Boolean);
+
             var place = PlaceOrNull(expr);
             var type = TryEmitVariableSpecialize(place, expr.TypeRefMask);
             if (type != null)
@@ -1041,6 +1043,15 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Debug.Assert(expr != null);
             Debug.Assert(to != null);
+
+            // pop effectively
+            if (to.SpecialType == SpecialType.System_Void)
+            {
+                // POP <expr>
+                expr.Access = BoundAccess.None;
+                EmitPop(Emit(expr));
+                return;
+            }
 
             // bind target expression type
             expr.Access = expr.Access.WithRead(to);

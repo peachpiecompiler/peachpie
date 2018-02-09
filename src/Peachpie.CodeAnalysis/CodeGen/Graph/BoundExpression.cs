@@ -3328,6 +3328,7 @@ namespace Pchp.CodeAnalysis.Semantics
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
             TypeSymbol result_type = cg.DeclaringCompilation.GetTypeFromTypeRef(cg.Routine, this.TypeRefMask);
+            bool result_isvoid = result_type.SpecialType == SpecialType.System_Void;
 
             object trueLbl = new object();
             object endLbl = new object();
@@ -3341,8 +3342,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 // false:
                 cg.EmitConvert(this.IfFalse, result_type);
                 cg.Builder.EmitBranch(ILOpCode.Br, endLbl);
-                cg.Builder.AdjustStack(-1);
-                                            // trueLbl:
+                if (!result_isvoid) cg.Builder.AdjustStack(-1);
+
+                // trueLbl:
                 cg.Builder.MarkLabel(trueLbl);
                 cg.EmitConvert(this.IfTrue, result_type);
 
@@ -3365,7 +3367,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 // false:
                 cg.EmitConvert(this.IfFalse, result_type);
                 cg.Builder.EmitBranch(ILOpCode.Br, endLbl);
-                cg.Builder.AdjustStack(-1);
+                if (!result_isvoid) cg.Builder.AdjustStack(-1);
 
                 // trueLbl:
                 cg.Builder.MarkLabel(trueLbl);
@@ -4150,7 +4152,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 else if (Access.IsWrite)
                 {
                     Debug.Assert(stack.tIndex == cg.CoreTypes.PhpValue);
-                    
+
                     // Template: <STACK>.offsetSet( key, value )
                     cg.EmitConvertToPhpValue(valueType, 0);
                     cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Operators.offsetSet_ArrayAccess_PhpValue_PhpValue);
@@ -4270,7 +4272,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         () => cg.Builder.EmitStringConstant(string.Empty));
 
                     return cg.CoreTypes.String;
-                    
+
                 default:
 
                     // the other pseudoconstants should be resolved by flow analysis
