@@ -111,6 +111,11 @@ namespace Pchp.Library
                     Debug.Assert(action == IniAction.Get);
                     return (PhpValue)ctx.HttpPhpContext.MaxRequestSize;
 
+                case "docref_root":
+                    return (PhpValue)GetSet(ref config.Core.docref_root, "", value, action);
+                case "docref_ext":
+                    return (PhpValue)GetSet(ref config.Core.docref_ext, "", value, action);
+
                 default:
                     throw new ArgumentException();
             }
@@ -212,6 +217,8 @@ namespace Pchp.Library
             Register("from", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
             Register("gpc_order", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
             Register("html_errors", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("docref_root", IniFlags.Supported | IniFlags.Local, gsrcore);
+            Register("docref_ext", IniFlags.Supported | IniFlags.Local, gsrcore);
             Register("ignore_repeated_errors", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
             Register("ignore_repeated_source", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
             Register("ignore_user_abort", IniFlags.Supported | IniFlags.Local | IniFlags.Http, s_emptyGsr);

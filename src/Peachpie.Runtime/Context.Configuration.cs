@@ -209,6 +209,13 @@ namespace Pchp.Core
         public string DefaultFromHeader = null;
 
         #endregion
+
+        #region Errors
+
+        public string docref_root = ""; // empty string by default
+        public string docref_ext = "";  // empty string by default
+
+        #endregion
     }
 
     #endregion
