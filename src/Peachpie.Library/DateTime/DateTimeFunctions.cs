@@ -619,6 +619,15 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
+        #region date_interval_create_from_date_string
+
+        /// <summary>
+        /// Alias of <see cref="DateInterval.createFromDateString(string)"/>.
+        /// </summary>
+        public static DateInterval date_interval_create_from_date_string(string time) => DateInterval.createFromDateString(time);
+
+        #endregion
+
         #region strftime, gmstrftime
 
         /// <summary>
