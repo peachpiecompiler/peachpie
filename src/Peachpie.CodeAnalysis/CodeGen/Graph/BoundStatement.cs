@@ -61,7 +61,6 @@ namespace Pchp.CodeAnalysis.Semantics
             // if generator method -> return via storing the value in generator
             if (cg.Routine.IsGeneratorMethod())
             {
-
                 // g._returnValue = <returned expression>
                 if (this.Returned != null)
                 {
@@ -110,6 +109,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 {
                     if (cg.Routine.SyntaxSignature.AliasReturn)
                     {
+                        Debug.Assert(this.Returned.Access.IsReadRef);
                         Debug.Assert(rtype == cg.CoreTypes.PhpAlias);
                     }
                     else

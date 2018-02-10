@@ -1691,6 +1691,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             Accept(x.Array);
             Accept(x.Index);
 
+            // TODO: resulting type if possible:
+            // var element_type = TypeCtx.GetElementType(x.Array.TypeRefMask); // + handle classes with ArrayAccess and TypeRefMask.Uninitialized
+
             //
             x.TypeRefMask = x.Access.IsReadRef
                 ? TypeRefMask.AnyType.WithRefFlag

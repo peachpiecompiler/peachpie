@@ -3026,7 +3026,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (thint.IsRef || thint.IsUninitialized)
                 {
-                    // ref.GetValue().DeepCopy()
+                    // ref.GetValue()
                     EmitPhpValueAddr();
                     type = EmitCall(ILOpCode.Call, CoreMethods.PhpValue.GetValue);
                 }
