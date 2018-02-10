@@ -116,6 +116,10 @@ namespace Pchp.Library
                 case "docref_ext":
                     return (PhpValue)GetSet(ref config.Core.docref_ext, "", value, action);
 
+                case "open_basedir":
+                    Debug.Assert(action == IniAction.Get);
+                    return (PhpValue)string.Empty;
+
                 default:
                     throw new ArgumentException();
             }
@@ -234,7 +238,7 @@ namespace Pchp.Library
             Register("max_input_time", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
             Register("memory_limit", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
             Register("mime_magic.magicfile", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
-            Register("open_basedir", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
+            Register("open_basedir", IniFlags.Supported | IniFlags.Global, gsrcore);
             Register("output_buffering", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
             Register("output_handler", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
             Register("post_max_size", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrcore);
