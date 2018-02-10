@@ -3889,6 +3889,10 @@ namespace Pchp.CodeAnalysis.Semantics
                     {
                         t = cg.EmitReadCopy(Access.TargetType, t);
                     }
+                    else // read by value, dereference // TODO: AccessMask.ReadValue to do this only if necessary // and get value directly in PhpArray.GetItemValue()
+                    {
+                        t = cg.EmitDereference(t);
+                    }
 
                     return t;
                 }
