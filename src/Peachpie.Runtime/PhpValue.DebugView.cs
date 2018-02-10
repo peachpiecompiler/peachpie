@@ -20,7 +20,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets php type name of the value.
         /// </summary>
-        internal string DebugTypeName => IsSet ? PhpVariable.GetTypeName(this) : "Void";
+        internal string DebugTypeName => IsSet ? PhpVariable.GetTypeName(this) : PhpVariable.TypeNameVoid;
 
         [DebuggerDisplay("{_value.DisplayString,nq}", Type = "{_value.DebugTypeName,nq}")]
         internal sealed class PhpValueDebugView

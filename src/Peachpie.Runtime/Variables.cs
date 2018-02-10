@@ -272,9 +272,8 @@ namespace Pchp.Core
                 case PhpTypeCode.Alias: return GetTypeName(value.Alias.Value);
                 case PhpTypeCode.PhpArray: return PhpArray.PhpTypeName;
                 case PhpTypeCode.Object:
-                    if (value.IsNull) goto case PhpTypeCode.Null;
                     if (value.Object is PhpResource) return PhpResource.PhpTypeName;
-                    return value.Object.GetType().Name; // TODO: TypeNameObject
+                    return TypeNameObject;
                 case PhpTypeCode.Null: return TypeNameNull;
                 case PhpTypeCode.Undefined: return TypeNameVoid;
             }
