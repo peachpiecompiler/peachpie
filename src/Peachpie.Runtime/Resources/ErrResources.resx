@@ -498,16 +498,6 @@ Additional information:
   <data name="default_exception_message" xml:space="preserve">
     <value>Unknown exception</value>
   </data>
-  <data name="stringified_exception_debug" xml:space="preserve">
-    <value>exception '{0}' with message '{1}' in {2}:{3}:{4}
-Stack trace:
-{5}</value>
-  </data>
-  <data name="stringified_exception" xml:space="preserve">
-    <value>exception '{0}' with message '{1}'
-Stack trace:
-{2}</value>
-  </data>
   <data name="getiterator_must_return_traversable" xml:space="preserve">
     <value>Objects returned by {0}::getIterator() must be traversable or implement interface Iterator</value>
   </data>

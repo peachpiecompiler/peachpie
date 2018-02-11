@@ -19,6 +19,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="1.1.1" />
     <PackageReference Include="System.Composition" Version="1.0.31" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="1.1.0" />
+    <PackageReference Include="System.Diagnostics.StackTrace" Version="4.3.0" />
     <PackageReference Include="System.ValueTuple" Version="4.4.0" />
   </ItemGroup>
 

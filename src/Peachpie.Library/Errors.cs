@@ -292,9 +292,8 @@ namespace Pchp.Library
         /// </summary>
         public static PhpArray debug_backtrace(int options = 0, int limit = 0)
         {
-            // not implemented
-
-            return PhpArray.NewEmpty();
+            // TODO: debug_backtrace: options
+            return (new Core.Reflection.PhpStackTrace()).GetBacktrace(1, (limit <= 0) ? int.MaxValue : limit);
         }
 
         /// <summary>
@@ -302,7 +301,8 @@ namespace Pchp.Library
         /// </summary>
         public static void debug_print_backtrace(Context ctx, int options = 0, int limit = 0)
         {
-            // not implemented
+            // TODO: debug_backtrace: options, limit
+            ctx.Echo((new Core.Reflection.PhpStackTrace()).GetStackTraceString());
         }
 
         /// <summary>

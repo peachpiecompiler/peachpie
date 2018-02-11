@@ -1,5 +1,6 @@
 ﻿using System;
 using Pchp.Core;
+using Pchp.Core.Reflection;
 
 namespace Pchp.Library.Spl
 {
@@ -9,6 +10,8 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName)]
     public class Exception : System.Exception, Throwable
     {
+        internal readonly PhpStackTrace _stacktrace;
+
         protected string message;
         protected long code;
         protected string file;
@@ -18,7 +21,13 @@ namespace Pchp.Library.Spl
         protected Exception() { }
 
         public Exception(string message = "", long code = 0, Throwable previous = null)
+            :base(message, innerException: previous as System.Exception)
         {
+            _stacktrace = new PhpStackTrace();
+
+            this.file = _stacktrace.GetFilename();
+            this.line = _stacktrace.GetLine();
+
             __construct(message, code, previous);
         }
 
@@ -41,22 +50,15 @@ namespace Pchp.Library.Spl
 
         public virtual string getMessage() => this.message;
 
-        public virtual Throwable getPrevious()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual Throwable getPrevious() => this.InnerException as Throwable;
 
-        public virtual PhpArray getTrace()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual PhpArray getTrace() => _stacktrace.GetBacktrace();
 
-        public virtual string getTraceAsString() => string.Empty;
+        public virtual string getTraceAsString() => _stacktrace.GetStackTraceString();
 
-        public virtual string __toString()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual string __toString() => _stacktrace.FormatExceptionString(this.GetType().Name, getMessage());
+
+        public sealed override string ToString() => __toString();
     }
 
     /// <summary>
