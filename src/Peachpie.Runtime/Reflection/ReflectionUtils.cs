@@ -21,6 +21,16 @@ namespace Pchp.Core.Reflection
         /// </summary>
         public const string PhpDestructorName = "__destruct";
 
+        /// <summary>
+        /// Special name of public static method representing PHP's global code.
+        /// </summary>
+        public const string GlobalCodeMethodName = "<Main>";
+
+        /// <summary>
+        /// Well known assembly token key of Peachpie assemblies.
+        /// </summary>
+        public const string PeachpieAssemblyTokenKey = "5b4bee2bf1f98593";
+
         readonly static char[] _disallowedNameChars = new char[] { '`', '<', '>', '.', '\'', '"', '#', '!', '?' };
 
         /// <summary>
