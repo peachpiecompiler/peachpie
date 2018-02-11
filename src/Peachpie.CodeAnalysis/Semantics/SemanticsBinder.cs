@@ -381,7 +381,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.AssignEx) return BindAssignEx((AST.AssignEx)expr, access);
             if (expr is AST.UnaryEx) return BindUnaryEx((AST.UnaryEx)expr, access);
             if (expr is AST.IncDecEx) return BindIncDec((AST.IncDecEx)expr).WithAccess(access);
-            if (expr is AST.ConditionalEx) return BindConditionalEx((AST.ConditionalEx)expr, access);
+            if (expr is AST.ConditionalEx) return BindConditionalEx((AST.ConditionalEx)expr, access).WithAccess(access);
             if (expr is AST.ConcatEx) return BindConcatEx((AST.ConcatEx)expr).WithAccess(access);
             if (expr is AST.IncludingEx) return BindIncludeEx((AST.IncludingEx)expr).WithAccess(access);
             if (expr is AST.InstanceOfEx) return BindInstanceOfEx((AST.InstanceOfEx)expr).WithAccess(access);
@@ -621,12 +621,9 @@ namespace Pchp.CodeAnalysis.Semantics
             // ternary operator C ? T : F
             // T can be omitted
 
-            var bound = (expr.TrueExpr == null)
+            return (expr.TrueExpr == null)
                 ? new BoundConditionalEx(BindExpression(expr.CondExpr, access.WithRead()), null, BindExpression(expr.FalseExpr, access))
                 : new BoundConditionalEx(BindExpression(expr.CondExpr), BindExpression(expr.TrueExpr, access), BindExpression(expr.FalseExpr, access));
-
-            //
-            return bound.WithAccess(access);
         }
 
         protected BoundExpression BindIncDec(AST.IncDecEx expr)
@@ -1254,8 +1251,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundConditionalEx(
                 condExpr,
                 trueExprBag.BoundElement,
-                falseExprBag.BoundElement)
-                .WithAccess(access);
+                falseExprBag.BoundElement);
         }
 
         protected override BoundYieldEx BindYieldEx(AST.YieldEx expr, BoundAccess access)
