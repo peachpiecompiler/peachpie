@@ -21,6 +21,7 @@ namespace Pchp.Library.Spl
         protected Error() { }
 
         public Error(string message = "", long code = 0, Throwable previous = null)
+            : base(message, previous as System.Exception)
         {
             __construct(message, code, previous);
         }
@@ -36,30 +37,15 @@ namespace Pchp.Library.Spl
             this.code = code;
         }
 
-        public virtual int getCode()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual int getCode() => (int)code;
 
-        public virtual string getFile()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual string getFile() => file;
 
-        public virtual int getLine()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual int getLine() => line;
 
-        public virtual string getMessage()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual string getMessage() => Message;
 
-        public virtual Throwable getPrevious()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual Throwable getPrevious() => this.InnerException as Throwable;
 
         public virtual PhpArray getTrace()
         {
@@ -71,10 +57,7 @@ namespace Pchp.Library.Spl
             throw new NotImplementedException();
         }
 
-        public virtual string __toString()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual string __toString() => Message;
     }
 
     /// <summary>
