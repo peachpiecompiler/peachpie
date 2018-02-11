@@ -31,7 +31,7 @@ namespace Pchp.Core.Reflection
             }
             catch (Exception ex)
             {
-                InitPhpStackFrames(new StackTrace(ex, needFileInfo: true));
+                InitPhpStackFrames(new StackTrace(ex, true));
             }
 #endif
             Debug.Assert(_frames != null);
