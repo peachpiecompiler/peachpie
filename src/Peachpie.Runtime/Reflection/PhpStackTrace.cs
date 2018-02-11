@@ -18,13 +18,11 @@ namespace Pchp.Core.Reflection
     [DebuggerNonUserCode]
     public sealed class PhpStackTrace
     {
-        sealed class FrameLine
+        /// <summary>
+        /// Helper class representing a single PHP stack frame information.
+        /// </summary>
+        public sealed class FrameLine
         {
-            /// <summary>
-            /// The frame index.
-            /// </summary>
-            readonly int _order;
-
             /// <summary>
             /// the frame with location.
             /// </summary>
@@ -37,9 +35,8 @@ namespace Pchp.Core.Reflection
 
             public bool HasLocation => _locationFrame != null && _locationFrame.HasLocation;
 
-            public FrameLine(int order, PhpStackFrame locationFrame, PhpStackFrame calledFrame)
+            internal FrameLine(PhpStackFrame locationFrame, PhpStackFrame calledFrame)
             {
-                _order = order;
                 _locationFrame = locationFrame;
                 _calledFrame = calledFrame;
             }
@@ -79,14 +76,14 @@ namespace Pchp.Core.Reflection
                 return item;
             }
 
-            public string ToStackTraceLine()
+            public string ToStackTraceLine(int order)
             {
                 var result = new StringBuilder();
 
-                if (_order >= 0)
+                if (order >= 0)
                 {
                     result.Append('#');
-                    result.Append(_order);
+                    result.Append(order);
                     result.Append(' ');
                 }
 
@@ -105,7 +102,7 @@ namespace Pchp.Core.Reflection
                 return result.ToString();
             }
 
-            public override string ToString() => ToStackTraceLine();
+            public override string ToString() => ToStackTraceLine(-1);
         }
 
         PhpStackFrame[] _frames;
@@ -117,10 +114,17 @@ namespace Pchp.Core.Reflection
 #if NET46
             InitPhpStackFrames(new StackTrace(true));
 #else
-            // .NET Core does not allow us to get StackTrace in netstandard 1.5.
-            // We can get Environment.StackTrace and parse it or leave it empty.
-            // TODO: Implement this once we target .NET Standard 2.0 using `new StackTrace()`:
-            _frames = Array.Empty<PhpStackFrame>();
+            // only available on netstrandard2.0+
+            var ctor = typeof(StackTrace).GetConstructor(Dynamic.Cache.Types.Bool);
+            if (ctor != null)
+            {
+                var st = (StackTrace)ctor.Invoke(new object[] { true });
+                InitPhpStackFrames(st);
+            }
+            else
+            {
+                _frames = Array.Empty<PhpStackFrame>();
+            }
 #endif
             Debug.Assert(_frames != null);
         }
@@ -190,95 +194,18 @@ namespace Pchp.Core.Reflection
 
         public int GetLine() => (_frames.Length != 0 && _frames[0].HasLocation) ? _frames[0].Line : 0;
 
-        FrameLine[] GetLines()
+        public FrameLine[] GetLines()
         {
             var frames = _frames;
             var lines = new FrameLine[frames.Length + 1];
             for (int i = 0; i < lines.Length; i++)
             {
-                lines[i] = new FrameLine(i - 1,
+                lines[i] = new FrameLine(
                     locationFrame: (i < frames.Length) ? frames[i] : null,
                     calledFrame: (i > 0) ? frames[i - 1] : null);
             }
 
             return lines;
-        }
-
-        /// <summary>
-        /// Gets stack trace as string.
-        /// </summary>
-        public string GetStackTraceString()
-        {
-            var lines = GetLines();
-            var result = new StringBuilder();
-
-            for (int i = 1; i < lines.Length; i++)
-            {
-                result.AppendLine(lines[i].ToStackTraceLine());
-            }
-
-            return result.ToString();
-        }
-
-        /// <summary>
-        /// Gets PHP `backtrace`. See <c>debug_backtrace()</c>.
-        /// </summary>
-        public PhpArray GetBacktrace(int skip = 0, int limit = int.MaxValue)
-        {
-            if (skip < 0) throw new ArgumentOutOfRangeException();
-
-            var lines = GetLines();
-            var arr = new PhpArray();
-            for (int i = 1 + skip; i < lines.Length - 1 && arr.Count < limit; i++)
-            {
-                arr.Add((PhpValue)lines[i].ToUserFrame());
-            }
-
-            return arr;
-        }
-
-        /// <summary>
-        /// Gets exception string.
-        /// </summary>
-        public string FormatExceptionString(string exceptionname, string message)
-        {
-            var result = new StringBuilder();
-
-            // TODO: to resources
-
-            // {exceptionname} in {location}
-            // Stack trace:
-            // #0 ...
-            var lines = GetLines();
-
-            result.Append(exceptionname);
-
-            if (!string.IsNullOrEmpty(message))
-            {
-                result.Append(": ");
-                result.Append(message);
-            }
-
-            if (lines.Length != 0)
-            {
-                if (lines[0].HasLocation)
-                {
-                    result.Append(" in ");
-                    result.Append(lines[0].ToStackTraceLine());
-                }
-
-                if (lines.Length > 1)
-                {
-                    result.AppendLine();
-                    result.AppendLine("Stack trace:");
-                    for (int i = 1; i < lines.Length; i++)
-                    {
-                        result.AppendLine(lines[i].ToStackTraceLine());
-                    }
-                }
-            }
-
-            return result.ToString();
         }
     }
 

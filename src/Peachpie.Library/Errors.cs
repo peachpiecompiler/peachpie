@@ -293,7 +293,7 @@ namespace Pchp.Library
         public static PhpArray debug_backtrace(int options = 0, int limit = 0)
         {
             // TODO: debug_backtrace: options
-            return (new Core.Reflection.PhpStackTrace()).GetBacktrace(1, (limit <= 0) ? int.MaxValue : limit);
+            return (new Core.Reflection.PhpStackTrace()).GetBacktrace(skip: 1, limit: (limit <= 0) ? int.MaxValue : limit);
         }
 
         /// <summary>
@@ -302,7 +302,7 @@ namespace Pchp.Library
         public static void debug_print_backtrace(Context ctx, int options = 0, int limit = 0)
         {
             // TODO: debug_backtrace: options, limit
-            ctx.Echo((new Core.Reflection.PhpStackTrace()).GetStackTraceString());
+            ctx.Echo((new Core.Reflection.PhpStackTrace()).GetStackTraceString(skip: 1));
         }
 
         /// <summary>
