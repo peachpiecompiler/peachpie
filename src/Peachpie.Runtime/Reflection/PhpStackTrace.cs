@@ -117,15 +117,10 @@ namespace Pchp.Core.Reflection
 #if NET46
             InitPhpStackFrames(new StackTrace(true));
 #else
-            // as of now, StackTrace can only be constructed from thrown exception:
-            try
-            {
-                throw new Exception();
-            }
-            catch (Exception ex)
-            {
-                InitPhpStackFrames(new StackTrace(ex, true));
-            }
+            // .NET Core does not allow us to get StackTrace in netstandard 1.5.
+            // We can get Environment.StackTrace and parse it or leave it empty.
+            // TODO: Implement this once we target .NET Standard 2.0 using `new StackTrace()`:
+            _frames = Array.Empty<PhpStackFrame>();
 #endif
             Debug.Assert(_frames != null);
         }
