@@ -114,7 +114,7 @@ namespace Pchp.Core.Reflection
 #if NET46
             InitPhpStackFrames(new StackTrace(true));
 #else
-            // only available on netstrandard2.0+
+            // only available on netstandard2.0+
             var ctor = typeof(StackTrace).GetConstructor(Dynamic.Cache.Types.Bool);
             if (ctor != null)
             {

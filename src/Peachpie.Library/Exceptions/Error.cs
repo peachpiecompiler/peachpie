@@ -37,9 +37,9 @@ namespace Pchp.Library.Spl
         /// <summary>
         /// Exception message in CLR.
         /// </summary>
-        public override string Message => this.message;
+        public override string Message => this.message ?? string.Empty;
 
-        public void __construct(string message = "", long code = 0, Throwable previous = null)
+        public virtual void __construct(string message = "", long code = 0, Throwable previous = null)
         {
             this.message = message;
             this.code = code;
@@ -51,7 +51,7 @@ namespace Pchp.Library.Spl
 
         public virtual int getLine() => line;
 
-        public virtual string getMessage() => Message;
+        public virtual string getMessage() => message;
 
         public virtual Throwable getPrevious() => this.InnerException as Throwable;
 
@@ -59,7 +59,7 @@ namespace Pchp.Library.Spl
 
         public virtual string getTraceAsString() => _stacktrace.GetStackTraceString();
 
-        public virtual string __toString() => _stacktrace.FormatExceptionString(this.GetType().Name, getMessage());
+        public virtual string __toString() => _stacktrace.FormatExceptionString(this.GetPhpTypeInfo().Name, getMessage());
 
         public sealed override string ToString() => __toString();
     }
