@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Text;
 using Pchp.Core;
+using static Peachpie.Library.MySql.MySqli.Functions;
 
 namespace Peachpie.Library.MySql.MySqli
 {
@@ -316,7 +317,9 @@ namespace Peachpie.Library.MySql.MySqli
             }
             else
             {
-                connect_error = _connection.GetLastErrorMessage();
+                MySqliContextData.GetContextData(ctx).LastConnectionError
+                    = connect_error
+                    = _connection.GetLastErrorMessage();
             }
 
             //

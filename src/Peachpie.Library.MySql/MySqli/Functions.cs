@@ -12,6 +12,16 @@ namespace Peachpie.Library.MySql.MySqli
     public static class Functions
     {
         /// <summary>
+        /// Internal object used to store per-request (context) data.
+        /// </summary>
+        internal class MySqliContextData
+        {
+            public static MySqliContextData/*!*/GetContextData(Context ctx) => ctx.GetStatic<MySqliContextData>();
+
+            public string LastConnectionError { get; set; }
+        }
+
+        /// <summary>
         /// Initializes MySQLi and returns a resource for use with mysqli_real_connect().
         /// </summary>
         [return: NotNull]
@@ -65,7 +75,8 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// The connection error message. Otherwise <c>null</c>.
         /// </summary>
-        public static string mysqli_connect_error(mysqli link) => link.connect_error;
+        public static string mysqli_connect_error(Context ctx, mysqli link = null)
+            => (link != null) ? link.connect_error : MySqliContextData.GetContextData(ctx).LastConnectionError;
 
         /// <summary>
         /// Returns the error code for the most recent function call.
