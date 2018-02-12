@@ -194,6 +194,27 @@ namespace Pchp.Core.Reflection
 
         public int GetLine() => (_frames.Length != 0 && _frames[0].HasLocation) ? _frames[0].Line : 0;
 
+        /// <summary>
+        /// Stack trace text formatted as PHP stack trace.
+        /// </summary>
+        public string StackTrace
+        {
+            get
+            {
+                var lines = this.GetLines();
+                var result = new StringBuilder();
+
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    result.AppendLine(lines[i].ToStackTraceLine(i - 1));
+                }
+
+                return result.ToString();
+            }
+        }
+
+        public override string ToString() => StackTrace;
+
         public FrameLine[] GetLines()
         {
             var frames = _frames;
