@@ -14,6 +14,7 @@ namespace Pchp.Library.Spl
     public class Error : System.Exception, Throwable
     {
         internal readonly PhpStackTrace _stacktrace;
+        internal Throwable _previous;
 
         protected string message;
         protected long code;
@@ -43,6 +44,8 @@ namespace Pchp.Library.Spl
         {
             this.message = message;
             this.code = code;
+
+            _previous = previous;
         }
 
         public virtual int getCode() => (int)code;
@@ -53,7 +56,7 @@ namespace Pchp.Library.Spl
 
         public virtual string getMessage() => message;
 
-        public virtual Throwable getPrevious() => this.InnerException as Throwable;
+        public virtual Throwable getPrevious() => _previous ?? this.InnerException as Throwable;
 
         public virtual PhpArray getTrace() => _stacktrace.GetBacktrace();
 
