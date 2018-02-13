@@ -166,14 +166,22 @@ namespace Pchp.Core.Reflection
             // in Peachpie assemblies (runtime, libraries) // implicitly NonUserCode
             var ass = tinfo.Assembly;
             var token = ass.GetName().GetPublicKeyToken();
-            if (token != null && Utilities.StringUtils.BinToHex(token) == ReflectionUtils.PeachpieAssemblyTokenKey)
+            if (token != null)
             {
-                // but allow library functions
-                if (method.IsPublic && method.IsStatic && tinfo.IsPublic && tinfo.IsAbstract) // public static class + public static method
+                var tokenkey = Utilities.StringUtils.BinToHex(token);
+                if (tokenkey == ReflectionUtils.PeachpieAssemblyTokenKey)
                 {
-                    // ok
+                    // but allow library functions
+                    if (method.IsPublic && method.IsStatic && tinfo.IsPublic && tinfo.IsAbstract) // public static class + public static method
+                    {
+                        // ok
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
-                else
+                else if (tokenkey == "b77a5c561934e089" || tokenkey == "b03f5f7f11d50a3a")    // System
                 {
                     return false;
                 }
@@ -193,6 +201,27 @@ namespace Pchp.Core.Reflection
         public string GetFilename() => (_frames.Length != 0 && _frames[0].HasLocation) ? _frames[0].FileName : string.Empty;
 
         public int GetLine() => (_frames.Length != 0 && _frames[0].HasLocation) ? _frames[0].Line : 0;
+
+        /// <summary>
+        /// Stack trace text formatted as PHP stack trace.
+        /// </summary>
+        public string StackTrace
+        {
+            get
+            {
+                var lines = this.GetLines();
+                var result = new StringBuilder();
+
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    result.AppendLine(lines[i].ToStackTraceLine(i - 1));
+                }
+
+                return result.ToString();
+            }
+        }
+
+        public override string ToString() => StackTrace;
 
         public FrameLine[] GetLines()
         {
