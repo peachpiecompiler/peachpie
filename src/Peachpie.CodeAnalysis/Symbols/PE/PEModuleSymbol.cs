@@ -32,7 +32,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         readonly PENamespaceSymbol _namespace;
 
-        // <summary>
+        /// <summary>
         /// Cache the symbol for well-known type System.Type because we use it frequently
         /// (for attributes).
         /// </summary>
