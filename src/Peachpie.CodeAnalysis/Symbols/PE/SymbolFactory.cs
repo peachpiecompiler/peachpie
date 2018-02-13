@@ -38,8 +38,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override TypeSymbol GetSystemTypeSymbol(PEModuleSymbol moduleSymbol)
         {
-            throw new NotImplementedException();
-            //return moduleSymbol.SystemTypeSymbol;
+            return moduleSymbol.SystemTypeSymbol;
         }
 
         internal override TypeSymbol MakePointerTypeSymbol(PEModuleSymbol moduleSymbol, TypeSymbol type, ImmutableArray<ModifierInfo<TypeSymbol>> customModifiers)
@@ -54,8 +53,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override TypeSymbol GetEnumUnderlyingType(PEModuleSymbol moduleSymbol, TypeSymbol type)
         {
-            throw new NotImplementedException();
-            //return type.GetEnumUnderlyingType();
+            return type.GetEnumUnderlyingType();
         }
 
         internal override Cci.PrimitiveTypeCode GetPrimitiveTypeCode(PEModuleSymbol moduleSymbol, TypeSymbol type)

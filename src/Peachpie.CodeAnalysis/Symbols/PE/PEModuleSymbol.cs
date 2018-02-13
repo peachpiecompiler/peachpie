@@ -9,6 +9,7 @@ using System.Collections.Concurrent;
 using System.Reflection.Metadata;
 using System.Diagnostics;
 using Cci = Microsoft.Cci;
+using System.Threading;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -26,10 +27,16 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         readonly PEModule _module;
 
-        ///// <summary>
-        ///// Global namespace.
-        ///// </summary>
+        /// <summary>
+        /// Global namespace.
+        /// </summary>
         readonly PENamespaceSymbol _namespace;
+
+        // <summary>
+        /// Cache the symbol for well-known type System.Type because we use it frequently
+        /// (for attributes).
+        /// </summary>
+        private NamedTypeSymbol _lazySystemTypeSymbol;
 
         /// <summary>
         /// Module's custom attributes
@@ -355,6 +362,21 @@ namespace Pchp.CodeAnalysis.Symbols
 
             Debug.Assert(result != null);
             return result;
+        }
+
+        internal NamedTypeSymbol SystemTypeSymbol
+        {
+            get
+            {
+                if ((object)_lazySystemTypeSymbol == null)
+                {
+                    Interlocked.CompareExchange(ref _lazySystemTypeSymbol,
+                                                GetTypeSymbolForWellKnownType(WellKnownType.System_Type),
+                                                null);
+                    Debug.Assert((object)_lazySystemTypeSymbol != null);
+                }
+                return _lazySystemTypeSymbol;
+            }
         }
 
         private NamedTypeSymbol GetTypeSymbolForWellKnownType(WellKnownType type)
