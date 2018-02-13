@@ -446,10 +446,8 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         protected virtual SourceTypeSymbol NewSelf() => new SourceTypeSymbol(_file, _syntax);
 
-        private SourceTypeSymbol NewSelf(NamedTypeSymbol baseType, ImmutableArray<NamedTypeSymbol> ifacesType, ImmutableArray<TraitUse> traitUses, int version, SourceTypeSymbol nextVersion)
+        private SourceTypeSymbol InitNewSelf(SourceTypeSymbol self, NamedTypeSymbol baseType, ImmutableArray<NamedTypeSymbol> ifacesType, ImmutableArray<TraitUse> traitUses, int version, SourceTypeSymbol nextVersion)
         {
-            var self = NewSelf();
-
             self._lazyBaseType = baseType;
             self._lazyInterfacesType = ifacesType;
             self._lazyTraitUses = traitUses;
@@ -501,7 +499,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return (list != null) ? list.AsImmutableOrEmpty() : ImmutableArray<NamedTypeSymbol>.Empty;
         }
 
-        ImmutableArray<TraitUse> SelectTraitUses(TypeRefSymbol[] tsignature, ImmutableArray<NamedTypeSymbol> boundtypes)
+        static ImmutableArray<TraitUse> SelectTraitUses(SourceTypeSymbol owner, TypeRefSymbol[] tsignature, ImmutableArray<NamedTypeSymbol> boundtypes)
         {
             Debug.Assert(tsignature.Length == boundtypes.Length);
             List<TraitUse> list = null;
@@ -511,7 +509,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (tsignature[i].Attributes.IsTrait())
                 {
                     if (list == null) list = new List<TraitUse>(1);
-                    list.Add(new TraitUse(this, boundtypes[i], tsignature[i].TraitAdaptations));
+                    list.Add(new TraitUse(owner, boundtypes[i], tsignature[i].TraitAdaptations));
                 }
             }
 
@@ -571,22 +569,22 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     var v_base = v[0];
                     var v_interfaces = SelectInterfaces(tsignature, v);
-                    var v_traituses = SelectTraitUses(tsignature, v);
-
+                    
                     // create the variation:
 
                     if (self)
                     {
                         _lazyBaseType = v_base;
                         _lazyInterfacesType = v_interfaces;
-                        _lazyTraitUses = v_traituses;
+                        _lazyTraitUses = SelectTraitUses(this, tsignature, v);
 
                         self = false;
                     }
                     else
                     {
                         // create next version of this type with already resolved type signature
-                        _nextVersion = NewSelf(v_base, v_interfaces, v_traituses, ++lastVersion, _nextVersion);
+                        var vinst = NewSelf();
+                        _nextVersion = InitNewSelf(vinst, v_base, v_interfaces, SelectTraitUses(vinst, tsignature, v), ++lastVersion, _nextVersion);
                     }
                 }
 
