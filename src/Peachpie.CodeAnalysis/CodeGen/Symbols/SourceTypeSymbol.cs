@@ -238,13 +238,25 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             var __tostring = this.GetMembers(SpecialMethodNames.Tostring.Value, true).OfType<MethodSymbol>().FirstOrDefault();
-            if (__tostring != null || this.Syntax.BaseClass == null)    // implement ToString if: there is __tostring() function or ToString is not overriden yet
+            if (__tostring != null)    // implement ToString if: there is __toString() function
             {
-                // public override string ToString()
-                // Note, there might be two ToString methods with same parameters only differing by their return type, CLR allows that
-                var tostring = new SynthesizedMethodSymbol(this, "ToString", false, true, DeclaringCompilation.CoreTypes.String, Accessibility.Public, isfinal: false)
+                // lookup base string ToString()
+                var overriden = this.LookupMember<MethodSymbol>(
+                    WellKnownMemberNames.ObjectToString,
+                    m => OverrideHelper.SignaturesMatch(m, (MethodSymbol)DeclaringCompilation.GetSpecialTypeMember(SpecialMember.System_Object__ToString)));
+
+                Debug.Assert(overriden != null);
+
+                if (overriden == null || overriden.IsSealed || overriden.ContainingType == this)
                 {
-                    ExplicitOverride = (MethodSymbol)DeclaringCompilation.GetSpecialTypeMember(SpecialMember.System_Object__ToString),
+                    // cannot be overriden
+                    return;
+                }
+
+                // public sealed override string ToString()
+                var tostring = new SynthesizedMethodSymbol(this, WellKnownMemberNames.ObjectToString, false, true, DeclaringCompilation.CoreTypes.String, Accessibility.Public, isfinal: false)
+                {
+                    ExplicitOverride = overriden,
                     ForwardedCall = __tostring,
                 };
 
