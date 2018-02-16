@@ -120,8 +120,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         #region Construction
 
-        internal ControlFlowGraph(IList<Statement>/*!*/statements, SemanticsBinder/*!*/binder, NamingContext naming)
-            : this(BuilderVisitor.Build(statements, binder, naming), binder.Yields)
+        internal ControlFlowGraph(IList<Statement>/*!*/statements, SemanticsBinder/*!*/binder)
+            : this(BuilderVisitor.Build(statements, binder), binder.Yields)
         {
         }
 

@@ -1855,8 +1855,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     break;
 
                 case PseudoConstUse.Types.Namespace:
-                    value = (Naming != null && Naming.CurrentNamespace.HasValue)
-                        ? Naming.CurrentNamespace.Value.NamespacePhpName
+                    var ns = x.PhpSyntax.ContainingNamespace;
+                    value = ns != null && ns.QualifiedName.HasValue
+                        ? ns.QualifiedName.QualifiedName.NamespacePhpName
                         : string.Empty;
                     break;
 

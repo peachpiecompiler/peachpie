@@ -29,11 +29,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         internal TypeRefContext TypeCtx => _state.TypeRefContext;
 
         /// <summary>
-        /// Current naming context. Can be a <c>null</c> reference.
-        /// </summary>
-        public NamingContext Naming => CurrentBlock?.Naming;
-
-        /// <summary>
         /// Current flow state.
         /// </summary>
         internal FlowState State

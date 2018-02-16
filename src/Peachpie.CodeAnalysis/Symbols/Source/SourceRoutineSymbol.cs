@@ -43,8 +43,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     // build control flow graph
                     _cfg = new ControlFlowGraph(
                         this.Statements,
-                        SemanticsBinder.Create(this.LocalsTable, DeclaringCompilation.DeclarationDiagnostics),
-                        this.GetNamingContext());
+                        SemanticsBinder.Create(this.LocalsTable, DeclaringCompilation.DeclarationDiagnostics));
                     _cfg.Start.FlowState = state;
                 }
 

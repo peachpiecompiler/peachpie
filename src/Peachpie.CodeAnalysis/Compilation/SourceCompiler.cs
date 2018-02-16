@@ -114,7 +114,6 @@ namespace Pchp.CodeAnalysis
             var dummy = new BoundBlock()
             {
                 FlowState = new FlowState(new FlowContext(ctx, null)),
-                Naming = naming
             };
 
             dummy.Add(new BoundExpressionStatement(expression));

@@ -34,12 +34,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         private int _tag;
 
         /// <summary>
-        /// Current naming context.
-        /// Can be a <c>null</c> reference.
-        /// </summary>
-        internal NamingContext Naming { get; set; }
-
-        /// <summary>
         /// Gets statements contained in this block.
         /// </summary>
         public List<BoundStatement>/*!!*/Statements => _statements;
