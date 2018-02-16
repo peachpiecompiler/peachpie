@@ -962,7 +962,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     return TypeCtx.GetArrayTypeMask();  // TODO: can we be more specific?
 
                 case Operations.UnsetCast:
-                    x.ConstantValue = new Optional<object>(null);
                     return TypeCtx.GetNullTypeMask();   // null
 
                 default:
