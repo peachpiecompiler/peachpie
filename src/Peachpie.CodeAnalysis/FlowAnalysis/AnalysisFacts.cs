@@ -39,23 +39,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // Clear out the constant value result from the previous run of this method (if it was valid, it will be reassigned below)
                 call.ConstantValue = default(Optional<object>);
 
+                string str;
+
                 var args = call.ArgumentsInSourceOrder;
                 switch (name)
                 {
-                    // bool function_exists ( string $function_name )
-                    case "function_exists":
-                        if (args.Length == 1)
+                    case "is_callable":     // bool is_callable( string $function_name )
+                    case "function_exists": // bool function_exists ( string $function_name )
+                        if (args.Length == 1 && args[0].Value.ConstantValue.TryConvertToString(out str))
                         {
                             // TRUE <=> function is defined unconditionally in a reference library (PE assembly)
-                            var function_name = args[0].Value.ConstantValue.Value as string;
-                            if (function_name != null)
+                            var tmp = analysis.Model.ResolveFunction(NameUtils.MakeQualifiedName(str, true));
+                            if (tmp is PEMethodSymbol || (tmp is AmbiguousMethodSymbol && ((AmbiguousMethodSymbol)tmp).Ambiguities.All(f => f is PEMethodSymbol)))  // TODO: unconditional declaration ?
                             {
-                                var tmp = analysis.Model.ResolveFunction(NameUtils.MakeQualifiedName(function_name, true));
-                                if (tmp is PEMethodSymbol || (tmp is AmbiguousMethodSymbol && ((AmbiguousMethodSymbol)tmp).Ambiguities.All(f => f is PEMethodSymbol)))  // TODO: unconditional declaration ?
-                                {
-                                    call.ConstantValue = ConstantValueExtensions.AsOptional(true);
-                                    return;
-                                }
+                                call.ConstantValue = ConstantValueExtensions.AsOptional(true);
+                                return;
                             }
                         }
                         break;
@@ -83,13 +81,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         if (args.Length == 2)
                         {
                             var class_name = args[0].Value.ConstantValue.Value as string;
-                            var function_name = args[1].Value.ConstantValue.Value as string;
-                            if (class_name != null && function_name != null)
+                            if (class_name != null && args[1].Value.ConstantValue.TryConvertToString(out str))
                             {
                                 var tmp = (NamedTypeSymbol)analysis.Model.ResolveType(NameUtils.MakeQualifiedName(class_name, true));
                                 if (tmp is PENamedTypeSymbol)
                                 {
-                                    if (tmp.LookupMethods(function_name).Any())
+                                    if (tmp.LookupMethods(str).Any())
                                     {
                                         call.ConstantValue = ConstantValueExtensions.AsOptional(true);
                                         return;
@@ -99,34 +96,47 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         }
                         break;
 
-                    case "defined":
-                    case "constant":
-                        if (args.Length == 1)
+                    case "extension_loaded":    // bool extension_loaded(name)
+                        if (args.Length == 1 && args[0].Value.ConstantValue.TryConvertToString(out str))
                         {
-                            var const_name = args[0].Value.ConstantValue.Value as string;
-                            if (const_name != null)
+                            if (analysis.Model.Extensions.Contains(str, StringComparer.OrdinalIgnoreCase))
                             {
-                                // TODO: const_name in form of "{CLASS}::{NAME}"
-
-                                var tmp = analysis.Model.ResolveConstant(const_name);
-                                if (tmp is PEFieldSymbol symbol)    // TODO: also user constants defined in the same scope
-                                {
-                                    if (name == "defined")
-                                    {
-                                        call.ConstantValue = ConstantValueExtensions.AsOptional(true);
-                                    }
-                                    else // name == "constant"
-                                    {
-                                        var cvalue = symbol.GetConstantValue(false);
-                                        call.ConstantValue = (cvalue != null) ? new Optional<object>(cvalue.Value) : null;
-                                        call.TypeRefMask = TypeRefFactory.CreateMask(analysis.TypeCtx, symbol.Type);
-                                    }
-
-                                    return;
-                                }
+                                call.ConstantValue = ConstantValueExtensions.AsOptional(true);
+                                return;
                             }
                         }
                         break;
+
+                    case "defined":
+                    case "constant":
+                        if (args.Length == 1 && args[0].Value.ConstantValue.TryConvertToString(out str))
+                        {
+                            // TODO: const_name in form of "{CLASS}::{NAME}"
+                            var tmp = analysis.Model.ResolveConstant(str);
+                            if (tmp is PEFieldSymbol symbol)    // TODO: also user constants defined in the same scope
+                            {
+                                if (name == "defined")
+                                {
+                                    call.ConstantValue = ConstantValueExtensions.AsOptional(true);
+                                }
+                                else // name == "constant"
+                                {
+                                    var cvalue = symbol.GetConstantValue(false);
+                                    call.ConstantValue = (cvalue != null) ? new Optional<object>(cvalue.Value) : null;
+                                    call.TypeRefMask = TypeRefFactory.CreateMask(analysis.TypeCtx, symbol.Type);
+                                }
+
+                                return;
+                            }
+                        }
+                        break;
+
+                    case "strlen":
+                        if (args.Length == 1 && args[0].Value.ConstantValue.TryConvertToString(out string value))
+                        {
+                            call.ConstantValue = new Optional<object>(value.Length);
+                        }
+                        return;
                 }
             }
         }

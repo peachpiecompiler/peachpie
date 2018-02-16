@@ -93,5 +93,31 @@ namespace Pchp.CodeAnalysis.Symbols
 
             return true;
         }
+
+        public static AttributeData GetPhpExtensionAttribute(this Symbol symbol)
+        {
+            var attrs = symbol.GetAttributes();
+            foreach (var a in attrs)
+            {
+                var fullname = MetadataHelpers.BuildQualifiedName((a.AttributeClass as NamedTypeSymbol)?.NamespaceName, a.AttributeClass.Name);
+                if (fullname == CoreTypes.PhpExtensionAttributeFullName)
+                {
+                    return a;
+                }
+            }
+
+            return null;
+        }
+
+        public static string[] PhpExtensionAttributeValues(this AttributeData phpextensionattribute)
+        {
+            if (phpextensionattribute != null && phpextensionattribute.CommonConstructorArguments.Length >= 1)
+            {
+                var extensions = phpextensionattribute.CommonConstructorArguments[0].Values;    // string[] extensions
+                return extensions.Select(x => (string)x.Value).ToArray();
+            }
+
+            return null;
+        }
     }
 }

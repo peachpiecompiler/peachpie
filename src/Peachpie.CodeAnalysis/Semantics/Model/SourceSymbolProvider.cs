@@ -14,6 +14,8 @@ namespace Pchp.CodeAnalysis.Semantics.Model
     {
         readonly SourceSymbolCollection _table;
 
+        public IEnumerable<string> Extensions => Enumerable.Empty<string>();
+
         public SourceSymbolProvider(SourceSymbolCollection table)
         {
             Contract.ThrowIfNull(table);

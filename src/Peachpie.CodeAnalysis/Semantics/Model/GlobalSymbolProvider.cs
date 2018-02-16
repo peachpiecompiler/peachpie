@@ -211,6 +211,19 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             return _next.ResolveConstant(name);
         }
 
+        /// <summary>
+        /// Gets enumeration of referenced extensions.
+        /// </summary>
+        public IEnumerable<string> Extensions
+        {
+            get
+            {
+                return GetExtensionLibraries(_compilation).Cast<Symbol>().Concat(ExtensionContainers).Concat(ExportedTypes.Values)   // assemblies & containers & types
+                    .SelectMany(x => x.GetPhpExtensionAttribute()?.PhpExtensionAttributeValues() ?? Array.Empty<string>())
+                    .Distinct(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
         #endregion
     }
 }

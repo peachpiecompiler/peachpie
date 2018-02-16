@@ -38,6 +38,8 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         SourceFileSymbol ContainingFile => _ctx.ContainingFile;
 
+        public IEnumerable<string> Extensions => _model.Extensions;
+
         public LocalSymbolProvider(ISymbolProvider/*!*/model, FlowContext/*!*/ctx)
         {
             Debug.Assert(model != null);

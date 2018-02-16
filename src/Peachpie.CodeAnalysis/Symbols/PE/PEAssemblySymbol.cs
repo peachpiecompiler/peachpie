@@ -109,15 +109,9 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (_specialAssembly == SpecialAssembly.None && !_lazyIsExtensionLibraryResolved)
                 {
-                    var attrs = GetAttributes();
-                    foreach (var a in attrs)
+                    if (this.GetPhpExtensionAttribute() != null)
                     {
-                        var fullname = MetadataHelpers.BuildQualifiedName((a.AttributeClass as NamedTypeSymbol)?.NamespaceName, a.AttributeClass.Name);
-                        if (fullname == CoreTypes.PhpExtensionAttributeFullName)
-                        {
-                            _specialAssembly = SpecialAssembly.ExtensionLibrary;
-                            break;
-                        }
+                        _specialAssembly = SpecialAssembly.ExtensionLibrary;
                     }
 
                     _lazyIsExtensionLibraryResolved = true;

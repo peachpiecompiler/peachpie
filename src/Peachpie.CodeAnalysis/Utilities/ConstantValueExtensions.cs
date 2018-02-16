@@ -126,6 +126,24 @@ namespace Pchp.CodeAnalysis
             return true;
         }
 
+        public static bool TryConvertToString(this Optional<object> value, out string result)
+        {
+            result = null;
+
+            if (value.HasValue)
+            {
+                var obj = value.Value;
+
+                if (obj == null) result = string.Empty;
+                else if (obj is string str) result = str;
+                else if (obj is long l) result = l.ToString();
+                else if (obj is bool b) result = b ? "1" : string.Empty;
+                else if (obj is int i) result = i.ToString();
+            }
+
+            return result != null;
+        }
+
         static bool StringToBoolean(string value)
         {
             return !string.IsNullOrEmpty(value) && value != "0";
