@@ -857,6 +857,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     return x.Operand.TypeRefMask;
 
                 case Operations.BitNegation:
+                    if (x.Operand.ConstantValue.HasValue)
+                    {
+                        if (x.Operand.ConstantValue.Value is long l)
+                        {
+                            x.ConstantValue = new Optional<object>(~l);
+                        }
+                        else if (x.Operand.ConstantValue.Value is int i)
+                        {
+                            x.ConstantValue = new Optional<object>(~(long)i);
+                        }
+                    }
+
                     return TypeCtx.GetLongTypeMask();   // TODO: or byte[]
 
                 case Operations.Clone:
