@@ -24,6 +24,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         private int _index = 0;
         private NamingContext _naming;
 
+        /// <summary>
+        /// Gets enumeration of unconditional declarations.
+        /// </summary>
+        public IEnumerable<BoundStatement> Declarations => _declarations != null ? _declarations : Enumerable.Empty<BoundStatement>();
+        public List<BoundStatement> _declarations;
+
         public BoundBlock/*!*/Start { get; private set; }
         public BoundBlock/*!*/Exit { get; private set; }
         //public BoundBlock Exception { get; private set; }
@@ -342,16 +348,60 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         #region Declaration Statements
 
+        void AddUnconditionalDeclaration(BoundStatement decl)
+        {
+            if (_declarations == null)
+            {
+                _declarations = new List<BoundStatement>();
+            }
+
+            _declarations.Add(decl);
+        }
+
         public override void VisitTypeDecl(TypeDecl x)
         {
             var bound = _binder.BindWholeStatement(x).SingleBoundElement();
-            (x.IsConditional ? _current : Start).Add(bound);
+            if (DeclareConditionally(x))
+            {
+                _current.Add(bound);
+            }
+            else
+            {
+                AddUnconditionalDeclaration(bound);
+            }
+        }
+
+        bool DeclareConditionally(TypeDecl x)
+        {
+            if (x.IsConditional)
+            {
+                return true;
+            }
+
+            if (_current == Start && _current.Statements.Count == 0)
+            {
+                return false;
+            }
+
+            if (x.BaseClass != null || x.ImplementsList.Length != 0 || x.Members.OfType<TraitsUse>().Any())
+            {
+                return true;
+            }
+
+            return false;
         }
 
         public override void VisitFunctionDecl(FunctionDecl x)
         {
             var bound = _binder.BindWholeStatement(x).SingleBoundElement();
-            (x.IsConditional ? _current : Start).Add(bound);
+            if (x.IsConditional)
+            {
+                _current.Add(bound);
+            }
+            else
+            {
+                AddUnconditionalDeclaration(bound);
+            }
         }
 
         public override void VisitMethodDecl(MethodDecl x)

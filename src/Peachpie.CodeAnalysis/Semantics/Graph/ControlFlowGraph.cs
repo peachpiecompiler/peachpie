@@ -126,17 +126,19 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         }
 
         private ControlFlowGraph(BuilderVisitor/*!*/builder, BoundYieldStatement[] yields)
-            : this(builder.Start, builder.Exit, /*builder.Exception*/null, builder.Labels, yields, builder.DeadBlocks)
+            : this(builder.Start, builder.Exit, builder.Declarations, /*builder.Exception*/null, builder.Labels, yields, builder.DeadBlocks)
         {
         }
 
-        private ControlFlowGraph(BoundBlock/*!*/start, BoundBlock/*!*/exit, BoundBlock exception, LabelBlockState[] labels, BoundYieldStatement[] yields, List<BoundBlock> unreachable)
+        private ControlFlowGraph(BoundBlock/*!*/start, BoundBlock/*!*/exit, IEnumerable<BoundStatement>/*!*/declarations, BoundBlock exception, LabelBlockState[] labels, BoundYieldStatement[] yields, List<BoundBlock> unreachable)
         {
             Contract.ThrowIfNull(start);
             Contract.ThrowIfNull(exit);
 
             _start = start;
             _exit = exit;
+            _start.Statements.InsertRange(0, declarations);
+
             //_exception = exception;
             _labels = labels;
             _yields = yields;
