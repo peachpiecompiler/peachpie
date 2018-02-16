@@ -934,7 +934,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.UInt64Cast:
                 case Operations.UInt32Cast:
                 case Operations.Int64Cast:
-                    return TypeCtx.GetLongTypeMask();
+                    {
+                        if (x.Operand.ConstantValue.TryConvertToLong(out long l))
+                        {
+                            x.ConstantValue = new Optional<object>(l);
+                        }
+                        return TypeCtx.GetLongTypeMask();
+                    }
 
                 case Operations.DecimalCast:
                 case Operations.DoubleCast:
@@ -943,6 +949,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 case Operations.UnicodeCast: // TODO
                 case Operations.StringCast:
+                    if (x.Operand.ConstantValue.TryConvertToString(out string str))
+                    {
+                        x.ConstantValue = new Optional<object>(str);
+                    }
                     return TypeCtx.GetStringTypeMask(); // binary | unicode | both
 
                 case Operations.BinaryCast:
@@ -952,6 +962,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     return TypeCtx.GetArrayTypeMask();  // TODO: can we be more specific?
 
                 case Operations.UnsetCast:
+                    x.ConstantValue = new Optional<object>(null);
                     return TypeCtx.GetNullTypeMask();   // null
 
                 default:

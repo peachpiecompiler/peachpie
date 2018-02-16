@@ -126,6 +126,39 @@ namespace Pchp.CodeAnalysis
             return true;
         }
 
+        /// <summary>
+        /// PHP safe implicit conversion to <c>long</c> if the value is known.
+        /// </summary>
+        public static bool TryConvertToLong(this Optional<object> value, out long result)
+        {
+                result = 0;
+
+            if (!value.HasValue)
+            {
+                return false;
+            }
+
+            var obj = value.Value;
+
+            if (obj == null) result = 0;
+            else if (obj is bool) result = (bool)obj ? 1 : 0;
+            else if (obj is int) result = (int)obj;
+            else if (obj is long) result = (long)obj;
+            else if (obj is string && long.TryParse((string)obj, out result)) { }
+            else if (obj is double) result = (long)(double)obj;
+            else if (obj is float) result = (long)(float)obj;
+            else if (obj is uint) result = (uint)obj;
+            else if (obj is sbyte) result = (sbyte)obj;
+            else if (obj is short) result = (short)obj;
+            else
+            {
+                return false;
+            }
+
+            //
+            return true;
+        }
+
         public static bool TryConvertToString(this Optional<object> value, out string result)
         {
             result = null;
