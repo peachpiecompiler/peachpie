@@ -151,7 +151,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// <summary>
     /// Conditionally declared functions.
     /// </summary>
-    public sealed partial class BoundFunctionDeclStatement : BoundStatement // TODO: ILocalFunctionStatement
+    public sealed partial class BoundFunctionDeclStatement : BoundStatement
     {
         public override OperationKind Kind => OperationKind.LocalFunctionStatement;
 

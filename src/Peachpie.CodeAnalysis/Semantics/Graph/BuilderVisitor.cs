@@ -344,25 +344,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override void VisitTypeDecl(TypeDecl x)
         {
-            var declarelazy = x.IsConditional || PostponeDeclaration();
-            if (declarelazy)
-            {
-                Add(x);
-            }
-            // ignored
+            var bound = _binder.BindWholeStatement(x).SingleBoundElement();
+            (x.IsConditional ? _current : Start).Add(bound);
         }
 
-        /// <summary>
-        /// Whether we can define types unconditionally in current state or the declaration should be postponed because some preceeding expressions may introduce new declarations conditionally.
-        /// </summary>
-        bool PostponeDeclaration()
+        public override void VisitFunctionDecl(FunctionDecl x)
         {
-            if (ReferenceEquals(_current, this.Start))
-            {
-                return _current.Statements.Count() != 0;
-            }
-
-            return true;
+            var bound = _binder.BindWholeStatement(x).SingleBoundElement();
+            (x.IsConditional ? _current : Start).Add(bound);
         }
 
         public override void VisitMethodDecl(MethodDecl x)
@@ -375,15 +364,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             // ignored
         }
 
-        public override void VisitFunctionDecl(FunctionDecl x)
-        {
-            if (x.IsConditional)
-            {
-                Add(x);
-            }
-            // ignored
-        }
-
         public override void VisitNamespaceDecl(NamespaceDecl x)
         {
             _naming = x.Naming;
@@ -392,9 +372,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             base.VisitNamespaceDecl(x);
         }
 
-        public override void VisitGlobalConstDeclList(GlobalConstDeclList x)
+        public override void VisitGlobalConstantDecl(GlobalConstantDecl x)
         {
-            Add(x);
+            var bound = _binder.BindGlobalConstantDecl(x);
+            _current.Add(bound);
         }
 
         #endregion
