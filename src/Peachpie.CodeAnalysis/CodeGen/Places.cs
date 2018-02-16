@@ -1602,8 +1602,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                 }
 
-                EmitOpCode_Load(cg);
-                return type;
+                // load & dereference // TODO: AccessMask whether we need to dereference
+                // Template (ref PhpValue).GetValue()
+                EmitOpCode_LoadAddress(cg);
+                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.GetValue);
             }
             else
             {
