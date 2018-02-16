@@ -126,7 +126,10 @@ namespace Pchp.CodeAnalysis.Symbols
                         hasunpacking |= args[p.Index].IsUnpacking;
 
                         // TODO: check args[i] is convertible to p.Type
-                        match &= args[p.Index].Value.TypeRefMask == p.Type && !hasunpacking;
+                        var p_type = typeCtx.WithoutNull(p.Type);
+                        var a_type = typeCtx.WithoutNull(args[p.Index].Value.TypeRefMask);
+
+                        match &= a_type == p_type && !hasunpacking; // check types match (ignoring NULL flag)
                     }
                 }
 
