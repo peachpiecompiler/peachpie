@@ -106,6 +106,11 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        /// <summary>
+        /// Gets value indicating whether the parameter has been replaced with <see cref="SourceRoutineSymbol.VarargsParam"/>.
+        /// </summary>
+        internal bool IsFake => (Routine.GetParamsParameter() != null && Routine.GetParamsParameter() != this && Ordinal >= Routine.GetParamsParameter().Ordinal);
+
         TypeSymbol ResolveType()
         {
             if (IsThis)

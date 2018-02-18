@@ -212,7 +212,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public TypeSymbol EmitConvertToPhpValue(BoundExpression expr)
         {
-            return expr != null
+            return (expr != null && !expr.ConstantValue.IsNull())
                 ? EmitConvertToPhpValue(Emit(expr), expr.TypeRefMask)
                 : Emit_PhpValue_Null();
         }

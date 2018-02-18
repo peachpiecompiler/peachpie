@@ -712,16 +712,26 @@ namespace Pchp.CodeAnalysis.CodeGen
                 throw new InvalidOperationException("Routine is null!");
             }
 
+            if (routine.IsGlobalScope)
+            {
+                // TODO: warning: use of arguments in global scope
+                _il.EmitNullConstant();
+                return (TypeSymbol)DeclaringCompilation.ObjectType;
+            }
+
             TypeSymbol arrtype;
 
-            var ps = routine.SourceParameters;
+            // [implicit] [use parameters, source parameters] [... varargs]
+
             var variadic = routine.GetParamsParameter();  // optional params
             var variadic_element = (variadic?.Type as ArrayTypeSymbol)?.ElementType;
             var variadic_place = variadic != null ? new ParamPlace(variadic) : null;
 
-            var useparams = (routine is SourceLambdaSymbol) ? ((SourceLambdaSymbol)routine).UseParams.Count : 0;    // lambda function 'use' parameters
-
-            ps = ps.Skip(useparams).Where(p => !p.IsParams).ToArray();  // parameters without implicitly declared parameters
+            // get used source parameters:
+            var ps = routine.SourceParameters
+                .Skip(routine is SourceLambdaSymbol lambda ? lambda.UseParams.Count : 0)    // without lambda use parameters
+                .TakeWhile(x => variadic != null ? x.Ordinal < variadic.Ordinal : true)     // up to the params parameter (handled separately)
+                .ToArray();
 
             if (ps.Length == 0 && variadic == null)
             {
@@ -929,18 +939,18 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Builds <c>PhpArray</c> out from <c>System.Array</c>.
         /// </summary>
-        public TypeSymbol ArrayToPhpArray(IPlace arrplace, bool deepcopy = false)
+        public TypeSymbol ArrayToPhpArray(IPlace arrplace, bool deepcopy = false, int startindex = 0)
         {
             var phparr = GetTemporaryLocal(CoreTypes.PhpArray);
 
             // Template: tmparr = new PhpArray(arrplace.Length)
             arrplace.EmitLoad(_il);
-            EmitArrayLength();
+            EmitArrayLength();  // array size hint
             EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpArray_int);
             _il.EmitLocalStore(phparr);
 
             // enumeration body:
-            EmitEnumerateArray(arrplace, 0, (srcindex, element_loader) =>
+            EmitEnumerateArray(arrplace, startindex, (srcindex, element_loader) =>
             {
                 // Template: <tmparr>.Add((T)arrplace[i])
                 _il.EmitLocalLoad(phparr);   // <array>
@@ -2979,6 +2989,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 else if (t == CoreTypes.PhpArray)
                 {
                     t = EmitCall(ILOpCode.Callvirt, CoreMethods.PhpArray.DeepCopy);
+                }
+                else
+                {
+                    throw this.NotImplementedException("copy " + t.Name);
                 }
 
                 //

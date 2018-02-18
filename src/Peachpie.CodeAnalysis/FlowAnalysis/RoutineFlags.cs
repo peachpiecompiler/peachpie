@@ -36,6 +36,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Whether the routine accesses its arguments dynamically we should provide params.
         /// </summary>
-        RequiresParams = UsesArgs,
+        RequiresVarArg = UsesArgs,
     }
 }

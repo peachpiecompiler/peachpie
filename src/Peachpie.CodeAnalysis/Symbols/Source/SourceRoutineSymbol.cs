@@ -95,9 +95,11 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal abstract SourceFileSymbol ContainingFile { get; }
 
-        protected List<ParameterSymbol> _implicitParams;
+        protected List<ParameterSymbol> _implicitParameters;
         private SourceParameterSymbol[] _srcParams;
-        private SynthesizedParameterSymbol _varargParam;
+
+        /// <summary>Implicitly declared [params] parameter if the routine allows access to its arguments. This allows more arguments to be passed than declared.</summary>
+        private SynthesizedParameterSymbol _implicitVarArg; // behaves like a stack of optional parameters
 
         /// <summary>
         /// Builds implicit parameters before source parameters.
@@ -147,13 +149,13 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         protected IEnumerable<SourceParameterSymbol> BuildSrcParams(IEnumerable<FormalParam> formalparams, PHPDocBlock phpdocOpt = null)
         {
-            var pindex = 0;
+            var pindex = 0; // zero-based relative index
 
             foreach (var p in formalparams)
             {
                 var ptag = (phpdocOpt != null) ? PHPDoc.GetParamTag(phpdocOpt, pindex, p.Name.Name.Value) : null;
 
-                yield return new SourceParameterSymbol(this, p, pindex++, ptag);
+                yield return new SourceParameterSymbol(this, p, relindex: pindex++, ptagOpt: ptag);
             }
         }
 
@@ -170,19 +172,19 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                if (_implicitParams == null)
+                if (_implicitParameters == null)
                 {
-                    _implicitParams = BuildImplicitParams().ToList();
+                    _implicitParameters = BuildImplicitParams().ToList();
                 }
 
-                if (RequiresLateStaticBoundParam && !_implicitParams.Any(SpecialParameterSymbol.IsLateStaticParameter))
+                if (RequiresLateStaticBoundParam && !_implicitParameters.Any(SpecialParameterSymbol.IsLateStaticParameter))
                 {
                     // PhpTypeInfo <static>
-                    _implicitParams.Add(new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpTypeInfo, SpecialParameterSymbol.StaticTypeName, _implicitParams.Count));
+                    _implicitParameters.Add(new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpTypeInfo, SpecialParameterSymbol.StaticTypeName, _implicitParameters.Count));
                 }
 
                 //
-                return _implicitParams;
+                return _implicitParameters;
             }
         }
 
@@ -199,8 +201,27 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        SourceParameterSymbol SourceVarargsParam
+        {
+            get
+            {
+                var srcparams = this.SourceParameters;
+                if (srcparams.Length != 0)
+                {
+                    var last = srcparams.Last();
+                    if (last.IsParams)
+                    {
+                        return last;
+                    }
+                }
+
+                return null;
+            }
+        }
+
         /// <summary>
-        /// Implicitly added parameter corresponding to <c>params PhpValue[] {arguments}</c>.
+        /// Implicitly added parameter corresponding to <c>params PhpValue[] {arguments}</c>. Replaces all the optional parameters.
+        /// !!IMPORTANT!! Its <see cref="ParameterSymbol.Ordinal"/> specifies its position - all the source parameters with the same or higher ordinal are ignored.
         /// Can be <c>null</c> if not needed.
         /// </summary>
         protected ParameterSymbol VarargsParam
@@ -208,27 +229,36 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 // declare implicit [... varargs] parameter if needed and not defined as source parameter
-
-                if ((Flags & RoutineFlags.RequiresParams) != 0 && _varargParam == null && (this is SourceFunctionSymbol || this is SourceMethodSymbol || this is SourceLambdaSymbol))
+                if ((Flags & RoutineFlags.RequiresVarArg) != 0 && !IsGlobalScope)
                 {
-                    var srcparams = this.SourceParameters;
-                    if (srcparams.Length == 0 || !srcparams.Last().IsParams)
+                    if (_implicitVarArg == null)
                     {
-                        _varargParam = new SynthesizedParameterSymbol( // IsImplicitlyDeclared, IsParams
+                        var srcparams = SourceVarargsParam;
+
+                        // is there is params (...) already and no optional parameters, we can stick with it
+                        if (srcparams != null && SourceParameters.All(p => p.Initializer == null))
+                        {
+                            return null;
+                        }
+
+                        // create implicit [... params]
+                        _implicitVarArg = new SynthesizedParameterSymbol( // IsImplicitlyDeclared, IsParams
                             this,
                             ArrayTypeSymbol.CreateSZArray(this.ContainingAssembly, this.DeclaringCompilation.CoreTypes.PhpValue),
-                            srcparams.Length,
+                            0,
                             RefKind.None,
-                            SpecialParameterSymbol.ParamsName, true);
+                            SpecialParameterSymbol.ParamsName, isParams: true);
                     }
                 }
 
-                if (_varargParam != null)
+                if (_implicitVarArg != null)
                 {
-                    _varargParam.UpdateOrdinal(ImplicitParameters.Count + SourceParameters.Length);
+                    // implicit params replaces all the optional arguments!!
+                    int mandatory = ImplicitParameters.Count + this.SourceParameters.TakeWhile(p => p.Initializer == null).Count();
+                    _implicitVarArg.UpdateOrdinal(mandatory);
                 }
 
-                return _varargParam;
+                return _implicitVarArg;
             }
         }
 
@@ -237,20 +267,10 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal ParameterSymbol GetParamsParameter()
         {
-            var srcparams = this.SourceParameters;
-            if (srcparams.Length != 0)
-            {
-                // explicitly declared via '...'
-                var last = srcparams[srcparams.Length - 1];
-                if (last.IsParams)
-                {
-                    Debug.Assert(last.Type.IsSZArray());
-                    return last;
-                }
-            }
+            var p = VarargsParam ?? SourceVarargsParam;
+            Debug.Assert(p == null || p.Type.IsSZArray());
 
-            // implicitly declared when needed by routine code
-            return VarargsParam;
+            return p;
         }
 
         public override bool IsExtern => false;
@@ -277,17 +297,29 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 // [implicit parameters], [source parameters], [...varargs]
 
-                var result = ImmutableArray<ParameterSymbol>.Empty;
+                var srcparams = SourceParameters;
+                var implicitVarArgs = VarargsParam;
 
-                result = result.AddRange(ImplicitParameters.Concat(SourceParameters));
+                var result = new List<ParameterSymbol>(ImplicitParameters.Count + srcparams.Length);
 
-                var vararg = VarargsParam;
-                if (vararg != null)
+                result.AddRange(ImplicitParameters);
+
+                if (implicitVarArgs == null)
                 {
-                    result = result.Add(vararg);
+                    result.AddRange(srcparams);
+                }
+                else
+                {
+                    // implicitVarArgs replaces optional srcparams
+                    for (int i = 0; i < srcparams.Length && srcparams[i].Initializer == null; i++)
+                    {
+                        result.Add(srcparams[i]);
+                    }
+
+                    result.Add(implicitVarArgs);
                 }
 
-                return result;
+                return result.AsImmutableOrEmpty();
             }
         }
 

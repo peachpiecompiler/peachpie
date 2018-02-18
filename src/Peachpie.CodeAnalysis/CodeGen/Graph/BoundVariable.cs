@@ -1,9 +1,11 @@
 ﻿using Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
+using Microsoft.CodeAnalysis.Text;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Symbols;
+using Peachpie.CodeAnalysis.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -41,7 +43,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override void EmitInit(CodeGenerator cg)
         {
-
             if (VariableKind == VariableKind.LocalTemporalVariable || cg.HasUnoptimizedLocals)
             {
                 // temporal variables must be indirect
@@ -60,7 +61,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
             //
             if (_symbol is SynthesizedLocalSymbol)
+            {
                 return;
+            }
 
             // Initialize local variable with void.
             // This is mandatory since even assignments reads the target value to assign properly to PhpAlias.
@@ -117,6 +120,221 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundParameter
     {
+        #region IParameterSource, IParameterTarget
+
+        /// <summary>
+        /// Describes the parameter source place.
+        /// </summary>
+        interface IParameterSource
+        {
+            void EmitTypeCheck(CodeGenerator cg, SourceParameterSymbol srcp);
+
+            /// <summary>Inplace copies the parameter.</summary>
+            void EmitPass(CodeGenerator cg);
+
+            /// <summary>Loads copied parameter value.</summary>
+            TypeSymbol EmitLoad(CodeGenerator cg);
+        }
+
+        /// <summary>
+        /// Describes the local variable target slot.
+        /// </summary>
+        interface IParameterTarget
+        {
+            void StorePrepare(CodeGenerator cg);
+            void Store(CodeGenerator cg, TypeSymbol valuetype);
+        }
+
+        /// <summary>
+        /// Parameter or local is real CLR value on stack.
+        /// </summary>
+        sealed class DirectParameter : IParameterSource, IParameterTarget
+        {
+            readonly IPlace _place;
+            readonly bool _isparams;
+            readonly bool _byref;
+
+            public DirectParameter(IPlace place, bool isparams, bool byref)
+            {
+                Debug.Assert(place != null);
+                _place = place;
+                _isparams = isparams;
+                _byref = byref;
+            }
+
+            /// <summary>Loads copied parameter value.</summary>
+            public TypeSymbol EmitLoad(CodeGenerator cg)
+            {
+                if (_isparams)
+                {
+                    // converts params -> PhpArray
+                    Debug.Assert(_place.TypeOpt.IsSZArray());
+                    return cg.ArrayToPhpArray(_place, deepcopy: true);
+                }
+                else
+                {
+                    // make copy of given value
+                    return cg.EmitDeepCopy(_place.EmitLoad(cg.Builder), nullcheck: true);
+                }
+            }
+
+            public void EmitPass(CodeGenerator cg)
+            {
+                // inplace copies the parameter
+
+                if (_place.TypeOpt == cg.CoreTypes.PhpValue)
+                {
+                    // dereference & copy
+                    // (ref <param>).PassValue()
+                    _place.EmitLoadAddress(cg.Builder);
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.PassValue);
+                }
+                else if (cg.IsCopiable(_place.TypeOpt))
+                {
+                    _place.EmitStorePrepare(cg.Builder);
+
+                    // copy
+                    // <param> = DeepCopy(<param>)
+                    cg.EmitDeepCopy(_place.EmitLoad(cg.Builder));
+
+                    _place.EmitStore(cg.Builder);
+                }
+            }
+
+            public void EmitTypeCheck(CodeGenerator cg, SourceParameterSymbol srcp)
+            {
+                BoundParameter.EmitTypeCheck(cg, _place, srcp);
+            }
+
+            public void Store(CodeGenerator cg, TypeSymbol valuetype)
+            {
+                cg.EmitConvert(valuetype, 0, _place.TypeOpt);
+                _place.EmitStore(cg.Builder);
+            }
+
+            public void StorePrepare(CodeGenerator cg)
+            {
+                _place.EmitStorePrepare(cg.Builder); // nop
+            }
+        }
+
+        /// <summary>
+        /// Parameter is fake and is stored in {varargs} array.
+        /// </summary>
+        sealed class IndirectParameterSource : IParameterSource
+        {
+            readonly IPlace _varargsplace;
+            readonly int _index;
+            bool _isparams => _p.IsParams;
+            bool _byref => _p.Syntax.PassedByRef;
+
+            readonly SourceParameterSymbol _p;
+
+            public IndirectParameterSource(SourceParameterSymbol p, ParameterSymbol varargparam)
+            {
+                Debug.Assert(p.IsFake);
+                Debug.Assert(varargparam.Type.IsSZArray());
+
+                _p = p;
+                _varargsplace = new ParamPlace(varargparam);
+                _index = p.Ordinal - varargparam.Ordinal;
+                Debug.Assert(_index >= 0);
+            }
+
+            public TypeSymbol EmitLoad(CodeGenerator cg)
+            {
+                if (_isparams)
+                {
+                    // PhpArray( {varargs[index..] )
+                    return cg.ArrayToPhpArray(_varargsplace, startindex: _index, deepcopy: true);
+                }
+                else
+                {
+                    var il = cg.Builder;
+
+                    var lbl_default = new object();
+                    var lbl_end = new object();
+
+                    var element_type = ((ArrayTypeSymbol)_varargsplace.TypeOpt).ElementType;
+
+                    // Template: _index < {vargags}.Length ? {varargs[_index]} : DEFAULT
+
+                    // _index < {varargs}.Length
+                    il.EmitIntConstant(_index);
+                    _varargsplace.EmitLoad(il);
+                    cg.EmitArrayLength();
+                    il.EmitBranch(ILOpCode.Bge, lbl_default);
+
+                    // LOAD varargs[index]
+                    _varargsplace.EmitLoad(il);
+                    il.EmitIntConstant(_index);
+                    il.EmitOpCode(ILOpCode.Ldelem);
+                    cg.EmitSymbolToken(element_type, null);
+                    cg.EmitConvertToPhpValue(cg.EmitDeepCopy(element_type, nullcheck: false), 0);
+                    il.EmitBranch(ILOpCode.Br, lbl_end);
+
+                    // DEFAULT
+                    il.MarkLabel(lbl_default);
+
+                    if (_p.Initializer != null)
+                    {
+                        using (var tmpcg = new CodeGenerator(cg, _p.Routine))
+                        {
+                            tmpcg.EmitConvertToPhpValue(_p.Initializer);
+                        }
+                    }
+                    else
+                    {
+                        cg.Emit_PhpValue_Null();
+                    }
+
+                    //
+                    il.MarkLabel(lbl_end);
+
+                    //
+                    return cg.CoreTypes.PhpValue;
+                }
+            }
+
+            public void EmitPass(CodeGenerator cg) => throw ExceptionUtilities.Unreachable;
+
+            public void EmitTypeCheck(CodeGenerator cg, SourceParameterSymbol srcp)
+            {
+                // throw new NotImplementedException();
+            }
+        }
+
+        /// <summary>
+        /// Local variables are unoptimized, parameter must be stored in {locals} array.
+        /// </summary>
+        sealed class IndirectLocalTarget : IParameterTarget
+        {
+            readonly string _localname;
+
+            public IndirectLocalTarget(string localname)
+            {
+                _localname = localname;
+            }
+
+            public void StorePrepare(CodeGenerator cg)
+            {
+                Debug.Assert(cg.LocalsPlaceOpt != null);
+
+                // LOAD <locals>, <name>
+                cg.LocalsPlaceOpt.EmitLoad(cg.Builder);             // <locals>
+                cg.EmitIntStringKey(new BoundLiteral(_localname));  // [key]
+            }
+
+            public void Store(CodeGenerator cg, TypeSymbol valuetype)
+            {
+                // Template: {PhpArray}.Add({name}, {value})
+                cg.EmitConvertToPhpValue(valuetype, 0);
+                cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_IntStringKey_PhpValue));  // TODO: Append() without duplicity check
+            }
+        }
+
+        #endregion
+
         /// <summary>
         /// In case routine uses array of locals (unoptimized locals).
         /// </summary>
@@ -126,32 +344,20 @@ namespace Pchp.CodeAnalysis.Semantics
         /// When parameter should be copied or its CLR type does not fit into its runtime type.
         /// E.g. foo(int $i){ $i = "Hello"; }
         /// </summary>
-        BoundLocal _lazyLocal;
+        IPlace _lazyplace;
 
-        internal override void EmitInit(CodeGenerator cg)
+        static void EmitTypeCheck(CodeGenerator cg, IPlace valueplace, SourceParameterSymbol srcparam)
         {
-            var srcparam = _symbol as SourceParameterSymbol;
-            if (srcparam == null)
-            {
-                // an implicit parameter
-                return;
-            }
-
-            // TODO: check callable, iterable
-
-            // TODO: ? if (cg.HasUnoptimizedLocals && $this) <locals>["this"] = ...
-
-            var srcplace = new ParamPlace(_symbol);
-            var routine = srcparam.Routine;
+            // TODO: check callable, iterable, type if not resolved in ct
 
             // check NotNull
-            if (srcparam.IsNotNull && srcparam.Type.IsReferenceType)
+            if (srcparam.IsNotNull && valueplace.TypeOpt.IsReferenceType)
             {
                 cg.EmitSequencePoint(srcparam.Syntax);
 
                 // Template: if (<param> == null) { PhpException.ArgumentNullError(param_name); }
                 var lbl_notnull = new object();
-                cg.EmitNotNull(srcplace);
+                cg.EmitNotNull(valueplace);
                 cg.Builder.EmitBranch(ILOpCode.Brtrue_s, lbl_notnull);
 
                 // PhpException.ArgumentNullError(param_name);
@@ -164,123 +370,81 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 cg.Builder.MarkLabel(lbl_notnull);
             }
+        }
+
+        internal override void EmitInit(CodeGenerator cg)
+        {
+            var srcparam = _symbol as SourceParameterSymbol;
+            if (srcparam == null)
+            {
+                // an implicit parameter,
+                // nothing to initialize
+                return;
+            }
 
             //
+            // source: real parameter OR fake parameter: IParameterSource { TypeCheck, Pass, Load }
+            // target: optimized locals OR unoptimized locals: IParameterTarget { StorePrepare, Store }
+            //
 
-            if (cg.HasUnoptimizedLocals)
+            var source = srcparam.IsFake
+                ? (IParameterSource)new IndirectParameterSource(srcparam, srcparam.Routine.GetParamsParameter())
+                : (IParameterSource)new DirectParameter(new ParamPlace(srcparam), srcparam.IsParams, srcparam.Syntax.PassedByRef);
+
+            if (cg.HasUnoptimizedLocals == false) // usual case - optimized locals
             {
-                Debug.Assert(cg.LocalsPlaceOpt != null);
+                // TODO: cleanup
+                var tmask = srcparam.Routine.ControlFlowGraph.GetLocalTypeMask(srcparam.Name);
+                var clrtype = cg.DeclaringCompilation.GetTypeFromTypeRef(srcparam.Routine, tmask);
 
-                // copy parameter to <locals>[Name]
-
-                // <locals>[name] = value
-                cg.LocalsPlaceOpt.EmitLoad(cg.Builder); // <locals>
-                cg.EmitIntStringKey(new BoundLiteral(this.Name));   // [key]
-
-                if (srcparam.Syntax.PassedByRef)
+                // target local must differ from source parameter ?
+                if (srcparam.IsFake || (srcparam.Type != cg.CoreTypes.PhpValue && srcparam.Type != cg.CoreTypes.PhpAlias && srcparam.Type != clrtype))
                 {
-                    var srcpt = srcplace.EmitLoad(cg.Builder);  // PhpAlias
-                    Debug.Assert(srcpt == cg.CoreTypes.PhpAlias);
-                    cg.EmitConvert(srcpt, 0, cg.CoreTypes.PhpAlias);
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.SetItemAlias_IntStringKey_PhpAlias);
+                    _lazyplace = new LocalPlace(cg.Builder.LocalSlotManager.DeclareLocal(
+                        clrtype, new SynthesizedLocalSymbol(srcparam.Routine, srcparam.Name, clrtype), srcparam.Name,
+                        SynthesizedLocalKind.UserDefined, LocalDebugId.None, 0, LocalSlotConstraints.None, false, default(ImmutableArray<TypedConstant>), false));
                 }
-                else
-                {
-                    if (_symbol.IsParams)
-                    {
-                        // (PhhpValue)new PhpArray( params )
-                        cg.EmitConvertToPhpValue(cg.ArrayToPhpArray(srcplace, true), 0);
-                    }
-                    else
-                    {
-                        if (_symbol.Type == cg.CoreTypes.PhpValue)
-                        {
-                            // <param>.GetValue()
-                            srcplace.EmitLoadAddress(cg.Builder);
-                            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.GetValue);
-                        }
-                        else
-                        {
-                            // (PhpValue)<param>
-                            cg.EmitConvertToPhpValue(srcplace.EmitLoad(cg.Builder), 0); // PhpValue
-                        }
+            }
 
-                        // copy <value>
-                        if (cg.IsCopiable(_symbol.Type))
-                        {
-                            cg.EmitDeepCopy(cg.CoreTypes.PhpValue);
-                        }
-                    }
+            var target = cg.HasUnoptimizedLocals
+                ? (IParameterTarget)new IndirectLocalTarget(srcparam.Name)
+                : (_lazyplace != null)
+                    ? new DirectParameter(_lazyplace, srcparam.IsParams, srcparam.Syntax.PassedByRef)
+                    : (DirectParameter)source;
 
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.Add_IntStringKey_PhpValue);
-                }
+            // 1. TypeCheck
+            source.EmitTypeCheck(cg, srcparam);
 
-                //
-                _isUnoptimized = true;
+            if (source == target)
+            {
+                // 2a. (source == target): Pass (inplace copy)
+                source.EmitPass(cg);
             }
             else
             {
-                // create local variable in case of parameter type is not enough for its use within routine
-                if (_symbol.Type != cg.CoreTypes.PhpValue && _symbol.Type != cg.CoreTypes.PhpAlias)
-                {
-                    var tmask = routine.ControlFlowGraph.GetLocalTypeMask(srcparam.Name);
-                    var clrtype = cg.DeclaringCompilation.GetTypeFromTypeRef(routine, tmask);
-                    if (clrtype != _symbol.Type)    // Assert: only if clrtype is not covered by _symbol.Type
-                    {
-                        // TODO: performance warning
-
-                        _lazyLocal = new BoundLocal(new SynthesizedLocalSymbol(routine, srcparam.Name, clrtype));
-                        _lazyLocal.EmitInit(cg);
-                        var localplace = _lazyLocal.Place(cg.Builder);
-                        TypeSymbol srctype;
-
-                        localplace.EmitStorePrepare(cg.Builder);
-
-                        if (_symbol.IsParams)
-                        {
-                            Debug.Assert(_symbol.Type.IsSZArray());
-
-                            // <local> = new PhpArray(){ ... }
-                            cg.ArrayToPhpArray(srcplace, true);
-
-                            srctype = cg.CoreTypes.PhpArray;
-                        }
-                        else
-                        {
-                            srctype = srcplace.EmitLoad(cg.Builder);
-                        }
-
-                        // <local> = <param>
-                        cg.EmitConvert(srctype, 0, clrtype);
-
-                        localplace.EmitStore(cg.Builder);
-                    }
-                }
-                else
-                {
-                    if (_symbol.Type == cg.CoreTypes.PhpValue)
-                    {
-                        // dereference & copy
-                        // (ref <param>).PassValue()
-                        srcplace.EmitLoadAddress(cg.Builder);
-                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.PassValue);
-                    }
-                    else if (cg.IsCopiable(_symbol.Type))
-                    {
-                        srcplace.EmitStorePrepare(cg.Builder);
-
-                        // copy
-                        // <param> = DeepCopy(<param>)
-                        cg.EmitDeepCopy(srcplace.EmitLoad(cg.Builder));
-
-                        srcplace.EmitStore(cg.Builder);
-                    }
-                }
+                // 2b. (source != target): StorePrepare -> Load&Copy -> Store
+                target.StorePrepare(cg);
+                var loaded = source.EmitLoad(cg);
+                target.Store(cg, loaded);
             }
+
+            _isUnoptimized = cg.HasUnoptimizedLocals;
+
+            if (_lazyplace != null)
+            {
+                // TODO: perf warning
+            }
+
+            // TODO: ? if (cg.HasUnoptimizedLocals && $this) <locals>["this"] = ...
         }
 
         internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)
         {
+            if (_lazyplace != null)
+            {
+                return new BoundLocalPlace(_lazyplace, access, thint);
+            }
+
             if (_isUnoptimized)
             {
                 return new BoundIndirectVariablePlace(new BoundLiteral(this.Name), access);
@@ -288,18 +452,23 @@ namespace Pchp.CodeAnalysis.Semantics
             else
             {
                 //
-                return (_lazyLocal != null)
-                    ? _lazyLocal.BindPlace(il, access, thint)
-                    : new BoundLocalPlace(Place(il), access, thint);
+                return new BoundLocalPlace(Place(il), access, thint);
             }
         }
 
         internal override IPlace Place(ILBuilder il)
         {
-            if (_isUnoptimized)
-                return null;
+            if (_lazyplace != null)
+            {
+                return _lazyplace;
+            }
 
-            var place = (_lazyLocal != null) ? _lazyLocal.Place(il) : new ParamPlace(_symbol);
+            if (_isUnoptimized)
+            {
+                return null;
+            }
+
+            IPlace place = new ParamPlace(_symbol);
 
             if (this.VariableKind == VariableKind.ThisParameter)
             {

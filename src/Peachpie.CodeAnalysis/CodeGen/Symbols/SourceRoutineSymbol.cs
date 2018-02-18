@@ -90,8 +90,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var ps = this.Parameters;
             for (int i = 0; i < ps.Length; i++)
             {
-                var p = ps[i] as SourceParameterSymbol;
-                if (p != null && p.Initializer != null && p.ExplicitDefaultConstantValue == null)   // => ConstantValue couldn't be resolved for optional parameter
+                if (ps[i] is SourceParameterSymbol p && p.Initializer != null && p.ExplicitDefaultConstantValue == null)   // => ConstantValue couldn't be resolved for optional parameter
                 {
                     if (this.ContainingType.IsInterface)
                     {

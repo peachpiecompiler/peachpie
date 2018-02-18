@@ -104,6 +104,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         public ParamPlace(ParameterSymbol p)
         {
             Contract.ThrowIfNull(p);
+            Debug.Assert(p.Ordinal >= 0, "(p.Ordinal < 0)");
+            Debug.Assert(p is SourceParameterSymbol sp ? !sp.IsFake : true);
             _p = p;
         }
 
@@ -582,7 +584,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         public BoundLocalPlace(IPlace place, BoundAccess access, TypeRefMask thint)
         {
             Contract.ThrowIfNull(place);
-            
+
             _place = place;
             _access = access;
             _thint = thint;
