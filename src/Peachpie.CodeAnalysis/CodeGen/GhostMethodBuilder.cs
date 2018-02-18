@@ -17,6 +17,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public static MethodSymbol CreateGhostOverload(this MethodSymbol method, NamedTypeSymbol containingtype, PEModuleBuilder module, DiagnosticBag diagnostic,
             TypeSymbol ghostreturn, IEnumerable<ParameterSymbol> ghostparams,
+            bool phphidden = false,
             MethodSymbol explicitOverride = null)
         {
             string prefix = null;
@@ -30,7 +31,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             //}
 
             var ghost = new SynthesizedMethodSymbol(
-                containingtype, prefix + name, method.IsStatic, explicitOverride != null, ghostreturn, method.DeclaredAccessibility)
+                containingtype, prefix + name, method.IsStatic, explicitOverride != null, ghostreturn, method.DeclaredAccessibility, phphidden: phphidden)
             {
                 ExplicitOverride = explicitOverride,
                 ForwardedCall = method,

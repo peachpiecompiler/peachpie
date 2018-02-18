@@ -60,6 +60,9 @@ namespace Pchp.Core.Reflection
                 methods = methods.Where(s_notObjectMember);
             }
 
+            // skip [PhpHidden] methods
+            methods = methods.Where(s_notPhpHidden);
+
             // collect available methods (including methods on base classes)
             foreach (var m in methods.ToLookup(_MethodName, StringComparer.OrdinalIgnoreCase))
             {
@@ -104,6 +107,8 @@ namespace Pchp.Core.Reflection
         static readonly Func<MethodInfo, string> _MethodName = m => m.Name;
 
         static readonly Func<MethodInfo, bool> s_notObjectMember = m => m.DeclaringType != typeof(object);
+
+        static readonly Func<MethodInfo, bool> s_notPhpHidden = m => m.GetCustomAttribute<PhpHiddenAttribute>() == null;
 
         #endregion
 

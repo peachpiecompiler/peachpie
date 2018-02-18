@@ -254,7 +254,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
 
                 // public sealed override string ToString()
-                var tostring = new SynthesizedMethodSymbol(this, WellKnownMemberNames.ObjectToString, false, true, DeclaringCompilation.CoreTypes.String, Accessibility.Public, isfinal: false)
+                var tostring = new SynthesizedMethodSymbol(this, WellKnownMemberNames.ObjectToString, false, true, DeclaringCompilation.CoreTypes.String, Accessibility.Public, isfinal: false, phphidden: true)
                 {
                     ExplicitOverride = overriden,
                     ForwardedCall = __tostring,
@@ -382,7 +382,8 @@ namespace Pchp.CodeAnalysis.Symbols
                         // override method with a ghost that calls the override
                         (info.Override ?? info.OverrideCandidate).CreateGhostOverload(
                             this, module, diagnostics,
-                            info.Method.ReturnType, info.Method.Parameters, info.Method);
+                            info.Method.ReturnType, info.Method.Parameters,
+                            phphidden: true, explicitOverride: info.Method);
                     }
                     else
                     {

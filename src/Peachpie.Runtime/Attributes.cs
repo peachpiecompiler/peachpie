@@ -88,7 +88,7 @@ namespace Pchp.Core
     }
 
     /// <summary>
-    /// Marks public declarations that won't be visible to the compiled PHP script.
+    /// Marks public declarations that won't be visible in the PHP context.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Enum | AttributeTargets.Method | AttributeTargets.Field)]
     public sealed class PhpHiddenAttribute : Attribute

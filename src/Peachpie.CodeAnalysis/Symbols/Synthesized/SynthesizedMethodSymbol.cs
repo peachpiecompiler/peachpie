@@ -13,7 +13,7 @@ namespace Pchp.CodeAnalysis.Symbols
     class SynthesizedMethodSymbol : MethodSymbol
     {
         readonly TypeSymbol _type;
-        readonly bool _static, _virtual, _final, _abstract;
+        readonly bool _static, _virtual, _final, _abstract, _phphidden;
         readonly string _name;
         TypeSymbol _return;
         readonly Accessibility _accessibility;
@@ -30,7 +30,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override IMethodSymbol OverriddenMethod => ExplicitOverride;
 
-        public SynthesizedMethodSymbol(TypeSymbol containingType, string name, bool isstatic, bool isvirtual, TypeSymbol returnType, Accessibility accessibility = Accessibility.Private, bool isfinal = true, bool isabstract = false, params ParameterSymbol[] ps)
+        public SynthesizedMethodSymbol(TypeSymbol containingType, string name, bool isstatic, bool isvirtual, TypeSymbol returnType, Accessibility accessibility = Accessibility.Private, bool isfinal = true, bool isabstract = false, bool phphidden = false, params ParameterSymbol[] ps)
         {
             _type = containingType;
             _name = name;
@@ -40,6 +40,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _return = returnType;
             _accessibility = accessibility;
             _final = isfinal && isvirtual && !isstatic;
+            _phphidden = phphidden;
 
             SetParameters(ps);
         }
@@ -47,6 +48,21 @@ namespace Pchp.CodeAnalysis.Symbols
         internal void SetParameters(params ParameterSymbol[] ps)
         {
             _parameters = ps.AsImmutable();
+        }
+
+        public override ImmutableArray<AttributeData> GetAttributes()
+        {
+            if (_phphidden)
+            {
+                return ImmutableArray.Create<AttributeData>(
+                    // [PhpHiddenAttribute]
+                    new SynthesizedAttributeData(
+                        DeclaringCompilation.CoreTypes.PhpHiddenAttribute.Ctor().Symbol,
+                        ImmutableArray<TypedConstant>.Empty,
+                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
+            }
+
+            return ImmutableArray<AttributeData>.Empty;
         }
 
         public override Symbol ContainingSymbol => _type;
@@ -87,7 +103,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public override string Name => _name;
 
         public override ImmutableArray<ParameterSymbol> Parameters => _parameters;
-        
+
         public override bool ReturnsVoid => ReturnType.SpecialType == SpecialType.System_Void;
 
         public override TypeSymbol ReturnType => _return ?? ForwardedCall?.ReturnType ?? throw new InvalidOperationException();
