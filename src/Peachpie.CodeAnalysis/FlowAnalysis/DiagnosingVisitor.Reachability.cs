@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,7 +14,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     {
         private int _visitedColor;
 
-        Queue<BoundBlock> _unreachableQueue = new Queue<BoundBlock>();
+        Queue<BoundBlock> _unreachables = new Queue<BoundBlock>();
 
         private void InitializeReachabilityInfo(ControlFlowGraph x)
         {
@@ -35,17 +36,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             if (x.Condition.ConstantValue.TryConvertToBool(out bool value))
             {
-                // Process only the reachable branch, let the reachability of the other be checked later
-                if (value)
-                {
-                    _unreachableQueue.Enqueue(x.FalseTarget);
-                    x.TrueTarget.Accept(this);
-                }
-                else
-                {
-                    _unreachableQueue.Enqueue(x.TrueTarget);
-                    x.FalseTarget.Accept(this);
-                }
+                var reachable = value ? x.TrueTarget : x.FalseTarget;
+                var unreachable = value ? x.FalseTarget : x.TrueTarget;
+
+                reachable.Accept(this);  // Process only the reachable branch
+                _unreachables.Enqueue(unreachable); // remember possible unreachable block
             }
             else
 	        {
@@ -56,11 +51,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         private void CheckUnreachableCode(ControlFlowGraph graph)
         {
-            graph.UnreachableBlocks.ForEach(_unreachableQueue.Enqueue);
+            graph.UnreachableBlocks.ForEach(_unreachables.Enqueue);
 
-            while (_unreachableQueue.Count > 0)
+            while (_unreachables.Count != 0)
             {
-                var block = _unreachableQueue.Dequeue();
+                var block = _unreachables.Dequeue();
 
                 // Skip the block if it was either proven reachable before or if it was already processed
                 if (block.Tag == _visitedColor)
@@ -74,15 +69,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (syntax != null)
                 {
                     // Report the diagnostic for the first unreachable statement
-                    _diagnostics.Add(this._routine, syntax, ErrorCode.WRN_UnreachableCode);
+                    _diagnostics.Add(_routine, syntax, ErrorCode.WRN_UnreachableCode);
                 }
                 else
                 {
                     // If there is no statement to report the diagnostic for, search further
                     // - needed for while, do while and scenarios such as if (...) { return; } else { return; } ...
-                    block.NextEdge?.Targets.ForEach(_unreachableQueue.Enqueue);
+                    block.NextEdge?.Targets.ForEach(_unreachables.Enqueue);
                 }
-
             }
         }
 

@@ -66,7 +66,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // analyse missing or redefined labels
             CheckLabels(x.Labels);
 
-            // TODO: Report also unreachable code caused by situations like if (false) { ... }
+            // report unreachable blocks
             CheckUnreachableCode(x);
         }
 
