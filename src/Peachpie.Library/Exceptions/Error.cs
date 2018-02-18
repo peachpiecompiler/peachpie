@@ -13,7 +13,7 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName)]
     public class Error : System.Exception, Throwable
     {
-        internal readonly PhpStackTrace _stacktrace;
+        internal readonly PhpStackTrace/*!*/_stacktrace;
         internal Throwable _previous;
 
         protected string message;
@@ -22,7 +22,10 @@ namespace Pchp.Library.Spl
         protected int line;
 
         [PhpFieldsOnlyCtor]
-        protected Error() { }
+        protected Error()
+        {
+            _stacktrace = new PhpStackTrace();
+        }
 
         public Error(string message = "", long code = 0, Throwable previous = null)
             : base(message, previous as System.Exception)

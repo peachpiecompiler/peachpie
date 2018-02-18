@@ -10,7 +10,7 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName)]
     public class Exception : System.Exception, Throwable
     {
-        internal readonly PhpStackTrace _stacktrace;
+        internal readonly PhpStackTrace/*!*/_stacktrace;
         internal Throwable _previous;
 
         protected string message;
@@ -19,7 +19,10 @@ namespace Pchp.Library.Spl
         protected int line;
 
         [PhpFieldsOnlyCtor]
-        protected Exception() { }
+        protected Exception()
+        {
+            _stacktrace = new PhpStackTrace();
+        }
 
         public Exception(string message = "", long code = 0, Throwable previous = null)
             :base(message, innerException: previous as System.Exception)
