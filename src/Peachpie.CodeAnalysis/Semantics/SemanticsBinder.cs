@@ -868,7 +868,9 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.ValueAssignEx assignEx)
             {
                 var readaccess = BoundAccess.Read;
-                if (!(target is BoundListEx))   // we don't need copy of RValue if assigning to list()
+
+                // we don't need copy of RValue if assigning to list() or in a part of compound operation
+                if (expr.Operation == AST.Operations.AssignValue && !(target is BoundListEx))
                 {
                     readaccess = readaccess.WithReadCopy();
                 }

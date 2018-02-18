@@ -351,24 +351,27 @@ namespace Pchp.CodeAnalysis.Semantics
             // TODO: check callable, iterable, type if not resolved in ct
 
             // check NotNull
-            if (srcparam.IsNotNull && valueplace.TypeOpt.IsReferenceType)
+            if (srcparam.IsNotNull)
             {
-                cg.EmitSequencePoint(srcparam.Syntax);
+                if (valueplace.TypeOpt.IsReferenceType && valueplace.TypeOpt != cg.CoreTypes.PhpAlias)
+                {
+                    cg.EmitSequencePoint(srcparam.Syntax);
 
-                // Template: if (<param> == null) { PhpException.ArgumentNullError(param_name); }
-                var lbl_notnull = new object();
-                cg.EmitNotNull(valueplace);
-                cg.Builder.EmitBranch(ILOpCode.Brtrue_s, lbl_notnull);
+                    // Template: if (<param> == null) { PhpException.ArgumentNullError(param_name); }
+                    var lbl_notnull = new object();
+                    cg.EmitNotNull(valueplace);
+                    cg.Builder.EmitBranch(ILOpCode.Brtrue_s, lbl_notnull);
 
-                // PhpException.ArgumentNullError(param_name);
-                // Consider: just Debug.Assert(<param> != null) for private methods
-                cg.Builder.EmitStringConstant(srcparam.Name);
-                cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreTypes.PhpException.Method("ArgumentNullError", cg.CoreTypes.String)));
+                    // PhpException.ArgumentNullError(param_name);
+                    // Consider: just Debug.Assert(<param> != null) for private methods
+                    cg.Builder.EmitStringConstant(srcparam.Name);
+                    cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreTypes.PhpException.Method("ArgumentNullError", cg.CoreTypes.String)));
 
-                //
-                cg.Builder.EmitOpCode(ILOpCode.Nop);
+                    //
+                    cg.Builder.EmitOpCode(ILOpCode.Nop);
 
-                cg.Builder.MarkLabel(lbl_notnull);
+                    cg.Builder.MarkLabel(lbl_notnull);
+                }
             }
         }
 
@@ -400,9 +403,11 @@ namespace Pchp.CodeAnalysis.Semantics
                 // target local must differ from source parameter ?
                 if (srcparam.IsFake || (srcparam.Type != cg.CoreTypes.PhpValue && srcparam.Type != cg.CoreTypes.PhpAlias && srcparam.Type != clrtype))
                 {
-                    _lazyplace = new LocalPlace(cg.Builder.LocalSlotManager.DeclareLocal(
+                    var loc = cg.Builder.LocalSlotManager.DeclareLocal(
                         clrtype, new SynthesizedLocalSymbol(srcparam.Routine, srcparam.Name, clrtype), srcparam.Name,
-                        SynthesizedLocalKind.UserDefined, LocalDebugId.None, 0, LocalSlotConstraints.None, false, default(ImmutableArray<TypedConstant>), false));
+                        SynthesizedLocalKind.UserDefined, LocalDebugId.None, 0, LocalSlotConstraints.None, false, default(ImmutableArray<TypedConstant>), false);
+                    _lazyplace = new LocalPlace(loc);
+                    cg.Builder.AddLocalToScope(loc);
                 }
             }
 

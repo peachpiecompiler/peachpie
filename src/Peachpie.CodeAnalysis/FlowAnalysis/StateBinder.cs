@@ -32,8 +32,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var state = new FlowState(flowCtx);
 
             // handle input parameters type
-            var parameters = routine.SourceParameters;
-            foreach (var p in parameters)
+            foreach (var p in routine.SourceParameters)
             {
                 var local = state.GetLocalHandle(new VariableName(p.Name));
                 var ptype = p.GetResultType(typeCtx);
