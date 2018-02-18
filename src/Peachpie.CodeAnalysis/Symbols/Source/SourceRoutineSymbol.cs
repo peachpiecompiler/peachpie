@@ -311,7 +311,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 else
                 {
                     // implicitVarArgs replaces optional srcparams
-                    for (int i = 0; i < srcparams.Length && srcparams[i].Initializer == null; i++)
+                    for (int i = 0; i < srcparams.Length && srcparams[i].Ordinal < implicitVarArgs.Ordinal; i++)
                     {
                         result.Add(srcparams[i]);
                     }
@@ -329,11 +329,15 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 // [implicit parameters], [source parameters], [...varargs]
 
-                var ps1 = ImplicitParameters;
-                var ps2 = SourceParameters;
-                var vararg = (VarargsParam != null) ? 1 : 0;
-
-                return ps1.Count + ps2.Length + vararg;
+                var implicitVarArgs = VarargsParam;
+                if (implicitVarArgs != null)
+                {
+                    return implicitVarArgs.Ordinal + 1;
+                }
+                else
+                {
+                    return ImplicitParameters.Count + SourceParameters.Length;
+                }
             }
         }
 
