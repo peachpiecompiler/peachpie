@@ -10,6 +10,11 @@ namespace Pchp.Library
 {
     public static class Miscellaneous
     {
+        /// <summary>
+        /// The Server API for this build of PHP. See also <see cref="php_sapi_name"/>.
+        /// </summary>
+        public static string PHP_SAPI => "dotnet"; // TODO: cli/isapi
+
         // [return: CastToFalse] // once $extension will be supported
         public static string phpversion(string extension = null)
         {

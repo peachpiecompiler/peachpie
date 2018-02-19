@@ -322,8 +322,16 @@ namespace Pchp.Library
         /// <returns>Array with error information or <c>null</c> if there is no error.</returns>
         public static PhpArray error_get_last(Context ctx)
         {
-            Debug.Fail(nameof(error_get_last) + ": not implemeted.");
+            // TODO: error_get_last
             return null;
+        }
+
+        /// <summary>
+        /// Clear the most recent error.
+        /// </summary>
+        public static void error_clear_last(Context ctx)
+        {
+            // TODO
         }
     }
 }

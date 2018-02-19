@@ -936,6 +936,7 @@ namespace Pchp.Library
         /// <summary>
         /// Replaces substrings according to a dictionary.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="str">Input string.</param>
         /// <param name="replacePairs">
         /// An dictionary that contains <see cref="string"/> to <see cref="string"/> replacement mapping.
@@ -944,7 +945,7 @@ namespace Pchp.Library
         /// <remarks>This function will not try to replace stuff that it has already worked on.</remarks>
         /// <exception cref="PhpException">Thrown if the <paramref name="replacePairs"/> argument is null.</exception>
         [return: CastToFalse]
-        public static string strtr(string str, PhpArray replacePairs)
+        public static string strtr(Context ctx, string str, PhpArray replacePairs)
         {
             if (replacePairs == null)
             {
@@ -965,7 +966,7 @@ namespace Pchp.Library
             while (replacePairsEnum.MoveNext())
             {
                 var key = replacePairsEnum.CurrentKey.ToString();
-                var value = replacePairsEnum.CurrentValue.ToString();
+                var value = replacePairsEnum.CurrentValue.ToString(ctx);
 
                 if (key.Length == 0)
                 {

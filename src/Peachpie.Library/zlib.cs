@@ -98,11 +98,9 @@ namespace Pchp.Library
         internal const int GZIP_HEADER_LENGTH = 10;
         internal const int GZIP_FOOTER_LENGTH = 8;
 
-        internal static string z_error = string.Empty;
-
         internal static string zError(int status)
         {
-            return z_error;
+            return null; // z_error;
         }
 
         #region gzdeflate, gzinflate
@@ -244,7 +242,7 @@ namespace Pchp.Library
             }
             else
             {
-                PhpException.Throw(PhpError.Warning, zError(status));
+                PhpException.Throw(PhpError.Warning, zError(status) ?? zs.msg);
                 return default(PhpString);
             }
         }
@@ -368,6 +366,7 @@ namespace Pchp.Library
             int factor = 1, maxfactor = 16;
             byte[] output;
             int status;
+            string msg;
 
             do
             {
@@ -382,7 +381,7 @@ namespace Pchp.Library
                     return default(PhpString);
                 }
 
-                status = ZlibUncompress(ref output, data);
+                status = ZlibUncompress(ref output, data, out msg);
             }
             while ((status == zlibConst.Z_BUF_ERROR) && (length == 0) && (factor < maxfactor));
 
@@ -392,7 +391,7 @@ namespace Pchp.Library
             }
             else
             {
-                PhpException.Throw(PhpError.Warning, zError(status));
+                PhpException.Throw(PhpError.Warning, zError(status) ?? msg);
                 return default(PhpString);
             }
         }
@@ -439,35 +438,43 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="dest">Destination array of bytes. May be trimmed if necessary.</param>
         /// <param name="source">Source array of bytes.</param>
+        /// <param name="msg">Eventual message from zstream.</param>
         /// <returns>Zlib status code.</returns>
-        static int ZlibUncompress(ref byte[] dest, byte[] source)
+        static int ZlibUncompress(ref byte[] dest, byte[] source, out string msg)
         {
-            ZStream stream = new ZStream();
+            var zs = new ZStream();
             int err;
 
-            stream.next_in = source;
-            stream.avail_in = source.Length;
-            stream.next_out = dest;
-            stream.avail_out = dest.Length;
+            zs.next_in = source;
+            zs.avail_in = source.Length;
+            zs.next_out = dest;
+            zs.avail_out = dest.Length;
 
-            err = stream.inflateInit();
-            if (err != zlibConst.Z_OK) return err;
+            err = zs.inflateInit();
+            if (err != zlibConst.Z_OK)
+            {
+                msg = zs.msg;
+                return err;
+            }
 
-            err = stream.inflate(zlibConst.Z_FINISH);
+            err = zs.inflate(zlibConst.Z_FINISH);
             if (err != zlibConst.Z_STREAM_END)
             {
-                stream.inflateEnd();
+                zs.inflateEnd();
+                msg = zs.msg;
                 return err == zlibConst.Z_OK ? zlibConst.Z_BUF_ERROR : err;
             }
 
-            if (stream.total_out != dest.Length)
+            if (zs.total_out != dest.Length)
             {
-                byte[] output = new byte[stream.total_out];
-                Buffer.BlockCopy(stream.next_out, 0, output, 0, (int)stream.total_out);
+                byte[] output = new byte[zs.total_out];
+                Buffer.BlockCopy(zs.next_out, 0, output, 0, (int)zs.total_out);
                 dest = output;
             }
 
-            return stream.inflateEnd();
+            msg = zs.msg;
+
+            return zs.inflateEnd();
         }
 
         #endregion
@@ -556,8 +563,6 @@ namespace Pchp.Library
                 status = zs.deflateEnd();
             }
 
-            z_error = zs.msg;
-
             if (status == zlibConst.Z_OK)
             {
                 long output_length = zs.total_out + (encoding_mode == (int)ForceConstants.FORCE_GZIP ? GZIP_HEADER_LENGTH + GZIP_FOOTER_LENGTH : GZIP_HEADER_LENGTH);
@@ -594,7 +599,7 @@ namespace Pchp.Library
             }
             else
             {
-                PhpException.Throw(PhpError.Warning, zError(status));
+                PhpException.Throw(PhpError.Warning, zError(status) ?? zs.msg);
                 return default(PhpString);
             }
         }
