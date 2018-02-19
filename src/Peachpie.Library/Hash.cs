@@ -341,6 +341,11 @@ namespace Pchp.Library
 
                         //algs["snefru256"] = () => new SNEFRU256();
 
+                        algs["fnv132"] = () => new FNV132();
+                        algs["fnv1a32"] = () => new FNV1a32();
+                        algs["fnv164"] = () => new FNV164();
+                        algs["fnv1a64"] = () => new FNV1a64();
+
                         _HashAlgorithms = algs;
                     }
 
@@ -1853,6 +1858,165 @@ namespace Pchp.Library
                 }
 
                 #endregion
+            }
+            abstract class FNV1 : HashPhpResource
+            {
+
+            }
+            abstract class FNV1_32 : HashPhpResource
+            {
+                const uint PHP_FNV1_32_INIT = 0x811c9dc5;
+                const uint PHP_FNV_32_PRIME = 0x01000193;
+
+                protected UInt32 _state;
+
+                public override int BlockSize => 4;
+
+                public override void Init()
+                {
+                    _state = PHP_FNV1_32_INIT;
+                }
+
+                //public override bool Update(byte[] data)
+                //{
+                //    _state = fnv_32_buf(data, _state, 0);
+                //}
+
+                public override byte[] Final()
+                {
+                    var bytes = BitConverter.GetBytes(_state);
+                    Array.Reverse(bytes, 0, bytes.Length);
+                    return bytes;
+                }
+
+                protected static uint fnv_32_buf(byte[] buf, uint hval, int alternate)
+                {
+                    for (int i = 0; i < buf.Length; i++)
+                    {
+                        if (alternate == 0)
+                        {
+                            hval *= PHP_FNV_32_PRIME;
+                            hval ^= (uint)buf[i];
+                        }
+                        else
+                        {
+                            hval ^= (uint)buf[i];
+                            hval *= PHP_FNV_32_PRIME;
+                        }
+                    }
+
+                    /* return our new hash value */
+                    return hval;
+                }
+            }
+            sealed class FNV132 : FNV1_32
+            {
+                public override HashPhpResource Clone()
+                {
+                    var x = new FNV132()
+                    {
+                        _state = _state,
+                    };
+                    CloneHashState(x);
+                    return x;
+                }
+                public override bool Update(byte[] data)
+                {
+                    _state = fnv_32_buf(data, _state, 0);
+                    return true;
+                }
+            }
+            sealed class FNV1a32 : FNV1_32
+            {
+                public override HashPhpResource Clone()
+                {
+                    var x = new FNV1a32()
+                    {
+                        _state = _state,
+                    };
+                    CloneHashState(x);
+                    return x;
+                }
+                public override bool Update(byte[] data)
+                {
+                    _state = fnv_32_buf(data, _state, 1);
+                    return true;
+                }
+            }
+            abstract class FNV1_64 : HashPhpResource
+            {
+                const ulong PHP_FNV1_64_INIT = 0xcbf29ce484222325;
+                const ulong PHP_FNV_64_PRIME = 0x100000001b3;
+
+                protected UInt64 _state;
+
+                public override int BlockSize => 8;
+
+                public override void Init()
+                {
+                    _state = PHP_FNV1_64_INIT;
+                }
+
+                public override byte[] Final()
+                {
+                    var bytes = BitConverter.GetBytes(_state);
+                    Array.Reverse(bytes, 0, bytes.Length);
+                    return bytes;
+                }
+
+                protected static ulong fnv_64_buf(byte[] buf, ulong hval, int alternate)
+                {
+                    for (int i = 0; i < buf.Length; i++)
+                    {
+                        if (alternate == 0)
+                        {
+                            hval *= PHP_FNV_64_PRIME;
+                            hval ^= (ulong)buf[i];
+                        }
+                        else
+                        {
+                            hval ^= (ulong)buf[i];
+                            hval *= PHP_FNV_64_PRIME;
+                        }
+                    }
+
+                    /* return our new hash value */
+                    return hval;
+                }
+            }
+            sealed class FNV164 : FNV1_64
+            {
+                public override HashPhpResource Clone()
+                {
+                    var x = new FNV164()
+                    {
+                        _state = _state,
+                    };
+                    CloneHashState(x);
+                    return x;
+                }
+                public override bool Update(byte[] data)
+                {
+                    _state = fnv_64_buf(data, _state, 0);
+                    return true;
+                }
+            }
+            sealed class FNV1a64 : FNV1_64
+            {
+                public override HashPhpResource Clone()
+                {
+                    var x = new FNV1a64()
+                    {
+                        _state = _state,
+                    };
+                    CloneHashState(x);
+                    return x;
+                }
+                public override bool Update(byte[] data)
+                {
+                    _state = fnv_64_buf(data, _state, 1);
+                    return true;
+                }
             }
 
             #endregion
