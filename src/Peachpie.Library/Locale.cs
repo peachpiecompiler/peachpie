@@ -282,18 +282,36 @@ namespace Pchp.Library
             // enumerates locales and finds out the first which is valid:
             for (;;)
             {
-                var name = locale.IsNull ? null : locale.ToString(ctx);
+                var name = locale.IsNull ? string.Empty : locale.ToString(ctx);
 
-                culture = GetCultureByName(name);
+                var dot = name.IndexOf('.');
+                if (dot >= 0)
+                {
+                    // TODO: {codepage} after the dot for character encoding (usualy UTF-8)
+                    name = name.Remove(dot);
+                }
 
                 // name is "empty" then the current culture is not changed:
-                if (name == null || name == "0") return false;
+                if (string.IsNullOrEmpty(name) || name == "0" || name == "C")
+                {
+                    culture = CultureInfo.InvariantCulture;
+                    return false;
+                }
+
+                //
+                culture = GetCultureByName(name);
 
                 // if culture exists and is specific then finish searching:
-                if (culture != null) return true;
+                if (culture != null)
+                {
+                    return true;
+                }
 
                 // the next locale:
-                if (!locales.MoveNext()) return false;
+                if (!locales.MoveNext())
+                {
+                    return false;
+                }
 
                 locale = locales.Current;
             }
@@ -325,12 +343,6 @@ namespace Pchp.Library
         /// </summary>
         static CultureInfo GetCultureByName(string name)
         {
-            // invariant culture:
-            if (string.IsNullOrEmpty(name) || name == "0" || name == "C")
-            {
-                return CultureInfo.InvariantCulture;
-            }
-
             int separator = name.IndexOfAny(CultureNameSeparators);
             if (separator < 0)
             {
