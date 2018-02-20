@@ -10,11 +10,6 @@ namespace Pchp.Library
 {
     public static class Miscellaneous
     {
-        /// <summary>
-        /// The Server API for this build of PHP. See also <see cref="php_sapi_name"/>.
-        /// </summary>
-        public static string PHP_SAPI => "dotnet"; // TODO: cli/isapi
-
         // [return: CastToFalse] // once $extension will be supported
         public static string phpversion(string extension = null)
         {
@@ -328,10 +323,7 @@ namespace Pchp.Library
         /// Returns the type of web server interface.
         /// </summary>
         /// <returns>The "isapi" string if runned under webserver (ASP.NET works via ISAPI) or "cli" otherwise.</returns>
-        public static string php_sapi_name(Context ctx)
-        {
-            return (ctx.IsWebApplication) ? "isapi" : "cli";    // TODO: Context.SapiName
-        }
+        public static string php_sapi_name(Context ctx) => ctx.ServerApi ?? "isapi";
 
         #endregion
 

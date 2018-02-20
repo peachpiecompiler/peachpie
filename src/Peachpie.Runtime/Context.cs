@@ -31,6 +31,9 @@ namespace Pchp.Core
             _functions = new RoutinesTable(RoutinesAppContext.NameToIndex, RoutinesAppContext.AppRoutines, RoutinesAppContext.ContextRoutinesCounter, FunctionRedeclared);
             _types = new TypesTable(TypesAppContext.NameToIndex, TypesAppContext.AppTypes, TypesAppContext.ContextTypesCounter, TypeRedeclared);
             _statics = new object[StaticIndexes.StaticsCount];
+
+            //
+            this.DefineConstant("PHP_SAPI", (PhpValue)this.ServerApi, ignorecase: false);
         }
 
         /// <summary>

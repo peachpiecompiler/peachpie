@@ -269,6 +269,11 @@ namespace Peachpie.RequestHandler
         /// <summary>Debug display string.</summary>
         protected override string DebugDisplay => _httpctx.Request.RawUrl;
 
+        /// <summary>
+        /// Gets server type interface name.
+        /// </summary>
+        public override string ServerApi => "isapi";
+
         public override IHttpPhpContext HttpPhpContext => this;
 
         /// <summary>

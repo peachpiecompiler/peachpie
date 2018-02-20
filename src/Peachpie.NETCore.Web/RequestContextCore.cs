@@ -249,6 +249,11 @@ namespace Peachpie.Web
         readonly Encoding _encoding;
 
         /// <summary>
+        /// Gets server type interface name.
+        /// </summary>
+        public override string ServerApi => "isapi";
+
+        /// <summary>
         /// Reference to current <see cref="HttpContext"/>.
         /// Cannot be <c>null</c>.
         /// </summary>

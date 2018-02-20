@@ -17,6 +17,11 @@ namespace Pchp.Core
         public virtual Encoding StringEncoding => Encoding.UTF8;
 
         /// <summary>
+        /// Gets name of the server API (aka <c>PHP_SAPI</c> PHP constant).
+        /// </summary>
+        public virtual string ServerApi => null;
+
+        /// <summary>
         /// Gets number format used for converting <see cref="double"/> to <see cref="string"/>.
         /// </summary>
         public virtual NumberFormatInfo NumberFormat => NumberFormatInfo.InvariantInfo;

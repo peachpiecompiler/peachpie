@@ -16,6 +16,11 @@ namespace Pchp.Core
 		sealed class ConsoleContext : Context
         {
             /// <summary>
+            /// Gets server type interface name.
+            /// </summary>
+            public override string ServerApi => "cli";
+
+            /// <summary>
             /// Initializes the console context.
             /// </summary>
             /// <param name="mainscript">Entry script file name.</param>
