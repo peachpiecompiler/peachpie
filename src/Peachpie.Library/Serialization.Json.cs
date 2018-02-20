@@ -100,6 +100,8 @@ namespace Pchp.Library
                 bool HasHexTag => (_encodeOptions & JsonEncodeOptions.JSON_HEX_TAG) != 0;
                 bool HasNumericCheck => (_encodeOptions & JsonEncodeOptions.JSON_NUMERIC_CHECK) != 0;
                 bool HasPrettyPrint => (_encodeOptions & JsonEncodeOptions.JSON_PRETTY_PRINT) != 0;
+                bool HasUnescapedSlashes => (_encodeOptions & JsonEncodeOptions.JSON_UNESCAPED_SLASHES) != 0;
+                bool HasUnescapedUnicode => (_encodeOptions & JsonEncodeOptions.JSON_UNESCAPED_UNICODE) != 0;
 
                 #endregion
 
@@ -320,7 +322,9 @@ namespace Pchp.Library
                         case '\n': return (Tokens.EscapedNewLine);
                         case '\r': return (Tokens.EscapedCR);
                         case '\t': return (Tokens.EscapedTab);
-                        case '/': return (Tokens.EscapedSolidus);
+                        case '/':
+                            if (HasUnescapedSlashes) { goto default; }
+                            return (Tokens.EscapedSolidus);
                         case Tokens.Escape: return (Tokens.EscapedReverseSolidus);
                         case '\b': return (Tokens.EscapedBackspace);
                         case '\f': return (Tokens.EscapedFormFeed);
@@ -626,9 +630,19 @@ namespace Pchp.Library
             JSON_NUMERIC_CHECK = 32,
 
             /// <summary>
+            /// Don't escape /.
+            /// </summary>
+            JSON_UNESCAPED_SLASHES = 64,
+
+            /// <summary>
             /// Use whitespace in returned data to format it.
             /// </summary>
-            JSON_PRETTY_PRINT = 64,
+            JSON_PRETTY_PRINT = 128,
+
+            /// <summary>
+            /// Encode multibyte Unicode characters literally (default is to escape as \uXXXX).
+            /// </summary>
+            JSON_UNESCAPED_UNICODE = 256,
         }
 
         public const int JSON_HEX_TAG = (int)JsonEncodeOptions.JSON_HEX_TAG;
@@ -637,7 +651,9 @@ namespace Pchp.Library
         public const int JSON_HEX_QUOT = (int)JsonEncodeOptions.JSON_HEX_QUOT;
         public const int JSON_FORCE_OBJECT = (int)JsonEncodeOptions.JSON_FORCE_OBJECT;
         public const int JSON_NUMERIC_CHECK = (int)JsonEncodeOptions.JSON_NUMERIC_CHECK;
+        public const int JSON_UNESCAPED_SLASHES = (int)JsonEncodeOptions.JSON_UNESCAPED_SLASHES;
         public const int JSON_PRETTY_PRINT = (int)JsonEncodeOptions.JSON_PRETTY_PRINT;
+        public const int JSON_UNESCAPED_UNICODE = (int)JsonEncodeOptions.JSON_UNESCAPED_UNICODE;
 
         /// <summary>
         /// Options given to json_decode function.
