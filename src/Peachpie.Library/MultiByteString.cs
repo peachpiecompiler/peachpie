@@ -27,7 +27,7 @@ namespace Pchp.Library
             /// <summary>
             /// Gets or sets a value of a legacy configuration option.
             /// </summary>
-            private static PhpValue GetSet(IPhpConfigurationService config, string option, PhpValue value, IniAction action)
+            private static PhpValue GetSet(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
             {
                 var local = config.Get<MbConfig>();
                 if (local == null)
@@ -43,7 +43,11 @@ namespace Pchp.Library
                     //mbstring.http_output    "pass"  PHP_INI_ALL Available since PHP 4.0.6.Deprecated in PHP 5.6.0.
                     //mbstring.script_encoding    NULL PHP_INI_ALL Available since PHP 4.3.0.Removed in PHP 5.4.0.Use zend.script_encoding instead.
                     //mbstring.substitute_character NULL    PHP_INI_ALL Available since PHP 4.0.6.
-                    //mbstring.func_overload  "0" PHP_INI_SYSTEM PHP_INI_PERDIR from PHP 4.3 to 5.2.6, otherwise PHP_INI_SYSTEM. Available since PHP 4.2.0.Deprecated in PHP 7.2.0.
+
+                    case "mbstring.func_overload":
+                        // "0" PHP_INI_SYSTEM PHP_INI_PERDIR from PHP 4.3 to 5.2.6, otherwise PHP_INI_SYSTEM. Available since PHP 4.2.0.Deprecated in PHP 7.2.0.
+                        return (PhpValue)0;
+                    
                     //mbstring.encoding_translation   "0" PHP_INI_PERDIR Available since PHP 4.3.0.
                     //mbstring.strict_detection   "0" PHP_INI_ALL Available since PHP 5.1.2.
                     //mbstring.internal_encoding  NULL PHP_INI_ALL Available since PHP 4.0.6.Deprecated in PHP 5.6.0.
@@ -61,10 +65,10 @@ namespace Pchp.Library
             /// </summary>
             internal static void RegisterLegacyOptions()
             {
-                //const string s = "mbstring";
-                //GetSetDelegate d = new GetSetDelegate(GetSet);
+                var d = new GetSetDelegate(GetSet);
 
                 //Register("mbstring.internal_encoding", IniFlags.Supported | IniFlags.Local, d, s);
+                Register("mbstring.func_overload", IniFlags.Supported | IniFlags.Local, d, MultiByteString.ExtensionName);
             }
         }
 
