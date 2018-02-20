@@ -217,6 +217,7 @@ namespace Peachpie.Library.MySql.MySqli
 
         /// <summary>
         /// Frees the memory associated with a result.
+        /// Alias to <see cref="mysqli_result.close"/>
         /// </summary>
         public static void mysqli_free_result(mysqli_result result) => result.close();
     }

@@ -12,6 +12,7 @@ namespace Peachpie.Library.MySql.MySqli
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
     [PhpExtension(Constants.ExtensionName)]
+    [DebuggerDisplay("mysqli_result")]
     public sealed class mysqli_result : Iterator
     {
         readonly MySqlResultResource _result;
@@ -196,9 +197,14 @@ namespace Peachpie.Library.MySql.MySqli
         public bool field_seek(int fieldnr) => _result.SeekField(fieldnr);
 
         /// <summary>
-        /// Frees the memory associated with a result.
+        /// Alias to <see cref="close"/>.
         /// </summary>
         public void free() => close();
+
+        /// <summary>
+        /// Alias to <see cref="close"/>.
+        /// </summary>
+        public void free_result() => close();
 
         /// <summary>
         /// Frees the memory associated with a result.
