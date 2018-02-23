@@ -479,62 +479,50 @@ namespace Pchp.Core
 
         public static bool IsLong(this PhpValue value, out long l)
         {
-            if (value.TypeCode == PhpTypeCode.Long)
+            switch (value.TypeCode)
             {
-                l = value.Long;
-                return true;
+                case PhpTypeCode.Long:
+                    l = value.Long;
+                    return true;
+                case PhpTypeCode.Int32:
+                    l = value.ToLong();
+                    return true;
+                case PhpTypeCode.Alias:
+                    return IsLong(value.Alias.Value, out l);
+                default:
+                    l = default(long);
+                    return false;
             }
-
-            if (value.TypeCode == PhpTypeCode.Int32)
-            {
-                l = value.ToLong();
-                return true;
-            }
-
-            if (value.TypeCode == PhpTypeCode.Alias)
-            {
-                return IsLong(value.Alias.Value, out l);
-            }
-
-            //
-            l = default(long);
-            return false;
         }
 
         public static bool IsDouble(this PhpValue value, out double d)
         {
-            if (value.TypeCode == PhpTypeCode.Double)
+            switch (value.TypeCode)
             {
-                d = value.Double;
-                return true;
+                case PhpTypeCode.Double:
+                    d = value.Double;
+                    return true;
+                case PhpTypeCode.Alias:
+                    return IsDouble(value.Alias.Value, out d);
+                default:
+                    d = default(double);
+                    return false;
             }
-
-            if (value.TypeCode == PhpTypeCode.Alias)
-            {
-                return IsDouble(value.Alias.Value, out d);
-            }
-
-            //
-            d = default(double);
-            return false;
         }
 
         public static bool IsBoolean(this PhpValue value, out bool b)
         {
-            if (value.TypeCode == PhpTypeCode.Boolean)
+            switch (value.TypeCode)
             {
-                b = value.Boolean;
-                return true;
+                case PhpTypeCode.Boolean:
+                    b = value.Boolean;
+                    return true;
+                case PhpTypeCode.Alias:
+                    return IsBoolean(value.Alias.Value, out b);
+                default:
+                    b = default(bool);
+                    return false;
             }
-
-            if (value.TypeCode == PhpTypeCode.Alias)
-            {
-                return IsBoolean(value.Alias.Value, out b);
-            }
-
-            //
-            b = default(bool);
-            return false;
         }
     }
 }

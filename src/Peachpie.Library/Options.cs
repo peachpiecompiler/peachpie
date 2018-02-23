@@ -101,6 +101,9 @@ namespace Pchp.Library
         {
             switch (option.ToLowerInvariant())
             {
+                case "precision":
+                    // TODO: this can be set in .NET <see cref="Core.Convert.ToString(double, Context)"/> by specifying "G{precision}", consider performance
+                    return (PhpValue)15;    // default Double precision in .NET
                 case "allow_url_fopen":
                     return (PhpValue)GetSet(ref config.Core.AllowUrlFopen, true, value, action);
                 case "include_path":
@@ -242,7 +245,7 @@ namespace Pchp.Library
             Register("output_buffering", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
             Register("output_handler", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
             Register("post_max_size", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrcore);
-            Register("precision", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
+            Register("precision", IniFlags.Supported | IniFlags.Local, gsrcore);
             Register("register_argc_argv", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
             Register("register_globals", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
             Register("register_long_arrays", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
