@@ -2207,9 +2207,9 @@ namespace Pchp.Library
             var algos = HashPhpResource.HashAlgorithms;
             var result = new PhpArray(algos.Count);
 
-            foreach (var x in algos)
+            foreach (var name in algos.Keys)
             {
-                result.Add((PhpValue)x.Key);
+                result.Add((PhpValue)name);
             }
 
             return result;
@@ -2252,9 +2252,12 @@ namespace Pchp.Library
                 PhpException.Throw(PhpError.Warning, "HMAC requested without a key");   // TODO: to resources
                 return null;
             }
+            else
+            {
+                key = null;
+            }
 
-            HashPhpResource.HashAlgFactory algFactory;
-            if (!HashPhpResource.HashAlgorithms.TryGetValue(algo, out algFactory))
+            if (!HashPhpResource.HashAlgorithms.TryGetValue(algo, out HashPhpResource.HashAlgFactory algFactory))
             {
                 PhpException.Throw(PhpError.Warning, "Unknown hashing algorithm: " + algo);   // TODO: to resources
                 return null;
@@ -2263,42 +2266,46 @@ namespace Pchp.Library
             //
             // create the hashing algorithm context
             //
-            HashPhpResource h = algFactory();
-            h.options = options;
+            return hash_init(algFactory(), key);
+        }
 
+        static HashPhpResource hash_init(HashPhpResource h, byte[] hmac_key = null)
+        {
             //
             // HMAC
             //
-            if (hmac)
+            if (hmac_key != null)
             {
+                h.options |= HashInitOptions.HASH_HMAC;
+
                 // Take the given key and hash it in the context of newly created hashing context.
 
                 Debug.Assert(h.BlockSize > 0);
-                if (key.Length > h.BlockSize)
+                if (hmac_key.Length > h.BlockSize)
                 {
                     // provided key is too long, hash it to obtain shorter key
-                    h.Update(key);
-                    key = h.Final();
+                    h.Update(hmac_key);
+                    hmac_key = h.Final();
                     h.Init();// restart the algorithm
                 }
                 else
                 {
-                    key = (byte[])key.Clone();
+                    hmac_key = (byte[])hmac_key.Clone();
                 }
 
-                if (key.Length != h.BlockSize)
+                if (hmac_key.Length != h.BlockSize)
                 {
-                    Debug.Assert(key.Length < h.BlockSize);
+                    Debug.Assert(hmac_key.Length < h.BlockSize);
                     byte[] KAligned = new byte[h.BlockSize];
-                    key.CopyTo(KAligned, 0);
-                    key = KAligned;
+                    hmac_key.CopyTo(KAligned, 0);
+                    hmac_key = KAligned;
                 }
 
-                for (int i = 0; i < key.Length; ++i)
-                    key[i] ^= 0x36;
+                for (int i = 0; i < hmac_key.Length; ++i)
+                    hmac_key[i] ^= 0x36;
 
-                h.Update(key);
-                h.HMACkey = key;
+                h.Update(hmac_key);
+                h.HMACkey = hmac_key;
             }
 
             return h;
@@ -2327,6 +2334,18 @@ namespace Pchp.Library
                 return default(PhpString);
             }
 
+            byte[] hash = hash_final(h);
+
+            //
+            // output
+            //
+            return raw_output
+                ? new PhpString(hash)
+                : new PhpString(StringUtils.BinToHex(hash));
+        }
+
+        static byte[] hash_final(HashPhpResource h)
+        {
             byte[] hash = h.Final();
 
             //
@@ -2350,12 +2369,7 @@ namespace Pchp.Library
                 h.HMACkey = null;
             }
 
-            //
-            // output
-            //
-            return raw_output
-                ? new PhpString(hash)
-                : new PhpString(StringUtils.BinToHex(hash));
+            return hash;
         }
 
         public static bool hash_update_file(Context ctx, PhpResource context, string filename, PhpResource stream_context = null)
@@ -2479,13 +2493,19 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpString hash_hmac(string algo, byte[] data, byte[] key, bool raw_output = false)
         {
-            var h = hash_init(algo, HashInitOptions.HASH_HMAC, key);
-            if (h == null || !hash_update(h, data))
+            var h = (HashPhpResource)hash_init(algo, HashInitOptions.HASH_HMAC, key);
+            if (h == null || !h.Update(data))
             {
                 return default(PhpString);
             }
 
             return hash_final(h, raw_output);
+        }
+
+        static byte[] hash_hmac(HashPhpResource h, byte[] data, byte[] key)
+        {
+            hash_init(h, key).Update(data);
+            return hash_final(h);
         }
 
         [return: CastToFalse]
@@ -2527,23 +2547,74 @@ namespace Pchp.Library
 
         #endregion
 
-        //#region hash_pbkdf2 (TODO)
+        #region hash_pbkdf2
 
-        ///// <summary>
-        ///// Generate a PBKDF2 key derivation of a supplied password.
-        ///// </summary>
-        //public static PhpString hash_pbkdf2(string algo, string password, byte[] salt, int iterations, int length = 0, bool raw_output = false)
-        //{
-        //    // TODO: algo != "sha1"
+        /// <summary>
+        /// Generate a PBKDF2 key derivation of a supplied password.
+        /// </summary>
+        public static PhpString hash_pbkdf2(string algo, byte[] password, byte[] salt, int iterations, int length = 0, bool raw_output = false)
+        {
+            if (!HashPhpResource.HashAlgorithms.TryGetValue(algo, out HashPhpResource.HashAlgFactory algFactory))
+            {
+                throw new ArgumentException();
+            }
 
-        //    var pbkdf2 = new Rfc2898DeriveBytes(password, salt, iterations);    // NOTE: SHA1 implementation
-        //    var bytes = pbkdf2.GetBytes(length > 0 ? length : 160);
+            var h = algFactory();
 
-        //    return raw_output
-        //        ? new PhpString(bytes)
-        //        : new PhpString(StringUtils.BinToHex(bytes, string.Empty));
-        //}
+            var blockCount = (length <= 0) ? 1 : Math.Ceiling((double)length / h.BlockSize);
+            Debug.Assert(blockCount >= 1);
 
-        //#endregion
+            // prepare computed_salt[]: salt[] + [4]
+            var computed_salt = new byte[salt.Length + sizeof(int)];
+            Array.Copy(salt, computed_salt, salt.Length);
+
+            var result = new PhpString.Blob();
+
+            for (int i = 1; i <= blockCount; i++)
+            {
+                Array.Copy(BitConverter.GetBytes(i), 0, computed_salt, salt.Length, sizeof(int));
+
+                h.Init();   // restart hash algo
+
+                var total = hash_hmac(h, computed_salt, password); // init -> update -> final
+                var last = total;
+
+                for (int j = 0; j < iterations; j++)
+                {
+                    h.Init();   // restart hash algo
+
+                    last = hash_hmac(h, last, password); // init -> update -> final
+                    Debug.Assert(last.Length == total.Length);
+
+                    // total ^= last
+                    for (int t = 0; t < total.Length; t++)
+                    {
+                        total[t] ^= last[t];
+                    }
+                }
+
+                result.Add(total);
+            }
+
+            //
+            var hash = result.ToBytes(Encoding.ASCII); // no encoding needed
+
+            var bytes_count = length <= 0 ? h.BlockSize : length;
+            if (!raw_output) bytes_count /= 2;
+
+            if (hash.Length > bytes_count)
+            {
+                var tmp = new byte[bytes_count];
+                Array.Copy(hash, tmp, bytes_count);
+                hash = tmp;
+            }
+
+            //
+            return raw_output
+                ? new PhpString(hash)
+                : new PhpString(StringUtils.BinToHex(hash));
+        }
+
+        #endregion
     }
 }
