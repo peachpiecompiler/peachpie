@@ -2245,12 +2245,13 @@ namespace Pchp.Library
         //[return: CastToFalse]
         public static PhpResource hash_init(string algo, HashInitOptions options = HashInitOptions.HASH_DEFAULT, byte[] key = null)
         {
-            bool hmac = (options & HashInitOptions.HASH_HMAC) != 0;
-
-            if (hmac && (key == null || key.Length == 0))
+            if ((options & HashInitOptions.HASH_HMAC) != 0)
             {
-                PhpException.Throw(PhpError.Warning, "HMAC requested without a key");   // TODO: to resources
-                return null;
+                if (key == null || key.Length == 0)
+                {
+                    PhpException.Throw(PhpError.Warning, "HMAC requested without a key");   // TODO: to resources
+                    return null;
+                }
             }
             else
             {
