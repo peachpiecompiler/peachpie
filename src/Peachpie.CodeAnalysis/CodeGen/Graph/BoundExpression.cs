@@ -1180,9 +1180,15 @@ namespace Pchp.CodeAnalysis.Semantics
 
                     if (ytype.SpecialType == SpecialType.System_Int64)
                     {
-                        // i8 == i8
+                        // i8 === i8
                         cg.Builder.EmitOpCode(ILOpCode.Ceq);
                         return cg.CoreTypes.Boolean;
+                    }
+                    else if (ytype == cg.CoreTypes.PhpNumber)
+                    {
+                        // i8 === number
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.StrictCeq_long_PhpNumber)
+                            .Expect(SpecialType.System_Boolean);
                     }
                     else if (
                         ytype.SpecialType == SpecialType.System_Boolean ||
@@ -1192,7 +1198,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         ytype == cg.CoreTypes.Object ||
                         ytype == cg.CoreTypes.PhpString)
                     {
-                        // i8 == something else => false
+                        // i8 === something else => false
                         cg.EmitPop(ytype);
                         cg.EmitPop(xtype);
                         cg.Builder.EmitBoolConstant(false);
@@ -1200,7 +1206,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
                     else
                     {
-                        // i8 == PhpValue
+                        // i8 === PhpValue
                         cg.EmitConvertToPhpValue(ytype, 0);
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.StrictCeq_long_PhpValue)
                             .Expect(SpecialType.System_Boolean);
@@ -1213,6 +1219,12 @@ namespace Pchp.CodeAnalysis.Semantics
                         // r8 == r8
                         cg.Builder.EmitOpCode(ILOpCode.Ceq);
                         return cg.CoreTypes.Boolean;
+                    }
+                    else if (ytype == cg.CoreTypes.PhpNumber)
+                    {
+                        // r8 === number
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.StrictCeq_double_PhpNumber)
+                            .Expect(SpecialType.System_Boolean);
                     }
                     else if (
                         ytype.SpecialType == SpecialType.System_Boolean ||
