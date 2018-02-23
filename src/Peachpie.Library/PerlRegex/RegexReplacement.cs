@@ -186,7 +186,7 @@ namespace Pchp.Library.PerlRegex
         /// The right-to-left case is split out because StringBuilder
         /// doesn't handle right-to-left string building directly very well.
         /// </summary>
-        internal string Replace(Regex regex, string input, int count, int startat)
+        internal string Replace(Regex regex, string input, int count, int startat, ref long replacements)
         {
             if (count < -1)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.CountTooSmall);
@@ -216,6 +216,7 @@ namespace Pchp.Library.PerlRegex
 
                         prevat = match.Index + match.Length;
                         ReplacementImpl(sb, match);
+                        ++replacements;
                         if (--count == 0)
                             break;
 
@@ -237,6 +238,7 @@ namespace Pchp.Library.PerlRegex
 
                         prevat = match.Index;
                         ReplacementImplRTL(al, match);
+                        ++replacements;
                         if (--count == 0)
                             break;
 
@@ -266,7 +268,8 @@ namespace Pchp.Library.PerlRegex
         /// doesn't handle right-to-left string building directly very well.
         /// </summary>
         internal static string Replace(MatchEvaluator evaluator, Regex regex,
-                                       string input, int count, int startat)
+                                       string input, int count, int startat,
+                                       ref long replacements)
         {
             if (evaluator == null)
                 throw new ArgumentNullException(nameof(evaluator));
@@ -301,6 +304,8 @@ namespace Pchp.Library.PerlRegex
 
                         sb.Append(evaluator(match));
 
+                        ++replacements;
+
                         if (--count == 0)
                             break;
 
@@ -323,6 +328,8 @@ namespace Pchp.Library.PerlRegex
                         prevat = match.Index;
 
                         al.Add(evaluator(match));
+
+                        ++replacements;
 
                         if (--count == 0)
                             break;

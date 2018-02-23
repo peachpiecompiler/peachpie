@@ -131,10 +131,7 @@ namespace Pchp.Library
         }
 
         public static PhpValue preg_replace(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, long limit = -1)
-        {
-            long count;
-            return preg_replace(ctx, pattern, replacement, subject, limit, out count);
-        }
+            => preg_replace(ctx, pattern, replacement, subject, limit, out long count);
 
         /// <summary>
         /// Perform a regular expression search and replace.
@@ -305,8 +302,6 @@ namespace Pchp.Library
         {
             var regex = new PerlRegex.Regex(pattern);
 
-            // TODO: count
-
             // callback
             PerlRegex.MatchEvaluator evaluator = null;
             if (callback != null)
@@ -322,14 +317,16 @@ namespace Pchp.Library
                 };
             }
 
+            // TODO: subject as a binary string would be corrupted after Replace - https://github.com/peachpiecompiler/peachpie/issues/178
+
             //
             var subject_array = subject.AsArray();
             if (subject_array == null)
             {
                 return PhpValue.Create(
                     evaluator == null
-                        ? regex.Replace(subject.ToStringOrThrow(ctx), replacement, limit)
-                        : regex.Replace(subject.ToStringOrThrow(ctx), evaluator, limit));
+                        ? regex.Replace(subject.ToStringOrThrow(ctx), replacement, limit, ref count)
+                        : regex.Replace(subject.ToStringOrThrow(ctx), evaluator, limit, ref count));
             }
             else
             {
@@ -338,8 +335,8 @@ namespace Pchp.Library
                 while (enumerator.MoveNext())
                 {
                     var newvalue = evaluator == null
-                        ? regex.Replace(enumerator.CurrentValue.ToStringOrThrow(ctx), replacement, limit)
-                        : regex.Replace(enumerator.CurrentValue.ToStringOrThrow(ctx), evaluator, limit);
+                        ? regex.Replace(enumerator.CurrentValue.ToStringOrThrow(ctx), replacement, limit, ref count)
+                        : regex.Replace(enumerator.CurrentValue.ToStringOrThrow(ctx), evaluator, limit, ref count);
 
                     enumerator.CurrentValue = PhpValue.Create(newvalue);
                 }

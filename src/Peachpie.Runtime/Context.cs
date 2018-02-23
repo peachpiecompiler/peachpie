@@ -193,14 +193,20 @@ namespace Pchp.Core
         /// <typeparam name="T">Type which is expected to be declared.</typeparam>
         public void ExpectTypeDeclared<T>()
         {
-            var tinfo = TypeInfoHolder<T>.TypeInfo;
-            if (!_types.IsDeclared(tinfo))
+            void EnsureTypeDeclared()
             {
+                var tinfo = TypeInfoHolder<T>.TypeInfo;
+
                 // perform regular load with autoload
-                if (GetDeclaredTypeOrThrow(tinfo.Name, true) != tinfo)
+                if (tinfo != GetDeclaredTypeOrThrow(tinfo.Name, true))
                 {
                     throw new InvalidOperationException();
                 }
+            }
+
+            if (!_types.IsDeclared(TypeInfoHolder<T>.TypeInfo))
+            {
+                EnsureTypeDeclared();
             }
         }
 

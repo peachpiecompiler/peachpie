@@ -646,7 +646,9 @@ namespace Pchp.Library.PerlRegex
             if (input == null)
                 throw new ArgumentNullException(nameof(input));
 
-            return Replace(input, replacement, -1, UseOptionR() ? input.Length : 0);
+            long replacements = 0;
+
+            return Replace(input, replacement, -1, UseOptionR() ? input.Length : 0, ref replacements);
         }
 
         /// <summary>
@@ -654,12 +656,12 @@ namespace Pchp.Library.PerlRegex
         /// <paramref name="replacement"/> pattern, starting at the first character in the
         /// input string.
         /// </summary>
-        public string Replace(string input, string replacement, int count)
+        public string Replace(string input, string replacement, int count, ref long replacements)
         {
             if (input == null)
                 throw new ArgumentNullException(nameof(input));
 
-            return Replace(input, replacement, count, UseOptionR() ? input.Length : 0);
+            return Replace(input, replacement, count, UseOptionR() ? input.Length : 0, ref replacements);
         }
 
         /// <summary>
@@ -667,7 +669,7 @@ namespace Pchp.Library.PerlRegex
         /// <paramref name="replacement"/> pattern, starting at the character position
         /// <paramref name="startat"/>.
         /// </summary>
-        public string Replace(string input, string replacement, int count, int startat)
+        public string Replace(string input, string replacement, int count, int startat, ref long replacements)
         {
             if (input == null)
                 throw new ArgumentNullException(nameof(input));
@@ -684,7 +686,7 @@ namespace Pchp.Library.PerlRegex
                 _replref.Cache(repl);
             }
 
-            return repl.Replace(this, input, count, startat);
+            return repl.Replace(this, input, count, startat, ref replacements);
         }
 
         /// <summary>
@@ -719,19 +721,21 @@ namespace Pchp.Library.PerlRegex
             if (input == null)
                 throw new ArgumentNullException(nameof(input));
 
-            return Replace(input, evaluator, -1, UseOptionR() ? input.Length : 0);
+            long replacements = 0;
+
+            return Replace(input, evaluator, -1, UseOptionR() ? input.Length : 0, ref replacements);
         }
 
         /// <summary>
         /// Replaces all occurrences of the previously defined pattern with the recent
         /// replacement pattern, starting at the first character position.
         /// </summary>
-        public string Replace(string input, MatchEvaluator evaluator, int count)
+        public string Replace(string input, MatchEvaluator evaluator, int count, ref long replacements)
         {
             if (input == null)
                 throw new ArgumentNullException(nameof(input));
 
-            return Replace(input, evaluator, count, UseOptionR() ? input.Length : 0);
+            return Replace(input, evaluator, count, UseOptionR() ? input.Length : 0, ref replacements);
         }
 
         /// <summary>
@@ -739,12 +743,12 @@ namespace Pchp.Library.PerlRegex
         /// replacement pattern, starting at the character position
         /// <paramref name="startat"/>.
         /// </summary>
-        public string Replace(string input, MatchEvaluator evaluator, int count, int startat)
+        public string Replace(string input, MatchEvaluator evaluator, int count, int startat, ref long replacements)
         {
             if (input == null)
                 throw new ArgumentNullException(nameof(input));
 
-            return RegexReplacement.Replace(evaluator, this, input, count, startat);
+            return RegexReplacement.Replace(evaluator, this, input, count, startat, ref replacements);
         }
 
         /// <summary>
