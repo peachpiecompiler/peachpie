@@ -216,7 +216,7 @@ namespace Pchp.CodeAnalysis.Emit
         /// </summary>
         internal void CreateEnumerateReferencedFunctions(DiagnosticBag diagnostic)
         {
-            var method = this.ScriptType.EnumerateReferencedFunctionsSymbol;
+            var method = this.ScriptType.EnumerateBuiltinFunctionsSymbol;
             var functions = GlobalSymbolProvider.ResolveExtensionContainers(this.Compilation)
                 .SelectMany(c => c.GetMembers().OfType<MethodSymbol>())
                 .Where(GlobalSymbolProvider.IsFunction);
@@ -250,9 +250,9 @@ namespace Pchp.CodeAnalysis.Emit
         /// <summary>
         /// Emit body of enumeration of referenced types.
         /// </summary>
-        internal void CreateEnumerateReferencedTypes(DiagnosticBag diagnostic)
+        internal void CreateBuiltinTypes(DiagnosticBag diagnostic)
         {
-            var method = this.ScriptType.EnumerateReferencedTypesSymbol;
+            var method = this.ScriptType.EnumerateBuiltinTypesSymbol;
             var types = this.Compilation.GlobalSemantics.GetReferencedTypes();
 
             // void (Action<string, RuntimeTypeHandle> callback)
@@ -266,10 +266,9 @@ namespace Pchp.CodeAnalysis.Emit
 
                     foreach (var t in types)
                     {
-                        // callback.Invoke(t.Name, t)
+                        // callback.Invoke(t)
                         il.EmitLoadArgumentOpcode(0);
-                        il.EmitStringConstant(t.Name);
-                        il.EmitLoadToken(this, diagnostic, t, null);
+                        il.EmitCall(this, diagnostic, ILOpCode.Call, Compilation.CoreMethods.Dynamic.GetPhpTypeInfo_T.Symbol.Construct(t));
                         il.EmitCall(this, diagnostic, ILOpCode.Callvirt, invoke);
                     }
 

@@ -26,16 +26,16 @@ namespace Pchp.CodeAnalysis.Symbols
         /// 
         /// EnumerateReferencedFunctions(Action&lt;string, RuntimeMethodHandle&gt; callback)
         /// </summary>
-        internal MethodSymbol EnumerateReferencedFunctionsSymbol => _enumerateReferencedFunctionsSymbol ?? (_enumerateReferencedFunctionsSymbol = CreateEnumerateReferencedFunctionsSymbol());
-        MethodSymbol _enumerateReferencedFunctionsSymbol;
+        internal MethodSymbol EnumerateBuiltinFunctionsSymbol => _enumerateBuiltinFunctionsSymbol ?? (_enumerateBuiltinFunctionsSymbol = CreateEnumerateBuiltinFunctionsSymbol());
+        MethodSymbol _enumerateBuiltinFunctionsSymbol;
 
         /// <summary>
         /// Method that enumerates all referenced global functions.
         /// 
         /// EnumerateReferencedTypes(Action&lt;string, RuntimeMethodHandle&gt; callback)
         /// </summary>
-        internal MethodSymbol EnumerateReferencedTypesSymbol => _enumerateReferencedTypesSymbol ?? (_enumerateReferencedTypesSymbol = CreateEnumerateReferencedTypesSymbol());
-        MethodSymbol _enumerateReferencedTypesSymbol;
+        internal MethodSymbol EnumerateBuiltinTypesSymbol => _enumerateBuiltinTypesSymbol ?? (_enumerateBuiltinTypesSymbol = CreateBuiltinTypesSymbol());
+        MethodSymbol _enumerateBuiltinTypesSymbol;
 
         /// <summary>
         /// Method that enumerates all script files.
@@ -113,8 +113,8 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             var list = new List<Symbol>()
             {
-                this.EnumerateReferencedFunctionsSymbol,
-                this.EnumerateReferencedTypesSymbol,
+                this.EnumerateBuiltinFunctionsSymbol,
+                this.EnumerateBuiltinTypesSymbol,
                 this.EnumerateScriptsSymbol,
                 this.EnumerateConstantsSymbol,
             };
@@ -150,13 +150,13 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Method that enumerates all referenced global functions.
         /// EnumerateReferencedFunctions(Action&lt;string, RuntimeMethodHandle&gt; callback)
         /// </summary>
-        MethodSymbol CreateEnumerateReferencedFunctionsSymbol()
+        MethodSymbol CreateEnumerateBuiltinFunctionsSymbol()
         {
             var compilation = DeclaringCompilation;
             var action_T2 = compilation.GetWellKnownType(WellKnownType.System_Action_T2);
             var action_string_method = action_T2.Construct(compilation.CoreTypes.String, compilation.CoreTypes.RuntimeMethodHandle);
 
-            var method = new SynthesizedMethodSymbol(this, "EnumerateReferencedFunctions", true, false, compilation.CoreTypes.Void, Accessibility.Public);
+            var method = new SynthesizedMethodSymbol(this, "BuiltinFunctions", true, false, compilation.CoreTypes.Void, Accessibility.Public);
             method.SetParameters(new SynthesizedParameterSymbol(method, action_string_method, 0, RefKind.None, "callback"));
 
             //
@@ -167,14 +167,14 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Method that enumerates all referenced global types.
         /// EnumerateReferencedTypes(Action&lt;string, RuntimeTypeHandle&gt; callback)
         /// </summary>
-        MethodSymbol CreateEnumerateReferencedTypesSymbol()
+        MethodSymbol CreateBuiltinTypesSymbol()
         {
             var compilation = DeclaringCompilation;
-            var action_T2 = compilation.GetWellKnownType(WellKnownType.System_Action_T2);
-            var action_string_method = action_T2.Construct(compilation.CoreTypes.String, compilation.CoreTypes.RuntimeTypeHandle);
+            var action_T = compilation.GetWellKnownType(WellKnownType.System_Action_T);
+            var action_phptypeinfo = action_T.Construct(compilation.CoreTypes.PhpTypeInfo);
 
-            var method = new SynthesizedMethodSymbol(this, "EnumerateReferencedTypes", true, false, compilation.CoreTypes.Void, Accessibility.Public);
-            method.SetParameters(new SynthesizedParameterSymbol(method, action_string_method, 0, RefKind.None, "callback"));
+            var method = new SynthesizedMethodSymbol(this, "BuiltinTypes", true, false, compilation.CoreTypes.Void, Accessibility.Public);
+            method.SetParameters(new SynthesizedParameterSymbol(method, action_phptypeinfo, 0, RefKind.None, "callback"));
 
             //
             return method;

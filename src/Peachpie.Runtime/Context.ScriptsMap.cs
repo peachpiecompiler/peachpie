@@ -171,8 +171,6 @@ namespace Pchp.Core
                 return _scripts[index];
             }
 
-            public ScriptInfo GetScript(string path) => GetDeclaredScript(path);
-
             static int EnsureIndex<TScript>(ref int script_id)
             {
                 if (script_id == 0)

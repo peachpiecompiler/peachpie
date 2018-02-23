@@ -10,55 +10,54 @@ using System.Threading;
 namespace Pchp.Core.Reflection
 {
     [DebuggerNonUserCode]
-    internal static class TypesAppContext
+    internal class TypesTable
     {
-        public static readonly Dictionary<string, int> NameToIndex = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        public static readonly List<PhpTypeInfo> AppTypes = new List<PhpTypeInfo>();
-        public static readonly TypesTable.TypesCount ContextTypesCounter = new TypesTable.TypesCount();
-        public static readonly ReaderWriterLockSlim RwLock = new ReaderWriterLockSlim();
+        #region AppContext
+
+        /// <summary>
+        /// Map of function names to their slot index.
+        /// Negative number is an application-wide function,
+        /// Positive number is context-wide function.
+        /// Zero is not used.
+        /// </summary>
+        static readonly Dictionary<string, int> _nameToIndex = new Dictionary<string, int>(512, StringComparer.OrdinalIgnoreCase);
+        static readonly List<PhpTypeInfo> _appTypes = new List<PhpTypeInfo>(256);
+        static readonly TypesTable.TypesCount _contextTypesCounter = new TypesTable.TypesCount();
+        static readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
 
         /// <summary>
         /// Adds referenced symbol into the map.
         /// In case of redeclaration, an exception is thrown.
         /// </summary>
-        public static void DeclareType<T>()
+        public static void DeclareAppType<T>()
         {
-            DeclareType(TypeInfoHolder<T>.TypeInfo);
+            DeclareAppType(TypeInfoHolder<T>.TypeInfo);
         }
 
-        public static void DeclareType(string phpname, RuntimeTypeHandle handle)
-        {
-            var info = handle.GetPhpTypeInfo();
-            Debug.Assert(phpname == info.Name);
-            DeclareType(info);
-        }
-
-        static void DeclareType(PhpTypeInfo info)
+        public static void DeclareAppType(PhpTypeInfo info)
         {
             if (info.Index == 0)
             {
                 var name = info.Name;
                 int index;
-                if (NameToIndex.TryGetValue(name, out index))
+                if (_nameToIndex.TryGetValue(name, out index))
                 {
                     throw new ArgumentException();  // redeclaration
                 }
                 else
                 {
-                    index = -AppTypes.Count - 1;
-                    AppTypes.Add(info);
-                    NameToIndex[name] = index;
+                    index = -_appTypes.Count - 1;
+                    _appTypes.Add(info);
+                    _nameToIndex[name] = index;
                 }
 
                 info.Index = index;
             }
         }
-    }
 
-    [DebuggerNonUserCode]
-    internal class TypesTable
-    {
-        public class TypesCount
+        #endregion
+
+        sealed class TypesCount
         {
             int _count;
 
@@ -80,28 +79,13 @@ namespace Pchp.Core.Reflection
             public int Count => _count;
         }
 
-        /// <summary>
-        /// Map of function names to their slot index.
-        /// Negative number is an application-wide function,
-        /// Positive number is context-wide function.
-        /// Zero is not used.
-        /// </summary>
-        readonly Dictionary<string, int> _nameToIndex;
-
-        readonly List<PhpTypeInfo> _appTypes;
-
-        readonly TypesCount _contextTypesCounter;
-
         PhpTypeInfo[] _contextTypes;
 
         readonly Action<PhpTypeInfo> _redeclarationCallback;
 
-        internal TypesTable(Dictionary<string, int> nameToIndex, List<PhpTypeInfo> appTypes, TypesCount counter, Action<PhpTypeInfo> redeclarationCallback)
+        internal TypesTable(Action<PhpTypeInfo> redeclarationCallback)
         {
-            _nameToIndex = nameToIndex;
-            _appTypes = appTypes;
-            _contextTypesCounter = counter;
-            _contextTypes = new PhpTypeInfo[counter.Count];
+            _contextTypes = new PhpTypeInfo[_contextTypesCounter.Count];
             _redeclarationCallback = redeclarationCallback;
         }
 
@@ -109,7 +93,7 @@ namespace Pchp.Core.Reflection
         {
             if (info.Index == 0)
             {
-                TypesAppContext.RwLock.EnterWriteLock();
+                _rwLock.EnterWriteLock();
                 try
                 {
                     // double checked lock
@@ -137,7 +121,7 @@ namespace Pchp.Core.Reflection
                 }
                 finally
                 {
-                    TypesAppContext.RwLock.ExitWriteLock();
+                    _rwLock.ExitWriteLock();
                 }
             }
 
@@ -222,14 +206,14 @@ namespace Pchp.Core.Reflection
             //
 
             int index;
-            TypesAppContext.RwLock.EnterReadLock();
+            _rwLock.EnterReadLock();
             try
             {
                 _nameToIndex.TryGetValue(name, out index);
             }
             finally
             {
-                TypesAppContext.RwLock.ExitReadLock();
+                _rwLock.ExitReadLock();
             }
 
             if (index > 0)

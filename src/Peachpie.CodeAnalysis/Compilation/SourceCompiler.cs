@@ -277,7 +277,7 @@ namespace Pchp.CodeAnalysis
             Debug.Assert(_moduleBuilder != null);
 
             _moduleBuilder.CreateEnumerateReferencedFunctions(_diagnostics);
-            _moduleBuilder.CreateEnumerateReferencedTypes(_diagnostics);
+            _moduleBuilder.CreateBuiltinTypes(_diagnostics);
             _moduleBuilder.CreateEnumerateScriptsSymbol(_diagnostics);
             _moduleBuilder.CreateEnumerateConstantsSymbol(_diagnostics);
         }

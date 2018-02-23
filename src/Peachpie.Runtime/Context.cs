@@ -28,8 +28,8 @@ namespace Pchp.Core
         protected Context()
         {
             // Context tables
-            _functions = new RoutinesTable(RoutinesAppContext.NameToIndex, RoutinesAppContext.AppRoutines, RoutinesAppContext.ContextRoutinesCounter, FunctionRedeclared);
-            _types = new TypesTable(TypesAppContext.NameToIndex, TypesAppContext.AppTypes, TypesAppContext.ContextTypesCounter, TypeRedeclared);
+            _functions = new RoutinesTable(FunctionRedeclared);
+            _types = new TypesTable(TypeRedeclared);
             _statics = new object[StaticIndexes.StaticsCount];
 
             //
@@ -115,17 +115,17 @@ namespace Pchp.Core
 
             var tscriptinfo = tscript.GetTypeInfo();
 
-            tscriptinfo.GetDeclaredMethod("EnumerateReferencedFunctions")
-                .Invoke(null, new object[] { new Action<string, RuntimeMethodHandle>(RoutinesAppContext.DeclareRoutine) });
+            tscriptinfo.GetDeclaredMethod("BuiltinFunctions")
+                .Invoke(null, new object[] { new Action<string, RuntimeMethodHandle>(RoutinesTable.DeclareAppRoutine) });
 
-            tscriptinfo.GetDeclaredMethod("EnumerateReferencedTypes")
-                .Invoke(null, new object[] { new Action<string, RuntimeTypeHandle>(TypesAppContext.DeclareType) });
-
-            tscriptinfo.GetDeclaredMethod("EnumerateScripts")
-                .Invoke(null, new object[] { new Action<string, RuntimeMethodHandle>(ScriptsMap.DeclareScript) });
+            tscriptinfo.GetDeclaredMethod("BuiltinTypes")
+                .Invoke(null, new object[] { new Action<PhpTypeInfo>(TypesTable.DeclareAppType) });
 
             tscriptinfo.GetDeclaredMethod("EnumerateConstants")
                 .Invoke(null, new object[] { new Action<string, PhpValue, bool>(ConstsMap.DefineAppConstant) });
+
+            tscriptinfo.GetDeclaredMethod("EnumerateScripts")
+                .Invoke(null, new object[] { new Action<string, RuntimeMethodHandle>(ScriptsMap.DeclareScript) });
 
             //
             ScriptAdded(tscriptinfo);

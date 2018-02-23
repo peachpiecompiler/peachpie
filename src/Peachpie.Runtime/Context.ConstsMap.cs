@@ -62,7 +62,7 @@ namespace Pchp.Core
             /// <summary>
             /// Maps of constant name to its ID.
             /// </summary>
-            readonly static Dictionary<ConstName, int> _map = new Dictionary<ConstName, int>(new ConstName.ConstNameComparer());
+            readonly static Dictionary<ConstName, int> _map = new Dictionary<ConstName, int>(1024, new ConstName.ConstNameComparer());
 
             /// <summary>
             /// Lock mechanism for accessing statics.
@@ -72,7 +72,7 @@ namespace Pchp.Core
             /// <summary>
             /// Maps constant ID to its actual value, accross all contexts (application wide).
             /// </summary>
-            static PhpValue[] _valuesApp = new PhpValue[32];
+            static PhpValue[] _valuesApp = new PhpValue[512];
 
             /// <summary>
             /// Actual count of defined constant names.

@@ -4,27 +4,40 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Pchp.Core.Reflection
 {
+    /// <summary>
+    /// Runtime table of application PHP functions.
+    /// </summary>
     [DebuggerNonUserCode]
-    internal static class RoutinesAppContext
+    internal class RoutinesTable
     {
-        public static readonly Dictionary<string, int> NameToIndex = new Dictionary<string, int>(StringComparer.CurrentCultureIgnoreCase);
-        public static readonly List<RoutineInfo> AppRoutines = new List<RoutineInfo>();
-        public static readonly RoutinesTable.RoutinesCount ContextRoutinesCounter = new RoutinesTable.RoutinesCount();
+        #region AppContext
+
+        /// <summary>
+        /// Map of function names to their slot index.
+        /// Negative number is an application-wide function,
+        /// Positive number is context-wide function.
+        /// Zero is not used.
+        /// </summary>
+        static readonly Dictionary<string, int> _nameToIndex = new Dictionary<string, int>(2048, StringComparer.CurrentCultureIgnoreCase);
+        static readonly List<RoutineInfo> _appRoutines = new List<RoutineInfo>(2048);
+        static readonly RoutinesCount _contextRoutinesCounter = new RoutinesTable.RoutinesCount();
+        static readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
 
         /// <summary>
         /// Adds referenced symbol into the map.
         /// In case of redeclaration, the handle is added to the list.
         /// </summary>
-        public static void DeclareRoutine(string name, RuntimeMethodHandle handle)
+        public static void DeclareAppRoutine(string name, RuntimeMethodHandle handle)
         {
             // TODO: W lock
 
             int index;
-            if (NameToIndex.TryGetValue(name, out index))
+            if (_nameToIndex.TryGetValue(name, out index))
             {
                 Debug.Assert(index != 0);
 
@@ -33,28 +46,23 @@ namespace Pchp.Core.Reflection
                     throw new InvalidOperationException();
                 }
 
-                ((ClrRoutineInfo)AppRoutines[-index - 1]).AddOverload(handle);
+                ((ClrRoutineInfo)_appRoutines[-index - 1]).AddOverload(handle);
             }
             else
             {
-                index = -AppRoutines.Count - 1;
+                index = -_appRoutines.Count - 1;
                 var routine = new ClrRoutineInfo(index, name, handle);
-                AppRoutines.Add(routine);
-                NameToIndex[name] = index;
+                _appRoutines.Add(routine);
+                _nameToIndex[name] = index;
 
                 // register the routine within the extensions table
                 ExtensionsAppContext.ExtensionsTable.AddRoutine(routine);
             }
         }
-    }
 
-    /// <summary>
-    /// Runtime table of application PHP functions.
-    /// </summary>
-    [DebuggerNonUserCode]
-    internal class RoutinesTable
-    {
-        public class RoutinesCount
+        #endregion
+
+        sealed class RoutinesCount
         {
             int _count;
 
@@ -76,28 +84,12 @@ namespace Pchp.Core.Reflection
             public int Count => _count;
         }
 
-        /// <summary>
-        /// Map of function names to their slot index.
-        /// Negative number is an application-wide function,
-        /// Positive number is context-wide function.
-        /// Zero is not used.
-        /// </summary>
-        readonly Dictionary<string, int> _nameToIndex;
-
-        readonly List<RoutineInfo> _appRoutines;
-
-        readonly RoutinesCount _contextRoutinesCounter;
-
-        RoutineInfo[] _contextRoutines;
+        RoutineInfo[] _contextRoutines = new RoutineInfo[_contextRoutinesCounter.Count];
 
         readonly Action<RoutineInfo> _redeclarationCallback;
 
-        internal RoutinesTable(Dictionary<string, int> nameToIndex, List<RoutineInfo> appRoutines, RoutinesCount counter, Action<RoutineInfo> redeclarationCallback)
+        internal RoutinesTable(Action<RoutineInfo> redeclarationCallback)
         {
-            _nameToIndex = nameToIndex;
-            _appRoutines = appRoutines;
-            _contextRoutinesCounter = counter;
-            _contextRoutines = new RoutineInfo[counter.Count];
             _redeclarationCallback = redeclarationCallback;
         }
 
