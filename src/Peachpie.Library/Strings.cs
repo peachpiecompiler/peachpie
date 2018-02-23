@@ -1034,7 +1034,7 @@ namespace Pchp.Library
         /// <summary>
         /// Retrieves a substring from the given string.
         /// </summary>
-        /// <param name="str">The source string (unicode or binary).</param>
+        /// <param name="str">The source string (unicode).</param>
         /// <param name="offset">The relativized offset of the first item of the slice.</param>
         /// <param name="length">The relativized length of the slice.</param>
         /// <returns>The substring of the <paramref name="str"/>.</returns>
@@ -1044,41 +1044,57 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static string substr(string str, int offset, int length = int.MaxValue)
         {
-            //PhpBytes binstr = str as PhpBytes;
-            //if (binstr != null)
-            //{
-            //    if (binstr.Length == 0) return null;
-
-            //    PhpMath.AbsolutizeRange(ref offset, ref length, binstr.Length);
-
-            //    // string is shorter than offset to start substring
-            //    if (offset == binstr.Length) return null;
-
-            //    if (length == 0) return PhpBytes.Empty;
-
-            //    byte[] substring = new byte[length];
-
-            //    Buffer.BlockCopy(binstr.ReadonlyData, offset, substring, 0, length);
-
-            //    return new PhpBytes(substring);
-            //}
-
-            string unistr = str; // Core.Convert.ObjectToString(str);
-            if (unistr != null)
+            if (string.IsNullOrEmpty(str))
             {
-                if (unistr == String.Empty) return null;
-
-                PhpMath.AbsolutizeRange(ref offset, ref length, unistr.Length);
-
-                // string is shorter than offset to start substring
-                if (offset == unistr.Length) return null;
-
-                if (length == 0) return String.Empty;
-
-                return unistr.Substring(offset, length);
+                return null;
             }
 
-            return null;
+            PhpMath.AbsolutizeRange(ref offset, ref length, str.Length);
+
+            // string is shorter than offset to start substring
+            if (offset == str.Length) return null;
+
+            if (length == 0) return String.Empty;
+
+            return str.Substring(offset, length);
+        }
+
+        /// <summary>
+        /// Retrieves a substring from the given string.
+        /// </summary>
+        /// <param name="binstr">The source string (single-byte string).</param>
+        /// <param name="offset">The relativized offset of the first item of the slice.</param>
+        /// <param name="length">The relativized length of the slice.</param>
+        /// <returns>The substring of the <paramref name="binstr"/>.</returns>
+        /// <remarks>
+        /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> and <paramref name="length"/>.
+        /// </remarks>
+        [return: CastToFalse]
+        public static PhpString substr(byte[] binstr, int offset, int length = int.MaxValue)
+        {
+            if (binstr.Length == 0)
+            {
+                return default(PhpString); // FALSE
+            }
+
+            PhpMath.AbsolutizeRange(ref offset, ref length, binstr.Length);
+
+            // string is shorter than offset to start substring
+            if (offset == binstr.Length)
+            {
+                return default(PhpString); // FALSE
+            }
+
+            if (length == 0)
+            {
+                return PhpString.Empty;
+            }
+
+            var substring = new byte[length];
+
+            Buffer.BlockCopy(binstr, offset, substring, 0, length);
+
+            return new PhpString(substring);
         }
 
         /// <summary>

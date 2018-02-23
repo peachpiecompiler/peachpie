@@ -767,9 +767,22 @@ namespace Pchp.Core.Dynamic
                     }
                     else
                     {
-                        if (value.IsNull) goto case PhpTypeCode.Null;
+                        Debug.Assert(!value.IsNull);
                         return ConversionCost.NoConversion;
                     }
+
+                case PhpTypeCode.String:
+                    if (typeof(T) == typeof(byte[])) // string -> byte[]
+                    {
+                        return ConversionCost.PassCostly;
+                    }
+                    return ConversionCost.NoConversion;
+                case PhpTypeCode.MutableString:
+                    if (typeof(T) == typeof(byte[])) // MutableString -> byte[]
+                    {
+                        return value.MutableString.ContainsBinaryData ? ConversionCost.Pass : ConversionCost.PassCostly;
+                    }
+                    return ConversionCost.NoConversion;
 
                 case PhpTypeCode.Alias:
                     return ToClass<T>(value.Alias.Value);
