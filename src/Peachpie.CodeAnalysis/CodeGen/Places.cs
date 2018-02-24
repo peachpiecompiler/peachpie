@@ -775,9 +775,21 @@ namespace Pchp.CodeAnalysis.CodeGen
                     //
                     return cg.EmitDeepCopy(t);
                 }
-                // Read Value
+                else if (_access.IsReadValue && _thint.IsRef)
+                {
+                    // Read Value
+                    if (type == cg.CoreTypes.PhpValue && _place.HasAddress)
+                    {
+                        // Template: <ref place>.GetValue()
+                        _place.EmitLoadAddress(cg.Builder);
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.GetValue);
+                    }
+
+                    return cg.EmitDereference(_place.EmitLoad(cg.Builder));
+                }
                 else
                 {
+                    // Read
                     return _place.EmitLoad(cg.Builder);
                 }
             }
@@ -1563,8 +1575,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
-                // read directly into a target type (skips eventual dereferencing and copying)
-                if (Access.TargetType != null)
+                // read directly PhpValue into the target type (skips eventual dereferencing and copying)
+                if (Access.TargetType != null && type == cg.CoreTypes.PhpValue)
                 {
                     // convert PhpValue to target type without loading whole value and storing to temporary variable
                     switch (Access.TargetType.SpecialType)
