@@ -747,7 +747,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             else
             {
                 // Read Copy
-                if (_access.IsReadCopy)
+                if (_access.IsReadValueCopy)
                 {
                     if (type == cg.CoreTypes.PhpValue && _place.HasAddress)
                     {
@@ -979,7 +979,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 result = cg.EmitCall(p.GetMethod.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, p.GetMethod);
 
                 //
-                if (_access.IsReadCopy)
+                if (_access.IsReadValueCopy)
                 {
                     result = cg.EmitDeepCopy(result, false);
                 }
@@ -1098,7 +1098,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 var result = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetItemValue_IntStringKey);
 
                 // 
-                if (_access.IsReadCopy)
+                if (_access.IsReadValueCopy)
                 {
                     // .GetValue()
                     result = cg.EmitDereference(result);
@@ -1535,8 +1535,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return cg.Emit_PhpValue_MakeAlias();
                 }
             }
-            // Read by value (copy value if applicable)
-            else if (Access.IsReadCopy)
+            // Read by value copy (copy value if applicable)
+            else if (Access.IsReadValueCopy)
             {
                 // dereference & copy
 
@@ -1561,18 +1561,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                 EmitOpCode_Load(cg);
                 return deepcopy ? cg.EmitDeepCopy(type) : type;
             }
-
-            //
-            // Read (...->Field)
-            //
-
-            if (type == cg.CoreTypes.PhpAlias)
+            else
             {
-                EmitOpCode_Load(cg);
-                return cg.Emit_PhpAlias_GetValue();
-            }
-            else if (type == cg.CoreTypes.PhpValue)
-            {
+                // read directly into a target type (skips eventual dereferencing and copying)
                 if (Access.TargetType != null)
                 {
                     // convert PhpValue to target type without loading whole value and storing to temporary variable
@@ -1604,13 +1595,29 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                 }
 
-                // load & dereference // TODO: AccessMask whether we need to dereference
-                // Template (ref PhpValue).GetValue()
-                EmitOpCode_LoadAddress(cg);
-                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.GetValue);
-            }
-            else
-            {
+                // 
+
+                if (Access.IsReadValue)
+                {
+                    // dereference
+
+                    if (type == cg.CoreTypes.PhpAlias)
+                    {
+                        EmitOpCode_Load(cg);
+                        return cg.Emit_PhpAlias_GetValue();
+                    }
+                    else if (type == cg.CoreTypes.PhpValue)
+                    {
+                        // Template (ref PhpValue).GetValue()
+                        EmitOpCode_LoadAddress(cg);
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.GetValue);
+                    }
+                }
+
+                //
+                // Read (...->Field)
+                //
+
                 EmitOpCode_Load(cg);
                 return type;
             }

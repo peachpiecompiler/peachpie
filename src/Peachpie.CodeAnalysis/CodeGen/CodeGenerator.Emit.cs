@@ -1634,9 +1634,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (access.IsRead && method.CastToFalse)
             {
                 // casts to false and copy the value
-                stack = EmitCastToFalse(stack, access.IsReadCopy);
+                stack = EmitCastToFalse(stack, access.IsReadValueCopy);
             }
-            else if (access.IsReadCopy)
+            else if (access.IsReadValueCopy)
             {
                 // copy the value
                 if (stack == CoreTypes.PhpAlias)

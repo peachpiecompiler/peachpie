@@ -3096,7 +3096,7 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 cg.Builder.EmitLocalLoad(tmp);
 
-                if (Access.IsReadCopy)
+                if (Access.IsReadValueCopy)
                 {
                     // DeepCopy(<tmp>)
                     t_value = cg.EmitDeepCopy(t_value, Value.TypeRefMask);
@@ -3838,7 +3838,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.IPhpArray.GetItemValue_PhpValue);
                     }
 
-                    if (Access.IsReadCopy)
+                    if (Access.IsReadValueCopy)
                     {
                         t = cg.EmitReadCopy(Access.TargetType, t);
                     }
@@ -3897,7 +3897,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.Builder.EmitBoolConstant(Access.IsQuiet);
                     var t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetItemValue_PhpValue_PhpValue_Bool);
 
-                    if (Access.IsReadCopy)
+                    if (Access.IsReadValueCopy)
                     {
                         t = cg.EmitReadCopy(Access.TargetType, t);
                     }
@@ -3924,7 +3924,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureArray);
                 }
 
-                if (Access.IsReadCopy)
+                if (Access.IsReadValueCopy)
                 {
                     t = cg.EmitReadCopy(Access.TargetType, t);
                 }

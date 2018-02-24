@@ -84,9 +84,14 @@ namespace Pchp.CodeAnalysis.Semantics
         public bool IsReadRef => (_flags & AccessMask.ReadRef) == AccessMask.ReadRef;
 
         /// <summary>
-        /// The variable will be read by value and copied.
+        /// The variable will be dereferenced.
         /// </summary>
-        public bool IsReadCopy => (_flags & AccessMask.ReadValueCopy) == AccessMask.ReadValueCopy;
+        public bool IsReadValue => (_flags & AccessMask.ReadValue) == AccessMask.ReadValue;
+
+        /// <summary>
+        /// The variable will be dereferenced and copied.
+        /// </summary>
+        public bool IsReadValueCopy => (_flags & AccessMask.ReadValueCopy) == AccessMask.ReadValueCopy;
 
         /// <summary>
         /// A reference will be written.
