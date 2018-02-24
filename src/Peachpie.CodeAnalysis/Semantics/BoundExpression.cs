@@ -86,7 +86,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// The variable will be read by value and copied.
         /// </summary>
-        public bool IsReadCopy => (_flags & AccessMask.ReadCopy) == AccessMask.ReadCopy;
+        public bool IsReadCopy => (_flags & AccessMask.ReadValueCopy) == AccessMask.ReadValueCopy;
 
         /// <summary>
         /// A reference will be written.
@@ -148,11 +148,6 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundAccess(_flags | AccessMask.Read, _targetType, _writeTypeMask);
         }
 
-        public BoundAccess WithReadCopy()
-        {
-            return new BoundAccess(_flags | AccessMask.ReadCopy, _targetType, _writeTypeMask);
-        }
-
         public BoundAccess WithWrite(TypeRefMask writeTypeMask)
         {
             return new BoundAccess(_flags | AccessMask.Write, _targetType, _writeTypeMask | writeTypeMask);
@@ -197,7 +192,17 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Read as a reference access.
         /// </summary>
-        public static BoundAccess ReadRef => new BoundAccess(AccessMask.Read | AccessMask.ReadRef, null, 0);
+        public static BoundAccess ReadRef => new BoundAccess(AccessMask.ReadRef, null, 0);
+
+        /// <summary>
+        /// Read by value.
+        /// </summary>
+        public static BoundAccess ReadValue => new BoundAccess(AccessMask.ReadValue, null, 0);
+
+        /// <summary>
+        /// Read by value copy.
+        /// </summary>
+        public static BoundAccess ReadValueCopy => new BoundAccess(AccessMask.ReadValueCopy, null, 0);
 
         /// <summary>
         /// Simple write access without bound write type mask.

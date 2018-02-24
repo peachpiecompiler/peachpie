@@ -342,7 +342,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 Debug.Assert(_locals != null);
                 var access = _locals.Routine.SyntaxSignature.AliasReturn
                     ? BoundAccess.ReadRef
-                    : BoundAccess.Read;
+                    : BoundAccess.ReadValue;
 
                 return new BoundReturnStatement(stmt.Expression != null ? BindExpression(stmt.Expression, access) : null);
             }
@@ -662,11 +662,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 if (access.IsReadRef)
                 {
-                    // TODO: warninng deprecated
+                    // TODO: warning deprecated
                     // _diagnostics. ...
                 }
 
-                return new BoundArrayEx(BindArrayItems(x.Items, BoundAccess.Read.WithReadCopy()))
+                return new BoundArrayEx(BindArrayItems(x.Items, BoundAccess.ReadValueCopy))
                     .WithAccess(access);
             }
             else if (x.Operation == AST.Operations.List)
@@ -872,7 +872,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 // we don't need copy of RValue if assigning to list() or in a part of compound operation
                 if (expr.Operation == AST.Operations.AssignValue && !(target is BoundListEx))
                 {
-                    readaccess = readaccess.WithReadCopy();
+                    readaccess = BoundAccess.ReadValueCopy;
                 }
 
                 value = BindExpression(assignEx.RValue, readaccess);

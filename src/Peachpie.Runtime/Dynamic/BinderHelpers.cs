@@ -336,7 +336,7 @@ namespace Pchp.Core.Dynamic
                     expr = Expression.Assign(expr, ConvertExpression.Bind(rvalue, expr.Type, ctx));
                 }
             }
-            else if (access.ReadCopy())
+            else if (access.ReadValueCopy())
             {
                 // dereference & copy
                 if (expr.Type == typeof(PhpValue))
