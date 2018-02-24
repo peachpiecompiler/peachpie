@@ -1228,10 +1228,7 @@ namespace Pchp.Library
         /// <returns>max() returns the numerically highest of the parameter values. If multiple values can be considered of the same size, the one that is listed first will be returned.
         /// When max() is given multiple arrays, the longest array is returned. If all the arrays have the same length, max() will use lexicographic ordering to find the return value.
         /// When given a string it will be cast as an integer when comparing.</returns>
-		public static PhpValue max(params PhpValue[] numbers)
-        {
-            return GetExtreme(numbers, true);
-        }
+		public static PhpValue max(params PhpValue[] numbers) => GetExtreme(numbers, true);
 
         /// <summary>
         /// Find lowest value.
@@ -1239,10 +1236,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="numbers">An array containing the values or values separately.</param>
         /// <returns>min() returns the numerically lowest of the parameter values.</returns>
-		public static PhpValue min(params PhpValue[] numbers)
-        {
-            return GetExtreme(numbers, false);
-        }
+		public static PhpValue min(params PhpValue[] numbers) => GetExtreme(numbers, false);
 
         internal static PhpValue GetExtreme(PhpValue[] numbers, bool maximum)
         {
@@ -1268,7 +1262,7 @@ namespace Pchp.Library
             var enumerator = array.GetEnumerator();
             if (enumerator.MoveNext())
             {
-                ex = enumerator.Current;
+                ex = enumerator.Current.GetValue();
 
                 int fact = maximum ? 1 : -1;
 
@@ -1276,7 +1270,7 @@ namespace Pchp.Library
                 {
                     if (Comparison.Compare(enumerator.Current, ex) * fact > 0)
                     {
-                        ex = enumerator.Current;
+                        ex = enumerator.Current.GetValue();
                     }
                 }
             }
