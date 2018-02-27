@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Pchp.Core;
+using Pchp.Library.Streams;
 
 namespace Peachpie.Library.Network
 {
@@ -14,6 +15,8 @@ namespace Peachpie.Library.Network
         internal const string ExtensionName = "curl";
 
         internal const string CurlResourceName = "curl";
+
+        internal static Version FakeCurlVersion => new Version(7, 10, 1);
 
         #region Constants
 
@@ -500,13 +503,20 @@ namespace Peachpie.Library.Network
 
         #region Helpers
 
-        internal static bool TrySetOption(CURLResource ch, int option, PhpValue value)
+        internal static bool TrySetOption(this CURLResource ch, int option, PhpValue value)
         {
             switch (option)
             {
                 case CURLOPT_URL: return (ch.Url = value.AsString()) != null;
+                case CURLOPT_POST: ch.IsPost = value.ToBoolean(); break;
+                case CURLOPT_FOLLOWLOCATION: ch.FollowLocation = value.ToBoolean(); break;
+                case CURLOPT_MAXREDIRS: ch.MaxRedirects = (int)value.ToLong(); break;
+                case CURLOPT_REFERER: return (ch.Referer = value.AsString()) != null;
                 case CURLOPT_RETURNTRANSFER: ch.ReturnTransfer = value.ToBoolean(); break;
                 case CURLOPT_HEADER: ch.OutputHeader = value.ToBoolean(); break;
+                case CURLOPT_FILE: return (ch.OutputTransfer = value.Object as PhpStream) != null;
+                case CURLOPT_INFILE: return (ch.InputTransfer = value.Object as PhpStream) != null;
+                case CURLOPT_USERAGENT: return (ch.UserAgent = value.AsString()) != null;
 
                 default:
                     return false;
@@ -515,7 +525,7 @@ namespace Peachpie.Library.Network
             return true;
         }
 
-        internal static bool TryGetOption(CURLResource ch, int option, out PhpValue value)
+        internal static bool TryGetOption(this CURLResource ch, int option, out PhpValue value)
         {
             switch (option)
             {
