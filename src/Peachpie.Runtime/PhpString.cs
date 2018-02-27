@@ -1039,7 +1039,7 @@ namespace Pchp.Core
         /// </summary>
         public PhpValue AsPhpValue(PhpString str) => str.IsEmpty ? PhpValue.Create(string.Empty) : PhpValue.Create(str._blob);
 
-        public override string ToString() => _blob.ToString(Encoding.UTF8);
+        public override string ToString() => _blob?.ToString(Encoding.UTF8);
 
         public string ToString(Encoding encoding) => _blob.ToString(encoding);
 
