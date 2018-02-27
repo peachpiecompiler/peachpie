@@ -9,6 +9,7 @@ namespace Peachpie.Library.Network
     /// Object that should be used to upload a file with <c>curl</c> <c>CURLOPT_POSTFIELDS</c> option.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpExtension(CURLConstants.ExtensionName)]
     public sealed class CURLFile
     {
         public string name { get; private set; }
