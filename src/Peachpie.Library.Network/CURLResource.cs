@@ -16,6 +16,12 @@ namespace Peachpie.Library.Network
 
         public bool ReturnTransfer { get; set; } = false;
 
+        /// <summary>
+        /// <c>true</c> to include the header in the output.
+        /// Default is <c>false</c>.
+        /// </summary>
+        public bool OutputHeader { get; set; } = false;
+
         #endregion
 
         public CURLResource() : base(CURLConstants.CurlResourceName)

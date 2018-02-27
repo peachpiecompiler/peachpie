@@ -504,9 +504,9 @@ namespace Peachpie.Library.Network
         {
             switch (option)
             {
-                case CURLOPT_URL:
-                    ch.Url = value.AsString();
-                    break;
+                case CURLOPT_URL: return (ch.Url = value.AsString()) != null;
+                case CURLOPT_RETURNTRANSFER: ch.ReturnTransfer = value.ToBoolean(); break;
+                case CURLOPT_HEADER: ch.OutputHeader = value.ToBoolean(); break;
 
                 default:
                     return false;

@@ -56,7 +56,7 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Perform a cURL session.
         /// </summary>
-        public static PhpValue curl_exec(CURLResource ch)
+        public static PhpValue curl_exec(Context ctx, CURLResource ch)
         {
             throw new NotImplementedException();
         }
