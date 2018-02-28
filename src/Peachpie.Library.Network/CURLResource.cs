@@ -11,9 +11,16 @@ namespace Peachpie.Library.Network
     /// </summary>
     public sealed class CURLResource : PhpResource
     {
+        public enum RequestMethod
+        {
+            GET = 0, POST, HEAD, PUT,
+        }
+
         #region Properties
 
         public string Url { get; set; }
+
+        public string DefaultSheme { get; set; } = "http";
 
         public bool FollowLocation { get; set; } = false;
 
@@ -26,10 +33,7 @@ namespace Peachpie.Library.Network
 
         public string Referer { get; set; }
 
-        /// <summary>
-        /// TRUE to do a regular HTTP POST. This POST is the normal application/x-www-form-urlencoded kind, most commonly used by HTML forms.
-        /// </summary>
-        public bool IsPost { get; set; } = false;
+        public RequestMethod Method { get; set; } = RequestMethod.GET;
 
         ///// <summary>
         ///// The full data to post in a HTTP "POST" operation.
@@ -58,6 +62,11 @@ namespace Peachpie.Library.Network
 
         #endregion
 
+        /// <summary>
+        /// Response after the execution.
+        /// </summary>
+        public CURLResponse Response { get; internal set; }
+
         public CURLResource() : base(CURLConstants.CurlResourceName)
         {
         }
@@ -66,5 +75,21 @@ namespace Peachpie.Library.Network
         {
             base.FreeManaged();
         }
+    }
+
+    /// <summary>
+    /// The result of exec operation.
+    /// </summary>
+    public interface CURLResponse
+    {
+        /// <summary>
+        /// The value supposed to be returned from <c>curl_exec</c>.
+        /// </summary>
+        PhpValue ExecValue { get; }
+    }
+
+    sealed class CURLHttpResponse : CURLResponse
+    {
+        public PhpValue ExecValue { get; set; } = PhpValue.False;
     }
 }

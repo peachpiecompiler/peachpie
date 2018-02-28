@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Text;
@@ -115,7 +116,7 @@ namespace Peachpie.Library.Network
             //
             if (url.IndexOf("://") == -1)
             {
-                url = "http://" + url;
+                url = string.Concat(ch.DefaultSheme, "://", url);
             }
 
             // TODO: implicit port
@@ -123,6 +124,77 @@ namespace Peachpie.Library.Network
             //
             Uri.TryCreate(url, UriKind.Absolute, out Uri result);
             return result;
+        }
+
+        static CURLResponse ExecHttpRequest(Context ctx, CURLResource ch, Uri uri)
+        {
+            var req = WebRequest.CreateHttp(uri);
+
+            // setup request:
+
+            req.Method = ch.Method.ToString();
+            req.AllowAutoRedirect = ch.FollowLocation;
+            req.MaximumAutomaticRedirections = ch.MaxRedirects;
+            if (ch.UserAgent != null) req.UserAgent = ch.UserAgent;
+            if (ch.Referer != null) req.Referer = ch.Referer;
+            // headers
+            // cookies
+            // certificate
+            // credentials
+            // proxy
+
+            // make request:
+
+            switch (ch.Method)
+            {
+                case CURLResource.RequestMethod.GET:
+                case CURLResource.RequestMethod.HEAD:
+                    break;
+
+                default:
+                    throw new NotImplementedException();
+            }
+
+            // process response:
+
+            using (var response = req.GetResponse())    // NOTE: GetResponse() internally throws an exception, ignore it
+            {
+                return new CURLHttpResponse() { ExecValue = ProcessResponse(ctx, ch, response) };
+            }
+        }
+
+        static PhpValue ProcessResponse(Context ctx, CURLResource ch, WebResponse response)
+        {
+            var stream = response.GetResponseStream();
+
+            // figure out the output stream:
+
+            MemoryStream returnstream = null;   // in case we are returning the response value
+
+            var outputstream =
+                (ch.OutputTransfer != null)
+                    ? ch.OutputTransfer.RawStream
+                    : ch.ReturnTransfer
+                        ? (returnstream = new MemoryStream())
+                        : ctx.OutputStream;
+
+            Debug.Assert(outputstream != null);
+
+            // read into output stream:
+
+            if (ch.OutputHeader)
+            {
+                var headers = response.Headers.ToByteArray();
+                outputstream.Write(headers, 0, headers.Length);
+            }
+
+            stream.CopyTo(outputstream);
+
+            //
+
+            return (returnstream != null)
+                ? PhpValue.Create(new PhpString(returnstream.ToArray()))
+                : PhpValue.True;
         }
 
         /// <summary>
@@ -133,18 +205,21 @@ namespace Peachpie.Library.Network
             var uri = TryCreateUri(ch);
             if (uri == null) return PhpValue.False;
 
-            // HTTP(S):
-            Debug.Assert(string.Equals(uri.Scheme, "http", StringComparison.OrdinalIgnoreCase));
+            //
 
-            var req = WebRequest.CreateHttp(uri);
+            if (string.Equals(uri.Scheme, "http", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(uri.Scheme, "https", StringComparison.OrdinalIgnoreCase))
+            {
+                ch.Response = ExecHttpRequest(ctx, ch, uri);
+            }
+            else
+            {
+                return PhpValue.False;
+            }
 
-            req.AllowAutoRedirect = ch.FollowLocation;
-            req.MaximumAutomaticRedirections = ch.MaxRedirects;
+            //
 
-            if (ch.UserAgent != null) req.UserAgent = ch.UserAgent;
-            if (ch.Referer != null) req.Referer = ch.Referer;
-
-            throw new NotImplementedException();
+            return ch.Response.ExecValue;
         }
     }
 }

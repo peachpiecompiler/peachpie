@@ -508,7 +508,11 @@ namespace Peachpie.Library.Network
             switch (option)
             {
                 case CURLOPT_URL: return (ch.Url = value.AsString()) != null;
-                case CURLOPT_POST: ch.IsPost = value.ToBoolean(); break;
+                case CURLOPT_DEFAULT_PROTOCOL: return (ch.DefaultSheme = value.AsString()) != null;
+                case CURLOPT_HTTPGET: if (value.ToBoolean()) { ch.Method = CURLResource.RequestMethod.GET; } break;
+                case CURLOPT_POST: if (value.ToBoolean()) { ch.Method = CURLResource.RequestMethod.POST; } break;
+                case CURLOPT_PUT: if (value.ToBoolean()) { ch.Method = CURLResource.RequestMethod.PUT; } break;
+                case CURLOPT_NOBODY: if (value.ToBoolean()) { ch.Method = CURLResource.RequestMethod.HEAD; } break;
                 case CURLOPT_FOLLOWLOCATION: ch.FollowLocation = value.ToBoolean(); break;
                 case CURLOPT_MAXREDIRS: ch.MaxRedirects = (int)value.ToLong(); break;
                 case CURLOPT_REFERER: return (ch.Referer = value.AsString()) != null;
