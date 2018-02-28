@@ -10,6 +10,7 @@ install:
   - dotnet build ./src/Peachpie.Runtime/ /p:TargetFrameworks=netcoreapp2.0
   - dotnet build ./src/Peachpie.Library/ /p:TargetFrameworks=netcoreapp2.0
   - dotnet build ./src/Peachpie.Library.Graphics/ /p:TargetFrameworks=netcoreapp2.0
+  - dotnet build ./src/Peachpie.Library.Network/ /p:TargetFrameworks=netcoreapp2.0
   - dotnet build ./src/Peachpie.Library.XmlDom/ /p:TargetFrameworks=netcoreapp2.0
   - dotnet build ./src/Peachpie.Library.Scripting/ /p:TargetFrameworks=netcoreapp2.0
   - dotnet build ./src/Peachpie.Library.MsSql/ /p:TargetFrameworks=netcoreapp2.0

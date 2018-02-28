@@ -24,6 +24,10 @@ namespace Peachpie.Test
                     Location = new Location(fullpath, 0, 0),
                     EmitDebugInformation = true,
                     IsSubmission = false,
+                    AdditionalReferences = new string[] {
+                        typeof(Library.Graphics.PhpImage).Assembly.Location,
+                        typeof(Library.Network.CURLFunctions).Assembly.Location
+                    },
                 }, File.ReadAllText(fullpath));
 
                 //
