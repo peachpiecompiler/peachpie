@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Text;
 using Pchp.Core;
 using Pchp.Library.Streams;
@@ -509,15 +510,18 @@ namespace Peachpie.Library.Network
             {
                 case CURLOPT_URL: return (ch.Url = value.AsString()) != null;
                 case CURLOPT_DEFAULT_PROTOCOL: return (ch.DefaultSheme = value.AsString()) != null;
-                case CURLOPT_HTTPGET: if (value.ToBoolean()) { ch.Method = CURLResource.RequestMethod.GET; } break;
-                case CURLOPT_POST: if (value.ToBoolean()) { ch.Method = CURLResource.RequestMethod.POST; } break;
-                case CURLOPT_PUT: if (value.ToBoolean()) { ch.Method = CURLResource.RequestMethod.PUT; } break;
-                case CURLOPT_NOBODY: if (value.ToBoolean()) { ch.Method = CURLResource.RequestMethod.HEAD; } break;
+                case CURLOPT_HTTPGET: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Get; } break;
+                case CURLOPT_POST: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Post; } break;
+                case CURLOPT_PUT: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Put; } break;
+                case CURLOPT_NOBODY: if (value.ToBoolean()) { ch.Method = WebRequestMethods.Http.Head; } break;
+                case CURLOPT_CUSTOMREQUEST: return (ch.Method = value.AsString()) != null;
+                case CURLOPT_POSTFIELDS: ch.PostFields = value.GetValue().DeepCopy(); break;
                 case CURLOPT_FOLLOWLOCATION: ch.FollowLocation = value.ToBoolean(); break;
                 case CURLOPT_MAXREDIRS: ch.MaxRedirects = (int)value.ToLong(); break;
                 case CURLOPT_REFERER: return (ch.Referer = value.AsString()) != null;
                 case CURLOPT_RETURNTRANSFER: ch.ReturnTransfer = value.ToBoolean(); break;
                 case CURLOPT_HEADER: ch.OutputHeader = value.ToBoolean(); break;
+                case CURLOPT_HTTPHEADER: ch.Headers = value.GetValue().DeepCopy().ToArray(); break;
                 case CURLOPT_FILE: return (ch.OutputTransfer = value.Object as PhpStream) != null;
                 case CURLOPT_INFILE: return (ch.InputTransfer = value.Object as PhpStream) != null;
                 case CURLOPT_USERAGENT: return (ch.UserAgent = value.AsString()) != null;

@@ -132,12 +132,14 @@ namespace Peachpie.Library.Network
 
             // setup request:
 
-            req.Method = ch.Method.ToString();
+            Debug.Assert(ch.Method != null, "Method == null");
+
+            req.Method = ch.Method;
             req.AllowAutoRedirect = ch.FollowLocation;
             req.MaximumAutomaticRedirections = ch.MaxRedirects;
             if (ch.UserAgent != null) req.UserAgent = ch.UserAgent;
             if (ch.Referer != null) req.Referer = ch.Referer;
-            // headers
+            if (ch.Headers != null) AddHeaders(req, ch.Headers);
             // cookies
             // certificate
             // credentials
@@ -145,21 +147,71 @@ namespace Peachpie.Library.Network
 
             // make request:
 
-            switch (ch.Method)
+            // GET, HEAD
+            if (string.Equals(ch.Method, WebRequestMethods.Http.Get, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(ch.Method, WebRequestMethods.Http.Head, StringComparison.OrdinalIgnoreCase))
             {
-                case CURLResource.RequestMethod.GET:
-                case CURLResource.RequestMethod.HEAD:
-                    break;
-
-                default:
-                    throw new NotImplementedException();
+                // nothing to do
+            }
+            // POST, PUT
+            else if (
+                string.Equals(ch.Method, WebRequestMethods.Http.Post, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(ch.Method, WebRequestMethods.Http.Put, StringComparison.OrdinalIgnoreCase))
+            {
+                ProcessPost(req, ch.PostFields);
+            }
+            // DELETE, or custom method
+            else
+            {
+                // custom method, nothing to do
             }
 
             // process response:
 
-            using (var response = req.GetResponse())    // NOTE: GetResponse() internally throws an exception, ignore it
+            using (var response = (HttpWebResponse)req.GetResponse())    // NOTE: GetResponse() internally throws an exception, ignore it
             {
                 return new CURLHttpResponse() { ExecValue = ProcessResponse(ctx, ch, response) };
+            }
+        }
+
+        static void ProcessPost(HttpWebRequest req, PhpValue postfields)
+        {
+            //var bytes = postfields.ToBytesOrNull(); // TODO: ASCII
+            //var arr = postfields.AsArray();
+
+            //if (arr != null)
+            //{
+            //    req.ContentType = "multipart/form-data";
+            //}
+            //else if (bytes != null)
+            //{
+            //    req.ContentLength = bytes.Length;
+            //}
+
+            //using (var stream = req.GetRequestStream())
+            //{
+            //    if (bytes != null)
+            //    {
+            //        stream.Write(bytes, 0, bytes.Length);
+            //    }
+            //    else if (arr != null)
+            //    {
+            //        // ...
+            //    }
+            //}
+            throw new NotImplementedException("Method: POST");
+        }
+
+        static void AddHeaders(HttpWebRequest req, PhpArray headers)
+        {
+            var enumerator = headers.GetFastEnumerator();
+            while (enumerator.MoveNext())
+            {
+                var header = enumerator.CurrentValue.AsString();
+                if (header != null)
+                {
+                    req.Headers.Add(header);
+                }
             }
         }
 

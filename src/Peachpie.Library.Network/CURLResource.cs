@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Text;
 using Pchp.Core;
 using Pchp.Library.Streams;
@@ -11,11 +12,6 @@ namespace Peachpie.Library.Network
     /// </summary>
     public sealed class CURLResource : PhpResource
     {
-        public enum RequestMethod
-        {
-            GET = 0, POST, HEAD, PUT,
-        }
-
         #region Properties
 
         public string Url { get; set; }
@@ -33,14 +29,20 @@ namespace Peachpie.Library.Network
 
         public string Referer { get; set; }
 
-        public RequestMethod Method { get; set; } = RequestMethod.GET;
+        public string Method { get; set; } = WebRequestMethods.Http.Get;
 
-        ///// <summary>
-        ///// The full data to post in a HTTP "POST" operation.
-        ///// This parameter can either be passed as a urlencoded string like 'para1=val1&para2=val2&...' or as an array with the field name as key and field data as value.
-        ///// If value is an array, the Content-Type header will be set to multipart/form-data.
-        ///// </summary>
-        //public string PostFields { get; set; }
+        /// <summary>
+        /// The full data to post in a HTTP "POST" operation.
+        /// This parameter can either be passed as a urlencoded string like 'para1=val1&amp;para2=val2&amp;...' or as an array with the field name as key and field data as value.
+        /// If value is an array, the Content-Type header will be set to multipart/form-data.
+        /// </summary>
+        public PhpValue PostFields { get; set; } = PhpValue.Void;
+
+        /// <summary>
+        /// Headers to be send with the request.
+        /// Keys of the array are ignored, values are in form of <c>header-name: value</c>
+        /// </summary>
+        public PhpArray Headers { get; set; }
 
         public bool ReturnTransfer { get; set; } = false;
 
