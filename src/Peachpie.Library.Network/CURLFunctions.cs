@@ -4,8 +4,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Security;
+using System.Security.Cryptography;
 using System.Text;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 
 namespace Peachpie.Library.Network
 {
@@ -105,6 +107,60 @@ namespace Peachpie.Library.Network
             return true;
         }
 
+        /// <summary>
+        /// Return the last error number.
+        /// </summary>
+        public static int curl_errno(CURLResource ch) => ch?.Result != null
+            ? ch.Result.ErrorCode
+            : CURLConstants.CURLE_OK;
+
+        /// <summary>
+        /// Return a string containing the last error for the current session.
+        /// </summary>
+        public static string curl_error(CURLResource ch) => ch?.Result != null && ch.Result.HasError
+            ? (ch.Result.ErrorMessage ?? ch.Result.ErrorCode.ToString())
+            : string.Empty;
+
+        /// <summary>
+        /// Get information regarding a specific transfer.
+        /// </summary>
+        public static PhpValue curl_getinfo(CURLResource ch, int opt = 0)
+        {
+            if (ch != null && ch.Result != null)
+            {
+                var r = ch.Result;
+
+                switch (opt)
+                {
+                    case 0:
+                        // array of all information
+                        return (PhpValue)new PhpArray()
+                        {
+                            { "url", r.ResponseUri.AbsoluteUri },
+                            { "content_type", r.ContentType },
+                            { "http_code", r.StatusCode },
+                            { "filetime", DateTimeUtils.UtcToUnixTimeStamp(r.LastModified) },
+                            { "total_time", r.TotalTime.TotalSeconds },
+                        };
+                    case CURLConstants.CURLINFO_EFFECTIVE_URL:
+                        return (PhpValue)r.ResponseUri.AbsoluteUri;
+                    case CURLConstants.CURLINFO_REDIRECT_URL:
+                        return (PhpValue)(ch.FollowLocation ? string.Empty : r.ResponseUri.AbsoluteUri);
+                    case CURLConstants.CURLINFO_HTTP_CODE:
+                        return (PhpValue)r.StatusCode;
+                    case CURLConstants.CURLINFO_FILETIME:
+                        return (PhpValue)DateTimeUtils.UtcToUnixTimeStamp(r.LastModified);
+                    case CURLConstants.CURLINFO_CONTENT_TYPE:
+                        return (PhpValue)r.ContentType;
+                    case CURLConstants.CURLINFO_TOTAL_TIME:
+                        return (PhpValue)r.TotalTime.TotalSeconds;
+                }
+            }
+
+            // failure:
+            return PhpValue.False;
+        }
+
         static void Write(this Stream stream, byte[] bytes) => stream.Write(bytes, 0, bytes.Length);
 
         static Uri TryCreateUri(CURLResource ch)
@@ -130,6 +186,34 @@ namespace Peachpie.Library.Network
 
         static CURLResponse ExecHttpRequest(Context ctx, CURLResource ch, Uri uri)
         {
+            try
+            {
+                return ExecHttpRequestInternal(ctx, ch, uri);
+            }
+            catch (WebException ex)
+            {
+                switch (ex.Status)
+                {
+                    case WebExceptionStatus.Timeout:
+                        return CURLResponse.CreateError(CURLConstants.CURLE_OPERATION_TIMEDOUT, ex);
+                    case WebExceptionStatus.TrustFailure:
+                        return CURLResponse.CreateError(CURLConstants.CURLE_SSL_CACERT, ex);
+                    default:
+                        return CURLResponse.CreateError(CURLConstants.CURLE_COULDNT_CONNECT, ex);
+                }
+            }
+            catch (ProtocolViolationException ex)
+            {
+                return CURLResponse.CreateError(CURLConstants.CURLE_FAILED_INIT, ex);
+            }
+            catch (CryptographicException ex)
+            {
+                return CURLResponse.CreateError(CURLConstants.CURLE_SSL_CERTPROBLEM, ex);
+            }
+        }
+
+        static CURLResponse ExecHttpRequestInternal(Context ctx, CURLResource ch, Uri uri)
+        {
             var req = WebRequest.CreateHttp(uri);
 
             // setup request:
@@ -143,6 +227,7 @@ namespace Peachpie.Library.Network
             if (ch.Referer != null) req.Referer = ch.Referer;
             if (ch.Headers != null) AddHeaders(req, ch.Headers);
             // TODO: cookies
+            req.CookieContainer = new CookieContainer();
             // TODO: certificate
             // TODO: credentials
             // TODO: proxy
@@ -175,7 +260,7 @@ namespace Peachpie.Library.Network
 
             using (var response = (HttpWebResponse)req.GetResponse())    // NOTE: GetResponse() internally throws an exception, ignore it
             {
-                return new CURLHttpResponse() { ExecValue = ProcessResponse(ctx, ch, response) };
+                return new CURLResponse(ProcessResponse(ctx, ch, response), response);
             }
         }
 
@@ -318,24 +403,29 @@ namespace Peachpie.Library.Network
         /// </summary>
         public static PhpValue curl_exec(Context ctx, CURLResource ch)
         {
+            var start = DateTime.UtcNow;
+
             var uri = TryCreateUri(ch);
-            if (uri == null) return PhpValue.False;
-
-            //
-
-            if (string.Equals(uri.Scheme, "http", StringComparison.OrdinalIgnoreCase) ||
+            if (uri == null)
+            {
+                ch.Result = CURLResponse.CreateError(CURLConstants.CURLE_URL_MALFORMAT);
+            }
+            else if (
+                string.Equals(uri.Scheme, "http", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(uri.Scheme, "https", StringComparison.OrdinalIgnoreCase))
             {
-                ch.Response = ExecHttpRequest(ctx, ch, uri);
+                ch.Result = ExecHttpRequest(ctx, ch, uri);
             }
             else
             {
-                return PhpValue.False;
+                ch.Result = CURLResponse.CreateError(CURLConstants.CURLE_UNSUPPORTED_PROTOCOL);
             }
 
             //
 
-            return ch.Response.ExecValue;
+            ch.Result.TotalTime = (DateTime.UtcNow - start);
+
+            return ch.Result.ExecValue;
         }
     }
 }

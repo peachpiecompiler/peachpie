@@ -67,7 +67,7 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Response after the execution.
         /// </summary>
-        public CURLResponse Response { get; internal set; }
+        internal CURLResponse Result { get; set; }
 
         public CURLResource() : base(CURLConstants.CurlResourceName)
         {
@@ -75,23 +75,57 @@ namespace Peachpie.Library.Network
 
         protected override void FreeManaged()
         {
+            // clear references
+            this.Result = null;
+            this.OutputTransfer = null;
+            this.PutStream = null;
+            this.Headers = null;
+            this.PostFields = PhpValue.Void;
+
+            //
             base.FreeManaged();
         }
     }
 
-    /// <summary>
-    /// The result of exec operation.
-    /// </summary>
-    public interface CURLResponse
+    sealed class CURLResponse
     {
-        /// <summary>
-        /// The value supposed to be returned from <c>curl_exec</c>.
-        /// </summary>
-        PhpValue ExecValue { get; }
-    }
+        readonly HttpWebResponse _responseObj;
 
-    sealed class CURLHttpResponse : CURLResponse
-    {
-        public PhpValue ExecValue { get; set; } = PhpValue.False;
+        /// <summary>
+        /// Error code number if exception happened.
+        /// </summary>
+        public int ErrorCode { get; set; } = CURLConstants.CURLE_OK;
+
+        /// <summary>
+        /// Optional. Error message.
+        /// </summary>
+        public string ErrorMessage { get; set; }
+
+        /// <summary>
+        /// Gets value indicating the request errored.
+        /// </summary>
+        public bool HasError => ErrorCode != CURLConstants.CURLE_OK;
+
+        public Uri ResponseUri => _responseObj.ResponseUri;
+
+        public int StatusCode => (int)_responseObj.StatusCode;
+
+        public DateTime LastModified => _responseObj.LastModified;
+
+        public string ContentType => _responseObj.ContentType;
+
+        public int HeaderSize => _responseObj.Headers.ToByteArray().Length;
+
+        public TimeSpan TotalTime { get; set; }
+
+        public PhpValue ExecValue { get; }
+
+        public static CURLResponse CreateError(int errcode, Exception ex = null) => new CURLResponse(PhpValue.False) { ErrorCode = errcode, ErrorMessage = ex?.Message };
+
+        public CURLResponse(PhpValue execvalue, WebResponse responseObj = null)
+        {
+            this.ExecValue = execvalue;
+            _responseObj = (HttpWebResponse)responseObj;
+        }
     }
 }

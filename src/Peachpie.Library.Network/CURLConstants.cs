@@ -203,6 +203,7 @@ namespace Peachpie.Library.Network
         public const int CURLINFO_SPEED_UPLOAD = 3145738;
         public const int CURLINFO_SSL_VERIFYRESULT = 2097165;
         public const int CURLINFO_STARTTRANSFER_TIME = 3145745;
+        /// <summary>Total transaction time in seconds for last transfer.</summary>
         public const int CURLINFO_TOTAL_TIME = 3145731;
         public const int CURLMSG_DONE = 1;
         public const int CURLVERSION_NOW = 4;
