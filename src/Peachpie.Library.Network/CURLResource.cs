@@ -58,9 +58,9 @@ namespace Peachpie.Library.Network
         public PhpStream OutputTransfer { get; set; }
 
         /// <summary>
-        /// The file that the transfer should be read from when uploading.
+        /// The file that the transfer should be read from when uploading using <c>PUT</c> method.
         /// </summary>
-        public PhpStream InputTransfer { get; set; }
+        public PhpStream PutStream { get; set; }
 
         #endregion
 

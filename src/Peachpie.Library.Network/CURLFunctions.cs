@@ -105,6 +105,8 @@ namespace Peachpie.Library.Network
             return true;
         }
 
+        static void Write(this Stream stream, byte[] bytes) => stream.Write(bytes, 0, bytes.Length);
+
         static Uri TryCreateUri(CURLResource ch)
         {
             var url = ch.Url;
@@ -140,10 +142,10 @@ namespace Peachpie.Library.Network
             if (ch.UserAgent != null) req.UserAgent = ch.UserAgent;
             if (ch.Referer != null) req.Referer = ch.Referer;
             if (ch.Headers != null) AddHeaders(req, ch.Headers);
-            // cookies
-            // certificate
-            // credentials
-            // proxy
+            // TODO: cookies
+            // TODO: certificate
+            // TODO: credentials
+            // TODO: proxy
 
             // make request:
 
@@ -153,12 +155,15 @@ namespace Peachpie.Library.Network
             {
                 // nothing to do
             }
-            // POST, PUT
-            else if (
-                string.Equals(ch.Method, WebRequestMethods.Http.Post, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(ch.Method, WebRequestMethods.Http.Put, StringComparison.OrdinalIgnoreCase))
+            // POST
+            else if (string.Equals(ch.Method, WebRequestMethods.Http.Post, StringComparison.OrdinalIgnoreCase))
             {
-                ProcessPost(req, ch.PostFields);
+                ProcessPost(ctx, req, ch);
+            }
+            // PUT
+            else if (string.Equals(ch.Method, WebRequestMethods.Http.Put, StringComparison.OrdinalIgnoreCase))
+            {
+                ProcessPut(req, ch);
             }
             // DELETE, or custom method
             else
@@ -174,32 +179,91 @@ namespace Peachpie.Library.Network
             }
         }
 
-        static void ProcessPost(HttpWebRequest req, PhpValue postfields)
+        static void ProcessPut(HttpWebRequest req, CURLResource ch)
         {
-            //var bytes = postfields.ToBytesOrNull(); // TODO: ASCII
-            //var arr = postfields.AsArray();
+            // req.ContentLength = bytes.Length;
 
-            //if (arr != null)
-            //{
-            //    req.ContentType = "multipart/form-data";
-            //}
-            //else if (bytes != null)
-            //{
-            //    req.ContentLength = bytes.Length;
-            //}
+            using (var stream = req.GetRequestStream())
+            {
+                ch.PutStream.RawStream.CopyTo(stream);
+            }
+        }
 
-            //using (var stream = req.GetRequestStream())
-            //{
-            //    if (bytes != null)
-            //    {
-            //        stream.Write(bytes, 0, bytes.Length);
-            //    }
-            //    else if (arr != null)
-            //    {
-            //        // ...
-            //    }
-            //}
-            throw new NotImplementedException("Method: POST");
+        static void ProcessPost(Context ctx, HttpWebRequest req, CURLResource ch)
+        {
+            byte[] bytes;
+
+            var arr = ch.PostFields.AsArray();
+            if (arr != null)
+            {
+                string boundary = "----------" + DateTime.UtcNow.Ticks.ToString();
+                string contentType = "multipart/form-data; boundary=" + boundary;
+
+                bytes = GetMultipartFormData(ctx, arr, boundary);
+
+                req.ContentType = contentType;
+            }
+            else
+            {
+                bytes = ch.PostFields.ToBytes(ctx);
+            }
+
+            req.ContentLength = bytes.Length;
+
+            using (var stream = req.GetRequestStream())
+            {
+                stream.Write(bytes);
+            }
+        }
+
+        static byte[] GetMultipartFormData(Context ctx, PhpArray postParameters, string boundary)
+        {
+            var encoding = Encoding.ASCII;
+            var formDataStream = new MemoryStream();
+            bool needsCLRF = false;
+
+            var param = postParameters.GetFastEnumerator();
+            while (param.MoveNext())
+            {
+                // Skip it on the first parameter, add it to subsequent parameters.
+                if (needsCLRF)
+                {
+                    formDataStream.Write(encoding.GetBytes("\r\n"));
+                }
+
+                needsCLRF = true;
+
+                if (param.CurrentValue.AsObject() is CURLFile fileToUpload)
+                {
+                    // Add just the first part of this param, since we will write the file data directly to the Stream
+                    string header = string.Format("--{0}\r\nContent-Disposition: form-data; name=\"{1}\"; filename=\"{2}\"\r\nContent-Type: {3}\r\n\r\n",
+                        boundary,
+                        param.CurrentKey.ToString(),
+                        string.IsNullOrEmpty(fileToUpload.postname) ? fileToUpload.name : fileToUpload.postname,
+                        string.IsNullOrEmpty(fileToUpload.mime) ? "application/octet-stream" : fileToUpload.mime);
+
+                    formDataStream.Write(encoding.GetBytes(header));
+
+                    // Write the file data directly to the Stream, rather than serializing it to a string.
+                    formDataStream.Write(File.ReadAllBytes(fileToUpload.name));
+                }
+                else
+                {
+                    string postData = string.Format("--{0}\r\nContent-Disposition: form-data; name=\"{1}\"\r\n\r\n",
+                        boundary,
+                        param.CurrentKey.ToString());
+
+                    formDataStream.Write(encoding.GetBytes(postData));
+                    formDataStream.Write(param.CurrentValue.ToBytes(ctx));
+                }
+            }
+
+            // Add the end of the request.  Start with a newline
+            string footer = "\r\n--" + boundary + "--\r\n";
+            formDataStream.Write(encoding.GetBytes(footer));
+
+            // Dump the Stream into a byte[]
+            return formDataStream.ToArray();
         }
 
         static void AddHeaders(HttpWebRequest req, PhpArray headers)
