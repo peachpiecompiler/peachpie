@@ -526,6 +526,7 @@ namespace Peachpie.Library.Network
                 case CURLOPT_FILE: return (ch.OutputTransfer = value.Object as PhpStream) != null;
                 case CURLOPT_INFILE: return (ch.PutStream = value.Object as PhpStream) != null;
                 case CURLOPT_USERAGENT: return (ch.UserAgent = value.AsString()) != null;
+                case CURLOPT_BINARYTRANSFER: return true;   // no effect
 
                 default:
                     return false;
