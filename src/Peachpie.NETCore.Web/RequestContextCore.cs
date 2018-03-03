@@ -32,6 +32,12 @@ namespace Peachpie.Web
 
         void IHttpPhpContext.SetHeader(string name, string value)
         {
+            if (name.EqualsOrdinalIgnoreCase("content-length"))
+            {
+                // ignore content-length header, it is set correctly by middleware, using actual encoding
+                return;
+            }
+
             StringValues newitem = new StringValues(value);
             //StringValues olditem;
             //if (_httpctx.Response.Headers.TryGetValue(name, out olditem))

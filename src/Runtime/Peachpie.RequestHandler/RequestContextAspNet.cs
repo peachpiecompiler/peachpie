@@ -114,7 +114,11 @@ namespace Peachpie.RequestHandler
 
         void IHttpPhpContext.SetHeader(string name, string value)
         {
-            if (name.EqualsOrdinalIgnoreCase("content-length")) return; // ignore content-length header, it is set correctly by IIS. If set by the app, mostly it is not correct value (strlen() issue).
+            if (name.EqualsOrdinalIgnoreCase("content-length"))
+            {
+                // ignore content-length header, it is set correctly by IIS, using actual encoding
+                return;
+            }
 
             //
             _httpctx.Response.Headers.Add(name, value);
