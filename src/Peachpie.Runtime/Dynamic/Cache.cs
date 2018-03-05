@@ -32,6 +32,8 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo SetValue_PhpValueRef_PhpValue = typeof(Core.Operators).GetMethod("SetValue", typeof(PhpValue).MakeByRefType(), typeof(PhpValue));
 
             public static MethodInfo ToString_Double_Context = typeof(Core.Convert).GetMethod("ToString", typeof(double), typeof(Context));
+            public static MethodInfo ToLong_String = typeof(Core.Convert).GetMethod("StringToLongInteger", typeof(string));
+            public static MethodInfo ToDouble_String = typeof(Core.Convert).GetMethod("StringToDouble", typeof(string));
             public static MethodInfo ToPhpString_PhpValue_Context = typeof(Core.Convert).GetMethod("ToPhpString", typeof(PhpValue), typeof(Context));
             public static MethodInfo ToPhpNumber_String = typeof(Core.Convert).GetMethod("ToNumber", Types.String[0]);
             public static MethodInfo ToBoolean_Object = typeof(Core.Convert).GetMethod("ToBoolean", Types.Object[0]);

@@ -103,6 +103,8 @@ namespace Pchp.Core.Dynamic
 
             if (source == typeof(PhpNumber)) return Expression.Call(expr, typeof(PhpNumber).GetMethod("ToLong", Cache.Types.Empty));
             if (source == typeof(PhpArray)) return Expression.Call(expr, typeof(PhpArray).GetMethod("ToLong", Cache.Types.Empty));
+            if (source == typeof(string)) return Expression.Call(Cache.Operators.ToLong_String, expr);
+            if (source == typeof(PhpString)) return Expression.Call(expr, typeof(PhpString).GetMethod("ToLong", Cache.Types.Empty));
             if (source == typeof(void)) return VoidAsConstant(expr, 0L, typeof(long));
             if (source == typeof(long)) return expr;    // unreachable
 
@@ -121,6 +123,8 @@ namespace Pchp.Core.Dynamic
                 source == typeof(long)) return Expression.Convert(expr, typeof(double));
             if (source == typeof(PhpNumber)) return Expression.Call(expr, typeof(PhpNumber).GetMethod("ToDouble", Cache.Types.Empty));
             if (source == typeof(PhpArray)) return Expression.Call(expr, typeof(PhpArray).GetMethod("ToDouble", Cache.Types.Empty));
+            if (source == typeof(string)) return Expression.Call(Cache.Operators.ToDouble_String, expr);
+            if (source == typeof(PhpString)) return Expression.Call(expr, typeof(PhpString).GetMethod("ToDouble", Cache.Types.Empty));
             if (source == typeof(void)) return VoidAsConstant(expr, 0.0, typeof(double));
             if (source == typeof(double)) return expr;
             if (source == typeof(float)) return Expression.Convert(expr, typeof(double));
