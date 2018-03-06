@@ -463,7 +463,6 @@ namespace Pchp.Library
         /// <summary>
         /// Creates a histogram of character occurence in a string or string of bytes.
         /// </summary>
-        /// <param name="ctx">Runtime context.</param>
         /// <param name="data">The string or bytes to be processed.</param>
         /// <param name="mode">Determines the type of result.</param>
         /// <returns>Depending on <paramref name="mode"/> the following is returned:
@@ -477,17 +476,17 @@ namespace Pchp.Library
         /// </returns>
         /// <exception cref="PhpException">The <paramref name="mode"/> is invalid.</exception>
         /// <exception cref="PhpException">The <paramref name="data"/> contains Unicode characters greater than '\u0800'.</exception>
-        public static PhpValue count_chars(Context ctx, PhpString data, int mode)
+        public static PhpValue count_chars(byte[] data, int mode)
         {
             try
             {
                 switch (mode)
                 {
-                    case 0: return (PhpValue)new PhpArray(CountBytes(data.ToBytes(ctx)), 0, 256);
-                    case 1: return (PhpValue)new PhpArray(CountBytes(data.ToBytes(ctx)), 0, 256, 0, true);
-                    case 2: return (PhpValue)new PhpArray(CountBytes(data.ToBytes(ctx)), 0, 256, 0, false);
-                    case 3: return PhpValue.Create(new PhpString(GetBytesContained(data.ToBytes(ctx), 0, 255)));
-                    case 4: return PhpValue.Create(new PhpString(GetBytesNotContained(data.ToBytes(ctx), 0, 255)));
+                    case 0: return (PhpValue)new PhpArray(CountBytes(data), 0, 256);
+                    case 1: return (PhpValue)new PhpArray(CountBytes(data), 0, 256, 0, true);
+                    case 2: return (PhpValue)new PhpArray(CountBytes(data), 0, 256, 0, false);
+                    case 3: return PhpValue.Create(new PhpString(GetBytesContained(data, 0, 255)));
+                    case 4: return PhpValue.Create(new PhpString(GetBytesNotContained(data, 0, 255)));
                     default:
                         PhpException.InvalidArgument(nameof(mode));
                         return PhpValue.Null;
