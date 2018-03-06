@@ -375,7 +375,17 @@ namespace Pchp.Core
                 return arr;
             }
             public override IPhpArray GetArrayAccess(ref PhpValue me) => EnsureArray(ref me);
-            public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => PhpValue.Create(Operators.GetItemValue(me.String, index, quiet));
+            public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet)
+            {
+                var item = Operators.GetItemValue(me.String, index, quiet);
+
+                if (quiet && string.IsNullOrEmpty(item))
+                {
+                    return PhpValue.Null;
+                }
+
+                return (PhpValue)item;
+            }
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) { throw new NotSupportedException(); } // TODO: Err
             public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me);
             public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx) => PhpCallback.Create(me.String, callerCtx);

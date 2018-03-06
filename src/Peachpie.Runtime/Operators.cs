@@ -401,6 +401,20 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Implements <c>[]</c> operator on <see cref="string"/> with <c>isset</c> semantics.
+        /// </summary>
+        public static string GetItemValueOrNull(string value, IntStringKey key)
+        {
+            int index = key.IsInteger
+                ? key.Integer
+                : (int)Convert.StringToLongInteger(key.String);
+
+            return (value != null && index >= 0 && index < value.Length)
+                ? value[index].ToString()
+                : null;
+        }
+
+        /// <summary>
         /// Implements <c>[]</c> operator on <see cref="string"/>.
         /// </summary>
         public static string GetItemValue(string value, PhpValue index, bool quiet)
@@ -411,9 +425,9 @@ namespace Pchp.Core
             }
             else
             {
-                if (!quiet) throw new ArgumentException();
-
-                return string.Empty;
+                return quiet
+                    ? (string)null
+                    : throw new ArgumentException();    // string.Empty + warning
             }
         }
 

@@ -3862,8 +3862,11 @@ namespace Pchp.CodeAnalysis.Semantics
                     Debug.Assert(Access.IsRead);
                     if (stack.tIndex == cg.CoreTypes.IntStringKey)
                     {
-                        // GetItemValue(string, IntStringKey)
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetItemValue_String_IntStringKey);
+                        // GetItemValue{OrNull}(string, IntStringKey)
+                        return cg.EmitCall(ILOpCode.Call, this.Access.Flags.Isset()
+                            ? cg.CoreMethods.Operators.GetItemValueOrNull_String_IntStringKey   // string or null
+                            : cg.CoreMethods.Operators.GetItemValue_String_IntStringKey         // string or ""
+                            );
                     }
                     else
                     {
