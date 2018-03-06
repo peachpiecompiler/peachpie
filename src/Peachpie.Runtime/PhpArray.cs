@@ -180,7 +180,8 @@ namespace Pchp.Core
         public PhpArray(PhpArray/*!*/array, bool preserveMaxInt)
             : base(array, preserveMaxInt)
         {
-
+            // preserve intrinsic enumerator state
+            _intrinsicEnumerator = array._intrinsicEnumerator?.WithTable(this); // copies state of intrinsic enumerator or null
         }
 
         /// <summary>

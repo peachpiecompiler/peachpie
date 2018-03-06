@@ -372,6 +372,25 @@ namespace Pchp.Core
                 hashtable.RegisterEnumerator(this);
             }
 
+            internal Enumerator/*!*/WithTable(PhpHashtable/*!*/hashtable)
+            {
+                Debug.Assert(hashtable != null);
+                Debug.Assert(hashtable.Count == _table.Count);
+
+                if (ReferenceEquals(hashtable, _hashtable))
+                {
+                    return this;
+                }
+                else
+                {
+                    return new Enumerator(hashtable)
+                    {
+                        _start = _start,
+                        _element = _element,
+                    };
+                }
+            }
+
             /// <summary>
             /// Gets value indicating the enumerator has current value.
             /// </summary>
@@ -540,7 +559,7 @@ namespace Pchp.Core
         internal class ReadonlyEnumerator : Enumerator
         {
             public ReadonlyEnumerator(PhpHashtable/*!*/hashtable)
-                : base(hashtable.table.Share()) // enumerates over readonly copy of givcen array
+                : base(hashtable.table.Share()) // enumerates over readonly copy of given array
             {
                 
             }
