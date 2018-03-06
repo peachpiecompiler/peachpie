@@ -362,10 +362,9 @@ namespace Pchp.Library.DateTime
                         break;
 
                     case 'e':
-                        // Timezone identifier (added in PHP 5.1.0)
-                        //result.Append(zone.Id);
-                        //break;
-                        throw new NotImplementedException();
+                        // Timezone identifier(added in PHP 5.1.0)
+                        result.Append(zone.Id);
+                        break;
 
                     case 'D':
                         // A textual representation of a day, three letters - Mon through Sun
