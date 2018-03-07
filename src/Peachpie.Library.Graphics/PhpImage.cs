@@ -1387,7 +1387,6 @@ namespace Peachpie.Library.Graphics
         /// <param name="jpeg_file_name">Path to the JPEG image.</param>
         /// <param name="spool">Spool flag. If the spool flag is over 2 then the JPEG will be returned as a string.</param>
         /// <returns>If success and spool flag is lower than 2 then the JPEG will not be returned as a string, FALSE on errors.</returns>
-        [return: CastToFalse]
         public static PhpValue iptcembed(byte[] iptcdata, string jpeg_file_name, int spool = 0)
         {
             PhpException.FunctionNotSupported("iptcembed");
