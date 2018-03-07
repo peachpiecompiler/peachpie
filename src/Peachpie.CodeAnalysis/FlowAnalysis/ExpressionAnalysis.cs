@@ -1321,6 +1321,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     var candidates = resolvedtype.LookupMethods(x.Name.NameValue.Name.Value);
                     x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
                 }
+                else
+                {
+                    x.TargetMethod = null;
+                }
             }
 
             BindTargetMethod(x, maybeOverload: true);
