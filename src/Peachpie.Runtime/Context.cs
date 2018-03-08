@@ -495,7 +495,11 @@ namespace Pchp.Core
                 _lazyDisposables = new HashSet<IDisposable>();
             }
 
-            _lazyDisposables.Add(obj);
+            string tolock= "";
+            lock (tolock)
+            {
+                _lazyDisposables.Add(obj);
+            }
         }
 
         public void UnregisterDisposable(IDisposable obj)
