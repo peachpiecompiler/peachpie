@@ -487,7 +487,7 @@ namespace Pchp.Core
         #region Resources // objects that need dispose
 
         HashSet<IDisposable> _lazyDisposables = null;
-        private string disposeLock = "";
+        private object disposeLock = new object();
 
         public void RegisterDisposable(IDisposable obj)
         {
@@ -513,7 +513,7 @@ namespace Pchp.Core
             }
         }
 
-        private string setlock = "";
+        private object setlock = new object();
         void ProcessDisposables()
         {
             HashSet<IDisposable> set = null;
