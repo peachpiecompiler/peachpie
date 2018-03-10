@@ -2907,6 +2907,26 @@ namespace Pchp.Library
         #region array_filter
 
         /// <summary>
+        /// <see cref="array_filter(Context, PhpArray, IPhpCallable, ArrayFilterFlags)"/> options.
+        /// </summary>
+        public enum ArrayFilterFlags
+        {
+            UseValue = 0,
+            UseBoth = 1,
+            UseKey = 2,
+        }
+
+        /// <summary>
+        /// Pass key as the only argument to callback instead of the value.
+        /// </summary>
+        public const int ARRAY_FILTER_USE_KEY = (int)ArrayFilterFlags.UseKey;
+
+        /// <summary>
+        /// Pass both value and key as arguments to callback instead of the value.
+        /// </summary>
+        public const int ARRAY_FILTER_USE_BOTH = (int)ArrayFilterFlags.UseBoth;
+
+        /// <summary>
         /// Retuns the specified array.
         /// see http://php.net/manual/en/function.array-filter.php
         /// </summary>
@@ -2944,9 +2964,10 @@ namespace Pchp.Library
         /// If the callback returns value convertible to <B>true</B> the value is copied to the resulting array.
         /// Otherwise, it is ignored.
         /// </param>
+        /// <param name="flag">Optional. Flag determining what arguments are sent to <paramref name="callback"/>.</param>
         /// <returns>An array of unfiltered items.</returns>
         //[return: PhpDeepCopy]
-        public static PhpArray array_filter(Context ctx /*, caller*/, PhpArray array, IPhpCallable callback)
+        public static PhpArray array_filter(Context ctx /*, caller*/, PhpArray array, IPhpCallable callback, ArrayFilterFlags flag = ArrayFilterFlags.UseValue)
         {
             if (array == null)
             {
@@ -2962,8 +2983,8 @@ namespace Pchp.Library
                 throw new ArgumentNullException(nameof(callback));
             }
 
-            var result = new PhpArray();
-            var args = new PhpValue[1];
+            var result = new PhpArray(array.Count);
+            var args = new PhpValue[(flag == ArrayFilterFlags.UseBoth) ? 2 : 1];
 
             var iterator = array.GetFastEnumerator();
             while (iterator.MoveNext())
@@ -2971,7 +2992,20 @@ namespace Pchp.Library
                 var entry = iterator.Current;
 
                 // no deep copying needed because it is done so in callback:
-                args[0] = entry.Value;
+
+                switch (flag)
+                {
+                    case ArrayFilterFlags.UseBoth:
+                        args[0] = entry.Value;
+                        args[1] = PhpValue.Create(entry.Key);
+                        break;
+                    case ArrayFilterFlags.UseKey:
+                        args[0] = PhpValue.Create(entry.Key);
+                        break;
+                    default:
+                        args[0] = entry.Value;
+                        break;
+                }                
 
                 // adds entry to the resulting array if callback returns true:
                 if (callback.Invoke(ctx, args).ToBoolean())
