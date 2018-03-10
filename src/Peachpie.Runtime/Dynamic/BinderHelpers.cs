@@ -366,23 +366,8 @@ namespace Pchp.Core.Dynamic
                     // TODO: specify - ReadCopy | ReadValue | ReadValueCopy - currently not consistent
                 }
             }
-            else if (access.Isset())
-            {
-                if (expr.Type == typeof(PhpAlias))
-                {
-                    // dereference: expr => expr.Value
-                    expr = Expression.Field(expr, Cache.Properties.PhpAlias_Value);
-                    // continue ->
-                }
 
-                if (expr.Type == typeof(PhpValue))
-                {
-                    // Template: isset( value )
-                    expr = Expression.Call(Cache.Operators.IsSet_PhpValue, expr);
-                }
-            }
-
-            //
+            // Read, IsSet
             return expr;
         }
 

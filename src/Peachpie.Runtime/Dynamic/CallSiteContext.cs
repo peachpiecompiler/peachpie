@@ -50,7 +50,6 @@ namespace Pchp.Core.Dynamic
 
             if (BinderHelpers.TryTargetAsObject(target, out target))
             {
-                this.AddRestriction(target.Restrictions);
                 this.TargetInstance = target.Expression;
                 this.CurrentTargetInstance = target.Value;
                 if (this.TargetType == null && target.Value != null)
@@ -58,6 +57,9 @@ namespace Pchp.Core.Dynamic
                     this.TargetType = target.Value.GetPhpTypeInfo();
                 }
             }
+
+            // merge restrictions:
+            this.AddRestriction(target.Restrictions);
         }
 
         bool ProcessArg(DynamicMetaObject arg)
