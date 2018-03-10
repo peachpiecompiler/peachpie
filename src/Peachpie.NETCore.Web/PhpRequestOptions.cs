@@ -27,7 +27,7 @@ namespace Peachpie.Web
         /// <summary>
         /// Event raised before processing the request within newly created <see cref="Context"/>.
         /// </summary>
-        public event Action<Context> BeforeRequest;
+        public Action<Context> BeforeRequest;
 
         internal void InvokeBeforeRequest(Context ctx) => BeforeRequest?.Invoke(ctx);
         

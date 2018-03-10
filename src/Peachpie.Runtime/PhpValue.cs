@@ -408,6 +408,7 @@ namespace Pchp.Core
         /// Dereferences and deep copies in-place.
         /// Called when this has been passed by value and inplace dereferencing and copying is necessary.
         /// </summary>
+        [DebuggerNonUserCode, DebuggerStepThrough]
         public void PassValue() => _type.PassValue(ref this);
 
         /// <summary>

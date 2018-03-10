@@ -20,17 +20,12 @@ namespace Peachpie.Web
 
         public PhpHandlerMiddleware(RequestDelegate next, IHostingEnvironment hostingEnv, PhpRequestOptions options)
         {
-            if (next == null)
-            {
-                throw new ArgumentNullException(nameof(next));
-            }
-
             if (hostingEnv == null)
             {
                 throw new ArgumentNullException(nameof(hostingEnv));
             }
 
-            _next = next;
+            _next = next ?? throw new ArgumentNullException(nameof(next));
             _options = options;
             _rootPath = NormalizeRootPath(hostingEnv.WebRootPath ?? hostingEnv.ContentRootPath ?? System.IO.Directory.GetCurrentDirectory());
             // TODO: pass hostingEnv.ContentRootFileProvider to the Context for file system functions
