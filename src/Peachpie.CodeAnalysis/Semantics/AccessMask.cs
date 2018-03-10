@@ -87,7 +87,9 @@ namespace Pchp.CodeAnalysis.Semantics
         public static bool EnsureAlias(this AccessMask flags) => (flags & AccessMask.ReadRef) == AccessMask.ReadRef;
         public static bool Quiet(this AccessMask flags) => (flags & AccessMask.ReadQuiet) != 0;
         public static bool Read(this AccessMask flags) => (flags & AccessMask.Read) != 0;
+        /// <summary>Whether the access requires dereferenced value.</summary>
         public static bool ReadValue(this AccessMask flags) => (flags & AccessMask.ReadValue) == AccessMask.ReadValue;
+        /// <summary>Whether the access requires dereferenced and copied value.</summary>
         public static bool ReadValueCopy(this AccessMask flags) => (flags & AccessMask.ReadValueCopy) == AccessMask.ReadValueCopy;
         public static bool WriteAlias(this AccessMask flags) => (flags & AccessMask.WriteRef) == AccessMask.WriteRef;
         public static bool Write(this AccessMask flags) => (flags & AccessMask.Write) != 0;

@@ -219,12 +219,13 @@ namespace Pchp.Core
         /// <summary>
         /// Implementation of PHP <c>isset</c> operator.
         /// </summary>
-        public static bool IsSet(PhpValue value) => value.IsSet && !value.IsNull;   // TODO: !Alias.IsNull
+        /// <remarks>Value (eventualy dereferenced value) is not <c>NULL</c>.</remarks>
+        public static bool IsSet(PhpValue value) => !value.IsDefault && !value.IsNull;
 
         /// <summary>
         /// Implements <c>empty</c> operator.
         /// </summary>
-        public static bool IsEmpty(PhpValue value) => !value.IsSet || value.IsEmpty;
+        public static bool IsEmpty(PhpValue value) => value.IsDefault || value.IsEmpty;
 
         #endregion
 
@@ -919,7 +920,7 @@ namespace Pchp.Core
 
                 protected override void FetchCurrent(ref PhpValue key, ref PhpValue value)
                 {
-                    key = (PhpValue)(key.IsSet ? key.ToLong() + 1L : 0L);
+                    key = (PhpValue)(key.IsDefault ? 0L : key.ToLong());
                     value = PhpValue.FromClr(_enumerator.Current);
                 }
 

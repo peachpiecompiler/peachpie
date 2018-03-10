@@ -78,7 +78,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets value indicating whether the value is set.
         /// </summary>
-        public bool IsSet => (_type != null && TypeCode != PhpTypeCode.Undefined);
+        public bool IsSet => !IsDefault && _type.Type != PhpTypeCode.Undefined;
 
         /// <summary>
         /// Gets value indicating whether the value is an alias containing another value.

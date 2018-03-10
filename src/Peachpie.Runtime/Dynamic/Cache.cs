@@ -30,6 +30,7 @@ namespace Pchp.Core.Dynamic
         {
             /// <summary><see cref="Core.Operators.SetValue(ref PhpValue, PhpValue)"/>.</summary>
             public static MethodInfo SetValue_PhpValueRef_PhpValue = typeof(Core.Operators).GetMethod("SetValue", typeof(PhpValue).MakeByRefType(), typeof(PhpValue));
+            public static MethodInfo IsSet_PhpValue = typeof(Core.Operators).GetMethod("IsSet", typeof(PhpValue));
 
             public static MethodInfo ToString_Double_Context = typeof(Core.Convert).GetMethod("ToString", typeof(double), typeof(Context));
             public static MethodInfo ToLong_String = typeof(Core.Convert).GetMethod("StringToLongInteger", typeof(string));
@@ -73,6 +74,7 @@ namespace Pchp.Core.Dynamic
 
         public static class Properties
         {
+            public static readonly FieldInfo PhpAlias_Value = Types.PhpAlias[0].GetTypeInfo().GetDeclaredField("Value");
             public static readonly FieldInfo PhpValue_Void = Types.PhpValue[0].GetTypeInfo().GetDeclaredField("Void");
             public static readonly FieldInfo PhpValue_Null = Types.PhpValue[0].GetTypeInfo().GetDeclaredField("Null");
             public static readonly PropertyInfo PhpValue_False = Types.PhpValue[0].GetTypeInfo().GetDeclaredProperty("False");

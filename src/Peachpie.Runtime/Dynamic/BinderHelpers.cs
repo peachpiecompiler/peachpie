@@ -124,10 +124,13 @@ namespace Pchp.Core.Dynamic
             // dereference PhpAlias first:
             if (target.LimitType == typeof(PhpAlias))
             {
-                expr = Expression.Field(expr, "Value");
+                expr = Expression.Field(expr, Cache.Properties.PhpAlias_Value);
                 value = ((PhpAlias)value).Value;
-                target = new DynamicMetaObject(expr, target.Restrictions, value);
-                // continue
+
+                //
+                return TryTargetAsObject(
+                    new DynamicMetaObject(expr, target.Restrictions, value),
+                    out instance);
             }
 
             // unwrap PhpValue
@@ -322,7 +325,7 @@ namespace Pchp.Core.Dynamic
                 if (expr.Type == typeof(PhpAlias))
                 {
                     // Template: fld.Value = (PhpValue)value
-                    expr = Expression.Assign(Expression.PropertyOrField(expr, "Value"), ConvertExpression.Bind(rvalue, typeof(PhpValue), ctx));
+                    expr = Expression.Assign(Expression.Field(expr, Cache.Properties.PhpAlias_Value), ConvertExpression.Bind(rvalue, typeof(PhpValue), ctx));
                 }
                 else if (expr.Type == typeof(PhpValue))
                 {
@@ -336,6 +339,20 @@ namespace Pchp.Core.Dynamic
                     expr = Expression.Assign(expr, ConvertExpression.Bind(rvalue, expr.Type, ctx));
                 }
             }
+            else if (access.ReadValue())
+            {
+                // dereference
+                if (expr.Type == typeof(PhpValue))
+                {
+                    // Template: value.GetValue().DeepCopy()
+                    expr = Expression.Call(expr, Cache.Operators.PhpValue_GetValue);
+                }
+                else if (expr.Type == typeof(PhpAlias))
+                {
+                    // Template: alias.Value // expecting alias cannot be null ref
+                    expr = Expression.Field(expr, Cache.Properties.PhpAlias_Value);
+                }
+            }
             else if (access.ReadValueCopy())
             {
                 // dereference & copy
@@ -346,7 +363,22 @@ namespace Pchp.Core.Dynamic
                 }
                 else if (expr.Type == typeof(PhpAlias))
                 {
+                    // TODO: specify - ReadCopy | ReadValue | ReadValueCopy - currently not consistent
+                }
+            }
+            else if (access.Isset())
+            {
+                if (expr.Type == typeof(PhpAlias))
+                {
+                    // dereference: expr => expr.Value
+                    expr = Expression.Field(expr, Cache.Properties.PhpAlias_Value);
+                    // continue ->
+                }
 
+                if (expr.Type == typeof(PhpValue))
+                {
+                    // Template: isset( value )
+                    expr = Expression.Call(Cache.Operators.IsSet_PhpValue, expr);
                 }
             }
 
@@ -482,7 +514,7 @@ namespace Pchp.Core.Dynamic
 
                 // Template: runtimeflds != null && runtimeflds.TryGetValue(field, out result)
                 var trygetfield = Expression.AndAlso(Expression.ReferenceNotEqual(runtimeflds, Expression.Constant(null)), Expression.Call(runtimeflds, Cache.Operators.PhpArray_TryGetValue, fieldkey, resultvar));
-                
+
                 // Template: runtimeflds != null && runtimeflds.ContainsKey(field)
                 var containsfield = Expression.AndAlso(Expression.ReferenceNotEqual(runtimeflds, Expression.Constant(null)), Expression.Call(runtimeflds, Cache.Operators.PhpArray_ContainsKey, fieldkey));
 
