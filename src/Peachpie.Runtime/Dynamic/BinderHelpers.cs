@@ -113,7 +113,7 @@ namespace Pchp.Core.Dynamic
             {
                 instance = new DynamicMetaObject(
                     target.Expression,
-                    target.Restrictions.Merge(BindingRestrictions.GetInstanceRestriction(target.Expression, Expression.Constant(null))),
+                    target.Restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.ReferenceEqual(target.Expression, Expression.Constant(null)))),
                     null);
 
                 return false;

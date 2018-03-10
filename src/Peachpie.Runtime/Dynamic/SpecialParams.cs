@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Linq.Expressions;
 using Pchp.Core.Reflection;
@@ -94,7 +95,9 @@ namespace Pchp.Core.Dynamic
 
         void ISpecialParamHolder.Process(CallSiteContext info, Expression valueExpr)
         {
-            info.AddRestriction(BindingRestrictions.GetInstanceRestriction(valueExpr, Value));
+            Debug.Assert(Value != null);
+
+            info.AddRestriction(BindingRestrictions.GetInstanceRestriction(valueExpr, Value));  // {arg} != null && {arg} == Value
             info.TargetType = Value;
         }
 
