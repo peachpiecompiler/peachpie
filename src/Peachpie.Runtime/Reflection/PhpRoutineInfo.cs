@@ -99,13 +99,13 @@ namespace Pchp.Core.Reflection
 
     internal class PhpRoutineInfo : RoutineInfo
     {
-        RuntimeMethodHandle _handle;
+        readonly RuntimeMethodHandle _handle;
         PhpCallable _lazyDelegate;
 
         /// <summary>
         /// CLR method handle.
         /// </summary>
-        public RuntimeMethodHandle Handle => _handle;
+        protected RuntimeMethodHandle Handle => _handle;
 
         public override int GetHashCode() => _handle.GetHashCode();
 
@@ -113,16 +113,48 @@ namespace Pchp.Core.Reflection
 
         public override PhpCallable PhpCallable => _lazyDelegate ?? (_lazyDelegate = BindDelegate());
 
-        PhpCallable BindDelegate()
-        {
-            return Dynamic.BinderHelpers.BindToPhpCallable((MethodInfo)MethodBase.GetMethodFromHandle(_handle));
-        }
+        PhpCallable BindDelegate() => Dynamic.BinderHelpers.BindToPhpCallable(Methods);
 
         public PhpRoutineInfo(string name, RuntimeMethodHandle handle)
             : base(0, name)
         {
             _handle = handle;
         }
+
+        #region PhpRoutineInfoWithOverloads
+
+        sealed class PhpRoutineInfoWithOverloads : PhpRoutineInfo
+        {
+            readonly RuntimeMethodHandle[] _overloads;
+
+            public PhpRoutineInfoWithOverloads(string name, RuntimeMethodHandle handle, RuntimeMethodHandle[] overloads)
+                : base(name, handle)
+            {
+                _overloads = overloads ?? throw new ArgumentNullException(nameof(overloads));
+            }
+
+            public override MethodInfo[] Methods
+            {
+                get
+                {
+                    var overloads = _overloads;
+
+                    // [Method] + Overloads
+
+                    var methods = new MethodInfo[1 + overloads.Length];
+                    methods[0] = (MethodInfo)MethodBase.GetMethodFromHandle(Handle);
+                    for (int i = 0; i < overloads.Length; i++)
+                    {
+                        methods[1 + i] = (MethodInfo)MethodBase.GetMethodFromHandle(overloads[i]);
+                    }
+
+                    //
+                    return methods;
+                }
+            }
+        }
+
+        #endregion
     }
 
     /// <summary>Represents anonymous function with special <see cref="Closure"/> parameter.</summary>
