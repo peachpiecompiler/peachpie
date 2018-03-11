@@ -56,7 +56,7 @@ namespace Pchp.Library.Reflection
         #endregion
 
         public static string export(string name, bool @return = false) { throw new NotImplementedException(); }
-        public Closure getClosure(Context ctx) => Operators.BuildClosure(ctx, _routine, null, default(RuntimeTypeHandle), PhpArray.Empty, PhpArray.Empty);
+        public Closure getClosure(Context ctx) => Operators.BuildClosure(ctx, _routine, null, default(RuntimeTypeHandle), null, PhpArray.Empty, PhpArray.Empty);
         public PhpValue invoke(Context ctx, params PhpValue[] args) => _routine.PhpCallable(ctx, args);
         public PhpValue invokeArgs(Context ctx, PhpArray args) => _routine.PhpCallable(ctx, args.GetValues());
         public bool isDisabled() => false;

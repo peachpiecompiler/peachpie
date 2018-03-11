@@ -453,9 +453,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 GetName_PhpTypeInfo = ct.PhpTypeInfo.Property("Name");
                 GetTypeHandle_PhpTypeInfo = ct.PhpTypeInfo.Property("TypeHandle");
 
-                BuildClosure_Context_IPhpCallable_Object_RuntimeTypeHandle_PhpArray_PhpArray = ct.Operators.Method("BuildClosure", ct.Context, ct.IPhpCallable, ct.Object, ct.RuntimeTypeHandle, ct.PhpArray, ct.PhpArray);
+                BuildClosure_Context_IPhpCallable_Object_RuntimeTypeHandle_PhpTypeInfo_PhpArray_PhpArray = ct.Operators.Method("BuildClosure", ct.Context, ct.IPhpCallable, ct.Object, ct.RuntimeTypeHandle, ct.PhpTypeInfo, ct.PhpArray, ct.PhpArray);
                 This_Closure = ct.Operators.Method("This", ct.Closure);
                 Scope_Closure = ct.Operators.Method("Scope", ct.Closure);
+                Static_Closure = ct.Operators.Method("Static", ct.Closure);
                 Context_Closure = ct.Operators.Method("Context", ct.Closure);
 
                 BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate_RuntimeMethodHandle = ct.Operators.Method("BuildGenerator", ct.Context, ct.Object, ct.PhpArray, ct.PhpArray, ct.GeneratorStateMachineDelegate, ct.RuntimeMethodHandle);
@@ -542,8 +543,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 Clone_Context_Object,
                 Eval_Context_PhpArray_object_RuntimeTypeHandle_string_string_int_int,
 
-                BuildClosure_Context_IPhpCallable_Object_RuntimeTypeHandle_PhpArray_PhpArray,
-                This_Closure, Scope_Closure, Context_Closure,
+                BuildClosure_Context_IPhpCallable_Object_RuntimeTypeHandle_PhpTypeInfo_PhpArray_PhpArray,
+                This_Closure, Scope_Closure, Static_Closure, Context_Closure,
 
                 BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate_RuntimeMethodHandle,
                 GetGeneratorState_Generator, SetGeneratorState_Generator_int, HandleGeneratorException_Generator,

@@ -1739,6 +1739,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 throw ExceptionUtilities.UnexpectedValue(symbol);
             }
 
+            // lambda uses `static` => we have to know where it is:
+            Routine.Flags |= (symbol.Flags & RoutineFlags.UsesLateStatic);
+
             // bind arguments to parameters
             var ps = symbol.SourceParameters;
 

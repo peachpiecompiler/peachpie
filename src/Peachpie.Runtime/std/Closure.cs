@@ -18,6 +18,9 @@ public sealed class Closure : IPhpCallable
     /// <summary>Current class scope. (class context)</summary>
     internal readonly RuntimeTypeHandle _scope;
 
+    /// <summary>Late static bound type if it differs from <see cref="_scope"/>. Otherwise <c>null</c> reference.</summary>
+    internal readonly PhpTypeInfo _statictype;
+
     /// <summary>Reference to <c>this</c> instance. Can be <c>null</c>.</summary>
     internal readonly object _this;
 
@@ -34,7 +37,7 @@ public sealed class Closure : IPhpCallable
     /// <summary>
     /// Constructs the closure.
     /// </summary>
-    internal Closure(Context/*!*/ctx, IPhpCallable/*!*/routine, object @this, RuntimeTypeHandle scope, PhpArray/*!*/parameter, PhpArray/*!*/@static)
+    internal Closure(Context/*!*/ctx, IPhpCallable/*!*/routine, object @this, RuntimeTypeHandle scope, PhpTypeInfo statictype, PhpArray/*!*/parameter, PhpArray/*!*/@static)
     {
         Debug.Assert(ctx != null);
         Debug.Assert(routine != null);
@@ -45,6 +48,7 @@ public sealed class Closure : IPhpCallable
         _ctx = ctx;
         _this = @this;
         _scope = scope;
+        _statictype = statictype;
 
         this.parameter = parameter;
         this.@static = @static;
@@ -72,7 +76,7 @@ public sealed class Closure : IPhpCallable
         }
 
         //
-        return new Closure(ctx, callable, null, default(RuntimeTypeHandle), PhpArray.Empty, PhpArray.Empty);
+        return new Closure(ctx, callable, null, default(RuntimeTypeHandle), null, PhpArray.Empty, PhpArray.Empty);
     }
 
     /// <summary>
@@ -82,7 +86,7 @@ public sealed class Closure : IPhpCallable
     {
         // create new Closure with updated '$this' and `scope`
 
-        return new Closure(_ctx, _callable, newthis, ResolveNewScope(newthis, newscope), parameter, @static);
+        return new Closure(_ctx, _callable, newthis, ResolveNewScope(newthis, newscope), null/*static is replaced with mew scope*/, parameter, @static);
     }
 
     internal RuntimeTypeHandle ResolveNewScope(object newthis, PhpValue newscope = default(PhpValue))

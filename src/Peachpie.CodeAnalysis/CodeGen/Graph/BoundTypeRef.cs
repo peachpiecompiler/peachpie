@@ -125,6 +125,15 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if (cg.Routine != null)
             {
+                if (cg.Routine is SourceLambdaSymbol lambda)
+                {
+                    // Handle lambda since $this can be null (unbound)
+                    // Template: CLOSURE.Static();
+                    lambda.ClosureParameter.EmitLoad(cg.Builder);
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Static_Closure)
+                        .Expect(cg.CoreTypes.PhpTypeInfo);
+                }
+
                 var thisVariablePlace = cg.Routine.GetPhpThisVariablePlace(cg.Module);
                 if (thisVariablePlace != null)
                 {

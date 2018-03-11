@@ -1303,10 +1303,29 @@ namespace Pchp.Core
         /// <summary>
         /// Create <see cref="Closure"/> with specified anonymous function and used parameters.
         /// </summary>
-        public static Closure BuildClosure(Context/*!*/ctx, IPhpCallable routine, object @this, RuntimeTypeHandle scope, PhpArray/*!*/parameter, PhpArray/*!*/@static)
-            => new Closure(ctx, routine, @this, scope, parameter, @static);
+        public static Closure BuildClosure(Context/*!*/ctx, IPhpCallable routine, object @this, RuntimeTypeHandle scope, PhpTypeInfo statictype, PhpArray/*!*/parameter, PhpArray/*!*/@static)
+            => new Closure(ctx, routine, @this, scope, statictype, parameter, @static);
 
         public static Context Context(this Closure closure) => closure._ctx;
+
+        /// <summary>Resolves late static bound type of closiure. Can be <c>null</c> reference.</summary>
+        public static PhpTypeInfo Static(this Closure closure)
+        {
+            if (closure._this != null)
+            {
+                // typeof $this
+                return closure._this.GetPhpTypeInfo();
+            }
+
+            if (closure._statictype != null)
+            {
+                // static
+                return closure._statictype;
+            }
+
+            // self or NULL
+            return closure._scope.GetPhpTypeInfo();
+        }
 
         public static RuntimeTypeHandle Scope(this Closure closure) => closure._scope;
 

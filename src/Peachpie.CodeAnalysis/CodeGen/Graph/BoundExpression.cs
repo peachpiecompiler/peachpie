@@ -2835,7 +2835,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 throw new InvalidOperationException();
             }
 
-            // Template: BuildClosure(ctx, BoundLambdaMethod.EnsureRoutineInfoField(), this, scope, [use1, use2, ...], [p1, p2, ...])
+            // Template: BuildClosure(ctx, BoundLambdaMethod.EnsureRoutineInfoField(), this, scope, statictype, [use1, use2, ...], [p1, p2, ...])
 
             var idxfld = this.BoundLambdaMethod.EnsureRoutineInfoField(cg.Module);
 
@@ -2843,10 +2843,23 @@ namespace Pchp.CodeAnalysis.Semantics
             idxfld.EmitLoad(cg);            // routine
             cg.EmitThisOrNull();            // $this
             cg.EmitCallerTypeHandle();      // scope
+            EmitStaticType(cg);             // statictype : PhpTypeInfo
             EmitParametersArray(cg);        // "parameters"
             EmitUseArray(cg);               // "static"
 
-            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildClosure_Context_IPhpCallable_Object_RuntimeTypeHandle_PhpArray_PhpArray);
+            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildClosure_Context_IPhpCallable_Object_RuntimeTypeHandle_PhpTypeInfo_PhpArray_PhpArray);
+        }
+
+        void EmitStaticType(CodeGenerator cg)
+        {
+            if ((cg.Routine.Flags & FlowAnalysis.RoutineFlags.UsesLateStatic) != 0)
+            {
+                BoundTypeRef.EmitLoadStaticPhpTypeInfo(cg);
+            }
+            else
+            {
+                cg.Builder.EmitNullConstant();
+            }
         }
 
         void EmitUseArray(CodeGenerator cg)
