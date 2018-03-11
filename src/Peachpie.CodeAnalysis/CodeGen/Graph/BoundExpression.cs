@@ -2841,7 +2841,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             cg.EmitLoadContext();           // Context
             idxfld.EmitLoad(cg);            // routine
-            cg.EmitThisOrNull();            // $this
+            cg.EmitPhpThis();               // $this
             cg.EmitCallerTypeHandle();      // scope
             EmitStaticType(cg);             // statictype : PhpTypeInfo
             EmitParametersArray(cg);        // "parameters"
