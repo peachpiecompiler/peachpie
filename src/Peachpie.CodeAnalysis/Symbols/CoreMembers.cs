@@ -1071,12 +1071,31 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public struct ReflectionHolder
         {
+            readonly CoreTypes _ct;
+
             public ReflectionHolder(CoreTypes ct)
             {
-                CreateUserRoutine_string_RuntimeMethodHandle = ct.RoutineInfo.Method("CreateUserRoutine", ct.String, ct.RuntimeMethodHandle);
+                _ct = ct;
+                _lazyCreateUserRoutine = null;
             }
 
-            public CoreMethod CreateUserRoutine_string_RuntimeMethodHandle;
+            public MethodSymbol CreateUserRoutine_string_RuntimeMethodHandle_RuntimeMethodHandleArr
+            {
+                get
+                {
+                    if (_lazyCreateUserRoutine == null)
+                    {
+                        _lazyCreateUserRoutine = _ct.RoutineInfo.Symbol.GetMembers("CreateUserRoutine").OfType<MethodSymbol>().Single(m =>
+                            m.ParameterCount == 3 &&
+                            m.Parameters[0].Type.SpecialType == SpecialType.System_String &&
+                            m.Parameters[1].Type.Name == "RuntimeMethodHandle" &&
+                            m.Parameters[2].Type.IsSZArray());
+                    }
+
+                    return _lazyCreateUserRoutine;
+                }
+            }
+            MethodSymbol _lazyCreateUserRoutine;
         }
 
     }

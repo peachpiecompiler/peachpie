@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Pchp.CodeAnalysis.Emit;
 using System.Reflection.Metadata;
 using Pchp.CodeAnalysis.FlowAnalysis;
+using Pchp.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -342,16 +343,23 @@ namespace Pchp.CodeAnalysis.Symbols
             var cctor = module.GetStaticCtorBuilder(_file);
             lock (cctor)
             {
-                var field = new FieldPlace(null, this.EnsureRoutineInfoField(module), module);
+                using (var cg = new CodeGenerator(
+                        cctor, module, diagnostic, OptimizationLevel.Release, false, this.ContainingType,
+                        contextPlace: null, thisPlace: null, routine: this))
+                {
+                    var field = new FieldPlace(null, this.EnsureRoutineInfoField(module), module);
 
-                // {RoutineInfoField} = RoutineInfo.CreateUserRoutine(name, handle)
-                field.EmitStorePrepare(cctor);
+                    // {RoutineInfoField} = RoutineInfo.CreateUserRoutine(name, handle, overloads[])
+                    field.EmitStorePrepare(cctor);
 
-                cctor.EmitStringConstant(this.QualifiedName.ToString());
-                cctor.EmitLoadToken(module, DiagnosticBag.GetInstance(), this, null);
-                cctor.EmitCall(module, DiagnosticBag.GetInstance(), ILOpCode.Call, module.Compilation.CoreMethods.Reflection.CreateUserRoutine_string_RuntimeMethodHandle);
+                    cctor.EmitStringConstant(this.QualifiedName.ToString());
+                    cctor.EmitLoadToken(module, DiagnosticBag.GetInstance(), this, null);
+                    cg.Emit_NewArray(cg.CoreTypes.RuntimeMethodHandle, overloads.AsImmutable(), m => cg.EmitLoadToken(m, null));
 
-                field.EmitStore(cctor);
+                    cctor.EmitCall(module, DiagnosticBag.GetInstance(), ILOpCode.Call, cg.CoreMethods.Reflection.CreateUserRoutine_string_RuntimeMethodHandle_RuntimeMethodHandleArr);
+
+                    field.EmitStore(cctor);
+                }
             }
 
             //

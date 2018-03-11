@@ -69,8 +69,9 @@ namespace Pchp.Core.Reflection
         /// </summary>
         /// <param name="name">Function name.</param>
         /// <param name="handle">CLR method handle.</param>
+        /// <param name="overloads">Additional method handles of the method overloads.</param>
         /// <returns>Instance of routine info with uninitialized slot index and unbound delegate.</returns>
-        public static RoutineInfo CreateUserRoutine(string name, RuntimeMethodHandle handle) => new PhpRoutineInfo(name, handle);
+        public static RoutineInfo CreateUserRoutine(string name, RuntimeMethodHandle handle, params RuntimeMethodHandle[] overloads) => PhpRoutineInfo.Create(name, handle, overloads);
 
         /// <summary>
         /// Creates instance of <see cref="RoutineInfo"/> representing a CLR methods (handling ovberloads).
@@ -115,7 +116,14 @@ namespace Pchp.Core.Reflection
 
         PhpCallable BindDelegate() => Dynamic.BinderHelpers.BindToPhpCallable(Methods);
 
-        public PhpRoutineInfo(string name, RuntimeMethodHandle handle)
+        internal static PhpRoutineInfo Create(string name, RuntimeMethodHandle handle, params RuntimeMethodHandle[] overloads)
+        {
+            return (overloads.Length == 0)
+                ? new PhpRoutineInfo(name, handle)
+                : new PhpRoutineInfoWithOverloads(name, handle, overloads);
+        }
+
+        protected PhpRoutineInfo(string name, RuntimeMethodHandle handle)
             : base(0, name)
         {
             _handle = handle;

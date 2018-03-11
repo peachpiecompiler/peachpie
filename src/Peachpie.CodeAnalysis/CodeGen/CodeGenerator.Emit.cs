@@ -663,10 +663,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 .Expect(CoreTypes.PhpArray);
         }
 
-        public void Emit_NewArray(TypeSymbol elementType, ImmutableArray<BoundArgument> values) => Emit_NewArray(elementType, values, a => a.Value);
-        public void Emit_NewArray(TypeSymbol elementType, ImmutableArray<BoundExpression> values) => Emit_NewArray(elementType, values, a => a);
+        public void Emit_NewArray(TypeSymbol elementType, ImmutableArray<BoundArgument> values) => Emit_NewArray(elementType, values, a => a.Value.Emit(this));
+        public void Emit_NewArray(TypeSymbol elementType, ImmutableArray<BoundExpression> values) => Emit_NewArray(elementType, values, a => a.Emit(this));
 
-        public void Emit_NewArray<T>(TypeSymbol elementType, ImmutableArray<T> values, Func<T, BoundExpression> selector)
+        public void Emit_NewArray<T>(TypeSymbol elementType, ImmutableArray<T> values, Func<T, TypeSymbol> emitter)
         {
             if (values.Length != 0)
             {
@@ -680,7 +680,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     _il.EmitOpCode(ILOpCode.Dup);   // <array>
                     _il.EmitIntConstant(i);         // [i]
-                    EmitConvert(selector(values[i]), elementType);
+                    EmitConvert(emitter(values[i]), 0, elementType);
                     _il.EmitOpCode(ILOpCode.Stelem);
                     EmitSymbolToken(elementType, null);
                 }
