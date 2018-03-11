@@ -294,7 +294,7 @@ namespace Pchp.Core.Dynamic
                     name_expr,
                     BinderHelpers.NewPhpArray(bound.Context, bound.Arguments),
                 };
-                return OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, call.Methods, bound.Context, call_args);
+                return OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, call.Methods, bound.Context, call_args, lateStaticType: bound.TargetType);
             }
 
             //
