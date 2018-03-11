@@ -2841,13 +2841,21 @@ namespace Pchp.CodeAnalysis.Semantics
 
             cg.EmitLoadContext();           // Context
             idxfld.EmitLoad(cg);            // routine
-            cg.EmitPhpThis();               // $this
+            EmitThis(cg);                   // $this
             cg.EmitCallerTypeHandle();      // scope
             EmitStaticType(cg);             // statictype : PhpTypeInfo
             EmitParametersArray(cg);        // "parameters"
             EmitUseArray(cg);               // "static"
 
             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildClosure_Context_IPhpCallable_Object_RuntimeTypeHandle_PhpTypeInfo_PhpArray_PhpArray);
+        }
+
+        void EmitThis(CodeGenerator cg)
+        {
+            if (cg.EmitPhpThis() == null)
+            {
+                cg.Builder.EmitNullConstant();
+            }
         }
 
         void EmitStaticType(CodeGenerator cg)
