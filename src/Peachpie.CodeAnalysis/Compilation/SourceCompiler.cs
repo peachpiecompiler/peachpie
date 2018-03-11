@@ -225,15 +225,8 @@ namespace Pchp.CodeAnalysis
             this.WalkMethods(f => f.SynthesizeStubs(_moduleBuilder, _diagnostics));
             this.WalkTypes(t => t.FinalizeMethodTable(_moduleBuilder, _diagnostics));
 
-            // initialize RoutineInfo
-            _compilation.SourceSymbolCollection.GetFunctions()
-                .ForEach(f => f.EmitInit(_moduleBuilder));
-
-            _compilation.SourceSymbolCollection.GetLambdas()
-                .ForEach(f => f.EmitInit(_moduleBuilder));
-
             // __statics.Init, .phpnew, .ctor
-            WalkTypes(t => t.EmitInit(_moduleBuilder, _diagnostics));
+            WalkTypes(t => t.SynthesizeInit(_moduleBuilder, _diagnostics));
 
             // realize .cctor if any
             _moduleBuilder.RealizeStaticCtors();

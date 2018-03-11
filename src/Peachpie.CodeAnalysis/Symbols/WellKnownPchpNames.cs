@@ -12,7 +12,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Name of function representing a script global code.
         /// </summary>
-        public const string GlobalRoutineName = "<" + WellKnownMemberNames.EntryPointMethodName + ">";
+        public const string GlobalRoutineName = "<" + WellKnownMemberNames.EntryPointMethodName + ">";  // TODO: rename to `{main}` as it is in PHP
 
         /// <summary>
         /// Name of special script type.

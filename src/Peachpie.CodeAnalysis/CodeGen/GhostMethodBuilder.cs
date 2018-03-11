@@ -20,8 +20,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             bool phphidden = false,
             MethodSymbol explicitOverride = null)
         {
-            string prefix = null;
-            string name = explicitOverride?.Name ?? method.Name;
+            //string prefix = null;
+            string name = explicitOverride?.MetadataName ?? method.MetadataName;
 
             //if (explicitOverride != null && explicitOverride.ContainingType.IsInterface)
             //{
@@ -31,7 +31,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             //}
 
             var ghost = new SynthesizedMethodSymbol(
-                containingtype, prefix + name, method.IsStatic, explicitOverride != null, ghostreturn, method.DeclaredAccessibility, phphidden: phphidden)
+                containingtype, /*prefix +*/ name, method.IsStatic, explicitOverride != null, ghostreturn, method.DeclaredAccessibility, phphidden: phphidden)
             {
                 ExplicitOverride = explicitOverride,
                 ForwardedCall = method,

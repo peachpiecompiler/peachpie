@@ -72,9 +72,10 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Creates ghost stubs,
         /// i.e. methods with a different signature calling this routine to comply with CLR standards.
         /// </summary>
-        internal virtual void SynthesizeStubs(PEModuleBuilder module, DiagnosticBag diagnostic)
+        /// <returns>List of additional overloads.</returns>
+        internal virtual IList<MethodSymbol> SynthesizeStubs(PEModuleBuilder module, DiagnosticBag diagnostic)
         {
-            SynthesizeOverloadsWithOptionalParameters(module, diagnostic);
+            return SynthesizeOverloadsWithOptionalParameters(module, diagnostic);
         }
 
         /// <summary>
@@ -85,13 +86,20 @@ namespace Pchp.CodeAnalysis.Symbols
         /// + foo() => foo([], [1, 2, 3)
         /// + foo($a) => foo($a, [1, 2, 3])
         /// </remarks>
-        protected void SynthesizeOverloadsWithOptionalParameters(PEModuleBuilder module, DiagnosticBag diagnostic)
+        protected IList<MethodSymbol> SynthesizeOverloadsWithOptionalParameters(PEModuleBuilder module, DiagnosticBag diagnostic)
         {
+            List<MethodSymbol> list = null;
+
             var ps = this.Parameters;
             for (int i = 0; i < ps.Length; i++)
             {
                 if (ps[i] is SourceParameterSymbol p && p.Initializer != null && p.ExplicitDefaultConstantValue == null)   // => ConstantValue couldn't be resolved for optional parameter
                 {
+                    if (list == null)
+                    {
+                        list = new List<MethodSymbol>();
+                    }
+
                     if (this.ContainingType.IsInterface)
                     {
                         // TODO: we can't build instance method in an interface, generate static extension method ?
@@ -100,16 +108,20 @@ namespace Pchp.CodeAnalysis.Symbols
                     else
                     {
                         // create ghost stub foo(p0, .. pi-1) => foo(p0, .. , pN)
-                        CreateGhostOverload(module, diagnostic, i);
+                        list.Add(CreateGhostOverload(module, diagnostic, i));
                     }
                 }
             }
+
+            return list ?? (IList<MethodSymbol>)Array.Empty<MethodSymbol>();
         }
 
-        void CreateGhostOverload(PEModuleBuilder module, DiagnosticBag diagnostic, int pcount)
+        MethodSymbol CreateGhostOverload(PEModuleBuilder module, DiagnosticBag diagnostic, int pcount)
         {
             Debug.Assert(this.Parameters.Length > pcount);
-            GhostMethodBuilder.CreateGhostOverload(this, this.ContainingType, module, diagnostic, this.ReturnType, this.Parameters.Take(pcount), explicitOverride: null);
+            return GhostMethodBuilder.CreateGhostOverload(
+                this, this.ContainingType, module, diagnostic,
+                ghostreturn: this.ReturnType, ghostparams: this.Parameters.Take(pcount), explicitOverride: null);
         }
 
         public virtual void Generate(CodeGenerator cg)
@@ -232,13 +244,15 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         internal override IPlace GetThisPlace() => new ParamPlace(ThisParameter);
 
-        internal override void SynthesizeStubs(PEModuleBuilder module, DiagnosticBag diagnostic)
+        internal override IList<MethodSymbol> SynthesizeStubs(PEModuleBuilder module, DiagnosticBag diagnostic)
         {
+            //base.SynthesizeStubs(module, diagnostic);          // ghosts (always empty)
+
             // <Main>'0
             this.SynthesizeMainMethodWrapper(module, diagnostic);
 
-            //
-            base.SynthesizeStubs(module, diagnostic);
+            // no overloads synthesized for global code
+            return Array.Empty<MethodSymbol>();
         }
 
         /// <summary>
@@ -291,7 +305,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return base.GetContextPlace(module);
         }
 
-        internal override void SynthesizeStubs(PEModuleBuilder module, DiagnosticBag diagnostic)
+        internal override IList<MethodSymbol> SynthesizeStubs(PEModuleBuilder module, DiagnosticBag diagnostic)
         {
             // empty body for static abstract
             if (this.ControlFlowGraph == null && this.IsStatic)
@@ -300,7 +314,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             //
-            base.SynthesizeStubs(module, diagnostic);
+            return base.SynthesizeStubs(module, diagnostic);
         }
 
         void SynthesizeEmptyBody(PEModuleBuilder module, DiagnosticBag diagnostic)
@@ -320,8 +334,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
     partial class SourceFunctionSymbol
     {
-        internal void EmitInit(PEModuleBuilder module)
+        internal override IList<MethodSymbol> SynthesizeStubs(PEModuleBuilder module, DiagnosticBag diagnostic)
         {
+            var overloads = base.SynthesizeStubs(module, diagnostic);
+
+            // synthesize RoutineInfo:
             var cctor = module.GetStaticCtorBuilder(_file);
             lock (cctor)
             {
@@ -336,6 +353,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 field.EmitStore(cctor);
             }
+
+            //
+            return overloads;
         }
     }
 
@@ -366,8 +386,11 @@ namespace Pchp.CodeAnalysis.Symbols
             return new OperatorPlace(DeclaringCompilation.CoreMethods.Operators.Scope_Closure, new ParamPlace(ClosureParameter));
         }
 
-        internal void EmitInit(PEModuleBuilder module)
+        internal override IList<MethodSymbol> SynthesizeStubs(PEModuleBuilder module, DiagnosticBag diagnostic)
         {
+            var overloads = base.SynthesizeStubs(module, diagnostic);
+
+            // synthesize RoutineInfo:
             var cctor = module.GetStaticCtorBuilder(_container);
             lock (cctor)
             {
@@ -384,6 +407,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 field.EmitStore(cctor);
             }
+
+            //
+            return overloads;
         }
     }
 

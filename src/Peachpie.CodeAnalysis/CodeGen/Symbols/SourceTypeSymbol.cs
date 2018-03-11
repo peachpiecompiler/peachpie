@@ -14,7 +14,7 @@ namespace Pchp.CodeAnalysis.Symbols
 {
     partial class SourceTypeSymbol
     {
-        internal void EmitInit(Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
+        internal void SynthesizeInit(Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
         {
             // .cctor
             EmitFieldsCctor(module);
