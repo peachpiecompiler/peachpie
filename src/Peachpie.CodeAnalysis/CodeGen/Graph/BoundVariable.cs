@@ -153,13 +153,15 @@ namespace Pchp.CodeAnalysis.Semantics
             readonly IPlace _place;
             readonly bool _isparams;
             readonly bool _byref;
+            readonly bool _notNull;
 
-            public DirectParameter(IPlace place, bool isparams, bool byref)
+            public DirectParameter(IPlace place, bool isparams, bool byref, bool notNull)
             {
                 Debug.Assert(place != null);
                 _place = place;
                 _isparams = isparams;
                 _byref = byref;
+                _notNull = notNull;
             }
 
             /// <summary>Loads copied parameter value.</summary>
@@ -174,7 +176,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 else
                 {
                     // make copy of given value
-                    return cg.EmitDeepCopy(_place.EmitLoad(cg.Builder), nullcheck: true);
+                    return cg.EmitDeepCopy(_place.EmitLoad(cg.Builder), nullcheck: !_notNull);
                 }
             }
 
@@ -195,7 +197,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                     // copy
                     // <param> = DeepCopy(<param>)
-                    cg.EmitDeepCopy(_place.EmitLoad(cg.Builder));
+                    cg.EmitDeepCopy(_place.EmitLoad(cg.Builder), nullcheck: !_notNull);
 
                     _place.EmitStore(cg.Builder);
                 }
@@ -392,7 +394,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             var source = srcparam.IsFake
                 ? (IParameterSource)new IndirectParameterSource(srcparam, srcparam.Routine.GetParamsParameter())
-                : (IParameterSource)new DirectParameter(new ParamPlace(srcparam), srcparam.IsParams, srcparam.Syntax.PassedByRef);
+                : (IParameterSource)new DirectParameter(new ParamPlace(srcparam), srcparam.IsParams, byref: srcparam.Syntax.PassedByRef, notNull: srcparam.IsNotNull);
 
             if (cg.HasUnoptimizedLocals == false) // usual case - optimized locals
             {
@@ -414,7 +416,7 @@ namespace Pchp.CodeAnalysis.Semantics
             var target = cg.HasUnoptimizedLocals
                 ? (IParameterTarget)new IndirectLocalTarget(srcparam.Name)
                 : (_lazyplace != null)
-                    ? new DirectParameter(_lazyplace, srcparam.IsParams, srcparam.Syntax.PassedByRef)
+                    ? new DirectParameter(_lazyplace, srcparam.IsParams, byref: srcparam.Syntax.PassedByRef, notNull: srcparam.IsNotNull/*not important*/)
                     : (DirectParameter)source;
 
             // 1. TypeCheck
