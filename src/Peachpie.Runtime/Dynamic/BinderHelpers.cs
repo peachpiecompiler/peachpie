@@ -217,8 +217,15 @@ namespace Pchp.Core.Dynamic
         {
             Expression arr;
 
-            if (values.Any(IsArgumentUnpacking))
+            if (values.Length == 0)
             {
+                // PhpArray.NewEmpty()
+                return Expression.Call(typeof(PhpArray), "NewEmpty", Cache.Types.Empty); // CONSIDER: just PhpArray.Empty
+            }
+            else if (values.Any(IsArgumentUnpacking))
+            {
+                // TODO: values.Length == 1 && values[0] is PhpArray => return values[0], AddRestriction
+
                 // unpacking
                 arr = UnpackArgumentsToArray(null, values);
             }
