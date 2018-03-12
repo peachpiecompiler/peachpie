@@ -292,7 +292,7 @@ namespace Pchp.Core.Dynamic
                 else
                 {
                     // list.Add((PhpValue)arg)
-                    exprs.Add(Expression.Call(list_var, "Add", Cache.Types.PhpValue, ConvertExpression.BindToValue(arg)));
+                    exprs.Add(Expression.Call(list_var, "Add", Cache.Types.Empty, ConvertExpression.BindToValue(arg)));
                 }
             }
 
