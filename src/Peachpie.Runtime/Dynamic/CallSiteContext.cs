@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core.Reflection;
@@ -108,6 +109,11 @@ namespace Pchp.Core.Dynamic
         /// Resolved actual arguments.
         /// </summary>
         public Expression[]/*!!*/Arguments { get; set; }
+
+        /// <summary>
+        /// Gets value indicating there is an argument unpacking (<c>...</c>) in <see cref="Arguments"/> list.
+        /// </summary>
+        public bool HasArgumentUnpacking => Arguments.Length != 0 && Arguments.Any(BinderHelpers.IsArgumentUnpacking);
 
         /// <summary>
         /// Resolved binding restrictions.

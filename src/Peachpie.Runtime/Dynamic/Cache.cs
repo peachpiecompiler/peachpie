@@ -12,7 +12,7 @@ namespace Pchp.Core.Dynamic
     {
         public static class Types
         {
-            public static Type[] Empty = new Type[0];
+            public static Type[] Empty = Array.Empty<Type>();
             public static Type[] Int = new Type[] { typeof(int) };
             public static Type[] Long = new Type[] { typeof(long) };
             public static Type[] Double = new Type[] { typeof(double) };

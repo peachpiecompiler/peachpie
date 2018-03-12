@@ -1168,7 +1168,6 @@ namespace Pchp.Core
             }
         }
 
-
         /// <summary>
         /// The method implements <c>...</c> unpack operator.
         /// Unpacks <paramref name="array"/> into <paramref name="stack"/>.

@@ -213,11 +213,94 @@ namespace Pchp.Core.Dynamic
                 Expression.Assign(variable, Expression.New(typeof(PhpArray))));
         }
 
-        public static Expression NewPhpArray(Expression ctx, IEnumerable<Expression> values)
+        public static Expression NewPhpArray(IEnumerable<Expression> values)
         {
             return Expression.Call(
                 typeof(PhpArray), "New", Cache.Types.Empty, // PhpArray.New(values[])
-                Expression.NewArrayInit(typeof(PhpValue), values.Select(x => ConvertExpression.Bind(x, typeof(PhpValue), ctx))));
+                Expression.NewArrayInit(typeof(PhpValue), values.Select(x => ConvertExpression.BindToValue(x))));
+        }
+
+        /// <summary>
+        /// Determines whether given expression represents argument unpacking.
+        /// </summary>
+        internal static bool IsArgumentUnpacking(Expression arg)
+        {
+            var tinfo = arg.Type.GetTypeInfo();
+            return tinfo.IsGenericType && tinfo.GetGenericTypeDefinition() == typeof(UnpackingParam<>);
+        }
+
+        public static Expression ArgumentsToArray(MethodBase[] methods, Expression[] arguments)
+        {
+            //if (arguments.Length == 1 && IsArgumentUnpacking(arguments[0]))
+            //{
+            //    // Template: (...$arg0)
+            //    // TODO: if (arg0 is PhpArray) return arg0.ToArray();
+            //}
+
+            // create byrefs mask: (but mask of parameters passed by ref)
+            ulong byrefs = 0uL;
+
+            foreach (var m in methods)
+            {
+                var ps = m.GetParameters();
+                var skip = ps.TakeWhile(IsImplicitParameter).Count();
+
+                for (int i = skip; i < ps.Length; i++)
+                {
+                    if (ps[i].ParameterType == typeof(PhpAlias)) { byrefs |= (1uL << (i - skip)); }
+                }
+            }
+
+            // List<PhpValue> list;
+            var list_var = Expression.Variable(typeof(List<PhpValue>), "list");
+            var exprs = new List<Expression>();
+            var byrefs_expr = Expression.Constant(byrefs);
+
+            // list = new List<PhpValue>( LENGTH )
+            exprs.Add(Expression.Assign(list_var, Expression.New(list_var.Type.GetConstructor(Cache.Types.Int), Expression.Constant(arguments.Length))));
+
+            // arguments.foreach(  Unpack(list, arg_i)  );
+            foreach (var arg in arguments)
+            {
+                if (IsArgumentUnpacking(arg))
+                {
+                    Expression unpackexpr;
+
+                    // Template: Operators.Unpack(list, arg, byrefs)
+
+                    // Unpack(List<PhpValue> stack, PhpValue|PhpArray|Traversable argument, ulong byrefs)
+
+                    var arg_value = Expression.Field(arg, "Value"); // UnpackingParam<>.Value
+
+                    //if (typeof(PhpArray).IsAssignableFrom(arg_value.Type)) // TODO
+                    //{
+
+                    //}
+                    //else if (typeof(Traversable).IsAssignableFrom(arg_value.Type)) // TODO
+                    //{
+
+                    //}
+                    //else // PhpValue
+                    {
+                        unpackexpr = Expression.Call(
+                            typeof(Operators), "Unpack", Cache.Types.Empty,
+                            list_var, ConvertExpression.BindToValue(arg_value), byrefs_expr);
+                    }
+
+                    exprs.Add(unpackexpr);
+                }
+                else
+                {
+                    // list.Add((PhpValue)arg)
+                    exprs.Add(Expression.Call(list_var, "Add", Cache.Types.PhpValue, ConvertExpression.BindToValue(arg)));
+                }
+            }
+
+            // return list.ToArray()
+            exprs.Add(Expression.Call(list_var, "ToArray", Cache.Types.Empty));
+
+            //
+            return Expression.Block(new[] { list_var }, exprs);
         }
 
         /// <summary>

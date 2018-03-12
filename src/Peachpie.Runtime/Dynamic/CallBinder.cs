@@ -58,7 +58,24 @@ namespace Pchp.Core.Dynamic
             var methods = ResolveMethods(bound);
             if (methods != null && methods.Length != 0)
             {
-                invocation = OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, bound.Arguments, bound.TargetType);
+                if (bound.HasArgumentUnpacking)
+                {
+                    var args_var = Expression.Variable(typeof(PhpValue[]), "args_array");
+
+                    /*
+                     * args_var = ArgumentsToArray()
+                     * call(...args_var...)
+                     */
+
+                    invocation = Expression.Block(new[] { args_var },
+                            Expression.Assign(args_var, BinderHelpers.ArgumentsToArray(methods, bound.Arguments)),
+                            OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, args_var, lateStaticType: bound.TargetType)
+                        );
+                }
+                else
+                {
+                    invocation = OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, bound.Arguments, lateStaticType: bound.TargetType);
+                }
             }
             else
             {
@@ -207,7 +224,7 @@ namespace Pchp.Core.Dynamic
                 var call_args = new Expression[]
                 {
                     name_expr,
-                    BinderHelpers.NewPhpArray(bound.Context, bound.Arguments),
+                    BinderHelpers.NewPhpArray(bound.Arguments),
                 };
                 return OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, call.Methods, bound.Context, call_args);
             }
@@ -292,7 +309,7 @@ namespace Pchp.Core.Dynamic
                 var call_args = new Expression[]
                 {
                     name_expr,
-                    BinderHelpers.NewPhpArray(bound.Context, bound.Arguments),
+                    BinderHelpers.NewPhpArray(bound.Arguments),
                 };
                 return OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, call.Methods, bound.Context, call_args, lateStaticType: bound.TargetType);
             }
