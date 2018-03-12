@@ -25,12 +25,15 @@ namespace Peachpie.Web
         public Encoding StringEncoding { get; set; } = Encoding.UTF8;
 
         /// <summary>
+        /// Application root directory. All the scripts will be relative to this path.
+        /// </summary>
+        public string RootPath { get; set; }
+
+        /// <summary>
         /// Event raised before processing the request within newly created <see cref="Context"/>.
         /// </summary>
-        public Action<Context> BeforeRequest;
+        public Action<Context> BeforeRequest { get; set; }
 
-        internal void InvokeBeforeRequest(Context ctx) => BeforeRequest?.Invoke(ctx);
-        
         public PhpRequestOptions() { }
 
         public PhpRequestOptions(

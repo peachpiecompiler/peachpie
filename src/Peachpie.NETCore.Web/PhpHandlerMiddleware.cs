@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Pchp.Core.Utilities;
 using System.Diagnostics;
+using System.IO;
 
 namespace Peachpie.Web
 {
@@ -27,7 +28,13 @@ namespace Peachpie.Web
 
             _next = next ?? throw new ArgumentNullException(nameof(next));
             _options = options;
-            _rootPath = NormalizeRootPath(hostingEnv.WebRootPath ?? hostingEnv.ContentRootPath ?? System.IO.Directory.GetCurrentDirectory());
+            _rootPath = NormalizeRootPath(hostingEnv.WebRootPath ?? hostingEnv.ContentRootPath ?? Directory.GetCurrentDirectory());
+
+            if (!string.IsNullOrEmpty(options.RootPath))
+            {
+                _rootPath = Path.Combine(_rootPath, options.RootPath);
+            }
+
             // TODO: pass hostingEnv.ContentRootFileProvider to the Context for file system functions
 
             // sideload script assemblies
@@ -72,6 +79,14 @@ namespace Peachpie.Web
             }
         }
 
+        /// <summary>
+        /// Handles new context.
+        /// </summary>
+        void OnContextCreated(RequestContextCore ctx)
+        {
+            _options.BeforeRequest?.Invoke(ctx);
+        }
+
         public Task Invoke(HttpContext context)
         {
             var script = RequestContextCore.ResolveScript(context.Request);
@@ -81,7 +96,7 @@ namespace Peachpie.Web
                 {
                     using (var phpctx = new RequestContextCore(context, _rootPath, _options.StringEncoding))
                     {
-                        _options.InvokeBeforeRequest(phpctx);
+                        OnContextCreated(phpctx);
                         phpctx.ProcessScript(script);
                     }
                 });
