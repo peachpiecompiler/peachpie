@@ -213,11 +213,23 @@ namespace Pchp.Core.Dynamic
                 Expression.Assign(variable, Expression.New(typeof(PhpArray))));
         }
 
-        public static Expression NewPhpArray(IEnumerable<Expression> values)
+        public static Expression NewPhpArray(Expression[] values)
         {
-            return Expression.Call(
-                typeof(PhpArray), "New", Cache.Types.Empty, // PhpArray.New(values[])
-                Expression.NewArrayInit(typeof(PhpValue), values.Select(x => ConvertExpression.BindToValue(x))));
+            Expression arr;
+
+            if (values.Any(IsArgumentUnpacking))
+            {
+                // unpacking
+                arr = UnpackArgumentsToArray(null, values);
+            }
+            else
+            {
+                // 1:1
+                arr = Expression.NewArrayInit(typeof(PhpValue), values.Select(x => ConvertExpression.BindToValue(x)));
+            }
+
+            // PhpArray.New( values[] )
+            return Expression.Call(typeof(PhpArray), "New", Cache.Types.Empty, arr);
         }
 
         /// <summary>
@@ -229,7 +241,7 @@ namespace Pchp.Core.Dynamic
             return tinfo.IsGenericType && tinfo.GetGenericTypeDefinition() == typeof(UnpackingParam<>);
         }
 
-        public static Expression ArgumentsToArray(MethodBase[] methods, Expression[] arguments)
+        public static Expression UnpackArgumentsToArray(MethodBase[] methods, Expression[] arguments)
         {
             //if (arguments.Length == 1 && IsArgumentUnpacking(arguments[0]))
             //{
@@ -240,14 +252,17 @@ namespace Pchp.Core.Dynamic
             // create byrefs mask: (but mask of parameters passed by ref)
             ulong byrefs = 0uL;
 
-            foreach (var m in methods)
+            if (methods != null)
             {
-                var ps = m.GetParameters();
-                var skip = ps.TakeWhile(IsImplicitParameter).Count();
-
-                for (int i = skip; i < ps.Length; i++)
+                foreach (var m in methods)
                 {
-                    if (ps[i].ParameterType == typeof(PhpAlias)) { byrefs |= (1uL << (i - skip)); }
+                    var ps = m.GetParameters();
+                    var skip = ps.TakeWhile(IsImplicitParameter).Count();
+
+                    for (int i = skip; i < ps.Length; i++)
+                    {
+                        if (ps[i].ParameterType == typeof(PhpAlias)) { byrefs |= (1uL << (i - skip)); }
+                    }
                 }
             }
 

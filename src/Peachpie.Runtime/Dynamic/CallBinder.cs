@@ -68,7 +68,7 @@ namespace Pchp.Core.Dynamic
                      */
 
                     invocation = Expression.Block(new[] { args_var },
-                            Expression.Assign(args_var, BinderHelpers.ArgumentsToArray(methods, bound.Arguments)),
+                            Expression.Assign(args_var, BinderHelpers.UnpackArgumentsToArray(methods, bound.Arguments)),
                             OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, args_var, lateStaticType: bound.TargetType)
                         );
                 }
