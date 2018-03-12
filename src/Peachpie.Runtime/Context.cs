@@ -487,35 +487,53 @@ namespace Pchp.Core
         #region Resources // objects that need dispose
 
         HashSet<IDisposable> _lazyDisposables = null;
+        private object disposeLock = new object();
 
         public void RegisterDisposable(IDisposable obj)
         {
-            if (_lazyDisposables == null)
+            lock (disposeLock)
             {
-                _lazyDisposables = new HashSet<IDisposable>();
+                if (_lazyDisposables == null)
+                {
+                    _lazyDisposables = new HashSet<IDisposable>();
+                }
+ 
+                _lazyDisposables.Add(obj);
             }
-
-            _lazyDisposables.Add(obj);
         }
 
         public void UnregisterDisposable(IDisposable obj)
         {
-            if (_lazyDisposables != null)
+            lock (disposeLock)
             {
-                _lazyDisposables.Remove(obj);
+                if (_lazyDisposables != null)
+                {
+                    _lazyDisposables.Remove(obj);
+                }
             }
         }
 
+        private object setlock = new object();
         void ProcessDisposables()
         {
-            var set = _lazyDisposables;
-            if (set != null && set.Count != 0)
+            HashSet<IDisposable> set = null;
+            lock (setlock)
             {
-                _lazyDisposables = null;
-
-                foreach (var x in set)
+                lock (disposeLock)
                 {
-                    x.Dispose();
+                    set = _lazyDisposables;
+                    if (set != null && set.Count != 0)
+                    {
+                        _lazyDisposables = null;
+                    }
+                }
+
+                if (set != null && set.Count != 0)
+                {
+                    foreach (var x in set)
+                    {
+                        x.Dispose();
+                    }
                 }
             }
         }
