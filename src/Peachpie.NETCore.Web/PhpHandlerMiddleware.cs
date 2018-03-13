@@ -28,12 +28,18 @@ namespace Peachpie.Web
 
             _next = next ?? throw new ArgumentNullException(nameof(next));
             _options = options;
-            _rootPath = NormalizeRootPath(hostingEnv.WebRootPath ?? hostingEnv.ContentRootPath ?? Directory.GetCurrentDirectory());
+
+            // determine Root Path:
+            _rootPath = hostingEnv.WebRootPath ?? hostingEnv.ContentRootPath ?? Directory.GetCurrentDirectory();
 
             if (!string.IsNullOrEmpty(options.RootPath))
             {
-                _rootPath = Path.Combine(_rootPath, options.RootPath);
+                _rootPath = Path.Combine(_rootPath, options.RootPath);  // use the root path option, relative to the ASP.NET Core Web Root
             }
+
+            _rootPath = NormalizeRootPath(_rootPath);
+
+            //
 
             // TODO: pass hostingEnv.ContentRootFileProvider to the Context for file system functions
 
