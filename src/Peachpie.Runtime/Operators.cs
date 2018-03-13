@@ -377,6 +377,27 @@ namespace Pchp.Core
         public static IPhpArray GetArrayAccess(PhpValue value) => value.GetArrayAccess();
 
         /// <summary>
+        /// Gets <see cref="IPhpArray"/> to be used as R-value of <c>list</c> expression.
+        /// </summary>
+        public static IPhpArray GetListAccess(PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.PhpArray: return value.Array;
+                case PhpTypeCode.Object: return EnsureArray(value.Object);
+                case PhpTypeCode.Alias: return GetListAccess(value.Alias.Value);
+                default:
+                    // TODO: some kind of debug log would be nice, PHP does not do that
+                    return PhpArray.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Gets <see cref="IPhpArray"/> to be used as R-value of <c>list</c> expression.
+        /// </summary>
+        public static IPhpArray GetListAccess(object value) => EnsureArray(value);
+
+        /// <summary>
         /// Implements <c>[]</c> operator on <see cref="string"/>.
         /// </summary>
         /// <param name="value">String to be accessed as array.</param>

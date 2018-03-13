@@ -2205,6 +2205,62 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override IPlace Place(ILBuilder il) => null;
 
+        /// <summary>
+        /// Emits conversion to <c>IPhpArray</c>.
+        /// Emits empty array on top of stack if object cannot be used as array.
+        /// </summary>
+        static TypeSymbol/*!*/EmitListAccess(CodeGenerator cg, TypeSymbol valueType)
+        {
+            Debug.Assert(valueType != null);
+
+            if (valueType.IsReferenceType)
+            {
+                if (valueType.IsOfType(cg.CoreTypes.IPhpArray))
+                {
+                    return valueType; // keep value on stack
+                }
+
+                if (valueType.IsOfType(cg.CoreTypes.ArrayAccess))
+                {
+                    // Template: EnsureArray( ArrayAccess) : IPhpArray
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_ArrayAccess);
+                }
+            }
+
+            // Template: Operators: EmitListAccess( (PhpValue)value )
+            cg.EmitConvertToPhpValue(valueType, 0);
+            return cg.EmitCall(ILOpCode.Call, cg.CoreTypes.Operators.Method("GetListAccess", cg.CoreTypes.PhpValue));
+        }
+
+        static void EmitItemAssign(CodeGenerator cg, KeyValuePair<BoundExpression, BoundReferenceExpression> item, int index, IPlace arrplace)
+        {
+            var target = item;
+            if (target.Value == null)
+            {
+                return;
+            }
+
+            // Template: <vars[i]> = <tmp>[i]
+
+            var boundtarget = target.Value.BindPlace(cg);
+            boundtarget.EmitStorePrepare(cg);
+
+            // LOAD IPhpArray.GetItemValue(IntStringKey{i})
+            arrplace.EmitLoad(cg.Builder);
+            if (target.Key == null)
+            {
+                cg.EmitIntStringKey(index);
+            }
+            else
+            {
+                cg.EmitIntStringKey(target.Key);
+            }
+            var itemtype = cg.EmitDereference(cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.GetItemValue_IntStringKey));
+
+            // STORE vars[i]
+            boundtarget.EmitStore(cg, itemtype);
+        }
+
         #region IBoundReference
 
         TypeSymbol IBoundReference.TypeOpt => null;
@@ -2226,79 +2282,22 @@ namespace Pchp.CodeAnalysis.Semantics
 
         void IBoundReference.EmitStore(CodeGenerator cg, TypeSymbol valueType)
         {
-            var rtype = cg.EmitAsPhpArray(valueType);
+            var rtype = EmitListAccess(cg, valueType);
 
             var tmp = cg.GetTemporaryLocal(rtype);
             cg.Builder.EmitLocalStore(tmp);
 
-            // Template: if (<tmp> != null) { ... }
-            var lblnull = new NamedLabel("<tmp> == null");
-            var lblend = new NamedLabel("<list> end");
-            cg.Builder.EmitLocalLoad(tmp);
-            cg.Builder.EmitBranch(ILOpCode.Brfalse, lblnull);
+            var items = this.Items;
 
             // NOTE: since PHP7, variables are assigned from left to right
-            var items = this.Items;
+
             for (int i = 0; i < items.Length; i++)
             {
-                var target = items[i];
-                if (target.Value == null)
-                {
-                    continue;
-                }
-
-                // Template: <vars[i]> = <tmp>[i]
-
-                var boundtarget = target.Value.BindPlace(cg);
-                boundtarget.EmitStorePrepare(cg);
-
-                // LOAD IPhpArray.GetItemValue(IntStringKey{i})
-                cg.Builder.EmitLocalLoad(tmp);
-                if (target.Key == null)
-                {
-                    cg.EmitIntStringKey(i);
-                }
-                else
-                {
-                    cg.EmitIntStringKey(target.Key);
-                }
-                var itemtype = cg.EmitDereference(cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.GetItemValue_IntStringKey));
-
-                // STORE vars[i]
-                boundtarget.EmitStore(cg, itemtype);
+                EmitItemAssign(cg, items[i], i, new LocalPlace(tmp));
             }
-
-            cg.Builder.EmitBranch(ILOpCode.Br, lblend);
 
             //
             cg.ReturnTemporaryLocal(tmp);
-
-            // Template: <vars[i]> = NULL
-            cg.Builder.MarkLabel(lblnull);
-            for (int i = 0; i < items.Length; i++)
-            {
-                var target = items[i].Value;
-                if (target == null)
-                {
-                    continue;
-                }
-
-                // Template: <vars[i]> = NULL
-
-                var boundtarget = target.BindPlace(cg);
-                boundtarget.EmitStorePrepare(cg);
-
-                // LOAD default<T> // = NULL
-                var t = boundtarget.TypeOpt ?? cg.CoreTypes.PhpValue;
-                cg.EmitLoadDefault(t, 0);
-
-                // STORE vars[i]
-                boundtarget.EmitStore(cg, t);
-            }
-
-            //
-            cg.Builder.MarkLabel(lblend);
-
         }
 
         #endregion
