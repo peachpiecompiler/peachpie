@@ -699,6 +699,63 @@ namespace Peachpie.Library.Graphics
             return (long)image[x, y].Rgba;
         }
 
+        /// <summary>
+        /// Enable or disable interlace.
+        /// </summary>
+        public static int imageinterlace(PhpResource image, bool interlace = false)
+        {
+            PhpException.FunctionNotSupported("imageinterlace");
+            return 0; // false
+        }
+
+        #region imagefilter
+
+        /// <summary>
+        /// Applies a filter to an image.
+        /// </summary>
+        public static bool imagefilter(PhpResource image, FilterTypes filtertype, int arg1 = 0, int arg2 = 0, int arg3 = 0, int arg4 = 0)
+        {
+            var img = PhpGdImageResource.ValidImage(image);
+            if (img != null)
+            {
+                switch(filtertype)
+                {
+                    case FilterTypes.GRAYSCALE:
+                        img.Image = img.Image.Grayscale();
+                        return true;
+
+                    case FilterTypes.CONTRAST:
+                        img.Image = img.Image.Contrast(arg1);
+                        return true;
+
+                    case FilterTypes.BRIGHTNESS:
+                        img.Image = img.Image.Brightness(arg1);
+                        return true;
+
+                    case FilterTypes.NEGATE:
+                        img.Image = img.Image.Invert();
+                        return true;
+
+                    case FilterTypes.GAUSSIAN_BLUR:
+                        img.Image = img.Image.BoxBlur(arg1);
+                        return true;
+
+                    //case FilterTypes.COLORIZE:
+                    //case FilterTypes.SMOOTH:
+                    //    return false;
+
+                    default:
+                        // argument exception
+                        Debug.Fail("Not Implemented: imagefilter(" + filtertype.ToString() + ")");
+                        break;
+                }
+            }
+
+            return false;
+        }
+
+        #endregion
+
         #region imagesavealpha
 
         /// <summary>
@@ -885,7 +942,7 @@ namespace Peachpie.Library.Graphics
             {
                 return null;
             }
-            
+
             var font = new Font(family, (float)size, style);
             var textsize = TextMeasurer.Measure(text, new RendererOptions(font));
 
@@ -907,7 +964,7 @@ namespace Peachpie.Library.Graphics
                 new Vector2(textsize.Width, 0), // upper right
                 new Vector2(0, 0), // upper left
             };
-            
+
             for (int i = 0; i < pts.Length; i++)
             {
                 pts[i] = Vector2.Transform(pts[i], matrix);
