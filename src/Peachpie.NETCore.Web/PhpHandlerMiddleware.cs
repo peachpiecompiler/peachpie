@@ -34,7 +34,7 @@ namespace Peachpie.Web
 
             if (!string.IsNullOrEmpty(options.RootPath))
             {
-                _rootPath = Path.Combine(_rootPath, options.RootPath);  // use the root path option, relative to the ASP.NET Core Web Root
+                _rootPath = Path.GetFullPath(Path.Combine(_rootPath, options.RootPath));  // use the root path option, relative to the ASP.NET Core Web Root
             }
 
             _rootPath = NormalizeRootPath(_rootPath);
