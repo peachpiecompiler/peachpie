@@ -458,6 +458,26 @@ namespace Pchp.Library
 
         #endregion
 
+        /// <summary>
+        /// This function flushes all response data to the client and finishes the request.
+        /// This allows for time consuming tasks to be performed without leaving the connection to the client open.
+        /// </summary>
+        public static bool fastcgi_finish_request(Context ctx)
+        {
+            if (ctx.IsWebApplication)
+            {
+                ctx.HttpPhpContext.Flush();
+
+                // TODO: finish the request
+
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         public static bool gc_enabled()
         {
             return true;    // status of the circular reference collector
