@@ -304,6 +304,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     // assume the type is mixed (unspecified).
                     // In global code, the type of variable cannot be determined by type analysis, it can change between every two operations (this may be improved by better flow analysis).
                     vartype = TypeRefMask.AnyType;
+
+                    if (Routine.IsGlobalScope)
+                    {
+                        // in global code, treat the variable as initialized always:
+                        State.SetVarInitialized(local);
+                    }
                 }
 
                 if (x.Access.IsEnsure)
