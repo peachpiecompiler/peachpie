@@ -346,16 +346,12 @@ namespace Peachpie.Library.Graphics
                 return false;
             }
 
-            //if (src_w == 0 && src_h == 0)
-            //    return true;
-
-            if (dst_w == 0 || dst_h == 0)
-                return true;
-
+            //if (src_w == 0 && src_h == 0) return true;
             //if (dst_w < 0) dst_w = 0;
             //if (dst_h < 0) dst_h = 0;
+            if (dst_w == 0 || dst_h == 0) return true;
 
-            var src = src_img.Image
+            var src = new Image<Rgba32>(src_img.Image)  // copy image and resize inplace:
                 .Crop(new Rectangle(src_x, src_y, src_w, src_h))
                 .Resize(dst_w, dst_h, resampler);
 
@@ -721,23 +717,23 @@ namespace Peachpie.Library.Graphics
                 switch(filtertype)
                 {
                     case FilterTypes.GRAYSCALE:
-                        img.Image = img.Image.Grayscale();
+                        img.Image.Grayscale();
                         return true;
 
                     case FilterTypes.CONTRAST:
-                        img.Image = img.Image.Contrast(arg1);
+                        img.Image.Contrast(arg1);
                         return true;
 
                     case FilterTypes.BRIGHTNESS:
-                        img.Image = img.Image.Brightness(arg1);
+                        img.Image.Brightness(arg1);
                         return true;
 
                     case FilterTypes.NEGATE:
-                        img.Image = img.Image.Invert();
+                        img.Image.Invert();
                         return true;
 
                     case FilterTypes.GAUSSIAN_BLUR:
-                        img.Image = img.Image.BoxBlur(arg1);
+                        img.Image.BoxBlur(arg1);
                         return true;
 
                     //case FilterTypes.COLORIZE:
