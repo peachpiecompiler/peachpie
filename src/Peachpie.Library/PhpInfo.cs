@@ -152,7 +152,7 @@ namespace Pchp.Library
                 }
                 using (var title = td.Tag("h1", new { @class = "p" }))
                 {
-                    title.EchoEscaped("Peachpie Version " + typeof(Context).GetTypeInfo().Assembly.GetName().Version.ToString(3));  // TODO: suffix (-preview...)
+                    title.EchoEscaped("Peachpie Version " + Core.Utilities.ContextExtensions.GetRuntimeInformationalVersion());
                 }
             }
         }

@@ -21,6 +21,11 @@ namespace Pchp.Library
             return Environment.PHP_MAJOR_VERSION + "." + Environment.PHP_MINOR_VERSION + "." + Environment.PHP_RELEASE_VERSION;
         }
 
+        /// <summary>
+        /// Gets "zend" engine version compatible version string.
+        /// </summary>
+        public static string zend_version() => "3." + Environment.PHP_MINOR_VERSION + ".0" + Core.Utilities.ContextExtensions.GetRuntimeVersionSuffix();
+
         #region Helpers
 
         /// <summary>
