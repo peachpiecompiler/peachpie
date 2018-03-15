@@ -518,6 +518,11 @@ namespace Pchp.Library
 
     public static class Options
     {
+        public const int INI_USER = (int)StandardPhpOptions.IniAccessability.User; // 1
+        public const int INI_PERDIR = (int)StandardPhpOptions.IniAccessability.PerDirectory; // 2
+        public const int INI_SYSTEM = (int)StandardPhpOptions.IniAccessability.System; // 4
+        public const int INI_ALL = (int)StandardPhpOptions.IniAccessability.All; // 7
+
         #region ini_get, ini_set, ini_restore, get_cfg_var, ini_alter, ini_get_all
 
         /// <summary>
