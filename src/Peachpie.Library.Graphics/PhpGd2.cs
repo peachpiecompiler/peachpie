@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
@@ -50,7 +51,7 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         public const int GD_BUNDLED = 1;
 
-        #endregion GDVersionConstants
+        #endregion
 
         #region ImgType
 
@@ -64,27 +65,22 @@ namespace Peachpie.Library.Graphics
             /// Used as a return value by <see cref="imagetypes"/>.
             /// </summary>
             GIF = 1,
-
             /// <summary>
             /// Used as a return value by <see cref="imagetypes"/>.
             /// </summary>
             JPG = JPEG,
-
             /// <summary>
             /// Used as a return value by <see cref="imagetypes"/>.
             /// </summary>
             JPEG = 2,
-
             /// <summary>
             /// Used as a return value by <see cref="imagetypes"/>.
             /// </summary>
             PNG = 4,
-
             /// <summary>
             /// Used as a return value by <see cref="imagetypes"/>.
             /// </summary>
             WBMP = 8,
-
             /// <summary>
             /// Used as a return value by <see cref="imagetypes"/>.
             /// </summary>
@@ -108,7 +104,7 @@ namespace Peachpie.Library.Graphics
         public const int IMG_WBMP = (int)ImgType.WBMP;
         public const int IMG_XPM = (int)ImgType.XPM;
 
-        #endregion ImgType
+        #endregion
 
         #region IMG_GD2_*
 
@@ -122,7 +118,7 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         public const int IMG_GD2_COMPRESSED = 2;
 
-        #endregion IMG_GD2_*
+        #endregion
 
         #region FilledArcStyles
 
@@ -165,7 +161,7 @@ namespace Peachpie.Library.Graphics
         public const int IMG_ARC_NOFILL = (int)FilledArcStyles.NOFILL;
         public const int IMG_ARC_EDGED = (int)FilledArcStyles.EDGED;
 
-        #endregion FilledArcStyles
+        #endregion
 
         #region ColorValues
 
@@ -206,7 +202,7 @@ namespace Peachpie.Library.Graphics
         public const int IMG_COLOR_TILED = (int)ColorValues.TILED;
         public const int IMG_COLOR_TRANSPARENT = (int)ColorValues.TRANSPARENT;
 
-        #endregion ColorValues
+        #endregion
 
         #region FilterTypes
 
@@ -219,57 +215,46 @@ namespace Peachpie.Library.Graphics
             /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
             /// </summary>
             NEGATE,
-
             /// <summary>
             /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
             /// </summary>
             GRAYSCALE,
-
             /// <summary>
             /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
             /// </summary>
             BRIGHTNESS,
-
             /// <summary>
             /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
             /// </summary>
             CONTRAST,
-
             /// <summary>
             /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
             /// </summary>
             COLORIZE,
-
             /// <summary>
             /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
             /// </summary>
             EDGEDETECT,
-
             /// <summary>
             /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
             /// </summary>
             EMBOSS,
-
             /// <summary>
             /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
             /// </summary>
             GAUSSIAN_BLUR,
-
             /// <summary>
             /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
             /// </summary>
             SELECTIVE_BLUR,
-
             /// <summary>
             /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
             /// </summary>
             MEAN_REMOVAL,
-
             /// <summary>
             /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
             /// </summary>
             SMOOTH,
-
             /// <summary>
             /// Special GD filter used by the <see cref="imagefilter(PhpResource,int)"/> function.
             /// </summary>
@@ -289,7 +274,7 @@ namespace Peachpie.Library.Graphics
         public const int IMG_FILTER_SMOOTH = (int)FilterTypes.SMOOTH;
         public const int IMG_FILTER_PIXELATE = (int)FilterTypes.PIXELATE;
 
-        #endregion FilterTypes
+        #endregion
 
         /// <summary>
         /// Retrieve information about the currently installed GD library
@@ -319,7 +304,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Return the types of images supported in a bitfield - 1=GIF, 2=JPEG, 4=PNG, 8=WBMP, 16=XPM
         /// IMG_GIF | IMG_JPG | IMG_PNG | IMG_WBMP | IMG_XPM
-        /// </summary>
+        /// </summary> 
         public static int imagetypes()
         {
             return (int)ImgType.Supported;
@@ -329,7 +314,7 @@ namespace Peachpie.Library.Graphics
 
         /// <summary>
         /// Copy and resize part of an image using resampling to help ensure clarity.
-        /// </summary>
+        /// </summary> 
         public static bool imagecopyresampled(PhpResource dst_im, PhpResource src_im,
             int dst_x, int dst_y, int src_x, int src_y, int dst_w, int dst_h, int src_w, int src_h)
         {
@@ -341,7 +326,7 @@ namespace Peachpie.Library.Graphics
 
         /// <summary>
         /// Copy and resize part of an image.
-        /// </summary>
+        /// </summary> 
         public static bool imagecopyresized(PhpResource dst_im, PhpResource src_im,
             int dst_x, int dst_y, int src_x, int src_y, int dst_w, int dst_h, int src_w, int src_h)
         {
@@ -351,7 +336,7 @@ namespace Peachpie.Library.Graphics
                 new NearestNeighborResampler());
         }
 
-        private static bool ImageCopyAndResize(PhpResource dst_im, PhpResource src_im,
+        static bool ImageCopyAndResize(PhpResource dst_im, PhpResource src_im,
             int dst_x, int dst_y, int src_x, int src_y, int dst_w, int dst_h,
             int src_w, int src_h, IResampler resampler)
         {
@@ -363,16 +348,12 @@ namespace Peachpie.Library.Graphics
                 return false;
             }
 
-            //if (src_w == 0 && src_h == 0)
-            //    return true;
-
-            if (dst_w == 0 || dst_h == 0)
-                return true;
-
+            //if (src_w == 0 && src_h == 0) return true;
             //if (dst_w < 0) dst_w = 0;
             //if (dst_h < 0) dst_h = 0;
+            if (dst_w == 0 || dst_h == 0) return true;
 
-            var src = src_img.Image
+            var src = new Image<Rgba32>(src_img.Image)  // copy image and resize inplace:
                 .Crop(new Rectangle(src_x, src_y, src_w, src_h))
                 .Resize(dst_w, dst_h, resampler);
 
@@ -381,13 +362,13 @@ namespace Peachpie.Library.Graphics
             return true;
         }
 
-        #endregion imagecopyresampled, imagecopyresized
+        #endregion
 
         #region imagecreate*
 
         /// <summary>
         /// Create a new image
-        /// </summary>
+        /// </summary> 
         [return: CastToFalse]
         public static PhpResource imagecreate(int x_size, int y_size)
         {
@@ -401,7 +382,7 @@ namespace Peachpie.Library.Graphics
 
         /// <summary>
         /// Create a new true color image
-        /// </summary>
+        /// </summary> 
         [return: CastToFalse]
         public static PhpResource imagecreatetruecolor(int x_size, int y_size)
         {
@@ -413,7 +394,7 @@ namespace Peachpie.Library.Graphics
             return img;
         }
 
-        private static PhpGdImageResource imagecreatecommon(int x_size, int y_size, IConfigurationModule configuration, IImageFormat format)
+        static PhpGdImageResource imagecreatecommon(int x_size, int y_size, IConfigurationModule configuration, IImageFormat format)
         {
             if (x_size <= 0 || y_size <= 0)
             {
@@ -426,7 +407,7 @@ namespace Peachpie.Library.Graphics
 
         /// <summary>
         /// Create a new image from the image stream in the string
-        /// </summary>
+        /// </summary> 
         [return: CastToFalse]
         public static PhpResource imagecreatefromstring(byte[] image)
         {
@@ -449,7 +430,7 @@ namespace Peachpie.Library.Graphics
 
         /// <summary>
         /// Create a new image from GD file or URL.
-        /// </summary>
+        /// </summary> 
         [return: CastToFalse]
         public static PhpResource imagecreatefromgd(Context ctx, string filename)
         {
@@ -458,7 +439,7 @@ namespace Peachpie.Library.Graphics
 
         /// <summary>
         /// Create a new image from GD2 file or URL.
-        /// </summary>
+        /// </summary> 
         [return: CastToFalse]
         public static PhpResource imagecreatefromgd2(Context ctx, string filename)
         {
@@ -467,7 +448,7 @@ namespace Peachpie.Library.Graphics
 
         /// <summary>
         /// Create a new image from a given part of GD2 file or URL.
-        /// </summary>
+        /// </summary> 
         [return: CastToFalse]
         public static PhpResource imagecreatefromgd2part(Context ctx, string filename, int srcX, int srcY, int width, int height)
         {
@@ -476,7 +457,7 @@ namespace Peachpie.Library.Graphics
 
         /// <summary>
         /// Create a new image from GIF file or URL.
-        /// </summary>
+        /// </summary> 
         [return: CastToFalse]
         public static PhpResource imagecreatefromgif(Context ctx, string filename)
         {
@@ -485,7 +466,7 @@ namespace Peachpie.Library.Graphics
 
         /// <summary>
         /// Create a new image from JPEG file or URL.
-        /// </summary>
+        /// </summary> 
         [return: CastToFalse]
         public static PhpResource imagecreatefromjpeg(Context ctx, string filename)
         {
@@ -494,7 +475,7 @@ namespace Peachpie.Library.Graphics
 
         /// <summary>
         /// Create a new image from PNG file or URL.
-        /// </summary>
+        /// </summary> 
         [return: CastToFalse]
         public static PhpResource imagecreatefrompng(Context ctx, string filename)
         {
@@ -503,7 +484,7 @@ namespace Peachpie.Library.Graphics
 
         /// <summary>
         /// Create a new image from WBMP file or URL.
-        /// </summary>
+        /// </summary> 
         [return: CastToFalse]
         public static PhpResource imagecreatefromwbmp(Context ctx, string filename)
         {
@@ -512,7 +493,7 @@ namespace Peachpie.Library.Graphics
 
         /// <summary>
         /// Create a new image from XBM file or URL.
-        /// </summary>
+        /// </summary> 
         [return: CastToFalse]
         public static PhpResource imagecreatefromxbm(Context ctx, string filename)
         {
@@ -521,14 +502,14 @@ namespace Peachpie.Library.Graphics
 
         /// <summary>
         /// Create a new image from XPM file or URL.
-        /// </summary>
+        /// </summary> 
         [return: CastToFalse]
         public static PhpResource imagecreatefromxpm(Context ctx, string filename)
         {
             return imagercreatefromfile(ctx, filename);
         }
 
-        private static PhpGdImageResource imagercreatefromfile(Context ctx, string filename, IConfigurationModule formatOpt = null)
+        static PhpGdImageResource imagercreatefromfile(Context ctx, string filename, IConfigurationModule formatOpt = null)
         {
             if (string.IsNullOrEmpty(filename))
             {
@@ -557,11 +538,11 @@ namespace Peachpie.Library.Graphics
                 : null;
         }
 
-        #endregion imagecreate*
+        #endregion
 
         /// <summary>
         /// Destroy an image
-        /// </summary>
+        /// </summary> 
         public static bool imagedestroy(PhpResource im)
         {
             var img = PhpGdImageResource.ValidImage(im);
@@ -576,11 +557,9 @@ namespace Peachpie.Library.Graphics
             }
         }
 
-        #region imagesx, imagesy
-
         /// <summary>
         /// Gets image width.
-        /// </summary>
+        /// </summary> 
         [return: CastToFalse]
         public static int imagesx(PhpResource im)
         {
@@ -593,7 +572,7 @@ namespace Peachpie.Library.Graphics
 
         /// <summary>
         /// Gets image height.
-        /// </summary>
+        /// </summary> 
         [return: CastToFalse]
         public static int imagesy(PhpResource im)
         {
@@ -604,11 +583,9 @@ namespace Peachpie.Library.Graphics
             return img.Image.Height;
         }
 
-        #endregion imagesx, imagesy
-
         /// <summary>
         /// Turn alpha blending mode on or off for the given image
-        /// </summary>
+        /// </summary> 
         public static bool imagealphablending(PhpResource im, bool blendmode)
         {
             var img = PhpGdImageResource.ValidImage(im);
@@ -628,7 +605,7 @@ namespace Peachpie.Library.Graphics
 
         /// <summary>
         /// return true if the image uses truecolor
-        /// </summary>
+        /// </summary> 
         public static bool imageistruecolor(PhpResource im)
         {
             var img = PhpGdImageResource.ValidImage(im);
@@ -642,7 +619,7 @@ namespace Peachpie.Library.Graphics
 
         /// <summary>
         /// Allocate a color for an image
-        /// </summary>
+        /// </summary> 
         public static long imagecolorallocate(PhpResource im, int red, int green, int blue)
         {
             var img = PhpGdImageResource.ValidImage(im);
@@ -669,7 +646,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// RGBA values to PHP Color format.
         /// </summary>
-        private static long RGBA(long red, long green, long blue, long alpha = 0xff)
+        static long RGBA(long red, long green, long blue, long alpha = 0xff)
         {
             return (alpha << 24)
                 | ((red & 0x0000FF) << 16)
@@ -677,9 +654,9 @@ namespace Peachpie.Library.Graphics
                 | (blue & 0x0000FF);
         }
 
-        private static Rgba32 FromRGBA(long color) => new Rgba32((uint)color);
+        static Rgba32 FromRGBA(long color) => new Rgba32((uint)color);
 
-        #endregion imagecolorallocate, imagecolorallocatealpha
+        #endregion
 
         /// <summary>
         /// Draws a pixel at the specified coordinate.
@@ -720,11 +697,68 @@ namespace Peachpie.Library.Graphics
             return (long)image[x, y].Rgba;
         }
 
+        /// <summary>
+        /// Enable or disable interlace.
+        /// </summary>
+        public static int imageinterlace(PhpResource image, bool interlace = false)
+        {
+            PhpException.FunctionNotSupported("imageinterlace");
+            return 0; // false
+        }
+
+        #region imagefilter
+
+        /// <summary>
+        /// Applies a filter to an image.
+        /// </summary>
+        public static bool imagefilter(PhpResource image, FilterTypes filtertype, int arg1 = 0, int arg2 = 0, int arg3 = 0, int arg4 = 0)
+        {
+            var img = PhpGdImageResource.ValidImage(image);
+            if (img != null)
+            {
+                switch(filtertype)
+                {
+                    case FilterTypes.GRAYSCALE:
+                        img.Image.Grayscale();
+                        return true;
+
+                    case FilterTypes.CONTRAST:
+                        img.Image.Contrast(arg1);
+                        return true;
+
+                    case FilterTypes.BRIGHTNESS:
+                        img.Image.Brightness(arg1);
+                        return true;
+
+                    case FilterTypes.NEGATE:
+                        img.Image.Invert();
+                        return true;
+
+                    case FilterTypes.GAUSSIAN_BLUR:
+                        img.Image.BoxBlur(arg1);
+                        return true;
+
+                    //case FilterTypes.COLORIZE:
+                    //case FilterTypes.SMOOTH:
+                    //    return false;
+
+                    default:
+                        // argument exception
+                        Debug.Fail("Not Implemented: imagefilter(" + filtertype.ToString() + ")");
+                        break;
+                }
+            }
+
+            return false;
+        }
+
+        #endregion
+
         #region imagesavealpha
 
         /// <summary>
         /// Include alpha channel to a saved image
-        /// </summary>
+        /// </summary> 
         public static bool imagesavealpha(PhpResource im, bool on)
         {
             var img = PhpGdImageResource.ValidImage(im);
@@ -736,7 +770,7 @@ namespace Peachpie.Library.Graphics
             return true;
         }
 
-        #endregion imagesavealpha
+        #endregion
 
         #region imagerotate
 
@@ -757,13 +791,13 @@ namespace Peachpie.Library.Graphics
             return new PhpGdImageResource(new Image<Rgba32>(img.Image).Rotate((float)(angle * (-Math.PI / 180.0)), true), img.Format);
         }
 
-        #endregion imagerotate
+        #endregion
 
         #region imagerectangle, imagefilledrectangle
 
         /// <summary>
         /// Draw a rectangle
-        /// </summary>
+        /// </summary> 
         public static bool imagerectangle(PhpResource im, int x1, int y1, int x2, int y2, long col)
         {
             var img = PhpGdImageResource.ValidImage(im);
@@ -781,7 +815,7 @@ namespace Peachpie.Library.Graphics
 
         /// <summary>
         /// Draw a filled rectangle
-        /// </summary>
+        /// </summary> 
         public static bool imagefilledrectangle(PhpResource im, int x1, int y1, int x2, int y2, long col)
         {
             var img = PhpGdImageResource.ValidImage(im);
@@ -807,13 +841,13 @@ namespace Peachpie.Library.Graphics
             return true;
         }
 
-        #endregion imagerectangle, imagefilledrectangle
+        #endregion
 
         #region imagesettile
 
         /// <summary>
         /// Set the tile image to $tile when filling $image with the "IMG_COLOR_TILED" color
-        /// </summary>
+        /// </summary> 
         public static bool imagesettile(PhpResource image, PhpResource tile)
         {
             var img = PhpGdImageResource.ValidImage(image);
@@ -833,13 +867,13 @@ namespace Peachpie.Library.Graphics
             return false;
         }
 
-        #endregion imagesettile
+        #endregion
 
         #region imagettftext
 
         /// <summary>
         /// Write text to the image using a TrueType font
-        /// </summary>
+        /// </summary> 
         [return: CastToFalse]
         public static PhpArray imagettftext(Context ctx, PhpResource im, double size, double angle, int x, int y, long color, string font_file, string text)
         {
@@ -950,7 +984,7 @@ namespace Peachpie.Library.Graphics
             };
         }
 
-        #endregion imagettftext
+        #endregion
 
         #region imagecopy, imagecopymerge
 
@@ -965,13 +999,13 @@ namespace Peachpie.Library.Graphics
 
         /// <summary>
         /// Merge one part of an image with another.
-        /// </summary>
+        /// </summary> 
         public static bool imagecopymerge(PhpResource dst_im, PhpResource src_im, int dst_x, int dst_y, int src_x, int src_y, int src_w, int src_h, int pct)
         {
             return imagecopy(dst_im, src_im, dst_x, dst_y, src_x, src_y, src_w, src_h, pct * 0.01f);
         }
 
-        private static bool imagecopy(PhpResource dst_im, PhpResource src_im, int dst_x, int dst_y, int src_x, int src_y, int src_w, int src_h, float opacity = 1.0f)
+        static bool imagecopy(PhpResource dst_im, PhpResource src_im, int dst_x, int dst_y, int src_x, int src_y, int src_w, int src_h, float opacity = 1.0f)
         {
             var dst = PhpGdImageResource.ValidImage(dst_im);
             var src = PhpGdImageResource.ValidImage(src_im);
@@ -1000,13 +1034,11 @@ namespace Peachpie.Library.Graphics
             return true;
         }
 
-        #endregion imagecopy, imagecopymerge
-
-        #region image2wbmp
+        #endregion
 
         /// <summary>
         /// Output WBMP image to browser or file
-        /// </summary>
+        /// </summary> 
         public static bool image2wbmp(Context ctx, PhpResource im, PhpValue to, int threshold = 0)
         {
             throw new NotImplementedException();
@@ -1015,13 +1047,9 @@ namespace Peachpie.Library.Graphics
 
         public static bool image2wbmp(Context ctx, PhpResource im) => image2wbmp(ctx, im, PhpValue.Null);
 
-        #endregion image2wbmp
-
-        #region imagejpeg
-
         /// <summary>
         /// Output JPEG image to browser or a file.
-        /// </summary>
+        /// </summary> 
         public static bool imagejpeg(Context ctx, PhpResource im, PhpValue to, int quality = 75)
         {
             var jpegoptions = new JpegEncoder() { Quality = Math.Min(Math.Max(quality, 0), 100) };
@@ -1030,13 +1058,9 @@ namespace Peachpie.Library.Graphics
 
         public static bool imagejpeg(Context ctx, PhpResource im) => imagejpeg(ctx, im, PhpValue.Null);
 
-        #endregion imagejpeg
-
-        #region imagegd, imagegd2
-
         /// <summary>
         /// Output GD image to browser or file
-        /// </summary>
+        /// </summary> 
         public static bool imagegd(PhpResource im)
         {
             throw new NotImplementedException();
@@ -1044,19 +1068,15 @@ namespace Peachpie.Library.Graphics
 
         /// <summary>
         /// Output GD2 image to browser or file
-        /// </summary>
+        /// </summary> 
         public static bool imagegd2(Context ctx, PhpResource im, [Optional]PhpValue to, int chunk_size = 128, int type = IMG_GD2_RAW)
         {
             throw new NotImplementedException();
         }
 
-        #endregion imagegd, imagegd2
-
-        #region imagegif
-
         /// <summary>
         /// Output GIF image to browser or file
-        /// </summary>
+        /// </summary> 
         public static bool imagegif(Context ctx, PhpResource im, [Optional]PhpValue to)
         {
             return imagesave(ctx, im, to, (img, stream) =>
@@ -1068,13 +1088,9 @@ namespace Peachpie.Library.Graphics
 
         public static bool imagegif(Context ctx, PhpResource im) => imagegif(ctx, im, PhpValue.Null);
 
-        #endregion imagegif
-
-        #region imagepng
-
         /// <summary>
         /// Output PNG image to browser or file or a stream.
-        /// </summary>
+        /// </summary> 
         public static bool imagepng(Context ctx, PhpResource im, PhpValue to, int quality = 6, int filters = 0)
         {
             quality = Math.Min(Math.Max(quality, 0), 9);    // compression level 0 - 9
@@ -1087,10 +1103,6 @@ namespace Peachpie.Library.Graphics
 
         public static bool imagepng(Context ctx, PhpResource im) => imagepng(ctx, im, PhpValue.Null);
 
-        #endregion imagepng
-
-        #region imagesave
-
         /// <summary>
         /// Internal image save.
         /// </summary>
@@ -1099,7 +1111,7 @@ namespace Peachpie.Library.Graphics
         /// <param name="to">Optional. Filename or stream. If not specified the functiona saves the image to output stream.</param>
         /// <param name="saveaction">Callback that actually save the image to given stream. Called when all checks pass.</param>
         /// <returns>True if save succeeded.</returns>
-        private static bool imagesave(Context ctx, PhpResource im, PhpValue to/* = null*/, Action<Image<Rgba32>, Stream> saveaction)
+        static bool imagesave(Context ctx, PhpResource im, PhpValue to/* = null*/, Action<Image<Rgba32>, Stream> saveaction)
         {
             Debug.Assert(saveaction != null);
 
@@ -1159,81 +1171,9 @@ namespace Peachpie.Library.Graphics
             return true;
         }
 
-        #endregion imagesave
-
-        // NEW FUNCTIONS
-
-        #region imagefilter
-
-        /// <summary>
-        /// Applies a filter to an image
-        /// </summary>
-        public static bool imagefilter(PhpResource src_im, int filtertype) => imagefilter(src_im, filtertype, -1, -1, -1, -1);
-
-        /// <summary>
-        /// Applies a filter to an image
-        /// </summary>
-        public static bool imagefilter(PhpResource src_im, int filtertype, int arg1) => imagefilter(src_im, filtertype, arg1, -1, -1, -1);
-
-        /// <summary>
-        /// Applies a filter to an image
-        /// </summary>
-        public static bool imagefilter(PhpResource src_im, int filtertype, int arg1, int arg2) => imagefilter(src_im, filtertype, arg1, arg2, -1, -1);
-
-        /// <summary>
-        /// Applies a filter to an image
-        /// </summary>
-        public static bool imagefilter(PhpResource src_im, int filtertype, int arg1, int arg2, int arg3) => imagefilter(src_im, filtertype, arg1, arg2, arg3, -1);
-
-        /// <summary>
-        /// Applies a filter to an image
-        /// </summary>
-        public static bool imagefilter(PhpResource im, int filtertype, int arg1, int arg2, int arg3, int arg4)
-        {
-            if (arg1 != -1)
-            {
-                PhpException.ArgumentValueNotSupported("arg1", arg1);
-            }
-
-            if (arg2 != -1)
-            {
-                PhpException.ArgumentValueNotSupported("arg2", arg2);
-            }
-
-            if (arg3 != -1)
-            {
-                PhpException.ArgumentValueNotSupported("arg3", arg3);
-            }
-
-            if (arg4 != -1)
-            {
-                PhpException.ArgumentValueNotSupported("arg4", arg4);
-            }
-
-            PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
-            if (img == null)
-                return false;
-
-            //TODO: (Maros) Not all filters are added here.
-
-            switch (filtertype)
-            {
-                case (int)FilterTypes.NEGATE:
-                    InvertColors(img.Image);
-                    break;
-
-                case (int)FilterTypes.GRAYSCALE:
-                    MakeGrayscale(img.Image);
-                    break;
-
-                default:
-                    return false;
-            }
-
-            return true;
-        }
-
-        #endregion imagefilter
+        // ====================================================================================================
+        // NEW FUNCTIONS (TODO: Remove this comment after all implemented, tested and confirmed to be working)
+        // ====================================================================================================
 
         #region imageconvolution
 
@@ -1242,11 +1182,11 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         public static PhpResource imageconvolution(PhpResource src_im, PhpArray matrix3x3, double div, double offset)
         {
-            //PhpException.FunctionNotSupported(PhpError.Warning);
+            PhpException.FunctionNotSupported("imageconvolution");
             return null;
         }
 
-        #endregion imageconvolution
+        #endregion
 
         #region imagecolortransparent
 
@@ -1257,7 +1197,7 @@ namespace Peachpie.Library.Graphics
         {
             PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
             if (img == null)
-                return -1; // TODO: (maros) check if it is -1 in PHP
+                return -1;
 
             if (img.IsTransparentColSet == false)
             {
@@ -1274,7 +1214,7 @@ namespace Peachpie.Library.Graphics
         {
             PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
             if (img == null)
-                return -1; // TODO: (maros) chekc if it is -1 in PHP
+                return -1;
 
             img.transparentColor = PHPColorToRgba32Color(col);
             img.IsTransparentColSet = true;
@@ -1282,7 +1222,7 @@ namespace Peachpie.Library.Graphics
             return col;
         }
 
-        #endregion imagecolortransparent
+        #endregion
 
         #region imagecolorsforindex
 
@@ -1291,11 +1231,11 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         public static PhpArray imagecolorsforindex(PhpResource im, int col)
         {
-            //PhpException.FunctionNotSupported(PhpError.Warning);
+            PhpException.FunctionNotSupported("imagecolorsforindex");
             return null;
         }
 
-        #endregion imagecolorsforindex
+        #endregion
 
         #region imagecolorset
 
@@ -1304,11 +1244,10 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         public static void imagecolorset(PhpResource im, int col, int red, int green, int blue)
         {
-            //TODO: (Maros) Used in non-truecolor images (palette images).
-            //PhpException.FunctionNotSupported(PhpError.Warning);
+            PhpException.FunctionNotSupported("imagecolorset");
         }
 
-        #endregion imagecolorset
+        #endregion
 
         #region imagefilledellipse
 
@@ -1334,14 +1273,13 @@ namespace Peachpie.Library.Graphics
             return true;
         }
 
-        #endregion imagefilledellipse
-        
+        #endregion
+
         /// <summary>
         /// Give the bounding box of a markerName using fonts via freetype2
         /// </summary>
         public static PhpArray imageftbbox(double size, double angle, string font_file, string text/*, PhpArray extrainfo*/)
         {
-            //return imagettfbbox(size, angle, font_file, text);
             return null;
         }
 
@@ -1352,11 +1290,11 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         public static int imageinterlace(PhpResource im, int interlace)
         {
-            //PhpException.FunctionNotSupported(PhpError.Warning);
+            PhpException.FunctionNotSupported("imageinterlace");
             return -1;
         }
 
-        #endregion imageinterlace
+        #endregion
 
         #region imagecolorexact
 
@@ -1365,12 +1303,11 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         public static int imagecolorexact(PhpResource im, int red, int green, int blue)
         {
-            //TODO: (Maros) Used in non-truecolor images (palette images).
-            //PhpException.FunctionNotSupported(PhpError.Warning);
+            PhpException.FunctionNotSupported("imagecolorexact");
             return -1;
         }
 
-        #endregion imagecolorexact
+        #endregion
 
         #region imagecolorexactalpha
 
@@ -1379,12 +1316,11 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         public static int imagecolorexactalpha(PhpResource im, int red, int green, int blue, int alpha)
         {
-            //TODO: (Maros) Used in non-truecolor images (palette images).
-            //PhpException.FunctionNotSupported(PhpError.Warning);
+            PhpException.FunctionNotSupported("imagecolorexactalpha");
             return -1;
         }
 
-        #endregion imagecolorexactalpha
+        #endregion
 
         #region imagecolormatch
 
@@ -1393,12 +1329,11 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         public static bool imagecolormatch(PhpResource im1, PhpResource im2)
         {
-            //TODO: (Maros) Used in non-truecolor images (palette images).
-            //PhpException.FunctionNotSupported(PhpError.Warning);
+            PhpException.FunctionNotSupported("imagecolormatch");
             return false;
         }
 
-        #endregion imagecolormatch
+        #endregion
 
         #region imagecolorresolve
 
@@ -1407,12 +1342,11 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         public static int imagecolorresolve(PhpResource im, int red, int green, int blue)
         {
-            //TODO: (Maros) Used in non-truecolor images (palette images).
-            //PhpException.FunctionNotSupported(PhpError.Warning);
+            PhpException.FunctionNotSupported("imagecolorresolve");
             return -1;
         }
 
-        #endregion imagecolorresolve
+        #endregion
 
         #region imagecolorresolvealpha
 
@@ -1421,52 +1355,32 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         public static int imagecolorresolvealpha(PhpResource im, int red, int green, int blue, int alpha)
         {
-            //TODO: (Maros) Used in non-truecolor images (palette images).
-            //PhpException.FunctionNotSupported(PhpError.Warning);
+            PhpException.FunctionNotSupported("imagecolorresolvealpha");
             return -1;
         }
 
-        #endregion imagecolorresolvealpha
+        #endregion
+
+        #region imagefill
 
         /// <summary>
-        /// Inverts colors in specified Bitmap
+        /// Flood fill
         /// </summary>
-        /// <param name="bitmap">processed bitmap</param>
-        /// <returns>success indication</returns>
-        private static bool InvertColors(Image<Rgba32>/*!*/bitmap)
+        public static bool imagefill(PhpResource im, int x, int y, int col)
         {
-            Debug.Assert(bitmap != null);
-
-            try
-            {
-                bitmap = bitmap.Invert(); // TODO: Test
-                return true;
-            }
-            catch
-            {
+            PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
                 return false;
-            }
+
+            if (x < 0 || y < 0) return true;
+            if (x > img.Image.Width || x > img.Image.Height) return true;
+
+            FloodFill(img.Image, x, y, PHPColorToRgba32Color(col), false, Rgba32.Red);
+
+            return true;
         }
 
-        /// <summary>
-        /// Makes specified Bitmap grayscaled
-        /// </summary>
-        /// <param name="bitmap">processed bitmap</param>
-        /// <returns>success indication</returns>
-        private static bool MakeGrayscale(Image<Rgba32>/*!*/bitmap)
-        {
-            Debug.Assert(bitmap != null);
-
-            try
-            {
-                bitmap = bitmap.Grayscale(); // TODO: Test
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
+        #endregion
 
         /// <summary>
         /// Converts .NET Color format to PHP Color format
@@ -1608,382 +1522,360 @@ namespace Peachpie.Library.Graphics
             if (s > 360) e = e - (e / 360) * 360;
         }
 
-        #region TODO
+        #region TODO (Convert from System.Drawing to ImageSharp)
 
         #region imagecolorstotal
 
-        //TODO: See: https://github.com/SixLabors/ImageSharp/issues/488
-        ///// <summary>
-        ///// Find out the number of colors in an image's palette
-        ///// </summary>
-        //public static int imagecolorstotal(PhpResource im)
-        //{
-        //    PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
-        //    if (img == null)
-        //        return 0;
+        // NOTE: See https://github.com/SixLabors/ImageSharp/issues/488
+        /// <summary>
+        /// Find out the number of colors in an image's palette
+        /// </summary>
+        public static int imagecolorstotal(PhpResource im)
+        {
+            throw new NotImplementedException();
 
-        //    var format = img.Image.PixelFormat;
+            //PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            //if (img == null)
+            //    return 0;
 
-        //    if ((format & PixelFormat.Format1bppIndexed) != 0)
-        //        return 2;
-        //    if ((format & PixelFormat.Format4bppIndexed) != 0)
-        //        return 16;
-        //    if ((format & PixelFormat.Format8bppIndexed) != 0)
-        //        return 256;
+            //var format = img.Image.PixelFormat;
 
-        //    if ((format & PixelFormat.Indexed) != 0)
-        //    {
-        //        // count the palette
-        //        try
-        //        {
-        //            // TODO: optimize, cache ?
-        //            return img.Image.Palette.Entries.Length;
-        //        }
-        //        catch
-        //        {
-        //            // ignored, some error during SafeNativeMethods.Gdip.GdipGetImagePalette
-        //        }
-        //    }
+            //if ((format & PixelFormat.Format1bppIndexed) != 0)
+            //    return 2;
+            //if ((format & PixelFormat.Format4bppIndexed) != 0)
+            //    return 16;
+            //if ((format & PixelFormat.Format8bppIndexed) != 0)
+            //    return 256;
 
-        //    // non indexed image
-        //    return 0;
-        //}
+            //if ((format & PixelFormat.Indexed) != 0)
+            //{
+            //    // count the palette
+            //    try
+            //    {
+            //        return img.Image.Palette.Entries.Length;
+            //    }
+            //    catch
+            //    {
+            //        // ignored, some error during SafeNativeMethods.Gdip.GdipGetImagePalette
+            //    }
+            //}
 
-        #endregion imagecolorstotal
+            //// non indexed image
+            //return 0;
+        }
+
+        #endregion
 
         #region imagetruecolortopalette
 
-        //TODO
-        ///// <summary>
-        ///// Convert a true colour image to a palette based image with a number of colours, optionally using dithering.
-        ///// </summary>
-        //public static bool imagetruecolortopalette(PhpResource im, bool ditherFlag, int colorsWanted)
-        //{
-        //    if (colorsWanted <= 0)
-        //        return false;
+        /// <summary>
+        /// Convert a true colour image to a palette based image with a number of colours, optionally using dithering.
+        /// </summary>
+        public static bool imagetruecolortopalette(PhpResource im, bool ditherFlag, int colorsWanted)
+        {
+            throw new NotImplementedException();
 
-        //    PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
-        //    if (img == null)
-        //        return false;
+            //if (colorsWanted <= 0)
+            //    return false;
 
-        //    if (img.IsIndexed)
-        //        return true;     // already indexed
+            //PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            //if (img == null)
+            //    return false;
 
-        //    // determine new pixel format:
-        //    PixelFormat newformat;
-        //    if (colorsWanted <= 2)
-        //        newformat = PixelFormat.Format1bppIndexed;
-        //    else if (colorsWanted <= 16)
-        //        newformat = PixelFormat.Format4bppIndexed;
-        //    else if (colorsWanted <= 256)
-        //        newformat = PixelFormat.Format8bppIndexed;
-        //    else
-        //        newformat = PixelFormat.Indexed;
+            //if (img.IsIndexed)
+            //    return true;     // already indexed
 
-        //    // clone the image as indexed:
-        //    var image = img.Image;
-        //    var newimage = image.Clone(new Rectangle(0, 0, image.Width, image.Height), newformat);
+            //// determine new pixel format:
+            //PixelFormat newformat;
+            //if (colorsWanted <= 2)
+            //    newformat = PixelFormat.Format1bppIndexed;
+            //else if (colorsWanted <= 16)
+            //    newformat = PixelFormat.Format4bppIndexed;
+            //else if (colorsWanted <= 256)
+            //    newformat = PixelFormat.Format8bppIndexed;
+            //else
+            //    newformat = PixelFormat.Indexed;
 
-        //    if (newimage == null)
-        //        return false;
+            //// clone the image as indexed:
+            //var image = img.Image;
+            //var newimage = image.Clone(new Rectangle(0, 0, image.Width, image.Height), newformat);
 
-        //    img.Image = newimage;
-        //    return true;
-        //}
+            //if (newimage == null)
+            //    return false;
 
-        #endregion imagetruecolortopalette
+            //img.Image = newimage;
+            //return true;
+        }
 
-        #region imagefill
-
-        //TODO
-        ///// <summary>
-        ///// Flood fill
-        ///// </summary>
-        //public static bool imagefill(PhpResource im, int x, int y, int col)
-        //{
-        //    PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
-        //    if (img == null)
-        //        return false;
-
-        //    if (x < 0 || y < 0) return true;
-        //    if (x > img.Image.Width || x > img.Image.Height) return true;
-
-        //    //TODO: (Maros) COLOR_TILED is not implemented.
-
-        //    //TODO: Can be optimized.
-        //    FloodFill(img.Image, x, y, PHPColorToRgba32Color(col), false, Rgba32.Red);
-
-        //    return true;
-        //}
-
-        #endregion imagefill
+        #endregion
 
         #region imagefilledarc
 
-        //TODO
-        ///// <summary>
-        ///// Draw a filled partial ellipse
-        ///// </summary>
-        //public static bool imagefilledarc(PhpResource im, int cx, int cy, int w, int h, int s, int e, int col, int style)
-        //{
-        //    PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
-        //    if (img == null)
-        //        return false;
+        /// <summary>
+        /// Draw a filled partial ellipse
+        /// </summary>
+        public static bool imagefilledarc(PhpResource im, int cx, int cy, int w, int h, int s, int e, int col, int style)
+        {
+            throw new NotImplementedException();
 
-        //    using (var g = Graphics.FromImage(img.Image))
-        //    {
-        //        g.SmoothingMode = SmoothingMode.None;
-        //        Pen pen = CreatePen(col, img, false);
+            //PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            //if (img == null)
+            //    return false;
 
-        //        int range = 0;
-        //        AdjustAnglesAndSize(ref w, ref h, ref s, ref e, ref range);
+            //using (var g = Graphics.FromImage(img.Image))
+            //{
+            //    g.SmoothingMode = SmoothingMode.None;
+            //    Pen pen = CreatePen(col, img, false);
 
-        //        // IMG_ARC_PIE
-        //        if (style == (int)FilledArcStyles.PIE || style == (int)FilledArcStyles.EDGED)
-        //        {
-        //            g.DrawArc(pen, new Rectangle(cx - (w / 2), cy - (h / 2), w, h), s, range);
-        //            var brush = new SolidBrush<Rgba32>(GetAlphaColor(img, col));
-        //            g.FillPie(brush, new Rectangle(cx - (w / 2), cy - (h / 2), w, h), s, range);
-        //        }
+            //    int range = 0;
+            //    AdjustAnglesAndSize(ref w, ref h, ref s, ref e, ref range);
 
-        //        if (style == (int)FilledArcStyles.NOFILL)
-        //        {
-        //            g.DrawArc(pen, new Rectangle(cx - (w / 2), cy - (h / 2), w, h), s, range);
-        //        }
+            //    // IMG_ARC_PIE
+            //    if (style == (int)FilledArcStyles.PIE || style == (int)FilledArcStyles.EDGED)
+            //    {
+            //        g.DrawArc(pen, new Rectangle(cx - (w / 2), cy - (h / 2), w, h), s, range);
+            //        var brush = new SolidBrush<Rgba32>(GetAlphaColor(img, col));
+            //        g.FillPie(brush, new Rectangle(cx - (w / 2), cy - (h / 2), w, h), s, range);
+            //    }
 
-        //        if (style == ((int)FilledArcStyles.EDGED | (int)FilledArcStyles.NOFILL))
-        //        {
-        //            Point[] points =
-        //            {
-        //                new Point(cx+(int)(Math.Cos(s*Math.PI/180) * (w / 2.0)), cy+(int)(Math.Sin(s*Math.PI/180) * (h / 2.0))),
-        //                new Point(cx, cy),
-        //                new Point(cx+(int)(Math.Cos(e*Math.PI/180) * (w / 2.0)), cy+(int)(Math.Sin(e*Math.PI/180) * (h / 2.0)))
-        //            };
+            //    if (style == (int)FilledArcStyles.NOFILL)
+            //    {
+            //        g.DrawArc(pen, new Rectangle(cx - (w / 2), cy - (h / 2), w, h), s, range);
+            //    }
 
-        //            g.DrawLines(pen, points);
-        //            g.DrawArc(pen, new Rectangle(cx - (w / 2), cy - (h / 2), w, h), s, range);
-        //        }
+            //    if (style == ((int)FilledArcStyles.EDGED | (int)FilledArcStyles.NOFILL))
+            //    {
+            //        Point[] points =
+            //        {
+            //            new Point(cx+(int)(Math.Cos(s*Math.PI/180) * (w / 2.0)), cy+(int)(Math.Sin(s*Math.PI/180) * (h / 2.0))),
+            //            new Point(cx, cy),
+            //            new Point(cx+(int)(Math.Cos(e*Math.PI/180) * (w / 2.0)), cy+(int)(Math.Sin(e*Math.PI/180) * (h / 2.0)))
+            //        };
 
-        //        // IMG_ARC_CHORD
-        //        if (style == ((int)FilledArcStyles.CHORD) || style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.EDGED))
-        //        {
-        //            var brush = new SolidBrush<Rgba32>(GetAlphaColor(img, col));
+            //        g.DrawLines(pen, points);
+            //        g.DrawArc(pen, new Rectangle(cx - (w / 2), cy - (h / 2), w, h), s, range);
+            //    }
 
-        //            Point point1 = new Point(cx + (int)(Math.Cos(s * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(s * Math.PI / 180) * (h / 2.0)));
-        //            Point point2 = new Point(cx + (int)(Math.Cos(e * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(e * Math.PI / 180) * (h / 2.0)));
+            //    // IMG_ARC_CHORD
+            //    if (style == ((int)FilledArcStyles.CHORD) || style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.EDGED))
+            //    {
+            //        var brush = new SolidBrush<Rgba32>(GetAlphaColor(img, col));
 
-        //            Point[] points = { new Point(cx, cy), point1, point2 };
+            //        Point point1 = new Point(cx + (int)(Math.Cos(s * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(s * Math.PI / 180) * (h / 2.0)));
+            //        Point point2 = new Point(cx + (int)(Math.Cos(e * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(e * Math.PI / 180) * (h / 2.0)));
 
-        //            g.FillPolygon(brush, points);
+            //        Point[] points = { new Point(cx, cy), point1, point2 };
 
-        //        }
+            //        g.FillPolygon(brush, points);
 
-        //        if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL))
-        //        {
-        //            g.DrawLine(pen,
-        //                new Point(cx + (int)(Math.Cos(s * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(s * Math.PI / 180) * (h / 2.0))),
-        //                new Point(cx + (int)(Math.Cos(e * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(e * Math.PI / 180) * (h / 2.0)))
-        //                );
-        //        }
+            //    }
 
-        //        if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL | (int)FilledArcStyles.EDGED))
-        //        {
-        //            Point[] points =
-        //            {
-        //                new Point(cx, cy),
-        //                new Point(cx+(int)(Math.Cos(s*Math.PI/180) * (w / 2.0)), cy+(int)(Math.Sin(s*Math.PI/180) * (h / 2.0))),
-        //                new Point(cx+(int)(Math.Cos(e*Math.PI/180) * (w / 2.0)), cy+(int)(Math.Sin(e*Math.PI/180) * (h / 2.0)))
-        //            };
+            //    if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL))
+            //    {
+            //        g.DrawLine(pen,
+            //            new Point(cx + (int)(Math.Cos(s * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(s * Math.PI / 180) * (h / 2.0))),
+            //            new Point(cx + (int)(Math.Cos(e * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(e * Math.PI / 180) * (h / 2.0)))
+            //            );
+            //    }
 
-        //            g.DrawPolygon(pen, points);
-        //        }
+            //    if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL | (int)FilledArcStyles.EDGED))
+            //    {
+            //        Point[] points =
+            //        {
+            //            new Point(cx, cy),
+            //            new Point(cx+(int)(Math.Cos(s*Math.PI/180) * (w / 2.0)), cy+(int)(Math.Sin(s*Math.PI/180) * (h / 2.0))),
+            //            new Point(cx+(int)(Math.Cos(e*Math.PI/180) * (w / 2.0)), cy+(int)(Math.Sin(e*Math.PI/180) * (h / 2.0)))
+            //        };
 
-        //        pen.Dispose();
-        //    }
+            //        g.DrawPolygon(pen, points);
+            //    }
 
-        //    return true;
-        //}
+            //    pen.Dispose();
+            //}
 
-        #endregion imagefilledarc
+            //return true;
+        }
 
-        //TODO
-        //private static void FloodFill(Image<Rgba32>/*!*/image, int x, int y, Rgba32 color, bool toBorder, Rgba32 border)
-        //{
-        //    Debug.Assert(image != null);
+        #endregion
 
-        //    BitmapData data = image.LockBits(
-        //        new Rectangle(0, 0, image.Width, image.Height),
-        //        ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+        private static void FloodFill(Image<Rgba32>/*!*/image, int x, int y, Rgba32 color, bool toBorder, Rgba32 border)
+        {
+            throw new NotImplementedException();
 
-        //    int[] bits = new int[data.Stride / 4 * data.Height];
-        //    Marshal.Copy(data.Scan0, bits, 0, bits.Length);
+            //Debug.Assert(image != null);
 
-        //    LinkedList<Point> check = new LinkedList<Point>();
-        //    //int floodTo = color.ToArgb();
-        //    uint floodTo = color.Rgba; // Correct?
-        //    int floodFrom = bits[x + y * data.Stride / 4];
-        //    bits[x + y * data.Stride / 4] = floodTo;
+            //BitmapData data = image.LockBits(
+            //    new Rectangle(0, 0, image.Width, image.Height),
+            //    ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
 
-        //    //int floodBorder = border.ToArgb();
-        //    uint floodBorder = border.Rgba; // Correct?
+            //int[] bits = new int[data.Stride / 4 * data.Height];
+            //Marshal.Copy(data.Scan0, bits, 0, bits.Length);
 
-        //    if (floodFrom != floodTo)
-        //    {
-        //        check.AddLast(new Point(x, y));
-        //        while (check.Count > 0)
-        //        {
-        //            Point cur = check.First.Value;
-        //            check.RemoveFirst();
+            //LinkedList<Point> check = new LinkedList<Point>();
+            ////int floodTo = color.ToArgb();
+            //uint floodTo = color.Rgba; // Correct?
+            //int floodFrom = bits[x + y * data.Stride / 4];
+            //bits[x + y * data.Stride / 4] = floodTo;
 
-        //            foreach (Point off in new Point[]{
-        //                new Point(0, -1), new Point(0, 1),
-        //                new Point(-1, 0), new Point(1, 0)})
-        //            {
-        //                Point next = new Point(cur.X + off.X, cur.Y + off.Y);
-        //                if (next.X >= 0 && next.Y >= 0 &&
-        //                    next.X < data.Width &&
-        //                    next.Y < data.Height)
-        //                {
-        //                    if (toBorder == false)
-        //                    {
-        //                        if (bits[next.X + next.Y * data.Stride / 4] == floodFrom)
-        //                        {
-        //                            check.AddLast(next);
-        //                            bits[next.X + next.Y * data.Stride / 4] = floodTo;
-        //                        }
-        //                    }
-        //                    else
-        //                    {
-        //                        if ((bits[next.X + next.Y * data.Stride / 4] != floodBorder && bits[next.X + next.Y * data.Stride / 4] != floodTo))
-        //                        {
-        //                            check.AddLast(next);
-        //                            bits[next.X + next.Y * data.Stride / 4] = floodTo;
-        //                        }
-        //                    }
-        //                }
-        //            }
-        //        }
-        //    }
+            ////int floodBorder = border.ToArgb();
+            //uint floodBorder = border.Rgba; // Correct?
 
-        //    Marshal.Copy(bits, 0, data.Scan0, bits.Length);
-        //    image.UnlockBits(data);
-        //}
+            //if (floodFrom != floodTo)
+            //{
+            //    check.AddLast(new Point(x, y));
+            //    while (check.Count > 0)
+            //    {
+            //        Point cur = check.First.Value;
+            //        check.RemoveFirst();
+
+            //        foreach (Point off in new Point[]{
+            //            new Point(0, -1), new Point(0, 1),
+            //            new Point(-1, 0), new Point(1, 0)})
+            //        {
+            //            Point next = new Point(cur.X + off.X, cur.Y + off.Y);
+            //            if (next.X >= 0 && next.Y >= 0 &&
+            //                next.X < data.Width &&
+            //                next.Y < data.Height)
+            //            {
+            //                if (toBorder == false)
+            //                {
+            //                    if (bits[next.X + next.Y * data.Stride / 4] == floodFrom)
+            //                    {
+            //                        check.AddLast(next);
+            //                        bits[next.X + next.Y * data.Stride / 4] = floodTo;
+            //                    }
+            //                }
+            //                else
+            //                {
+            //                    if ((bits[next.X + next.Y * data.Stride / 4] != floodBorder && bits[next.X + next.Y * data.Stride / 4] != floodTo))
+            //                    {
+            //                        check.AddLast(next);
+            //                        bits[next.X + next.Y * data.Stride / 4] = floodTo;
+            //                    }
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
+
+            //Marshal.Copy(bits, 0, data.Scan0, bits.Length);
+            //image.UnlockBits(data);
+        }
 
         #region imagefilledpolygon
 
-        //TODO
-        ///// <summary>
-        ///// Draw a filled polygon
-        ///// </summary>
-        //public static bool imagefilledpolygon(PhpResource im, PhpArray point, int num_points, int col)
-        //{
-        //    return DrawPoly(im, point, num_points, col, true);
-        //}
+        /// <summary>
+        /// Draw a filled polygon
+        /// </summary>
+        public static bool imagefilledpolygon(PhpResource im, PhpArray point, int num_points, int col)
+        {
+            return DrawPoly(im, point, num_points, col, true);
+        }
 
-        //TODO
-        ///// <summary>
-        ///// Draws normal or filled polygon
-        ///// </summary>
-        ///// <param name="im"></param>
-        ///// <param name="point"></param>
-        ///// <param name="num_points"></param>
-        ///// <param name="col"></param>
-        ///// <param name="filled"></param>
-        ///// <returns></returns>
-        //private static bool DrawPoly(PhpResource im, PhpArray point, int num_points, int col, bool filled)
-        //{
-        //    if (im == null)
-        //    {
-        //        PhpException.Throw(PhpError.Warning, LibResources.GetString("unexpected_arg_given", 1, PhpResource.PhpTypeName, PhpVariable.TypeNameNull.ToLowerInvariant()));
-        //        return false;
-        //    }
-        //    PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
-        //    if (img == null)
-        //        return false;
+        /// <summary>
+        /// Draws normal or filled polygon
+        /// </summary>
+        /// <param name="im"></param>
+        /// <param name="point"></param>
+        /// <param name="num_points"></param>
+        /// <param name="col"></param>
+        /// <param name="filled"></param>
+        /// <returns></returns>
+        private static bool DrawPoly(PhpResource im, PhpArray point, int num_points, int col, bool filled)
+        {
+            throw new NotImplementedException();
 
-        //    if (point == null)
-        //    {
-        //        PhpException.Throw(PhpError.Warning, LibResources.GetString("unexpected_arg_given", 2, PhpArray.PhpTypeName, PhpVariable.TypeNameNull.ToLowerInvariant()));
-        //        return false;
-        //    }
+            //if (im == null)
+            //{
+            //    PhpException.Throw(PhpError.Warning, LibResources.GetString("unexpected_arg_given", 1, PhpResource.PhpTypeName, PhpVariable.TypeNameNull.ToLowerInvariant()));
+            //    return false;
+            //}
+            //PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            //if (img == null)
+            //    return false;
 
-        //    if (point.Count < num_points * 2)
-        //        return false;
+            //if (point == null)
+            //{
+            //    PhpException.Throw(PhpError.Warning, LibResources.GetString("unexpected_arg_given", 2, PhpArray.PhpTypeName, PhpVariable.TypeNameNull.ToLowerInvariant()));
+            //    return false;
+            //}
 
-        //    if (num_points <= 0)
-        //    {
-        //        PhpException.Throw(PhpError.Warning, Utils.Resources.GetString("must_be_positive_number_of_points"));
-        //        return false;
-        //    }
+            //if (point.Count < num_points * 2)
+            //    return false;
 
-        //    Point[] points = new Point[num_points];
+            //if (num_points <= 0)
+            //{
+            //    PhpException.Throw(PhpError.Warning, Utils.Resources.GetString("must_be_positive_number_of_points"));
+            //    return false;
+            //}
 
-        //    for (int i = 0, j = 0; i < num_points; i++, j += 2)
-        //        points[i] = new Point(Pchp.Core.Convert.ObjectToInteger(point[j]), Pchp.Core.Convert.ObjectToInteger(point[j + 1]));
+            //Point[] points = new Point[num_points];
 
-        //    using (Graphics g = Graphics.FromImage(img.Image))
-        //    {
-        //        g.SmoothingMode = SmoothingMode.None;
+            //for (int i = 0, j = 0; i < num_points; i++, j += 2)
+            //    points[i] = new Point(Pchp.Core.Convert.ObjectToInteger(point[j]), Pchp.Core.Convert.ObjectToInteger(point[j + 1]));
 
-        //        if (filled)
-        //        {
-        //            if (col < 0)
-        //            {
-        //                if (col == (int)ColorValues.TILED)
-        //                {
-        //                    if (img.tiled != null)
-        //                    {
-        //                        //TODO: (Maros) TILED filles little more width in PHP (pixel wider).
-        //                        g.FillPolygon(img.tiled, points);
-        //                    }
-        //                    return true;
-        //                }
-        //                //TODO: (Maros) BRUSHED_STYLED missing, BRUSHED and BRUSHED_STYLED has different behavior in PHP (brush image draw for every pixel drawn)
-        //                //TODO: (Maros) STYLED has little different look (different angle of lines etc.)
-        //                else if (col == -2 && img.styled != null)
-        //                {
-        //                    g.FillPolygon(img.styled, points);
-        //                }
-        //                else if (col == -3 && img.brushed != null)
-        //                {
-        //                    g.FillPolygon(img.brushed, points);
-        //                }
-        //                else
-        //                {
-        //                    return true;
-        //                }
-        //            }
-        //            else
-        //            {
-        //                var brush = new SolidBrush<Rgba32>(PHPColorToRgba32Color(col));
-        //                g.FillPolygon(brush, points);
-        //            }
+            //using (Graphics g = Graphics.FromImage(img.Image))
+            //{
+            //    g.SmoothingMode = SmoothingMode.None;
 
-        //            using (Pen pen = CreatePen(col, img, false))
-        //            {
-        //                pen.LineJoin = LineJoin.Bevel;
-        //                g.DrawPolygon(pen, points);
-        //            }
-        //        }
-        //        else
-        //        {
-        //            using (Pen pen = CreatePen(col, img, true))
-        //            {
-        //                SetAntiAlias(img, g);
+            //    if (filled)
+            //    {
+            //        if (col < 0)
+            //        {
+            //            if (col == (int)ColorValues.TILED)
+            //            {
+            //                if (img.tiled != null)
+            //                {
+            //                    g.FillPolygon(img.tiled, points);
+            //                }
+            //                return true;
+            //            }
+            //            else if (col == -2 && img.styled != null)
+            //            {
+            //                g.FillPolygon(img.styled, points);
+            //            }
+            //            else if (col == -3 && img.brushed != null)
+            //            {
+            //                g.FillPolygon(img.brushed, points);
+            //            }
+            //            else
+            //            {
+            //                return true;
+            //            }
+            //        }
+            //        else
+            //        {
+            //            var brush = new SolidBrush<Rgba32>(PHPColorToRgba32Color(col));
+            //            g.FillPolygon(brush, points);
+            //        }
 
-        //                pen.LineJoin = LineJoin.Bevel;
-        //                g.DrawPolygon(pen, points);
-        //            }
-        //        }
-        //    }
+            //        using (Pen pen = CreatePen(col, img, false))
+            //        {
+            //            pen.LineJoin = LineJoin.Bevel;
+            //            g.DrawPolygon(pen, points);
+            //        }
+            //    }
+            //    else
+            //    {
+            //        using (Pen pen = CreatePen(col, img, true))
+            //        {
+            //            SetAntiAlias(img, g);
 
-        //    return true;
-        //}
+            //            pen.LineJoin = LineJoin.Bevel;
+            //            g.DrawPolygon(pen, points);
+            //        }
+            //    }
+            //}
 
-        #endregion imagefilledpolygon
+            //return true;
+        }
 
-        #endregion TODO
-        
+        #endregion
+
+        #endregion
+
+        // ====================================================================================================
         // END: NEW FUNCTIONS
+        // ====================================================================================================
     }
 }
