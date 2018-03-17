@@ -643,6 +643,10 @@ namespace Peachpie.Library.Graphics
             return RGBA(red, green, blue, alpha);
         }
 
+        #endregion
+
+        #region Helpers
+
         /// <summary>
         /// RGBA values to PHP Color format.
         /// </summary>
@@ -654,7 +658,25 @@ namespace Peachpie.Library.Graphics
                 | (blue & 0x0000FF);
         }
 
-        static Rgba32 FromRGBA(long color) => new Rgba32((uint)color);
+        static Rgba32 FromRGB(long color) => new Rgba32((uint)color | 0xff000000u);
+        static Rgba32 FromRGBA(long color) => (color != (long)ColorValues.TRANSPARENT) ? new Rgba32((uint)color) : Rgba32.Transparent;
+
+        /// <summary>
+        /// Converts .NET Color format to PHP Color format
+        /// </summary>
+        /// <param name="col">.NET Color</param>
+        /// <returns>PHP Color</returns>
+        private static long Rgba32ColorToPHPColor(Rgba32 col) => RGBA(col.R, col.G, col.B, col.A);
+
+        private static int PHPColorToPHPAlpha(int color) => FromRGBA(color).A;
+        private static int PHPColorToRed(int color) => FromRGBA(color).R;
+        private static int PHPColorToGreen(int color) => FromRGBA(color).G;
+        private static int PHPColorToBlue(long color) => FromRGBA(color).B;
+
+        private static Rgba32 GetAlphaColor(PhpGdImageResource img, long col)
+        {
+            return img.AlphaBlending ? FromRGBA(col) : FromRGB(col);
+        }
 
         #endregion
 
@@ -1039,24 +1061,20 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Output WBMP image to browser or file
         /// </summary> 
-        public static bool image2wbmp(Context ctx, PhpResource im, PhpValue to, int threshold = 0)
+        public static bool image2wbmp(Context ctx, PhpResource im, PhpValue to = default(PhpValue), int threshold = 0)
         {
             throw new NotImplementedException();
             //return imagesave(ctx, im, filename, (img, stream) => img.SaveAsWirelessBmp(stream));
         }
 
-        public static bool image2wbmp(Context ctx, PhpResource im) => image2wbmp(ctx, im, PhpValue.Null);
-
         /// <summary>
         /// Output JPEG image to browser or a file.
         /// </summary> 
-        public static bool imagejpeg(Context ctx, PhpResource im, PhpValue to, int quality = 75)
+        public static bool imagejpeg(Context ctx, PhpResource im, PhpValue to = default(PhpValue), int quality = 75)
         {
             var jpegoptions = new JpegEncoder() { Quality = Math.Min(Math.Max(quality, 0), 100) };
             return imagesave(ctx, im, to, (img, stream) => img.SaveAsJpeg(stream, jpegoptions));
         }
-
-        public static bool imagejpeg(Context ctx, PhpResource im) => imagejpeg(ctx, im, PhpValue.Null);
 
         /// <summary>
         /// Output GD image to browser or file
@@ -1069,7 +1087,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Output GD2 image to browser or file
         /// </summary> 
-        public static bool imagegd2(Context ctx, PhpResource im, [Optional]PhpValue to, int chunk_size = 128, int type = IMG_GD2_RAW)
+        public static bool imagegd2(Context ctx, PhpResource im, PhpValue to = default(PhpValue), int chunk_size = 128, int type = IMG_GD2_RAW)
         {
             throw new NotImplementedException();
         }
@@ -1077,7 +1095,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Output GIF image to browser or file
         /// </summary> 
-        public static bool imagegif(Context ctx, PhpResource im, [Optional]PhpValue to)
+        public static bool imagegif(Context ctx, PhpResource im, PhpValue to = default(PhpValue))
         {
             return imagesave(ctx, im, to, (img, stream) =>
             {
@@ -1086,12 +1104,10 @@ namespace Peachpie.Library.Graphics
             });
         }
 
-        public static bool imagegif(Context ctx, PhpResource im) => imagegif(ctx, im, PhpValue.Null);
-
         /// <summary>
         /// Output PNG image to browser or file or a stream.
         /// </summary> 
-        public static bool imagepng(Context ctx, PhpResource im, PhpValue to, int quality = 6, int filters = 0)
+        public static bool imagepng(Context ctx, PhpResource im, PhpValue to = default(PhpValue), int quality = 6, int filters = 0)
         {
             quality = Math.Min(Math.Max(quality, 0), 9);    // compression level 0 - 9
 
@@ -1100,8 +1116,6 @@ namespace Peachpie.Library.Graphics
                 img.SaveAsPng(stream, new PngEncoder() { CompressionLevel = quality });
             });
         }
-
-        public static bool imagepng(Context ctx, PhpResource im) => imagepng(ctx, im, PhpValue.Null);
 
         /// <summary>
         /// Internal image save.
@@ -1125,7 +1139,7 @@ namespace Peachpie.Library.Graphics
             try
             {
                 // not specified stream or filename -> save to the output stream
-                if (to.IsEmpty)
+                if (Operators.IsEmpty(to)) // ~ is default or empty
                 {
                     saveaction(img.Image, ctx.OutputStream);
                     return true;
@@ -1171,10 +1185,6 @@ namespace Peachpie.Library.Graphics
             return true;
         }
 
-        // ====================================================================================================
-        // NEW FUNCTIONS (TODO: Remove this comment after all implemented, tested and confirmed to be working)
-        // ====================================================================================================
-
         #region imageconvolution
 
         /// <summary>
@@ -1193,7 +1203,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Define a color as transparent
         /// </summary>
-        public static int imagecolortransparent(PhpResource im)
+        public static long imagecolortransparent(PhpResource im)
         {
             PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
             if (img == null)
@@ -1210,13 +1220,13 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Define a color as transparent
         /// </summary>
-        public static int imagecolortransparent(PhpResource im, int col)
+        public static long imagecolortransparent(PhpResource im, long col)
         {
             PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
             if (img == null)
                 return -1;
 
-            img.transparentColor = PHPColorToRgba32Color(col);
+            img.transparentColor = FromRGBA(col);
             img.IsTransparentColSet = true;
 
             return col;
@@ -1229,7 +1239,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Get the colors for an index
         /// </summary>
-        public static PhpArray imagecolorsforindex(PhpResource im, int col)
+        public static PhpArray imagecolorsforindex(PhpResource im, long col)
         {
             PhpException.FunctionNotSupported("imagecolorsforindex");
             return null;
@@ -1242,7 +1252,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Set the color for the specified palette index
         /// </summary>
-        public static void imagecolorset(PhpResource im, int col, int red, int green, int blue)
+        public static void imagecolorset(PhpResource im, long col, int red, int green, int blue)
         {
             PhpException.FunctionNotSupported("imagecolorset");
         }
@@ -1254,7 +1264,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Draw an ellipse
         /// </summary>
-        public static bool imagefilledellipse(PhpResource im, int cx, int cy, int w, int h, int col)
+        public static bool imagefilledellipse(PhpResource im, int cx, int cy, int w, int h, long col)
         {
             PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
             if (img == null)
@@ -1280,21 +1290,9 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         public static PhpArray imageftbbox(double size, double angle, string font_file, string text/*, PhpArray extrainfo*/)
         {
+            PhpException.FunctionNotSupported(nameof(imageftbbox));
             return null;
         }
-
-        #region imageinterlace
-
-        /// <summary>
-        /// Enable or disable interlace
-        /// </summary>
-        public static int imageinterlace(PhpResource im, int interlace)
-        {
-            PhpException.FunctionNotSupported("imageinterlace");
-            return -1;
-        }
-
-        #endregion
 
         #region imagecolorexact
 
@@ -1366,7 +1364,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Flood fill
         /// </summary>
-        public static bool imagefill(PhpResource im, int x, int y, int col)
+        public static bool imagefill(PhpResource im, int x, int y, long col)
         {
             PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
             if (img == null)
@@ -1375,120 +1373,12 @@ namespace Peachpie.Library.Graphics
             if (x < 0 || y < 0) return true;
             if (x > img.Image.Width || x > img.Image.Height) return true;
 
-            FloodFill(img.Image, x, y, PHPColorToRgba32Color(col), false, Rgba32.Red);
+            FloodFill(img.Image, x, y, FromRGBA(col), false, Rgba32.Red);
 
             return true;
         }
 
         #endregion
-
-        /// <summary>
-        /// Converts .NET Color format to PHP Color format
-        /// </summary>
-        /// <param name="col">.NET Color</param>
-        /// <returns>PHP Color</returns>
-        private static int Rgba32ColorToPHPColor(Rgba32 col)
-        {
-            int alpha = col.A;
-
-            int color = RGBToPHPColor(col.R, col.G, col.B);
-
-            // PHP Alpha format to .NET Alpha format
-            alpha = (byte)((1.0f - ((float)alpha / 255.0f)) * 127.0f);
-            alpha = alpha << 24;
-
-            return color | alpha;
-        }
-
-        /// <summary>
-        /// RGB values to PHP Color format
-        /// </summary>
-        /// <param name="red"></param>
-        /// <param name="green"></param>
-        /// <param name="blue"></param>
-        /// <returns></returns>
-        private static int RGBToPHPColor(int red, int green, int blue)
-        {
-            int color = 0; // = 0x00 << 24;
-
-            color = color | blue & 0x0000FF;
-            color = color | ((green & 0x0000FF) << 8);
-            color = color | ((red & 0x0000FF) << 16);
-            return color;
-        }
-
-        /// <summary>
-        /// Converts PHP Color format to .NET Color format (different alpha meaning)
-        /// </summary>
-        /// <param name="color">PHP Color</param>
-        /// <returns>.NET Color</returns>
-        private static Rgba32 PHPColorToRgba32Color(int color)
-        {
-            if (color == (int)ColorValues.TRANSPARENT)
-            {
-                return Rgba32.Transparent;
-            }
-
-            Rgba32 col;
-
-            byte alpha = (byte)PHPColorToPHPAlpha(color);
-            byte red = (byte)PHPColorToRed(color);
-            byte green = (byte)PHPColorToGreen(color);
-            byte blue = (byte)PHPColorToBlue(color);
-
-            // PHP Alpha format to .NET Alpha format
-            alpha = (byte)((1.0f - ((float)alpha / 127.0f)) * 255.0f);
-
-            col = new Rgba32(red, green, blue, alpha);
-
-            return col;
-        }
-
-        private static int PHPColorToPHPAlpha(int color)
-        {
-            int ret = (color & 0x0000FF << 24);
-            ret = (ret >> 24);
-            ret = ret & (0x0000FF);
-
-            return ret;
-        }
-
-        private static int PHPColorToRed(int color)
-        {
-            int ret = (color & 0x0000FF << 16);
-            ret = (ret >> 16);
-            ret = ret & (0x0000FF);
-
-            return ret;
-        }
-
-        private static int PHPColorToGreen(int color)
-        {
-            int ret = (color & 0x0000FF << 8);
-            ret = (ret >> 8);
-            ret = ret & (0x0000FF);
-
-            return ret;
-        }
-
-        private static int PHPColorToBlue(int color)
-        {
-            return (color & 0x0000FF);
-        }
-
-        private static Rgba32 GetAlphaColor(PhpGdImageResource img, int col)
-        {
-            Rgba32 color;
-            if (!img.AlphaBlending)
-            {
-                color = new Rgba32(PHPColorToRed(col), PHPColorToGreen(col), PHPColorToBlue(col), 255);
-            }
-            else
-            {
-                color = PHPColorToRgba32Color(col);
-            }
-            return color;
-        }
 
         /// <summary>
         /// Adjust angles and size for same behavior as in PHP
@@ -1767,7 +1657,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Draw a filled polygon
         /// </summary>
-        public static bool imagefilledpolygon(PhpResource im, PhpArray point, int num_points, int col)
+        public static bool imagefilledpolygon(PhpResource im, PhpArray point, int num_points, long col)
         {
             return DrawPoly(im, point, num_points, col, true);
         }
@@ -1781,7 +1671,7 @@ namespace Peachpie.Library.Graphics
         /// <param name="col"></param>
         /// <param name="filled"></param>
         /// <returns></returns>
-        private static bool DrawPoly(PhpResource im, PhpArray point, int num_points, int col, bool filled)
+        private static bool DrawPoly(PhpResource im, PhpArray point, int num_points, long col, bool filled)
         {
             throw new NotImplementedException();
 
@@ -1873,9 +1763,5 @@ namespace Peachpie.Library.Graphics
         #endregion
 
         #endregion
-
-        // ====================================================================================================
-        // END: NEW FUNCTIONS
-        // ====================================================================================================
     }
 }
