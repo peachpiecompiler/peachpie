@@ -205,16 +205,16 @@ namespace Pchp.Core
     /// </remarks>
     public static class CommonPhpArrayKeys
     {
-        public readonly static IntStringKey Globals = new IntStringKey("GLOBALS");
-        public readonly static IntStringKey _Env = new IntStringKey("_ENV");
-        public readonly static IntStringKey _Get = new IntStringKey("_GET");
-        public readonly static IntStringKey _Post = new IntStringKey("_POST");
-        public readonly static IntStringKey _Cookie = new IntStringKey("_COOKIE");
-        public readonly static IntStringKey _Request = new IntStringKey("_REQUEST");
-        public readonly static IntStringKey _Server = new IntStringKey("_SERVER");
-        public readonly static IntStringKey _Files = new IntStringKey("_FILES");
-        public readonly static IntStringKey _Session = new IntStringKey("_SESSION");
-        public readonly static IntStringKey Http_Raw_Post_Data = new IntStringKey("HTTP_RAW_POST_DATA");
+        public readonly static IntStringKey GLOBALS = new IntStringKey("GLOBALS");
+        public readonly static IntStringKey _ENV = new IntStringKey("_ENV");
+        public readonly static IntStringKey _GET = new IntStringKey("_GET");
+        public readonly static IntStringKey _POST = new IntStringKey("_POST");
+        public readonly static IntStringKey _COOKIE = new IntStringKey("_COOKIE");
+        public readonly static IntStringKey _REQUEST = new IntStringKey("_REQUEST");
+        public readonly static IntStringKey _SERVER = new IntStringKey("_SERVER");
+        public readonly static IntStringKey _FILES = new IntStringKey("_FILES");
+        public readonly static IntStringKey _SESSION = new IntStringKey("_SESSION");
+        public readonly static IntStringKey HTTP_RAW_POST_DATA = new IntStringKey("HTTP_RAW_POST_DATA");
 
         public readonly static IntStringKey DOCUMENT_ROOT = new IntStringKey("DOCUMENT_ROOT");
         public readonly static IntStringKey REMOTE_ADDR = new IntStringKey("REMOTE_ADDR");

@@ -186,15 +186,15 @@ namespace Pchp.Core
             }
 
             // adds auto-global variables (overwrites potential existing variables in $GLOBALS):
-            globals[CommonPhpArrayKeys.Globals] = PhpValue.Create(new PhpAlias(PhpValue.Create(globals)));   // &$GLOBALS
-            globals[CommonPhpArrayKeys._Env] = PhpValue.Create(_superglobals.env);
-            globals[CommonPhpArrayKeys._Get] = PhpValue.Create(_superglobals.get);
-            globals[CommonPhpArrayKeys._Post] = PhpValue.Create(_superglobals.post);
-            globals[CommonPhpArrayKeys._Cookie] = PhpValue.Create(_superglobals.cookie);
-            globals[CommonPhpArrayKeys._Request] = PhpValue.Create(_superglobals.request);
-            globals[CommonPhpArrayKeys._Server] = PhpValue.Create(_superglobals.server);
-            globals[CommonPhpArrayKeys._Files] = PhpValue.Create(_superglobals.files);
-            globals[CommonPhpArrayKeys._Session] = PhpValue.Create(_superglobals.session);
+            globals[CommonPhpArrayKeys.GLOBALS] = PhpValue.Create(new PhpAlias(PhpValue.Create(globals)));   // &$GLOBALS
+            globals[CommonPhpArrayKeys._ENV] = PhpValue.Create(_superglobals.env);
+            globals[CommonPhpArrayKeys._GET] = PhpValue.Create(_superglobals.get);
+            globals[CommonPhpArrayKeys._POST] = PhpValue.Create(_superglobals.post);
+            globals[CommonPhpArrayKeys._COOKIE] = PhpValue.Create(_superglobals.cookie);
+            globals[CommonPhpArrayKeys._REQUEST] = PhpValue.Create(_superglobals.request);
+            globals[CommonPhpArrayKeys._SERVER] = PhpValue.Create(_superglobals.server);
+            globals[CommonPhpArrayKeys._FILES] = PhpValue.Create(_superglobals.files);
+            globals[CommonPhpArrayKeys._SESSION] = PhpValue.Create(_superglobals.session);
             //globals[CommonPhpArrayKeys.Http_Raw_Post_Data] = HttpRawPostData;
 
             //// adds long arrays:
