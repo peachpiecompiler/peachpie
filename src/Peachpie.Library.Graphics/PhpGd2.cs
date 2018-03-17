@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
@@ -11,6 +12,7 @@ using Pchp.Core;
 using Pchp.Library.Streams;
 using SixLabors.Fonts;
 using SixLabors.Primitives;
+using SixLabors.Shapes;
 
 namespace Peachpie.Library.Graphics
 {
@@ -1169,5 +1171,711 @@ namespace Peachpie.Library.Graphics
             return true;
         }
 
+        // ====================================================================================================
+        // NEW FUNCTIONS (TODO: Remove this comment after all implemented, tested and confirmed to be working)
+        // ====================================================================================================
+
+        #region imageconvolution
+
+        /// <summary>
+        /// Apply a 3x3 convolution matrix, using coefficient div and offset
+        /// </summary>
+        public static PhpResource imageconvolution(PhpResource src_im, PhpArray matrix3x3, double div, double offset)
+        {
+            PhpException.FunctionNotSupported("imageconvolution");
+            return null;
+        }
+
+        #endregion
+
+        #region imagecolortransparent
+
+        /// <summary>
+        /// Define a color as transparent
+        /// </summary>
+        public static int imagecolortransparent(PhpResource im)
+        {
+            PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+                return -1;
+
+            if (img.IsTransparentColSet == false)
+            {
+                return -1;
+            }
+
+            return Rgba32ColorToPHPColor(img.transparentColor);
+        }
+
+        /// <summary>
+        /// Define a color as transparent
+        /// </summary>
+        public static int imagecolortransparent(PhpResource im, int col)
+        {
+            PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+                return -1;
+
+            img.transparentColor = PHPColorToRgba32Color(col);
+            img.IsTransparentColSet = true;
+
+            return col;
+        }
+
+        #endregion
+
+        #region imagecolorsforindex
+
+        /// <summary>
+        /// Get the colors for an index
+        /// </summary>
+        public static PhpArray imagecolorsforindex(PhpResource im, int col)
+        {
+            PhpException.FunctionNotSupported("imagecolorsforindex");
+            return null;
+        }
+
+        #endregion
+
+        #region imagecolorset
+
+        /// <summary>
+        /// Set the color for the specified palette index
+        /// </summary>
+        public static void imagecolorset(PhpResource im, int col, int red, int green, int blue)
+        {
+            PhpException.FunctionNotSupported("imagecolorset");
+        }
+
+        #endregion
+
+        #region imagefilledellipse
+
+        /// <summary>
+        /// Draw an ellipse
+        /// </summary>
+        public static bool imagefilledellipse(PhpResource im, int cx, int cy, int w, int h, int col)
+        {
+            PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+                return false;
+
+            if (img.tiled != null)
+            {
+                img.Image.Fill(img.tiled, new EllipsePolygon(cx - (w / 2), cy - (h / 2), w, h));
+            }
+            else
+            {
+                var brush = new SolidBrush<Rgba32>(GetAlphaColor(img, col));
+                img.Image.Fill(brush, new EllipsePolygon(cx - (w / 2), cy - (h / 2), w, h));
+            }
+
+            return true;
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Give the bounding box of a markerName using fonts via freetype2
+        /// </summary>
+        public static PhpArray imageftbbox(double size, double angle, string font_file, string text/*, PhpArray extrainfo*/)
+        {
+            return null;
+        }
+
+        #region imageinterlace
+
+        /// <summary>
+        /// Enable or disable interlace
+        /// </summary>
+        public static int imageinterlace(PhpResource im, int interlace)
+        {
+            PhpException.FunctionNotSupported("imageinterlace");
+            return -1;
+        }
+
+        #endregion
+
+        #region imagecolorexact
+
+        /// <summary>
+        /// Get the index of the specified color
+        /// </summary>
+        public static int imagecolorexact(PhpResource im, int red, int green, int blue)
+        {
+            PhpException.FunctionNotSupported("imagecolorexact");
+            return -1;
+        }
+
+        #endregion
+
+        #region imagecolorexactalpha
+
+        /// <summary>
+        /// Find exact match for colour with transparency
+        /// </summary>
+        public static int imagecolorexactalpha(PhpResource im, int red, int green, int blue, int alpha)
+        {
+            PhpException.FunctionNotSupported("imagecolorexactalpha");
+            return -1;
+        }
+
+        #endregion
+
+        #region imagecolormatch
+
+        /// <summary>
+        /// Makes the colors of the palette version of an image more closely match the true color version
+        /// </summary>
+        public static bool imagecolormatch(PhpResource im1, PhpResource im2)
+        {
+            PhpException.FunctionNotSupported("imagecolormatch");
+            return false;
+        }
+
+        #endregion
+
+        #region imagecolorresolve
+
+        /// <summary>
+        /// Get the index of the specified color or its closest possible alternative
+        /// </summary>
+        public static int imagecolorresolve(PhpResource im, int red, int green, int blue)
+        {
+            PhpException.FunctionNotSupported("imagecolorresolve");
+            return -1;
+        }
+
+        #endregion
+
+        #region imagecolorresolvealpha
+
+        /// <summary>
+        /// Resolve/Allocate a colour with an alpha level.  Works for true colour and palette based images
+        /// </summary>
+        public static int imagecolorresolvealpha(PhpResource im, int red, int green, int blue, int alpha)
+        {
+            PhpException.FunctionNotSupported("imagecolorresolvealpha");
+            return -1;
+        }
+
+        #endregion
+
+        #region imagefill
+
+        /// <summary>
+        /// Flood fill
+        /// </summary>
+        public static bool imagefill(PhpResource im, int x, int y, int col)
+        {
+            PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+                return false;
+
+            if (x < 0 || y < 0) return true;
+            if (x > img.Image.Width || x > img.Image.Height) return true;
+
+            FloodFill(img.Image, x, y, PHPColorToRgba32Color(col), false, Rgba32.Red);
+
+            return true;
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Converts .NET Color format to PHP Color format
+        /// </summary>
+        /// <param name="col">.NET Color</param>
+        /// <returns>PHP Color</returns>
+        private static int Rgba32ColorToPHPColor(Rgba32 col)
+        {
+            int alpha = col.A;
+
+            int color = RGBToPHPColor(col.R, col.G, col.B);
+
+            // PHP Alpha format to .NET Alpha format
+            alpha = (byte)((1.0f - ((float)alpha / 255.0f)) * 127.0f);
+            alpha = alpha << 24;
+
+            return color | alpha;
+        }
+
+        /// <summary>
+        /// RGB values to PHP Color format
+        /// </summary>
+        /// <param name="red"></param>
+        /// <param name="green"></param>
+        /// <param name="blue"></param>
+        /// <returns></returns>
+        private static int RGBToPHPColor(int red, int green, int blue)
+        {
+            int color = 0; // = 0x00 << 24;
+
+            color = color | blue & 0x0000FF;
+            color = color | ((green & 0x0000FF) << 8);
+            color = color | ((red & 0x0000FF) << 16);
+            return color;
+        }
+
+        /// <summary>
+        /// Converts PHP Color format to .NET Color format (different alpha meaning)
+        /// </summary>
+        /// <param name="color">PHP Color</param>
+        /// <returns>.NET Color</returns>
+        private static Rgba32 PHPColorToRgba32Color(int color)
+        {
+            if (color == (int)ColorValues.TRANSPARENT)
+            {
+                return Rgba32.Transparent;
+            }
+
+            Rgba32 col;
+
+            byte alpha = (byte)PHPColorToPHPAlpha(color);
+            byte red = (byte)PHPColorToRed(color);
+            byte green = (byte)PHPColorToGreen(color);
+            byte blue = (byte)PHPColorToBlue(color);
+
+            // PHP Alpha format to .NET Alpha format
+            alpha = (byte)((1.0f - ((float)alpha / 127.0f)) * 255.0f);
+
+            col = new Rgba32(red, green, blue, alpha);
+
+            return col;
+        }
+
+        private static int PHPColorToPHPAlpha(int color)
+        {
+            int ret = (color & 0x0000FF << 24);
+            ret = (ret >> 24);
+            ret = ret & (0x0000FF);
+
+            return ret;
+        }
+
+        private static int PHPColorToRed(int color)
+        {
+            int ret = (color & 0x0000FF << 16);
+            ret = (ret >> 16);
+            ret = ret & (0x0000FF);
+
+            return ret;
+        }
+
+        private static int PHPColorToGreen(int color)
+        {
+            int ret = (color & 0x0000FF << 8);
+            ret = (ret >> 8);
+            ret = ret & (0x0000FF);
+
+            return ret;
+        }
+
+        private static int PHPColorToBlue(int color)
+        {
+            return (color & 0x0000FF);
+        }
+
+        private static Rgba32 GetAlphaColor(PhpGdImageResource img, int col)
+        {
+            Rgba32 color;
+            if (!img.AlphaBlending)
+            {
+                color = new Rgba32(PHPColorToRed(col), PHPColorToGreen(col), PHPColorToBlue(col), 255);
+            }
+            else
+            {
+                color = PHPColorToRgba32Color(col);
+            }
+            return color;
+        }
+
+        /// <summary>
+        /// Adjust angles and size for same behavior as in PHP
+        /// </summary>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="s"></param>
+        /// <param name="e"></param>
+        /// <param name="range"></param>
+        private static void AdjustAnglesAndSize(ref int w, ref int h, ref int s, ref int e, ref int range)
+        {
+            if (w < 0) w = 0;
+            if (h < 0) h = 0;
+
+            if (w > 1 && w <= 4) w -= 1;
+            if (h > 1 && h <= 4) h -= 1;
+            if (w > 4) w -= 2;
+            if (h > 4) h -= 2;
+
+            range = e - s;
+            if (range < 360) range = range + (range / 360) * 360;
+            if (range > 360) range = range - (range / 360) * 360;
+
+            if (s < 360) s = s + (s / 360) * 360;
+            if (e < 360) e = e + (e / 360) * 360;
+
+            if (s < 0) s = 360 + s;
+            if (e < 0) e = 360 + e;
+
+            if (e > 360) e = e - (e / 360) * 360;
+            if (s > 360) e = e - (e / 360) * 360;
+        }
+
+        #region TODO (Convert from System.Drawing to ImageSharp)
+
+        #region imagecolorstotal
+
+        // NOTE: See https://github.com/SixLabors/ImageSharp/issues/488
+        /// <summary>
+        /// Find out the number of colors in an image's palette
+        /// </summary>
+        public static int imagecolorstotal(PhpResource im)
+        {
+            throw new NotImplementedException();
+
+            //PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            //if (img == null)
+            //    return 0;
+
+            //var format = img.Image.PixelFormat;
+
+            //if ((format & PixelFormat.Format1bppIndexed) != 0)
+            //    return 2;
+            //if ((format & PixelFormat.Format4bppIndexed) != 0)
+            //    return 16;
+            //if ((format & PixelFormat.Format8bppIndexed) != 0)
+            //    return 256;
+
+            //if ((format & PixelFormat.Indexed) != 0)
+            //{
+            //    // count the palette
+            //    try
+            //    {
+            //        return img.Image.Palette.Entries.Length;
+            //    }
+            //    catch
+            //    {
+            //        // ignored, some error during SafeNativeMethods.Gdip.GdipGetImagePalette
+            //    }
+            //}
+
+            //// non indexed image
+            //return 0;
+        }
+
+        #endregion
+
+        #region imagetruecolortopalette
+
+        /// <summary>
+        /// Convert a true colour image to a palette based image with a number of colours, optionally using dithering.
+        /// </summary>
+        public static bool imagetruecolortopalette(PhpResource im, bool ditherFlag, int colorsWanted)
+        {
+            throw new NotImplementedException();
+
+            //if (colorsWanted <= 0)
+            //    return false;
+
+            //PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            //if (img == null)
+            //    return false;
+
+            //if (img.IsIndexed)
+            //    return true;     // already indexed
+
+            //// determine new pixel format:
+            //PixelFormat newformat;
+            //if (colorsWanted <= 2)
+            //    newformat = PixelFormat.Format1bppIndexed;
+            //else if (colorsWanted <= 16)
+            //    newformat = PixelFormat.Format4bppIndexed;
+            //else if (colorsWanted <= 256)
+            //    newformat = PixelFormat.Format8bppIndexed;
+            //else
+            //    newformat = PixelFormat.Indexed;
+
+            //// clone the image as indexed:
+            //var image = img.Image;
+            //var newimage = image.Clone(new Rectangle(0, 0, image.Width, image.Height), newformat);
+
+            //if (newimage == null)
+            //    return false;
+
+            //img.Image = newimage;
+            //return true;
+        }
+
+        #endregion
+
+        #region imagefilledarc
+
+        /// <summary>
+        /// Draw a filled partial ellipse
+        /// </summary>
+        public static bool imagefilledarc(PhpResource im, int cx, int cy, int w, int h, int s, int e, int col, int style)
+        {
+            throw new NotImplementedException();
+
+            //PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            //if (img == null)
+            //    return false;
+
+            //using (var g = Graphics.FromImage(img.Image))
+            //{
+            //    g.SmoothingMode = SmoothingMode.None;
+            //    Pen pen = CreatePen(col, img, false);
+
+            //    int range = 0;
+            //    AdjustAnglesAndSize(ref w, ref h, ref s, ref e, ref range);
+
+            //    // IMG_ARC_PIE
+            //    if (style == (int)FilledArcStyles.PIE || style == (int)FilledArcStyles.EDGED)
+            //    {
+            //        g.DrawArc(pen, new Rectangle(cx - (w / 2), cy - (h / 2), w, h), s, range);
+            //        var brush = new SolidBrush<Rgba32>(GetAlphaColor(img, col));
+            //        g.FillPie(brush, new Rectangle(cx - (w / 2), cy - (h / 2), w, h), s, range);
+            //    }
+
+            //    if (style == (int)FilledArcStyles.NOFILL)
+            //    {
+            //        g.DrawArc(pen, new Rectangle(cx - (w / 2), cy - (h / 2), w, h), s, range);
+            //    }
+
+            //    if (style == ((int)FilledArcStyles.EDGED | (int)FilledArcStyles.NOFILL))
+            //    {
+            //        Point[] points =
+            //        {
+            //            new Point(cx+(int)(Math.Cos(s*Math.PI/180) * (w / 2.0)), cy+(int)(Math.Sin(s*Math.PI/180) * (h / 2.0))),
+            //            new Point(cx, cy),
+            //            new Point(cx+(int)(Math.Cos(e*Math.PI/180) * (w / 2.0)), cy+(int)(Math.Sin(e*Math.PI/180) * (h / 2.0)))
+            //        };
+
+            //        g.DrawLines(pen, points);
+            //        g.DrawArc(pen, new Rectangle(cx - (w / 2), cy - (h / 2), w, h), s, range);
+            //    }
+
+            //    // IMG_ARC_CHORD
+            //    if (style == ((int)FilledArcStyles.CHORD) || style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.EDGED))
+            //    {
+            //        var brush = new SolidBrush<Rgba32>(GetAlphaColor(img, col));
+
+            //        Point point1 = new Point(cx + (int)(Math.Cos(s * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(s * Math.PI / 180) * (h / 2.0)));
+            //        Point point2 = new Point(cx + (int)(Math.Cos(e * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(e * Math.PI / 180) * (h / 2.0)));
+
+            //        Point[] points = { new Point(cx, cy), point1, point2 };
+
+            //        g.FillPolygon(brush, points);
+
+            //    }
+
+            //    if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL))
+            //    {
+            //        g.DrawLine(pen,
+            //            new Point(cx + (int)(Math.Cos(s * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(s * Math.PI / 180) * (h / 2.0))),
+            //            new Point(cx + (int)(Math.Cos(e * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(e * Math.PI / 180) * (h / 2.0)))
+            //            );
+            //    }
+
+            //    if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL | (int)FilledArcStyles.EDGED))
+            //    {
+            //        Point[] points =
+            //        {
+            //            new Point(cx, cy),
+            //            new Point(cx+(int)(Math.Cos(s*Math.PI/180) * (w / 2.0)), cy+(int)(Math.Sin(s*Math.PI/180) * (h / 2.0))),
+            //            new Point(cx+(int)(Math.Cos(e*Math.PI/180) * (w / 2.0)), cy+(int)(Math.Sin(e*Math.PI/180) * (h / 2.0)))
+            //        };
+
+            //        g.DrawPolygon(pen, points);
+            //    }
+
+            //    pen.Dispose();
+            //}
+
+            //return true;
+        }
+
+        #endregion
+
+        private static void FloodFill(Image<Rgba32>/*!*/image, int x, int y, Rgba32 color, bool toBorder, Rgba32 border)
+        {
+            throw new NotImplementedException();
+
+            //Debug.Assert(image != null);
+
+            //BitmapData data = image.LockBits(
+            //    new Rectangle(0, 0, image.Width, image.Height),
+            //    ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+
+            //int[] bits = new int[data.Stride / 4 * data.Height];
+            //Marshal.Copy(data.Scan0, bits, 0, bits.Length);
+
+            //LinkedList<Point> check = new LinkedList<Point>();
+            ////int floodTo = color.ToArgb();
+            //uint floodTo = color.Rgba; // Correct?
+            //int floodFrom = bits[x + y * data.Stride / 4];
+            //bits[x + y * data.Stride / 4] = floodTo;
+
+            ////int floodBorder = border.ToArgb();
+            //uint floodBorder = border.Rgba; // Correct?
+
+            //if (floodFrom != floodTo)
+            //{
+            //    check.AddLast(new Point(x, y));
+            //    while (check.Count > 0)
+            //    {
+            //        Point cur = check.First.Value;
+            //        check.RemoveFirst();
+
+            //        foreach (Point off in new Point[]{
+            //            new Point(0, -1), new Point(0, 1),
+            //            new Point(-1, 0), new Point(1, 0)})
+            //        {
+            //            Point next = new Point(cur.X + off.X, cur.Y + off.Y);
+            //            if (next.X >= 0 && next.Y >= 0 &&
+            //                next.X < data.Width &&
+            //                next.Y < data.Height)
+            //            {
+            //                if (toBorder == false)
+            //                {
+            //                    if (bits[next.X + next.Y * data.Stride / 4] == floodFrom)
+            //                    {
+            //                        check.AddLast(next);
+            //                        bits[next.X + next.Y * data.Stride / 4] = floodTo;
+            //                    }
+            //                }
+            //                else
+            //                {
+            //                    if ((bits[next.X + next.Y * data.Stride / 4] != floodBorder && bits[next.X + next.Y * data.Stride / 4] != floodTo))
+            //                    {
+            //                        check.AddLast(next);
+            //                        bits[next.X + next.Y * data.Stride / 4] = floodTo;
+            //                    }
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
+
+            //Marshal.Copy(bits, 0, data.Scan0, bits.Length);
+            //image.UnlockBits(data);
+        }
+
+        #region imagefilledpolygon
+
+        /// <summary>
+        /// Draw a filled polygon
+        /// </summary>
+        public static bool imagefilledpolygon(PhpResource im, PhpArray point, int num_points, int col)
+        {
+            return DrawPoly(im, point, num_points, col, true);
+        }
+
+        /// <summary>
+        /// Draws normal or filled polygon
+        /// </summary>
+        /// <param name="im"></param>
+        /// <param name="point"></param>
+        /// <param name="num_points"></param>
+        /// <param name="col"></param>
+        /// <param name="filled"></param>
+        /// <returns></returns>
+        private static bool DrawPoly(PhpResource im, PhpArray point, int num_points, int col, bool filled)
+        {
+            throw new NotImplementedException();
+
+            //if (im == null)
+            //{
+            //    PhpException.Throw(PhpError.Warning, LibResources.GetString("unexpected_arg_given", 1, PhpResource.PhpTypeName, PhpVariable.TypeNameNull.ToLowerInvariant()));
+            //    return false;
+            //}
+            //PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            //if (img == null)
+            //    return false;
+
+            //if (point == null)
+            //{
+            //    PhpException.Throw(PhpError.Warning, LibResources.GetString("unexpected_arg_given", 2, PhpArray.PhpTypeName, PhpVariable.TypeNameNull.ToLowerInvariant()));
+            //    return false;
+            //}
+
+            //if (point.Count < num_points * 2)
+            //    return false;
+
+            //if (num_points <= 0)
+            //{
+            //    PhpException.Throw(PhpError.Warning, Utils.Resources.GetString("must_be_positive_number_of_points"));
+            //    return false;
+            //}
+
+            //Point[] points = new Point[num_points];
+
+            //for (int i = 0, j = 0; i < num_points; i++, j += 2)
+            //    points[i] = new Point(Pchp.Core.Convert.ObjectToInteger(point[j]), Pchp.Core.Convert.ObjectToInteger(point[j + 1]));
+
+            //using (Graphics g = Graphics.FromImage(img.Image))
+            //{
+            //    g.SmoothingMode = SmoothingMode.None;
+
+            //    if (filled)
+            //    {
+            //        if (col < 0)
+            //        {
+            //            if (col == (int)ColorValues.TILED)
+            //            {
+            //                if (img.tiled != null)
+            //                {
+            //                    g.FillPolygon(img.tiled, points);
+            //                }
+            //                return true;
+            //            }
+            //            else if (col == -2 && img.styled != null)
+            //            {
+            //                g.FillPolygon(img.styled, points);
+            //            }
+            //            else if (col == -3 && img.brushed != null)
+            //            {
+            //                g.FillPolygon(img.brushed, points);
+            //            }
+            //            else
+            //            {
+            //                return true;
+            //            }
+            //        }
+            //        else
+            //        {
+            //            var brush = new SolidBrush<Rgba32>(PHPColorToRgba32Color(col));
+            //            g.FillPolygon(brush, points);
+            //        }
+
+            //        using (Pen pen = CreatePen(col, img, false))
+            //        {
+            //            pen.LineJoin = LineJoin.Bevel;
+            //            g.DrawPolygon(pen, points);
+            //        }
+            //    }
+            //    else
+            //    {
+            //        using (Pen pen = CreatePen(col, img, true))
+            //        {
+            //            SetAntiAlias(img, g);
+
+            //            pen.LineJoin = LineJoin.Bevel;
+            //            g.DrawPolygon(pen, points);
+            //        }
+            //    }
+            //}
+
+            //return true;
+        }
+
+        #endregion
+
+        #endregion
+
+        // ====================================================================================================
+        // END: NEW FUNCTIONS
+        // ====================================================================================================
     }
 }

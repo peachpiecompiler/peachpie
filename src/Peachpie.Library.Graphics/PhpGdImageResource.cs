@@ -50,7 +50,7 @@ namespace Peachpie.Library.Graphics
         internal bool SaveAlpha = false;
         internal bool AntiAlias = false;
 
-        //internal Rgba32 transparentColor;
+        internal Rgba32 transparentColor;
         internal bool IsTransparentColSet = false;
 
         internal IBrush<Rgba32> styled = null;
