@@ -48,13 +48,13 @@ namespace Pchp.Core
 
             // initialize server variables in order:
 
-            server["PHP_SELF"] = (PhpValue)mainscript;
-            server["SCRIPT_NAME"] = (PhpValue)mainscript;
-            server["SCRIPT_FILENAME"] = (PhpValue)mainscript;
-            server["PATH_TRANSLATED"] = (PhpValue)mainscript;
-            server["DOCUMENT_ROOT"] = (PhpValue)string.Empty;
-            server["REQUEST_TIME_FLOAT"] = (PhpValue)DateTimeUtils.UtcToUnixTimeStampFloat(DateTime.UtcNow);
-            server["REQUEST_TIME"] = (PhpValue)DateTimeUtils.UtcToUnixTimeStamp(DateTime.UtcNow);
+            server[CommonPhpArrayKeys.PHP_SELF] = (PhpValue)mainscript;
+            server[CommonPhpArrayKeys.SCRIPT_NAME] = (PhpValue)mainscript;
+            server[CommonPhpArrayKeys.SCRIPT_FILENAME] = (PhpValue)mainscript;
+            server[CommonPhpArrayKeys.PATH_TRANSLATED] = (PhpValue)mainscript;
+            server[CommonPhpArrayKeys.DOCUMENT_ROOT] = (PhpValue)string.Empty;
+            server[CommonPhpArrayKeys.REQUEST_TIME_FLOAT] = (PhpValue)DateTimeUtils.UtcToUnixTimeStampFloat(DateTime.UtcNow);
+            server[CommonPhpArrayKeys.REQUEST_TIME] = (PhpValue)DateTimeUtils.UtcToUnixTimeStamp(DateTime.UtcNow);
         }
 
         /// <summary>Initializes global $argv and $argc variables and corresponding $_SERVER entries.</summary>

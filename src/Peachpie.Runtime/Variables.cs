@@ -196,6 +196,59 @@ namespace Pchp.Core
         PhpString Serialize(PhpValue value);
     }
 
+    /// <summary>
+    /// Set of common array keys.
+    /// </summary>
+    /// <remarks>
+    /// Used by runtime and compiler.
+    /// Name of class field corresponds to the key string.
+    /// </remarks>
+    public static class CommonPhpArrayKeys
+    {
+        public readonly static IntStringKey Globals = new IntStringKey("GLOBALS");
+        public readonly static IntStringKey _Env = new IntStringKey("_ENV");
+        public readonly static IntStringKey _Get = new IntStringKey("_GET");
+        public readonly static IntStringKey _Post = new IntStringKey("_POST");
+        public readonly static IntStringKey _Cookie = new IntStringKey("_COOKIE");
+        public readonly static IntStringKey _Request = new IntStringKey("_REQUEST");
+        public readonly static IntStringKey _Server = new IntStringKey("_SERVER");
+        public readonly static IntStringKey _Files = new IntStringKey("_FILES");
+        public readonly static IntStringKey _Session = new IntStringKey("_SESSION");
+        public readonly static IntStringKey Http_Raw_Post_Data = new IntStringKey("HTTP_RAW_POST_DATA");
+
+        public readonly static IntStringKey DOCUMENT_ROOT = new IntStringKey("DOCUMENT_ROOT");
+        public readonly static IntStringKey REMOTE_ADDR = new IntStringKey("REMOTE_ADDR");
+        public readonly static IntStringKey REMOTE_ADDR_IPV6 = new IntStringKey("REMOTE_ADDR_IPV6");
+        public readonly static IntStringKey REMOTE_PORT = new IntStringKey("REMOTE_PORT");
+        public readonly static IntStringKey LOCAL_ADDR = new IntStringKey("LOCAL_ADDR");
+        public readonly static IntStringKey LOCAL_PORT = new IntStringKey("LOCAL_PORT");
+        public readonly static IntStringKey SERVER_ADDR = new IntStringKey("SERVER_ADDR");
+        public readonly static IntStringKey SERVER_SOFTWARE = new IntStringKey("SERVER_SOFTWARE");
+        public readonly static IntStringKey SERVER_PROTOCOL = new IntStringKey("SERVER_PROTOCOL");
+        public readonly static IntStringKey SERVER_NAME = new IntStringKey("SERVER_NAME");
+        public readonly static IntStringKey SERVER_PORT = new IntStringKey("SERVER_PORT");
+        public readonly static IntStringKey REQUEST_METHOD = new IntStringKey("REQUEST_METHOD");
+        public readonly static IntStringKey SCRIPT_NAME = new IntStringKey("SCRIPT_NAME");
+        public readonly static IntStringKey SCRIPT_FILENAME = new IntStringKey("SCRIPT_FILENAME");
+        public readonly static IntStringKey PHP_SELF = new IntStringKey("PHP_SELF");
+        public readonly static IntStringKey QUERY_STRING = new IntStringKey("QUERY_STRING");
+        public readonly static IntStringKey HTTP_HOST = new IntStringKey("HTTP_HOST");
+        public readonly static IntStringKey HTTP_CONNECTION = new IntStringKey("HTTP_CONNECTION");
+        public readonly static IntStringKey HTTP_USER_AGENT = new IntStringKey("HTTP_USER_AGENT");
+        public readonly static IntStringKey HTTP_ACCEPT = new IntStringKey("HTTP_ACCEPT");
+        public readonly static IntStringKey HTTP_ACCEPT_ENCODING = new IntStringKey("HTTP_ACCEPT_ENCODING");
+        public readonly static IntStringKey HTTP_ACCEPT_LANGUAGE = new IntStringKey("HTTP_ACCEPT_LANGUAGE");
+        public readonly static IntStringKey HTTP_COOKIE = new IntStringKey("HTTP_COOKIE");
+        public readonly static IntStringKey HTTP_REFERER = new IntStringKey("HTTP_REFERER");
+        public readonly static IntStringKey REQUEST_URI = new IntStringKey("REQUEST_URI");
+        public readonly static IntStringKey REQUEST_TIME_FLOAT = new IntStringKey("REQUEST_TIME_FLOAT");
+        public readonly static IntStringKey REQUEST_TIME = new IntStringKey("REQUEST_TIME");
+        public readonly static IntStringKey HTTPS = new IntStringKey("HTTPS");
+        public readonly static IntStringKey PATH_INFO = new IntStringKey("PATH_INFO");
+        public readonly static IntStringKey PATH_TRANSLATED = new IntStringKey("PATH_TRANSLATED");
+        public readonly static IntStringKey ORIG_PATH_INFO = new IntStringKey("ORIG_PATH_INFO");
+    }
+
     public static class PhpVariable
     {
         #region Types
@@ -237,7 +290,7 @@ namespace Pchp.Core
         /// PHP name for <see cref="System.Object"/>.
         /// </summary>
         public const string TypeNameObject = "object";
-        
+
         /// <summary>
         /// PHP name for <B>null</B>.
         /// </summary>

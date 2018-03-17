@@ -350,13 +350,18 @@ namespace Peachpie.RequestHandler
                 string[] values = serverVariables.GetValues(name);
 
                 if (values == null)
-                    continue;   // http://phalanger.codeplex.com/workitem/30132
+                {
+                    // http://phalanger.codeplex.com/workitem/30132
+                    continue;
+                }
 
                 // adds all items:
                 if (name != null)
                 {
                     foreach (string value in values)
+                    {
                         Superglobals.AddVariable(array, name, value, null);
+                    }
                 }
                 else
                 {
@@ -378,36 +383,36 @@ namespace Peachpie.RequestHandler
             //}
 
             // additional variables defined in PHP manual:
-            array["PHP_SELF"] = (PhpValue)request.Path;
+            array[CommonPhpArrayKeys.PHP_SELF] = (PhpValue)request.Path;
 
             try
             {
-                array["DOCUMENT_ROOT"] = (PhpValue)request.MapPath("/"); // throws exception under mod_aspdotnet
+                array[CommonPhpArrayKeys.DOCUMENT_ROOT] = (PhpValue)request.MapPath("/"); // throws exception under mod_aspdotnet
             }
             catch
             {
-                array["DOCUMENT_ROOT"] = PhpValue.Null;
+                array[CommonPhpArrayKeys.DOCUMENT_ROOT] = PhpValue.Null;
             }
 
-            array["SERVER_ADDR"] = (PhpValue)serverVariables["LOCAL_ADDR"];
-            array["REQUEST_URI"] = (PhpValue)request.RawUrl;
-            array["REQUEST_TIME"] = (PhpValue)Pchp.Core.Utilities.DateTimeUtils.UtcToUnixTimeStamp(_httpctx.Timestamp.ToUniversalTime());
-            array["SCRIPT_FILENAME"] = (PhpValue)request.PhysicalPath;
+            array[CommonPhpArrayKeys.SERVER_ADDR] = (PhpValue)serverVariables["LOCAL_ADDR"];
+            array[CommonPhpArrayKeys.REQUEST_URI] = (PhpValue)request.RawUrl;
+            array[CommonPhpArrayKeys.REQUEST_TIME] = (PhpValue)DateTimeUtils.UtcToUnixTimeStamp(_httpctx.Timestamp.ToUniversalTime());
+            array[CommonPhpArrayKeys.SCRIPT_FILENAME] = (PhpValue)request.PhysicalPath;
 
             //IPv6 is the default in IIS7, convert to an IPv4 address (store the IPv6 as well)
             if (request.UserHostAddress.Contains(":"))
             {
-                array["REMOTE_ADDR_IPV6"] = (PhpValue)request.UserHostAddress;
+                array[CommonPhpArrayKeys.REMOTE_ADDR_IPV6] = (PhpValue)request.UserHostAddress;
 
                 if (request.UserHostAddress == "::1")
                 {
-                    array["REMOTE_ADDR"] = array["SERVER_ADDR"] = (PhpValue)"127.0.0.1";
+                    array[CommonPhpArrayKeys.REMOTE_ADDR] = array[CommonPhpArrayKeys.SERVER_ADDR] = (PhpValue)"127.0.0.1";
                 }
                 else foreach (IPAddress IPA in Dns.GetHostAddresses(request.UserHostAddress))
                     {
                         if (IPA.AddressFamily.ToString() == "InterNetwork")
                         {
-                            array["REMOTE_ADDR"] = (PhpValue)IPA.ToString();
+                            array[CommonPhpArrayKeys.REMOTE_ADDR] = (PhpValue)IPA.ToString();
                             break;
                         }
                     }
@@ -418,14 +423,14 @@ namespace Peachpie.RequestHandler
             // note: IIS has AllowPathInfoForScriptMappings property that do the thing ... but ISAPI does not work then
             // hence it must be done here manually
 
-            if (array.ContainsKey("PATH_INFO"))
+            if (array.ContainsKey(CommonPhpArrayKeys.PATH_INFO))
             {
-                string path_info = array["PATH_INFO"].AsString();
-                string script_name = array["SCRIPT_NAME"].AsString();
+                string path_info = array[CommonPhpArrayKeys.PATH_INFO].AsString();
+                string script_name = array[CommonPhpArrayKeys.SCRIPT_NAME].AsString();
 
                 // 'ORIG_PATH_INFO'
                 // Original version of 'PATH_INFO' before processed by PHP. 
-                array["ORIG_PATH_INFO"] = (PhpValue)path_info;
+                array[CommonPhpArrayKeys.ORIG_PATH_INFO] = (PhpValue)path_info;
 
                 // 'PHP_INFO'
                 // Contains any client-provided pathname information trailing the actual script filename
@@ -437,7 +442,7 @@ namespace Peachpie.RequestHandler
                 // 
                 // strncpy(path_info_buf, static_variable_buf + scriptname_len - 1, sizeof(path_info_buf) - 1);    // PATH_INFO = PATH_INFO.SubString(SCRIPT_NAME.Length);
 
-                array["PATH_INFO"] = (PhpValue)((script_name.Length <= path_info.Length) ? path_info.Substring(script_name.Length) : string.Empty);
+                array[CommonPhpArrayKeys.PATH_INFO] = (PhpValue)((script_name.Length <= path_info.Length) ? path_info.Substring(script_name.Length) : string.Empty);
             }
 
             //

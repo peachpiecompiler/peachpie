@@ -235,8 +235,8 @@ namespace Peachpie.Web
 
             var path = script.Path.Replace('\\', '/');  // address of the script
 
-            array["SCRIPT_FILENAME"] = (PhpValue)string.Concat(this.RootPath, "/", path);
-            array["PHP_SELF"] = (PhpValue)string.Concat("/", path);
+            array[CommonPhpArrayKeys.SCRIPT_FILENAME] = (PhpValue)string.Concat(this.RootPath, "/", path);
+            array[CommonPhpArrayKeys.PHP_SELF] = (PhpValue)string.Concat("/", path);
         }
 
         /// <summary>
@@ -258,6 +258,11 @@ namespace Peachpie.Web
         /// Gets server type interface name.
         /// </summary>
         public override string ServerApi => "isapi";
+
+        /// <summary>
+        /// Name of the server software as it appears in <c>$_SERVER[SERVER_SOFTWARE]</c> variable.
+        /// </summary>
+        public const string ServerSoftware = "ASP.NET Core Server";
 
         /// <summary>
         /// Reference to current <see cref="HttpContext"/>.
@@ -299,6 +304,9 @@ namespace Peachpie.Web
             }
         }
 
+        IHttpRequestFeature/*!*/HttpRequestFeature => _httpctx.Features.Get<IHttpRequestFeature>();
+        IHttpConnectionFeature/*!*/HttpConnectionFeature => _httpctx.Features.Get<IHttpConnectionFeature>();
+
         /// <summary>
         /// Loads $_SERVER from <see cref="_httpctx"/>.
         /// </summary>
@@ -306,7 +314,9 @@ namespace Peachpie.Web
         {
             var array = new PhpArray(32);
 
-            var request = _httpctx.Request;
+            var request = HttpRequestFeature;
+            var connection = HttpConnectionFeature;
+            var host = HostString.FromUriComponent(request.Headers["Host"]);
 
             //// adds variables defined by ASP.NET and IIS:
             //var serverVariables = _httpctx.Features.Get<IServerVariablesFeature>()?.ServerVariables;
@@ -348,32 +358,29 @@ namespace Peachpie.Web
 
             // variables defined in PHP manual
             // order as it is by builtin PHP server
-            array["DOCUMENT_ROOT"] = (PhpValue)RootPath;    // string, backslashes, no trailing slash
-
-            array["REMOTE_ADDR"] = (PhpValue)(_httpctx.Connection.RemoteIpAddress?.ToString() ?? request.Headers["X-Real-IP"]);
-            array["REMOTE_PORT"] = (PhpValue)_httpctx.Connection.RemotePort;
-            array["LOCAL_ADDR"] = array["SERVER_ADDR"] = (PhpValue)_httpctx.Connection.LocalIpAddress?.ToString();
-            array["LOCAL_PORT"] = (PhpValue)_httpctx.Connection.LocalPort;
-            array["SERVER_SOFTWARE"] = (PhpValue)"ASP.NET Core Server";
-            array["SERVER_PROTOCOL"] = (PhpValue)request.Protocol;
-            array["SERVER_NAME"] = (PhpValue)request.Host.Host;
-            array["SERVER_PORT"] = (PhpValue)(request.Host.Port ?? _httpctx.Connection.LocalPort);
-            array["REQUEST_METHOD"] = (PhpValue)request.Method;
-            array["SCRIPT_NAME"] = (PhpValue)request.Path.ToString();
-            array["SCRIPT_FILENAME"] = PhpValue.Null; // set in ProcessScript
-            array["PHP_SELF"] = PhpValue.Null; // set in ProcessScript
-            array["QUERY_STRING"] = (PhpValue)(request.QueryString.HasValue ? request.QueryString.Value.Substring(1) : string.Empty);
-            array["HTTP_HOST"] = (PhpValue)request.Headers["Host"].ToString();
-            array["HTTP_CONNECTION"] = (PhpValue)request.Headers["Connection"].ToString();
-            array["HTTP_USER_AGENT"] = (PhpValue)request.Headers["User-Agent"].ToString();
-            array["HTTP_ACCEPT"] = (PhpValue)request.Headers["Accept"].ToString();
-            array["HTTP_ACCEPT_ENCODING"] = (PhpValue)request.Headers["Accept-Encoding"].ToString();
-            array["HTTP_ACCEPT_LANGUAGE"] = (PhpValue)request.Headers["Accept-Language"].ToString();
-            array["HTTP_REFERER"] = (PhpValue)request.Headers["Referer"].ToString();
-            array["REQUEST_URI"] = (PhpValue)_httpctx.Features.Get<IHttpRequestFeature>()?.RawTarget;
-            array["REQUEST_TIME_FLOAT"] = (PhpValue)DateTimeUtils.UtcToUnixTimeStampFloat(DateTime.UtcNow);
-            array["REQUEST_TIME"] = (PhpValue)DateTimeUtils.UtcToUnixTimeStamp(DateTime.UtcNow);
-            array["HTTPS"] = PhpValue.Create(request.IsHttps);
+            array[CommonPhpArrayKeys.DOCUMENT_ROOT] = (PhpValue)RootPath;    // string, backslashes, no trailing slash
+            array[CommonPhpArrayKeys.REMOTE_ADDR] = (PhpValue)((connection.RemoteIpAddress != null) ? connection.RemoteIpAddress.ToString() : request.Headers["X-Real-IP"].ToString());
+            array[CommonPhpArrayKeys.REMOTE_PORT] = (PhpValue)connection.RemotePort;
+            array[CommonPhpArrayKeys.LOCAL_ADDR] = array[CommonPhpArrayKeys.SERVER_ADDR] = (PhpValue)connection.LocalIpAddress?.ToString();
+            array[CommonPhpArrayKeys.LOCAL_PORT] = (PhpValue)connection.LocalPort;
+            array[CommonPhpArrayKeys.SERVER_SOFTWARE] = (PhpValue)ServerSoftware;
+            array[CommonPhpArrayKeys.SERVER_PROTOCOL] = (PhpValue)request.Protocol;
+            array[CommonPhpArrayKeys.SERVER_NAME] = (PhpValue)host.Host;
+            array[CommonPhpArrayKeys.SERVER_PORT] = (PhpValue)(host.Port ?? connection.LocalPort);
+            array[CommonPhpArrayKeys.REQUEST_URI] = (PhpValue)request.RawTarget;
+            array[CommonPhpArrayKeys.REQUEST_METHOD] = (PhpValue)request.Method;
+            array[CommonPhpArrayKeys.SCRIPT_NAME] = (PhpValue)request.Path.ToString();
+            array[CommonPhpArrayKeys.SCRIPT_FILENAME] = PhpValue.Null; // set in ProcessScript
+            array[CommonPhpArrayKeys.PHP_SELF] = PhpValue.Null; // set in ProcessScript
+            array[CommonPhpArrayKeys.QUERY_STRING] = (PhpValue)(!string.IsNullOrEmpty(request.QueryString) ? request.QueryString.Substring(1) : string.Empty);
+            foreach (KeyValuePair<string, StringValues>  header in request.Headers)
+            {
+                // HTTP_{HEADER_NAME} = HEADER_VALUE
+                array.Add(string.Concat("HTTP_" + header.Key.Replace('-', '_').ToUpperInvariant()), header.Value.ToString());
+            }
+            array[CommonPhpArrayKeys.REQUEST_TIME_FLOAT] = (PhpValue)DateTimeUtils.UtcToUnixTimeStampFloat(DateTime.UtcNow);
+            array[CommonPhpArrayKeys.REQUEST_TIME] = (PhpValue)DateTimeUtils.UtcToUnixTimeStamp(DateTime.UtcNow);
+            array[CommonPhpArrayKeys.HTTPS] = PhpValue.Create(string.Equals(request.Scheme, "https", StringComparison.OrdinalIgnoreCase));
 
             //
             return array;

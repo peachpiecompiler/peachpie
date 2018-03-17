@@ -116,7 +116,7 @@ namespace Pchp.CodeAnalysis.Symbols
             IStaticInit, RoutineInfo,
             BinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
             Dynamic_NameParam_T, Dynamic_TargetTypeParam, Dynamic_CallerTypeParam, Dynamic_UnpackingParam_T,
-            PhpTypeInfoExtension, PhpTypeInfo,
+            PhpTypeInfoExtension, PhpTypeInfo, CommonPhpArrayKeys,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable, IPhpConvertible, PhpString_Blob,
             IntStringKey, PhpHashtable,
             Void, Object, Int32, Long, Double, Boolean, String, Exception,
@@ -186,6 +186,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             PhpTypeInfoExtension = Create("Reflection.PhpTypeInfoExtension");
             PhpTypeInfo = Create("Reflection.PhpTypeInfo");
+            CommonPhpArrayKeys = Create("CommonPhpArrayKeys");
 
             Iterator = CreateFromFullName("Iterator");
             Generator = CreateFromFullName("Generator");
