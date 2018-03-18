@@ -661,13 +661,6 @@ namespace Peachpie.Library.Graphics
         static Rgba32 FromRGB(long color) => new Rgba32((uint)color | 0xff000000u);
         static Rgba32 FromRGBA(long color) => (color != (long)ColorValues.TRANSPARENT) ? new Rgba32((uint)color) : Rgba32.Transparent;
 
-        /// <summary>
-        /// Converts .NET Color format to PHP Color format
-        /// </summary>
-        /// <param name="col">.NET Color</param>
-        /// <returns>PHP Color</returns>
-        private static long Rgba32ColorToPHPColor(Rgba32 col) => RGBA(col.R, col.G, col.B, col.A);
-
         private static int PHPColorToPHPAlpha(int color) => FromRGBA(color).A;
         private static int PHPColorToRed(int color) => FromRGBA(color).R;
         private static int PHPColorToGreen(int color) => FromRGBA(color).G;
@@ -1214,7 +1207,7 @@ namespace Peachpie.Library.Graphics
                 return -1;
             }
 
-            return Rgba32ColorToPHPColor(img.transparentColor);
+            return img.transparentColor.Rgba;
         }
 
         /// <summary>
