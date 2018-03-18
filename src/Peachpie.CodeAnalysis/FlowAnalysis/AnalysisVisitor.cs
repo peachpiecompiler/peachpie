@@ -204,6 +204,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Visits condition used to branch execution to true or false branch.
         /// </summary>
+        /// <returns>Value indicating whether branch was used.</returns>
         /// <remarks>
         /// Because of minimal evaluation there is different FlowState for true and false branches,
         /// AND and OR operators have to take this into account.
@@ -211,7 +212,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Also some other constructs may have side-effect for known branch,
         /// eg. <c>($x instanceof X)</c> implies ($x is X) in True branch.
         /// </remarks>
-        internal void VisitCondition(BoundExpression condition, ConditionBranch branch)
+        internal bool VisitCondition(BoundExpression condition, ConditionBranch branch)
         {
             Contract.ThrowIfNull(condition);
 
@@ -220,37 +221,38 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (condition is BoundBinaryEx)
                 {
                     Visit((BoundBinaryEx)condition, branch);
-                    return;
+                    return true;
                 }
                 if (condition is BoundUnaryEx unaryEx)
                 {
                     Visit(unaryEx, branch);
-                    return;
+                    return true;
                 }
                 if (condition is BoundGlobalFunctionCall)
                 {
                     VisitGlobalFunctionCall((BoundGlobalFunctionCall)condition, branch);
-                    return;
+                    return true;
                 }
                 if (condition is BoundInstanceOfEx)
                 {
                     Visit((BoundInstanceOfEx)condition, branch);
-                    return;
+                    return true;
                 }
                 if (condition is BoundIsSetEx)
                 {
                     Visit((BoundIsSetEx)condition, branch);
-                    return;
+                    return true;
                 }
                 //if (condition is EmptyEx)
                 //{
                 //    VisitEmptyEx((EmptyEx)condition, branch);
-                //    return;
+                //    return false;
                 //}
             }
 
             // no effect
             condition.Accept(this);
+            return false;
         }
 
         public sealed override void VisitBinaryExpression(BoundBinaryEx x) => Visit(x, ConditionBranch.Default);

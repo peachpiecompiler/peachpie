@@ -1967,31 +1967,60 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void VisitConditional(BoundConditionalEx x)
         {
-            var state = State;
-            var trueExpr = x.IfTrue ?? x.Condition;
+            BoundExpression positiveExpr;    // positive expression (if evaluated to true, FalseExpr is not evaluated)
+            FlowState positiveState; // state after successful positive branch
 
-            // true branch
-            var trueState = State = state.Clone();
-            VisitCondition(x.Condition, ConditionBranch.ToTrue);
-            Accept(trueExpr);
-
-            // false branch
-            var falseState = State = state.Clone();
-            VisitCondition(x.Condition, ConditionBranch.ToFalse);
-            Accept(x.IfFalse);
-
-            // merge both states
-            State = trueState.Merge(falseState);
-
-            // merge resulting types
-            var trueTypeMask = trueExpr.TypeRefMask;
-            if (x.Condition == trueExpr)
+            if (x.IfTrue != null && x.IfTrue != x.Condition)
             {
-                // condition != false => condition != null => trueExpr cannot be NULL:
-                trueTypeMask = TypeCtx.WithoutNull(trueTypeMask);
+                // Template: Condition ? IfTrue : IfFalse
+
+                var originalState = State.Clone();
+                positiveExpr = x.IfTrue;
+
+                // true branch:
+                if (VisitCondition(x.Condition, ConditionBranch.ToTrue))
+                {
+                    Accept(x.IfTrue);
+                    positiveState = State;
+
+                    // false branch
+                    State = originalState.Clone();
+                    VisitCondition(x.Condition, ConditionBranch.ToFalse);
+                }
+                else
+                {
+                    // OPTIMIZATION: Condition does not have to be visited twice!
+
+                    originalState = State.Clone(); // state after visiting Condition
+
+                    Accept(x.IfTrue);
+                    positiveState = State;
+
+                    State = originalState.Clone();
+                }
+            }
+            else
+            {
+                // Template: Condition ?: IfFalse
+                positiveExpr = x.Condition;
+
+                // in case ?: do not evaluate trueExpr twice:
+                // Template: Condition ?: FalseExpr
+
+                Accept(x.Condition);
+                positiveState = State.Clone();
+
+                // condition != false => condition != null =>
+                // ignoring NULL type from Condition:
+                x.Condition.TypeRefMask = TypeCtx.WithoutNull(x.Condition.TypeRefMask);
             }
 
-            x.TypeRefMask = trueTypeMask | x.IfFalse.TypeRefMask;
+            // and start over with false branch:
+            Accept(x.IfFalse);
+
+            // merge both states (after positive evaluation and the false branch)
+            State = State.Merge(positiveState);
+            x.TypeRefMask = positiveExpr.TypeRefMask | x.IfFalse.TypeRefMask;
         }
 
         public override void VisitExpressionStatement(BoundExpressionStatement x)
