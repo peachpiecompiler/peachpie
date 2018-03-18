@@ -771,19 +771,32 @@ namespace Pchp.Library
         /// Moves an uploaded file to a new location.
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
-        /// <param name="path"></param>
-        /// <param name="destination"></param>
-        /// <returns></returns>
+        /// <param name="path">Temporary path of the uploaded file.</param>
+        /// <param name="destination">Destination.</param>
+        /// <returns>Value indicating the move succeeded.</returns>
         public static bool move_uploaded_file(Context ctx, string path, string destination)
         {
-            if (path == null || !ctx.IsTemporaryFile(path)) return false;
+            if (path == null || !ctx.IsTemporaryFile(path))
+            {
+                return false;
+            }
 
-            try { System.IO.File.Delete(destination); } catch { }
-            System.IO.File.Move(path, destination);
+            // overwrite destination unconditionally:
+            if (PhpPath.file_exists(ctx, destination))
+            {
+                PhpPath.unlink(ctx, destination);
+            }
 
-            ctx.RemoveTemporaryFile(path);
-
-            return true;
+            // move temp file to destination:
+            if (PhpPath.rename(ctx, path, destination))
+            {
+                ctx.RemoveTemporaryFile(path);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         #endregion

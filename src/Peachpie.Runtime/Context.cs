@@ -527,17 +527,7 @@ namespace Pchp.Core
         /// <summary>
         /// A list of temporary files which was created during the request and should be deleted at its end.
         /// </summary>
-        private List<string>/*!*/TemporaryFiles
-        {
-            get
-            {
-                if (_temporaryFiles == null)
-                    _temporaryFiles = new List<string>();
-
-                return _temporaryFiles;
-            }
-        }
-        private List<string> _temporaryFiles;
+        HashSet<string> _temporaryFiles;
 
         /// <summary>
         /// Silently deletes all temporary files.
@@ -546,12 +536,9 @@ namespace Pchp.Core
         {
             if (_temporaryFiles != null)
             {
-                for (int i = 0; i < _temporaryFiles.Count; i++)
+                foreach (var path in _temporaryFiles)
                 {
-                    try
-                    {
-                        File.Delete(_temporaryFiles[i]);
-                    }
+                    try { File.Delete(path); }
                     catch { }
                 }
 
@@ -566,7 +553,13 @@ namespace Pchp.Core
         protected void AddTemporaryFile(string path)
         {
             Debug.Assert(path != null);
-            TemporaryFiles.Add(path);
+
+            if (_temporaryFiles == null)
+            {
+                _temporaryFiles = new HashSet<string>(CurrentPlatform.PathComparer);
+            }
+
+            _temporaryFiles.Add(path);
         }
 
         /// <summary>
@@ -581,10 +574,10 @@ namespace Pchp.Core
         {
             if (path == null)
             {
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             }
 
-            return _temporaryFiles != null && _temporaryFiles.Contains(path, CurrentPlatform.PathComparer);
+            return _temporaryFiles != null && _temporaryFiles.Contains(path);
         }
 
         /// <summary>
@@ -596,23 +589,10 @@ namespace Pchp.Core
         {
             if (path == null)
             {
-                throw new ArgumentNullException("path");
+                throw new ArgumentNullException(nameof(path));
             }
 
-            if (_temporaryFiles != null)
-            {
-                // NOTE: == List<T>.IndexOf(T, IEqualityComparer<T>)
-                for (int i = 0; i < _temporaryFiles.Count; i++)
-                {
-                    if (CurrentPlatform.PathComparer.Compare(_temporaryFiles[i], path) == 0)
-                    {
-                        _temporaryFiles.RemoveAt(i);
-                        return true;
-                    }
-                }
-            }
-
-            return false;
+            return _temporaryFiles != null && _temporaryFiles.Remove(path);
         }
 
         #endregion
