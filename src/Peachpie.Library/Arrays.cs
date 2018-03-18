@@ -247,6 +247,7 @@ namespace Pchp.Library
         /// or <b>false</b> if the enumerator has been behind the last item of <paramref name="array"/>
         /// before the call.
         /// </returns>
+        [Obsolete]
         [return: CastToFalse]
         public static PhpArray each(IPhpEnumerable array)
         {

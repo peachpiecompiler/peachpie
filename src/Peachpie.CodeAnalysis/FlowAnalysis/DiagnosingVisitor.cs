@@ -216,6 +216,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // check target type
             CheckMethodCallTargetInstance(call.Instance, call.Name.NameValue.Name.Value);
 
+            // check deprecated
+            CheckObsoleteSymbol(call.PhpSyntax, call.TargetMethod);
+
             // TODO: Enable the diagnostic when several problems are solved (such as __call())
             //CheckUndefinedMethodCall(call, call.Instance?.ResultType, call.Name);
             base.VisitInstanceFunctionCall(call);
@@ -352,6 +355,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (nonobjtype != null)
             {
                 _diagnostics.Add(_routine, target.PhpSyntax, ErrorCode.ERR_MethodCalledOnNonObject, methodName ?? "{}", nonobjtype);
+            }
+        }
+
+        void CheckObsoleteSymbol(LangElement node, Symbol target)
+        {
+            var obsolete = target?.ObsoleteAttributeData;
+            if (obsolete != null)
+            {
+                _diagnostics.Add(_routine, node, ErrorCode.WRN_SymbolDeprecated, target.Kind.ToString(), target.Name, obsolete.Message);
             }
         }
 

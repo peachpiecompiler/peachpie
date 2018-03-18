@@ -234,4 +234,7 @@
   <data name="ERR_TooManyUserStrings" xml:space="preserve">
     <value>Combined length of user strings used by the program exceeds allowed limit. Try to decrease use of string literals.</value>
   </data>
+  <data name="WRN_SymbolDeprecated" xml:space="preserve">
+    <value>Deprecated: {0} '{1}' has been deprecated. {2}</value>
+  </data>
 </root>

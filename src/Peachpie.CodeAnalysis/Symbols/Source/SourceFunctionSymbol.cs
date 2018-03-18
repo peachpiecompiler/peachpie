@@ -70,6 +70,27 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(null);
 
+        protected override void GetDiagnostics(DiagnosticBag diagnostic)
+        {
+            if (this.QualifiedName == new QualifiedName(Devsense.PHP.Syntax.Name.AutoloadName))
+            {
+                if (this.DeclaringCompilation.Options.ParseOptions?.LanguageVersion >= new Version(7,2))
+                {
+                    // __autoload is deprecated
+                    diagnostic.Add(this, _syntax, Errors.ErrorCode.WRN_SymbolDeprecated, string.Empty, this.QualifiedName, PhpResources.AutoloadDeprecatedMessage);
+                }
+
+                // __autoload must have exactly one parameter
+                if (_syntax.Signature.FormalParams.Length != 1)
+                {
+                    diagnostic.Add(this, _syntax.Signature.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Function", this.QualifiedName.ToString(), 1);
+                }
+            }
+
+            //
+            base.GetDiagnostics(diagnostic);
+        }
+
         internal QualifiedName QualifiedName => NameUtils.MakeQualifiedName(_syntax.Name, _syntax.ContainingNamespace);
 
         public override string Name => this.QualifiedName.ClrName();

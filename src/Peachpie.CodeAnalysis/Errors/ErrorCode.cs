@@ -129,7 +129,9 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_AssertAlwaysFail,
         /// <summary>Using string as the assertion is deprecated</summary>
         WRN_StringAssertionDeprecated,
-
+        /// <summary>Deprecated: {0} '{1}' has been deprecated. {2}</summary>
+        WRN_SymbolDeprecated,
+        
 
         //
         // Visible information

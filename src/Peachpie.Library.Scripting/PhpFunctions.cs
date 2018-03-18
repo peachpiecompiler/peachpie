@@ -30,6 +30,7 @@ namespace Peachpie.Library.Scripting
         /// <param name="args">The function arguments.</param>
         /// <param name="code">the function body.</param>
         /// <returns>Returns a unique function name as a string, or <c>FALSE</c> on error.</returns>
+        [Obsolete]
         [return: CastToFalse]
         public static string create_function(Context ctx, string args, string code)
         {

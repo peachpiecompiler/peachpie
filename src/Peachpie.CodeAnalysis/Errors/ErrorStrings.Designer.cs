@@ -20,10 +20,10 @@ namespace Pchp.CodeAnalysis.Errors {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    public class ErrorStrings {
+    internal class ErrorStrings {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
@@ -37,7 +37,7 @@ namespace Pchp.CodeAnalysis.Errors {
         ///   Returns the cached ResourceManager instance used by this class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static global::System.Resources.ResourceManager ResourceManager {
+        internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Peachpie.CodeAnalysis.Errors.ErrorStrings", typeof(ErrorStrings).GetTypeInfo().Assembly);
@@ -52,7 +52,7 @@ namespace Pchp.CodeAnalysis.Errors {
         ///   resource lookups using this strongly typed resource class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static global::System.Globalization.CultureInfo Culture {
+        internal static global::System.Globalization.CultureInfo Culture {
             get {
                 return resourceCulture;
             }
@@ -62,9 +62,63 @@ namespace Pchp.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Unrecognized option: &apos;{0}&apos;.
+        /// </summary>
+        internal static string ERR_BadSwitch {
+            get {
+                return ResourceManager.GetString("ERR_BadSwitch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0}() cannot declare a return type.
+        /// </summary>
+        internal static string ERR_CannotDeclareReturnType {
+            get {
+                return ResourceManager.GetString("ERR_CannotDeclareReturnType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Class {0} cannot extend from {1} {2}.
+        /// </summary>
+        internal static string ERR_CannotExtendFrom {
+            get {
+                return ResourceManager.GetString("ERR_CannotExtendFrom", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} cannot implement {1} - it is not an interface.
+        /// </summary>
+        internal static string ERR_CannotImplementNonInterface {
+            get {
+                return ResourceManager.GetString("ERR_CannotImplementNonInterface", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot instantiate {0} {1}.
+        /// </summary>
+        internal static string ERR_CannotInstantiateType {
+            get {
+                return ResourceManager.GetString("ERR_CannotInstantiateType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} cannot use {1} - it is not a trait.
+        /// </summary>
+        internal static string ERR_CannotUseNonTrait {
+            get {
+                return ResourceManager.GetString("ERR_CannotUseNonTrait", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Circular base class dependency involving &apos;{0}&apos; and &apos;{1}&apos;.
         /// </summary>
-        public static string ERR_CircularBase {
+        internal static string ERR_CircularBase {
             get {
                 return ResourceManager.GetString("ERR_CircularBase", resourceCulture);
             }
@@ -73,34 +127,142 @@ namespace Pchp.CodeAnalysis.Errors {
         /// <summary>
         ///   Looks up a localized string similar to Error opening assembly file &apos;{0}&apos;: {1}.
         /// </summary>
-        public static string ERR_ErrorOpeningAssemblyFile {
+        internal static string ERR_ErrorOpeningAssemblyFile {
             get {
                 return ResourceManager.GetString("ERR_ErrorOpeningAssemblyFile", resourceCulture);
             }
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Source file &apos;{0}&apos; could not be found..
+        /// </summary>
+        internal static string ERR_FileNotFound {
+            get {
+                return ResourceManager.GetString("ERR_FileNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot use the final modifier on an abstract class.
+        /// </summary>
+        internal static string ERR_FinalAbstractClassDeclared {
+            get {
+                return ResourceManager.GetString("ERR_FinalAbstractClassDeclared", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Function name must be a string, {0} given.
+        /// </summary>
+        internal static string ERR_InvalidFunctionName {
+            get {
+                return ResourceManager.GetString("ERR_InvalidFunctionName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Metadata file &apos;{0}&apos; could not be found.
         /// </summary>
-        public static string ERR_MetadataFileNotFound {
+        internal static string ERR_MetadataFileNotFound {
             get {
                 return ResourceManager.GetString("ERR_MetadataFileNotFound", resourceCulture);
             }
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Call to a member function {0}() on {1}.
+        /// </summary>
+        internal static string ERR_MethodCalledOnNonObject {
+            get {
+                return ResourceManager.GetString("ERR_MethodCalledOnNonObject", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} {1}() must take exactly {2} arguments.
+        /// </summary>
+        internal static string ERR_MustTakeArgs {
+            get {
+                return ResourceManager.GetString("ERR_MustTakeArgs", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {0} is currently not supported by Peachpie..
         /// </summary>
-        public static string ERR_NotYetImplemented {
+        internal static string ERR_NotYetImplemented {
             get {
                 return ResourceManager.GetString("ERR_NotYetImplemented", resourceCulture);
             }
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot use positional argument after argument unpacking.
+        /// </summary>
+        internal static string ERR_PositionalArgAfterUnpacking {
+            get {
+                return ResourceManager.GetString("ERR_PositionalArgAfterUnpacking", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use of primitive type &apos;{0}&apos; is misused.
+        /// </summary>
+        internal static string ERR_PrimitiveTypeNameMisused {
+            get {
+                return ResourceManager.GetString("ERR_PrimitiveTypeNameMisused", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Access level to {0}::${1} must be {2} (as in class {3}) or weaker.
+        /// </summary>
+        internal static string ERR_PropertyAccessibilityError {
+            get {
+                return ResourceManager.GetString("ERR_PropertyAccessibilityError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Startup object matching &apos;{0}&apos; could not be resolved.
+        /// </summary>
+        internal static string ERR_StartupObjectNotFound {
+            get {
+                return ResourceManager.GetString("ERR_StartupObjectNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Missing value for &apos;{0}&apos; option.
+        /// </summary>
+        internal static string ERR_SwitchNeedsValue {
+            get {
+                return ResourceManager.GetString("ERR_SwitchNeedsValue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Combined length of user strings used by the program exceeds allowed limit. Try to decrease use of string literals..
+        /// </summary>
+        internal static string ERR_TooManyUserStrings {
+            get {
+                return ResourceManager.GetString("ERR_TooManyUserStrings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Method {0}::__toString() must return a string value.
+        /// </summary>
+        internal static string ERR_ToStringMustReturnString {
+            get {
+                return ResourceManager.GetString("ERR_ToStringMustReturnString", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Type name &apos;{0}&apos; could not be resolved..
         /// </summary>
-        public static string ERR_TypeNameCannotBeResolved {
+        internal static string ERR_TypeNameCannotBeResolved {
             get {
                 return ResourceManager.GetString("ERR_TypeNameCannotBeResolved", resourceCulture);
             }
@@ -109,34 +271,115 @@ namespace Pchp.CodeAnalysis.Errors {
         /// <summary>
         ///   Looks up a localized string similar to Type &apos;{0}&apos; cannot be declared..
         /// </summary>
-        public static string ERR_UnknownTypeDependencies {
+        internal static string ERR_UnknownTypeDependencies {
             get {
                 return ResourceManager.GetString("ERR_UnknownTypeDependencies", resourceCulture);
             }
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Value of type &apos;{0}&apos; cannot be passed by reference.
+        /// </summary>
+        internal static string ERR_ValueOfTypeCannotBeAliased {
+            get {
+                return ResourceManager.GetString("ERR_ValueOfTypeCannotBeAliased", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to A void function must not return a value.
+        /// </summary>
+        internal static string ERR_VoidFunctionCannotReturnValue {
+            get {
+                return ResourceManager.GetString("ERR_VoidFunctionCannotReturnValue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The declaration of &apos;{0}&apos; is ambiguous resulting in multiple versions to be compiled. Fix this issue by ensuring every base type is declared just once unconditionally..
         /// </summary>
-        public static string WRN_AmbiguousDeclaration {
+        internal static string WRN_AmbiguousDeclaration {
             get {
                 return ResourceManager.GetString("WRN_AmbiguousDeclaration", resourceCulture);
             }
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Assertion will always fail.
+        /// </summary>
+        internal static string WRN_AssertAlwaysFail {
+            get {
+                return ResourceManager.GetString("WRN_AssertAlwaysFail", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Use of &apos;eval()&apos; is discouraged. Construct allows execution of arbitrary code and is subject to performance and memory overhead..
         /// </summary>
-        public static string WRN_EvalDiscouraged {
+        internal static string WRN_EvalDiscouraged {
             get {
                 return ResourceManager.GetString("WRN_EvalDiscouraged", resourceCulture);
             }
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to {0}() expects at least {1} parameter(s), {2} given.
+        /// </summary>
+        internal static string WRN_MissingArguments {
+            get {
+                return ResourceManager.GetString("WRN_MissingArguments", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No source files specified.
+        /// </summary>
+        internal static string WRN_NoSourceFiles {
+            get {
+                return ResourceManager.GetString("WRN_NoSourceFiles", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} will be ignored, because it is currently not supported by Peachpie..
+        /// </summary>
+        internal static string WRN_NotYetImplementedIgnored {
+            get {
+                return ResourceManager.GetString("WRN_NotYetImplementedIgnored", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Using string as the assertion is deprecated.
+        /// </summary>
+        internal static string WRN_StringAssertionDeprecated {
+            get {
+                return ResourceManager.GetString("WRN_StringAssertionDeprecated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Deprecated: {0} &apos;{1}&apos; has been deprecated. {2}.
+        /// </summary>
+        internal static string WRN_SymbolDeprecated {
+            get {
+                return ResourceManager.GetString("WRN_SymbolDeprecated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Too many arguments provided.
+        /// </summary>
+        internal static string WRN_TooManyArguments {
+            get {
+                return ResourceManager.GetString("WRN_TooManyArguments", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Call to undefined function: &apos;{0}&apos;.
         /// </summary>
-        public static string WRN_UndefinedFunctionCall {
+        internal static string WRN_UndefinedFunctionCall {
             get {
                 return ResourceManager.GetString("WRN_UndefinedFunctionCall", resourceCulture);
             }
@@ -145,7 +388,7 @@ namespace Pchp.CodeAnalysis.Errors {
         /// <summary>
         ///   Looks up a localized string similar to Call to undefined method: {0}::{1}().
         /// </summary>
-        public static string WRN_UndefinedMethodCall {
+        internal static string WRN_UndefinedMethodCall {
             get {
                 return ResourceManager.GetString("WRN_UndefinedMethodCall", resourceCulture);
             }
@@ -154,7 +397,7 @@ namespace Pchp.CodeAnalysis.Errors {
         /// <summary>
         ///   Looks up a localized string similar to Class &apos;{0}&apos; not found.
         /// </summary>
-        public static string WRN_UndefinedType {
+        internal static string WRN_UndefinedType {
             get {
                 return ResourceManager.GetString("WRN_UndefinedType", resourceCulture);
             }
@@ -163,9 +406,18 @@ namespace Pchp.CodeAnalysis.Errors {
         /// <summary>
         ///   Looks up a localized string similar to Undefined variable: ${0}.
         /// </summary>
-        public static string WRN_UninitializedVariableUse {
+        internal static string WRN_UninitializedVariableUse {
             get {
                 return ResourceManager.GetString("WRN_UninitializedVariableUse", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unreachable code detected.
+        /// </summary>
+        internal static string WRN_UnreachableCode {
+            get {
+                return ResourceManager.GetString("WRN_UnreachableCode", resourceCulture);
             }
         }
     }
