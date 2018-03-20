@@ -606,9 +606,9 @@ namespace Pchp.Library
         /// <param name="encType"></param>
         /// <returns>Returns a URL-encoded string </returns>
         public static string http_build_query(Context ctx, PhpValue formData, string numericPrefix = null, string argSeparator = null, int encType = 0)
-            => http_build_query(ctx, formData, numericPrefix, argSeparator, encType, null);
+            => http_build_query(ctx, formData, numericPrefix, argSeparator ?? "&", encType, null);
 
-        private static string http_build_query(Context ctx, PhpValue formData, string numericPrefix, string argSeparator = null, int encType = 0, string indexerPrefix = null)
+        private static string http_build_query(Context ctx, PhpValue formData, string numericPrefix, string argSeparator, int encType = 0, string indexerPrefix = null)
         {
             var str_builder = new StringBuilder(64);  // statistically the length of the result
             var result = new System.IO.StringWriter(str_builder);
