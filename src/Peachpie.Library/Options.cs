@@ -123,6 +123,11 @@ namespace Pchp.Library
                     Debug.Assert(action == IniAction.Get);
                     return (PhpValue)string.Empty;
 
+                case "disable_functions": return (PhpValue)string.Empty;
+                case "memory_limit": return (PhpValue)(-1);
+                //TODO: case "safe_mode": return ???;
+                //TODO: case "max_execution_time": return ???;
+
                 default:
                     throw new ArgumentException();
             }
