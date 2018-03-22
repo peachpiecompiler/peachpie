@@ -119,7 +119,7 @@ namespace Pchp.Library
 
                 case "disable_functions":
                 case "disable_classes":
-                    Debug.Assert(action == IniAction.Get);
+                    AssertGet(option, action);
                     return (PhpValue)string.Empty;
 
                 case "memory_limit":

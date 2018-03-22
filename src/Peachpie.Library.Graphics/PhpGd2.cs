@@ -5,7 +5,9 @@ using System.IO;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using ImageSharp;
+using ImageSharp.Drawing;
 using ImageSharp.Drawing.Brushes;
+using ImageSharp.Drawing.Pens;
 using ImageSharp.Formats;
 using ImageSharp.Processing;
 using Pchp.Core;
@@ -181,7 +183,7 @@ namespace Peachpie.Library.Graphics
             BRUSHED = -3,
 
             /// <summary>
-            /// Special color option which can be used in stead of color allocated with <see cref="imagecolorallocate"/> or <see cref="imagecolorallocatealpha"/>.
+            /// Special color option which can be used instead of color allocated with <see cref="imagecolorallocate"/> or <see cref="imagecolorallocatealpha"/>.
             /// </summary>
             STYLEDBRUSHED = -4,
 
@@ -731,7 +733,7 @@ namespace Peachpie.Library.Graphics
             var img = PhpGdImageResource.ValidImage(image);
             if (img != null)
             {
-                switch(filtertype)
+                switch (filtertype)
                 {
                     case FilterTypes.GRAYSCALE:
                         img.Image.Grayscale();
@@ -1645,112 +1647,85 @@ namespace Peachpie.Library.Graphics
             //image.UnlockBits(data);
         }
 
-        #region imagefilledpolygon
+        #region imagefilledpolygon, imagepolygon 
+
+        /// <summary>
+        /// Draws a polygon.
+        /// </summary>
+        public static bool imagepolygon(PhpResource im, PhpArray point, int num_points, long col)
+            => Polygon(im, point, num_points, col, filled: false);
 
         /// <summary>
         /// Draw a filled polygon
         /// </summary>
         public static bool imagefilledpolygon(PhpResource im, PhpArray point, int num_points, long col)
+            => Polygon(im, point, num_points, col, filled: true);
+
+        static bool Polygon(PhpResource im, PhpArray point, int num_points, long col, bool filled)
         {
-            return DrawPoly(im, point, num_points, col, true);
-        }
+            var img = PhpGdImageResource.ValidImage(im);
+            if (img == null || point == null)
+            {
+                return false;
+            }
 
-        /// <summary>
-        /// Draws normal or filled polygon
-        /// </summary>
-        /// <param name="im"></param>
-        /// <param name="point"></param>
-        /// <param name="num_points"></param>
-        /// <param name="col"></param>
-        /// <param name="filled"></param>
-        /// <returns></returns>
-        private static bool DrawPoly(PhpResource im, PhpArray point, int num_points, long col, bool filled)
-        {
-            throw new NotImplementedException();
+            if (point == null)
+            {
+                PhpException.Throw(PhpError.Warning, Pchp.Library.Resources.Resources.unexpected_arg_given, nameof(point), PhpArray.PhpTypeName, PhpVariable.TypeNameNull);
+                return false;
+            }
 
-            //if (im == null)
-            //{
-            //    PhpException.Throw(PhpError.Warning, LibResources.GetString("unexpected_arg_given", 1, PhpResource.PhpTypeName, PhpVariable.TypeNameNull.ToLowerInvariant()));
-            //    return false;
-            //}
-            //PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
-            //if (img == null)
-            //    return false;
+            if (point.Count < num_points * 2)
+            {
+                return false;
+            }
 
-            //if (point == null)
-            //{
-            //    PhpException.Throw(PhpError.Warning, LibResources.GetString("unexpected_arg_given", 2, PhpArray.PhpTypeName, PhpVariable.TypeNameNull.ToLowerInvariant()));
-            //    return false;
-            //}
+            if (num_points <= 0)
+            {
+                PhpException.Throw(PhpError.Warning, Resources.must_be_positive_number_of_points);
+                return false;
+            }
 
-            //if (point.Count < num_points * 2)
-            //    return false;
+            var enumerator = point.GetFastEnumerator();
+            var points = new PointF[num_points];
+            for (int i = 0; i < points.Length; i++)
+            {
+                enumerator.MoveNext();
+                var x = (float)enumerator.CurrentValue.ToDouble();
+                enumerator.MoveNext();
+                var y = (float)enumerator.CurrentValue.ToDouble();
 
-            //if (num_points <= 0)
-            //{
-            //    PhpException.Throw(PhpError.Warning, Utils.Resources.GetString("must_be_positive_number_of_points"));
-            //    return false;
-            //}
+                points[i] = new PointF(x, y);
+            }
 
-            //Point[] points = new Point[num_points];
+            if (filled)
+            {
+                IBrush<Rgba32> brush;
 
-            //for (int i = 0, j = 0; i < num_points; i++, j += 2)
-            //    points[i] = new Point(Pchp.Core.Convert.ObjectToInteger(point[j]), Pchp.Core.Convert.ObjectToInteger(point[j + 1]));
+                switch (col)
+                {
+                    case (long)ColorValues.TILED:
+                        brush = img.tiled;
+                        break;
+                    case (long)ColorValues.STYLED:
+                        brush = img.styled;
+                        break;
+                    case (long)ColorValues.BRUSHED:
+                        brush = img.brushed;
+                        break;
+                    default:
+                        brush = new SolidBrush<Rgba32>(FromRGBA(col));
+                        break;                        
+                }
+                
+                img.Image.FillPolygon(brush, points);
+            }
+            else
+            {
+                img.Image.DrawPolygon(new Pen<Rgba32>(FromRGBA(col), 1.0f), points);
+            }
 
-            //using (Graphics g = Graphics.FromImage(img.Image))
-            //{
-            //    g.SmoothingMode = SmoothingMode.None;
-
-            //    if (filled)
-            //    {
-            //        if (col < 0)
-            //        {
-            //            if (col == (int)ColorValues.TILED)
-            //            {
-            //                if (img.tiled != null)
-            //                {
-            //                    g.FillPolygon(img.tiled, points);
-            //                }
-            //                return true;
-            //            }
-            //            else if (col == -2 && img.styled != null)
-            //            {
-            //                g.FillPolygon(img.styled, points);
-            //            }
-            //            else if (col == -3 && img.brushed != null)
-            //            {
-            //                g.FillPolygon(img.brushed, points);
-            //            }
-            //            else
-            //            {
-            //                return true;
-            //            }
-            //        }
-            //        else
-            //        {
-            //            var brush = new SolidBrush<Rgba32>(PHPColorToRgba32Color(col));
-            //            g.FillPolygon(brush, points);
-            //        }
-
-            //        using (Pen pen = CreatePen(col, img, false))
-            //        {
-            //            pen.LineJoin = LineJoin.Bevel;
-            //            g.DrawPolygon(pen, points);
-            //        }
-            //    }
-            //    else
-            //    {
-            //        using (Pen pen = CreatePen(col, img, true))
-            //        {
-            //            SetAntiAlias(img, g);
-
-            //            pen.LineJoin = LineJoin.Bevel;
-            //            g.DrawPolygon(pen, points);
-            //        }
-            //    }
-            //}
-
-            //return true;
+            return true;
         }
 
         #endregion
