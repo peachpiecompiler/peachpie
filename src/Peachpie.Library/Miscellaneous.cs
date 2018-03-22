@@ -431,7 +431,6 @@ namespace Pchp.Library
             //ctx.ApplyExecutionTimeout(seconds);
         }
 
-
         /// <summary>
         /// Get a value of a configuration option "ignore_user_abort".
         /// </summary>

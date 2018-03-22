@@ -97,6 +97,14 @@ namespace Pchp.Library
 
         static readonly GetSetDelegate s_emptyGsr = new GetSetDelegate((ctx, s, name, value, action) => PhpValue.Null);
 
+        static void AssertGet(string option, IniAction action)
+        {
+            if (action != IniAction.Get)
+            {
+                PhpException.ArgumentValueNotSupported(option, action);
+            }
+        }
+
         static PhpValue GsrCore(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
         {
             switch (option.ToLowerInvariant())
@@ -109,9 +117,18 @@ namespace Pchp.Library
                 case "include_path":
                     return (PhpValue)GetSet(ref config.Core.IncludePaths, ".", value, action);
 
+                case "disable_functions":
+                case "disable_classes":
+                    Debug.Assert(action == IniAction.Get);
+                    return (PhpValue)string.Empty;
+
+                case "memory_limit":
+                    AssertGet(option, action);
+                    return (PhpValue)(-1); // no memory limit
+
                 case "post_max_size":
                 case "upload_max_filesize":
-                    Debug.Assert(action == IniAction.Get);
+                    AssertGet(option, action);
                     return (PhpValue)ctx.HttpPhpContext.MaxRequestSize;
 
                 case "docref_root":
@@ -206,8 +223,8 @@ namespace Pchp.Library
             Register("default_mimetype", IniFlags.Supported | IniFlags.Local | IniFlags.Http, s_emptyGsr);
             Register("default_socket_timeout", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
             Register("define_syslog_variables", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
-            Register("disable_classes", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
-            Register("disable_functions", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
+            Register("disable_classes", IniFlags.Supported | IniFlags.Global, gsrcore);
+            Register("disable_functions", IniFlags.Supported | IniFlags.Global, gsrcore);
             Register("display_errors", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
             Register("display_startup_errors", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
             Register("doc_root", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
@@ -239,7 +256,7 @@ namespace Pchp.Library
             Register("magic_quotes_sybase", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
             Register("max_execution_time", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
             Register("max_input_time", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
-            Register("memory_limit", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
+            Register("memory_limit", IniFlags.Supported | IniFlags.Local, gsrcore);
             Register("mime_magic.magicfile", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
             Register("open_basedir", IniFlags.Supported | IniFlags.Global, gsrcore);
             Register("output_buffering", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
