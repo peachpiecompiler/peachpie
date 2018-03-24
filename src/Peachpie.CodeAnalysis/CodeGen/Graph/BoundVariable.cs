@@ -175,8 +175,22 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
                 else
                 {
+                    // load parameter & dereference PhpValue
+                    TypeSymbol t;
+                    if (_place.TypeOpt == cg.CoreTypes.PhpValue)
+                    {
+                        // p.GetValue() : PhpValue
+                        _place.EmitLoadAddress(cg.Builder);
+                        t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.GetValue);
+                    }
+                    else
+                    {
+                        // p
+                        t = _place.EmitLoad(cg.Builder);
+                    }
+
                     // make copy of given value
-                    return cg.EmitDeepCopy(_place.EmitLoad(cg.Builder), nullcheck: !_notNull);
+                    return cg.EmitDeepCopy(t, nullcheck: !_notNull);
                 }
             }
 

@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Pchp.Library.Resources;
 using Pchp.Library.Reflection;
+using System.Diagnostics;
 
 namespace Pchp.Library
 {
@@ -235,6 +236,8 @@ namespace Pchp.Library
         /// If a property has not been assigned a value, it will be returned with a NULL value.</returns>
         public static PhpArray get_object_vars([ImportCallerClass]RuntimeTypeHandle caller, object obj)
         {
+            Debug.Assert(!(obj is PhpAlias), "obj must be dereferenced");
+
             if (obj == null)
             {
                 return null; // not FALSE since PHP 5.3
