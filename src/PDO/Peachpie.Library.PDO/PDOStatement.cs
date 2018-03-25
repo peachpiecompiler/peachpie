@@ -11,6 +11,7 @@ namespace Peachpie.Library.PDO
     /// PDOStatement class
     /// </summary>
     /// <seealso cref="IPDOStatement" />
+    [PhpType(PhpTypeAttribute.InheritName)]
     public class PDOStatement : IPDOStatement, IDisposable
     {
         private readonly PDO m_pdo;
@@ -21,7 +22,6 @@ namespace Peachpie.Library.PDO
         private DbDataReader m_dr;
         private readonly Dictionary<PDO.PDO_ATTR, PhpValue> m_attributes = new Dictionary<PDO.PDO_ATTR, PhpValue>();
         private string[] m_dr_names;
-
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PDOStatement" /> class.
@@ -38,6 +38,17 @@ namespace Peachpie.Library.PDO
             this.m_cmd = pdo.CreateCommand(this.m_stmt);
 
             this.SetDefaultAttributes();
+        }
+
+        /// <summary>
+        /// Empty ctor.
+        /// </summary>
+        protected PDOStatement()
+        {
+            m_pdo = null;
+            m_stmt = null;
+            m_options = PhpArray.Empty;
+            m_cmd = null;
         }
 
         private void SetDefaultAttributes()
