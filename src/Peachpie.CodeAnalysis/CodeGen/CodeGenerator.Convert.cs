@@ -857,8 +857,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public TypeSymbol EmitAsObject(TypeSymbol from)
         {
-            bool isnull;
-            return EmitAsObject(from, out isnull);
+            return EmitAsObject(from, out bool isnull);
         }
 
         internal TypeSymbol EmitAsObject(TypeSymbol from, out bool isnull)

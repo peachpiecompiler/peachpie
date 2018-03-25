@@ -38,7 +38,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public int GetHashCode(IMethodSymbol obj)
         {
-            return obj.Parameters.Sum(p => p.Type.GetHashCode()) ^ obj.MetadataName.GetHashCode();
+            var hash = 0; ;
+            var ps = obj.Parameters;
+            for (int i = 0; i < ps.Length; i++)
+            {
+                hash = unchecked(hash + ps[i].Type.GetHashCode());
+            }
+
+            return hash ^ obj.MetadataName.GetHashCode();
         }
     }
 }
