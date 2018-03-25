@@ -812,10 +812,8 @@ namespace Pchp.Library
             if ((enumerable = glue.AsObject() as IEnumerable) != null)
                 return ImplodeInternal(ctx, pieces, new PhpArray(enumerable));
 
-            ////
-            //PhpException.InvalidArgument("pieces");
-            //return null;
-            throw new ArgumentException();
+            PhpException.InvalidArgument("pieces");
+            return PhpString.Empty;  // ~ NULL
         }
 
         /// <summary>
