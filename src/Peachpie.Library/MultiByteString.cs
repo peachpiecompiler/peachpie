@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Pchp.Core;
 using static Pchp.Library.StandardPhpOptions;
 
@@ -19,6 +18,8 @@ namespace Pchp.Library
         sealed class MbConfig : IPhpConfiguration
         {
             public Encoding InternalEncoding { get; set; }
+
+            public Encoding RegexEncoding { get; set; }
 
             public IPhpConfiguration Copy() => (MbConfig)this.MemberwiseClone();
 
@@ -47,7 +48,7 @@ namespace Pchp.Library
                     case "mbstring.func_overload":
                         // "0" PHP_INI_SYSTEM PHP_INI_PERDIR from PHP 4.3 to 5.2.6, otherwise PHP_INI_SYSTEM. Available since PHP 4.2.0.Deprecated in PHP 7.2.0.
                         return (PhpValue)0;
-                    
+
                     //mbstring.encoding_translation   "0" PHP_INI_PERDIR Available since PHP 4.3.0.
                     //mbstring.strict_detection   "0" PHP_INI_ALL Available since PHP 5.1.2.
                     //mbstring.internal_encoding  NULL PHP_INI_ALL Available since PHP 4.0.6.Deprecated in PHP 5.6.0.
@@ -287,11 +288,10 @@ namespace Pchp.Library
             {
                 return false;
             }
-
         }
 
         /// <summary>
-        /// Get a MIME charset string for a specific encoding. 
+        /// Get a MIME charset string for a specific encoding.
         /// </summary>
         /// <param name="encoding_name">The encoding being checked. Its WebName or PHP/Phalanger name.</param>
         /// <returns>The MIME charset string for given character encoding.</returns>
@@ -399,7 +399,7 @@ namespace Pchp.Library
             => SubString(ctx, str, start, length, encoding);
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <param name="ctx"></param>
         /// <param name="str"></param>
@@ -595,7 +595,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region mb_convert_encoding 
+        #region mb_convert_encoding
 
         /// <summary>
         /// Converts the character encoding of <paramref name="str"/> to <paramref name="to_encoding"/>.
@@ -742,5 +742,468 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        #region mb_substitute_character
+
+        public static object mb_substitute_character()
+        {
+            PhpException.FunctionNotSupported("mb_substitute_character");
+            return false;
+        }
+
+        public static object mb_substitute_character(object substrchar)
+        {
+            PhpException.FunctionNotSupported("mb_substitute_character");
+            return "none";
+        }
+
+        #endregion
+
+        #region mb_strimwidth implementation
+
+        public static string mb_strimwidth(Context ctx, string str, int start, int width, string trimmarker = null, string encoding = null)
+        {
+            return StringTrimByWidth(
+                str,
+                start,
+                width,
+                trimmarker,
+                () => string.IsNullOrEmpty(encoding) ? GetInternalEncoding(ctx) : GetEncoding(encoding));
+        }
+
+        static string StringTrimByWidth(string str, int start, int width, string trimmarker, Func<Encoding> encodingGetter)
+        {
+            string ustr = str; // ObjectToString(str, encodingGetter);
+
+            if (start >= ustr.Length)
+                return string.Empty;
+
+            ustr = ustr.Substring(start);
+            int ustrWidth = StringWidth(ustr);
+
+            if (ustrWidth <= width)
+                return ustr;
+
+            // trim the string
+            int trimmarkerWidth = StringWidth(trimmarker);
+
+            width -= trimmarkerWidth;
+            string trimmedStr = StringTrimByWidth(ustr, ref width);
+            width += trimmarkerWidth;
+            string trimmedTrimMarker = StringTrimByWidth(trimmarker, ref width);
+
+            //
+            return trimmedStr + trimmedTrimMarker;
+        }
+
+        #endregion
+
+        #region mb_strstr, mb_stristr
+
+        [return: CastToFalse]
+        public static string mb_strstr(Context ctx, string haystack, string needle, bool part = false, string encoding = null)
+        {
+            return StrStr(
+                haystack,
+                needle,
+                part,
+                () => string.IsNullOrEmpty(encoding) ? GetInternalEncoding(ctx) : GetEncoding(encoding),
+                false);
+        }
+
+        [return: CastToFalse]
+        public static string mb_stristr(Context ctx, string haystack, string needle, bool part = false, string encoding = null)
+        {
+            return StrStr(
+                haystack,
+                needle,
+                part,
+                () => string.IsNullOrEmpty(encoding) ? GetInternalEncoding(ctx) : GetEncoding(encoding),
+                true);
+        }
+
+        /// <summary>
+        /// mb_strstr() finds the first occurrence of needle in haystack  and returns the portion of haystack. If needle is not found, it returns FALSE.
+        /// </summary>
+        /// <param name="haystack">The string from which to get the first occurrence of needle</param>
+        /// <param name="needle">The string to find in haystack</param>
+        /// <param name="part">Determines which portion of haystack  this function returns. If set to TRUE, it returns all of haystack  from the beginning to the first occurrence of needle. If set to FALSE, it returns all of haystack  from the first occurrence of needle to the end.</param>
+        /// <param name="encodingGetter">Character encoding name to use. If it is omitted, internal character encoding is used. </param>
+        /// <param name="ignoreCase">Case insensitive.</param>
+        /// <returns>Returns the portion of haystack, or FALSE (-1) if needle is not found.</returns>
+        static string StrStr(string haystack, string needle, bool part/* = false*/  , Func<Encoding> encodingGetter, bool ignoreCase)
+        {
+            string uhaystack = haystack; //ObjectToString(haystack, encodingGetter);
+            string uneedle = needle; //ObjectToString(needle, encodingGetter);
+
+            if (uhaystack == null || uneedle == null)   // never happen
+                return null;
+
+            if (uneedle == string.Empty)
+            {
+                PhpException.InvalidArgument(nameof(needle), Resources.LibResources.arg_empty);
+                return null;
+            }
+
+            int index = (ignoreCase) ? uhaystack.ToLower().IndexOf(uneedle.ToLower()) : uhaystack.IndexOf(uneedle);
+            return (index == -1) ? null : (part ? uhaystack.Substring(0, index) : uhaystack.Substring(index));
+        }
+
+        #endregion
+
+        #region mb_strrpos
+
+        [return: CastToFalse]
+        public static int mb_strrpos(Context ctx, string haystack, string needle, int offset = 0, string encoding = null)
+        {
+            return Strrpos(
+                haystack,
+                needle,
+                offset,
+                () => string.IsNullOrEmpty(encoding) ? GetInternalEncoding(ctx) : GetEncoding(encoding),
+                false);
+        }
+
+        #endregion
+
+        #region mb_strripos
+
+        [return: CastToFalse]
+        public static int mb_strripos(Context ctx, string haystack, string needle, int offset = 0, string encoding = null)
+        {
+            return Strrpos(
+                haystack,
+                needle,
+                offset,
+                () => string.IsNullOrEmpty(encoding) ? GetInternalEncoding(ctx) : GetEncoding(encoding),
+                true);
+        }
+
+        #endregion
+
+        #region mb_strrchr
+
+        [return: CastToFalse]
+        public static string mb_strrchr(Context ctx, string haystack, string needle, bool part = false, string encoding = null)
+        {
+            return StrrChr(
+                haystack,
+                needle,
+                part,
+                () => string.IsNullOrEmpty(encoding) ? GetInternalEncoding(ctx) : GetEncoding(encoding),
+                false);
+        }
+
+        #endregion
+
+        #region mb_language, mb_send_mail
+
+        /// <summary>
+        /// Get language used by mail functions.
+        /// </summary>
+        /// <returns></returns>
+        public static string mb_language()
+        {
+            return "uni"; //MailLanguage;
+        }
+
+        /// <summary>
+        /// Set the language used by mail functions.
+        /// </summary>
+        /// <param name="language"></param>
+        /// <returns>True if language was set, otherwise false.</returns>
+        public static bool mb_language(string language)
+        {
+            PhpException.FunctionNotSupported("mb_language");
+            return false;
+        }
+
+        #region mb_send_mail(), TODO: use mb_language
+
+        public static bool mb_send_mail(Context ctx, string to, string subject, string message, string additional_headers = null, string additional_parameter = null)
+        {
+            return Mail.mail(
+                ctx,
+                to,
+                subject,
+                message,
+                additional_headers,
+                additional_parameter);
+        }
+
+        #endregion
+
+        #endregion
+
+        #region mb_regex_encoding
+
+        /// <summary>
+        /// Get encoding used by regex in the extension.
+        /// </summary>
+        /// <returns></returns>
+        public static string mb_regex_encoding(Context ctx)
+        {
+            return (ctx.Configuration.Get<MbConfig>().RegexEncoding ?? ctx.StringEncoding).WebName;
+        }
+        
+        /// <summary>
+        /// Set the encoding used by the extension in regex functions.
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="encodingName"></param>
+        /// <returns>True is encoding was set, otherwise false.</returns>
+        public static bool mb_regex_encoding(Context ctx, string encodingName)
+        {
+            Encoding enc = GetEncoding(encodingName);
+
+            if (enc != null)
+            {
+                ctx.Configuration.Get<MbConfig>().RegexEncoding = enc;
+
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Detects the HTTP input character encoding.
+        /// </summary>
+        /// <param name="type">
+        /// <para>Input string specifies the input type. "G" for GET, "P" for POST, "C" for COOKIE, "S" for string, "L" for list, and</para>
+        /// <para> "I" for the whole list (will return array). If type is omitted, it returns the last input type processed.</para>
+        /// </param>
+        /// <returns>The character encoding name, as per the type. If mb_http_input() does not process specified HTTP input, it returns FALSE.</returns>
+        public static string mb_http_input(string type = "")
+        {
+            // TODO: Implement
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Set/Get the HTTP output character encoding. Output after this function is called will be converted from the set internal encoding to encoding.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        public static string mb_http_output(string type)
+        {
+            // TODO: Implement
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Sets the automatic character encoding detection order to encoding_list. 
+        /// </summary>
+        /// <param name="encoding_list"></param>
+        /// <returns></returns>
+        public static string mb_detect_order(object encoding_list = null)
+        {
+            // TODO: Implement
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Detects character encoding in string str. 
+        /// </summary>
+        /// <param name="str"></param>
+        /// <param name="encoding_list"></param>
+        /// <param name="strict"></param>
+        /// <returns></returns>
+        public static string mb_detect_encoding(string str, object encoding_list = null, bool strict = false)
+        {
+            //if (encoding_list == null)
+            //{
+            //    encoding_list = mb_detect_order();
+            //}
+
+            // TODO: Implement
+            throw new NotImplementedException();
+        }
+        
+        /// <summary>
+        /// Implementation of <c>mb_strr[i]pos</c> functions.
+        /// </summary>
+        static int Strrpos(string haystack, string needle, int offset, Func<Encoding> encodingGetter, bool ignoreCase)
+        {
+            string uhaystack = haystack; //ObjectToString(haystack, encodingGetter);
+            string uneedle = needle; //ObjectToString(needle, encodingGetter);
+
+            if (uhaystack == null || uneedle == null)
+                return -1;
+
+            int end = uhaystack.Length - 1;
+            if (offset > end || offset < -end - 1)
+            {
+                PhpException.InvalidArgument(nameof(offset), Resources.LibResources.arg_out_of_bounds);
+                return -1;
+            }
+
+            if (offset < 0)
+            {
+                end += uneedle.Length + offset;
+                offset = 0;
+            }
+
+            if (uneedle.Length == 0)
+            {
+                PhpException.InvalidArgument(nameof(needle), Resources.LibResources.arg_empty);
+                return -1;
+            }
+
+            if (ignoreCase)
+                return uhaystack.ToLower().LastIndexOf(uneedle.ToLower(), end, end - offset + 1);
+            else
+                return uhaystack.LastIndexOf(uneedle, end, end - offset + 1);
+        }
+
+        static int StringWidth(string str)
+        {
+            if (str == null)
+                return 0;
+
+            int width = 0;
+
+            foreach (char c in str)
+                width += CharWidth(c);
+
+            return width;
+        }
+
+        /// <summary>
+        /// Determines the char width.
+        /// </summary>
+        /// <param name="c">Character.</param>
+        /// <returns>The width of the character.</returns>
+        static int CharWidth(char c)
+        {
+            //Chars  	            Width
+            //U+0000 - U+0019 	0
+            //U+0020 - U+1FFF 	1
+            //U+2000 - U+FF60 	2
+            //U+FF61 - U+FF9F 	1
+            //U+FFA0 - 	        2
+
+            if (c <= 0x0019) return 0;
+            else if (c <= 0x1fff) return 1;
+            else if (c <= 0xff60) return 2;
+            else if (c <= 0xff9f) return 1;
+            else return 2;
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="str"></param>
+        /// <param name="width">Characters remaining.</param>
+        /// <returns></returns>
+        static string StringTrimByWidth(string/*!*/str, ref int width)
+        {
+            if (str == null)
+                return null;
+
+            int i = 0;
+
+            foreach (char c in str)
+            {
+                int w = CharWidth(c);
+
+                if (w < width)
+                {
+                    ++i;
+                    width -= w;
+                }
+                else if (w == width)
+                {
+                    ++i;
+                    width = 0;
+                    break;
+                }
+                else
+                    break;
+            }
+
+            return (i < str.Length) ? str.Remove(i) : str;
+        }
+
+        static string StrrChr(string haystack, string needle, bool beforeNeedle/*=false*/, Func<Encoding> encodingGetter, bool ignoreCase)
+        {
+            string uhaystack = haystack; //ObjectToString(haystack, encodingGetter);
+            char cneedle;
+            {
+                string uneedle = needle;
+
+                //string uneedle;
+
+                //if (needle is string) uneedle = (string)needle;
+                //else if (needle is PhpString) uneedle = ((IPhpConvertible)needle).ToString();
+                //else if (needle is PhpBytes)
+                //{
+                //    Encoding encoding = encodingGetter();
+                //    if (encoding == null)
+                //        return null;
+
+                //    PhpBytes bytes = (PhpBytes)needle;
+                //    uneedle = encoding.GetString(bytes.ReadonlyData, 0, bytes.Length);
+                //}
+                //else
+                //{   // needle as a character number
+                //    Encoding encoding = encodingGetter();
+                //    if (encoding == null)
+                //        return null;
+
+                //    uneedle = encoding.GetString(new byte[] { unchecked((byte)Core.Convert.ObjectToInteger(needle)) }, 0, 1);
+                //}
+
+                if (string.IsNullOrEmpty(uneedle))
+                    return null;
+
+                cneedle = uneedle[0];
+            }
+
+            int index = (ignoreCase) ? uhaystack.ToLower().LastIndexOf(char.ToLower(cneedle)) : uhaystack.LastIndexOf(cneedle);
+            if (index < 0)
+                return null;
+
+            return (beforeNeedle) ? uhaystack.Remove(index) : uhaystack.Substring(index);
+        }
+
+        static Encoding GetInternalEncoding(Context ctx)
+        {
+            return (ctx.Configuration.Get<MbConfig>().InternalEncoding ?? ctx.StringEncoding);
+        }
+
+        static Encoding GetRegexEncoding(Context ctx)
+        {
+            return (ctx.Configuration.Get<MbConfig>().RegexEncoding ?? ctx.StringEncoding);
+        }
+
+        ///// <summary>
+        ///// Converts PhpBytes using specified encoding. If any other object is provided, encoding is not performed.
+        ///// </summary>
+        ///// <param name="str"></param>
+        ///// <param name="encodingGetter"></param>
+        ///// <returns></returns>
+        //static string ObjectToString(PhpValue str, Func<Encoding> encodingGetter)
+        //{
+        //    if (str is PhpBytes)
+        //    {
+        //        PhpBytes bytes = (PhpBytes)str;
+        //        Encoding encoding = encodingGetter();
+
+        //        if (encoding == null)
+        //            return null;
+
+        //        return encoding.GetString(bytes.ReadonlyData, 0, bytes.Length);
+        //    }
+        //    else
+        //    {
+        //        // .NET String should be always UTF-16, given encoding is irrelevant
+        //        return PHP.Core.Convert.ObjectToString(str);
+        //    }
+        //}
     }
 }
