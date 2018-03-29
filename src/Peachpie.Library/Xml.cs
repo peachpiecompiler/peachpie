@@ -337,11 +337,11 @@ namespace Pchp.Library
                         emptyElement = reader.IsEmptyElement;
                         PhpArray attributeArray = new PhpArray();
 
-                        if (_processNamespaces && elementName.IndexOf(":") >= 0)
-                        {
-                            string localName = elementName.Substring(elementName.IndexOf(":") + 1);
-                            elementName = reader.NamespaceURI + _namespaceSeparator + localName;
-                        }
+                        //if (_processNamespaces && elementName.IndexOf(":") >= 0)
+                        //{
+                        //    string localName = elementName.Substring(elementName.IndexOf(":") + 1);
+                        //    elementName = reader.NamespaceURI + _namespaceSeparator + localName;
+                        //}
 
                         if (reader.MoveToFirstAttribute())
                         {
@@ -397,11 +397,11 @@ namespace Pchp.Library
                     case XmlNodeType.EndElement:
                         elementName = reader.Name;
 
-                        if (_processNamespaces && elementName.IndexOf(":") >= 0)
-                        {
-                            string localName = elementName.Substring(elementName.IndexOf(":") + 1);
-                            elementName = reader.NamespaceURI + _namespaceSeparator + localName;
-                        }
+                        //if (_processNamespaces && elementName.IndexOf(":") >= 0)
+                        //{
+                        //    string localName = elementName.Substring(elementName.IndexOf(":") + 1);
+                        //    elementName = reader.NamespaceURI + _namespaceSeparator + localName;
+                        //}
 
                         // pop the top element record
                         currentElementRecord = elementStack.Pop();
