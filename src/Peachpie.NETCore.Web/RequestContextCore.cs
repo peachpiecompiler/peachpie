@@ -126,7 +126,16 @@ namespace Peachpie.Web
         {
             get
             {
-                return 30_000_000; // TODO: since 2.0.0: _httpctx.Features.Get<IHttpMaxRequestBodySizeFeature>().MaxRequestBodySize;
+#if NETSTANDARD2_0
+                // since 2.0.0
+                var maxsize = _httpctx.Features.Get<IHttpMaxRequestBodySizeFeature>()?.MaxRequestBodySize;
+                if (maxsize.HasValue)
+                {
+                    return maxsize.Value;
+                }
+#endif
+                // default:
+                return 30_000_000;
             }
         }
 
@@ -153,9 +162,9 @@ namespace Peachpie.Web
         /// </summary>
         PhpSessionState IHttpPhpContext.SessionState { get; set; }
 
-        #endregion
+#endregion
 
-        #region Request Lifecycle
+#region Request Lifecycle
 
         /// <summary>
         /// The default document.
@@ -247,7 +256,7 @@ namespace Peachpie.Web
             base.Dispose();
         }
 
-        #endregion
+#endregion
 
         public override IHttpPhpContext HttpPhpContext => this;
 
