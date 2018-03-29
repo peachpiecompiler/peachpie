@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using Pchp.Core;
@@ -20,6 +21,8 @@ namespace Pchp.Library
             public Encoding InternalEncoding { get; set; }
 
             public Encoding RegexEncoding { get; set; }
+
+            public Encoding HttpOutputEncoding { get; set; }
 
             public IPhpConfiguration Copy() => (MbConfig)this.MemberwiseClone();
 
@@ -945,7 +948,7 @@ namespace Pchp.Library
         {
             return (ctx.Configuration.Get<MbConfig>().RegexEncoding ?? ctx.StringEncoding).WebName;
         }
-        
+
         /// <summary>
         /// Set the encoding used by the extension in regex functions.
         /// </summary>
@@ -978,21 +981,30 @@ namespace Pchp.Library
         /// <para> "I" for the whole list (will return array). If type is omitted, it returns the last input type processed.</para>
         /// </param>
         /// <returns>The character encoding name, as per the type. If mb_http_input() does not process specified HTTP input, it returns FALSE.</returns>
-        public static string mb_http_input(string type = "")
+        public static bool mb_http_input(string type = "")
         {
-            // TODO: Implement
-            throw new NotImplementedException();
+            return false;
         }
 
-        /// <summary>
-        /// Set/Get the HTTP output character encoding. Output after this function is called will be converted from the set internal encoding to encoding.
-        /// </summary>
-        /// <param name="type"></param>
-        /// <returns></returns>
-        public static string mb_http_output(string type)
+        public static string mb_http_output(Context ctx)
         {
-            // TODO: Implement
-            throw new NotImplementedException();
+            return (ctx.Configuration.Get<MbConfig>().HttpOutputEncoding ?? ctx.StringEncoding).WebName;
+        }
+
+        public static bool mb_http_output(Context ctx, string encodingName)
+        {
+            Encoding enc = GetEncoding(encodingName);
+
+            if (enc != null)
+            {
+                ctx.Configuration.Get<MbConfig>().HttpOutputEncoding = enc;
+
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         /// <summary>
@@ -1009,21 +1021,21 @@ namespace Pchp.Library
         /// <summary>
         /// Detects character encoding in string str. 
         /// </summary>
-        /// <param name="str"></param>
-        /// <param name="encoding_list"></param>
-        /// <param name="strict"></param>
-        /// <returns></returns>
-        public static string mb_detect_encoding(string str, object encoding_list = null, bool strict = false)
+        /// <param name="ctx"></param>
+        /// <param name="str">The string being detected.</param>
+        /// <param name="encoding_list">
+        /// <para>A list of character encoding. Encoding order may be specified by array or comma separated list string.</para>
+        /// <para>If omitted, detect_order is used.</para>
+        /// </param>
+        /// <param name="strict">strict specifies whether to use the strict encoding detection or not. Default is FALSE.</param>
+        /// <returns>The detected character encoding or FALSE if the encoding cannot be detected from the given string.</returns>
+        public static object mb_detect_encoding(Context ctx, string str, PhpArray encoding_list = null, bool strict = false)
         {
-            //if (encoding_list == null)
-            //{
-            //    encoding_list = mb_detect_order();
-            //}
-
             // TODO: Implement
+            // NOTE: See DetectByteOrderMarkAsync() function here for possible solution: https://github.com/AngleSharp/AngleSharp/blob/master/src/AngleSharp/TextSource.cs
             throw new NotImplementedException();
         }
-        
+
         /// <summary>
         /// Implementation of <c>mb_strr[i]pos</c> functions.
         /// </summary>
