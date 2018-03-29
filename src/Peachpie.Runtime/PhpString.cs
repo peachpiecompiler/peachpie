@@ -962,7 +962,7 @@ namespace Pchp.Core
         /// <summary>
         /// Outputs the string content to the context output streams.
         /// </summary>
-        internal void Output(Context ctx) => _blob.Output(ctx);
+        internal void Output(Context ctx) => _blob?.Output(ctx);
 
         // Prepend
 
