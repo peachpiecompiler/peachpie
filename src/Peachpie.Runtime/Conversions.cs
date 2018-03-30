@@ -235,7 +235,8 @@ namespace Pchp.Core
             {
                 // special case,
                 // object is stdClass, we can simply copy its runtime fields
-                return ((stdClass)obj).GetRuntimeFields().DeepCopy();
+                var runtime_fields = ((stdClass)obj).GetRuntimeFields();
+                return (runtime_fields != null) ? runtime_fields.DeepCopy() : PhpArray.NewEmpty();
             }
             else
             {
