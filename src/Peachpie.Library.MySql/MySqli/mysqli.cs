@@ -282,7 +282,7 @@ namespace Peachpie.Library.MySql.MySqli
         {
             var config = ctx.Configuration.Get<MySqlConfiguration>();
             int connectiontimeout = 0;
-            string characterset = null;
+            string characterset = "utf8mb4"; // default characterset that solves all the problems
 
             if (_lazyoptions != null)
             {

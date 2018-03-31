@@ -147,7 +147,7 @@ namespace Peachpie.Library.MySql
             var config = ctx.Configuration.Get<MySqlConfiguration>();
             Debug.Assert(config != null);
 
-            var connection_string = BuildConnectionString(config, ref server, username, password, (ConnectFlags)client_flags);
+            var connection_string = BuildConnectionString(config, ref server, username, password, (ConnectFlags)client_flags, characterset: "utf8mb4");
 
             bool success;
             var connection = MySqlConnectionManager.GetInstance(ctx)
@@ -1126,26 +1126,7 @@ namespace Peachpie.Library.MySql
             }
 
             // else
-            var str = unescaped_str.ToString(ctx);
-
-            var sb = new StringBuilder(str.Length + 8);
-            for (int i = 0; i < str.Length; i++)
-            {
-                char c = str[i];
-                switch (c)
-                {
-                    case '\0': sb.Append(@"\0"); break;
-                    case '\\': sb.Append(@"\\"); break;
-                    case '\n': sb.Append(@"\n"); break;
-                    case '\r': sb.Append(@"\r"); break;
-                    case '\u001a': sb.Append(@"\Z"); break;
-                    case '\'': sb.Append(@"\'"); break;
-                    case '"': sb.Append("\\\""); break;
-                    default: sb.Append(c); break;
-                }
-            }
-
-            return new PhpString(sb.ToString());
+            return new PhpString(MySqlHelper.EscapeString(unescaped_str.ToString(ctx)));
         }
 
         #endregion
