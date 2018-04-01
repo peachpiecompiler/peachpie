@@ -2286,9 +2286,37 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // TODO: lookup cached keys:
 
-            // Template: new IntStringKey( <key> ) // PERF: computes GetHashCode()
-            _il.EmitStringConstant(key);
-            EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_string);
+            // try convert string to integer as it is in PHP:
+            if (TryConvertToIntKey(key, out int ikey))
+            {
+                EmitIntStringKey(ikey);
+            }
+            else
+            {
+                // Template: new IntStringKey( <key> )
+                _il.EmitStringConstant(key);
+                EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_string);
+            }
+        }
+
+        static bool TryConvertToIntKey(string key, out int ikey)
+        {
+            ikey = default(int);
+
+            if (string.IsNullOrEmpty(key))
+            {
+                return false;
+            }
+
+            // See Pchp.Core.Convert.StringToArrayKey:
+
+            if (key[0] == '0' ||
+                (key[0] == '-' && (key.Length == 1 || key[1] == '0')))
+            {
+                return false;
+            }
+
+            return int.TryParse(key, out ikey);
         }
 
         public void EmitIntStringKey(BoundExpression expr)
