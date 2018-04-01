@@ -107,7 +107,7 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Returns the auto generated id used in the latest query.
         /// </summary>
-        public long insert_id { get; private set; }
+        public long insert_id => _connection.LastInsertedId;
 
         //string $sqlstate;
 
@@ -256,8 +256,6 @@ namespace Peachpie.Library.MySql.MySqli
 
             if (result != null)
             {
-                insert_id = result.Command.LastInsertedId;
-
                 if (result.FieldCount == 0)
                 {
                     // no result set => not a SELECT

@@ -473,23 +473,10 @@ namespace Peachpie.Library.MySql
         /// <param name="linkIdentifier">Connection resource.</param>
         /// <returns>Id or 0 if the last command wasn't an insertion.</returns>
         [return: CastToFalse]
-        public static int mysql_insert_id(Context ctx, PhpResource linkIdentifier = null)
+        public static long mysql_insert_id(Context ctx, PhpResource linkIdentifier = null)
         {
             var connection = ValidConnection(ctx, linkIdentifier);
-            if (connection == null) return -1;
-
-            var result = connection.ExecuteQuery("SELECT LAST_INSERT_ID()", false);
-            if (result == null || result.RowCount < 1 || result.FieldCount < 1) return 0;
-
-            try
-            {
-                long id = System.Convert.ToInt64(result.GetFieldValue(0, 0));
-                return (id <= Int32.MaxValue) ? (int)id : Int32.MaxValue;
-            }
-            catch (InvalidCastException)
-            {
-                return -1;
-            }
+            return connection != null ? connection.LastInsertedId : -1;
         }
 
         /// <summary>
