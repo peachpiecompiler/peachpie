@@ -384,6 +384,16 @@ namespace Pchp.Core
             }
         }
 
+        /// <summary>
+        /// Tries to resolve compiled script according to given path.
+        /// </summary>
+        public static ScriptInfo TryResolveScript(string root, string path) => ScriptsMap.ResolveInclude(path, root, null, null, null);
+
+        /// <summary>
+        /// Declares script within runtime. The script will be available for inclusions.
+        /// </summary>
+        public static void DeclareScript(ScriptInfo script) => throw new NotImplementedException(); // ScriptsMap.DeclareScript( ... )
+
         #endregion
 
         #region Constants

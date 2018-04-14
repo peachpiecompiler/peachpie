@@ -13,7 +13,7 @@ namespace Peachpie.Web
     /// <summary>
     /// ASP.NET Core application middleware handling requests to compiled PHP scripts.
     /// </summary>
-    internal class PhpHandlerMiddleware
+    internal sealed class PhpHandlerMiddleware
     {
         readonly RequestDelegate _next;
         readonly string _rootPath;
