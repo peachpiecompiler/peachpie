@@ -210,10 +210,8 @@ namespace Pchp.Library
 		/// <returns>True if the file exists.</returns>
 		public static bool file_exists(Context ctx, string path)
         {
-            StreamWrapper wrapper;
-            return
-                !string.IsNullOrEmpty(path) &&  // check empty parameter quietly
-                ResolvePath(ctx, ref path, true, out wrapper) &&
+            return !string.IsNullOrEmpty(path) &&  // check empty parameter quietly
+                ResolvePath(ctx, ref path, true, out var wrapper) &&
                 HandleFileSystemInfo(false, path, p => File.Exists(p) || System.IO.Directory.Exists(p));
         }
 
@@ -510,9 +508,7 @@ namespace Pchp.Library
         /// <returns></returns>
         public static bool is_dir(Context ctx, string path)
         {
-            StreamWrapper wrapper;
-
-            if (!string.IsNullOrEmpty(path) && path.IndexOfAny(s_invalidPathChars) < 0 && ResolvePath(ctx, ref path, false, out wrapper)) // do not throw warning if path is null or empty
+            if (!string.IsNullOrEmpty(path) && path.IndexOfAny(s_invalidPathChars) < 0 && ResolvePath(ctx, ref path, false, out var wrapper)) // do not throw warning if path is null or empty
             {
                 //string url;
                 //if (StatInternalTryCache(path, out url))
@@ -551,9 +547,7 @@ namespace Pchp.Library
         /// <returns></returns>
         public static bool is_file(Context ctx, string path)
         {
-            StreamWrapper wrapper;
-
-            if (!string.IsNullOrEmpty(path) && path.IndexOfAny(s_invalidPathChars) < 0 && ResolvePath(ctx, ref path, false, out wrapper))
+            if (!string.IsNullOrEmpty(path) && path.IndexOfAny(s_invalidPathChars) < 0 && ResolvePath(ctx, ref path, false, out var wrapper))
             {
                 //string url;
                 //if (StatInternalTryCache(path, out url))

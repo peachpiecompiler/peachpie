@@ -895,12 +895,10 @@ namespace Pchp.Library.Streams
 
         public override StatStruct Stat(string path, StreamStatOptions options, StreamContext context, bool streamStat)
         {
-            StatStruct invalid = new StatStruct();
-            invalid.st_size = -1;
             Debug.Assert(path != null);
 
             // Note: path is already absolute w/o the scheme, the permissions have already been checked.
-            return PhpPath.HandleFileSystemInfo(invalid, path, (p) =>
+            return PhpPath.HandleFileSystemInfo(StatStruct.Invalid, path, (p) =>
             {
                 FileSystemInfo info = null;
 
@@ -910,7 +908,7 @@ namespace Pchp.Library.Streams
                     info = new FileInfo(p);
                     if (!info.Exists)
                     {
-                        return invalid;
+                        return StatStruct.Invalid;
                     }
                 }
 
