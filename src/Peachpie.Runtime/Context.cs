@@ -390,9 +390,35 @@ namespace Pchp.Core
         public static ScriptInfo TryResolveScript(string root, string path) => ScriptsMap.ResolveInclude(path, root, null, null, null);
 
         /// <summary>
+        /// Gets scripts in given directory.
+        /// </summary>
+        public static bool TryGetScriptsInDirectory(string root, string path, out IEnumerable<ScriptInfo> scripts)
+        {
+            // trim leading {root} path:
+            if (!string.IsNullOrEmpty(root) && path.StartsWith(root, StringComparison.Ordinal))
+            {
+                if (path.Length == root.Length)
+                {
+                    path = string.Empty;
+                }
+                else if (path[root.Length] == CurrentPlatform.DirectorySeparator)
+                {
+                    path = path.Remove(root.Length + 1);
+                }
+                else if (root[root.Length - 1] == CurrentPlatform.DirectorySeparator)
+                {
+                    path = path.Remove(root.Length);
+                }
+            }
+            
+            // try to get compiled scripts within path:
+            return ScriptsMap.TryGetDirectory(path, out scripts);
+        }
+
+        /// <summary>
         /// Declares script within runtime. The script will be available for inclusions.
         /// </summary>
-        public static void DeclareScript(ScriptInfo script) => throw new NotImplementedException(); // ScriptsMap.DeclareScript( ... )
+        public static void DeclareScript(string path, MainDelegate main) => throw new NotImplementedException(); // ScriptsMap.DeclareScript( ... )
 
         #endregion
 

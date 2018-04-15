@@ -212,7 +212,8 @@ namespace Pchp.Library
         {
             return !string.IsNullOrEmpty(path) &&  // check empty parameter quietly
                 ResolvePath(ctx, ref path, true, out var wrapper) &&
-                HandleFileSystemInfo(false, path, p => File.Exists(p) || System.IO.Directory.Exists(p));
+                HandleFileSystemInfo(false, path, p => File.Exists(p) || System.IO.Directory.Exists(p)) || // check file system
+                Context.TryResolveScript(ctx.RootPath, path).IsValid;   // check a compiled script
         }
 
         /// <summary>
@@ -516,7 +517,10 @@ namespace Pchp.Library
 
                 // we can't just call Directory.Exists since we have to throw warnings
                 // also we are not calling full stat(), it is slow
-                return HandleFileSystemInfo(false, path, (p) => new DirectoryInfo(p).Exists);
+
+                return
+                    HandleFileSystemInfo(false, path, (p) => new DirectoryInfo(p).Exists) ||    // filesystem
+                    Context.TryGetScriptsInDirectory(ctx.RootPath, path, out var scripts);      // compiled scripts
             }
 
             return false;
@@ -555,7 +559,10 @@ namespace Pchp.Library
 
                 // we can't just call File.Exists since we have to throw warnings
                 // also we are not calling full stat(), it is slow
-                return HandleFileSystemInfo(false, path, (p) => new FileInfo(p).Exists);
+
+                return
+                    HandleFileSystemInfo(false, path, (p) => new FileInfo(p).Exists) || // check file system
+                    Context.TryResolveScript(ctx.RootPath, path).IsValid;   // check a compiled script
             }
 
             return false;

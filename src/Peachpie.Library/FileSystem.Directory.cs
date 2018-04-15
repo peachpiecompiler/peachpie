@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Pchp.Core;
@@ -123,42 +124,39 @@ namespace Pchp.Library
     /// </summary>
     internal sealed class DirectoryListing : PhpResource
     {
-        public DirectoryListing(Context ctx, string[] listing)
-            : base(DirectoryListingName)
-        {
-            _ctx = ctx;
-            _listing = listing;
-
-            if (listing != null)
-            {
-                this.Enumerator = ((IEnumerable<string>)listing).GetEnumerator();
-                this.Enumerator.Reset();
-            }
-            else
-            {
-                this.Dispose();
-            }
-        }
-
-        protected override void FreeManaged()
-        {
-            var dirctx = PhpDirectory.PhpDirectoryContext.GetContext(_ctx);
-            if (object.ReferenceEquals(this, dirctx.LastDirHandle))
-            {
-                dirctx.LastDirHandle = null;
-            }
-        }
-
         public readonly IEnumerator<string> Enumerator;
 
-        private readonly Context _ctx;
-        private readonly string[] _listing;
+        readonly PhpDirectory.PhpDirectoryContext _dirctx;
 
-        private const string DirectoryListingName = "stream";
+        const string DirectoryListingName = "stream";
+
         //private static int DirectoryListingType = PhpResource.RegisterType(DirectoryListingName);
         // Note: PHP uses the stream mechanism listings (opendir etc.)
         // this is the same but a) faster, b) more memory expensive for large directories
         // (and unfinished listings in script)
+
+        public DirectoryListing(PhpDirectory.PhpDirectoryContext dirctx, IEnumerable<string> listing)
+            : base(DirectoryListingName)
+        {
+            Debug.Assert(listing != null);
+            Debug.Assert(dirctx != null);
+
+            _dirctx = dirctx;
+
+            this.Enumerator = listing.GetEnumerator();
+        }
+
+        protected override void FreeManaged()
+        {
+            //
+            if (ReferenceEquals(this, _dirctx.LastDirHandle))
+            {
+                _dirctx.LastDirHandle = null;
+            }
+
+            //
+            this.Enumerator.Dispose();
+        }
     }
 
     #endregion
@@ -276,14 +274,12 @@ namespace Pchp.Library
         {
             var dirctx = PhpDirectoryContext.GetContext(ctx);
 
-            StreamWrapper wrapper;
-            if (PhpStream.ResolvePath(ctx, ref directory, out wrapper, CheckAccessMode.Directory, CheckAccessOptions.Empty))
+            if (PhpStream.ResolvePath(ctx, ref directory, out var wrapper, CheckAccessMode.Directory, CheckAccessOptions.Empty))
             {
-                string[] listing = wrapper.Listing(directory, 0, null);
+                var listing = wrapper.Listing(ctx.RootPath, directory, StreamListingOptions.Empty, null);
                 if (listing != null)
                 {
-                    var res = dirctx.LastDirHandle = new DirectoryListing(ctx, listing);
-                    return res;
+                    return dirctx.LastDirHandle = new DirectoryListing(dirctx, listing);
                 }
             }
 
@@ -314,10 +310,9 @@ namespace Pchp.Library
         public static string readdir(PhpResource dirHandle)
         {
             var enumerator = ValidListing(dirHandle);
-            if (enumerator != null && enumerator.MoveNext())
-                return enumerator.Current.ToString();
-            else
-                return null;
+            return (enumerator != null && enumerator.MoveNext())
+                ? enumerator.Current
+                : null;
         }
 
         /// <summary>
@@ -339,9 +334,7 @@ namespace Pchp.Library
         /// </remarks>
         public static void rewinddir(PhpResource dirHandle)
         {
-            var enumerator = ValidListing(dirHandle);
-            if (enumerator == null) return;
-            enumerator.Reset();
+            ValidListing(dirHandle)?.Reset();
         }
 
         /// <summary>
@@ -364,9 +357,7 @@ namespace Pchp.Library
         public static void closedir(PhpResource dirHandle)
         {
             // Note: PHP allows other all stream resources to be closed with closedir().
-            var enumerator = ValidListing(dirHandle);
-            if (enumerator == null) return;
-            dirHandle.Dispose(); // releases the DirectoryListing and sets to invalid.
+            ValidListing(dirHandle)?.Dispose(); // releases the DirectoryListing and sets to invalid.
         }
 
         /// <summary>Lists files and directories inside the specified path.</summary>
@@ -387,10 +378,9 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpArray scandir(Context ctx, string directory, int sorting_order = 0)
         {
-            StreamWrapper wrapper;
-            if (PhpStream.ResolvePath(ctx, ref directory, out wrapper, CheckAccessMode.Directory, CheckAccessOptions.Empty))
+            if (PhpStream.ResolvePath(ctx, ref directory, out var wrapper, CheckAccessMode.Directory, CheckAccessOptions.Empty))
             {
-                var listing = wrapper.Listing(directory, 0, null);
+                var listing = wrapper.Listing(ctx.RootPath, directory, 0, null);
                 if (listing != null)
                 {
                     var ret = new PhpArray(listing); // create the array from the system one

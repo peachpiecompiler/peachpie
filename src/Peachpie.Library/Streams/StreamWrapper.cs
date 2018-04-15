@@ -71,7 +71,12 @@ namespace Pchp.Library.Streams
             return false;
         }
 
-        public virtual string[] Listing(string path, StreamListingOptions options, StreamContext context)
+        /// <summary>
+        /// Gets enumeration of entries within given path (directory).
+        /// The method can return a <c>null</c> reference.
+        /// The method throws PHP warning in case of not supported operation or insufficient permissions.
+        /// </summary>
+        public virtual IEnumerable<string> Listing(string root, string path, StreamListingOptions options, StreamContext context)
         {
             // php_stream *(*dir_opener)(php_stream_wrapper *wrapper, char *filename, char *mode, int options, char **opened_path, php_stream_context *context STREAMS_DC TSRMLS_DC);
             PhpException.Throw(PhpError.Warning, ErrResources.wrapper_op_unsupported, "Opendir");
@@ -948,47 +953,56 @@ namespace Pchp.Library.Streams
             return false;
         }
 
-        public override string[] Listing(string path, StreamListingOptions options, StreamContext context)
+        static readonly string[] s_default_files = new[] { ".", ".." };
+        static readonly Func<Context.ScriptInfo, string> s_script_fname_func = new Func<Context.ScriptInfo, string>(s => Path.GetFileName(s.Path));
+
+        public override IEnumerable<string> Listing(string root, string path, StreamListingOptions options, StreamContext context)
         {
             Debug.Assert(path != null);
             Debug.Assert(Path.IsPathRooted(path));
 
+            var isCompiledDir = Context.TryGetScriptsInDirectory(root, path, out var scripts);
+            string[] listing = Array.Empty<string>();
+
             try
             {
-                string[] listing = System.IO.Directory.GetFileSystemEntries(path);
-                bool root = Path.GetPathRoot(path) == path;
-                int index = root ? 0 : 2;
-                string[] rv = new string[listing.Length + index];
-
-                // Remove the absolute path information (PHP returns only filenames)
-                int pathLength = path.Length;
-                if (path[pathLength - 1] != Path.DirectorySeparatorChar) pathLength++;
-
-                // Check for the '.' and '..'; they should be present
-                if (!root)
-                {
-                    rv[0] = ".";
-                    rv[1] = "..";
-                }
-                for (int i = 0; i < listing.Length; i++)
-                {
-                    rv[index++] = listing[i].Substring(pathLength);
-                }
-                return rv;
+                listing = System.IO.Directory.GetFileSystemEntries(path);
             }
             catch (DirectoryNotFoundException)
             {
-                PhpException.Throw(PhpError.Warning, ErrResources.stream_bad_directory, FileSystemUtils.StripPassword(path));
+                if (!isCompiledDir)
+                    PhpException.Throw(PhpError.Warning, ErrResources.stream_bad_directory, FileSystemUtils.StripPassword(path));
             }
             catch (UnauthorizedAccessException)
             {
-                PhpException.Throw(PhpError.Warning, ErrResources.stream_file_access_denied, FileSystemUtils.StripPassword(path));
+                if (!isCompiledDir)
+                    PhpException.Throw(PhpError.Warning, ErrResources.stream_file_access_denied, FileSystemUtils.StripPassword(path));
             }
             catch (System.Exception e)
             {
-                PhpException.Throw(PhpError.Warning, ErrResources.stream_error, FileSystemUtils.StripPassword(path), e.Message);
+                if (!isCompiledDir)
+                    PhpException.Throw(PhpError.Warning, ErrResources.stream_error, FileSystemUtils.StripPassword(path), e.Message);
             }
-            return null;
+
+            // entries (files and directories) in the file system directory:
+            IEnumerable<string> result = listing.Select(Path.GetFileName);
+
+            if (isCompiledDir)
+            {
+                // merge with compiled scripts:
+                result = result
+                    .Concat(scripts.Select(s_script_fname_func))
+                    .Distinct(CurrentPlatform.PathComparer);
+            }
+
+            if (Path.GetPathRoot(path) != path) // => is not root path
+            {
+                // .
+                // ..
+                result = s_default_files.Concat(result);
+            }
+
+            return result;
         }
 
         public override bool Rename(string fromPath, string toPath, StreamRenameOptions options, StreamContext context)
@@ -1834,9 +1848,9 @@ namespace Pchp.Library.Streams
             return InvokeWrapperMethod(PhpUserStream.USERSTREAM_UNLINK, (PhpValue)path).ToBoolean();
         }
 
-        public override string[] Listing(string path, StreamListingOptions options, StreamContext context)
+        public override IEnumerable<string> Listing(string root, string path, StreamListingOptions options, StreamContext context)
         {
-            return base.Listing(path, options, context);
+            return base.Listing(root, path, options, context);
         }
 
         public override bool MakeDirectory(string path, int accessMode, StreamMakeDirectoryOptions options, StreamContext context)

@@ -57,8 +57,20 @@ namespace Pchp.Core
             /// </summary>
             public bool IsValid => this.MainMethod != null;
 
+            /// <summary>
+            /// Internal ID.
+            /// Index to the internal array of compiled scripts.
+            /// </summary>
             readonly public int Index;
+
+            /// <summary>
+            /// Script path, relative to the <see cref="Context.RootPath"/>.
+            /// </summary>
             readonly public string Path;
+
+            /// <summary>
+            /// Emtry method (main method) of the script.
+            /// </summary>
             readonly MainDelegate MainMethod;
 
             static MainDelegate CreateMain(TypeInfo script)
@@ -91,10 +103,15 @@ namespace Pchp.Core
             }
 
             public ScriptInfo(int index, string path, TypeInfo script)
+                : this(index, path, CreateMain(script))
+            {
+            }
+
+            internal ScriptInfo(int index, string path, MainDelegate method)
             {
                 Index = index;
-                Path = CurrentPlatform.NormalizeSlashes(path);
-                MainMethod = CreateMain(script);
+                Path = path;
+                MainMethod = method;
             }
         }
 
@@ -103,22 +120,47 @@ namespace Pchp.Core
         /// </summary>
         protected class ScriptsMap
         {
-            readonly ElasticBitArray array = new ElasticBitArray(_scriptsMap.Count);
+            readonly ElasticBitArray _included = new ElasticBitArray(_scriptsMap.Count);
 
             /// <summary>
             /// Maps script paths to their id.
             /// </summary>
-            static Dictionary<string, int> _scriptsMap = new Dictionary<string, int>(64, CurrentPlatform.PathComparer);
+            static Dictionary<string, int> _scriptsMap = new Dictionary<string, int>(128, CurrentPlatform.PathComparer);
+
+            /// <summary>
+            /// Set of script directories and contained script ids.
+            /// </summary>
+            static Dictionary<string, List<int>> _dirsMap = new Dictionary<string, List<int>>(32, CurrentPlatform.PathComparer);
 
             /// <summary>
             /// Scripts descriptors corresponding to id.
             /// </summary>
             static ScriptInfo[] _scripts = new ScriptInfo[64];
 
+            static void AddToMapNoLock(string path, int index)
+            {
+                // remember script {name : index}
+
+                _scriptsMap[path] = index;
+
+                // fast directory name:
+                var slash = path.LastIndexOf(CurrentPlatform.DirectorySeparator);
+                var dir = (slash > 0) ? path.Remove(slash) : string.Empty;
+
+                // add to directory map {dir : ids[]}
+
+                if (_dirsMap.TryGetValue(dir, out var ids))
+                {
+                    ids.Add(index);
+                }
+                else
+                {
+                    _dirsMap[dir] = new List<int>() { index };
+                }
+            }
+
             static void DeclareScript(int index, string path, TypeInfo script)
             {
-                // TODO: RW lock
-
                 if (index >= _scripts.Length)
                 {
                     Array.Resize(ref _scripts, index * 2 + 1);
@@ -136,13 +178,13 @@ namespace Pchp.Core
 
             static string NormalizeSlashes(string path) => CurrentPlatform.NormalizeSlashes(path);
 
-            public void SetIncluded<TScript>() => array.SetTrue(EnsureIndex<TScript>(ref ScriptIndexHolder<TScript>.Index) - 1);
+            public void SetIncluded<TScript>() => _included.SetTrue(EnsureIndex<TScript>(ref ScriptIndexHolder<TScript>.Index) - 1);
 
             public bool IsIncluded<TScript>() => IsIncluded(EnsureIndex<TScript>(ref ScriptIndexHolder<TScript>.Index) - 1);
 
             internal bool IsIncluded(ScriptInfo script) => script.IsValid && IsIncluded(script.Index);
 
-            internal bool IsIncluded(int index) => array[index];
+            internal bool IsIncluded(int index) => _included[index];
 
             public static ScriptInfo GetScript<TScript>()
             {
@@ -197,14 +239,14 @@ namespace Pchp.Core
 
                 path = NormalizeSlashes(path);
 
-                lock (_scriptsMap)  // TODO: RW lock
+                lock (_scriptsMap)  // TODO: remove lock, not needed
                 {
                     if (!_scriptsMap.TryGetValue(path, out index))
                     {
                         index = _scriptsMap.Count;
                         DeclareScript(index, path, script);
 
-                        _scriptsMap[path] = index;
+                        AddToMapNoLock(path, index);
                     }
                 }
 
@@ -299,6 +341,22 @@ namespace Pchp.Core
             public IEnumerable<ScriptInfo> GetIncludedScripts()
             {
                 return _scripts.Take(_scriptsMap.Count).Where(IsIncluded);
+            }
+
+            /// <summary>
+            /// Gets scripts in given directory. The path is relative to application root (<see cref="Context.RootPath"/>).
+            /// </summary>
+            internal static bool TryGetDirectory(string path, out IEnumerable<ScriptInfo> scripts)
+            {
+                if (_dirsMap.TryGetValue(path, out var ids))
+                {
+                    scripts = ids.Select(id => _scripts[id]);
+                    return true;
+                }
+
+                //
+                scripts = Enumerable.Empty<ScriptInfo>();
+                return false;
             }
         }
     }
