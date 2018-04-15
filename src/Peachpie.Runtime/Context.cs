@@ -376,6 +376,8 @@ namespace Pchp.Core
             var fnc = this.GetDeclaredFunction("readfile");
             if (fnc != null)
             {
+                Debug.WriteLine($"Note: file '{path}' has not been compiled.");
+
                 return fnc.PhpCallable(this, (PhpValue)path).ToLong() >= 0;
             }
             else
@@ -418,7 +420,7 @@ namespace Pchp.Core
         /// <summary>
         /// Declares script within runtime. The script will be available for inclusions.
         /// </summary>
-        public static void DeclareScript(string path, MainDelegate main) => throw new NotImplementedException(); // ScriptsMap.DeclareScript( ... )
+        public static void DeclareScript(string relpath, MainDelegate main) => ScriptsMap.DeclareScript(relpath, main);
 
         #endregion
 

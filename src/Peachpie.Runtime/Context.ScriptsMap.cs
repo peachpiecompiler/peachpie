@@ -159,21 +159,60 @@ namespace Pchp.Core
                 }
             }
 
-            static void DeclareScript(int index, string path, TypeInfo script)
+            static void DeclareScript(int index, ScriptInfo script)
             {
                 if (index >= _scripts.Length)
                 {
                     Array.Resize(ref _scripts, index * 2 + 1);
                 }
 
-                _scripts[index] = new ScriptInfo(index, path, script);
+                _scripts[index] = script;
             }
 
             internal static void DeclareScript(string path, RuntimeMethodHandle mainmethodHandle)
             {
                 var mainmethod = MethodBase.GetMethodFromHandle(mainmethodHandle);
 
-                GetScriptIndex(path, mainmethod.DeclaringType.GetTypeInfo());
+                DeclareScript(path, mainmethod.DeclaringType.GetTypeInfo());
+            }
+
+            /// <summary>
+            /// Associates path with an ID.
+            /// Does not declare the script within <see cref="_scripts"/>.
+            /// </summary>
+            static int EnsureScriptIndex(ref string path)
+            {
+                int index;
+
+                path = NormalizeSlashes(path);
+
+                lock (_scriptsMap)  // TODO: remove lock, not needed
+                {
+                    if (_scriptsMap.TryGetValue(path, out index))
+                    {
+                        return index;
+                    }
+                    else
+                    {
+                        index = _scriptsMap.Count;
+                        AddToMapNoLock(path, index);
+                    }
+                }
+
+                return index;
+            }
+
+            static int DeclareScript(string path, TypeInfo script)
+            {
+                int index = EnsureScriptIndex(ref path);
+                DeclareScript(index, new ScriptInfo(index, path, script));
+                return index;
+            }
+
+            public static void DeclareScript(string path, MainDelegate main)
+            {
+                int index = EnsureScriptIndex(ref path);
+                DeclareScript(index, new ScriptInfo(index, path, main));
             }
 
             static string NormalizeSlashes(string path) => CurrentPlatform.NormalizeSlashes(path);
@@ -230,27 +269,7 @@ namespace Pchp.Core
 
                 var path = (attr != null) ? attr.Path : $"?{_scriptsMap.Count}";
 
-                return GetScriptIndex(path, script);
-            }
-
-            static int GetScriptIndex(string path, TypeInfo script)
-            {
-                int index;
-
-                path = NormalizeSlashes(path);
-
-                lock (_scriptsMap)  // TODO: remove lock, not needed
-                {
-                    if (!_scriptsMap.TryGetValue(path, out index))
-                    {
-                        index = _scriptsMap.Count;
-                        DeclareScript(index, path, script);
-
-                        AddToMapNoLock(path, index);
-                    }
-                }
-
-                return index;
+                return DeclareScript(path, script);
             }
 
             /// <summary>
