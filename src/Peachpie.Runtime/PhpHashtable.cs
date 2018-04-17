@@ -702,9 +702,26 @@ namespace Pchp.Core
             return false;
         }
 
+        /// <summary>
+        /// Removes all occurances of given value.
+        /// </summary>
         bool ICollection<PhpValue>.Remove(PhpValue item)
         {
-            throw new NotImplementedException();
+            bool found = false;
+
+            using (var e = GetFastEnumerator())
+            {
+                while (e.MoveNext())
+                {
+                    if (e.CurrentValue == item)
+                    {
+                        e.DeleteCurrentEntryAndMove(this.activeEnumerators);
+                        found = true;
+                    }
+                }
+            }
+
+            return found;
         }
 
         #endregion
@@ -1005,6 +1022,8 @@ namespace Pchp.Core
         {
             throw new NotImplementedException();
         }
+
+        void IList.Remove(object value) => ((ICollection<PhpValue>)this).Remove(PhpValue.FromClr(value));
 
         int IList<PhpValue>.IndexOf(PhpValue value)
         {
