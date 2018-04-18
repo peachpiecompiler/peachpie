@@ -415,7 +415,9 @@ namespace Pchp.Core
 
             // empty string:
             if (str.Length == 0)
-                return new IntStringKey(string.Empty);
+            {
+                return IntStringKey.EmptyStringKey;
+            }
 
             // starts with minus sign?
             bool sign = false;

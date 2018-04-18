@@ -18,9 +18,9 @@ namespace Pchp.Core.Utilities
             return name.Replace('.', '_').Replace(' ', '_');
         }
 
-        static IPhpArray EnsureItemArray(IPhpArray array, string key)
+        static IPhpArray EnsureItemArray(IPhpArray array, IntStringKey key)
         {
-            if (string.IsNullOrEmpty(key))
+            if (key.Equals(IntStringKey.EmptyStringKey))
             {
                 var newarr = new PhpArray();
                 array.AddValue(PhpValue.Create(newarr));
@@ -28,7 +28,7 @@ namespace Pchp.Core.Utilities
             }
             else
             {
-                return array.EnsureItemArray(new IntStringKey(key));
+                return array.EnsureItemArray(key);
             }
         }
 
@@ -47,7 +47,7 @@ namespace Pchp.Core.Utilities
             Debug.Assert(name != null);
             Debug.Assert(value != null);
 
-            string key;
+            IntStringKey key;
 
             // current left and right square brace positions:
             int left, right;
@@ -57,10 +57,10 @@ namespace Pchp.Core.Utilities
             if (left > 0 && left < name.Length - 1 && (right = name.IndexOf(']', left + 1)) >= 0)
             {
                 // the variable name is a key to the "array", dots are replaced by underscores in top-level name:
-                key = EncodeTopLevelName(name.Substring(0, left));
+                key = new IntStringKey(EncodeTopLevelName(name.Substring(0, left)));
 
                 // ensures that all [] operators in the chain except for the last one are applied on an array:
-                for (;;)
+                for (; ; )
                 {
                     // adds a level keyed by "key":
                     array = EnsureItemArray(array, key);
@@ -68,12 +68,12 @@ namespace Pchp.Core.Utilities
                     // adds a level keyed by "subname" (once only):
                     if (subname != null)
                     {
-                        array = EnsureItemArray(array, subname);
+                        array = EnsureItemArray(array, Convert.StringToArrayKey(subname));
                         subname = null;
                     }
 
                     // next key:
-                    key = name.Substring(left + 1, right - left - 1);
+                    key = Convert.StringToArrayKey(name.Substring(left + 1, right - left - 1)); // key can be a number
 
                     // breaks if ']' is not followed by '[':
                     left = right + 1;
@@ -83,28 +83,28 @@ namespace Pchp.Core.Utilities
                     right = name.IndexOf(']', left + 1);
                 }
 
-                if (string.IsNullOrEmpty(key))
+                if (key.Equals(IntStringKey.EmptyStringKey))
                 {
                     array.AddValue(PhpValue.Create(value));
                 }
                 else
                 {
-                    array.SetItemValue(new IntStringKey(key), PhpValue.Create(value));
+                    array.SetItemValue(key, PhpValue.Create(value));
                 }
             }
             else
             {
                 // no array pattern in variable name, "name" is a top-level key:
-                name = EncodeTopLevelName(name);
+                key = new IntStringKey(EncodeTopLevelName(name));
 
                 // inserts a subname on the next level:
                 if (subname != null)
                 {
-                    EnsureItemArray(array, name).SetItemValue(new IntStringKey(subname), PhpValue.Create(value));
+                    EnsureItemArray(array, key).SetItemValue(Convert.StringToArrayKey(subname), PhpValue.Create(value));
                 }
                 else
                 {
-                    array.SetItemValue(new IntStringKey(name), PhpValue.Create(value));
+                    array.SetItemValue(key, PhpValue.Create(value));
                 }
             }
         }
