@@ -237,4 +237,7 @@
   <data name="WRN_SymbolDeprecated" xml:space="preserve">
     <value>Deprecated: {0} '{1}' has been deprecated. {2}</value>
   </data>
+  <data name="ERR_OutputWriteFailed" xml:space="preserve">
+    <value>Could not write to output file '{0}' -- '{1}'</value>
+  </data>
 </root>
