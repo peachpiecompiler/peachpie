@@ -124,7 +124,7 @@ namespace Pchp.Core.Dynamic
             // dereference PhpAlias first:
             if (target.LimitType == typeof(PhpAlias))
             {
-                expr = Expression.Field(expr, Cache.Properties.PhpAlias_Value);
+                expr = Expression.Field(expr, Cache.PhpAlias.Value);
                 value = ((PhpAlias)value).Value;
 
                 //
@@ -430,7 +430,7 @@ namespace Pchp.Core.Dynamic
                 if (expr.Type == typeof(PhpAlias))
                 {
                     // Template: fld.Value = (PhpValue)value
-                    expr = Expression.Assign(Expression.Field(expr, Cache.Properties.PhpAlias_Value), ConvertExpression.Bind(rvalue, typeof(PhpValue), ctx));
+                    expr = Expression.Assign(Expression.Field(expr, Cache.PhpAlias.Value), ConvertExpression.Bind(rvalue, typeof(PhpValue), ctx));
                 }
                 else if (expr.Type == typeof(PhpValue))
                 {
@@ -455,7 +455,7 @@ namespace Pchp.Core.Dynamic
                 else if (expr.Type == typeof(PhpAlias))
                 {
                     // Template: alias.Value // expecting alias cannot be null ref
-                    expr = Expression.Field(expr, Cache.Properties.PhpAlias_Value);
+                    expr = Expression.Field(expr, Cache.PhpAlias.Value);
                 }
             }
             else if (access.ReadValueCopy())

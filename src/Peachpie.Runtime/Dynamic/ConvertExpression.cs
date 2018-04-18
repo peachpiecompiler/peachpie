@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
@@ -28,25 +29,23 @@ namespace Pchp.Core.Dynamic
         public static Expression Bind(Expression arg, Type target, Expression ctx)
         {
             if (arg.Type == target)
+            {
                 return arg;
+            }
 
             // dereference
             if (arg.Type == typeof(PhpAlias))
             {
-                arg = Expression.PropertyOrField(arg, "Value");
-
-                if (target == typeof(PhpValue))
-                    return arg;
+                return Bind(Expression.Field(arg, Cache.PhpAlias.Value), target, ctx);
             }
 
-            if (ctx == null)
-            {
-                throw new ArgumentNullException(nameof(ctx));
-            }
+            Debug.Assert(ctx != null, "!ctx");
 
             //
             if (target == typeof(long)) return BindToLong(arg);
-            if (target == typeof(int) || target == typeof(uint)) return Expression.Convert(BindToLong(arg), target);
+            if (target == typeof(int) ||
+                target == typeof(uint) ||
+                target == typeof(ulong)) return Expression.Convert(BindToLong(arg), target);
             if (target == typeof(double)) return BindToDouble(arg);
             if (target == typeof(float)) return Expression.Convert(BindToDouble(arg), target);  // (float)double
             if (target == typeof(string)) return BindToString(arg, ctx);
@@ -55,8 +54,11 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(PhpValue)) return BindToValue(arg);
             if (target == typeof(void)) return BindToVoid(arg);
             if (target == typeof(object)) return BindAsObject(arg);
-            if (target == typeof(PhpArray) || target == typeof(IPhpArray) || target == typeof(IPhpEnumerable) || target == typeof(PhpHashtable)) return BindToArray(arg);   // TODO: BindToXXXX(), cast object to IPhpEnumerable if Value.IsObject
-            if (target == typeof(IPhpArray)) return BindToArray(arg);   // TODO
+            //if (target == typeof(stdClass)) return BindAsStdClass(arg);
+            if (target == typeof(PhpArray) ||
+                target == typeof(IPhpArray) ||
+                target == typeof(IPhpEnumerable) ||
+                target == typeof(PhpHashtable)) return BindToArray(arg);   // TODO: BindToXXXX(), cast object to IPhpEnumerable if Value.IsObject
             if (target == typeof(IntStringKey)) return BindIntStringKey(arg);
             if (target == typeof(IPhpCallable)) return BindAsCallable(arg);
             if (target == typeof(PhpString)) return BindToPhpString(arg, ctx);
@@ -66,19 +68,19 @@ namespace Pchp.Core.Dynamic
                 if (arg.Type == typeof(PhpValue)) return Expression.Call(arg, Cache.Operators.PhpValue_EnsureAlias);
                 return Expression.New(Cache.PhpAlias.ctor_PhpValue_int, BindToValue(arg), Expression.Constant(1));
             }
-            if (typeof(PhpResource).GetTypeInfo().IsAssignableFrom(target)) // PhpResource
-            {
-                // AsObject() as PhpResource
-                return Expression.TypeAs(BindAsObject(arg), target);
-            }
-
+            
             var target_type = target.GetTypeInfo();
 
-            if (target_type.IsEnum) return Expression.Convert(BindToLong(arg), target);
+            // enum
+            if (target_type.IsEnum)
+            {
+                return Expression.Convert(BindToLong(arg), target);
+            }
+
+            // 
             if (target_type.IsValueType == false)
             {
-                // TODO: handle type conversion and throw PHP TypeException
-                return Expression.Convert(BindAsObject(arg), target);
+                return BindAsReferenceType(arg, target);
             }
 
             if (target == typeof(IntPtr))
@@ -293,9 +295,19 @@ namespace Pchp.Core.Dynamic
 
                 throw new NotImplementedException(source.FullName);
             }
+            else if (
+                source == typeof(IPhpArray) ||
+                source == typeof(object) ||
+                typeof(ICollection).IsAssignableFrom(source) || // possibly PhpArray
+                source == typeof(IPhpConvertible) ||
+                source == typeof(IPhpEnumerable))
+            {
+                // convert dynamically to a PhpValue
+                return Expression.Call(typeof(PhpValue).GetMethod("FromClr", Cache.Types.Object), expr);
+            }
             else
             {
-                // TODO: FromClr
+                // source is a class:
                 return Expression.Call(typeof(PhpValue).GetMethod("FromClass", Cache.Types.Object), expr);
             }
         }
@@ -337,6 +349,21 @@ namespace Pchp.Core.Dynamic
 
             // NULL
             return Expression.Constant(null, Cache.Types.Object[0]);
+        }
+
+        static Expression BindAsReferenceType(Expression expr, Type target)
+        {
+            Debug.Assert(expr.Type != typeof(PhpAlias));
+
+            // from PhpValue:
+            if (expr.Type == typeof(PhpValue))
+            {
+                expr = Expression.Call(expr, Cache.Operators.PhpValue_GetValue);    // dereference
+                expr = Expression.Property(expr, Cache.Properties.PhpValue_Object); // PhpValue.Object
+            }
+
+            // just cast:
+            return Expression.Convert(expr, target);
         }
 
         private static Expression BindToArray(Expression expr)
@@ -409,10 +436,7 @@ namespace Pchp.Core.Dynamic
         /// <returns>Expression calculating the cost of conversion.</returns>
         public static Expression BindCost(Expression arg, Type target)
         {
-            if (arg == null || target == null)
-            {
-                throw new ArgumentNullException();
-            }
+            Debug.Assert(arg != null && target != null);
 
             var t = arg.Type;
             if (t == target)
@@ -422,8 +446,7 @@ namespace Pchp.Core.Dynamic
 
             if (t == typeof(PhpAlias))
             {
-                arg = Expression.PropertyOrField(arg, "Value");
-                t = typeof(PhpValue);
+                return BindCost(Expression.Field(arg, Cache.PhpAlias.Value), target);
             }
 
             if (target == typeof(PhpAlias) || target == typeof(PhpValue))

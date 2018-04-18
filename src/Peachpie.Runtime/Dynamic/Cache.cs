@@ -12,7 +12,7 @@ namespace Pchp.Core.Dynamic
     {
         public static class Types
         {
-            public static Type[] Empty = Array.Empty<Type>();
+            public static Type[] Empty => Array.Empty<Type>();
             public static Type[] Int = new Type[] { typeof(int) };
             public static Type[] Long = new Type[] { typeof(long) };
             public static Type[] Double = new Type[] { typeof(double) };
@@ -29,44 +29,44 @@ namespace Pchp.Core.Dynamic
         public static class Operators
         {
             /// <summary><see cref="Core.Operators.SetValue(ref PhpValue, PhpValue)"/>.</summary>
-            public static MethodInfo SetValue_PhpValueRef_PhpValue = typeof(Core.Operators).GetMethod("SetValue", typeof(PhpValue).MakeByRefType(), typeof(PhpValue));
-            public static MethodInfo IsSet_PhpValue = typeof(Core.Operators).GetMethod("IsSet", typeof(PhpValue));
+            public static MethodInfo SetValue_PhpValueRef_PhpValue = typeof(Core.Operators).GetMethod("SetValue", Types.PhpValue[0].MakeByRefType(), Types.PhpValue[0]);
+            public static MethodInfo IsSet_PhpValue = typeof(Core.Operators).GetMethod("IsSet", Types.PhpValue[0]);
 
             public static MethodInfo ToString_Double_Context = typeof(Core.Convert).GetMethod("ToString", typeof(double), typeof(Context));
             public static MethodInfo ToLong_String = typeof(Core.Convert).GetMethod("StringToLongInteger", typeof(string));
             public static MethodInfo ToDouble_String = typeof(Core.Convert).GetMethod("StringToDouble", typeof(string));
-            public static MethodInfo ToPhpString_PhpValue_Context = typeof(Core.Convert).GetMethod("ToPhpString", typeof(PhpValue), typeof(Context));
+            public static MethodInfo ToPhpString_PhpValue_Context = typeof(Core.Convert).GetMethod("ToPhpString", Types.PhpValue[0], typeof(Context));
             public static MethodInfo ToPhpNumber_String = typeof(Core.Convert).GetMethod("ToNumber", Types.String[0]);
             public static MethodInfo ToBoolean_Object = typeof(Core.Convert).GetMethod("ToBoolean", Types.Object[0]);
 
             public static MethodInfo Object_EnsureArray = typeof(Core.Operators).GetMethod("EnsureArray", Types.Object);
 
-            public static MethodInfo PhpAlias_EnsureObject = typeof(Core.PhpAlias).GetMethod("EnsureObject", Types.Empty);
-            public static MethodInfo PhpAlias_EnsureArray = typeof(Core.PhpAlias).GetMethod("EnsureArray", Types.Empty);
+            public static MethodInfo PhpAlias_EnsureObject = Types.PhpAlias[0].GetMethod("EnsureObject", Types.Empty);
+            public static MethodInfo PhpAlias_EnsureArray = Types.PhpAlias[0].GetMethod("EnsureArray", Types.Empty);
 
-            public static MethodInfo PhpValue_EnsureObject = typeof(PhpValue).GetMethod("EnsureObject", Types.Empty);
-            public static MethodInfo PhpValue_EnsureArray = typeof(PhpValue).GetMethod("EnsureArray", Types.Empty);
-            public static MethodInfo PhpValue_EnsureAlias = typeof(PhpValue).GetMethod("EnsureAlias", Types.Empty);
-            public static MethodInfo PhpValue_ToClass = typeof(PhpValue).GetMethod("ToClass", Types.Empty);
-            public static MethodInfo PhpValue_ToArray = typeof(PhpValue).GetMethod("ToArray", Types.Empty);
-            public static MethodInfo PhpValue_AsCallable_RuntimeTypeHandle = typeof(PhpValue).GetMethod("AsCallable", typeof(RuntimeTypeHandle));
-            public static MethodInfo PhpValue_AsObject = typeof(PhpValue).GetMethod("AsObject", Types.Empty);
-            public static MethodInfo PhpValue_ToString_Context = typeof(PhpValue).GetMethod("ToString", typeof(Context));
-            public static MethodInfo PhpValue_ToIntStringKey = typeof(PhpValue).GetMethod("ToIntStringKey");
-            public static MethodInfo PhpValue_GetValue = typeof(PhpValue).GetMethod("GetValue");
-            public static MethodInfo PhpValue_DeepCopy = typeof(PhpValue).GetMethod("DeepCopy");
+            public static MethodInfo PhpValue_EnsureObject = Types.PhpValue[0].GetMethod("EnsureObject", Types.Empty);
+            public static MethodInfo PhpValue_EnsureArray = Types.PhpValue[0].GetMethod("EnsureArray", Types.Empty);
+            public static MethodInfo PhpValue_EnsureAlias = Types.PhpValue[0].GetMethod("EnsureAlias", Types.Empty);
+            public static MethodInfo PhpValue_ToClass = Types.PhpValue[0].GetMethod("ToClass", Types.Empty);
+            public static MethodInfo PhpValue_ToArray = Types.PhpValue[0].GetMethod("ToArray", Types.Empty);
+            public static MethodInfo PhpValue_AsCallable_RuntimeTypeHandle = Types.PhpValue[0].GetMethod("AsCallable", typeof(RuntimeTypeHandle));
+            public static MethodInfo PhpValue_AsObject = Types.PhpValue[0].GetMethod("AsObject", Types.Empty);
+            public static MethodInfo PhpValue_ToString_Context = Types.PhpValue[0].GetMethod("ToString", typeof(Context));
+            public static MethodInfo PhpValue_ToIntStringKey = Types.PhpValue[0].GetMethod("ToIntStringKey");
+            public static MethodInfo PhpValue_GetValue = Types.PhpValue[0].GetMethod("GetValue");
+            public static MethodInfo PhpValue_DeepCopy = Types.PhpValue[0].GetMethod("DeepCopy");
 
             public static MethodInfo PhpNumber_ToString_Context = typeof(PhpNumber).GetMethod("ToString", typeof(Context));
 
             public static MethodInfo PhpArray_ToClass = typeof(PhpArray).GetMethod("ToClass", Types.Empty);
-            public static MethodInfo PhpArray_SetItemAlias = typeof(PhpArray).GetMethod("SetItemAlias", typeof(Core.IntStringKey), typeof(Core.PhpAlias));
-            public static MethodInfo PhpArray_SetItemValue = typeof(PhpArray).GetMethod("SetItemValue", typeof(Core.IntStringKey), typeof(Core.PhpValue));
+            public static MethodInfo PhpArray_SetItemAlias = typeof(PhpArray).GetMethod("SetItemAlias", typeof(Core.IntStringKey), Types.PhpAlias[0]);
+            public static MethodInfo PhpArray_SetItemValue = typeof(PhpArray).GetMethod("SetItemValue", typeof(Core.IntStringKey), Types.PhpValue[0]);
             public static MethodInfo PhpArray_EnsureItemObject = typeof(PhpArray).GetMethod("EnsureItemObject", typeof(Core.IntStringKey));
             public static MethodInfo PhpArray_EnsureItemArray = typeof(PhpArray).GetMethod("EnsureItemArray", typeof(Core.IntStringKey));
             public static MethodInfo PhpArray_EnsureItemAlias = typeof(PhpArray).GetMethod("EnsureItemAlias", typeof(Core.IntStringKey));
             public static MethodInfo PhpArray_GetItemValue = typeof(PhpArray).GetMethod("GetItemValue", typeof(Core.IntStringKey));
             public static MethodInfo PhpArray_RemoveKey = typeof(PhpArray).GetMethod("RemoveKey", typeof(Core.IntStringKey));
-            public static MethodInfo PhpArray_TryGetValue = typeof(PhpArray).GetMethod("TryGetValue", typeof(Core.IntStringKey), typeof(Core.PhpValue).MakeByRefType());
+            public static MethodInfo PhpArray_TryGetValue = typeof(PhpArray).GetMethod("TryGetValue", typeof(Core.IntStringKey), Types.PhpValue[0].MakeByRefType());
             public static MethodInfo PhpArray_ContainsKey = typeof(PhpArray).GetMethod("ContainsKey", typeof(Core.IntStringKey));
 
             public static MethodInfo RuntimeTypeHandle_Equals_RuntimeTypeHandle = typeof(RuntimeTypeHandle).GetMethod("Equals", typeof(RuntimeTypeHandle));
@@ -74,7 +74,7 @@ namespace Pchp.Core.Dynamic
 
         public static class Properties
         {
-            public static readonly FieldInfo PhpAlias_Value = Types.PhpAlias[0].GetTypeInfo().GetDeclaredField("Value");
+            public static readonly PropertyInfo PhpValue_Object = Types.PhpValue[0].GetTypeInfo().GetDeclaredProperty("Object");
             public static readonly FieldInfo PhpValue_Void = Types.PhpValue[0].GetTypeInfo().GetDeclaredField("Void");
             public static readonly FieldInfo PhpValue_Null = Types.PhpValue[0].GetTypeInfo().GetDeclaredField("Null");
             public static readonly PropertyInfo PhpValue_False = Types.PhpValue[0].GetTypeInfo().GetDeclaredProperty("False");
@@ -99,6 +99,7 @@ namespace Pchp.Core.Dynamic
 
         public static class PhpAlias
         {
+            public static readonly FieldInfo Value = Types.PhpAlias[0].GetTypeInfo().GetDeclaredField("Value");
             public static ConstructorInfo ctor_PhpValue_int => Types.PhpAlias[0].GetCtor(Types.PhpValue[0], Types.Int[0]);
         }
 
