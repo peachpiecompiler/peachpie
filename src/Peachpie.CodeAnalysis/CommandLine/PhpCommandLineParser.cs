@@ -155,10 +155,15 @@ namespace Pchp.CodeAnalysis.CommandLine
             bool emitPdb = true, debugPlus = false;
             string mainTypeName = null, pdbPath = null;
             Version languageVersion = null;
+            bool? delaySignSetting = null;
+            string keyFileSetting = null;
+            string keyContainerSetting = null;
+            bool publicSign = false;
             bool shortOpenTags = false;
             bool resourcesOrModulesSpecified = false;
             DebugInformationFormat debugInformationFormat = DebugInformationFormat.Pdb;
             List<string> referencePaths = new List<string>();
+            List<string> keyFileSearchPaths = new List<string>();
             if (sdkDirectoryOpt != null) referencePaths.Add(sdkDirectoryOpt);
             if (!string.IsNullOrEmpty(additionalReferenceDirectories)) referencePaths.AddRange(additionalReferenceDirectories.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
 
@@ -297,7 +302,86 @@ namespace Pchp.CodeAnalysis.CommandLine
                             throw new ArgumentException("langversion");
                             //AddDiagnostic(diagnostics, ErrorCode.ERR_BadCompatMode, value);
                         }
+                        continue;
 
+                    case "delaysign":
+                    case "delaysign+":
+                        if (value != null)
+                        {
+                            break;
+                        }
+
+                        delaySignSetting = true;
+                        continue;
+
+                    case "delaysign-":
+                        if (value != null)
+                        {
+                            break;
+                        }
+
+                        delaySignSetting = false;
+                        continue;
+
+                    case "publicsign":
+                    case "publicsign+":
+                        if (value != null)
+                        {
+                            break;
+                        }
+
+                        publicSign = true;
+                        continue;
+
+                    case "publicsign-":
+                        if (value != null)
+                        {
+                            break;
+                        }
+
+                        publicSign = false;
+                        continue;
+
+                    case "keyfile":
+                        value = RemoveQuotesAndSlashes(value);
+                        if (string.IsNullOrEmpty(value))
+                        {
+                            diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_SwitchNeedsValue, Location.None, name));
+                            // TODO: AddDiagnostic(diagnostics, ErrorCode.ERR_NoFileSpec, "keyfile");
+                        }
+                        else
+                        {
+                            keyFileSetting = value;
+                        }
+                        // NOTE: Dev11/VB also clears "keycontainer", see also:
+                        //
+                        // MSDN: In case both /keyfile and /keycontainer are specified (either by command line option or by 
+                        // MSDN: custom attribute) in the same compilation, the compiler will first try the key container. 
+                        // MSDN: If that succeeds, then the assembly is signed with the information in the key container. 
+                        // MSDN: If the compiler does not find the key container, it will try the file specified with /keyfile. 
+                        // MSDN: If that succeeds, the assembly is signed with the information in the key file and the key 
+                        // MSDN: information will be installed in the key container (similar to sn -i) so that on the next 
+                        // MSDN: compilation, the key container will be valid.
+                        continue;
+
+                    case "keycontainer":
+                        if (string.IsNullOrEmpty(value))
+                        {
+                            diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_SwitchNeedsValue, Location.None, name));
+                        }
+                        else
+                        {
+                            keyContainerSetting = value;
+                        }
+                        // NOTE: Dev11/VB also clears "keyfile", see also:
+                        //
+                        // MSDN: In case both /keyfile and /keycontainer are specified (either by command line option or by 
+                        // MSDN: custom attribute) in the same compilation, the compiler will first try the key container. 
+                        // MSDN: If that succeeds, then the assembly is signed with the information in the key container. 
+                        // MSDN: If the compiler does not find the key container, it will try the file specified with /keyfile. 
+                        // MSDN: If that succeeds, the assembly is signed with the information in the key file and the key 
+                        // MSDN: information will be installed in the key container (similar to sn -i) so that on the next 
+                        // MSDN: compilation, the key container will be valid.
                         continue;
 
                     case "shortopentag":
@@ -478,6 +562,20 @@ namespace Pchp.CodeAnalysis.CommandLine
                 documentationPath = PathUtilities.CombinePossiblyRelativeAndRelativePaths(outputDirectory, documentationPath);
             }
 
+            // Dev11 searches for the key file in the current directory and assembly output directory.
+            // We always look to base directory and then examine the search paths.
+            keyFileSearchPaths.Add(baseDirectory);
+            if (baseDirectory != outputDirectory)
+            {
+                keyFileSearchPaths.Add(outputDirectory);
+            }
+
+            // Public sign doesn't use the legacy search path settings
+            if (publicSign && !string.IsNullOrWhiteSpace(keyFileSetting))
+            {
+                keyFileSetting = ParseGenericPathToFile(keyFileSetting, diagnostics, baseDirectory);
+            }
+
             var parseOptions = new PhpParseOptions
             (
                 documentationMode: DocumentationMode.Diagnose, // always diagnose
@@ -511,15 +609,15 @@ namespace Pchp.CodeAnalysis.CommandLine
                 checkOverflow: false, // checkOverflow,
                                       //deterministic: deterministic,
                 concurrentBuild: concurrentBuild,
-                //cryptoKeyContainer: keyContainerSetting,
-                //cryptoKeyFile: keyFileSetting,
-                //delaySign: delaySignSetting,
-                platform: Platform.AnyCpu // platform,
-                                          //generalDiagnosticOption: generalDiagnosticOption,
-                                          //warningLevel: warningLevel,
-                                          //specificDiagnosticOptions: diagnosticOptions,
-                                          //reportSuppressedDiagnostics: reportSuppressedDiagnostics,
-                                          //publicSign: publicSign
+                cryptoKeyContainer: keyContainerSetting,
+                cryptoKeyFile: keyFileSetting,
+                delaySign: delaySignSetting,
+                platform: Platform.AnyCpu,
+                //generalDiagnosticOption: generalDiagnosticOption,
+                //warningLevel: warningLevel,
+                //specificDiagnosticOptions: diagnosticOptions,
+                //reportSuppressedDiagnostics: reportSuppressedDiagnostics,
+                publicSign: publicSign
             );
 
             if (debugPlus)
@@ -531,15 +629,15 @@ namespace Pchp.CodeAnalysis.CommandLine
             (
                 metadataOnly: false,
                 debugInformationFormat: debugInformationFormat,
-                //pdbFilePath: null, // to be determined later
-                //outputNameOverride: null, // to be determined later
+                pdbFilePath: null, // to be determined later
+                outputNameOverride: null, // to be determined later
                 //baseAddress: baseAddress,
                 //highEntropyVirtualAddressSpace: highEntropyVA,
                 //fileAlignment: fileAlignment,
                 //subsystemVersion: subsystemVersion,
                 runtimeMetadataVersion: runtimeMetadataVersion
             );
-
+            
             return new PhpCommandLineArguments()
             {
                 // TODO: parsed arguments
@@ -565,7 +663,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 AdditionalFiles = additionalFiles.AsImmutable(),
                 ReferencePaths = referencePaths.AsImmutable(),
                 SourcePaths = ImmutableArray<string>.Empty, //sourcePaths.AsImmutable(),
-                //KeyFileSearchPaths = keyFileSearchPaths.AsImmutable(),
+                KeyFileSearchPaths = keyFileSearchPaths.AsImmutable(),
                 //Win32ResourceFile = win32ResourceFile,
                 //Win32Icon = win32IconFile,
                 //Win32Manifest = win32ManifestFile,

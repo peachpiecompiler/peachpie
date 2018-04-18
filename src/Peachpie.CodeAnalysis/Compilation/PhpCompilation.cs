@@ -271,7 +271,15 @@ namespace Pchp.CodeAnalysis
         {
             get
             {
-                return false; // throw new NotImplementedException(); // SourceAssembly.IsDelaySigned
+                return SourceAssembly.IsDelaySigned;
+            }
+        }
+
+        internal override StrongNameKeys StrongNameKeys
+        {
+            get
+            {
+                return SourceAssembly.StrongNameKeys;
             }
         }
 
@@ -314,14 +322,6 @@ namespace Pchp.CodeAnalysis
             get
             {
                 return ImmutableArray<ReferenceDirective>.Empty; // throw new NotImplementedException();
-            }
-        }
-
-        internal override StrongNameKeys StrongNameKeys
-        {
-            get
-            {
-                return StrongNameKeys.None;
             }
         }
 

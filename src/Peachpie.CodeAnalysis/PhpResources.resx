@@ -168,6 +168,14 @@
                             or their combination using vertical bar |.
 /phpdoctypes[+|-]           Shortcut for /phpdoctypes:All or /phpdoctypes:None.
 
+                    - SECURITY -
+/delaysign[+|-]             Delay-sign the assembly using only the public
+                            portion of the strong name key
+/publicsign[+|-]            Public-sign the assembly using only the public
+                            portion of the strong name key
+/keyfile:&lt;file&gt;             Specify a strong name key file
+/keycontainer:&lt;string&gt;      Specify a strong name key container
+ 
                     - MISCELLANEOUS -
 @&lt;file&gt;                     Read response file for more options
 /help                       Display this usage message (Short form: /?)

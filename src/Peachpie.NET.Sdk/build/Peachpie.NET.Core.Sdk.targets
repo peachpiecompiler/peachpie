@@ -140,6 +140,11 @@
       <RspLine Include="--xmldoc:$(DocumentationFile)" Condition=" '$(GenerateDocumentation)' == 'true'" />
       <RspLine Include="--nowarn:$(NoWarn)" Condition=" '$(NoWarn)' != '' " />
       <RspLine Include="--debug-type:$(DebugType)" />
+      
+      <RspLine Include="--keyfile:$(AssemblyOriginatorKeyFile)" Condition=" '$(SignAssembly)' == 'true' and '$(AssemblyOriginatorKeyFile)' != ''" />
+      <RspLine Include="--publicsign+" Condition=" '$(SignAssembly)' == 'true' and '$(PublicSign)' == 'true'" />
+      <RspLine Include="--publicsign-" Condition=" '$(SignAssembly)' == 'true' and '$(PublicSign)' == 'false'" />
+      
       <RspLine Include="--emit-entry-point:$(EmitEntryPoint)" />
       <RspLine Include="--main:$(StartupObject)" Condition=" '$(StartupObject)' != '' " />
       <RspLine Include="--pdb:$(PdbFile)" Condition=" '$(PdbFile)' != '' " />

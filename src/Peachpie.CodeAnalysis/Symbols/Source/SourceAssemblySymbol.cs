@@ -26,6 +26,19 @@ namespace Pchp.CodeAnalysis.Symbols
 
         AssemblyIdentity _lazyIdentity;
 
+        // Computing the identity requires computing the public key. Computing the public key 
+        // can require binding attributes that contain version or strong name information. 
+        // Attribute binding will check type visibility which will possibly 
+        // check IVT relationships. To correctly determine the IVT relationship requires the public key. 
+        // To avoid infinite recursion, this type notes, per thread, the assembly for which the thread 
+        // is actively computing the public key (assemblyForWhichCurrentThreadIsComputingKeys). Should a request to determine IVT
+        // relationship occur on the thread that is computing the public key, access is optimistically
+        // granted provided the simple assembly names match. When such access is granted
+        // the assembly to which we have been granted access is noted (optimisticallyGrantedInternalsAccess).
+        // After the public key has been computed, the set of optimistic grants is reexamined 
+        // to ensure that full identities match. This may produce diagnostics.
+        private StrongNameKeys _lazyStrongNameKeys;
+
         public SourceAssemblySymbol(
             PhpCompilation compilation,
             string assemblySimpleName,
@@ -53,6 +66,12 @@ namespace Pchp.CodeAnalysis.Symbols
             //}
 
             _modules = moduleBuilder.ToImmutableAndFree();
+
+            if (!compilation.Options.CryptoPublicKey.IsEmpty)
+            {
+                // Private key is not necessary for assembly identity, only when emitting.  For this reason, the private key can remain null.
+                _lazyStrongNameKeys = StrongNameKeys.Create(compilation.Options.CryptoPublicKey, Errors.MessageProvider.Instance);
+            }
         }
 
         public override string Name => _simpleName;
@@ -93,9 +112,42 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        internal bool IsDelaySigned
+        {
+            get
+            {
+                //commandline setting trumps attribute value. Warning assumed to be given elsewhere
+                if (_compilation.Options.DelaySign.HasValue)
+                {
+                    return _compilation.Options.DelaySign.Value;
+                }
+
+                // The public sign argument should also override the attribute
+                if (_compilation.Options.PublicSign)
+                {
+                    return false;
+                }
+
+                return false; // (this.AssemblyDelaySignAttributeSetting == ThreeState.True);
+            }
+        }
+
+        internal StrongNameKeys StrongNameKeys
+        {
+            get
+            {
+                if (_lazyStrongNameKeys == null)
+                {
+                    Interlocked.CompareExchange(ref _lazyStrongNameKeys, ComputeStrongNameKeys(), null);
+                }
+
+                return _lazyStrongNameKeys;
+            }
+        }
+
         internal override ImmutableArray<byte> PublicKey
         {
-            get { return _compilation.StrongNameKeys.PublicKey; }
+            get { return StrongNameKeys.PublicKey; }
         }
 
         internal string SignatureKey
@@ -131,6 +183,62 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 return fieldValue;
             }
+        }
+
+        private StrongNameKeys ComputeStrongNameKeys()
+        {
+            //// TODO:
+            //// In order to allow users to escape problems that we create with our provisional granting of IVT access,
+            //// consider not binding the attributes if the command line options were specified, then later bind them
+            //// and report warnings if both were used.
+            //EnsureAttributesAreBound();
+
+            // when both attributes and command-line options specified, cmd line wins.
+            string keyFile = _compilation.Options.CryptoKeyFile;
+
+            // Public sign requires a keyfile
+            if (DeclaringCompilation.Options.PublicSign)
+            {
+                // TODO(https://github.com/dotnet/roslyn/issues/9150):
+                // Provide better error message if keys are provided by
+                // the attributes. Right now we'll just fall through to the
+                // "no key available" error.
+
+                if (!string.IsNullOrEmpty(keyFile) && !PathUtilities.IsAbsolute(keyFile))
+                {
+                    // If keyFile has a relative path then there should be a diagnostic
+                    // about it
+                    Debug.Assert(!DeclaringCompilation.Options.Errors.IsEmpty);
+                    return StrongNameKeys.None;
+                }
+
+                // If we're public signing, we don't need a strong name provider
+                return StrongNameKeys.Create(keyFile, Errors.MessageProvider.Instance);
+            }
+
+            if (string.IsNullOrEmpty(keyFile))
+            {
+                //keyFile = this.AssemblyKeyFileAttributeSetting;
+
+                //if ((object)keyFile == (object)WellKnownAttributeData.StringMissingValue)
+                //{
+                //    keyFile = null;
+                //}
+            }
+
+            string keyContainer = _compilation.Options.CryptoKeyContainer;
+
+            if (string.IsNullOrEmpty(keyContainer))
+            {
+                //keyContainer = this.AssemblyKeyContainerAttributeSetting;
+
+                //if ((object)keyContainer == (object)WellKnownAttributeData.StringMissingValue)
+                //{
+                //    keyContainer = null;
+                //}
+            }
+
+            return StrongNameKeys.Create(DeclaringCompilation.Options.StrongNameProvider, keyFile, keyContainer, Errors.MessageProvider.Instance);
         }
 
         Version AssemblyVersionAttributeSetting => new Version(1, 0, 0, 0);
