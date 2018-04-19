@@ -21,7 +21,7 @@ namespace Pchp.Core.Dynamic
             _name = name;
             _returnType = Type.GetTypeFromHandle(returnType); // should correspond to AccessFlags
             _classContext = Type.GetTypeFromHandle(classContext);
-            _access = access;
+            _access = access & (~AccessMask.WriteMask); // Read|Write => Read
         }
 
         public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
@@ -31,13 +31,13 @@ namespace Pchp.Core.Dynamic
             var bound = new CallSiteContext()
             {
                 ClassContext = _classContext,
-                Name =_name
+                Name = _name
             }
             .ProcessArgs(target, args, hasTargetInstance);
 
             if (hasTargetInstance)
             {
-                var isobject = bound.TargetType != null;                
+                var isobject = bound.TargetType != null;
                 if (isobject == false)
                 {
                     var defaultexpr = ConvertExpression.BindDefault(_returnType);
