@@ -278,6 +278,11 @@ namespace Peachpie.RequestHandler
         /// </summary>
         public override string ServerApi => "isapi";
 
+        /// <summary>
+        /// Informational string exposing technology powering the web request and version.
+        /// </summary>
+        public static readonly string XPoweredBy = "PeachPie" + " " + ContextExtensions.GetRuntimeInformationalVersion();
+
         public override IHttpPhpContext HttpPhpContext => this;
 
         /// <summary>
@@ -300,6 +305,13 @@ namespace Peachpie.RequestHandler
             this.InitSuperglobals();
 
             // TODO: start session if AutoStart is On
+
+            this.SetupHeaders();
+        }
+
+        void SetupHeaders()
+        {
+            _httpctx.Response.Headers["x-powered-by"] = XPoweredBy;
         }
 
         static void AddVariables(PhpArray result, NameValueCollection collection)

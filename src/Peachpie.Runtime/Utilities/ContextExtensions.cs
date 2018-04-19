@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace Pchp.Core.Utilities
 {
+    /// <summary>
+    /// Extension context methods.
+    /// </summary>
     public static class ContextExtensions
     {
         /// <summary>

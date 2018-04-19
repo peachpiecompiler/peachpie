@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Reflection;
 
 namespace Peachpie.Web
 {
@@ -162,9 +163,9 @@ namespace Peachpie.Web
         /// </summary>
         PhpSessionState IHttpPhpContext.SessionState { get; set; }
 
-#endregion
+        #endregion
 
-#region Request Lifecycle
+        #region Request Lifecycle
 
         /// <summary>
         /// The default document.
@@ -256,7 +257,7 @@ namespace Peachpie.Web
             base.Dispose();
         }
 
-#endregion
+        #endregion
 
         public override IHttpPhpContext HttpPhpContext => this;
 
@@ -272,6 +273,11 @@ namespace Peachpie.Web
         /// Name of the server software as it appears in <c>$_SERVER[SERVER_SOFTWARE]</c> variable.
         /// </summary>
         public const string ServerSoftware = "ASP.NET Core Server";
+
+        /// <summary>
+        /// Informational string exposing technology powering the web request and version.
+        /// </summary>
+        public static readonly string XPoweredBy = "PeachPie" + " " + ContextExtensions.GetRuntimeInformationalVersion();
 
         /// <summary>
         /// Reference to current <see cref="HttpContext"/>.
@@ -299,6 +305,13 @@ namespace Peachpie.Web
             this.InitSuperglobals();
 
             // TODO: start session if AutoStart is On
+
+            this.SetupHeaders();
+        }
+
+        void SetupHeaders()
+        {
+            _httpctx.Response.Headers["x-powered-by"] = new StringValues(XPoweredBy);
         }
 
         static void AddVariables(PhpArray target, IEnumerable<KeyValuePair<string, StringValues>> values)
@@ -382,7 +395,7 @@ namespace Peachpie.Web
             array[CommonPhpArrayKeys.SCRIPT_FILENAME] = PhpValue.Null; // set in ProcessScript
             array[CommonPhpArrayKeys.PHP_SELF] = PhpValue.Null; // set in ProcessScript
             array[CommonPhpArrayKeys.QUERY_STRING] = (PhpValue)(!string.IsNullOrEmpty(request.QueryString) ? request.QueryString.Substring(1) : string.Empty);
-            foreach (KeyValuePair<string, StringValues>  header in request.Headers)
+            foreach (KeyValuePair<string, StringValues> header in request.Headers)
             {
                 // HTTP_{HEADER_NAME} = HEADER_VALUE
                 array.Add(string.Concat("HTTP_" + header.Key.Replace('-', '_').ToUpperInvariant()), header.Value.ToString());
