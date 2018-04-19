@@ -64,6 +64,11 @@ namespace Pchp.CodeAnalysis.Semantics
         public bool IsUnset => (_flags & AccessMask.Unset) != 0;
 
         /// <summary>
+        /// In case the expression is read within <c>isset</c> operation.
+        /// </summary>
+        public bool IsIsSet => (_flags & AccessMask.Isset) == AccessMask.Isset;
+
+        /// <summary>
         /// Gets type of value to be written.
         /// </summary>
         public TypeRefMask WriteMask => _writeTypeMask;

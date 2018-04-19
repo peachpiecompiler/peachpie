@@ -21,7 +21,7 @@ namespace Pchp.Core.Dynamic
             _name = name;
             _returnType = Type.GetTypeFromHandle(returnType); // should correspond to AccessFlags
             _classContext = Type.GetTypeFromHandle(classContext);
-            _access = access & AccessMask.ReadMask;
+            _access = access;
         }
 
         public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)

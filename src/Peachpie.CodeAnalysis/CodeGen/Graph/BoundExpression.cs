@@ -4481,6 +4481,20 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
+                // OPTIMIZATION: emitting VarReference sometimes checks for 'isset' already!
+                if (t.SpecialType == SpecialType.System_Boolean)
+                {
+                    if (VarReference is BoundFieldRef boundfld)
+                    {
+                        if (boundfld.BoundReference is BoundIndirectFieldPlace ||
+                            boundfld.BoundReference is BoundIndirectStFieldPlace)
+                        {
+                            // isset already checked by callsite:
+                            return t;
+                        }
+                    }
+                }
+
                 // value type => true
                 cg.EmitPop(t);
                 cg.Builder.EmitBoolConstant(true);

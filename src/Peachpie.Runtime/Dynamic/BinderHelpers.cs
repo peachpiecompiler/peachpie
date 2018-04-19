@@ -471,6 +471,30 @@ namespace Pchp.Core.Dynamic
                     // TODO: specify - ReadCopy | ReadValue | ReadValueCopy - currently not consistent
                 }
             }
+            else if (access.Isset())
+            {
+                if (expr.Type == typeof(PhpAlias))
+                {
+                    expr = Expression.Field(expr, Cache.PhpAlias.Value);
+                }
+
+                //
+                if (expr.Type == typeof(PhpValue))
+                {
+                    // Template: Operators.IsSet( value )
+                    expr = Expression.Call(Cache.Operators.IsSet_PhpValue, expr);
+                }
+                else if (!expr.Type.GetTypeInfo().IsValueType)
+                {
+                    // Template: value != null
+                    expr = Expression.ReferenceNotEqual(expr, Expression.Constant(null, typeof(object)));
+                }
+                else
+                {
+                    // if there is bound typed symbol, it is always set:
+                    expr = Expression.Constant(true, typeof(bool));
+                }
+            }
 
             // Read, IsSet
             return expr;
@@ -528,6 +552,13 @@ namespace Pchp.Core.Dynamic
                 return Expression.Call(
                     EnsureNotNullPhpArray(arr),
                     Cache.Operators.PhpArray_SetItemValue, key, rvalue);
+            }
+            else if (access.Isset())
+            {
+                // Template: arr != null && IsSet(arr[key])
+                return Expression.AndAlso(
+                    Expression.ReferenceNotEqual(arr, Expression.Constant(null, typeof(object))), // arr != null
+                    Expression.Call(Cache.Operators.IsSet_PhpValue, Expression.Call(arr, Cache.Operators.PhpArray_GetItemValue, key))); // isset( arr[key] )
             }
             else
             {
@@ -745,14 +776,14 @@ namespace Pchp.Core.Dynamic
                 {
                     // isset(target->field)
 
-                    var __isset = BindMagicMethod(type, classCtx, target, ctx, TypeMethods.MagicMethods.__isset, field, null);
+                    var __isset =
+                        BindMagicMethod(type, classCtx, target, ctx, TypeMethods.MagicMethods.__isset, field, null) ??
+                        BindMagicMethod(type, classCtx, target, ctx, TypeMethods.MagicMethods.__get, field, null);
 
-                    // Template: (TryGetField(result) || (bool)__isset(key)) ? true : void
-                    result = Expression.Condition(Expression.OrElse(
+                    // Template: TryGetField(result) || (bool)(__isset(key)??NULL)
+                    result = Expression.OrElse(
                             trygetfield,
-                            ConvertExpression.BindToBool(InvokeHandler(ctx, target, field, __isset, access))),
-                        Expression.Property(null, Cache.Properties.PhpValue_True),
-                        Expression.Field(null, Cache.Properties.PhpValue_Void));
+                            ConvertExpression.BindToBool(InvokeHandler(ctx, target, field, __isset, access)));
                 }
                 else
                 {

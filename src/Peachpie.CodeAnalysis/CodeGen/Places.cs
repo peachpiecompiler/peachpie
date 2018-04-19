@@ -1806,6 +1806,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (Access.EnsureObject) return_type = cg.CoreTypes.Object;
             else if (Access.EnsureArray) return_type = cg.CoreTypes.IPhpArray;
             else if (Access.IsReadRef) return_type = cg.CoreTypes.PhpAlias;
+            else if (Access.IsIsSet) return_type = cg.CoreTypes.Boolean;
             else return_type = Access.TargetType ?? cg.CoreTypes.PhpValue;
 
             // Template: Invoke(TInstance, Context, [string name])
