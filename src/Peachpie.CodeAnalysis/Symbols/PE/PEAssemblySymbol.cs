@@ -89,7 +89,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsCorLibrary => _specialAssembly == SpecialAssembly.CorLibrary;
 
-        public override bool IsPchpCorLibrary => _specialAssembly == SpecialAssembly.PchpCorLibrary;
+        public override bool IsPeachpieCorLibrary => _specialAssembly == SpecialAssembly.PeachpieCorLibrary;
 
         internal override bool IsLinked => _isLinked;
 
@@ -146,7 +146,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             if (IsPchpCor(assembly))
             {
-                _specialAssembly = SpecialAssembly.PchpCorLibrary;
+                _specialAssembly = SpecialAssembly.PeachpieCorLibrary;
 
                 // initialize CoreTypes
                 this.PrimaryModule.GlobalNamespace.GetTypeMembers();

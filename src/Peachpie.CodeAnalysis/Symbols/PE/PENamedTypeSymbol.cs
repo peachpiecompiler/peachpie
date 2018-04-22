@@ -20,7 +20,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// The class to represent all types imported from a PE/module.
     /// </summary>
-    internal abstract class PENamedTypeSymbol : NamedTypeSymbol, IPhpTypeSymbol
+    internal abstract class PENamedTypeSymbol : NamedTypeSymbol, IPhpTypeSymbol, IPhpScriptTypeSymbol
     {
         #region IPhpTypeSymbol
 
@@ -112,6 +112,51 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Optional. A <c>.ctor</c> that ensures the initialization of the class without calling the type PHP constructor.
         /// </summary>
         public IMethodSymbol InstanceConstructorFieldsOnly => InstanceConstructors.Where(MethodSymbolExtensions.IsFieldsOnlyConstructor).SingleOrDefault();
+
+        #endregion
+
+        #region IPhpScriptTypeSymbol // applies when [PhpScriptAttributes] and <Main> method are declared
+
+        /// <summary>
+        /// Gets method symbol representing the script entry point.
+        /// The method's signature corresponds to <c>runtime:Context.MainDelegate</c> (Context ctx, PhpArray locals, object @this, RuntimeTypeHandle self).
+        /// </summary>
+        IMethodSymbol IPhpScriptTypeSymbol.MainMethod
+        {
+            get
+            {
+                if (this.DeclaredAccessibility == Accessibility.Public && this.IsSealed)
+                {
+                    var method = GetMembers(WellKnownPchpNames.GlobalRoutineName).OfType<IMethodSymbol>().SingleOrDefault();
+                    Debug.Assert(method == null || (method.Parameters.Length == 4 && method.IsStatic && method.DeclaredAccessibility == Accessibility.Public));
+
+                    return method;
+                }
+
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Script's relative path to the application root.
+        /// </summary>
+        string IPhpScriptTypeSymbol.RelativeFilePath
+        {
+            get
+            {
+                if (this.DeclaredAccessibility == Accessibility.Public && this.IsSealed)
+                {
+                    // [ScriptAtribute( string file_path )]
+                    var scriptattr = this.GetPhpScriptAttribute();
+                    if (scriptattr != null)
+                    {
+                        return (string)scriptattr.ConstructorArguments[0].Value;
+                    }
+                }
+
+                return null;
+            }
+        }
 
         #endregion
 

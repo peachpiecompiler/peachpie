@@ -169,11 +169,9 @@ namespace Pchp.Core
                 _scripts[index] = script;
             }
 
-            internal static void DeclareScript(string path, RuntimeMethodHandle mainmethodHandle)
+            internal static void DeclareScript(string path, RuntimeTypeHandle scriptHandle)
             {
-                var mainmethod = MethodBase.GetMethodFromHandle(mainmethodHandle);
-
-                DeclareScript(path, mainmethod.DeclaringType.GetTypeInfo());
+                DeclareScript(path, Type.GetTypeFromHandle(scriptHandle).GetTypeInfo());
             }
 
             /// <summary>

@@ -125,7 +125,7 @@ namespace Pchp.Core
                 .Invoke(null, new object[] { new Action<string, PhpValue, bool>(ConstsMap.DefineAppConstant) });
 
             tscriptinfo.GetDeclaredMethod("EnumerateScripts")
-                .Invoke(null, new object[] { new Action<string, RuntimeMethodHandle>(ScriptsMap.DeclareScript) });
+                .Invoke(null, new object[] { new Action<string, RuntimeTypeHandle>(ScriptsMap.DeclareScript) });
 
             //
             ScriptAdded(tscriptinfo);

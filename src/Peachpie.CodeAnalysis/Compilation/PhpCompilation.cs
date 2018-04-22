@@ -576,14 +576,18 @@ namespace Pchp.CodeAnalysis
             {
                 // first script
                 if (this.SourceSymbolCollection.FirstScript != null)
-                    return this.SourceSymbolCollection.FirstScript.MainMethod;
+                {
+                    return (MethodSymbol)this.SourceSymbolCollection.FirstScript.MainMethod;
+                }
             }
             else
             {
                 // "ScriptFile"
                 var file = this.SourceSymbolCollection.GetFile(maintype);
                 if (file != null)
-                    return file.MainMethod;
+                {
+                    return (MethodSymbol)file.MainMethod;
+                }
 
                 // "Function"
                 var func = this.SourceSymbolCollection.GetFunction(NameUtils.MakeQualifiedName(maintype, true));

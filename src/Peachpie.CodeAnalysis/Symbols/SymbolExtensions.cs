@@ -109,6 +109,22 @@ namespace Pchp.CodeAnalysis.Symbols
             return null;
         }
 
+        public static AttributeData GetPhpScriptAttribute(this TypeSymbol symbol)
+        {
+            var attrs = symbol.GetAttributes();
+            for (int i = 0; i < attrs.Length; i++)
+            {
+                var a = attrs[i];
+                var fullname = MetadataHelpers.BuildQualifiedName((a.AttributeClass as NamedTypeSymbol)?.NamespaceName, a.AttributeClass.Name);
+                if (fullname == CoreTypes.PhpScriptAttributeFullName)
+                {
+                    return a;
+                }
+            }
+
+            return null;
+        }
+
         public static string[] PhpExtensionAttributeValues(this AttributeData phpextensionattribute)
         {
             if (phpextensionattribute != null && phpextensionattribute.CommonConstructorArguments.Length >= 1)

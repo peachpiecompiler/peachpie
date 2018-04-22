@@ -49,7 +49,7 @@ namespace Pchp.CodeAnalysis.Semantics
             _ctx = ctx;
         }
 
-        public SourceFileSymbol ResolveFile(string path) => _model.ResolveFile(path);
+        public IPhpScriptTypeSymbol ResolveFile(string path) => _model.ResolveFile(path);
 
         public INamedTypeSymbol ResolveType(QualifiedName name)
         {

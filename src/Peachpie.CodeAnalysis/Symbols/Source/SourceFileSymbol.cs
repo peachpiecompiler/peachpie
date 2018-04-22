@@ -20,7 +20,7 @@ namespace Pchp.CodeAnalysis.Symbols
     ///         object [Main](){ ... }
     ///     }
     /// }</remarks>
-    sealed partial class SourceFileSymbol : NamedTypeSymbol, ILambdaContainerSymbol
+    sealed partial class SourceFileSymbol : NamedTypeSymbol, ILambdaContainerSymbol, IPhpScriptTypeSymbol
     {
         readonly PhpCompilation _compilation;
         readonly PhpSyntaxTree _syntaxTree;
@@ -62,7 +62,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Special main method representing the script global code.
         /// </summary>
-        internal SourceGlobalMethodSymbol MainMethod => _mainMethod;
+        public IMethodSymbol MainMethod => _mainMethod;
 
         /// <summary>
         /// Lazily adds a function into the list of global functions declared within this file.
@@ -148,7 +148,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        internal string RelativeFilePath =>
+        public string RelativeFilePath =>
             PhpFileUtilities.GetRelativePath(
                 PhpFileUtilities.NormalizeSlashes(_syntaxTree.Source.FilePath),
                 PhpFileUtilities.NormalizeSlashes(_compilation.Options.BaseDirectory));

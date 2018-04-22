@@ -108,7 +108,7 @@ namespace Pchp.CodeAnalysis
                 case SpecialType.System_Boolean: return ctx.GetBooleanTypeMask();
                 case SpecialType.None:
                     var containing = t.ContainingAssembly;
-                    if (containing != null && containing.IsPchpCorLibrary)
+                    if (containing != null && containing.IsPeachpieCorLibrary)
                     {
                         if (t.Name == "PhpValue") return TypeRefMask.AnyType;
                         if (t.Name == "PhpAlias") return TypeRefMask.AnyType.WithRefFlag;

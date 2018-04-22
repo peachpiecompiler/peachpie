@@ -204,7 +204,7 @@ namespace Pchp.CodeAnalysis
                             if (_lazyCorLibrary == null && symbol.IsCorLibrary)
                                 _lazyCorLibrary = symbol;
 
-                            if (_lazyPhpCorLibrary == null && symbol.IsPchpCorLibrary)
+                            if (_lazyPhpCorLibrary == null && symbol.IsPeachpieCorLibrary)
                                 _lazyPhpCorLibrary = symbol;
 
                             // cache bound assembly symbol

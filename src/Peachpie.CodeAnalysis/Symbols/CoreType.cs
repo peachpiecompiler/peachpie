@@ -90,6 +90,11 @@ namespace Pchp.CodeAnalysis.Symbols
         public const string PhpExtensionAttributeFullName = "Pchp.Core.PhpExtensionAttribute";
 
         /// <summary>
+        /// Name of attribute class representing a script type.
+        /// </summary>
+        public const string PhpScriptAttributeFullName = "Pchp.Core.ScriptAttribute";
+
+        /// <summary>
         /// Name of attribute class representing target PHP language specification.
         /// </summary>
         public const string TargetPhpLanguageAttributeFullName = "Pchp.Core.TargetPhpLanguageAttribute";

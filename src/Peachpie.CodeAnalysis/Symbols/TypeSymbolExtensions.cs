@@ -79,12 +79,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public static bool Is_PhpAlias(this TypeSymbol t)
         {
-            return t.MetadataName == "PhpAlias" && t.ContainingAssembly?.IsPchpCorLibrary == true;
+            return t.MetadataName == "PhpAlias" && t.ContainingAssembly?.IsPeachpieCorLibrary == true;
         }
 
         public static bool Is_PhpValue(this TypeSymbol t)
         {
-            return t.MetadataName == "PhpValue" && t.ContainingAssembly?.IsPchpCorLibrary == true;
+            return t.MetadataName == "PhpValue" && t.ContainingAssembly?.IsPeachpieCorLibrary == true;
         }
 
         public static bool IsOfType(this TypeSymbol t, TypeSymbol oftype)

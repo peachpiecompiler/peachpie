@@ -220,7 +220,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 case SpecialType.System_Boolean: return "boolean";
                 default:
                     var containing = t.ContainingAssembly;
-                    if (containing != null && containing.IsPchpCorLibrary)
+                    if (containing != null && containing.IsPeachpieCorLibrary)
                     {
                         if (t.Name == "PhpNumber") return "number";
                         if (t.Name == "PhpString") return "string";

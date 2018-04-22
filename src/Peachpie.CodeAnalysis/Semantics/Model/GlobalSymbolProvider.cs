@@ -8,6 +8,8 @@ using Pchp.CodeAnalysis.Symbols;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using Devsense.PHP.Syntax;
+using Roslyn.Utilities;
+using Pchp.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Semantics.Model
 {
@@ -110,6 +112,39 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             }
         }
 
+        /// <summary>
+        /// Gets script classes from referenced assemblies.
+        /// </summary>
+        IEnumerable<IPhpScriptTypeSymbol> GetScriptsFromReferencedAssemblies()
+        {
+            return _referencedScripts
+                ?? (_referencedScripts = GetExtensionLibraries(_compilation)
+                    .SelectMany(ass => ass.PrimaryModule.GlobalNamespace.GetTypeMembers())
+                    .OfType<IPhpScriptTypeSymbol>()
+                    .Where(t => t.RelativeFilePath != null)
+                    .ToArray());
+        }
+
+        IPhpScriptTypeSymbol[] _referencedScripts; // TODO: dictionary
+
+        /// <summary>
+        /// Gets scripts used within the compilation.
+        /// </summary>
+        public IEnumerable<IPhpScriptTypeSymbol> ExportedScripts
+        {
+            get
+            {
+                // source files
+                var srcfiles = _compilation.SourceSymbolCollection.GetFiles().Cast<IPhpScriptTypeSymbol>();
+
+                // scripts from referenced assemblies
+                var refscripts = GetScriptsFromReferencedAssemblies();
+
+                //
+                return srcfiles.Concat(refscripts);
+            }
+        }
+
         public IEnumerable<IPhpValue> GetExportedConstants()
         {
             return ExtensionContainers
@@ -154,16 +189,32 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             return null;
         }
 
-        public SourceFileSymbol ResolveFile(string path)
+        public IPhpScriptTypeSymbol ResolveFile(string path)
         {
-            // TODO: lookup referenced assemblies
+            // normalize path
+            path = FileUtilities.NormalizeRelativePath(path, null, _compilation.Options.BaseDirectory);
 
-            // TODO: .\
-            // TODO: ..\
+            // absolute path
+            if (PathUtilities.IsAbsolute(path))
+            {
+                path = PhpFileUtilities.GetRelativePath(path, _compilation.Options.BaseDirectory);
+            }
 
+            // lookup referenced assemblies
+
+            // ./ handled by context semantics
+
+            // ../ handled by context semantics
+
+            // TODO: lookup include paths
+            // TODO: calling script directory
+
+            // cwd
+            var script = GetScriptsFromReferencedAssemblies().FirstOrDefault(t => t.RelativeFilePath == path);
+            
             // TODO: RoutineSemantics // relative to current script
 
-            return _next.ResolveFile(path);
+            return script ?? _next.ResolveFile(path);
         }
 
         public IPhpRoutineSymbol ResolveFunction(QualifiedName name)

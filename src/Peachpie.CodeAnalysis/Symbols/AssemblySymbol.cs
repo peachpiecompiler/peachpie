@@ -85,7 +85,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual bool IsCorLibrary => false;
 
-        public virtual bool IsPchpCorLibrary => false;
+        public virtual bool IsPeachpieCorLibrary => false;
 
         public override bool IsAbstract => false;
 

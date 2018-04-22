@@ -19,7 +19,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Gets a file by its path relative to current context.
         /// </summary>
-        SourceFileSymbol ResolveFile(string path);
+        IPhpScriptTypeSymbol ResolveFile(string path);
 
         /// <summary>
         /// Gets type symbol by its name in current context.

@@ -1494,7 +1494,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     var targetFile = _model.ResolveFile(value);
                     if (targetFile != null)
                     {
-                        x.Target = targetFile.MainMethod;
+                        x.Target = (MethodSymbol)targetFile.MainMethod;
                     }
                 }
             }

@@ -276,7 +276,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         static bool IsCastToFalse(AttributeData attr)
         {
-            return attr.AttributeClass.MetadataName == "CastToFalse" && ((AssemblySymbol)attr.AttributeClass.ContainingAssembly).IsPchpCorLibrary;
+            return attr.AttributeClass.MetadataName == "CastToFalse" && ((AssemblySymbol)attr.AttributeClass.ContainingAssembly).IsPeachpieCorLibrary;
         }
 
         /// <summary>

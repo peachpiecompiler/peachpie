@@ -266,7 +266,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 var funcs = GetFunctions().Cast<SourceRoutineSymbol>();
-                var mains = _files.Values.Select(f => f.MainMethod);
+                var mains = _files.Values.Select(f => (SourceRoutineSymbol)f.MainMethod);
                 var methods = GetTypes().SelectMany(f => f.GetMembers().OfType<SourceRoutineSymbol>());
                 var lambdas = GetLambdas();
                 

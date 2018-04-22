@@ -14,6 +14,8 @@ namespace Pchp.CodeAnalysis.Semantics.Model
     {
         readonly SourceSymbolCollection _table;
 
+        public PhpCompilation Compilation => _table.Compilation;
+
         public IEnumerable<string> Extensions => Enumerable.Empty<string>();
 
         public SourceSymbolProvider(SourceSymbolCollection table)
@@ -22,15 +24,15 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             _table = table;
         }
 
-        public SourceFileSymbol ResolveFile(string path)
+        public IPhpScriptTypeSymbol ResolveFile(string path)
         {
             // normalize path
-            path = FileUtilities.NormalizeRelativePath(path, null, _table.Compilation.Options.BaseDirectory);
+            path = FileUtilities.NormalizeRelativePath(path, null, Compilation.Options.BaseDirectory);
 
             // absolute path
             if (PathUtilities.IsAbsolute(path))
             {
-                path = PhpFileUtilities.GetRelativePath(path, _table.Compilation.Options.BaseDirectory);
+                path = PhpFileUtilities.GetRelativePath(path, Compilation.Options.BaseDirectory);
             }
 
             // ./ handled by context semantics

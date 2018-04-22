@@ -24,7 +24,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Corresponds to our runtime library (<c>Peachpie.Runtime</c>).
         /// </summary>
-        PchpCorLibrary,
+        PeachpieCorLibrary,
 
         /// <summary>
         /// Denotates an assembly that contains the library extension.

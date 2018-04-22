@@ -286,23 +286,23 @@ namespace Pchp.CodeAnalysis.Emit
         internal void CreateEnumerateScriptsSymbol(DiagnosticBag diagnostic)
         {
             var method = this.ScriptType.EnumerateScriptsSymbol;
-            var files = this.Compilation.SourceSymbolCollection.GetFiles();
 
             // void (Action<string, RuntimeMethodHandle> callback)
             var body = MethodGenerator.GenerateMethodBody(this, method,
                 (il) =>
                 {
-                    var action_string_method = method.Parameters[0].Type;
-                    Debug.Assert(action_string_method.Name == "Action");
-                    var invoke = action_string_method.DelegateInvokeMethod();
+                    var action_string_type = method.Parameters[0].Type;
+                    Debug.Assert(action_string_type.Name == "Action");
+                    var invoke = action_string_type.DelegateInvokeMethod();
                     Debug.Assert(invoke != null);
 
+                    var files = this.Compilation.GlobalSemantics.ExportedScripts;
                     foreach (var f in files)
                     {
                         // callback.Invoke(f.Name, f)
                         il.EmitLoadArgumentOpcode(0);
                         il.EmitStringConstant(f.RelativeFilePath);
-                        il.EmitLoadToken(this, diagnostic, f.MainMethod, null);
+                        il.EmitLoadToken(this, diagnostic, (TypeSymbol)f, null);
                         il.EmitCall(this, diagnostic, ILOpCode.Callvirt, invoke);
                     }
 
