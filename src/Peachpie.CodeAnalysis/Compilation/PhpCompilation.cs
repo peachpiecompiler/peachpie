@@ -509,21 +509,20 @@ namespace Pchp.CodeAnalysis
         protected override void AppendDefaultVersionResource(Stream resourceStream)
         {
             var sourceAssembly = SourceAssembly;
-            string fileVersion = //sourceAssembly.FileVersion ?? 
-                sourceAssembly.Identity.Version.ToString();
+            string fileVersion = sourceAssembly.FileVersion ?? sourceAssembly.Identity.Version.ToString();
 
             Win32ResourceConversions.AppendVersionToResourceStream(resourceStream,
                 !this.Options.OutputKind.IsApplication(),
                 fileVersion: fileVersion,
                 originalFileName: this.SourceModule.Name,
                 internalName: this.SourceModule.Name,
-                productVersion: /*sourceAssembly.InformationalVersion ??*/ fileVersion,
-                //fileDescription: sourceAssembly.Title ?? " ", //alink would give this a blank if nothing was supplied.
-                //legalCopyright: sourceAssembly.Copyright ?? " ", //alink would give this a blank if nothing was supplied.
-                //legalTrademarks: sourceAssembly.Trademark,
-                //productName: sourceAssembly.Product,
-                //comments: sourceAssembly.Description,
-                //companyName: sourceAssembly.Company
+                productVersion: sourceAssembly.InformationalVersion ?? fileVersion,
+                fileDescription: sourceAssembly.Title ?? " ", //alink would give this a blank if nothing was supplied.
+                legalCopyright: sourceAssembly.Copyright ?? " ", //alink would give this a blank if nothing was supplied.
+                legalTrademarks: sourceAssembly.Trademark,
+                productName: sourceAssembly.Product,
+                comments: sourceAssembly.Description,
+                companyName: sourceAssembly.Company,
                 assemblyVersion: sourceAssembly.Identity.Version
                 );
         }

@@ -145,6 +145,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             string moduleName = null;
             string runtimeMetadataVersion = null; // will be read from cor library if not specified in cmd
             string compilationName = null;
+            string versionString = null;
             bool optimize = false;
             bool concurrentBuild = true;
             var diagnosticOptions = new Dictionary<string, ReportDiagnostic>();
@@ -491,6 +492,11 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                         continue;
 
+                    case "version":
+                    case "v":
+                        versionString = RemoveQuotesAndSlashes(value);
+                        continue;
+
                     case "runtimemetadataversion":
                         unquoted = RemoveQuotesAndSlashes(value);
                         if (string.IsNullOrEmpty(unquoted))
@@ -600,6 +606,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 moduleName: moduleName,
                 mainTypeName: mainTypeName,
                 scriptClassName: WellKnownMemberNames.DefaultScriptClassName,
+                versionString: versionString,
                 phpdocTypes: phpdocTypes,
                 parseOptions: parseOptions,
                 diagnostics: diagnostics.AsImmutable(),

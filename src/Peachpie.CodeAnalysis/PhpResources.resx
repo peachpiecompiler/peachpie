@@ -188,7 +188,8 @@
 /pdb:&lt;file&gt;                 Specify debug information file name (default:
                             output file name with .pdb extension)
 /modulename:&lt;string&gt;        Specify the name of the source module
-/define:&lt;name&gt;=&lt;value&gt;      Defines compile-time constant. (Short form: /d)</value>
+/define:&lt;name&gt;=&lt;value&gt;      Defines compile-time constant. (Short form: /d)
+/version:&lt;value&gt;            Specifies the assembly version string. (Short form: /v)</value>
   </data>
   <data name="IDS_Logo" xml:space="preserve">
     <value>{0} version {1}</value>

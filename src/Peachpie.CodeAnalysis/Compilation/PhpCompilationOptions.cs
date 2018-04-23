@@ -72,6 +72,11 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public ImmutableArray<Diagnostic> Diagnostics { get; private set; }
 
+        /// <summary>
+        /// The file version string.
+        /// </summary>
+        public string VersionString { get; private set; }
+
         ///// <summary>
         ///// Flags applied to the top-level binder created for each syntax tree in the compilation 
         ///// as well as for the binder of global imports.
@@ -88,6 +93,7 @@ namespace Pchp.CodeAnalysis
             string moduleName = null,
             string mainTypeName = null,
             string scriptClassName = null,
+            string versionString = null,
             OptimizationLevel optimizationLevel = OptimizationLevel.Debug,
             bool checkOverflow = false,
             string cryptoKeyContainer = null,
@@ -111,6 +117,7 @@ namespace Pchp.CodeAnalysis
             PhpParseOptions parseOptions = null)
             : this(outputKind, baseDirectory, sdkDirectory,
                    reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
+                   versionString,
                    optimizationLevel, checkOverflow,
                    cryptoKeyContainer, cryptoKeyFile, cryptoPublicKey, delaySign, platform,
                    generalDiagnosticOption, warningLevel,
@@ -139,6 +146,7 @@ namespace Pchp.CodeAnalysis
             string moduleName,
             string mainTypeName,
             string scriptClassName,
+            string versionString,
             OptimizationLevel optimizationLevel,
             bool checkOverflow,
             string cryptoKeyContainer,
@@ -175,6 +183,7 @@ namespace Pchp.CodeAnalysis
             this.PhpDocTypes = phpdocTypes;
             this.ParseOptions = parseOptions;
             this.Diagnostics = diagnostics;
+            this.VersionString = versionString;
         }
 
         private PhpCompilationOptions(PhpCompilationOptions other) : this(
@@ -184,6 +193,7 @@ namespace Pchp.CodeAnalysis
             moduleName: other.ModuleName,
             mainTypeName: other.MainTypeName,
             scriptClassName: other.ScriptClassName,
+            versionString: other.VersionString,
             optimizationLevel: other.OptimizationLevel,
             checkOverflow: other.CheckOverflow,
             cryptoKeyContainer: other.CryptoKeyContainer,

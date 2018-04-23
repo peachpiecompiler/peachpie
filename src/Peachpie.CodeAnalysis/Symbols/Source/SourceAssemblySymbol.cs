@@ -17,7 +17,7 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         readonly string _simpleName;
         readonly PhpCompilation _compilation;
-        
+
         /// <summary>
         /// A list of modules the assembly consists of. 
         /// The first (index=0) module is a SourceModuleSymbol, which is a primary module, the rest are net-modules.
@@ -47,10 +47,10 @@ namespace Pchp.CodeAnalysis.Symbols
             Debug.Assert(compilation != null);
             Debug.Assert(!String.IsNullOrWhiteSpace(assemblySimpleName));
             Debug.Assert(!String.IsNullOrWhiteSpace(moduleName));
-            
+
             _compilation = compilation;
             _simpleName = assemblySimpleName;
-            
+
             var moduleBuilder = new ArrayBuilder<ModuleSymbol>(1);
 
             moduleBuilder.Add(new SourceModuleSymbol(this, compilation.SourceSymbolCollection, moduleName));
@@ -241,7 +241,50 @@ namespace Pchp.CodeAnalysis.Symbols
             return StrongNameKeys.Create(DeclaringCompilation.Options.StrongNameProvider, keyFile, keyContainer, Errors.MessageProvider.Instance);
         }
 
-        Version AssemblyVersionAttributeSetting => new Version(1, 0, 0, 0);
+        Version AssemblyVersionAttributeSetting
+        {
+            get
+            {
+                var str = FileVersion;
+                if (!string.IsNullOrEmpty(str))
+                {
+                    var sep = str.IndexOfAny(new char[] { '-', ' ' });
+                    if (sep >= 0)
+                    {
+                        str = str.Remove(sep);
+                    }
+
+                    if (Version.TryParse(str, out var v))
+                    {
+                        v = new Version(
+                            Math.Max(0, v.Major),
+                            Math.Max(0, v.Minor),
+                            Math.Max(0, v.Build),
+                            Math.Max(0, v.Revision)); // TODO: AssemblyVersionPattern for `-1` fields
+                        return v;
+                    }
+                }
+
+                // no version specified:
+                return new Version(1, 0, 0, 0);
+            }
+        }
+
+        internal string FileVersion => _compilation.Options.VersionString;
+
+        internal string Title => null;
+
+        internal string Description => null;
+
+        internal string Company => null;
+
+        internal string Product => null;
+
+        internal string InformationalVersion => null;
+
+        internal string Copyright => null;
+
+        internal string Trademark => null;
 
         string AssemblyCultureAttributeSetting => null;
 

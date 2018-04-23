@@ -33,7 +33,7 @@ namespace Pchp.CodeAnalysis.Emit
         public SynthesizedManager SynthesizedManager => _synthesized;
         readonly SynthesizedManager _synthesized;
 
-        Cci.ICustomAttribute _debuggableAttribute, _phpextensionAttribute, _targetphpversionAttribute;
+        Cci.ICustomAttribute _debuggableAttribute, _phpextensionAttribute, _targetphpversionAttribute, _assemblyinformationalversionAttribute;
 
         protected readonly ConcurrentDictionary<Symbol, Cci.IModuleReference> AssemblyOrModuleSymbolToModuleRefMap = new ConcurrentDictionary<Symbol, Cci.IModuleReference>();
         readonly ConcurrentDictionary<Symbol, object> _genericInstanceMap = new ConcurrentDictionary<Symbol, object>();
@@ -207,6 +207,26 @@ namespace Pchp.CodeAnalysis.Emit
                 if (_targetphpversionAttribute != null)
                 {
                     yield return _targetphpversionAttribute;
+                }
+
+                // [assembly: AssemblyInformationalVersion( FileVersion )]
+                if (Compilation.SourceAssembly.FileVersion != null)
+                {
+                    if (_assemblyinformationalversionAttribute == null)
+                    {
+                        var attr = (NamedTypeSymbol)this.Compilation.GetTypeByMetadataName("System.Reflection.AssemblyInformationalVersionAttribute");
+                        if (attr != null)
+                        {
+                            _assemblyinformationalversionAttribute = new SynthesizedAttributeData(attr.InstanceConstructors[0],
+                                ImmutableArray.Create(new TypedConstant(Compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, Compilation.SourceAssembly.FileVersion)),
+                                ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                        }
+                    }
+
+                    if (_assemblyinformationalversionAttribute != null)
+                    {
+                        yield return _assemblyinformationalversionAttribute;
+                    }
                 }
 
                 //

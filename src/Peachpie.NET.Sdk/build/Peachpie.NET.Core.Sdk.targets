@@ -144,6 +144,7 @@
       <RspLine Include="--keyfile:$(AssemblyOriginatorKeyFile)" Condition=" '$(SignAssembly)' == 'true' and '$(AssemblyOriginatorKeyFile)' != ''" />
       <RspLine Include="--publicsign+" Condition=" '$(SignAssembly)' == 'true' and '$(PublicSign)' == 'true'" />
       <RspLine Include="--publicsign-" Condition=" '$(SignAssembly)' == 'true' and '$(PublicSign)' == 'false'" />
+      <RspLine Include="--version:$(Version)" Condition=" '$(Version)' != '' " />
       
       <RspLine Include="--emit-entry-point:$(EmitEntryPoint)" />
       <RspLine Include="--main:$(StartupObject)" Condition=" '$(StartupObject)' != '' " />
