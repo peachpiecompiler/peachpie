@@ -2,8 +2,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.DependencyInjection;
 using Pchp.Core;
-using Peachpie.Library.Scripting;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -11,7 +11,7 @@ namespace ScriptsTest
 {
     public class ScriptsTest
     {
-        static readonly Context.IScriptingProvider _provider = new ScriptingProvider();
+        static readonly Context.IScriptingProvider _provider = Context.GlobalServices.GetService<Context.IScriptingProvider>(); // use IScriptingProvider singleton 
 
         private readonly ITestOutputHelper _output;
 
@@ -25,7 +25,7 @@ namespace ScriptsTest
         public void ScriptRunTest(string dir, string fname)
         {
             var isSkipTest = new Regex(@"^skip(\([^)]*\))?_.*$"); // matches either skip_<smth>.php or skip(<reason>)_<smth>.php
-            Skip.If(isSkipTest.IsMatch(fname));           
+            Skip.If(isSkipTest.IsMatch(fname));
 
             var path = Path.Combine(dir, fname);
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using Pchp.Core;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Peachpie.Test
 {
@@ -12,7 +13,7 @@ namespace Peachpie.Test
         {
             // bootstrapper that compiles, loads and runs our script file
 
-            var provider = (Context.IScriptingProvider)new Library.Scripting.ScriptingProvider();
+            var provider = Context.GlobalServices.GetService<Context.IScriptingProvider>(); // use IScriptingProvider singleton 
             var fullpath = Path.Combine(Directory.GetCurrentDirectory(), ScriptPath);
 
             using (var ctx = Context.CreateConsole(string.Empty, args))
