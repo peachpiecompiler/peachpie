@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -306,13 +307,44 @@ namespace Pchp.Library
         }
 
         /// <summary>
+		/// An action performed by the <see cref="error_log"/> method.
+		/// </summary>
+		public enum ErrorLogType
+        {
+            /// <summary>A message to be logged is appended to log file or sent to system log.</summary>
+            Default = 0,
+
+            /// <summary>A message is sent by an e-mail.</summary>
+            SendByEmail = 1,
+
+            /// <summary>Not supported.</summary>
+            ToDebuggingConnection = 2,
+
+            /// <summary>A message is appended to a specified file.</summary>
+            AppendToFile = 3,
+
+            /// <summary>A message is sent directly to the SAPI logging handler.</summary>
+            SAPI = 4,
+        }
+
+        /// <summary>
         /// Send an error message to the defined error handling routines.
         /// </summary>
-        public static bool error_log(string message, int message_type = 0, string destination = null, string extra_headers = null)
+        public static bool error_log(string message, ErrorLogType message_type = ErrorLogType.Default, string destination = null, string extra_headers = null)
         {
-            // not implemented
+            // send to attached trace listener (attached debugger for instance):
+            Trace.WriteLine(message, "PHP");
 
-            return false;
+            // pass the message:
+            switch (message_type)
+            {
+                case ErrorLogType.Default:
+                    LogEventSource.Instance.ErrorLog(message);
+                    return true;
+
+                default:
+                    return false;
+            }
         }
 
         /// <summary>

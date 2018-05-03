@@ -19,6 +19,7 @@
 
     <RuntimeFrameworkVersion Condition=" '$(TargetFramework)' == 'netcoreapp1.0' ">1.0.4</RuntimeFrameworkVersion>
     <NetStandardImplicitPackageVersion Condition=" '$(TargetFramework)' == 'netstandard1.6' ">1.6.1</NetStandardImplicitPackageVersion>
+    <DefineConstants>TRACE</DefineConstants>
 
     <!-- DebugType Condition=" '$(TargetFramework)' == 'net46' ">full</DebugType -->
 

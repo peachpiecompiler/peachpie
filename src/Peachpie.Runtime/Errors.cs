@@ -3,6 +3,7 @@ using Pchp.Core.Resources;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -304,6 +305,40 @@ namespace Pchp.Core
             Throw(PhpError.Error, ErrResources.self_used_out_of_class);
             throw new ArgumentException(ErrResources.self_used_out_of_class);
         }
+    }
+
+    #endregion
+
+    #region LogEventSource
+
+    /// <summary>
+    /// Provides logging of errors into system events log.
+    /// </summary>
+    [EventSource(Name = "PeachPie")]
+    public sealed class LogEventSource : EventSource
+    {
+        /// <summary>
+        /// Public singleton to be used.
+        /// </summary>
+        public static readonly LogEventSource Instance = new LogEventSource();
+
+        /// <summary>
+        /// Logs user's error message.
+        /// </summary>
+        [Event(1, Message = "error_log: {0}", Level = EventLevel.Error, Keywords = EventKeywords.All)]
+        public void ErrorLog(string message) => WriteEvent(1, message);
+
+        /// <summary>
+        /// Logs non-fatal error.
+        /// </summary>
+        [Event(2, Message = "Warning: {0}", Level = EventLevel.Warning, Keywords = EventKeywords.All)]
+        public void HandleWarning(string message) => WriteEvent(2, message);
+
+        /// <summary>
+        /// Logs fatal error.
+        /// </summary>
+        [Event(3, Message = "Error: {0}", Level = EventLevel.Error, Keywords = EventKeywords.All)]
+        public void HandleFatal(string message) => WriteEvent(3, message);
     }
 
     #endregion

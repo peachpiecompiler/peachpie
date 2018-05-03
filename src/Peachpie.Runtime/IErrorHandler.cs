@@ -35,8 +35,17 @@ namespace Pchp.Core
     {
         public void Throw(PhpError error, string message)
         {
-            Debug.WriteLine(message, "PHP");
-            Debug.Assert((error & (PhpError)PhpErrorSets.Fatal) == 0, message);
+            Trace.WriteLine(message, $"PHP ({error})");
+            
+            if ((error & (PhpError)PhpErrorSets.Fatal) != 0)
+            {
+                LogEventSource.Instance.HandleFatal(message);
+                Trace.Fail(message);
+            }
+            else
+            {
+                LogEventSource.Instance.HandleWarning(message);
+            }
         }
 
         public void Throw(PhpError error, string formatString, params string[] args) => Throw(error, string.Format(formatString, args));
