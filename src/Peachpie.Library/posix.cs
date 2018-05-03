@@ -74,7 +74,7 @@ namespace Pchp.Library
         /// <param name="useLimit">True if you want to use previous parameter.</param>
         /// <param name="ignoreCase">True if <c>str</c> is matched case insensitive, false otherwise.</param>
         /// <returns>Array containing parts of str</returns>
-        public static PhpArray DoSplit(Context ctx, string pattern, string str, int limit, bool useLimit, bool ignoreCase)
+        private static PhpArray DoSplit(Context ctx, string pattern, string str, int limit, bool useLimit, bool ignoreCase)
         {
             System.Array sAr;
 
