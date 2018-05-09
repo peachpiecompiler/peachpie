@@ -109,12 +109,8 @@ namespace Pchp.Library.DateTime
         }
 
         //public array getTransitions ([ int $timestamp_begin [, int $timestamp_end ]] )
-        public PhpArray getTransitions()
-        {
-            throw new NotImplementedException();
-        }
-
-        public PhpArray getTransitions(int timestamp_begin, int timestamp_end)
+        [return: CastToFalse]
+        public PhpArray getTransitions(int timestamp_begin = 0, int timestamp_end = 0)
         {
             // TODO: timestamp_begin, timestamp_end
 
@@ -140,7 +136,9 @@ namespace Pchp.Library.DateTime
 
             //return array;
 
-            throw new NotImplementedException();
+            PhpException.FunctionNotSupported(nameof(timestamp_begin));
+
+            return null;
         }
 
         //public static array listAbbreviations ( void )

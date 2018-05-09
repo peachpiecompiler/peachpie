@@ -561,9 +561,9 @@ namespace Pchp.Library.DateTime
         }
 
         [return: CastToFalse]
-        public static PhpArray timezone_transitions_get(DateTimeZone timezone)
+        public static PhpArray timezone_transitions_get(DateTimeZone timezone, int timestamp_begin = 0, int timestamp_end = 0)
         {
-            return (timezone != null) ? timezone.getTransitions() : null;
+            return timezone?.getTransitions(timestamp_begin, timestamp_end);
         }
 
         #endregion
