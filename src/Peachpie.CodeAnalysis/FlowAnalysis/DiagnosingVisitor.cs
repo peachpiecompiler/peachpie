@@ -102,6 +102,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitEval(x);
         }
 
+        public override void VisitArray(BoundArrayEx x)
+        {
+            if (x.Access.IsNone)
+            {
+                // The expression is not being read. Did you mean to assign it somewhere?
+                _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_ExpressionNotRead);
+            }
+
+            base.VisitArray(x);
+        }
+
         public override void VisitTypeRef(BoundTypeRef typeRef)
         {
             if (typeRef != null)

@@ -3431,6 +3431,11 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if (_items.Length == 0)
             {
+                if (Access.IsNone && !cg.EmitPdbSequencePoints)
+                {
+                    return cg.CoreTypes.Void;
+                }
+
                 // PhpArray.NewEmpty()
                 return cg.Emit_PhpArray_NewEmpty();
             }
@@ -3441,6 +3446,11 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else // array items do not need Context => they are immutable/literals
             {
+                if (Access.IsNone && !cg.EmitPdbSequencePoints)
+                {
+                    return cg.CoreTypes.Void;
+                }
+
                 // static PhpArray field;
                 // field ?? (field = new PhpArray(){ ... })
                 return EmitCachedPhpArray(cg);

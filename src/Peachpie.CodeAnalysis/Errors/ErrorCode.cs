@@ -133,6 +133,8 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_StringAssertionDeprecated,
         /// <summary>Deprecated: {0} '{1}' has been deprecated. {2}</summary>
         WRN_SymbolDeprecated,
+        /// <summary>The expression is not being read. Did you mean to assign it somewhere?</summary>
+        WRN_ExpressionNotRead,
         
 
         //

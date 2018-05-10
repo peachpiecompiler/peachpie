@@ -244,4 +244,8 @@
     <value>'{0}' not in the 'loop' or 'switch' context</value>
     <comment>When using break; or continue; outside switch or loop.</comment>
   </data>
+  <data name="WRN_ExpressionNotRead" xml:space="preserve">
+    <value>The expression is not being read. Did you mean to assign it somewhere?</value>
+    <comment>e.g. an array is created but not used</comment>
+  </data>
 </root>

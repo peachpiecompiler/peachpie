@@ -663,7 +663,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if (x.Operation == AST.Operations.Array)
             {
-                Debug.Assert(access.IsRead);
+                Debug.Assert(access.IsRead || access.IsNone);
 
                 if (access.IsReadRef)
                 {
