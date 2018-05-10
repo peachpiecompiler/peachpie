@@ -240,4 +240,8 @@
   <data name="ERR_OutputWriteFailed" xml:space="preserve">
     <value>Could not write to output file '{0}' -- '{1}'</value>
   </data>
+  <data name="ERR_NeedsLoopOrSwitch" xml:space="preserve">
+    <value>'{0}' not in the 'loop' or 'switch' context</value>
+    <comment>When using break; or continue; outside switch or loop.</comment>
+  </data>
 </root>

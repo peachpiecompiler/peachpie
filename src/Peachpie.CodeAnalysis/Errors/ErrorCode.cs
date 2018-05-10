@@ -101,6 +101,8 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_PrimitiveTypeNameMisused,
         /// <summary>Missing value for '{0}' option</summary>
         ERR_SwitchNeedsValue,
+        /// <summary>'{0}' not in the 'loop' or 'switch' context</summary>
+        ERR_NeedsLoopOrSwitch,
 
         //
         // Warnings

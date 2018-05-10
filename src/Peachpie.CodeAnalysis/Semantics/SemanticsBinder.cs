@@ -84,6 +84,11 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Found yield statements (needed for ControlFlowGraph)
         /// </summary>
         public virtual BoundYieldStatement[] Yields { get => EmptyArray<BoundYieldStatement>.Instance; }
+
+        /// <summary>
+        /// Bag with semantic diagnostics.
+        /// </summary>
+        public DiagnosticBag Diagnostics => _diagnostics;
         protected readonly DiagnosticBag _diagnostics;
 
         /// <summary>

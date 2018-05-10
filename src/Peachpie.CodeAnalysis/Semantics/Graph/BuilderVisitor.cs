@@ -655,13 +655,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 }
                 else
                 {
-                    throw new InvalidOperationException();   // TODO: ErrCode
-                    //Connect(_current, this.GetExceptionBlock());    // unreachable  // fatal error in PHP
+                    // fatal error in PHP:
+                    _binder.Diagnostics.Add(_binder.Routine, x, Errors.ErrorCode.ERR_NeedsLoopOrSwitch, x.Type.ToString().ToLowerInvariant());
+                    Connect(_current, this.GetExceptionBlock());    // unreachable, wouldn't compile
                 }
             }
             else
             {
-                throw new InvalidOperationException();
+                throw Peachpie.CodeAnalysis.Utilities.ExceptionUtilities.UnexpectedValue(x.Type);
             }
 
             _current = NewDeadBlock();  // anything after these statements is unreachable
