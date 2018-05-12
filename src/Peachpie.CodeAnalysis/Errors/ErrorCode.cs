@@ -135,6 +135,8 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_SymbolDeprecated,
         /// <summary>The expression is not being read. Did you mean to assign it somewhere?</summary>
         WRN_ExpressionNotRead,
+        /// <summary>Assignment made to same variable; did you mean to assign something else?</summary>
+        WRN_AssigningSameVariable,
         
 
         //

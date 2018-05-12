@@ -205,6 +205,22 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // anything else (object (even convertible to string), array, number, boolean, ...) is not allowed
         }
 
+        public override void VisitAssign(BoundAssignEx x)
+        {
+            // Template: <x> = <x>
+            if (x.Target is BoundVariableRef lvar && lvar.Variable is BoundLocal lloc &&
+                x.Value is BoundVariableRef rvar && rvar.Variable is BoundLocal rloc &&
+                lloc.Name == rloc.Name && !string.IsNullOrEmpty(lloc.Name) && x.PhpSyntax != null)
+            {
+                // Assignment made to same variable
+                _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_AssigningSameVariable);
+            }
+
+            //
+
+            base.VisitAssign(x);
+        }
+
         public override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
         {
             CheckUndefinedFunctionCall(x);
