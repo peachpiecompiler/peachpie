@@ -134,7 +134,7 @@ namespace Pchp.Library.DateTime
             if (timezone.timezone != this.TimeZone)
             {
                 // convert this.Time from old TZ to new TZ
-                this.Time = TimeZoneInfo.ConvertTime(this.Time, this.TimeZone, timezone.timezone);
+                this.Time = TimeZoneInfo.ConvertTime(new System_DateTime(this.Time.Ticks, DateTimeKind.Unspecified), this.TimeZone, timezone.timezone);
                 this.TimeZone = timezone.timezone;
             }
 
