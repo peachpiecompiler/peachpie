@@ -122,7 +122,7 @@ namespace Pchp.Library.DateTime
         /// </summary>
         public virtual DateInterval diff(DateTimeInterface datetime2, bool absolute = false) => DateTimeFunctions.date_diff(this, datetime2, absolute);
 
-        public virtual DateTime setTimeZone(DateTimeZone timezone)
+        public virtual DateTime setTimezone(DateTimeZone timezone)
         {
             if (timezone == null)
             {
@@ -131,7 +131,12 @@ namespace Pchp.Library.DateTime
                 throw new ArgumentNullException();
             }
 
-            this.TimeZone = timezone.timezone;
+            if (timezone.timezone != this.TimeZone)
+            {
+                // convert this.Time from old TZ to new TZ
+                this.Time = TimeZoneInfo.ConvertTime(this.Time, this.TimeZone, timezone.timezone);
+                this.TimeZone = timezone.timezone;
+            }
 
             return this;
         }

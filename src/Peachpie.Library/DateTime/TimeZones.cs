@@ -452,6 +452,20 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
+        #region date_timezone_get, date_timezone_set
+
+        /// <summary>
+        /// Alias to <see cref="DateTimeInterface.getTimezone"/>.
+        /// </summary>
+        public static DateTimeZone date_timezone_get(DateTimeInterface dt) => dt.getTimezone();
+
+        /// <summary>
+        /// Alias to <see cref="DateTime.setTimezone(DateTimeZone)"/>.
+        /// </summary>
+        public static DateTime date_timezone_set(DateTime dt, DateTimeZone timezone) => dt.setTimezone(timezone);
+
+        #endregion
+
         #region timezone_identifiers_list, timezone_version_get
 
         static readonly Dictionary<string, int> s_what = new Dictionary<string, int>(10, StringComparer.OrdinalIgnoreCase)
