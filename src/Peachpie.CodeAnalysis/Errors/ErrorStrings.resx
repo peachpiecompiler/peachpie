@@ -248,4 +248,7 @@
     <value>The expression is not being read. Did you mean to assign it somewhere?</value>
     <comment>e.g. an array is created but not used</comment>
   </data>
+  <data name="WRN_AssigningSameVariable" xml:space="preserve">
+    <value>Assignment made to same variable; did you mean to assign something else?</value>
+  </data>
 </root>
