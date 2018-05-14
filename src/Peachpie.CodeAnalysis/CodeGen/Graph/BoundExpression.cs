@@ -1292,7 +1292,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Emits comparison operator pushing <c>bool</c> (<c>i4</c> of value <c>0</c> or <c>1</c>) onto the evaluation stack.
         /// </summary>
-        /// <returns>Resulting type code pushed onto the top of evaliuation stack.</returns>
+        /// <returns>Resulting type code pushed onto the top of evaluation stack.</returns>
         internal static TypeSymbol EmitLtGt(CodeGenerator cg, TypeSymbol xtype, BoundExpression right, bool lt)
         {
             TypeSymbol ytype;
@@ -1301,8 +1301,16 @@ namespace Pchp.CodeAnalysis.Semantics
             switch (xtype.SpecialType)
             {
                 case SpecialType.System_Void:
-                    // Operators.CompareNull(value)
-                    throw new NotImplementedException();
+                    ytype = cg.Emit(right);    // bool|int -> long
+
+                    // Template: Operators.CompareNull(value)
+                    cg.EmitConvertToPhpValue(ytype, 0);
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.CompareNull_value);
+
+                    // {comparison }<> 0
+                    il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
+                    il.EmitOpCode(lt ? ILOpCode.Clt : ILOpCode.Cgt);
+                    return cg.CoreTypes.Boolean;
 
                 case SpecialType.System_Int32:
                     // i4 -> i8
@@ -1546,6 +1554,15 @@ namespace Pchp.CodeAnalysis.Semantics
                     //
                     throw cg.NotImplementedException($"Mul(int64, {ytype.Name})", right);
                 default:
+
+                    if (xtype== cg.CoreTypes.PhpAlias)
+                    {
+                        // dereference:
+                        xtype = cg.Emit_PhpAlias_GetValue();
+                    }
+
+                    //
+
                     if (xtype == cg.CoreTypes.PhpNumber)
                     {
                         ytype = cg.EmitConvertStringToNumber(cg.EmitConvertIntToLong(cg.Emit(right)));
