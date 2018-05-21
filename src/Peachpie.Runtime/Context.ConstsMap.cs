@@ -57,6 +57,51 @@ namespace Pchp.Core
 
         #endregion
 
+        #region IConstantsComposition
+
+        /// <summary>
+        /// Interface for defining new constants.
+        /// Used by compiler to provide definitions of app-wide constants.
+        /// </summary>
+        public interface IConstantsComposition
+        {
+            /// <summary>Defines constant, either case sensitive or insensitive.</summary>
+            void Define(string name, PhpValue value, bool ignoreCase);
+
+            /// <summary>Defines case sensitive constant.</summary>
+            void Define(string name, PhpValue value);
+
+            /// <summary>Defines case sensitive constant.</summary>
+            void Define(string name, long value);
+
+            /// <summary>Defines case sensitive constant.</summary>
+            void Define(string name, double value);
+
+            /// <summary>Defines case sensitive constant.</summary>
+            void Define(string name, string value);
+
+            /// <summary>
+            /// Defines case sensitive constant using a getter method instead of a value.
+            /// The getter is called every time the constant is used.
+            /// </summary>
+            void Define(string name, Func<PhpValue> getter);
+        }
+
+        /// <summary>
+        /// Helper class that defines constants in app-context.
+        /// </summary>
+        sealed class AppConstantsComposition : IConstantsComposition
+        {
+            public void Define(string name, PhpValue value, bool ignoreCase) => ConstsMap.DefineAppConstant(name, value, ignoreCase);
+            public void Define(string name, PhpValue value) => Define(name, value, ignoreCase: false);
+            public void Define(string name, long value) => Define(name, (PhpValue)value);
+            public void Define(string name, double value) => Define(name, (PhpValue)value);
+            public void Define(string name, string value) => Define(name, (PhpValue)value);
+            public void Define(string name, Func<PhpValue> getter) => Define(name, PhpValue.FromClass(getter));
+        }
+
+        #endregion
+
         class ConstsMap : IEnumerable<KeyValuePair<string, PhpValue>>
         {
             /// <summary>

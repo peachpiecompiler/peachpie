@@ -424,48 +424,6 @@ namespace Pchp.Core
 
         #endregion
 
-        #region Constants
-
-        /// <summary>
-        /// Tries to get a global constant from current context.
-        /// </summary>
-        public bool TryGetConstant(string name, out PhpValue value)
-        {
-            int idx = 0;
-            return TryGetConstant(name, out value, ref idx);
-        }
-
-        /// <summary>
-        /// Tries to get a global constant from current context.
-        /// </summary>
-        internal bool TryGetConstant(string name, out PhpValue value, ref int idx)
-        {
-            value = _constants.GetConstant(name, ref idx);
-            return value.IsSet;
-        }
-
-        /// <summary>
-        /// Defines a runtime constant.
-        /// </summary>
-        public bool DefineConstant(string name, PhpValue value, bool ignorecase = false) => _constants.DefineConstant(name, value, ignorecase);
-
-        /// <summary>
-        /// Defines a runtime constant.
-        /// </summary>
-        internal bool DefineConstant(string name, PhpValue value, ref int idx, bool ignorecase = false) => _constants.DefineConstant(name, value, ref idx, ignorecase);
-
-        /// <summary>
-        /// Determines whether a constant with given name is defined.
-        /// </summary>
-        public bool IsConstantDefined(string name) => _constants.IsDefined(name);
-
-        /// <summary>
-        /// Gets enumeration of all available constants and their values.
-        /// </summary>
-        public IEnumerable<KeyValuePair<string, PhpValue>> GetConstants() => _constants;
-
-        #endregion
-
         #region Shutdown
 
         List<Action<Context>> _lazyShutdownCallbacks = null;

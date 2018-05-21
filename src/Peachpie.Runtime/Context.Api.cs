@@ -7,8 +7,10 @@ using System.Threading.Tasks;
 
 namespace Pchp.Core
 {
-    partial class Context
+    partial class Context : Context.IConstantsComposition
     {
+        #region Functions
+
         /// <summary>
         /// Declare user function into the PHP runtime context.
         /// </summary>
@@ -31,6 +33,10 @@ namespace Pchp.Core
         /// <param name="arguments">Arguments to be passed to the function call.</param>
         /// <returns>Returns value given from the function call.</returns>
         public PhpValue Call(string function, params object[] arguments) => PhpCallback.Create(function, default(RuntimeTypeHandle)).Invoke(this, PhpValue.FromClr(arguments));
+
+        #endregion
+
+        #region Instantiation
 
         /// <summary>
         /// Creates an instance of a type dynamically with constructor overload resolution.
@@ -105,6 +111,10 @@ namespace Pchp.Core
             }
         }
 
+        #endregion
+
+        #region Extensions
+
         /// <summary>
         /// Gets collection of extension names loaded into the application context.
         /// </summary>
@@ -135,9 +145,70 @@ namespace Pchp.Core
             return ExtensionsAppContext.ExtensionsTable.GetTypesByExtension(extension);
         }
 
+        #endregion
+
+        #region Scripts
+
         /// <summary>
         /// Gets enumeration of scripts that were included.
         /// </summary>
         public IEnumerable<ScriptInfo> GetIncludedScripts() => _scripts.GetIncludedScripts();
+
+        // TODO: static AddScript(string path, MainDelegate @delegate)
+
+        #endregion
+
+        #region Constants
+
+        /// <summary>
+        /// Tries to get a global constant from current context.
+        /// </summary>
+        public bool TryGetConstant(string name, out PhpValue value)
+        {
+            int idx = 0;
+            return TryGetConstant(name, out value, ref idx);
+        }
+
+        /// <summary>
+        /// Tries to get a global constant from current context.
+        /// </summary>
+        internal bool TryGetConstant(string name, out PhpValue value, ref int idx)
+        {
+            value = _constants.GetConstant(name, ref idx);
+            return value.IsSet;
+        }
+
+        /// <summary>
+        /// Defines a runtime constant.
+        /// </summary>
+        public bool DefineConstant(string name, PhpValue value, bool ignorecase = false) => _constants.DefineConstant(name, value, ignorecase);
+
+        /// <summary>
+        /// Defines a runtime constant.
+        /// </summary>
+        internal bool DefineConstant(string name, PhpValue value, ref int idx, bool ignorecase = false) => _constants.DefineConstant(name, value, ref idx, ignorecase);
+
+        /// <summary>
+        /// Determines whether a constant with given name is defined.
+        /// </summary>
+        public bool IsConstantDefined(string name) => _constants.IsDefined(name);
+
+        /// <summary>
+        /// Gets enumeration of all available constants and their values.
+        /// </summary>
+        public IEnumerable<KeyValuePair<string, PhpValue>> GetConstants() => _constants;
+
+        #endregion
+
+        #region IConstantsComposition (user constants)
+
+        void IConstantsComposition.Define(string name, PhpValue value) => DefineConstant(name, value, ignorecase: false);
+        void IConstantsComposition.Define(string name, PhpValue value, bool ignoreCase) => DefineConstant(name, value, ignoreCase);
+        void IConstantsComposition.Define(string name, long value) => DefineConstant(name, (PhpValue)value);
+        void IConstantsComposition.Define(string name, double value) => DefineConstant(name, (PhpValue)value);
+        void IConstantsComposition.Define(string name, string value) => DefineConstant(name, (PhpValue)value);
+        void IConstantsComposition.Define(string name, Func<PhpValue> getter) => throw new NotSupportedException();
+
+        #endregion
     }
 }
