@@ -265,9 +265,9 @@ namespace Pchp.Library.Streams
             return zs.deflateEnd();
         }
 
-        public override TextElement Filter(Context ctx, TextElement input, bool closing)
+        public override TextElement Filter(IEncodingProvider enc, TextElement input, bool closing)
         {
-            var bInput = input.AsBytes(ctx.StringEncoding);
+            var bInput = input.AsBytes(enc.StringEncoding);
             if (bInput != null)
             {
                 int offset = 0;
@@ -312,9 +312,9 @@ namespace Pchp.Library.Streams
             return zs.inflateEnd();
         }
 
-        public override TextElement Filter(Context ctx, TextElement input, bool closing)
+        public override TextElement Filter(IEncodingProvider enc, TextElement input, bool closing)
         {
-            var bInput = input.AsBytes(ctx.StringEncoding);
+            var bInput = input.AsBytes(enc.StringEncoding);
             if (bInput != null)
             {
                 int offset = 0;
@@ -351,9 +351,9 @@ namespace Pchp.Library.Streams
             _state = CompressionState.Header;
         }
 
-        public override TextElement Filter(Context ctx, TextElement input, bool closing)
+        public override TextElement Filter(IEncodingProvider enc, TextElement input, bool closing)
         {
-            var bInput = input.AsBytes(ctx.StringEncoding);
+            var bInput = input.AsBytes(enc.StringEncoding);
 
             if (bInput != null)
             {
@@ -502,11 +502,11 @@ namespace Pchp.Library.Streams
             _chunkQueue = new BinaryChunkQueue();
         }
 
-        public override TextElement Filter(Context ctx, TextElement input, bool closing)
+        public override TextElement Filter(IEncodingProvider enc, TextElement input, bool closing)
         {
             // TODO: not the most efficient method - after the filters are upgraded to bucket lists, update this
 
-            var bInput = input.AsBytes(ctx.StringEncoding);
+            var bInput = input.AsBytes(enc.StringEncoding);
             if (bInput != null)
             {
                 if (_state == UncompressionState.Failed)

@@ -375,23 +375,18 @@ namespace Pchp.CodeAnalysis.Emit
                             consttype = cg.CoreTypes.Long;
                         }
 
-                        if (consttype.SpecialType == SpecialType.System_String)
-                        {
-                            il.EmitCall(this, diagnostic, ILOpCode.Callvirt, define_string);
-                        }
-                        else if (consttype.SpecialType == SpecialType.System_Int64)
-                        {
-                            il.EmitCall(this, diagnostic, ILOpCode.Callvirt, define_long);
-                        }
-                        else if (consttype.SpecialType == SpecialType.System_Double)
-                        {
-                            il.EmitCall(this, diagnostic, ILOpCode.Callvirt, define_double);
-                        }
+                        MethodSymbol define_method = null;
+
+                        if (consttype.SpecialType == SpecialType.System_String) { define_method = define_string; }
+                        else if (consttype.SpecialType == SpecialType.System_Int64) { define_method = define_long; }
+                        else if (consttype.SpecialType == SpecialType.System_Double) { define_method = define_double; }
                         else
                         {
                             cg.EmitConvertToPhpValue(consttype, 0);
-                            il.EmitCall(this, diagnostic, ILOpCode.Callvirt, define_value);
+                            define_method = define_value;
                         }
+
+                        il.EmitCall(this, diagnostic, ILOpCode.Callvirt, define_method);
                     }
 
                     //

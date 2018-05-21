@@ -408,18 +408,18 @@ namespace Pchp.Library.Streams
         /// This class newly implements the auto-remove behavior too
         /// (see <see cref="StreamAccessOptions.Temporary"/>).
         /// </remarks>
-        /// <param name="ctx">Runtime context.</param>
+        /// <param name="enc_provider">Runtime string encoding provider.</param>
         /// <param name="openingWrapper">The parent instance.</param>
         /// <param name="accessOptions">The additional options parsed from the <c>fopen()</c> mode.</param>
         /// <param name="openedPath">The absolute path to the opened resource.</param>
         /// <param name="context">The stream context passed to fopen().</param>
-        public PhpStream(Context ctx, StreamWrapper openingWrapper, StreamAccessOptions accessOptions, string openedPath, StreamContext context)
+        public PhpStream(IEncodingProvider enc_provider, StreamWrapper openingWrapper, StreamAccessOptions accessOptions, string openedPath, StreamContext context)
             : base(PhpStreamTypeName)
         {
-            Debug.Assert(ctx != null);
+            Debug.Assert(enc_provider != null);
             Debug.Assert(context != null);
 
-            _ctx = ctx;
+            _encoding = enc_provider;
             _context = context;
 
             this.Wrapper = openingWrapper;
@@ -441,7 +441,9 @@ namespace Pchp.Library.Streams
                 }
             }
 
-            this.readTimeout = ctx.Configuration.Core.DefaultSocketTimeout;
+            this.readTimeout = (enc_provider is Context ctx)    // NOTE: provider is Context, this remains here for historical reasons, refactor if you don't like it
+                ? ctx.Configuration.Core.DefaultSocketTimeout
+                : 60;
         }
 
         /// <summary>
@@ -704,7 +706,7 @@ namespace Pchp.Library.Streams
                 if (textReadFilter != null)
                 {
                     // First use the text-input filter if any.
-                    filtered = textReadFilter.Filter(_ctx, filtered, closing);
+                    filtered = textReadFilter.Filter(_encoding, filtered, closing);
                 }
 
                 if (readFilters != null)
@@ -718,7 +720,7 @@ namespace Pchp.Library.Streams
                             if (closing) filtered = TextElement.Empty;
                             else break; // Continue with next RawRead()
                         }
-                        filtered = f.Filter(_ctx, filtered, closing);
+                        filtered = f.Filter(_encoding, filtered, closing);
                     } // foreach
                 } // if
             } // while 
@@ -779,7 +781,7 @@ namespace Pchp.Library.Streams
         {
             if (length == 0) return string.Empty;
 
-            string peek = readBuffers.Peek().AsText(_ctx.StringEncoding);
+            string peek = readBuffers.Peek().AsText(_encoding.StringEncoding);
             if (peek == null) throw new InvalidOperationException(ErrResources.buffers_must_not_be_empty);
             Debug.Assert(peek.Length >= readPosition);
 
@@ -807,7 +809,7 @@ namespace Pchp.Library.Streams
 
                 while (length > 0)
                 {
-                    peek = readBuffers.Peek().AsText(_ctx.StringEncoding);
+                    peek = readBuffers.Peek().AsText(_encoding.StringEncoding);
                     if (peek == null) throw new InvalidOperationException(ErrResources.too_little_data_buffered);
                     if (peek.Length > length)
                     {
@@ -846,7 +848,7 @@ namespace Pchp.Library.Streams
         {
             if (length == 0) return ArrayUtils.EmptyBytes;
 
-            byte[] peek = readBuffers.Peek().AsBytes(_ctx.StringEncoding);
+            byte[] peek = readBuffers.Peek().AsBytes(_encoding.StringEncoding);
             Debug.Assert(peek.Length >= readPosition);
 
             if (peek.Length - readPosition >= length)
@@ -879,7 +881,7 @@ namespace Pchp.Library.Streams
 
                 while (length > 0)
                 {
-                    peek = readBuffers.Peek().AsBytes(_ctx.StringEncoding);
+                    peek = readBuffers.Peek().AsBytes(_encoding.StringEncoding);
                     if (peek.Length > length)
                     {
                         // This data is long enough. It is the last one.
@@ -1148,7 +1150,7 @@ namespace Pchp.Library.Streams
         {
             Debug.Assert(this.IsBinary);
             // Data may only be a string or PhpBytes.
-            return ReadData(length, false).AsBytes(_ctx.StringEncoding);
+            return ReadData(length, false).AsBytes(_encoding.StringEncoding);
         }
 
         /// <summary>
@@ -1162,7 +1164,7 @@ namespace Pchp.Library.Streams
         {
             Debug.Assert(this.IsText);
             // Data may only be a string or PhpBytes.
-            return ReadData(length, false).AsText(_ctx.StringEncoding);
+            return ReadData(length, false).AsText(_encoding.StringEncoding);
         }
 
         /// <summary>
@@ -1301,7 +1303,7 @@ namespace Pchp.Library.Streams
         /// <returns>A <see cref="byte"/>[] containing data read from the stream.</returns>
         public byte[] ReadMaximumBytes()
         {
-            return ReadMaximumData().AsBytes(_ctx.StringEncoding);
+            return ReadMaximumData().AsBytes(_encoding.StringEncoding);
         }
 
         /// <summary>
@@ -1310,7 +1312,7 @@ namespace Pchp.Library.Streams
         /// <returns>A <see cref="string"/> containing data read from the stream.</returns>
         public string ReadMaximumString()
         {
-            return ReadMaximumData().AsText(_ctx.StringEncoding);
+            return ReadMaximumData().AsText(_encoding.StringEncoding);
         }
 
         #endregion
@@ -1408,7 +1410,7 @@ namespace Pchp.Library.Streams
             Debug.Assert((length > 0) || (ending == null));
 
             var str = ReadData(length, ending == null) // null ending => use \n
-                .AsText(_ctx.StringEncoding);
+                .AsText(_encoding.StringEncoding);
 
             if (ending != null)
             {
@@ -1420,7 +1422,7 @@ namespace Pchp.Library.Streams
                     Debug.Assert(right != null);
                     int returnedLength = right.Length;
                     TextElement rightElement = (this.IsBinary)
-                        ? new TextElement(_ctx.StringEncoding.GetBytes(right))
+                        ? new TextElement(_encoding.StringEncoding.GetBytes(right))
                         : new TextElement(right);
                     
                     if (readBuffers.Count != 0)
@@ -1484,7 +1486,7 @@ namespace Pchp.Library.Streams
                     var q = new Queue<TextElement>();
                     foreach (var o in readBuffers)
                     {
-                        q.Enqueue(filter.Filter(_ctx, o, false));
+                        q.Enqueue(filter.Filter(_encoding, o, false));
                     }
 
                     readBuffers = q;
@@ -1629,7 +1631,7 @@ namespace Pchp.Library.Streams
                         if (closing) data = TextElement.Empty;
                         else return consumed; // Eaten all
                     }
-                    data = f.Filter(_ctx, data, closing);
+                    data = f.Filter(_encoding, data, closing);
                     if (closing) f.OnClose();
                 }
             }
@@ -1637,11 +1639,11 @@ namespace Pchp.Library.Streams
             if (textWriteFilter != null)
             {
                 // Then pass it through the text-conversion filter if any.
-                data = textWriteFilter.Filter(_ctx, data, closing);
+                data = textWriteFilter.Filter(_encoding, data, closing);
             }
 
             // From now on, the data is treated just as binary
-            byte[] bin = data.AsBytes(_ctx.StringEncoding);
+            byte[] bin = data.AsBytes(_encoding.StringEncoding);
             if (bin.Length == 0)
             {
                 return consumed;
@@ -2003,9 +2005,9 @@ namespace Pchp.Library.Streams
         protected StreamContext _context;
 
         /// <summary>
-        /// Runtime context.
+        /// Runtime string encoding.
         /// </summary>
-        protected readonly Context _ctx;
+        protected readonly IEncodingProvider _encoding;
 
         /// <summary>
         /// Gets the Auto-remove option of this stream.

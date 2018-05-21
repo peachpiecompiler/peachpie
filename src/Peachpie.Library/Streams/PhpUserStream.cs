@@ -75,7 +75,7 @@ namespace Pchp.Library.Streams
             var result = UserWrapper.InvokeWrapperMethod(USERSTREAM_READ, (PhpValue)count);
             if (result.IsEmpty == false)
             {
-                var bytes = result.ToBytes(_ctx);
+                var bytes = result.ToBytes((Context)_encoding); // _encoding is Context, see .ctor
                 int readbytes = bytes.Length;
                 if (readbytes > count)
                 {

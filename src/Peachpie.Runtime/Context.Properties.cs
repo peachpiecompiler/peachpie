@@ -9,7 +9,7 @@ using Pchp.Core.Utilities;
 
 namespace Pchp.Core
 {
-    partial class Context
+    partial class Context : IEncodingProvider
     {
         /// <summary>
         /// Encoding used to convert between unicode strings and binary strings.

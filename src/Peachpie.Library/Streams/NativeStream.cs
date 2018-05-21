@@ -18,8 +18,8 @@ namespace Pchp.Library.Streams
     {
         #region PhpStream overrides
 
-        public NativeStream(Context ctx, Stream nativeStream, StreamWrapper openingWrapper, StreamAccessOptions accessOptions, string openedPath, StreamContext context)
-            : base(ctx, openingWrapper, accessOptions, openedPath, context)
+        public NativeStream(IEncodingProvider enc_provider, Stream nativeStream, StreamWrapper openingWrapper, StreamAccessOptions accessOptions, string openedPath, StreamContext context)
+            : base(enc_provider, openingWrapper, accessOptions, openedPath, context)
         {
             Debug.Assert(nativeStream != null);
             this.stream = nativeStream;

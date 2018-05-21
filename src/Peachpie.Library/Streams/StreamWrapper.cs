@@ -1587,15 +1587,18 @@ namespace Pchp.Library.Streams
         /// It is a persistent text stream. This means that it is never closed
         /// by <c>fclose()</c> and <c>\r\n</c> is converted to <c>\n</c>.
         /// </remarks>
-        public static PhpStream In(Context ctx)
+        public static PhpStream In
         {
-            if (stdin == null)
+            get
             {
-                stdin = new NativeStream(ctx, Console.OpenStandardInput(), null, StreamAccessOptions.Read | StreamAccessOptions.UseText | StreamAccessOptions.Persistent, "php://stdin", StreamContext.Default);
-                stdin.IsReadBuffered = false;
-                // EX: cache this as a persistent stream (incl. path and options)
+                if (stdin == null)
+                {
+                    stdin = new NativeStream(Utf8EncodingProvider.Instance, Console.OpenStandardInput(), null, StreamAccessOptions.Read | StreamAccessOptions.UseText | StreamAccessOptions.Persistent, "php://stdin", StreamContext.Default);
+                    stdin.IsReadBuffered = false;
+                    // EX: cache this as a persistent stream (incl. path and options)
+                }
+                return stdin;
             }
-            return stdin;
         }
         private static PhpStream stdin = null;
 
@@ -1606,15 +1609,18 @@ namespace Pchp.Library.Streams
         /// It is a persistent text stream. This means that it is never closed
         /// by <c>fclose()</c> and <c>\n</c> is converted to <c>\r\n</c>.
         /// </remarks>
-        public static PhpStream Out(Context ctx)
+        public static PhpStream Out
         {
-            if (stdout == null)
+            get
             {
-                stdout = new NativeStream(ctx, Console.OpenStandardOutput(), null, StreamAccessOptions.Write | StreamAccessOptions.UseText | StreamAccessOptions.Persistent, "php://stdout", StreamContext.Default);
-                stdout.IsWriteBuffered = false;
-                // EX: cache this as a persistent stream
+                if (stdout == null)
+                {
+                    stdout = new NativeStream(Utf8EncodingProvider.Instance, Console.OpenStandardOutput(), null, StreamAccessOptions.Write | StreamAccessOptions.UseText | StreamAccessOptions.Persistent, "php://stdout", StreamContext.Default);
+                    stdout.IsWriteBuffered = false;
+                    // EX: cache this as a persistent stream
+                }
+                return stdout;
             }
-            return stdout;
         }
         private static PhpStream stdout = null;
 
@@ -1625,16 +1631,19 @@ namespace Pchp.Library.Streams
         /// It is a persistent text stream. This means that it is never closed
         /// by <c>fclose()</c> and <c>\n</c> is converted to <c>\r\n</c>.
         /// </remarks>
-        public static PhpStream Error(Context ctx)
+        public static PhpStream Error
         {
-            if (stderr == null)
+            get
             {
-                stderr = new NativeStream(ctx, Console.OpenStandardInput(), null,
-                    StreamAccessOptions.Write | StreamAccessOptions.UseText | StreamAccessOptions.Persistent, "php://stderr", StreamContext.Default);
-                stderr.IsWriteBuffered = false;
-                // EX: cache this as a persistent stream
+                if (stderr == null)
+                {
+                    stderr = new NativeStream(Utf8EncodingProvider.Instance, Console.OpenStandardInput(), null,
+                        StreamAccessOptions.Write | StreamAccessOptions.UseText | StreamAccessOptions.Persistent, "php://stderr", StreamContext.Default);
+                    stderr.IsWriteBuffered = false;
+                    // EX: cache this as a persistent stream
+                }
+                return stderr;
             }
-            return stderr;
         }
         private static PhpStream stderr = null;
     }

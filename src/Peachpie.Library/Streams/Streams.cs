@@ -394,6 +394,15 @@ namespace Pchp.Library.Streams
 
         public const int STREAM_IS_URL = (int)StreamWrapperRegisterFlags.IsUrl;
 
+        [PhpConditionalAttribute("CLI")]
+        public static PhpStream STDIN => InputOutputStreamWrapper.In;
+
+        [PhpConditionalAttribute("CLI")]
+        public static PhpStream STDOUT => InputOutputStreamWrapper.Out;
+
+        [PhpConditionalAttribute("CLI")]
+        public static PhpStream STDERR => InputOutputStreamWrapper.Error;
+
         /// <summary>
         /// Registers a user-wrapper specified by the name of a defining user-class.
         /// </summary>
@@ -434,7 +443,6 @@ namespace Pchp.Library.Streams
         {
             return stream_wrapper_register(ctx, protocol, userWrapperName, flags);
         }
-
 
         ///<summary>Retrieve list of registered streams (only the names)</summary>  
         public static PhpArray stream_get_wrappers(Context ctx)

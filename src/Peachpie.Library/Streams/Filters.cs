@@ -116,7 +116,7 @@ namespace Pchp.Library.Streams
         /// Processes the <paramref name="input"/> (either of type <see cref="string"/> or <see cref="byte"/>[]) 
         /// data and returns the filtered data in one of the formats above or <c>null</c>.
         /// </summary>
-        TextElement Filter(Context ctx, TextElement input, bool closing);
+        TextElement Filter(IEncodingProvider enc, TextElement input, bool closing);
 
         /// <summary>
         /// Called when the filter is attached to a stream.
@@ -138,9 +138,9 @@ namespace Pchp.Library.Streams
         /// Processes the <paramref name="input"/> (either of type <see cref="string"/> or <see cref="byte"/>[]) 
         /// data and returns the filtered data in one of the formats above or <c>null</c>.
         /// </summary>
-        public TextElement Filter(Context ctx, TextElement input, bool closing)
+        public TextElement Filter(IEncodingProvider enc, TextElement input, bool closing)
         {
-            string str = input.AsText(ctx.StringEncoding);
+            string str = input.AsText(enc.StringEncoding);
 
             if (pending)
             {
@@ -186,9 +186,9 @@ namespace Pchp.Library.Streams
         /// Processes the <paramref name="input"/> (either of type <see cref="string"/> or <see cref="byte"/>[]) 
         /// data and returns the filtered data in one of the formats above or <c>null</c>.
         /// </summary>
-        public TextElement Filter(Context ctx, TextElement input, bool closing)
+        public TextElement Filter(IEncodingProvider enc, TextElement input, bool closing)
         {
-            return new TextElement(input.AsText(ctx.StringEncoding).Replace("\n", "\r\n"));
+            return new TextElement(input.AsText(enc.StringEncoding).Replace("\n", "\r\n"));
         }
 
         /// <summary>
@@ -282,7 +282,7 @@ namespace Pchp.Library.Streams
         /// Processes the <paramref name="input"/> (either of type <see cref="string"/> or <see cref="byte"/>[]) 
         /// data and returns the filtered data in one of the formats above or <c>null</c>.
         /// </summary>
-        public abstract TextElement Filter(Context ctx, TextElement input, bool closing);
+        public abstract TextElement Filter(IEncodingProvider enc, TextElement input, bool closing);
 
         /// <summary>
         /// Called when the filter is attached to a stream.
