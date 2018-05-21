@@ -901,6 +901,15 @@ namespace Pchp.Library
 
             public override void AcceptObject(object obj)
             {
+                if (obj is PhpResource res)
+                {
+                    // Resource id #ID
+                    _output.Append($"Resource id #{res.Id}");
+                    NewLine();
+
+                    return;
+                }
+
                 // typename Object
                 _output.Append(obj.GetPhpTypeInfo().Name);
                 _output.Append(" ");
@@ -1033,7 +1042,17 @@ namespace Pchp.Library
 
             public override void AcceptObject(object obj)
             {
-                throw new NotImplementedException();
+                if (obj is PhpResource res)
+                {
+                    // NULL
+                    _output.Append(PhpVariable.TypeNameNull);
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
+
+                NewLine();
             }
         }
 
@@ -1162,6 +1181,14 @@ namespace Pchp.Library
 
             public override void AcceptObject(object obj)
             {
+                if (obj is PhpResource res)
+                {
+                    // resource(ID) of type (TYPE)
+                    _output.Append($"resource({res.Id}) of type ({res.TypeName})");
+                    
+                    return;
+                }
+
                 if (Enter(obj))
                 {
                     var flds = TypeMembersUtils.EnumerateInstanceFieldsForDump(obj).ToList();
