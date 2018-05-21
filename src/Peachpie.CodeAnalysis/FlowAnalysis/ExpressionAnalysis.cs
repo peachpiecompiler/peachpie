@@ -1950,13 +1950,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // TODO: check constant name
 
             // bind to app-wide constant if possible
-            var constant = (FieldSymbol)_model.ResolveConstant(x.Name.ToString());
-            if (!BindConstantValue(x, constant))
+            var symbol = (Symbol)_model.ResolveConstant(x.Name.ToString());
+            var field = symbol as FieldSymbol;
+
+            if (!BindConstantValue(x, field))
             {
-                if (constant != null && constant.IsStatic && constant.IsReadOnly)
+                if (field != null && field.IsStatic)
                 {
-                    x._boundExpressionOpt = new BoundFieldPlace(null, constant, x);
-                    x.TypeRefMask = constant.GetResultType(TypeCtx);
+                    x._boundExpressionOpt = new BoundFieldPlace(null, field, x);
+                    x.TypeRefMask = field.GetResultType(TypeCtx);
+                }
+                else if (symbol is PEPropertySymbol prop && prop.IsStatic)
+                {
+                    x._boundExpressionOpt = new BoundPropertyPlace(null, prop);
+                    x.TypeRefMask = prop.GetResultType(TypeCtx);
                 }
                 else
                 {

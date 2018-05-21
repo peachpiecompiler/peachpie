@@ -115,6 +115,25 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public IEnumerable<IPhpTypeSymbol> UserDeclaredTypes => this.SourceSymbolCollection.GetTypes();
 
+        public IEnumerable<string> ConditionalOptions
+        {
+            get
+            {
+                yield return this.Options.OutputKind.ToString();
+
+                if (this.Options.OutputKind == OutputKind.ConsoleApplication)
+                {
+                    yield return "CLI";
+                    yield return "console";
+                }
+
+                if (this.Options.OptimizationLevel == OptimizationLevel.Debug)
+                {
+                    yield return "DEBUG";
+                }
+            }
+        }
+
         private PhpCompilation(
             string assemblyName,
             PhpCompilationOptions options,

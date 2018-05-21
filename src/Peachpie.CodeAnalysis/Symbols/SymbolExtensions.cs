@@ -21,10 +21,37 @@ namespace Pchp.CodeAnalysis.Symbols
             return type.TypeParameters.IsEmpty ? type : type.Construct(typeArguments, unbound: false);
         }
 
-        public static bool IsPhpHidden(this Symbol s)
+        public static bool IsPhpHidden(this Symbol s, PhpCompilation compilation = null)
         {
             var attrs = s.GetAttributes();
-            return attrs.Length != 0 && attrs.Any(a => a.AttributeClass.MetadataName == "PhpHiddenAttribute");
+
+            if (attrs.Length != 0)
+            {
+                bool hascond = false;
+                bool hasmatch = false;
+
+                foreach (var attr in attrs)
+                {
+                    // [PhpHiddenAttribute]
+                    if (attr.AttributeClass.MetadataName == "PhpHiddenAttribute")
+                    {
+                        return true; // => hide
+                    }
+
+                    // [PhpConditionalAttribute]
+                    if (attr.AttributeClass.MetadataName == "PhpConditionalAttribute")
+                    {
+                        hascond = true;
+
+                        var condition = (string)attr.ConstructorArguments[0].Value;
+                        hasmatch = compilation == null || compilation.ConditionalOptions.Contains(condition);
+                    }
+                }
+
+                if (hascond && !hasmatch) return true;  // conditions defined but not satisfied => hide
+            }
+            //
+            return false;
         }
 
         /// <summary>

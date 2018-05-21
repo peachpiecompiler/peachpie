@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Semantics.Model;
 using Pchp.CodeAnalysis.Symbols;
+using Peachpie.CodeAnalysis.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -219,7 +220,7 @@ namespace Pchp.CodeAnalysis.Emit
             var method = this.ScriptType.EnumerateBuiltinFunctionsSymbol;
             var functions = GlobalSymbolProvider.ResolveExtensionContainers(this.Compilation)
                 .SelectMany(c => c.GetMembers().OfType<MethodSymbol>())
-                .Where(GlobalSymbolProvider.IsFunction);
+                .Where(Compilation.GlobalSemantics.IsFunction);
 
             // void (Action<string, RuntimeMethodHandle> callback)
             var body = MethodGenerator.GenerateMethodBody(this, method,
@@ -320,7 +321,7 @@ namespace Pchp.CodeAnalysis.Emit
         internal void CreateEnumerateConstantsSymbol(DiagnosticBag diagnostic)
         {
             var method = this.ScriptType.EnumerateConstantsSymbol;
-            var consts = this.Compilation.GlobalSemantics.GetExportedConstants().Cast<FieldSymbol>();   // TODO: PropertySymbol
+            var consts = this.Compilation.GlobalSemantics.GetExportedConstants();
 
             // void (Action<string, RuntimeMethodHandle> callback)
             var body = MethodGenerator.GenerateMethodBody(this, method,
@@ -345,48 +346,62 @@ namespace Pchp.CodeAnalysis.Emit
                     var define_func = define_xxx.Single(m => m.Parameters[1].Type.Name == "Func"); // Func<PhpValue>
                     var define_value = define_xxx.Single(m => m.Parameters[1].Type == cg.CoreTypes.PhpValue);
 
-                    foreach (var c in consts)
+                    foreach (var c in consts.OfType<Symbol>())
                     {
-                        Debug.Assert(c.IsConst || (c.IsStatic && c.IsReadOnly));
-
                         // composer.Define(c.Name, c.Value)
                         il.EmitLoadArgumentOpcode(0);
 
                         // string : name
                         il.EmitStringConstant(c.MetadataName);
 
-                        // PhpValue : value
-                        TypeSymbol consttype;
-                        var constvalue = c.GetConstantValue(false);
-                        if (constvalue != null)
+                        if (c is FieldSymbol fld)
                         {
-                            consttype = cg.EmitLoadConstant(constvalue.Value, cg.CoreTypes.PhpValue);
+                            // PhpValue : value
+                            TypeSymbol consttype;
+
+                            var constvalue = fld.GetConstantValue(false);
+                            if (constvalue != null)
+                            {
+                                consttype = cg.EmitLoadConstant(constvalue.Value, cg.CoreTypes.PhpValue);
+                            }
+                            else
+                            {
+                                consttype = new FieldPlace(null, fld, this).EmitLoad(il);
+                            }
+
+                            // Define(...)
+                            if (consttype.SpecialType == SpecialType.System_Int32)
+                            {
+                                // i4 -> i8
+                                il.EmitOpCode(ILOpCode.Conv_i8);
+                                consttype = cg.CoreTypes.Long;
+                            }
+
+                            MethodSymbol define_method = null;
+
+                            if (consttype.SpecialType == SpecialType.System_String) { define_method = define_string; }
+                            else if (consttype.SpecialType == SpecialType.System_Int64) { define_method = define_long; }
+                            else if (consttype.SpecialType == SpecialType.System_Double) { define_method = define_double; }
+                            else
+                            {
+                                cg.EmitConvertToPhpValue(consttype, 0);
+                                define_method = define_value;
+                            }
+
+                            il.EmitCall(this, diagnostic, ILOpCode.Callvirt, define_method);
+                        }
+                        else if (c is PropertySymbol prop)
+                        {
+                            // Func<PhpValue>
+                            il.EmitNullConstant(); // NOT SUPOPORTED YET
+
+                            //
+                            il.EmitCall(this, diagnostic, ILOpCode.Callvirt, define_func);
                         }
                         else
                         {
-                            consttype = new FieldPlace(null, c, this).EmitLoad(il);
+                            throw ExceptionUtilities.UnexpectedValue(c);
                         }
-
-                        // Define(...)
-                        if (consttype.SpecialType == SpecialType.System_Int32)
-                        {
-                            // i4 -> i8
-                            il.EmitOpCode(ILOpCode.Conv_i8);
-                            consttype = cg.CoreTypes.Long;
-                        }
-
-                        MethodSymbol define_method = null;
-
-                        if (consttype.SpecialType == SpecialType.System_String) { define_method = define_string; }
-                        else if (consttype.SpecialType == SpecialType.System_Int64) { define_method = define_long; }
-                        else if (consttype.SpecialType == SpecialType.System_Double) { define_method = define_double; }
-                        else
-                        {
-                            cg.EmitConvertToPhpValue(consttype, 0);
-                            define_method = define_value;
-                        }
-
-                        il.EmitCall(this, diagnostic, ILOpCode.Callvirt, define_method);
                     }
 
                     //

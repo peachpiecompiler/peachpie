@@ -394,13 +394,13 @@ namespace Pchp.Library.Streams
 
         public const int STREAM_IS_URL = (int)StreamWrapperRegisterFlags.IsUrl;
 
-        [PhpConditionalAttribute("CLI")]
+        [PhpConditional("CLI")]
         public static PhpStream STDIN => InputOutputStreamWrapper.In;
 
-        [PhpConditionalAttribute("CLI")]
+        [PhpConditional("CLI")]
         public static PhpStream STDOUT => InputOutputStreamWrapper.Out;
 
-        [PhpConditionalAttribute("CLI")]
+        [PhpConditional("CLI")]
         public static PhpStream STDERR => InputOutputStreamWrapper.Error;
 
         /// <summary>

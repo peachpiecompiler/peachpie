@@ -113,7 +113,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         {
                             // TODO: const_name in form of "{CLASS}::{NAME}"
                             var tmp = analysis.Model.ResolveConstant(str);
-                            if (tmp is PEFieldSymbol symbol)    // TODO: also user constants defined in the same scope
+                            if (tmp is PEFieldSymbol fld)    // TODO: also user constants defined in the same scope
                             {
                                 if (name == "defined")
                                 {
@@ -121,12 +121,23 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 }
                                 else // name == "constant"
                                 {
-                                    var cvalue = symbol.GetConstantValue(false);
+                                    var cvalue = fld.GetConstantValue(false);
                                     call.ConstantValue = (cvalue != null) ? new Optional<object>(cvalue.Value) : null;
-                                    call.TypeRefMask = TypeRefFactory.CreateMask(analysis.TypeCtx, symbol.Type);
+                                    call.TypeRefMask = TypeRefFactory.CreateMask(analysis.TypeCtx, fld.Type);
                                 }
 
                                 return;
+                            }
+                            else if (tmp is PEPropertySymbol prop)
+                            {
+                                if (name == "defined")
+                                {
+                                    call.ConstantValue = ConstantValueExtensions.AsOptional(true);
+                                }
+                                else // name == "constant"
+                                {
+                                    call.TypeRefMask = TypeRefFactory.CreateMask(analysis.TypeCtx, prop.Type);
+                                }
                             }
                         }
                         break;

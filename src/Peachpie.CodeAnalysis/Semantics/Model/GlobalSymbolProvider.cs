@@ -50,14 +50,26 @@ namespace Pchp.CodeAnalysis.Semantics.Model
                 .ToImmutableArray();
         }
 
-        internal static bool IsFunction(MethodSymbol method)
+        internal bool IsFunction(MethodSymbol method)
         {
-            return method.IsStatic && method.DeclaredAccessibility == Accessibility.Public && method.MethodKind == MethodKind.Ordinary && !method.IsPhpHidden();
+            return method.IsStatic && method.DeclaredAccessibility == Accessibility.Public && method.MethodKind == MethodKind.Ordinary && !method.IsPhpHidden(_compilation);
         }
 
-        internal static bool IsConstantField(FieldSymbol field)
+        internal bool IsGlobalConstant(Symbol symbol)
         {
-            return (field.IsConst || (field.IsReadOnly && field.IsStatic)) && field.DeclaredAccessibility == Accessibility.Public && !field.IsPhpHidden();
+            if (symbol is FieldSymbol field)
+            {
+                return (field.IsConst || (field.IsReadOnly && field.IsStatic)) &&
+                    field.DeclaredAccessibility == Accessibility.Public &&
+                    !field.IsPhpHidden(_compilation);
+            }
+
+            if (symbol is PropertySymbol prop)
+            {
+                return prop.IsStatic && prop.DeclaredAccessibility == Accessibility.Public && !prop.IsPhpHidden(_compilation);
+            }
+
+            return false;
         }
 
         ImmutableArray<NamedTypeSymbol> ExtensionContainers
@@ -103,7 +115,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
                             }
                         }
                     }
-                    
+
                     //
                     _lazyExportedTypes = result;
                 }
@@ -148,8 +160,8 @@ namespace Pchp.CodeAnalysis.Semantics.Model
         public IEnumerable<IPhpValue> GetExportedConstants()
         {
             return ExtensionContainers
-                .SelectMany(t => t.GetMembers().OfType<FieldSymbol>())
-                .Where(IsConstantField);
+                .SelectMany(t => t.GetMembers().Where(IsGlobalConstant))
+                .OfType<IPhpValue>();
         }
 
         /// <summary>
@@ -211,7 +223,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
             // cwd
             var script = GetScriptsFromReferencedAssemblies().FirstOrDefault(t => t.RelativeFilePath == path);
-            
+
             // TODO: RoutineSemantics // relative to current script
 
             return script ?? _next.ResolveFile(path);
@@ -243,21 +255,15 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         public IPhpValue ResolveConstant(string name)
         {
-            var candidates = new List<IPhpValue>();
-
             foreach (var container in ExtensionContainers)
             {
                 // container.Constant
-                var candidate = container.GetMembers(name).OfType<FieldSymbol>().Where(IsConstantField).SingleOrDefault();
-                if (candidate != null)
-                    candidates.Add(candidate);
+                var match = container.GetMembers(name).Where(IsGlobalConstant).SingleOrDefault();
+                if (match is IPhpValue phpv) // != null
+                {
+                    return phpv;
+                }
             }
-
-            if (candidates.Count == 1)
-                return candidates[0];
-
-            if (candidates.Count > 1)
-                return null;    // TODO: ErrCode ambiguity
 
             return _next.ResolveConstant(name);
         }
