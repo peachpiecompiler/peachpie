@@ -100,6 +100,11 @@ namespace Pchp.CodeAnalysis.Symbols
         public const string TargetPhpLanguageAttributeFullName = "Pchp.Core.TargetPhpLanguageAttribute";
 
         /// <summary>
+        /// Full name of IConstantsComposition interface.
+        /// </summary>
+        public const string IConstantsCompositionFullName = "Pchp.Core.Context+IConstantsComposition";
+
+        /// <summary>
         /// Name of attribute class annotating trait declaration.
         /// </summary>
         public const string PhpTraitAttributeName = "PhpTraitAttribute";

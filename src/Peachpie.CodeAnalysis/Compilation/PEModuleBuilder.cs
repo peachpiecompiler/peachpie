@@ -328,16 +328,28 @@ namespace Pchp.CodeAnalysis.Emit
                 {
                     var cg = new CodeGenerator(il, this, diagnostic, this.Compilation.Options.OptimizationLevel, false, this.ScriptType, null, null);
 
-                    var action_string_method = method.Parameters[0].Type;
-                    Debug.Assert(action_string_method.Name == "Action");
-                    var invoke = action_string_method.DelegateInvokeMethod();
-                    Debug.Assert(invoke != null);
+                    // interface IConstantsComposition
+                    var constantscomposition = method.Parameters[0].Type;
+                    Debug.Assert(constantscomposition.Name == "IConstantsComposition");
+
+                    // Define(string, ...)
+                    var define_xxx = constantscomposition
+                    .GetMembers("Define")
+                    .OfType<MethodSymbol>()
+                    .Where(m => m.ParameterCount == 2)
+                    .ToArray();
+
+                    var define_string = define_xxx.Single(m => m.Parameters[1].Type.SpecialType == SpecialType.System_String);
+                    var define_long = define_xxx.Single(m => m.Parameters[1].Type.SpecialType == SpecialType.System_Int64);
+                    var define_double = define_xxx.Single(m => m.Parameters[1].Type.SpecialType == SpecialType.System_Double);
+                    var define_func = define_xxx.Single(m => m.Parameters[1].Type.Name == "Func"); // Func<PhpValue>
+                    var define_value = define_xxx.Single(m => m.Parameters[1].Type == cg.CoreTypes.PhpValue);
 
                     foreach (var c in consts)
                     {
                         Debug.Assert(c.IsConst || (c.IsStatic && c.IsReadOnly));
 
-                        // callback.Invoke(c.Name, c.Value, c.IgnoreCase)
+                        // composer.Define(c.Name, c.Value)
                         il.EmitLoadArgumentOpcode(0);
 
                         // string : name
@@ -354,13 +366,32 @@ namespace Pchp.CodeAnalysis.Emit
                         {
                             consttype = new FieldPlace(null, c, this).EmitLoad(il);
                         }
-                        cg.EmitConvertToPhpValue(consttype, 0);
 
-                        // bool : ignore case
-                        il.EmitBoolConstant(false);
+                        // Define(...)
+                        if (consttype.SpecialType == SpecialType.System_Int32)
+                        {
+                            // i4 -> i8
+                            il.EmitOpCode(ILOpCode.Conv_i8);
+                            consttype = cg.CoreTypes.Long;
+                        }
 
-                        // Invoke(...)
-                        il.EmitCall(this, diagnostic, ILOpCode.Callvirt, invoke);
+                        if (consttype.SpecialType == SpecialType.System_String)
+                        {
+                            il.EmitCall(this, diagnostic, ILOpCode.Callvirt, define_string);
+                        }
+                        else if (consttype.SpecialType == SpecialType.System_Int64)
+                        {
+                            il.EmitCall(this, diagnostic, ILOpCode.Callvirt, define_long);
+                        }
+                        else if (consttype.SpecialType == SpecialType.System_Double)
+                        {
+                            il.EmitCall(this, diagnostic, ILOpCode.Callvirt, define_double);
+                        }
+                        else
+                        {
+                            cg.EmitConvertToPhpValue(consttype, 0);
+                            il.EmitCall(this, diagnostic, ILOpCode.Callvirt, define_value);
+                        }
                     }
 
                     //

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -24,7 +25,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Method that enumerates all referenced global functions.
         /// 
-        /// EnumerateReferencedFunctions(Action&lt;string, RuntimeMethodHandle&gt; callback)
+        /// BuiltinFunctions(Action&lt;string, RuntimeMethodHandle&gt; callback)
         /// </summary>
         internal MethodSymbol EnumerateBuiltinFunctionsSymbol => _enumerateBuiltinFunctionsSymbol ?? (_enumerateBuiltinFunctionsSymbol = CreateEnumerateBuiltinFunctionsSymbol());
         MethodSymbol _enumerateBuiltinFunctionsSymbol;
@@ -32,7 +33,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Method that enumerates all referenced global functions.
         /// 
-        /// EnumerateReferencedTypes(Action&lt;string, RuntimeMethodHandle&gt; callback)
+        /// BuiltinTypes(Action&lt;string, RuntimeMethodHandle&gt; callback)
         /// </summary>
         internal MethodSymbol EnumerateBuiltinTypesSymbol => _enumerateBuiltinTypesSymbol ?? (_enumerateBuiltinTypesSymbol = CreateBuiltinTypesSymbol());
         MethodSymbol _enumerateBuiltinTypesSymbol;
@@ -48,7 +49,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Method that enumerates all app-wide global constants.
         /// 
-        /// EnumerateScripts(Action&lt;string name, PhpValue value, bool ignorecase&gt; callback)
+        /// BuiltinConstants(Context.IConstantsComposition composer)
         /// </summary>
         internal MethodSymbol EnumerateConstantsSymbol => _enumerateConstantsSymbol ?? (_enumerateConstantsSymbol = CreateEnumerateConstantsSymbol());
         MethodSymbol _enumerateConstantsSymbol;
@@ -148,7 +149,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         /// <summary>
         /// Method that enumerates all referenced global functions.
-        /// EnumerateReferencedFunctions(Action&lt;string, RuntimeMethodHandle&gt; callback)
+        /// BuiltinFunctions(Action&lt;string, RuntimeMethodHandle&gt; callback)
         /// </summary>
         MethodSymbol CreateEnumerateBuiltinFunctionsSymbol()
         {
@@ -198,16 +199,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
         /// <summary>
         /// Method that enumerates all app-wide global constants.
-        /// EnumerateConstants(Action&lt;string, PhpValue, bool&gt; callback)
+        /// EnumerateConstants(Context.IConstantsComposition composer)
         /// </summary>
         MethodSymbol CreateEnumerateConstantsSymbol()
         {
             var compilation = DeclaringCompilation;
-            var action_T3 = compilation.GetWellKnownType(WellKnownType.System_Action_T3);
-            var action_string_value_bool = action_T3.Construct(compilation.CoreTypes.String, compilation.CoreTypes.PhpValue, compilation.CoreTypes.Boolean);
-
-            var method = new SynthesizedMethodSymbol(this, "EnumerateConstants", true, false, compilation.CoreTypes.Void, Accessibility.Public);
-            method.SetParameters(new SynthesizedParameterSymbol(method, action_string_value_bool, 0, RefKind.None, "callback"));
+            var t = (TypeSymbol)compilation.GetTypeByMetadataName(CoreTypes.IConstantsCompositionFullName);
+            Debug.Assert(t != null);
+            
+            var method = new SynthesizedMethodSymbol(this, "BuiltinConstants", true, false, compilation.CoreTypes.Void, Accessibility.Public);
+            method.SetParameters(new SynthesizedParameterSymbol(method, t, 0, RefKind.None, name: "composer"));
 
             //
             return method;

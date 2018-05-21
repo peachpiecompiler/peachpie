@@ -121,8 +121,8 @@ namespace Pchp.Core
             tscriptinfo.GetDeclaredMethod("BuiltinTypes")
                 .Invoke(null, new object[] { new Action<PhpTypeInfo>(TypesTable.DeclareAppType) });
 
-            tscriptinfo.GetDeclaredMethod("EnumerateConstants")
-                .Invoke(null, new object[] { new Action<string, PhpValue, bool>(ConstsMap.DefineAppConstant) });
+            tscriptinfo.GetDeclaredMethod("BuiltinConstants")
+                .Invoke(null, new object[] { new AppConstantsComposition() } );
 
             tscriptinfo.GetDeclaredMethod("EnumerateScripts")
                 .Invoke(null, new object[] { new Action<string, RuntimeTypeHandle>(ScriptsMap.DeclareScript) });
