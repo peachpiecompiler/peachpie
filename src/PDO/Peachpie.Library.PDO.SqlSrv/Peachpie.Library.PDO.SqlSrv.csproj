@@ -2,7 +2,7 @@
 
   <Import Project="..\..\..\build\Targets\Settings.props" />
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.6;net46</TargetFrameworks>
+    <TargetFrameworks>netstandard1.6;netstandard2.0;net46</TargetFrameworks>
     <PreserveCompilationContext>true</PreserveCompilationContext>
     <AssemblyName>Peachpie.Library.PDO.SqlSrv</AssemblyName>
     <PackageId>Peachpie.Library.PDO.SqlSrv</PackageId>
@@ -13,13 +13,8 @@
     <ProjectReference Include="..\Peachpie.Library.PDO\Peachpie.Library.PDO.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net46' ">
     <PackageReference Include="System.Data.SqlClient" Version="4.4.0" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
 
 </Project>

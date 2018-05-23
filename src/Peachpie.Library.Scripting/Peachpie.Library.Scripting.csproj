@@ -25,12 +25,6 @@
     <ProjectReference Include="..\Peachpie.Library\Peachpie.Library.csproj" />
     <ProjectReference Include="..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
   </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
-    <Reference Include="System" />
-	<Reference Include="System.Core" />
-	<Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
   
   <ItemGroup Condition=" '$(TargetFramework)' != 'net46' ">
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />

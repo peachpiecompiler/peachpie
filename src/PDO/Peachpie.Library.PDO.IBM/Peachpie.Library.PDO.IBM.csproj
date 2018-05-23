@@ -2,7 +2,7 @@
 
   <Import Project="..\..\..\build\Targets\Settings.props" />
   <PropertyGroup>
-    <TargetFramework>netstandard1.6</TargetFramework>
+    <TargetFrameworks>netstandard1.6;netstandard2.0</TargetFrameworks>
     <PreserveCompilationContext>true</PreserveCompilationContext>
     <AssemblyName>Peachpie.Library.PDO.IBM</AssemblyName>
     <PackageId>Peachpie.Library.PDO.IBM</PackageId>
@@ -11,7 +11,7 @@
 
   <PropertyGroup Condition="'$(Platform)'=='AnyCPU'">
     <PlatformTarget>x64</PlatformTarget>
-	<Platform>x64</Platform>
+    <Platform>x64</Platform>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,7 +24,7 @@
     <ProjectReference Include="..\Peachpie.Library.PDO\Peachpie.Library.PDO.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
+  <ItemGroup>
     <PackageReference Include="IBM.Data.DB2.Core" Version="1.1.1.101" />
   </ItemGroup>
 

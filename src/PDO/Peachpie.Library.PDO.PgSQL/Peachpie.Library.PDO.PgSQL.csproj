@@ -2,7 +2,7 @@
 
   <Import Project="..\..\..\build\Targets\Settings.props" />
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.6;net46</TargetFrameworks>
+    <TargetFrameworks>netstandard1.6;netstandard2.0;net46</TargetFrameworks>
     <PreserveCompilationContext>true</PreserveCompilationContext>
     <AssemblyName>Peachpie.Library.PDO.PgSQL</AssemblyName>
     <PackageId>Peachpie.Library.PDO.PgSQL</PackageId>
@@ -15,11 +15,6 @@
 
   <ItemGroup>
     <PackageReference Include="Npgsql" Version="3.2.6" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
 
 </Project>

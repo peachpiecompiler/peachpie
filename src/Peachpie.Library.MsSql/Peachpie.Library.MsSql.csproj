@@ -2,7 +2,7 @@
 
   <Import Project="..\..\build\Targets\Settings.props" />
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.5;net46</TargetFrameworks>
+    <TargetFrameworks>netstandard1.5;netstandard2.0;net46</TargetFrameworks>
     <AssemblyName>Peachpie.Library.MsSql</AssemblyName>
     <PackageId>Peachpie.Library.MsSql</PackageId>
     <PackageTags>peachpie;library;mssql</PackageTags>
@@ -15,13 +15,8 @@
     <ProjectReference Include="..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net46' ">
     <PackageReference Include="System.Data.SqlClient" Version="4.4.0" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
 
 </Project>
