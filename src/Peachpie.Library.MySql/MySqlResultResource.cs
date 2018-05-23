@@ -1,13 +1,10 @@
-﻿using MySql.Data.MySqlClient;
-using MySql.Data.Types;
-using Pchp.Core;
-using Pchp.Library.Database;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
+using MySql.Data.MySqlClient;
+using Pchp.Core;
+using Pchp.Library.Database;
 using Pchp.Library.Resources;
 
 namespace Peachpie.Library.MySql
@@ -69,10 +66,8 @@ namespace Peachpie.Library.MySql
         protected override void FreeManaged()
         {
             var reader = (MySqlDataReader)this.Reader;
-            if (reader != null)
-            {
-                reader.Close(); // non virtual!!
-            }
+
+            reader?.Dispose();
 
             base.FreeManaged();
         }
@@ -176,8 +171,8 @@ namespace Peachpie.Library.MySql
             if (sqlValue.GetType() == typeof(float))
                 return Pchp.Core.Convert.ToString((float)sqlValue);
 
-            if (sqlValue.GetType() == typeof(System.DateTime))
-                return ConvertDateTime(dataType, (System.DateTime)sqlValue);
+            if (sqlValue.GetType() == typeof(DateTime))
+                return ConvertDateTime(dataType, (DateTime)sqlValue);
 
             if (sqlValue.GetType() == typeof(long))
                 return ((long)sqlValue).ToString();
@@ -194,24 +189,12 @@ namespace Peachpie.Library.MySql
             if (sqlValue.GetType() == typeof(byte[]))
                 return (byte[])sqlValue;
 
-            //MySqlDateTime sql_date_time = sqlValue as MySqlDateTime;
-            if (sqlValue.GetType() == typeof(MySqlDateTime))
-            {
-                MySqlDateTime sql_date_time = (MySqlDateTime)sqlValue;
-                if (sql_date_time.IsValidDateTime)
-                    return ConvertDateTime(dataType, sql_date_time.GetDateTime());
-
-                if (dataType == "DATE" || dataType == "NEWDATE")
-                    return "0000-00-00";
-                else
-                    return "0000-00-00 00:00:00";
-            }
-
+           
             Debug.Fail("Unexpected DB field type " + sqlValue.GetType() + ".");
             return sqlValue.ToString();
         }
 
-        private static string ConvertDateTime(string dataType, System.DateTime value)
+        private static string ConvertDateTime(string dataType, DateTime value)
         {
             if (dataType == "DATE" || dataType == "NEWDATE")
                 return value.ToString("yyyy-MM-dd");

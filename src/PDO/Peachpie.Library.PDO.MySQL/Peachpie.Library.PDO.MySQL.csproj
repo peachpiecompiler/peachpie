@@ -2,7 +2,7 @@
 
   <Import Project="..\..\..\build\Targets\Settings.props" />
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.6;netstandard2.0;net46</TargetFrameworks>
+    <TargetFrameworks>netstandard1.5;netstandard2.0;net46</TargetFrameworks>
     <PreserveCompilationContext>true</PreserveCompilationContext>
     <AssemblyName>Peachpie.Library.PDO.MySQL</AssemblyName>
     <PackageId>Peachpie.Library.PDO.MySQL</PackageId>
@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MySql.Data" Version="7.0.6-IR31" />
+    <PackageReference Include="MySqlConnector" Version="0.40.4" />
   </ItemGroup>
 
 </Project>

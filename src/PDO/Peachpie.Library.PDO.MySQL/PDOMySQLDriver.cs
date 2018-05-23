@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using MySql.Data.MySqlClient;
+﻿using MySql.Data.MySqlClient;
+
 using Pchp.Core;
-using System.Data.Common;
 
 namespace Peachpie.Library.PDO.MySQL
 {
@@ -27,9 +23,11 @@ namespace Peachpie.Library.PDO.MySQL
         protected override string BuildConnectionString(string dsn, string user, string password, PhpArray options)
         {
             //TODO mysql pdo parameters to dotnet connectionstring
-            var csb = new MySqlConnectionStringBuilder(dsn);
-            csb.UserID = user;
-            csb.Password = password;
+            var csb = new MySqlConnectionStringBuilder(dsn)
+            {
+                UserID = user,
+                Password = password
+            };
             return csb.ConnectionString;
         }
 
