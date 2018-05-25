@@ -179,7 +179,7 @@ namespace Pchp.Core
 
             public static void DefineAppConstant(string name, PhpValue value, bool ignorecase = false)
             {
-                Debug.Assert(value.IsScalar);
+                Debug.Assert(value.IsScalar || value.Object is Func<PhpValue>);
 
                 var idx = -RegisterConstantId(name, ignorecase, true);
                 Debug.Assert(idx != 0);
@@ -276,12 +276,19 @@ namespace Pchp.Core
 
             /// <summary>
             /// Gets constant value by constant index.
+            /// Negative numbers denotates app constants, positive numbers conrrespond to constants defined in runtime.
             /// </summary>
-            PhpValue GetConstant(int idx)
-                => idx > 0 ? GetConstant(idx - 1, _valuesCtx) : GetConstant(-idx - 1, _valuesApp);
+            PhpValue GetConstant(int idx) => idx > 0 ? GetConstant(idx - 1, _valuesCtx) : GetAppConstant(GetConstant(-idx - 1, _valuesApp));
 
-            static PhpValue GetConstant(int idx, PhpValue[] values)
-                => (idx >= 0 && idx < values.Length) ? values[idx] : PhpValue.Void;
+            /// <summary>
+            /// Safely returns constant from its index within array of constants.
+            /// </summary>
+            static PhpValue GetConstant(int idx, PhpValue[] values) => (idx >= 0 && idx < values.Length) ? values[idx] : PhpValue.Void;
+
+            /// <summary>
+            /// App constant can be either a value or a function getting a value.
+            /// </summary>
+            static PhpValue GetAppConstant(PhpValue slot) => slot.Object is Func<PhpValue> func ? func() : slot;
 
             /// <summary>
             /// Gets value indicating whether given constant is defined.

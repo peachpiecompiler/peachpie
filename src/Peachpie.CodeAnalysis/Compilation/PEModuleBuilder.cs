@@ -392,8 +392,31 @@ namespace Pchp.CodeAnalysis.Emit
                         }
                         else if (c is PropertySymbol prop)
                         {
+                            MethodSymbol getter_func;
                             // Func<PhpValue>
-                            il.EmitNullConstant(); // NOT SUPOPORTED YET
+                            if (prop.Type == cg.CoreTypes.PhpValue)
+                            {
+                                getter_func = prop.GetMethod;
+                            }
+                            else
+                            {
+                                // static PhpValue get_XXX => get_prop();
+                                getter_func = new SynthesizedMethodSymbol(ScriptType, "get_" + prop.Name, true, false, cg.CoreTypes.PhpValue, Accessibility.Internal);
+                                SynthesizedManager.AddMethod(ScriptType, getter_func);
+                                SetMethodBody(getter_func, MethodGenerator.GenerateMethodBody(this, getter_func, _il =>
+                                {
+                                    var _cg = new CodeGenerator(_il, this, diagnostic, this.Compilation.Options.OptimizationLevel, false, ScriptType, null, null);
+
+                                    _cg.EmitRet(_cg.EmitConvertToPhpValue(_cg.EmitForwardCall(prop.GetMethod, getter_func, callvirt: false), 0));
+
+                                }, null, diagnostic, false));
+                            }
+
+                            // new Func<PhpValue>(object @object = null, IntPtr method = getter_func)
+                            cg.Builder.EmitNullConstant(); // null
+                            cg.EmitOpCode(ILOpCode.Ldftn); // method
+                            cg.EmitSymbolToken(getter_func, null);
+                            cg.EmitCall(ILOpCode.Newobj, Compilation.GetWellKnownType(WellKnownType.System_Func_T).Construct(cg.CoreTypes.PhpValue).InstanceConstructors[0]);
 
                             //
                             il.EmitCall(this, diagnostic, ILOpCode.Callvirt, define_func);
