@@ -148,6 +148,16 @@ namespace Pchp.Library
 
         public string SessionName = DefaultSessionName;
 
+        public int CookieLifetime = 0;
+
+        public string CookiePath = "/";
+
+        public string CookieDomain = "";
+
+        public bool CookieSecure = false;
+
+        public bool CookieHttpOnly = false;
+
         internal PhpValue Gsr(Context ctx, IPhpConfigurationService config, string option, PhpValue value, IniAction action)
         {
             switch (option.ToLowerInvariant())
@@ -157,6 +167,21 @@ namespace Pchp.Library
 
                 case "session.name":
                     return (PhpValue)GetSet(ref SessionName, DefaultSessionName, value, action);
+
+                case "session.cookie_lifetime":
+                    return (PhpValue)GetSet(ref CookieLifetime, 0, value, action);
+
+                case "session.cookie_path":
+                    return (PhpValue)GetSet(ref CookiePath, "/", value, action);
+
+                case "session.cookie_domain":
+                    return (PhpValue)GetSet(ref CookieDomain, "", value, action);
+
+                case "session.cookie_secure":
+                    return (PhpValue)GetSet(ref CookieSecure, false, value, action);
+
+                case "session.cookie_httponly":
+                    return (PhpValue)GetSet(ref CookieHttpOnly, false, value, action);
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(option));
@@ -567,11 +592,6 @@ namespace Pchp.Library
         public static int session_gc() => 0;
 
         /// <summary>
-        /// Get the session cookie parameters
-        /// </summary>
-        public static void session_get_cookie_params() { throw new NotImplementedException(); }
-
-        /// <summary>
         /// Get and/or set the current session id
         /// </summary>
         public static string session_id(Context ctx, string newid = null)
@@ -692,7 +712,77 @@ namespace Pchp.Library
         /// <summary>
         /// Set the session cookie parameters
         /// </summary>
-        public static void session_set_cookie_params() { throw new NotImplementedException(); }
+        public static bool session_set_cookie_params(Context ctx, int lifetime)
+        {
+            PhpException.FunctionNotSupported(nameof(session_set_cookie_params));
+
+            var config = ctx.Configuration.Get<SessionConfiguration>();
+            config.CookieLifetime = lifetime;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Set the session cookie parameters
+        /// </summary>
+        public static bool session_set_cookie_params(Context ctx, int lifetime, string path)
+        {
+            PhpException.FunctionNotSupported(nameof(session_set_cookie_params));
+
+            var config = ctx.Configuration.Get<SessionConfiguration>();
+            config.CookieLifetime = lifetime;
+            config.CookiePath = path;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Set the session cookie parameters
+        /// </summary>
+        public static bool session_set_cookie_params(Context ctx, int lifetime, string path, string domain)
+        {
+            PhpException.FunctionNotSupported(nameof(session_set_cookie_params));
+
+            var config = ctx.Configuration.Get<SessionConfiguration>();
+            config.CookieLifetime = lifetime;
+            config.CookiePath = path;
+            config.CookieDomain = domain;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Set the session cookie parameters
+        /// </summary>
+        public static bool session_set_cookie_params(Context ctx, int lifetime, string path, string domain, bool secure = false, bool httponly = false)
+        {
+            PhpException.FunctionNotSupported(nameof(session_set_cookie_params));
+
+            var config = ctx.Configuration.Get<SessionConfiguration>();
+            config.CookieLifetime = lifetime;
+            config.CookiePath = path;
+            config.CookieDomain = domain;
+            config.CookieSecure = secure;
+            config.CookieHttpOnly = httponly;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Get the session cookie parameters
+        /// </summary>
+        public static PhpArray session_get_cookie_params(Context ctx)
+        {
+            var config = ctx.Configuration.Get<SessionConfiguration>();
+            return new PhpArray(5)
+            {
+                { "lifetime", config.CookieLifetime },
+                { "path", config.CookiePath},
+                { "domain", config.CookieDomain},
+                { "secure", config.CookieSecure},
+                { "httponly", config.CookieHttpOnly},
+            };
+        }
 
         /// <summary>
         /// Sets user-level session storage functions

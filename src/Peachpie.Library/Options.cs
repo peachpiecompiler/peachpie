@@ -277,6 +277,11 @@ namespace Pchp.Library
             Register("session.save_handler", IniFlags.Supported | IniFlags.Local | IniFlags.Http, s_emptyGsr);
             Register("session.serialize_handler", IniFlags.Supported | IniFlags.Local | IniFlags.Http, gsrsession);
             Register("session.name", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
+            Register("session.cookie_lifetime", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
+            Register("session.cookie_path", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
+            Register("session.cookie_domain", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
+            Register("session.cookie_secure", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
+            Register("session.cookie_httponly", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrsession);
             Register("short_open_tag", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
             Register("sql.safe_mode", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
             Register("track_errors", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
