@@ -1003,6 +1003,24 @@ namespace Peachpie.Library.Graphics
 
         #endregion
 
+        /// <summary>
+        /// Draws a line between the two given points.
+        /// </summary>
+        public static bool imageline(PhpResource im, int x1, int y1, int x2, int y2, int color)
+        {
+            var img = PhpGdImageResource.ValidImage(im);
+            if (img != null)
+            {
+                img.Image.DrawLines(GetAlphaColor(img, color), 1.0f, new PointF[] { new PointF(x1, y1), new PointF(x2, y2) });
+
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         #region imagecopy, imagecopymerge
 
         /// <summary>
@@ -1715,9 +1733,9 @@ namespace Peachpie.Library.Graphics
                         break;
                     default:
                         brush = new SolidBrush<Rgba32>(FromRGBA(col));
-                        break;                        
+                        break;
                 }
-                
+
                 img.Image.FillPolygon(brush, points);
             }
             else
