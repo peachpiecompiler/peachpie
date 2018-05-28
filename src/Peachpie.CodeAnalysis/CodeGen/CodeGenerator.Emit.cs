@@ -535,7 +535,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             if (_emitPdbSequencePoints && span.IsValid && !span.IsEmpty)
             {
-                EmitSequencePoint(new Microsoft.CodeAnalysis.Text.TextSpan(span.Start, span.Length));
+                EmitSequencePoint(span.ToTextSpan());
             }
         }
 
@@ -2701,7 +2701,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     Builder.EmitIntConstant((int)value);
                     return CoreTypes.Int32;
                 }
-                else if (value is long)
+                else if (value is long l)
                 {
                     if (targetOpt != null)
                     {
@@ -2716,10 +2716,19 @@ namespace Pchp.CodeAnalysis.CodeGen
                             case SpecialType.System_String:
                                 _il.EmitStringConstant(value.ToString());
                                 return targetOpt;
+                            default:
+                                if (targetOpt == CoreTypes.PhpValue && l <= int.MaxValue && l >= int.MinValue)
+                                {
+                                    // Template: PhpValue.Create( int )
+                                    _il.EmitIntConstant((int)l);
+                                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Int);
+                                    return targetOpt;
+                                }
+                                break;
                         }
                     }
 
-                    Builder.EmitLongConstant((long)value);
+                    Builder.EmitLongConstant(l);
                     return CoreTypes.Long;
                 }
                 else if (value is string)

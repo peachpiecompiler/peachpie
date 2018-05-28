@@ -234,8 +234,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                     il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_Boolean);
                     break;
                 case SpecialType.System_Int32:
-                    il.EmitOpCode(ILOpCode.Conv_i8);   // Int32 -> Int64
-                    goto case SpecialType.System_Int64; // PhpValue.Create((long)<stack>)
+                    il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_Int);
+                    break;
                 case SpecialType.System_Int64:
                     il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_Long);
                     break;

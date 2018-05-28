@@ -88,10 +88,10 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public static LinePosition LinePosition(this ILineBreaks lines, int pos)
         {
-            int line, col;
-            lines.GetLineColumnFromPosition(pos, out line, out col);
+            lines.GetLineColumnFromPosition(pos, out int line, out int col);
 
-            return new LinePosition(line, col);
+            // https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#sequence-points-blob - column must be less than 0x10000
+            return new LinePosition(line, Math.Min(col, 0x09999));
         }
 
         /// <summary>
