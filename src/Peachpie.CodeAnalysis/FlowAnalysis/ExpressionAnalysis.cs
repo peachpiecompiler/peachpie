@@ -422,11 +422,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (x.Access.IsRead)
                 {
                     State.FlowContext.SetAllUsed();
+                    x.TypeRefMask = TypeRefMask.AnyType;
                 }
 
                 if (x.Access.IsWrite || x.Access.IsEnsure)
                 {
                     State.SetAllUnknown(x.Access.IsWriteRef);
+                    x.TypeRefMask = x.Access.WriteMask;
                 }
 
                 if (x.Access.IsUnset)
