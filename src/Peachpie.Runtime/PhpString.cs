@@ -692,6 +692,7 @@ namespace Pchp.Core
                                     if (index < ch_length)
                                     {
                                         SetCharInChunk(ref arr[i], index, value);
+                                        return;
                                     }
                                     index -= ch_length;
                                 }
