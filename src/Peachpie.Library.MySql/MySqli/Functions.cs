@@ -79,6 +79,14 @@ namespace Peachpie.Library.MySql.MySqli
             => (link != null) ? link.connect_error : MySqliContextData.GetContextData(ctx).LastConnectionError;
 
         /// <summary>
+        /// Returns the error code from last connect call.
+        /// </summary>
+        public static int mysqli_connect_errno(Context ctx, mysqli link = null)
+            => (link != null)
+                ? link.connect_errno
+                : string.IsNullOrEmpty(MySqliContextData.GetContextData(ctx).LastConnectionError) ? 0 : -1;
+
+        /// <summary>
         /// Returns the error code for the most recent function call.
         /// </summary>
         public static int mysqli_errno(mysqli link) => link.errno;
