@@ -1040,7 +1040,7 @@ namespace Peachpie.Library.Graphics
 
             try
             {
-                dst.Image.DrawImage(src.Image.Crop(new Rectangle(src_x, src_y, src_w, src_h)), opacity, new Size(src_w, src_h), new Point(dst_x, dst_y));
+                dst.Image.DrawImage(new Image<Rgba32>(src.Image).Crop(new Rectangle(src_x, src_y, src_w, src_h)), opacity, new Size(src_w, src_h), new Point(dst_x, dst_y));
             }
             catch (Exception ex)
             {
