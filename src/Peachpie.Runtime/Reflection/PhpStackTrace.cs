@@ -111,21 +111,8 @@ namespace Pchp.Core.Reflection
         public PhpStackTrace()
         {
             // collect stack trace if possible:
-#if NET46
             InitPhpStackFrames(new StackTrace(true));
-#else
-            // only available on netstandard2.0+
-            var ctor = typeof(StackTrace).GetConstructor(Dynamic.Cache.Types.Bool);
-            if (ctor != null)
-            {
-                var st = (StackTrace)ctor.Invoke(new object[] { true });
-                InitPhpStackFrames(st);
-            }
-            else
-            {
-                _frames = Array.Empty<PhpStackFrame>();
-            }
-#endif
+
             Debug.Assert(_frames != null);
         }
 

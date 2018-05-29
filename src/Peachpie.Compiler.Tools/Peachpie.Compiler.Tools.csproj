@@ -3,14 +3,11 @@
   <Import Project="..\..\build\Targets\Settings.props" />
   <PropertyGroup>
     <Description>Command line tool enabling 'php' project compilation.</Description>
-    <TargetFrameworks>net46;netcoreapp1.1;netcoreapp2.0</TargetFrameworks>
+    <TargetFrameworks>net461;netcoreapp2.0</TargetFrameworks>
     <AssemblyName>dotnet-compile-php</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>Peachpie.Compiler.Tools</PackageId>
     <PackageTags>dotnet;compile-php</PackageTags>
-    <!-- PostBuildEvent Condition=" '$(TargetFramework)' == 'netcoreapp1.0' ">
-	powershell -File ../../../../../build/update-cache.ps1 $(VersionPrefix) $(VersionSuffix)
-	</PostBuildEvent -->
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 

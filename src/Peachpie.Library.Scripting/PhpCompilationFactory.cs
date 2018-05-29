@@ -10,9 +10,7 @@ using Pchp.CodeAnalysis;
 namespace Peachpie.Library.Scripting
 {
     class PhpCompilationFactory
-#if !NET46
         : System.Runtime.Loader.AssemblyLoadContext
-#endif
     {
         public PhpCompilationFactory()
         {
@@ -93,11 +91,8 @@ namespace Peachpie.Library.Scripting
 
         public Assembly LoadFromStream(AssemblyName assemblyName, MemoryStream peStream, MemoryStream pdbStream)
         {
-#if NET46
-            Assembly assembly = Assembly.Load(peStream.ToArray(), pdbStream?.ToArray());
-#else
-            Assembly assembly = this.LoadFromStream(peStream, pdbStream);
-#endif
+            var assembly = Assembly.Load(peStream.ToArray(), pdbStream?.ToArray());
+
             if (assembly != null)
             {
                 _assemblies.Add(assemblyName.Name, assembly);

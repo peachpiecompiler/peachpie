@@ -2,7 +2,7 @@
 
   <Import Project="..\..\build\Targets\Settings.props" />
   <PropertyGroup>
-    <TargetFrameworks>net46;netstandard1.5</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <NoWarn>$(NoWarn);1591</NoWarn>
     <AssemblyName>Peachpie.CodeAnalysis</AssemblyName>
     <AssemblyOriginatorKeyFile>../../build/StrongKeys/core.snk</AssemblyOriginatorKeyFile>
@@ -19,13 +19,14 @@
     <PackageReference Include="System.Reflection.Metadata" Version="1.5.0" />
     
     <!-- Prevent package downgrades -->
+    <PackageReference Include="System.Collections" Version="4.3.0" />  
+    <PackageReference Include="System.Diagnostics.Debug" Version="4.3.0" />  
+    <PackageReference Include="System.Resources.ResourceManager" Version="4.3.0" />  
+    <PackageReference Include="System.Runtime.Extensions" Version="4.3.0" />  
     <PackageReference Include="System.Runtime.Handles" Version="4.3.0" />
     <PackageReference Include="System.Runtime.InteropServices" Version="4.3.0" />
     <PackageReference Include="System.Text.Encoding.Extensions" Version="4.3.0" />  
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.5' ">
-    <PackageReference Include="System.Threading.Tasks.Parallel" Version="4.3.0" />
+    <PackageReference Include="System.Threading" Version="4.3.0" />  
   </ItemGroup>
 
 </Project>

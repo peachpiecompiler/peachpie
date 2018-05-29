@@ -2,7 +2,7 @@
 
   <Import Project="..\..\..\build\Targets\Settings.props" />
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.6;netstandard2.0;net46</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <PreserveCompilationContext>true</PreserveCompilationContext>
     <AssemblyName>Peachpie.Library.PDO.Sqlite</AssemblyName>
     <PackageId>Peachpie.Library.PDO.Sqlite</PackageId>
@@ -13,12 +13,8 @@
     <ProjectReference Include="..\Peachpie.Library.PDO\Peachpie.Library.PDO.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' != 'net46' ">
+  <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="1.1.0" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
-    <PackageReference Include="System.Data.SQLite" Version="1.0.106" />
   </ItemGroup>
 
 </Project>

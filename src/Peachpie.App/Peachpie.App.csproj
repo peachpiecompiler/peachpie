@@ -3,7 +3,7 @@
   <Import Project="..\..\build\Targets\Settings.props" />
   <PropertyGroup>
     <Description>Peachpie platform dependencies.</Description>
-    <TargetFrameworks>netstandard1.5;netstandard2.0;net46</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <AssemblyName>Peachpie.App</AssemblyName>
     <PackageId>Peachpie.App</PackageId>
     <IncludeBuildOutput>false</IncludeBuildOutput>
@@ -18,9 +18,6 @@
     <ProjectReference Include="..\Peachpie.Library\Peachpie.Library.csproj" />
     <ProjectReference Include="..\Peachpie.Library.MsSql\Peachpie.Library.MsSql.csproj" />
     <ProjectReference Include="..\Peachpie.Library.MySql\Peachpie.Library.MySql.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net46' ">
     <ProjectReference Include="..\Peachpie.Library.XmlDom\Peachpie.Library.XmlDom.csproj" />
   </ItemGroup>
 

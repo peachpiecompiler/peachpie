@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using Pchp.Core;
 
 namespace Peachpie.Library.PDO
 {
     //IBM pure ADO.NET Driver is not available on dotnet core, only on framework
-#if NETSTANDARD1_6
-using IBM.Data.DB2.Core;
- 
+    using IBM.Data.DB2.Core;
+
     /// <summary>
     /// PDO driver class for IBM DB2
     /// </summary>
@@ -53,5 +49,4 @@ using IBM.Data.DB2.Core;
             }
         }
     }
-#endif
 }
