@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis;
 
@@ -19,7 +18,7 @@ namespace Peachpie.Library.Scripting
                 syntaxTrees: Array.Empty<PhpSyntaxTree>(),
                 options: new PhpCompilationOptions(
                     outputKind: OutputKind.DynamicallyLinkedLibrary,
-                    baseDirectory: System.IO.Directory.GetCurrentDirectory(),
+                    baseDirectory: Directory.GetCurrentDirectory(),
                     sdkDirectory: null));
 
             // bind reference manager, cache all references
@@ -91,18 +90,17 @@ namespace Peachpie.Library.Scripting
 
         public Assembly LoadFromStream(AssemblyName assemblyName, MemoryStream peStream, MemoryStream pdbStream)
         {
-            var assembly = Assembly.Load(peStream.ToArray(), pdbStream?.ToArray());
+            var assembly = this.LoadFromStream(peStream, pdbStream);
 
             if (assembly != null)
             {
                 _assemblies.Add(assemblyName.Name, assembly);
             }
+
             return assembly;
         }
 
-#if !NET46
         protected override Assembly Load(AssemblyName assemblyName) => TryGetSubmissionAssembly(assemblyName);
-#endif
 
         static int _counter = 0;
 
