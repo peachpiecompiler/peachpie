@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Pchp.Core;
@@ -624,11 +625,11 @@ namespace Pchp.Library
             private static string DomainMapper(Match match)
             {
                 string domainName = match.Groups[2].Value;
-#if NET46
+
                 // IdnMapping class with default property values.
-                var idn = new System.Globalization.IdnMapping();
+                var idn = new IdnMapping();
                 domainName = idn.GetAscii(domainName);
-#endif
+
                 return match.Groups[1].Value + domainName;
             }
         }

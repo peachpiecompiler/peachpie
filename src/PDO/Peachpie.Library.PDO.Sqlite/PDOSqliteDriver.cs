@@ -1,22 +1,7 @@
-﻿using System;
-using System.Collections.Specialized;
-using System.Data.Common;
+﻿using System.Collections.Generic;
 using Pchp.Core;
-using System.Collections.Generic;
-
-#if NET46
-using System.Data.SQLite;
-using Factory = System.Data.SQLite.SQLiteFactory;
-using Connection = System.Data.SQLite.SQLiteConnection;
-using ConnectionStringBuilder = System.Data.SQLite.SQLiteConnectionStringBuilder;
-using Command = System.Data.SQLite.SQLiteCommand;
-#else
-using Microsoft.Data.Sqlite;
-using Factory = Microsoft.Data.Sqlite.SqliteFactory;
-using Connection = Microsoft.Data.Sqlite.SqliteConnection;
 using ConnectionStringBuilder = Microsoft.Data.Sqlite.SqliteConnectionStringBuilder;
-using Command = Microsoft.Data.Sqlite.SqliteCommand;
-#endif
+using Factory = Microsoft.Data.Sqlite.SqliteFactory;
 
 namespace Peachpie.Library.PDO.Sqlite
 {
@@ -56,31 +41,17 @@ namespace Peachpie.Library.PDO.Sqlite
 
         private static PhpValue sqliteCreateAggregate(PDO pdo, PhpArray arguments)
         {
-#if NET46
-            throw new NotImplementedException();
-#else
             return PhpValue.False;
-#endif
         }
         private static PhpValue sqliteCreateCollation(PDO pdo, PhpArray arguments)
         {
-#if NET46
-            throw new NotImplementedException();
-#else
             return PhpValue.False;
-#endif
         }
 
         private static PhpValue sqliteCreateFunction(PDO pdo, PhpArray arguments)
         {
-#if NET46
-            throw new NotImplementedException();
-            // From https://github.com/DEVSENSE/Phalanger/blob/master/Source/Extensions/PDOSQLite/SQLitePDODriver.cs
-            // SQLiteFunction.RegisterFunction(func_name, nbr_arg, FunctionType.Scalar, null, d, null);
-#else
             //Microsoft connector does not support CreateFunction
             return PhpValue.False;
-#endif
         }
 
         /// <inheritDoc />

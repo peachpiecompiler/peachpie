@@ -3,32 +3,21 @@
   <Import Project="..\..\build\Targets\Settings.props" />
   <PropertyGroup>
     <Description>Peachpie platform dependencies.</Description>
-    <TargetFrameworks>netstandard1.5;netstandard1.6;netstandard2.0;net46</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <AssemblyName>Peachpie.App</AssemblyName>
     <PackageId>Peachpie.App</PackageId>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
-	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PDO\Peachpie.Library.PDO\Peachpie.Library.PDO.csproj" />
     <ProjectReference Include="..\Peachpie.Library.Scripting\Peachpie.Library.Scripting.csproj" />
     <ProjectReference Include="..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
-	<ProjectReference Include="..\Peachpie.Library\Peachpie.Library.csproj" />
+    <ProjectReference Include="..\Peachpie.Library\Peachpie.Library.csproj" />
     <ProjectReference Include="..\Peachpie.Library.MsSql\Peachpie.Library.MsSql.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' != 'netstandard1.5' ">
     <ProjectReference Include="..\Peachpie.Library.MySql\Peachpie.Library.MySql.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' or '$(TargetFramework)' == 'net46' ">
     <ProjectReference Include="..\Peachpie.Library.XmlDom\Peachpie.Library.XmlDom.csproj" />
   </ItemGroup>
 

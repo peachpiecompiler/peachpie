@@ -2,7 +2,7 @@
 
   <Import Project="..\..\..\build\Targets\Settings.props" />
   <PropertyGroup>
-    <TargetFrameworks>net46</TargetFrameworks>
+    <TargetFrameworks>net461</TargetFrameworks>
     <NoWarn>$(NoWarn);1591</NoWarn>
     <AssemblyName>Peachpie.RequestHandler</AssemblyName>
     <PackageId>Peachpie.RequestHandler</PackageId>
@@ -14,12 +14,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Peachpie.Library\Peachpie.Library.csproj" />
     <ProjectReference Include="..\..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
-    <Reference Include="System.Web" />
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
 
   <ItemGroup>

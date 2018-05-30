@@ -2,7 +2,7 @@
 
   <Import Project="..\..\build\Targets\Settings.props" />
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.5;netstandard2.0;net46</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <NoWarn>$(NoWarn);1591;1574</NoWarn>
     <AssemblyName>Peachpie.Library.Scripting</AssemblyName>
     <PackageId>Peachpie.Library.Scripting</PackageId>
@@ -10,34 +10,19 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Description>Support for dynamic code evaluation in Peachpie application. The package enables `eval` and `create_function` in compiled programs.</Description>
   </PropertyGroup>
-  
-  <PropertyGroup Condition=" '$(TargetFramework)' != 'net46' ">
-		<DefineConstants>$(DefineConstants);NETSTANDARD1_5</DefineConstants>
-  </PropertyGroup>
-  
+ 
   <ItemGroup>
     <PackageReference Include="Devsense.Php.Parser" Version="1.4.48" />
     <PackageReference Include="Peachpie.Microsoft.CodeAnalysis" Version="0.6.0" />
+    <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Peachpie.CodeAnalysis\Peachpie.CodeAnalysis.csproj" />
     <ProjectReference Include="..\Peachpie.Library\Peachpie.Library.csproj" />
     <ProjectReference Include="..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net46' ">
-    <Reference Include="System" />
-	<Reference Include="System.Core" />
-	<Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
-  
-  <ItemGroup Condition=" '$(TargetFramework)' != 'net46' ">
-    <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' != 'netstandard1.5' ">
     <ProjectReference Include="..\Peachpie.Library.XmlDom\Peachpie.Library.XmlDom.csproj" />
   </ItemGroup>
+ 
 
 </Project>

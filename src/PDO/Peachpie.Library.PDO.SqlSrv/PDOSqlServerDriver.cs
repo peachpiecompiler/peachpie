@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.Common;
-using System.Data.SqlClient;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Data.SqlClient;
 using Pchp.Core;
 
 namespace Peachpie.Library.PDO.SqlSrv
@@ -11,7 +6,7 @@ namespace Peachpie.Library.PDO.SqlSrv
     /// <summary>
     /// PDO driver for Microsoft SqlServer
     /// </summary>
-    /// <seealso cref="Peachpie.Library.PDO.PDODriver" />
+    /// <seealso cref="PDODriver" />
     [System.Composition.Export(typeof(IPDODriver))]
     public class PDOSqlServerDriver : PDODriver
     {
@@ -36,9 +31,12 @@ namespace Peachpie.Library.PDO.SqlSrv
         protected override string BuildConnectionString(string dsn, string user, string password, PhpArray options)
         {
             //TODO sqlserver pdo dsn to dotnet connectionstring
-            var csb = new SqlConnectionStringBuilder(dsn);
-            csb.UserID = user;
-            csb.Password = password;
+            var csb = new SqlConnectionStringBuilder(dsn)
+            {
+                UserID = user,
+                Password = password
+            };
+
             return csb.ConnectionString;
         }
     }

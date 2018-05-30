@@ -127,16 +127,9 @@ namespace Peachpie.Web
         {
             get
             {
-#if NETSTANDARD2_0
-                // since 2.0.0
                 var maxsize = _httpctx.Features.Get<IHttpMaxRequestBodySizeFeature>()?.MaxRequestBodySize;
-                if (maxsize.HasValue)
-                {
-                    return maxsize.Value;
-                }
-#endif
-                // default:
-                return 30_000_000;
+             
+                return maxsize ?? 30_000_000;
             }
         }
 
