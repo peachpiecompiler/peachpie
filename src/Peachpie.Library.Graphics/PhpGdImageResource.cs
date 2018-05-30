@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using ImageSharp;
-using ImageSharp.Drawing;
-using ImageSharp.Formats;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
 using Pchp.Core;
-using TImage = ImageSharp.Image<ImageSharp.Rgba32>;
+using TImage = SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Rgba32>;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing.Drawing.Brushes;
 
 namespace Peachpie.Library.Graphics
 {
@@ -44,7 +45,7 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         public bool IsIndexed =>
             _format == ImageFormats.Gif ||
-            _format == ImageFormats.Bitmap;
+            _format == ImageFormats.Bmp;
         
         internal bool AlphaBlending = false;
         internal bool SaveAlpha = false;

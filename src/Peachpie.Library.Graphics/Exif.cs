@@ -1,8 +1,11 @@
 ﻿using System;
 using System.IO;
-using ImageSharp;
-using ImageSharp.Formats;
 using Pchp.Core;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.MetaData.Profiles.Exif;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace Peachpie.Library.Graphics
 {
@@ -352,7 +355,7 @@ namespace Peachpie.Library.Graphics
 
             using (var ms2 = new MemoryStream())
             {
-                thumbnail.Save(ms2, new ImageSharp.Formats.PngEncoder());
+                thumbnail.Save(ms2, new PngEncoder());
                 result = ms2.ToArray();
             }
 

@@ -4,17 +4,28 @@ using System.Diagnostics;
 using System.IO;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using ImageSharp;
-using ImageSharp.Drawing;
-using ImageSharp.Drawing.Brushes;
-using ImageSharp.Drawing.Pens;
-using ImageSharp.Formats;
-using ImageSharp.Processing;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
 using Pchp.Core;
 using Pchp.Library.Streams;
 using SixLabors.Fonts;
 using SixLabors.Primitives;
 using SixLabors.Shapes;
+using SixLabors.ImageSharp.Processing.Transforms.Resamplers;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing.Drawing.Brushes;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Formats.Bmp;
+using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp.Processing.Overlays;
+using SixLabors.ImageSharp.Processing.Transforms;
+using SixLabors.ImageSharp.Processing.Drawing;
+using SixLabors.ImageSharp.Formats.Gif;
+using SixLabors.ImageSharp.Processing.Filters;
+using SixLabors.ImageSharp.Processing.Convolution;
+using SixLabors.ImageSharp.Processing.Text;
+using SixLabors.ImageSharp.Processing.Drawing.Pens;
 
 namespace Peachpie.Library.Graphics
 {
@@ -355,11 +366,12 @@ namespace Peachpie.Library.Graphics
             //if (dst_h < 0) dst_h = 0;
             if (dst_w == 0 || dst_h == 0) return true;
 
-            var src = new Image<Rgba32>(src_img.Image)  // copy image and resize inplace:
-                .Crop(new Rectangle(src_x, src_y, src_w, src_h))
-                .Resize(dst_w, dst_h, resampler);
-
-            dst_img.Image.DrawImage(src, new Size(dst_w, dst_h), new Point(dst_x, dst_y), GraphicsOptions.Default);
+            using (var cropped = src_img.Image.Clone(o => o
+                    .Crop(new Rectangle(src_x, src_y, src_w, src_h))
+                    .Resize(dst_w, dst_h, resampler)))
+            {
+                dst_img.Image.Mutate(o => o.DrawImage(GraphicsOptions.Default, cropped, new Point(dst_x, dst_y)));
+            }
 
             return true;
         }
@@ -374,9 +386,9 @@ namespace Peachpie.Library.Graphics
         [return: CastToFalse]
         public static PhpResource imagecreate(int x_size, int y_size)
         {
-            var img = imagecreatecommon(x_size, y_size, new BmpConfigurationModule(), ImageFormats.Bitmap);
+            var img = imagecreatecommon(x_size, y_size, new BmpConfigurationModule(), ImageFormats.Bmp);
 
-            img.Image.BackgroundColor(Rgba32.White);
+            img.Image.Mutate(o => o.BackgroundColor(Rgba32.White));
             img.AlphaBlending = true;
 
             return img;
@@ -390,7 +402,7 @@ namespace Peachpie.Library.Graphics
         {
             var img = imagecreatecommon(x_size, y_size, new PngConfigurationModule(), ImageFormats.Png);
 
-            img.Image.BackgroundColor(Rgba32.Black);
+            img.Image.Mutate(o => o.BackgroundColor(Rgba32.Black));
             img.AlphaBlending = true;
 
             return img;
@@ -421,7 +433,7 @@ namespace Peachpie.Library.Graphics
 
             try
             {
-                return new PhpGdImageResource(Image.Load(image, out IImageFormat format), format);
+                return new PhpGdImageResource(Image.Load(image, out var format), format);
             }
             catch
             {
@@ -736,28 +748,38 @@ namespace Peachpie.Library.Graphics
                 switch (filtertype)
                 {
                     case FilterTypes.GRAYSCALE:
-                        img.Image.Grayscale();
+                        img.Image.Mutate(o => o.Grayscale());
                         return true;
 
                     case FilterTypes.CONTRAST:
-                        img.Image.Contrast(arg1);
+                        // -100 = max contrast, 0 = no change, +100 = min contrast (note the direction!)
+                        img.Image.Mutate(o => o.Contrast(arg1 / 100.0f));
                         return true;
 
                     case FilterTypes.BRIGHTNESS:
-                        img.Image.Brightness(arg1);
+                        // -255 = min brightness, 0 = no change, +255 = max brightness
+                        img.Image.Mutate(o => o.Brightness(arg1 / 255.0f));
                         return true;
 
                     case FilterTypes.NEGATE:
-                        img.Image.Invert();
+                        img.Image.Mutate(o => o.Invert());
                         return true;
 
                     case FilterTypes.GAUSSIAN_BLUR:
-                        img.Image.BoxBlur(arg1);
+                        img.Image.Mutate(o => o.BoxBlur(arg1));
                         return true;
 
-                    //case FilterTypes.COLORIZE:
-                    //case FilterTypes.SMOOTH:
-                    //    return false;
+                    case FilterTypes.COLORIZE:
+                        // Adds(subtracts) specified RGB values to each pixel.
+                        // The valid range for each color is -255...+ 255, not 0...255.The correct order is red, green, blue.
+                        // -255 = min, 0 = no change, +255 = max
+                        return false;
+
+                    case FilterTypes.SMOOTH:
+                        // Applies a 9 - cell convolution matrix where center pixel has the weight arg1 and others weight of 1.0.
+                        // The result is normalized by dividing the sum with arg1 + 8.0(sum of the matrix).
+                        // Any float is accepted, large value(in practice: 2048 or more) = no change
+                        return false;
 
                     default:
                         // argument exception
@@ -805,7 +827,8 @@ namespace Peachpie.Library.Graphics
             }
 
             //
-            return new PhpGdImageResource(new Image<Rgba32>(img.Image).Rotate((float)(angle * (-Math.PI / 180.0)), true), img.Format);
+            var rotated = img.Image.Clone(o => o.Rotate((float)(angle * (-Math.PI / 180.0)), new BicubicResampler()));
+            return new PhpGdImageResource(rotated, img.Format);
         }
 
         #endregion
@@ -825,7 +848,7 @@ namespace Peachpie.Library.Graphics
 
             var rect = new RectangleF(x1, y1, x2 - x1, y2 - y1);
 
-            img.Image.Draw(FromRGBA(col), 1.0f, rect);
+            img.Image.Mutate(o => o.Draw(FromRGBA(col), 1.0f, rect));
 
             return true;
         }
@@ -847,12 +870,12 @@ namespace Peachpie.Library.Graphics
             {
                 if (img.tiled != null)
                 {
-                    img.Image.Fill(img.tiled, rect);
+                    img.Image.Mutate(o => o.Fill(img.tiled, rect));
                 }
             }
             else
             {
-                img.Image.Fill(FromRGBA(col), rect);
+                img.Image.Mutate(o => o.Fill(FromRGBA(col), rect));
             }
 
             return true;
@@ -965,11 +988,11 @@ namespace Peachpie.Library.Graphics
             var matrix = (angle == 0.0) ? Matrix3x2.Identity : Matrix3x2.CreateRotation((float)(angle * -2.0 * Math.PI / 360.0f));
             matrix.Translation = new Vector2(x, y);
 
-            var path = new SixLabors.Shapes.PathBuilder(matrix).AddLine(0, 0, textsize.Width, 0).Build();
+            var path = new PathBuilder(matrix).AddLine(0, 0, textsize.Width, 0).Build();
 
             // draw the text:
             // TODO: col < 0 => turn off antialiasing
-            img.Image.DrawText(text, font, FromRGBA(Math.Abs(color)), path);
+            img.Image.Mutate(o => o.DrawText(text, font, FromRGBA(Math.Abs(color)), path));
 
             // calculate drawen text boundaries:
             var pts = new Vector2[]
@@ -1011,7 +1034,7 @@ namespace Peachpie.Library.Graphics
             var img = PhpGdImageResource.ValidImage(im);
             if (img != null)
             {
-                img.Image.DrawLines(GetAlphaColor(img, color), 1.0f, new PointF[] { new PointF(x1, y1), new PointF(x2, y2) });
+                img.Image.Mutate(o => o.DrawLines(GetAlphaColor(img, color), 1.0f, new PointF[] { new PointF(x1, y1), new PointF(x2, y2) }));
 
                 return true;
             }
@@ -1058,7 +1081,12 @@ namespace Peachpie.Library.Graphics
 
             try
             {
-                dst.Image.DrawImage(new Image<Rgba32>(src.Image).Crop(new Rectangle(src_x, src_y, src_w, src_h)), opacity, new Size(src_w, src_h), new Point(dst_x, dst_y));
+                using (var cropped = src.Image.Clone(o => o
+                        .Crop(new Rectangle(src_x, src_y, src_w, src_h))
+                        .Resize(new Size(src_w, src_h))))
+                {
+                    dst.Image.Mutate(o => o.DrawImage(cropped, opacity: opacity, location: new Point(dst_x, dst_y)));
+                }
             }
             catch (Exception ex)
             {
@@ -1112,7 +1140,7 @@ namespace Peachpie.Library.Graphics
         {
             return imagesave(ctx, im, to, (img, stream) =>
             {
-                img.BackgroundColor(Rgba32.Transparent);
+                img.Mutate(o => o.BackgroundColor(Rgba32.Transparent));
                 img.SaveAsGif(stream);
             });
         }
@@ -1285,12 +1313,12 @@ namespace Peachpie.Library.Graphics
 
             if (img.tiled != null)
             {
-                img.Image.Fill(img.tiled, new EllipsePolygon(cx - (w / 2), cy - (h / 2), w, h));
+                img.Image.Mutate(o => o.Fill(img.tiled, new EllipsePolygon(cx - (w / 2), cy - (h / 2), w, h)));
             }
             else
             {
                 var brush = new SolidBrush<Rgba32>(GetAlphaColor(img, col));
-                img.Image.Fill(brush, new EllipsePolygon(cx - (w / 2), cy - (h / 2), w, h));
+                img.Image.Mutate(o => o.Fill(brush, new EllipsePolygon(cx - (w / 2), cy - (h / 2), w, h)));
             }
 
             return true;
@@ -1736,11 +1764,11 @@ namespace Peachpie.Library.Graphics
                         break;
                 }
 
-                img.Image.FillPolygon(brush, points);
+                img.Image.Mutate(o => o.FillPolygon(brush, points));
             }
             else
             {
-                img.Image.DrawPolygon(new Pen<Rgba32>(FromRGBA(col), 1.0f), points);
+                img.Image.Mutate(o => o.DrawPolygon(new Pen<Rgba32>(FromRGBA(col), 1.0f), points));
             }
 
             return true;
