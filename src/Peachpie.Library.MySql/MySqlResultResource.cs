@@ -68,12 +68,7 @@ namespace Peachpie.Library.MySql
 
         protected override void FreeManaged()
         {
-            var reader = (MySqlDataReader)this.Reader;
-            if (reader != null)
-            {
-                reader.Close(); // non virtual!!
-            }
-
+            this.Reader?.Dispose();
             base.FreeManaged();
         }
 
