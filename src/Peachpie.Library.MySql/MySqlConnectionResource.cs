@@ -48,7 +48,7 @@ namespace Peachpie.Library.MySql
             var myreader = (MySqlDataReader)_pendingReader;
             if (myreader != null)
             {
-                myreader.Dispose();
+                myreader.Close();   // we have to call Close() on MySqlDataReader, it is declared as non-virtual!
                 _pendingReader = myreader = null;
             }
         }
