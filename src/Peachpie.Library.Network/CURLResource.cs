@@ -89,8 +89,6 @@ namespace Peachpie.Library.Network
 
     sealed class CURLResponse
     {
-        readonly HttpWebResponse _responseObj;
-
         /// <summary>
         /// Error code number if exception happened.
         /// </summary>
@@ -99,22 +97,37 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Optional. Error message.
         /// </summary>
-        public string ErrorMessage { get; set; }
+        public string ErrorMessage { get; private set; }
 
         /// <summary>
         /// Gets value indicating the request errored.
         /// </summary>
         public bool HasError => ErrorCode != CURLConstants.CURLE_OK;
 
-        public Uri ResponseUri => _responseObj.ResponseUri;
+        public Uri ResponseUri { get; }
 
-        public int StatusCode => (int)_responseObj.StatusCode;
+        public HttpStatusCode StatusCode { get; }
 
-        public DateTime LastModified => _responseObj.LastModified;
+        public DateTime LastModified
+        {
+            get
+            {
+                if (DateTime.TryParse(Headers?[HttpRequestHeader.LastModified], out var dt))
+                {
+                    return dt;
+                }
+                else
+                {
+                    return DateTime.UtcNow;
+                }
+            }
+        }
 
-        public string ContentType => _responseObj.ContentType;
+        public string ContentType => (Headers != null) ? Headers[HttpRequestHeader.ContentType] : string.Empty;
 
-        public int HeaderSize => _responseObj.Headers.ToByteArray().Length;
+        public int HeaderSize => (Headers != null) ? Headers.ToByteArray().Length : 0;
+
+        public WebHeaderCollection Headers { get; }
 
         public TimeSpan TotalTime { get; set; }
 
@@ -122,10 +135,16 @@ namespace Peachpie.Library.Network
 
         public static CURLResponse CreateError(int errcode, Exception ex = null) => new CURLResponse(PhpValue.False) { ErrorCode = errcode, ErrorMessage = ex?.Message };
 
-        public CURLResponse(PhpValue execvalue, WebResponse responseObj = null)
+        public CURLResponse(PhpValue execvalue, HttpWebResponse response = null)
         {
             this.ExecValue = execvalue;
-            _responseObj = (HttpWebResponse)responseObj;
+
+            if (response != null)
+            {
+                this.ResponseUri = response.ResponseUri;
+                this.StatusCode = response.StatusCode;
+                this.Headers = response.Headers;
+            }
         }
     }
 }
