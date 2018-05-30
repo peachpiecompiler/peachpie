@@ -158,6 +158,8 @@ namespace Peachpie.Library.Network
                         return (PhpValue)r.ContentLength;
                     case CURLConstants.CURLINFO_TOTAL_TIME:
                         return (PhpValue)r.TotalTime.TotalSeconds;
+                    case CURLConstants.CURLINFO_PRIVATE:
+                        return r.Private.IsSet ? r.Private : PhpValue.False;
                 }
             }
 
@@ -428,6 +430,7 @@ namespace Peachpie.Library.Network
             //
 
             ch.Result.TotalTime = (DateTime.UtcNow - start);
+            ch.Result.Private = ch.Private;
 
             return ch.Result.ExecValue;
         }

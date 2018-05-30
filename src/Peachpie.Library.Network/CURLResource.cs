@@ -62,6 +62,11 @@ namespace Peachpie.Library.Network
         /// </summary>
         public PhpStream PutStream { get; set; }
 
+        /// <summary>
+        /// Private data set to the handle.
+        /// </summary>
+        internal PhpValue Private { get; set; }
+
         #endregion
 
         /// <summary>
@@ -135,6 +140,11 @@ namespace Peachpie.Library.Network
         public WebHeaderCollection Headers { get; }
 
         public TimeSpan TotalTime { get; set; }
+
+        /// <summary>
+        /// Private data set to the requesting handle.
+        /// </summary>
+        public PhpValue Private { get; set; }
 
         public PhpValue ExecValue { get; }
 

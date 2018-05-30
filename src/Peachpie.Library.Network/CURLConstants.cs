@@ -530,6 +530,7 @@ namespace Peachpie.Library.Network
                 case CURLOPT_INFILE: return (ch.PutStream = value.Object as PhpStream) != null;
                 case CURLOPT_USERAGENT: return (ch.UserAgent = value.AsString()) != null;
                 case CURLOPT_BINARYTRANSFER: return true;   // no effect
+                case CURLOPT_PRIVATE: ch.Private = value.GetValue().DeepCopy(); return true;
 
                 default:
                     return false;
