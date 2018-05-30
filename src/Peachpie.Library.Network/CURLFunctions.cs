@@ -141,17 +141,21 @@ namespace Peachpie.Library.Network
                             { "http_code", r.StatusCode },
                             { "filetime", DateTimeUtils.UtcToUnixTimeStamp(r.LastModified) },
                             { "total_time", r.TotalTime.TotalSeconds },
+                            { "download_content_length", r.ContentLength },
+                            { "redirect_url", ch.FollowLocation && r.ResponseUri != null ? string.Empty : r.ResponseUri.AbsoluteUri }
                         };
                     case CURLConstants.CURLINFO_EFFECTIVE_URL:
                         return (PhpValue)r.ResponseUri?.AbsoluteUri;
                     case CURLConstants.CURLINFO_REDIRECT_URL:
-                        return (PhpValue)(ch.FollowLocation ? string.Empty : r.ResponseUri?.AbsoluteUri);
+                        return (PhpValue)(ch.FollowLocation && r.ResponseUri != null ? string.Empty : r.ResponseUri.AbsoluteUri);
                     case CURLConstants.CURLINFO_HTTP_CODE:
                         return (PhpValue)(int)r.StatusCode;
                     case CURLConstants.CURLINFO_FILETIME:
                         return (PhpValue)DateTimeUtils.UtcToUnixTimeStamp(r.LastModified);
                     case CURLConstants.CURLINFO_CONTENT_TYPE:
                         return (PhpValue)r.ContentType;
+                    case CURLConstants.CURLINFO_CONTENT_LENGTH_DOWNLOAD:
+                        return (PhpValue)r.ContentLength;
                     case CURLConstants.CURLINFO_TOTAL_TIME:
                         return (PhpValue)r.TotalTime.TotalSeconds;
                 }

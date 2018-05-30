@@ -123,6 +123,11 @@ namespace Peachpie.Library.Network
             }
         }
 
+        /// <summary>
+        /// Content length of download, read from Content-Length: field.
+        /// </summary>
+        public long ContentLength => Headers != null && long.TryParse(Headers[HttpRequestHeader.ContentLength], out var length) ? length : -1;
+
         public string ContentType => (Headers != null) ? Headers[HttpRequestHeader.ContentType] : string.Empty;
 
         public int HeaderSize => (Headers != null) ? Headers.ToByteArray().Length : 0;

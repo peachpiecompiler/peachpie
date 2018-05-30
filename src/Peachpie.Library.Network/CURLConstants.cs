@@ -182,6 +182,9 @@ namespace Peachpie.Library.Network
         public const int CURLE_URL_MALFORMAT_USER = 4;
         public const int CURLE_WRITE_ERROR = 23;
         public const int CURLINFO_CONNECT_TIME = 3145733;
+        /// <summary>
+        /// Content length of download, read from Content-Length: field.
+        /// </summary>
         public const int CURLINFO_CONTENT_LENGTH_DOWNLOAD = 3145743;
         public const int CURLINFO_CONTENT_LENGTH_UPLOAD = 3145744;
         public const int CURLINFO_CONTENT_TYPE = 1048594;
