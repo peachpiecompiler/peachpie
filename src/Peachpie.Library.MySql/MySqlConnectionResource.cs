@@ -12,11 +12,12 @@ using Pchp.Library.Resources;
 namespace Peachpie.Library.MySql
 {
     /// <summary>
-    /// 
+    /// Resource representing MySql connection.
     /// </summary>
-    [PhpHidden]
     sealed class MySqlConnectionResource : ConnectionResource
     {
+        const string ResourceName = "mysql connection";
+
         readonly MySqlConnectionManager _manager;
         readonly MySqlConnection _connection;
 
@@ -31,7 +32,7 @@ namespace Peachpie.Library.MySql
         internal Context Context => _manager.Context;
 
         public MySqlConnectionResource(MySqlConnectionManager manager, string connectionString)
-            : base(manager.Context, connectionString, "mysql connection")
+            : base(manager.Context, connectionString, ResourceName)
         {
             _manager = manager;
             _connection = new MySqlConnection(this.ConnectionString);
