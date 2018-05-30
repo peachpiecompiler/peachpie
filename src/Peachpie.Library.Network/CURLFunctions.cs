@@ -160,6 +160,9 @@ namespace Peachpie.Library.Network
                         return (PhpValue)r.TotalTime.TotalSeconds;
                     case CURLConstants.CURLINFO_PRIVATE:
                         return r.Private.IsSet ? r.Private : PhpValue.False;
+                    default:
+                        PhpException.ArgumentValueNotSupported(nameof(opt), opt);
+                        break;
                 }
             }
 
