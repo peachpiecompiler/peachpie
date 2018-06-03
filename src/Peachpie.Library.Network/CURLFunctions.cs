@@ -235,6 +235,7 @@ namespace Peachpie.Library.Network
             if (ch.UserAgent != null) req.UserAgent = ch.UserAgent;
             if (ch.Referer != null) req.Referer = ch.Referer;
             if (ch.Headers != null) AddHeaders(req, ch.Headers);
+            if (ch.CookieHeader != null) TryAddCookieHeader(req, ch.CookieHeader);
             // TODO: cookies
             req.CookieContainer = new CookieContainer();
             // TODO: certificate
@@ -370,6 +371,17 @@ namespace Peachpie.Library.Network
                 {
                     req.Headers.Add(header);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Add the Cookie header if not present.
+        /// </summary>
+        static void TryAddCookieHeader(HttpWebRequest req, string value)
+        {
+            if (req.Headers.Get(HttpRequestHeader.Cookie.ToString()) == null)
+            {
+                req.Headers.Add(HttpRequestHeader.Cookie, value);
             }
         }
 

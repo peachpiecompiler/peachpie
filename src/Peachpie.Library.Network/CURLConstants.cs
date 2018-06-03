@@ -526,6 +526,7 @@ namespace Peachpie.Library.Network
                 case CURLOPT_RETURNTRANSFER: ch.ReturnTransfer = value.ToBoolean(); break;
                 case CURLOPT_HEADER: ch.OutputHeader = value.ToBoolean(); break;
                 case CURLOPT_HTTPHEADER: ch.Headers = value.GetValue().DeepCopy().ToArray(); break;
+                case CURLOPT_COOKIE: return (ch.CookieHeader = value.AsString()) != null;
                 case CURLOPT_FILE: return (ch.OutputTransfer = value.Object as PhpStream) != null;
                 case CURLOPT_INFILE: return (ch.PutStream = value.Object as PhpStream) != null;
                 case CURLOPT_USERAGENT: return (ch.UserAgent = value.AsString()) != null;

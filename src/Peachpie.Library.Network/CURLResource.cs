@@ -44,6 +44,12 @@ namespace Peachpie.Library.Network
         /// </summary>
         public PhpArray Headers { get; set; }
 
+        /// <summary>
+        /// The value of the Cookie header.
+        /// Ignored if already present in <see cref="Headers"/>.
+        /// </summary>
+        public string CookieHeader { get; set; }
+
         public bool ReturnTransfer { get; set; } = false;
 
         /// <summary>
