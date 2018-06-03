@@ -82,7 +82,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         private static LangElement PickFirstSyntaxNode(BoundBlock block)
         {
-            var syntax = block.Statements.FirstOrDefault(st => st.PhpSyntax != null)?.PhpSyntax;
+            var syntax = block.Statements.FirstOrDefault(st => st.PhpSyntax != null && !(st.PhpSyntax is PHPDocStmt))?.PhpSyntax;
             if (syntax != null)
             {
                 return syntax;
