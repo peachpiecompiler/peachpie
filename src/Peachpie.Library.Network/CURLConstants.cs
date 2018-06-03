@@ -533,6 +533,7 @@ namespace Peachpie.Library.Network
                 case CURLOPT_PRIVATE: ch.Private = value.GetValue().DeepCopy(); return true;
 
                 default:
+                    PhpException.ArgumentValueNotSupported(nameof(option), option);
                     return false;
             }
 
