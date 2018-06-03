@@ -590,7 +590,7 @@ namespace Pchp.Core
 
         public static PhpValue Create(string value) => new PhpValue(TypeTable.StringTable, value);
 
-        public static PhpValue Create(PhpString value) => value.AsPhpValue(value);
+        public static PhpValue Create(PhpString value) => PhpString.AsPhpValue(value);
 
         internal static PhpValue Create(PhpString.Blob blob) => new PhpValue(blob);
 

@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core.Reflection;
+using Pchp.Core.Text;
 
 namespace Pchp.Core
 {
@@ -181,6 +182,17 @@ namespace Pchp.Core
             // not empty
             // not "0"
             return value != null && value.Length != 0 && (value.Length != 1 || value[0] != '0');
+        }
+
+        /// <summary>
+        /// Converts string to boolean according to PHP.
+        /// </summary>
+        internal static bool ToBoolean(BlobChar[] value)
+        {
+            // not null
+            // not empty
+            // not "0"
+            return value != null && value.Length != 0 && (value.Length != 1 || value[0].AsChar() != '0');
         }
 
         /// <summary>

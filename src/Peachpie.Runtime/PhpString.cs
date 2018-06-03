@@ -1,4 +1,5 @@
-﻿using Pchp.Core.Utilities;
+﻿using Pchp.Core.Text;
+using Pchp.Core.Utilities;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,27 +9,244 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Pchp.Core
+namespace Pchp.Core.Text
 {
+    #region BlobChar
+
+    /// <summary>
+    /// A character that can be either a single <see cref="byte"/> or Unicode <see cref="char"/>.
+    /// Used internally.
+    /// </summary>
+    [DebuggerNonUserCode]
+    internal struct BlobChar
+    {
+        private readonly short _b;
+        private readonly char _ch;
+
+        public bool IsByte => _b >= 0;
+
+        /// <summary>
+        /// Character stored as UTF16.
+        /// </summary>
+        public bool IsUnicode => _ch != 0;
+
+        /// <summary>
+        /// Character needs to be stored as a single byte,
+        /// conversion to char would change its semantic.
+        /// </summary>
+        public bool IsBinary => _b >= 0xf0;
+
+        public BlobChar(byte b) : this() { _b = b; }
+        public BlobChar(char c) : this() { _ch = c; _b = -1; }
+        public BlobChar(long l)
+        {
+            if (l <= 0xff)
+            {
+                _b = (short)l;
+                _ch = (char)0;
+            }
+            else
+            {
+                _ch = (char)l;
+                _b = -1;
+            }
+        }
+
+        /// <summary>
+        /// Converts the character to a value.
+        /// </summary>
+        public PhpValue AsValue() => IsBinary
+            ? PhpValue.Create(new PhpString.Blob(new[] { (byte)_b }))   // [0x10, 0xff]
+            : PhpValue.Create(AsChar().ToString()); // Char is preferred if can be used
+
+        public char AsChar() => IsByte ? (char)_b : _ch;
+
+        public byte AsByte() => IsByte ? (byte)_b : (byte)_ch;
+
+        public void Output(Context ctx)
+        {
+            if (IsByte)
+                ctx.OutputStream.WriteByte((byte)_b);
+            else
+                ctx.Output.Write(_ch);
+        }
+
+        public override string ToString() => AsChar().ToString();
+
+        /// <summary>
+        /// Converts the value to a character.
+        /// </summary>
+        public static BlobChar FromValue(PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Long:
+                    return new BlobChar(value.Long);
+
+                case PhpTypeCode.String:
+                    return new BlobChar(Core.Convert.ToChar(value.String));
+
+                case PhpTypeCode.MutableString:
+                    return value.MutableStringBlob[0];
+
+                case PhpTypeCode.Alias:
+                    return FromValue(value.Alias.Value);
+
+                // TODO: other types
+
+                default:
+                    throw new NotSupportedException(value.TypeCode.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Copies characters to a new array of <see cref="char"/>s.
+        /// Single-byte chars are encoded to Unicode chars.
+        /// </summary>
+        public static char[] ToCharArray(BlobChar[] chars, Encoding enc)
+        {
+            // TODO: more decent code
+
+            var result = new List<char>(chars.Length);
+
+            Debug.Assert(chars != null);
+
+            for (int i = 0; i < chars.Length; i++)
+            {
+                if (chars[i].IsByte)
+                {
+                    int j = i;
+                    while (j < chars.Length && chars[j].IsByte)
+                    {
+                        j++;
+                    }
+
+                    // encode bytes (i..j] to char array
+                    var maxchars = enc.GetMaxCharCount(j - i);
+                    var tmp = new char[maxchars];
+                    var src = new byte[j - i];
+
+                    for (int b = 0; b < src.Length; b++, i++)
+                    {
+                        src[b] = (byte)chars[i]._b;
+                    }
+
+                    var charscount = enc.GetChars(src, 0, src.Length, tmp, 0);
+                    result.AddRange(new ArraySegment<char>(tmp, 0, charscount));
+                }
+                else
+                {
+                    result.Add(chars[i]._ch);
+                }
+            }
+
+            return result.ToArray(); // TODO: span of underlaying items
+        }
+
+        /// <summary>
+        /// Decode characters into a new array of <see cref="byte"/>s.
+        /// Unicode chars are decoded to single-byte chars.
+        /// </summary>
+        public static byte[] ToByteArray(BlobChar[] chars, Encoding enc)
+        {
+            // TODO: more decent code
+
+            var result = new List<byte>(chars.Length);
+
+            Debug.Assert(chars != null);
+
+            for (int i = 0; i < chars.Length; i++)
+            {
+                if (chars[i].IsByte)
+                {
+                    result.Add((byte)chars[i]._b);
+                }
+                else
+                {
+                    int j = i;
+                    while (j < chars.Length && !chars[j].IsByte)
+                    {
+                        j++;
+                    }
+
+                    // encode bytes (i..j] to char array
+                    var maxbytes = enc.GetMaxByteCount(j - i);
+                    var tmp = new byte[maxbytes];
+                    var src = new char[j - i];
+
+                    for (int b = 0; b < src.Length; b++, i++)
+                    {
+                        src[b] = chars[i]._ch;
+                    }
+
+                    var bytescount = enc.GetBytes(src, 0, src.Length, tmp, 0);
+                    result.AddRange(new ArraySegment<byte>(tmp, 0, bytescount));
+                }
+            }
+
+            return result.ToArray(); // TODO: span of underlaying items
+        }
+
+        internal static BlobChar[] ToBlobCharArray(string str)
+        {
+            var arr = new BlobChar[str.Length];
+            for (int i = 0; i < str.Length; i++)
+            {
+                arr[i] = str[i];
+            }
+            return arr;
+        }
+
+        internal static BlobChar[] ToBlobCharArray(char[] chars)
+        {
+            var arr = new BlobChar[chars.Length];
+            for (int i = 0; i < chars.Length; i++)
+            {
+                arr[i] = chars[i];
+            }
+            return arr;
+        }
+
+        internal static BlobChar[] ToBlobCharArray(byte[] bytes)
+        {
+            var arr = new BlobChar[bytes.Length];
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                arr[i] = bytes[i];
+            }
+            return arr;
+        }
+
+        public static implicit operator PhpValue(BlobChar b) => b.AsValue();
+        public static implicit operator BlobChar(PhpValue value) => FromValue(value);
+        public static implicit operator BlobChar(char c) => new BlobChar(c);
+        public static implicit operator BlobChar(byte b) => new BlobChar(b);
+    }
+
+    #endregion
+
     #region IMutableString
 
     /// <summary>
     /// Provides access to <see cref="PhpString"/> with write access.
     /// </summary>
-    public interface IMutableString : IPhpArray
+    internal interface IMutableString : IPhpArray
     {
         void Add(string value);
         void Add(byte[] value);
         void Add(PhpString value);
         void Add(PhpValue value, Context ctx);
 
-        char this[int index] { get; set; }
+        BlobChar this[int index] { get; set; }
 
         int Length { get; }
     }
 
     #endregion
+}
 
+namespace Pchp.Core
+{
     /// <summary>
     /// String builder providing fast concatenation and character replacements for hybrid strings (both unicode and binary).
     /// </summary>
@@ -74,6 +292,9 @@ namespace Pchp.Core
             {
                 None = 0,
 
+                /// <summary>
+                /// The blob contains <see cref="byte"/>[].
+                /// </summary>
                 ContainsBinary = 1,
 
                 IsNonEmpty = 2,
@@ -322,11 +543,12 @@ namespace Pchp.Core
             {
                 AssertChunkObject(chunk);
 
-                if (chunk.GetType() == typeof(string)) return ((string)chunk).Length;
-                if (chunk.GetType() == typeof(byte[])) return ((byte[])chunk).Length;
-                if (chunk.GetType() == typeof(Blob)) return ((Blob)chunk).Length;
-                if (chunk.GetType() == typeof(char[])) return ((char[])chunk).Length;
-                throw new ArgumentException();
+                switch (chunk)
+                {
+                    case string str: return str.Length;
+                    case Blob b: return b.Length;
+                    default: return ((Array)chunk).Length;
+                }
             }
 
             static int ChunkLength(object[] chunks, int count)
@@ -423,7 +645,7 @@ namespace Pchp.Core
             [Conditional("DEBUG")]
             static void AssertChunkObject(object chunk)
             {
-                Debug.Assert(chunk is byte[] || chunk is string || chunk is char[] || chunk is Blob);
+                Debug.Assert(chunk is byte[] || chunk is string || chunk is char[] || chunk is Blob || chunk is BlobChar[]);
             }
 
             void AddChunk(object newchunk)
@@ -504,11 +726,23 @@ namespace Pchp.Core
             {
                 AssertChunkObject(chunk);
 
-                if (chunk.GetType() == typeof(string)) ctx.Output.Write((string)chunk);
-                else if (chunk.GetType() == typeof(byte[])) ctx.OutputStream.Write((byte[])chunk);
-                else if (chunk.GetType() == typeof(Blob)) ((Blob)chunk).Output(ctx);
-                else if (chunk.GetType() == typeof(char[])) ctx.Output.Write((char[])chunk);
-                else throw new ArgumentException();
+                switch (chunk)
+                {
+                    case string str: ctx.Output.Write(str); break;
+                    case byte[] barr: ctx.OutputStream.Write(barr); break;
+                    case Blob b: b.Output(ctx); break;
+                    case char[] carr: ctx.Output.Write(carr); break;
+                    case BlobChar[] barr: OutputChunk(ctx, barr); break;
+                    default: throw new ArgumentException(chunk.GetType().ToString());
+                }
+            }
+
+            static void OutputChunk(Context ctx, BlobChar[] chars)
+            {
+                for (int i = 0; i < chars.Length; i++)
+                {
+                    chars[i].Output(ctx);
+                }
             }
 
             static void OutputChunks(Context ctx, object[] chunks, int count)
@@ -548,7 +782,7 @@ namespace Pchp.Core
                 }
                 else
                 {
-                    var builder = new StringBuilder(32);    // TODO: threadstatic cached instance
+                    var builder = new StringBuilder(32);    // TODO: pooled instance
 
                     for (int i = 0; i < count; i++)
                     {
@@ -563,11 +797,15 @@ namespace Pchp.Core
             {
                 AssertChunkObject(chunk);
 
-                if (chunk.GetType() == typeof(string)) return (string)chunk;
-                if (chunk.GetType() == typeof(byte[])) return encoding.GetString((byte[])chunk);
-                if (chunk.GetType() == typeof(Blob)) return ((Blob)chunk).ToString(encoding);
-                if (chunk.GetType() == typeof(char[])) return new string((char[])chunk);
-                throw new ArgumentException(chunk.GetType().ToString());
+                switch (chunk)
+                {
+                    case string str: return str;
+                    case byte[] barr: return encoding.GetString(barr);
+                    case Blob b: return b.ToString(encoding);
+                    case char[] carr: return new string(carr);
+                    case BlobChar[] barr: return new string(BlobChar.ToCharArray(barr, encoding));
+                    default: throw new ArgumentException(chunk.GetType().ToString());
+                }
             }
 
             #endregion
@@ -602,8 +840,8 @@ namespace Pchp.Core
                 }
                 else
                 {
-                    var buffer = new List<byte>();
 
+                    var buffer = new List<byte>();
                     for (int i = 0; i < count; i++)
                     {
                         buffer.AddRange(ChunkToBytes(encoding, chunks[i]));
@@ -617,23 +855,33 @@ namespace Pchp.Core
             {
                 AssertChunkObject(chunk);
 
-                if (chunk.GetType() == typeof(byte[])) return (byte[])chunk;
-                if (chunk.GetType() == typeof(string)) return encoding.GetBytes((string)chunk);
-                if (chunk.GetType() == typeof(Blob)) return ((Blob)chunk).ToBytes(encoding);
-                if (chunk.GetType() == typeof(char[])) return encoding.GetBytes((char[])chunk);
-                throw new ArgumentException(chunk.GetType().ToString());
+                switch (chunk)
+                {
+                    case string str: return encoding.GetBytes(str);
+                    case byte[] barr: return barr;
+                    case Blob b: return b.ToBytes(encoding);
+                    case char[] carr: return encoding.GetBytes(carr);
+                    case BlobChar[] barr: return BlobChar.ToByteArray(barr, encoding);
+                    default: throw new ArgumentException(chunk.GetType().ToString());
+                }
             }
 
             #endregion
 
             #region this[int]
 
+            BlobChar IMutableString.this[int index]
+            {
+                get => this[index];
+                set => this[index] = value;
+            }
+
             /// <summary>
             /// Gets or sets character at given index according to PHP semantics.
             /// </summary>
             /// <param name="index">Character index.</param>
             /// <returns>Character at given position.</returns>
-            public char this[int index]
+            internal BlobChar this[int index]
             {
                 get
                 {
@@ -665,20 +913,34 @@ namespace Pchp.Core
                 {
                     if (index >= this.Length)
                     {
-                        if (index == this.Length)
+                        if (index > this.Length)
                         {
-                            this.Add(value.ToString());
+                            this.AddChunk(new string('\0', index - this.Length));
+                        }
+
+                        object chunk;   // byte[] | string
+                        if (value.IsBinary)
+                        {
+                            _flags |= Flags.ContainsBinary;
+                            chunk = new[] { value.AsByte() };
                         }
                         else
                         {
-                            this.Add(new string('\0', index - this.Length) + value.ToString());
+                            chunk = value.ToString();
                         }
+
+                        this.AddChunk(chunk);
                     }
                     else if (index >= 0)
                     {
                         // TODO: EnsureWritable
 
                         _flags |= Flags.ContainsMutables;   // any immutable value will be converted to a mutable
+
+                        if (value.IsByte)
+                        {
+                            _flags |= Flags.ContainsBinary;
+                        }
 
                         var chunks = _chunks;
                         if (chunks != null)
@@ -710,32 +972,76 @@ namespace Pchp.Core
                 }
             }
 
-            static char GetCharInChunk(object chunk, int index)
+            static BlobChar GetCharInChunk(object chunk, int index)
             {
                 AssertChunkObject(chunk);
 
                 if (chunk.GetType() == typeof(string)) return ((string)chunk)[index];
-                if (chunk.GetType() == typeof(byte[])) return (char)((byte[])chunk)[index];
-                if (chunk.GetType() == typeof(Blob)) return ((Blob)chunk)[index];
+                if (chunk.GetType() == typeof(byte[])) return ((byte[])chunk)[index];
                 if (chunk.GetType() == typeof(char[])) return ((char[])chunk)[index];
+                if (chunk.GetType() == typeof(Blob)) return ((Blob)chunk)[index];
+                if (chunk.GetType() == typeof(BlobChar[])) return ((BlobChar[])chunk)[index];
 
                 throw new ArgumentException(chunk.GetType().ToString());
             }
 
-            static void SetCharInChunk(ref object chunk, int index, char ch)
+            static void SetCharInChunk(ref object chunk, int index, BlobChar ch)
             {
                 AssertChunkObject(chunk);
 
-                if (chunk.GetType() == typeof(string))
+                if (chunk is string str)
                 {
-                    var chars = ((string)chunk).ToCharArray();
-                    chars[index] = ch;
-                    chunk = chars;
+                    if (ch.IsByte)
+                    {
+                        var chars = BlobChar.ToBlobCharArray(str);
+                        chars[index] = ch;
+                        chunk = chars;
+                    }
+                    else
+                    {
+                        var chars = str.ToCharArray();
+                        chars[index] = ch.AsChar();
+                        chunk = chars;
+                    }
                 }
-                else if (chunk.GetType() == typeof(byte[])) ((byte[])chunk)[index] = (byte)ch;
-                else if (chunk.GetType() == typeof(Blob)) ((Blob)chunk)[index] = ch;
-                else if (chunk.GetType() == typeof(char[])) ((char[])chunk)[index] = ch;
-                else throw new ArgumentException(chunk.GetType().ToString());
+                else if (chunk.GetType() == typeof(byte[]))
+                {
+                    if (ch.IsByte)
+                    {
+                        ((byte[])chunk)[index] = ch.AsByte();
+                    }
+                    else
+                    {
+                        var chars = BlobChar.ToBlobCharArray((byte[])chunk);
+                        chars[index] = ch;
+                        chunk = chars;
+                    }
+                }
+                else if (chunk.GetType() == typeof(char[]))
+                {
+                    if (ch.IsByte)
+                    {
+                        var chars = BlobChar.ToBlobCharArray((char[])chunk);
+                        chars[index] = ch;
+                        chunk = chars;
+                    }
+                    else
+                    {
+                        ((char[])chunk)[index] = ch.AsChar();
+                    }
+                }
+                else if (chunk.GetType() == typeof(Blob))
+                {
+                    ((Blob)chunk)[index] = ch;
+                }
+                else if (chunk.GetType() == typeof(BlobChar[]))
+                {
+                    ((BlobChar[])chunk)[index] = ch;
+                }
+                else
+                {
+                    throw new ArgumentException(chunk.GetType().ToString());
+                }
             }
 
             #endregion
@@ -768,6 +1074,7 @@ namespace Pchp.Core
                 if (chunk.GetType() == typeof(byte[])) return Convert.ToBoolean((byte[])chunk);
                 if (chunk.GetType() == typeof(Blob)) return ((Blob)chunk).ToBoolean();
                 if (chunk.GetType() == typeof(char[])) return Convert.ToBoolean((char[])chunk);
+                if (chunk.GetType() == typeof(BlobChar[])) return Convert.ToBoolean((BlobChar[])chunk);
                 throw new ArgumentException();
             }
 
@@ -787,8 +1094,7 @@ namespace Pchp.Core
             PhpValue IPhpArray.GetItemValue(IntStringKey key)
             {
                 int index = key.IsInteger ? key.Integer : (int)Convert.StringToLongInteger(key.String);
-
-                return new PhpValue((index >= 0 && index < this.Length) ? this[index].ToString() : string.Empty);
+                return (index >= 0 && index < this.Length) ? this[index].AsValue() : PhpValue.Create(string.Empty);
             }
 
             PhpValue IPhpArray.GetItemValue(PhpValue index)
@@ -819,30 +1125,7 @@ namespace Pchp.Core
             void IPhpArray.SetItemValue(IntStringKey key, PhpValue value)
             {
                 int index = key.IsInteger ? key.Integer : (int)Convert.StringToLongInteger(key.String);
-
-                char ch;
-
-                switch (value.TypeCode)
-                {
-                    case PhpTypeCode.Long:
-                        ch = (char)value.Long;
-                        break;
-
-                    case PhpTypeCode.String:
-                        ch = (value.String.Length != 0) ? value.String[0] : '\0';
-                        break;
-
-                    case PhpTypeCode.MutableString:
-                        ch = value.MutableStringBlob[0];
-                        break;
-
-                    // TODO: other types
-
-                    default:
-                        throw new NotSupportedException(value.TypeCode.ToString());
-                }
-
-                this[key.Integer] = ch;
+                this[index] = value;
             }
 
             /// <summary>
@@ -991,10 +1274,7 @@ namespace Pchp.Core
 
         public string ToStringOrThrow(Context ctx) => ToString(ctx.StringEncoding);
 
-        public object ToClass()
-        {
-            return new stdClass(PhpValue.Create(ToString()));
-        }
+        public object ToClass() => new stdClass(AsPhpValue(this));
 
         public PhpArray ToArray() => PhpArray.New(PhpValue.Create(this.DeepCopy()));
 
@@ -1009,10 +1289,8 @@ namespace Pchp.Core
         /// <returns>Character at given position.</returns>
         public char this[int index]
         {
-            get
-            {
-                return _blob[index];
-            }
+            get => _blob[index].AsChar();
+            set => EnsureWritable()[index] = value;
         }
 
         #endregion
@@ -1038,7 +1316,7 @@ namespace Pchp.Core
         /// <summary>
         /// Wraps the string into <see cref="PhpValue"/>.
         /// </summary>
-        public PhpValue AsPhpValue(PhpString str) => str.IsEmpty ? PhpValue.Create(string.Empty) : PhpValue.Create(str._blob);
+        internal static PhpValue AsPhpValue(PhpString str) => str.IsEmpty ? PhpValue.Create(string.Empty) : PhpValue.Create(str._blob.AddRef());
 
         public override string ToString() => _blob?.ToString(Encoding.UTF8);
 
