@@ -50,6 +50,12 @@ namespace Peachpie.Library.Network
         /// </summary>
         public string CookieHeader { get; set; }
 
+        /// <summary>
+        /// As long as <see cref="CURLConstants.CURLOPT_COOKIEFILE"/> is set (regardless of the value, even
+        /// null suffices), the cookies retrieved from the server are recorded.
+        /// </summary>
+        public bool CookieFileSet { get; set; } = false;
+
         public bool ReturnTransfer { get; set; } = false;
 
         /// <summary>
@@ -145,6 +151,8 @@ namespace Peachpie.Library.Network
 
         public WebHeaderCollection Headers { get; }
 
+        public CookieCollection Cookies { get; }
+
         public TimeSpan TotalTime { get; set; }
 
         /// <summary>
@@ -165,6 +173,7 @@ namespace Peachpie.Library.Network
                 this.ResponseUri = response.ResponseUri;
                 this.StatusCode = response.StatusCode;
                 this.Headers = response.Headers;
+                this.Cookies = response.Cookies;
             }
         }
     }

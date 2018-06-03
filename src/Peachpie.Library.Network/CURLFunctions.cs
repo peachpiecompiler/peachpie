@@ -160,6 +160,8 @@ namespace Peachpie.Library.Network
                         return (PhpValue)r.TotalTime.TotalSeconds;
                     case CURLConstants.CURLINFO_PRIVATE:
                         return r.Private.IsSet ? r.Private : PhpValue.False;
+                    case CURLConstants.CURLINFO_COOKIELIST:
+                        return (PhpValue)((ch.CookieFileSet && ch.Result != null) ? CreateCookieArray(ch.Result.Cookies) : PhpArray.Empty);
                     default:
                         PhpException.ArgumentValueNotSupported(nameof(opt), opt);
                         break;
@@ -168,6 +170,20 @@ namespace Peachpie.Library.Network
 
             // failure:
             return PhpValue.False;
+        }
+
+        static PhpArray CreateCookieArray(CookieCollection cookies)
+        {
+            var result = new PhpArray(cookies.Count);
+            foreach (Cookie c in cookies)
+            {
+                string subdomainAccess = "TRUE";                    // Simplified
+                string secure = c.Secure.ToString().ToUpper();
+                long expires = (c.Expires.ToBinary() == 0) ? 0 : DateTimeUtils.UtcToUnixTimeStamp(c.Expires);
+                result.Add($"{c.Domain}\t{subdomainAccess}\t{c.Path}\t{secure}\t{expires}\t{c.Name}\t{c.Value}");
+            }
+
+            return result;
         }
 
         static void Write(this Stream stream, byte[] bytes) => stream.Write(bytes, 0, bytes.Length);
@@ -236,8 +252,7 @@ namespace Peachpie.Library.Network
             if (ch.Referer != null) req.Referer = ch.Referer;
             if (ch.Headers != null) AddHeaders(req, ch.Headers);
             if (ch.CookieHeader != null) TryAddCookieHeader(req, ch.CookieHeader);
-            // TODO: cookies
-            req.CookieContainer = new CookieContainer();
+            if (ch.CookieFileSet) req.CookieContainer = new CookieContainer();
             // TODO: certificate
             // TODO: credentials
             // TODO: proxy
