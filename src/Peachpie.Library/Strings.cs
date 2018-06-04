@@ -2303,7 +2303,8 @@ namespace Pchp.Library
                     for (int i = 0; i < entities.Length; i++)
                     {
                         var entity = entities[i];
-                        if (str.IndexOf(entity, index, entity.Length, StringComparison.Ordinal) == index)
+                        if (index + entity.Length <= str.Length &&
+                            str.IndexOf(entity, index, entity.Length, StringComparison.Ordinal) == index)
                         {
                             return entity;
                         }
