@@ -41,11 +41,11 @@ namespace Pchp.Core.Reflection
 
         internal TypeFields(Type tinfo)
         {
-            _fields = tinfo.GetFields(BindingFlags.DeclaredOnly).Where(_IsAllowedField).ToDictionary(_FieldName, StringComparer.Ordinal);
+            _fields = tinfo.GetFields(BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(_IsAllowedField).ToDictionary(_FieldName, StringComparer.Ordinal);
             if (_fields.Count == 0)
                 _fields = null;
 
-            var staticscontainer = tinfo.GetNestedType("_statics", BindingFlags.DeclaredOnly);
+            var staticscontainer = tinfo.GetNestedType("_statics");
             if (staticscontainer != null)
             {
                 if (staticscontainer.IsGenericTypeDefinition)
@@ -53,13 +53,13 @@ namespace Pchp.Core.Reflection
                     // _statics is always generic type definition (not constructed) in case enclosing type is generic.
                     // Construct the type using enclosing class (trait) generic arguments (TSelf):
                     Debug.Assert(tinfo.GenericTypeArguments.Length == staticscontainer.GetGenericArguments().Length);   // <!TSelf>
-                    staticscontainer = staticscontainer.MakeGenericType(tinfo.GenericTypeArguments).GetTypeInfo();
+                    staticscontainer = staticscontainer.MakeGenericType(tinfo.GenericTypeArguments);
                 }
 
-                _staticsFields = staticscontainer.GetFields(BindingFlags.DeclaredOnly).ToDictionary(_FieldName, StringComparer.Ordinal);
+                _staticsFields = staticscontainer.GetFields(BindingFlags.Instance | BindingFlags.DeclaredOnly).ToDictionary(_FieldName, StringComparer.Ordinal);
             }
 
-            _properties = tinfo.GetProperties(BindingFlags.DeclaredOnly).Where(_IsAllowedProperty).ToDictionary(_PropertyName, StringComparer.Ordinal);
+            _properties = tinfo.GetProperties(BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(_IsAllowedProperty).ToDictionary(_PropertyName, StringComparer.Ordinal);
             if (_properties.Count == 0)
                 _properties = null;
         }

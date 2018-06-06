@@ -248,10 +248,8 @@ namespace Pchp.Core.Reflection
 
             if (!tinfo.IsInterface && !tinfo.IsTrait)
             {
-                foreach (var c in tinfo.Type.GetConstructors(BindingFlags.DeclaredOnly))
+                foreach (var c in tinfo.Type.GetConstructors(BindingFlags.Instance | BindingFlags.DeclaredOnly))
                 {
-                    if (c.IsStatic) continue;
-
                     if (c.IsPhpFieldsOnlyCtor())
                     {
                         return (_ctx) => c.Invoke(new object[] { _ctx });

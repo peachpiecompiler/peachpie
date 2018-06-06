@@ -288,7 +288,7 @@ namespace Peachpie.Library.Scripting
             }
             else
             {
-                return _script.GetMethods(BindingFlags.DeclaredOnly).Where(m => m.IsStatic && m.Name == name);
+                return _script.GetMethods(BindingFlags.Static | BindingFlags.DeclaredOnly).Where(m => m.Name == name);
             }
         }
 

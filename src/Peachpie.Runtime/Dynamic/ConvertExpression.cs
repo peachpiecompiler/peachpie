@@ -491,7 +491,7 @@ namespace Pchp.Core.Dynamic
             //
             if (ReflectionUtils.IsPhpClassType(target))
             {
-                var toclass_T = typeof(CostOf).GetMethod("ToClass", BindingFlags.DeclaredOnly).MakeGenericMethod(target);
+                var toclass_T = typeof(CostOf).GetMethod("ToClass").MakeGenericMethod(target);
                 return Expression.Call(toclass_T, arg); // CostOf.ToClass<T>(arg)
             }
 

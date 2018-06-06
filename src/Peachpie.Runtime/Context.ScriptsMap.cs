@@ -76,8 +76,8 @@ namespace Pchp.Core
             static MainDelegate CreateMain(Type script)
             {
                 var mainmethod =
-                    script.GetMethod(Reflection.ReflectionUtils.GlobalCodeMethodName + "`0", BindingFlags.DeclaredOnly) ?? // generated wrapper that always returns PhpValue
-                    script.GetMethod(Reflection.ReflectionUtils.GlobalCodeMethodName, BindingFlags.DeclaredOnly);          // if there is no generated wrapper, Main itself returns PhpValue
+                    script.GetMethod(Reflection.ReflectionUtils.GlobalCodeMethodName + "`0") ?? // generated wrapper that always returns PhpValue
+                    script.GetMethod(Reflection.ReflectionUtils.GlobalCodeMethodName);          // if there is no generated wrapper, Main itself returns PhpValue
 
                 Debug.Assert(mainmethod != null);
                 Debug.Assert(mainmethod.ReturnType == typeof(PhpValue));

@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Pchp.Core.Reflection
 {
@@ -151,15 +149,11 @@ namespace Pchp.Core.Reflection
             {
                 if (_lazyCreator == null)
                 {
-                    var ctors = _type.GetConstructors(BindingFlags.DeclaredOnly).Where(c => c.IsPublic && !c.IsStatic).ToArray();
-                    if (ctors.Length != 0)
-                    {
-                        _lazyCreator = Dynamic.BinderHelpers.BindToCreator(_type, ctors);
-                    }
-                    else
-                    {
-                        _lazyCreator = s_inaccessibleCreator;
-                    }
+                    var ctors = _type.GetConstructors(BindingFlags.Instance | BindingFlags.Public);
+                   
+                    _lazyCreator = ctors.Length > 0 
+                        ? Dynamic.BinderHelpers.BindToCreator(_type, ctors) 
+                        : s_inaccessibleCreator;
                 }
             }
 
@@ -177,9 +171,9 @@ namespace Pchp.Core.Reflection
                 {
                     var ctorsList = new List<ConstructorInfo>();
                     bool hasPrivate = false;
-                    foreach (var c in _type.GetConstructors(BindingFlags.DeclaredOnly))
+                    foreach (var c in _type.GetConstructors(BindingFlags.Instance))
                     {
-                        if (!c.IsStatic && !c.IsPhpFieldsOnlyCtor())
+                        if (!c.IsPhpFieldsOnlyCtor())
                         {
                             ctorsList.Add(c);
                             hasPrivate |= c.IsPrivate;
@@ -205,9 +199,9 @@ namespace Pchp.Core.Reflection
                 {
                     var ctorsList = new List<ConstructorInfo>();
                     bool hasProtected = false;
-                    foreach (var c in _type.GetConstructors(BindingFlags.DeclaredOnly))
+                    foreach (var c in _type.GetConstructors(BindingFlags.Instance | BindingFlags.Public))
                     {
-                        if (!c.IsStatic && !c.IsPrivate && !c.IsPhpFieldsOnlyCtor())
+                        if (!c.IsPhpFieldsOnlyCtor())
                         {
                             ctorsList.Add(c);
                             hasProtected |= c.IsFamily;
