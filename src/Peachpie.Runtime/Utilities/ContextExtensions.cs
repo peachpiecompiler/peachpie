@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Reflection;
 
 namespace Pchp.Core.Utilities
 {
@@ -17,7 +12,7 @@ namespace Pchp.Core.Utilities
         /// </summary>
         public static string GetRuntimeInformationalVersion()
         {
-            return typeof(Context).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+            return typeof(Context).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
         }
 
         /// <summary>

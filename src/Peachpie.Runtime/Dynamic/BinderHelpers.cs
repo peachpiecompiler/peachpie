@@ -185,8 +185,8 @@ namespace Pchp.Core.Dynamic
             //
 
             var restrictions = target.Restrictions;
-            var lt = target.Expression.Type.GetTypeInfo();
-            if (!lt.IsValueType && !lt.IsSealed && !typeof(PhpArray).IsAssignableFrom(lt.AsType()) && !typeof(PhpResource).IsAssignableFrom(lt.AsType()))
+            var lt = target.Expression.Type;
+            if (!lt.IsValueType && !lt.IsSealed && !typeof(PhpArray).IsAssignableFrom(lt) && !typeof(PhpResource).IsAssignableFrom(lt))
             {
                 // we need to set the type restriction
                 restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(expr, value.GetType()));
@@ -244,8 +244,8 @@ namespace Pchp.Core.Dynamic
         /// </summary>
         internal static bool IsArgumentUnpacking(Expression arg)
         {
-            var tinfo = arg.Type.GetTypeInfo();
-            return tinfo.IsGenericType && tinfo.GetGenericTypeDefinition() == typeof(UnpackingParam<>);
+            var type = arg.Type;
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(UnpackingParam<>);
         }
 
         public static Expression UnpackArgumentsToArray(MethodBase[] methods, Expression[] arguments)
@@ -350,7 +350,7 @@ namespace Pchp.Core.Dynamic
                 else
                 {
                     // getter // TODO: ensure it is not null
-                    Debug.Assert(!expr.Type.GetTypeInfo().IsValueType);
+                    Debug.Assert(!expr.Type.IsValueType);
                 }
             }
             else if (access.EnsureArray())
@@ -484,7 +484,7 @@ namespace Pchp.Core.Dynamic
                     // Template: Operators.IsSet( value )
                     expr = Expression.Call(Cache.Operators.IsSet_PhpValue, expr);
                 }
-                else if (!expr.Type.GetTypeInfo().IsValueType)
+                else if (!expr.Type.IsValueType)
                 {
                     // Template: value != null
                     expr = Expression.ReferenceNotEqual(expr, Expression.Constant(null, typeof(object)));

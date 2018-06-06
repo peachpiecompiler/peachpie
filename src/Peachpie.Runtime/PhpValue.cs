@@ -459,7 +459,7 @@ namespace Pchp.Core
             if (type == typeof(string)) return this.ToString();
             if (type == typeof(object)) return this.ToClass();
 
-            if (this.Object != null && type.GetTypeInfo().IsAssignableFrom(this.Object.GetType()))
+            if (this.Object != null && type.IsAssignableFrom(this.Object.GetType()))
             {
                 return this.Object;
             }

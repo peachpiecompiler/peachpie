@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Pchp.Core.Reflection
 {
@@ -112,8 +110,7 @@ namespace Pchp.Core.Reflection
 
                 if (_lazyCreatorProtected == null || _lazyCreatorProtected != _lazyCreator) // in case protected creator == public creator, we can skip following checks
                 {
-                    var callerinfo = caller.GetTypeInfo();
-                    if (callerinfo.IsAssignableFrom(_type) || _type.IsAssignableFrom(callerinfo))
+                    if (caller.IsAssignableFrom(_type) || _type.IsAssignableFrom(caller))
                     {
                         // creation including protected|public .ctors
                         return this.Creator_protected;
@@ -375,7 +372,7 @@ namespace Pchp.Core.Reflection
             // invoke GetPhpTypeInfo<TType>() dynamically and cache the result
             if (result == null)
             {
-                if (type.GetTypeInfo().IsGenericTypeDefinition)
+                if (type.IsGenericTypeDefinition)
                 {
                     // generic type definition cannot be used as a type parameter for GetPhpTypeInfo<T>
                     // just instantiate the type info and cache the result

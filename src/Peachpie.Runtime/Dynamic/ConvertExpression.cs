@@ -1,13 +1,8 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Dynamic;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using Pchp.Core.Reflection;
 
 namespace Pchp.Core.Dynamic
@@ -69,16 +64,14 @@ namespace Pchp.Core.Dynamic
                 return Expression.New(Cache.PhpAlias.ctor_PhpValue_int, BindToValue(arg), Expression.Constant(1));
             }
             
-            var target_type = target.GetTypeInfo();
-
             // enum
-            if (target_type.IsEnum)
+            if (target.IsEnum)
             {
                 return Expression.Convert(BindToLong(arg), target);
             }
 
             // 
-            if (target_type.IsValueType == false)
+            if (target.IsValueType == false)
             {
                 return BindAsReferenceType(arg, target);
             }
@@ -289,7 +282,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(PhpArray)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpArray), expr);
             if (source == typeof(PhpAlias)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpAlias), expr);   // PhpValue.Create(PhpAlias)
 
-            if (source.GetTypeInfo().IsValueType)
+            if (source.IsValueType)
             {
                 if (source == typeof(void)) return VoidAsConstant(expr, PhpValue.Void, Cache.Types.PhpValue[0]);
 
@@ -320,7 +313,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(PhpArray)) return Expression.Call(expr, Cache.Operators.PhpArray_ToClass);
             if (source == typeof(PhpNumber)) return Expression.Call(expr, typeof(PhpNumber).GetMethod("ToClass", Cache.Types.Empty));
 
-            if (!source.GetTypeInfo().IsValueType) return expr;
+            if (!source.IsValueType) return expr;
 
             throw new NotImplementedException(source.FullName);
         }
@@ -335,13 +328,11 @@ namespace Pchp.Core.Dynamic
                 return Expression.Call(expr, Cache.Operators.PhpValue_AsObject);
             }
 
-            var tinfo = source.GetTypeInfo();
-
             // <expr>
-            if (!tinfo.IsValueType &&
-                !tinfo.IsSubclassOf(typeof(PhpResource)) &&
-                !tinfo.IsSubclassOf(typeof(IPhpArray)) &&
-                !tinfo.IsSubclassOf(typeof(PhpString))
+            if (!source.IsValueType &&
+                !source.IsSubclassOf(typeof(PhpResource)) &&
+                !source.IsSubclassOf(typeof(IPhpArray)) &&
+                !source.IsSubclassOf(typeof(PhpString))
                 )
             {
                 return expr;
@@ -381,7 +372,7 @@ namespace Pchp.Core.Dynamic
         {
             var source = expr.Type;
 
-            if (typeof(IPhpCallable).GetTypeInfo().IsAssignableFrom(source.GetTypeInfo())) return expr;
+            if (typeof(IPhpCallable).IsAssignableFrom(source)) return expr;
 
             return Expression.Call(BindToValue(expr), Cache.Operators.PhpValue_AsCallable_RuntimeTypeHandle, Expression.Default(typeof(RuntimeTypeHandle)));    // TODO: call context instead of default()
         }
@@ -463,7 +454,7 @@ namespace Pchp.Core.Dynamic
             if (t == typeof(PhpArray)) return BindCostFromPhpArray(arg, target);
 
             // other types
-            if (target.GetTypeInfo().IsAssignableFrom(t.GetTypeInfo())) return Expression.Constant(ConversionCost.Pass);
+            if (target.IsAssignableFrom(t)) return Expression.Constant(ConversionCost.Pass);
 
             //
             throw new NotImplementedException($"costof({t} -> {target})");
@@ -475,15 +466,13 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(PhpValue) ||
                 target == typeof(PhpAlias)) return Expression.Constant(ConversionCost.Pass);
 
-            //
-            var target_type = target.GetTypeInfo();
-            if (!target_type.IsValueType)
+            if (!target.IsValueType)
             {
                 // TODO
             }
 
             //
-            if (target_type.IsEnum)
+            if (target.IsEnum)
             {
                 return Expression.Call(typeof(CostOf).GetMethod("ToInt64", arg.Type), arg);
             }
@@ -494,7 +483,7 @@ namespace Pchp.Core.Dynamic
             }
 
             //
-            if (ReflectionUtils.IsPhpClassType(target_type))
+            if (ReflectionUtils.IsPhpClassType(target))
             {
                 var toclass_T = typeof(CostOf).GetTypeInfo().GetDeclaredMethod("ToClass").MakeGenericMethod(target);
                 return Expression.Call(toclass_T, arg); // CostOf.ToClass<T>(arg)
@@ -557,8 +546,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(PhpValue)) return (ConversionCost.PassCostly);
             if (target == typeof(object)) return ConversionCost.PassCostly;    // TODO: Error when passing to a PHP function
 
-            var tinfo = target.GetTypeInfo();
-            if (tinfo.IsAssignableFrom(typeof(IPhpCallable).GetTypeInfo())) throw new NotImplementedException("IPhpCallable");
+            if (target.IsAssignableFrom(typeof(IPhpCallable))) throw new NotImplementedException("IPhpCallable");
 
             return ConversionCost.Error;
         }
@@ -574,8 +562,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(PhpValue)) return (ConversionCost.PassCostly);
             if (target == typeof(object)) return ConversionCost.PassCostly;    // TODO: Error when passing to a PHP function
 
-            var tinfo = target.GetTypeInfo();
-            if (tinfo.IsAssignableFrom(typeof(IPhpCallable).GetTypeInfo())) throw new NotImplementedException("IPhpCallable");
+            if (target.IsAssignableFrom(typeof(IPhpCallable))) throw new NotImplementedException("IPhpCallable");
 
             return ConversionCost.Error;
         }

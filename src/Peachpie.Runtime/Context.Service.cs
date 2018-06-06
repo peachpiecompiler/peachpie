@@ -72,7 +72,7 @@ namespace Pchp.Core
         {
             // Template: return ServiceCollectionContainerBuilderExtensions.BuildServiceProvider(services);
 
-            var t = typeof(ServiceCollectionContainerBuilderExtensions).GetTypeInfo();
+            var t = typeof(ServiceCollectionContainerBuilderExtensions);
             var BuildServiceProviderMethod = t.GetMethod(nameof(BuildServiceProvider), new Type[] { typeof(IServiceCollection) });
             Debug.Assert(BuildServiceProviderMethod != null);
 
