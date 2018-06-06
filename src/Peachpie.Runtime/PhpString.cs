@@ -255,33 +255,6 @@ namespace Pchp.Core
     [DebuggerNonUserCode]
     public struct PhpString : IPhpConvertible
     {
-        //[StructLayout(LayoutKind.Explicit)]
-        //struct Chunk
-        //{
-        //    [FieldOffset(0)]
-        //    object _obj;
-
-        //    [FieldOffset(0)]
-        //    public string _string;
-
-        //    [FieldOffset(0)]
-        //    public byte[] _bytes;
-
-        //    [FieldOffset(0)]
-        //    public char[] _chars;
-
-        //    [FieldOffset(0)]
-        //    public PhpString _phpstring;
-
-        //    public bool IsString => _obj != null && _obj.GetType() == typeof(string);
-
-        //    public bool IsByteArray => _obj != null && _obj.GetType() == typeof(byte[]);
-
-        //    public bool IsCharArray => _obj != null && _obj.GetType() == typeof(char[]);
-
-        //    public bool IsPhpString => _obj != null && _obj.GetType() == typeof(PhpString);
-        //}
-
         [DebuggerDisplay("{DebugString}")]
         public sealed class Blob : IMutableString
         {
@@ -379,7 +352,7 @@ namespace Pchp.Core
             #endregion
 
             /// <summary>
-            /// Gets value indicating the string contains <see cref="byte"/> instead of unicode <see cref="string"/>.
+            /// Gets value indicating the string contains <see cref="byte"/> in addition to unicode <see cref="char"/>.
             /// </summary>
             public bool ContainsBinaryData => (_flags & Flags.ContainsBinary) != 0;
 
@@ -497,7 +470,7 @@ namespace Pchp.Core
                 AssertChunkObject(chunk);
                 if (chunk.GetType() == typeof(string)) { }  // immutable
                 else if (chunk.GetType() == typeof(Blob)) chunk = ((Blob)chunk).AddRef();
-                else chunk = ((Array)chunk).Clone();   // byte[], char[]
+                else chunk = ((Array)chunk).Clone();   // byte[], char[], BlobChar[]
             }
 
             #endregion
@@ -512,7 +485,9 @@ namespace Pchp.Core
                 get
                 {
                     if (_length < 0)
+                    {
                         _length = GetLength();
+                    }
 
                     return _length;
                 }
@@ -551,11 +526,11 @@ namespace Pchp.Core
                 }
             }
 
-            static int ChunkLength(object[] chunks, int count)
+            static int ChunkLength(object[] chunks, int chunksCount)
             {
                 int length = 0;
 
-                for (int i = 0; i < count; i++)
+                for (int i = 0; i < chunksCount; i++)
                 {
                     length += ChunkLength(chunks[i]);
                 }
@@ -605,6 +580,24 @@ namespace Pchp.Core
                 {
                     AddChunk(value);
                     _flags |= Flags.ContainsBinary | Flags.ContainsMutables;
+                }
+            }
+
+            public void Add(char[] value)
+            {
+                if (value != null && value.Length != 0)
+                {
+                    AddChunk(value);
+                    _flags |= Flags.ContainsMutables;
+                }
+            }
+
+            internal void Add(BlobChar[] value)
+            {
+                if (value != null && value.Length != 0)
+                {
+                    AddChunk(value);
+                    _flags |= Flags.ContainsMutables;
                 }
             }
 
@@ -686,12 +679,10 @@ namespace Pchp.Core
             void AddChunkToArray(object[] chunks, object newchunk)
             {
                 Debug.Assert(chunks != null);
-                Debug.Assert(_chunksCount > 0);
 
                 if (_chunksCount >= chunks.Length)
                 {
-                    Debug.Assert(chunks.Length != 0);
-                    var newarr = new object[chunks.Length * 2];
+                    var newarr = new object[(chunks.Length + 1) * 2];
                     Array.Copy(chunks, newarr, chunks.Length);
                     _chunks = chunks = newarr;
 
@@ -750,6 +741,116 @@ namespace Pchp.Core
                 for (int i = 0; i < count; i++)
                 {
                     OutputChunk(ctx, chunks[i]);
+                }
+            }
+
+            #endregion
+
+            #region Substring
+
+            /// <summary>
+            /// Adds portion of this instance into <paramref name="target"/>
+            /// </summary>
+            /// <param name="target">Target blog to copy substring to.</param>
+            /// <param name="start">Index of first character to be copied.</param>
+            /// <param name="count">Count of charactyers to be copied.</param>
+            internal void Substring(Blob target, int start, ref int count)
+            {
+                Debug.Assert(target != null);
+
+                var chunks = _chunks;
+                if (chunks.GetType() == typeof(object[]))
+                {
+                    Debug.Assert(IsArrayOfChunks);
+
+                    // TODO: cache length for current chunks version
+                    ChunkSubstring(target, start, ref count, (object[])chunks, _chunksCount);
+                }
+                else
+                {
+                    ChunkSubstring(target, start, ref count, chunks, out int _);
+                }
+            }
+
+            static void ChunkSubstring(Blob target, int start, ref int count, object chunk, out int chunkLength)
+            {
+                Debug.Assert(start >= 0);
+                Debug.Assert(count > 0);
+                AssertChunkObject(chunk);
+
+                switch (chunk)
+                {
+                    case string str:
+                        chunkLength = str.Length;
+
+                        if (start < str.Length)
+                        {
+                            int append = Math.Min(str.Length - start, count);
+                            target.AddChunk(str.Substring(start, append));
+                            count -= append;
+                        }
+
+                        break;
+
+                    case byte[] barr:
+                        chunkLength = barr.Length;
+
+                        if (start < barr.Length)
+                        {
+                            int append = Math.Min(barr.Length - start, count);
+                            var newarr = new byte[append];
+                            Array.Copy(barr, start, newarr, 0, append);
+                            target.Add(newarr); // flags must be set
+                            count -= append;
+                        }
+
+                        break;
+
+                    case Blob b:
+                        chunkLength = b.Length;
+                        b.Substring(target, start, ref count);
+                        break;
+
+                    case char[] carr:
+                        chunkLength = carr.Length;
+
+                        if (start < carr.Length)
+                        {
+                            int append = Math.Min(carr.Length - start, count);
+                            var newarr = new char[append];
+                            Array.Copy(carr, start, newarr, 0, append);
+                            target.Add(newarr); // flags must be set
+                            count -= append;
+                        }
+                        break;
+
+                    case BlobChar[] barr:
+                        chunkLength = barr.Length;
+
+                        if (start < barr.Length)
+                        {
+                            int append = Math.Min(barr.Length - start, count);
+                            var newarr = new BlobChar[append];
+                            Array.Copy(barr, start, newarr, 0, append);
+                            target.Add(newarr); // flags must be set
+                            count -= append;
+                        }
+                        break;
+
+                    default:
+                        throw new ArgumentException(chunk.GetType().ToString());
+                }
+            }
+
+            static void ChunkSubstring(Blob target, int start, ref int count, object[] chunks, int chunksCount)
+            {
+                Debug.Assert(start >= 0);
+                Debug.Assert(chunksCount <= chunks.Length);
+
+                for (int i = 0; i < chunksCount && count > 0; i++)
+                {
+                    ChunkSubstring(target, start, ref count, chunks[i], out int chunkLength);
+                    start = Math.Max(start - chunkLength, 0);
                 }
             }
 
@@ -1174,12 +1275,12 @@ namespace Pchp.Core
         /// Content of the string, may be shared.
         /// Cannot be <c>null</c>.
         /// </summary>
-        Blob _blob; // TODO: allow union of "null|string|byte[]|Blob"
+        Blob _blob; // TODO: allow union of "null|string|Blob"
 
         /// <summary>
         /// Gets the count of characters and binary characters.
         /// </summary>
-        public int Length => _blob.Length;
+        public int Length => _blob != null ? _blob.Length : 0;
 
         /// <summary>
         /// Gets value indicating the string contains <see cref="byte"/> instead of unicode <see cref="string"/>.
@@ -1199,7 +1300,7 @@ namespace Pchp.Core
         /// <summary>
         /// Empty immutable string.
         /// </summary>
-        public static PhpString Empty => default(PhpString);
+        public static PhpString Empty => default(PhpString); // TODO: should be Blob.Empty.AddRef
 
         #region Construction, DeepCopy
 
@@ -1295,12 +1396,52 @@ namespace Pchp.Core
 
         #endregion
 
+        #region Methods
+
+        /// <summary>
+        /// Creates copy of this string.
+        /// Internally only increases <c>refcount</c>.
+        /// </summary>
         public object Clone() => DeepCopy();
 
         /// <summary>
         /// Operator that checks the string is default/uninitialized not containing any value.
         /// </summary>
         public static bool IsNull(PhpString value) => value.IsDefault;
+
+        /// <summary>
+        /// Gets substring of this instance.
+        /// The operation safely maintains single byte and unicode characters, and reuses existing underlaying chunks of text.
+        /// </summary>
+        public PhpString Substring(int startIndex) => Substring(startIndex, int.MaxValue);
+
+        /// <summary>
+        /// Gets substring of this instance.
+        /// The operation safely maintains single byte and unicode characters, and reuses existing underlaying chunks of text.
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">The start index is out of range of the string dimensions.</exception>
+        public PhpString Substring(int startIndex, int length)
+        {
+            if (startIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(startIndex));
+            }
+
+            if (ReferenceEquals(_blob, null) || length <= 0)
+            {
+                return default(PhpString); // FALSE
+            }
+
+            //
+
+            var blob = new Blob();
+
+            _blob.Substring(blob, startIndex, ref length);
+
+            return new PhpString(blob);
+        }
+
+        #endregion
 
         /// <summary>
         /// Gets instance of blob that is not shared.
