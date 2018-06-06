@@ -41,7 +41,7 @@ namespace Pchp.Core.Reflection
 
         internal TypeFields(Type tinfo)
         {
-            _fields = tinfo.GetFields(BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(_IsAllowedField).ToDictionary(_FieldName, StringComparer.Ordinal);
+            _fields = tinfo.GetFields().Where(_IsAllowedField).ToDictionary(_FieldName, StringComparer.Ordinal);
             if (_fields.Count == 0)
                 _fields = null;
 
@@ -56,10 +56,11 @@ namespace Pchp.Core.Reflection
                     staticscontainer = staticscontainer.MakeGenericType(tinfo.GenericTypeArguments);
                 }
 
-                _staticsFields = staticscontainer.GetFields(BindingFlags.Instance | BindingFlags.DeclaredOnly).ToDictionary(_FieldName, StringComparer.Ordinal);
+                _staticsFields = staticscontainer.GetFields().ToDictionary(_FieldName, StringComparer.Ordinal);
             }
 
-            _properties = tinfo.GetProperties(BindingFlags.Instance | BindingFlags.DeclaredOnly).Where(_IsAllowedProperty).ToDictionary(_PropertyName, StringComparer.Ordinal);
+            _properties = tinfo.GetProperties().Where(_IsAllowedProperty).ToDictionary(_PropertyName, StringComparer.Ordinal);
+
             if (_properties.Count == 0)
                 _properties = null;
         }
