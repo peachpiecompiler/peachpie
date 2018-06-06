@@ -1240,10 +1240,14 @@ namespace Pchp.Library
         /// <summary>
         /// See <see cref="substr_replace(PhpValue, PhpValue, PhpValue, PhpValue)"/>.
         /// </summary>
-        public static string substr_replace(string subject, string replacement, int offset)
-        {
-            return SubstringReplace(subject, replacement, offset, int.MaxValue);
-        }
+        public static string substr_replace(string subject, string replacement, int offset, int length = int.MaxValue)
+            => SubstringReplace(subject, replacement, offset, length);
+
+        /// <summary>
+        /// See <see cref="substr_replace(PhpValue, PhpValue, PhpValue, PhpValue)"/>.
+        /// </summary>
+        public static PhpString substr_replace(PhpString subject, PhpString replacement, int offset, int length = int.MaxValue)
+            =>  SubstringReplace(subject, replacement, offset, length);
 
         /// <summary>
         /// Replaces a portion of a string or multiple strings with another string.
@@ -1266,6 +1270,8 @@ namespace Pchp.Library
         /// </remarks>
         public static PhpValue substr_replace(Context ctx, PhpValue subject, PhpValue replacement, PhpValue offset, PhpValue length)
         {
+            // TODO: handle non unicode strings (PhpString)
+
             IList<PhpValue> replacement_list, offset_list, length_list;
             PhpArray subject_array;
             string[] replacements = null;
@@ -1340,6 +1346,9 @@ namespace Pchp.Library
                         if (replacement_list != null) str_replacement = (i < replacements.Length) ? replacements[i] : string.Empty;
 
                         result_array.SetItemValue(subjects.CurrentKey, (PhpValue)SubstringReplace(subject_string, str_replacement, int_offset, int_length));
+
+                        //
+                        i++;
                     }
                 }
 
@@ -1363,7 +1372,24 @@ namespace Pchp.Library
         static string SubstringReplace(string subject, string replacement, int offset, int length)
         {
             PhpMath.AbsolutizeRange(ref offset, ref length, subject.Length);
-            return new StringBuilder(subject).Remove(offset, length).Insert(offset, replacement).ToString();
+            return string.Concat(subject.Remove(offset), replacement, subject.Substring(offset + length)); // note: faster than StringBuilder
+        }
+
+        /// <summary>
+        /// Performs substring replacements on subject.
+        /// </summary>
+        static PhpString SubstringReplace(PhpString subject, PhpString replacement, int offset, int length)
+        {
+            PhpMath.AbsolutizeRange(ref offset, ref length, subject.Length);
+
+            //
+            var result = new PhpString.Blob();
+            subject.CopyTo(result, 0, offset);
+            result.Append(replacement);
+            subject.CopyTo(result, offset + length, int.MaxValue);
+
+            //
+            return new PhpString(result);
         }
 
         /// <summary>

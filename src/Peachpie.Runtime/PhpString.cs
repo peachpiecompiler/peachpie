@@ -1419,14 +1419,9 @@ namespace Pchp.Core
         /// Gets substring of this instance.
         /// The operation safely maintains single byte and unicode characters, and reuses existing underlaying chunks of text.
         /// </summary>
-        /// <exception cref="ArgumentOutOfRangeException">The start index is out of range of the string dimensions.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The start index is less than zero.</exception>
         public PhpString Substring(int startIndex, int length)
         {
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex));
-            }
-
             if (ReferenceEquals(_blob, null) || length <= 0)
             {
                 return default(PhpString); // FALSE
@@ -1436,9 +1431,26 @@ namespace Pchp.Core
 
             var blob = new Blob();
 
-            _blob.Substring(blob, startIndex, ref length);
+            CopyTo(blob, startIndex, length);
 
             return new PhpString(blob);
+        }
+
+        /// <summary>
+        /// Copies portion of this instance to the target string.
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">The start index is less than zero.</exception>
+        public void CopyTo(Blob target, int startIndex, int length)
+        {
+            if (startIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(startIndex));
+            }
+
+            if (!ReferenceEquals(_blob, null) && length > 0 && startIndex < this.Length)
+            {
+                _blob.Substring(target, startIndex, ref length);
+            }
         }
 
         #endregion
