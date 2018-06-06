@@ -113,25 +113,23 @@ namespace Pchp.Core
             Debug.Assert(tscript != null);
             Debug.Assert(tscript.Name == ScriptInfo.ScriptTypeName);
 
-            var tscriptinfo = tscript.GetTypeInfo();
-
-            tscriptinfo.GetDeclaredMethod("BuiltinFunctions")
+            tscript.GetMethod("BuiltinFunctions", BindingFlags.DeclaredOnly)
                 .Invoke(null, new object[] { new Action<string, RuntimeMethodHandle>(RoutinesTable.DeclareAppRoutine) });
 
-            tscriptinfo.GetDeclaredMethod("BuiltinTypes")
+            tscript.GetMethod("BuiltinTypes", BindingFlags.DeclaredOnly)
                 .Invoke(null, new object[] { new Action<PhpTypeInfo>(TypesTable.DeclareAppType) });
 
-            tscriptinfo.GetDeclaredMethod("BuiltinConstants")
+            tscript.GetMethod("BuiltinConstants", BindingFlags.DeclaredOnly)
                 .Invoke(null, new object[] { new AppConstantsComposition() } );
 
-            tscriptinfo.GetDeclaredMethod("EnumerateScripts")
+            tscript.GetMethod("EnumerateScripts", BindingFlags.DeclaredOnly)
                 .Invoke(null, new object[] { new Action<string, RuntimeTypeHandle>(ScriptsMap.DeclareScript) });
 
             //
-            ScriptAdded(tscriptinfo);
+            ScriptAdded(tscript);
         }
 
-        static void ScriptAdded(TypeInfo tscript)
+        static void ScriptAdded(Type tscript)
         {
             Debug.Assert(tscript != null);
 

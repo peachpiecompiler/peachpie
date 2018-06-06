@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis;
 using Pchp.Core;
@@ -89,11 +88,11 @@ namespace Peachpie.Library.Scripting
 
             foreach (var t in ass.GetTypes())
             {
-                var attr = t.GetTypeInfo().GetCustomAttribute<ScriptAttribute>(false);
+                var attr = t.GetCustomAttribute<ScriptAttribute>(false);
                 if (attr != null)
                 {
                     _script = t;
-                    _entryPoint = new Context.ScriptInfo(-1, attr.Path, t.GetTypeInfo()).Evaluate;
+                    _entryPoint = new Context.ScriptInfo(-1, attr.Path, t).Evaluate;
                     break;
                 }
             }
@@ -289,7 +288,7 @@ namespace Peachpie.Library.Scripting
             }
             else
             {
-                return _script.GetTypeInfo().DeclaredMethods.Where(m => m.IsStatic && m.Name == name);
+                return _script.GetMethods(BindingFlags.DeclaredOnly).Where(m => m.IsStatic && m.Name == name);
             }
         }
 

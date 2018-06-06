@@ -27,16 +27,16 @@ namespace Pchp.Core.Reflection
         /// Copies fields from <paramref name="source"/> object to <paramref name="target"/> object.
         /// Types of both objects must be the same.
         /// </summary>
-        /// <param name="tinfo">Type of both objects.</param>
+        /// <param name="type">Type of both objects.</param>
         /// <param name="source">Source instance.</param>
         /// <param name="target">Target instance.</param>
-        public static void MemberwiseClone(PhpTypeInfo tinfo, object source, object target)
+        public static void MemberwiseClone(PhpTypeInfo type, object source, object target)
         {
-            Debug.Assert(tinfo != null);
+            Debug.Assert(type != null);
             Debug.Assert(source != null);
             Debug.Assert(target != null);
             Debug.Assert(source.GetType() == target.GetType());
-            Debug.Assert(source.GetType() == tinfo.Type.AsType());
+            Debug.Assert(source.GetType() == type.Type);
 
             // copy CLR fields, skipping runtime fields
             foreach (var fldvalue in TypeMembersUtils.EnumerateInstanceFields(source, (f, d) => f, null, null, true))
@@ -45,10 +45,10 @@ namespace Pchp.Core.Reflection
             }
 
             // fast copy of runtime fields
-            var runtime_fields = tinfo.GetRuntimeFields(source);
+            var runtime_fields = type.GetRuntimeFields(source);
             if (runtime_fields != null && runtime_fields.Count != 0)
             {
-                tinfo.RuntimeFieldsHolder.SetValue(target, runtime_fields.DeepCopy());
+                type.RuntimeFieldsHolder.SetValue(target, runtime_fields.DeepCopy());
             }
         }
 

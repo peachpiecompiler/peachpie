@@ -55,7 +55,7 @@ namespace Pchp.Core.Reflection
                 .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy);
 
             // skip members of {System.Object} if we are in a PHP type
-            if (type.Type.AsType() != typeof(object))
+            if (type.Type != typeof(object))
             {
                 methods = methods.Where(s_notObjectMember);
             }

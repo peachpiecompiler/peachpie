@@ -73,11 +73,11 @@ namespace Pchp.Core
             /// </summary>
             readonly MainDelegate MainMethod;
 
-            static MainDelegate CreateMain(TypeInfo script)
+            static MainDelegate CreateMain(Type script)
             {
                 var mainmethod =
-                    script.GetDeclaredMethod(Reflection.ReflectionUtils.GlobalCodeMethodName + "`0") ?? // generated wrapper that always returns PhpValue
-                    script.GetDeclaredMethod(Reflection.ReflectionUtils.GlobalCodeMethodName);          // if there is no generated wrapper, Main itself returns PhpValue
+                    script.GetMethod(Reflection.ReflectionUtils.GlobalCodeMethodName + "`0", BindingFlags.DeclaredOnly) ?? // generated wrapper that always returns PhpValue
+                    script.GetMethod(Reflection.ReflectionUtils.GlobalCodeMethodName, BindingFlags.DeclaredOnly);          // if there is no generated wrapper, Main itself returns PhpValue
 
                 Debug.Assert(mainmethod != null);
                 Debug.Assert(mainmethod.ReturnType == typeof(PhpValue));
@@ -102,7 +102,7 @@ namespace Pchp.Core
                 throw new NotSupportedException();
             }
 
-            public ScriptInfo(int index, string path, TypeInfo script)
+            public ScriptInfo(int index, string path, Type script)
                 : this(index, path, CreateMain(script))
             {
             }
@@ -171,7 +171,7 @@ namespace Pchp.Core
 
             internal static void DeclareScript(string path, RuntimeTypeHandle scriptHandle)
             {
-                DeclareScript(path, Type.GetTypeFromHandle(scriptHandle).GetTypeInfo());
+                DeclareScript(path, Type.GetTypeFromHandle(scriptHandle));
             }
 
             /// <summary>
@@ -200,7 +200,7 @@ namespace Pchp.Core
                 return index;
             }
 
-            static int DeclareScript(string path, TypeInfo script)
+            static int DeclareScript(string path, Type script)
             {
                 int index = EnsureScriptIndex(ref path);
                 DeclareScript(index, new ScriptInfo(index, path, script));
@@ -254,13 +254,13 @@ namespace Pchp.Core
             {
                 if (script_id == 0)
                 {
-                    script_id = GetScriptIndex(typeof(TScript).GetTypeInfo()) + 1;
+                    script_id = GetScriptIndex(typeof(TScript)) + 1;
                 }
 
                 return script_id;
             }
 
-            static int GetScriptIndex(TypeInfo script)
+            static int GetScriptIndex(Type script)
             {
                 var attr = script.GetCustomAttribute<ScriptAttribute>();
                 Debug.Assert(attr != null);

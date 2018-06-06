@@ -95,7 +95,7 @@ namespace Pchp.Library
 
                 // try to find a suitable property
                 var property = tinfo.GetDeclaredProperty(property_name);
-                if (property != null && !property.IsStatic && property.IsVisible(declarer.Type.AsType()))
+                if (property != null && !property.IsStatic && property.IsVisible(declarer.Type))
                 {
                     if (property.IsPrivate && declarer != property.ContainingType)
                     {
@@ -503,7 +503,7 @@ namespace Pchp.Library
 
                         // obtain the property desc and decorate the prop name according to its visibility and declaring class
                         var property = tinfo.GetDeclaredProperty(property_name);
-                        if (property != null && !property.IsStatic && property.IsVisible(declarer.Type.AsType()))
+                        if (property != null && !property.IsStatic && property.IsVisible(declarer.Type))
                         {
                             var prop_declarer = property.ContainingType;
 

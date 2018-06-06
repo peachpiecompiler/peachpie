@@ -254,7 +254,7 @@ namespace Peachpie.DiagnosticTests
                 typeof(ScriptingProvider),      // Peachpie.Library.Scripting
             };
 
-            var list = types.Distinct().Select(ass => ass.GetTypeInfo().Assembly).ToList();
+            var list = types.Distinct().Select(ass => ass.Assembly).ToList();
             var set = new HashSet<Assembly>(list);
 
             for (int i = 0; i < list.Count; i++)

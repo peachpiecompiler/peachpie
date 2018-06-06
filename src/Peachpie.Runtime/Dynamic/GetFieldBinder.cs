@@ -54,7 +54,7 @@ namespace Pchp.Core.Dynamic
                 }
 
                 // instance := (T)instance
-                bound.TargetInstance = Expression.Convert(bound.TargetInstance, bound.TargetType.Type.AsType());
+                bound.TargetInstance = Expression.Convert(bound.TargetInstance, bound.TargetType.Type);
             }
 
             Debug.Assert(IsClassConst ? (bound.TargetInstance == null) : true);

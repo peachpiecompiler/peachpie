@@ -1,13 +1,10 @@
-﻿using Pchp.Core.Dynamic;
-using Pchp.Core.Utilities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+using Pchp.Core.Dynamic;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Core.Reflection
 {
@@ -42,27 +39,27 @@ namespace Pchp.Core.Reflection
 
         #region Initialization
 
-        internal TypeFields(TypeInfo tinfo)
+        internal TypeFields(Type tinfo)
         {
-            _fields = tinfo.DeclaredFields.Where(_IsAllowedField).ToDictionary(_FieldName, StringComparer.Ordinal);
+            _fields = tinfo.GetFields(BindingFlags.DeclaredOnly).Where(_IsAllowedField).ToDictionary(_FieldName, StringComparer.Ordinal);
             if (_fields.Count == 0)
                 _fields = null;
 
-            var staticscontainer = tinfo.GetDeclaredNestedType("_statics");
+            var staticscontainer = tinfo.GetNestedType("_statics", BindingFlags.DeclaredOnly);
             if (staticscontainer != null)
             {
                 if (staticscontainer.IsGenericTypeDefinition)
                 {
                     // _statics is always generic type definition (not constructed) in case enclosing type is generic.
                     // Construct the type using enclosing class (trait) generic arguments (TSelf):
-                    Debug.Assert(tinfo.GenericTypeArguments.Length == staticscontainer.GenericTypeParameters.Length);   // <!TSelf>
+                    Debug.Assert(tinfo.GenericTypeArguments.Length == staticscontainer.GetGenericArguments().Length);   // <!TSelf>
                     staticscontainer = staticscontainer.MakeGenericType(tinfo.GenericTypeArguments).GetTypeInfo();
                 }
 
-                _staticsFields = staticscontainer.DeclaredFields.ToDictionary(_FieldName, StringComparer.Ordinal);
+                _staticsFields = staticscontainer.GetFields(BindingFlags.DeclaredOnly).ToDictionary(_FieldName, StringComparer.Ordinal);
             }
 
-            _properties = tinfo.DeclaredProperties.Where(_IsAllowedProperty).ToDictionary(_PropertyName, StringComparer.Ordinal);
+            _properties = tinfo.GetProperties(BindingFlags.DeclaredOnly).Where(_IsAllowedProperty).ToDictionary(_PropertyName, StringComparer.Ordinal);
             if (_properties.Count == 0)
                 _properties = null;
         }

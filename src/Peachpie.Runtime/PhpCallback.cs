@@ -172,7 +172,7 @@ namespace Pchp.Core
             {
                 var tinfo = ResolveType(ctx);
 
-                if (@static != null && tinfo != null && @static.Type.IsSubclassOf(tinfo.Type.AsType()))
+                if (@static != null && tinfo != null && @static.Type.IsSubclassOf(tinfo.Type))
                 {
                     tinfo = @static;
                 }
@@ -271,7 +271,7 @@ namespace Pchp.Core
 
                 //
 
-                if (@static != null && tinfo != null && target == null && @static.Type.IsSubclassOf(tinfo.Type.AsType()))
+                if (@static != null && tinfo != null && target == null && @static.Type.IsSubclassOf(tinfo.Type))
                 {
                     tinfo = @static;
                 }

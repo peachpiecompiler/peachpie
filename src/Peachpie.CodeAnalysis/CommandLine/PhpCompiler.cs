@@ -150,7 +150,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             consoleOutput.WriteLine(PhpResources.IDS_Logo, GetToolName(), GetAssemblyFileVersion());
         }
 
-        internal new string GetAssemblyFileVersion() => typeof(PhpCompiler).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+        internal new string GetAssemblyFileVersion() => typeof(PhpCompiler).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 
         protected override void CompilerSpecificSqm(IVsSqmMulti sqm, uint sqmSession)
         {

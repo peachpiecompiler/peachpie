@@ -59,8 +59,8 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// CLR type declaration.
         /// </summary>
-        public TypeInfo Type => _type;
-        readonly TypeInfo _type;
+        public Type Type => _type;
+        readonly Type _type;
 
         /// <summary>
         /// Gets <see cref="RuntimeTypeHandle"/> of corresponding type information.
@@ -104,7 +104,7 @@ namespace Pchp.Core.Reflection
         {
             if (caller != null)
             {
-                if (caller == _type.AsType())
+                if (caller == _type)
                 {
                     // creation including private|protected|public .ctors
                     return this.Creator_private;
@@ -112,8 +112,7 @@ namespace Pchp.Core.Reflection
 
                 if (_lazyCreatorProtected == null || _lazyCreatorProtected != _lazyCreator) // in case protected creator == public creator, we can skip following checks
                 {
-                    var callerinfo = caller.GetTypeInfo();
-                    if (callerinfo.IsAssignableFrom(_type) || _type.IsAssignableFrom(callerinfo))
+                    if (caller.IsAssignableFrom(_type) || _type.IsAssignableFrom(caller))
                     {
                         // creation including protected|public .ctors
                         return this.Creator_protected;
@@ -152,10 +151,10 @@ namespace Pchp.Core.Reflection
             {
                 if (_lazyCreator == null)
                 {
-                    var ctors = _type.DeclaredConstructors.Where(c => c.IsPublic && !c.IsStatic).ToArray();
+                    var ctors = _type.GetConstructors(BindingFlags.DeclaredOnly).Where(c => c.IsPublic && !c.IsStatic).ToArray();
                     if (ctors.Length != 0)
                     {
-                        _lazyCreator = Dynamic.BinderHelpers.BindToCreator(_type.AsType(), ctors);
+                        _lazyCreator = Dynamic.BinderHelpers.BindToCreator(_type, ctors);
                     }
                     else
                     {
@@ -178,7 +177,7 @@ namespace Pchp.Core.Reflection
                 {
                     var ctorsList = new List<ConstructorInfo>();
                     bool hasPrivate = false;
-                    foreach (var c in _type.DeclaredConstructors)
+                    foreach (var c in _type.GetConstructors(BindingFlags.DeclaredOnly))
                     {
                         if (!c.IsStatic && !c.IsPhpFieldsOnlyCtor())
                         {
@@ -187,7 +186,7 @@ namespace Pchp.Core.Reflection
                         }
                     }
                     _lazyCreatorPrivate = hasPrivate
-                        ? Dynamic.BinderHelpers.BindToCreator(_type.AsType(), ctorsList.ToArray())
+                        ? Dynamic.BinderHelpers.BindToCreator(_type, ctorsList.ToArray())
                         : this.Creator_protected;
                 }
             }
@@ -206,7 +205,7 @@ namespace Pchp.Core.Reflection
                 {
                     var ctorsList = new List<ConstructorInfo>();
                     bool hasProtected = false;
-                    foreach (var c in _type.DeclaredConstructors)
+                    foreach (var c in _type.GetConstructors(BindingFlags.DeclaredOnly))
                     {
                         if (!c.IsStatic && !c.IsPrivate && !c.IsPhpFieldsOnlyCtor())
                         {
@@ -215,7 +214,7 @@ namespace Pchp.Core.Reflection
                         }
                     }
                     _lazyCreatorProtected = hasProtected
-                        ? Dynamic.BinderHelpers.BindToCreator(_type.AsType(), ctorsList.ToArray())
+                        ? Dynamic.BinderHelpers.BindToCreator(_type, ctorsList.ToArray())
                         : this.Creator;
                 }
             }
@@ -223,7 +222,7 @@ namespace Pchp.Core.Reflection
             return _lazyCreatorProtected;
         }
 
-        internal PhpTypeInfo(TypeInfo t)
+        internal PhpTypeInfo(Type t)
         {
             Debug.Assert(t != null);
             _type = t;
@@ -234,28 +233,23 @@ namespace Pchp.Core.Reflection
             // register type in extension tables
             ExtensionsAppContext.ExtensionsTable.AddType(this);
         }
-
-        internal PhpTypeInfo(Type t)
-            :this(t.GetTypeInfo())
-        {   
-        }
-
+        
         /// <summary>
         /// Resolves PHP-like type name.
         /// </summary>
-        static string ResolvePhpTypeName(TypeInfo tinfo, PhpTypeAttribute attr)
+        static string ResolvePhpTypeName(Type type, PhpTypeAttribute attr)
         {
             string name;
 
             if (attr != null && (name = attr.ExplicitTypeName) != null)
             {
                 // explicitly specified type name
-                name = name.Replace(PhpTypeAttribute.InheritName, tinfo.Name);
+                name = name.Replace(PhpTypeAttribute.InheritName, type.Name);
             }
             else
             {
                 // CLR type
-                name = tinfo.FullName       // full PHP type name instead of CLR type name
+                name = type.FullName       // full PHP type name instead of CLR type name
                    .Replace('.', '\\')      // namespace separator
                    .Replace('+', '\\');     // nested type separator
 
@@ -315,7 +309,7 @@ namespace Pchp.Core.Reflection
             {
                 if ((_flags & Flags.RuntimeFieldsHolderPopulated) == 0)
                 {
-                    _runtimeFieldsHolder = Dynamic.BinderHelpers.LookupRuntimeFields(_type.AsType());
+                    _runtimeFieldsHolder = Dynamic.BinderHelpers.LookupRuntimeFields(_type);
                     _flags |= Flags.RuntimeFieldsHolderPopulated;
                 }
                 return _runtimeFieldsHolder;
@@ -360,7 +354,7 @@ namespace Pchp.Core.Reflection
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             PhpTypeInfo result = null;
@@ -375,7 +369,7 @@ namespace Pchp.Core.Reflection
             // invoke GetPhpTypeInfo<TType>() dynamically and cache the result
             if (result == null)
             {
-                if (type.GetTypeInfo().IsGenericTypeDefinition)
+                if (type.IsGenericTypeDefinition)
                 {
                     // generic type definition cannot be used as a type parameter for GetPhpTypeInfo<T>
                     // just instantiate the type info and cache the result
@@ -420,11 +414,6 @@ namespace Pchp.Core.Reflection
 
             return result ?? GetPhpTypeInfo(Type.GetTypeFromHandle(handle));
         }
-
-        /// <summary>
-        /// Gets <see cref="PhpTypeInfo"/> of given <paramref name="typeInfo"/>.
-        /// </summary>
-        public static PhpTypeInfo GetPhpTypeInfo(this TypeInfo typeInfo) => typeInfo.AsType().GetPhpTypeInfo();
 
         /// <summary>
         /// Gets <see cref="PhpTypeInfo"/> of given object.

@@ -74,13 +74,12 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets value indicating the given type is a type of a class instance excluding builtin PHP value types.
         /// </summary>
-        public static bool IsPhpClassType(TypeInfo tinfo)
+        public static bool IsPhpClassType(Type type)
         {
-            Debug.Assert(tinfo != null);
-            Debug.Assert(tinfo.AsType() != typeof(PhpAlias));
+            Debug.Assert(type != null);
+            Debug.Assert(type != typeof(PhpAlias));
 
-            var t = tinfo.AsType();
-            return !tinfo.IsValueType && t != typeof(PhpArray) && t != typeof(string) && t != typeof(IPhpCallable);
+            return !type.IsValueType && type != typeof(PhpArray) && type != typeof(string) && type != typeof(IPhpCallable);
         }
 
         readonly static HashSet<Type> s_hiddenTypes = new HashSet<Type>()

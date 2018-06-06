@@ -1,13 +1,9 @@
-﻿using Pchp.Core;
-using Pchp.Core.Reflection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
-using Pchp.Library.Resources;
-using Pchp.Library.Reflection;
+﻿using System;
 using System.Diagnostics;
+using System.Reflection;
+using Pchp.Core;
+using Pchp.Core.Reflection;
+using Pchp.Library.Resources;
 
 namespace Pchp.Library
 {
@@ -224,7 +220,7 @@ namespace Pchp.Library
             var ctype = ctx.GetDeclaredType(class_name, false);
 
             // check is_a
-            return tvalue != null && ctype != null && tvalue.Type.IsSubclassOf(ctype.Type.AsType());
+            return tvalue != null && ctype != null && tvalue.Type.IsSubclassOf(ctype.Type);
         }
 
         /// <summary>
@@ -483,7 +479,7 @@ namespace Pchp.Library
             if (tinfo != null)
             {
                 result = new PhpArray();
-                foreach (var iface in tinfo.Type.ImplementedInterfaces)
+                foreach (var iface in tinfo.Type.GetInterfaces())
                 {
                     if (!iface.IsHiddenType())
                     {

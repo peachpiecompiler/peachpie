@@ -198,12 +198,12 @@ namespace Pchp.Core
             if (ReferenceEquals(x, y)) return 0;
 
             // check for different types
-            var type_x = x.GetType().GetTypeInfo();
-            var type_y = y.GetType().GetTypeInfo();
+            var type_x = x.GetType();
+            var type_y = y.GetType();
             if (type_x != type_y)
             {
-                if (type_x.IsSubclassOf(type_y.AsType())) return -1;
-                if (type_y.IsSubclassOf(type_x.AsType())) return 1;
+                if (type_x.IsSubclassOf(type_y)) return -1;
+                if (type_y.IsSubclassOf(type_x)) return 1;
 
                 incomparable = true;
                 return 1; // they really are incomparable
