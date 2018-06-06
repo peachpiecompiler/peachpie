@@ -1,9 +1,5 @@
-﻿using Pchp.Core;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
+﻿using System;
+using Pchp.Core;
 
 namespace Pchp.Library
 {
@@ -29,7 +25,7 @@ namespace Pchp.Library
                 ctx.Echo($"<{tag}");
                 if (attributes != null)
                 {
-                    foreach (var prop in attributes.GetType().GetTypeInfo().GetProperties())
+                    foreach (var prop in attributes.GetType().GetProperties())
                     {
                         ctx.Echo($" {prop.Name}");
                         string value = prop.GetValue(attributes)?.ToString();

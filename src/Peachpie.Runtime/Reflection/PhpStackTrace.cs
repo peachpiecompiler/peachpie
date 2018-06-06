@@ -144,7 +144,7 @@ namespace Pchp.Core.Reflection
             }
 
             // <Script> type
-            var tinfo = method.DeclaringType.GetTypeInfo();
+            var tinfo = method.DeclaringType;
             if (tinfo.Name == "<Script>")
             {
                 return false;
@@ -267,7 +267,7 @@ namespace Pchp.Core.Reflection
             get
             {
                 var method = _clrframe.GetMethod();
-                var tinfo = method.DeclaringType.GetTypeInfo();
+                var type = method.DeclaringType;
 
                 if (method.IsStatic)
                 {
@@ -277,15 +277,15 @@ namespace Pchp.Core.Reflection
                         return null;
                     }
 
-                    if (tinfo.GetCustomAttribute<ScriptAttribute>() != null)
+                    if (type.GetCustomAttribute<ScriptAttribute>() != null)
                     {
                         // global function
                         return null;
                     }
 
-                    if (tinfo.IsPublic && tinfo.IsAbstract) // => public static
+                    if (type.IsPublic && type.IsAbstract) // => public static
                     {
-                        if (tinfo.Assembly.GetCustomAttribute<PhpExtensionAttribute>() != null)
+                        if (type.Assembly.GetCustomAttribute<PhpExtensionAttribute>() != null)
                         {
                             // library function
                             return null;
@@ -293,7 +293,7 @@ namespace Pchp.Core.Reflection
                     }
                 }
 
-                return tinfo.Name;
+                return type.Name;
             }
         }
 

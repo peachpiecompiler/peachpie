@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.Linq.Expressions;
 using Pchp.CodeAnalysis.Semantics;
-using Pchp.Core.Reflection;
 
 namespace Pchp.Core.Dynamic
 {
@@ -54,7 +53,7 @@ namespace Pchp.Core.Dynamic
                 }
 
                 // instance := (T)instance
-                bound.TargetInstance = Expression.Convert(bound.TargetInstance, bound.TargetType.Type.AsType());
+                bound.TargetInstance = Expression.Convert(bound.TargetInstance, bound.TargetType.Type);
             }
 
             Debug.Assert(IsClassConst ? (bound.TargetInstance == null) : true);
@@ -71,7 +70,7 @@ namespace Pchp.Core.Dynamic
             }
 
             // field not found
-            throw new NotImplementedException();
+            throw new NotImplementedException($"Field '{bound.Name}' was not found.");
         }
     }
 

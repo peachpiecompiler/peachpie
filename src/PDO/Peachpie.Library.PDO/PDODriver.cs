@@ -1,12 +1,7 @@
-﻿using Pchp.Core;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data.Common;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Collections.Specialized;
-using System.Reflection;
-using Microsoft.Extensions.DependencyModel;
+using Pchp.Core;
 
 namespace Peachpie.Library.PDO
 {
@@ -25,7 +20,7 @@ namespace Peachpie.Library.PDO
         {
             get
             {
-                return this.DbFactory.GetType().GetTypeInfo().Assembly.GetName().Version.ToString();
+                return this.DbFactory.GetType().Assembly.GetName().Version.ToString();
             }
         }
 

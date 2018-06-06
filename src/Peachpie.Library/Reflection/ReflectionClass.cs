@@ -1,12 +1,9 @@
-﻿using Pchp.Core;
-using Pchp.Core.Reflection;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 using System.IO;
-using Pchp.Core.Resources;
+using System.Linq;
+using Pchp.Core;
+using Pchp.Core.Reflection;
 
 namespace Pchp.Library.Reflection
 {
@@ -142,7 +139,7 @@ namespace Pchp.Library.Reflection
         {
             var result = new PhpArray();
 
-            foreach (var t in _tinfo.Type.ImplementedInterfaces)
+            foreach (var t in _tinfo.Type.GetInterfaces())
             {
                 result.Add(t.GetPhpTypeInfo().Name);
             }
@@ -153,7 +150,7 @@ namespace Pchp.Library.Reflection
         {
             var result = new PhpArray();
 
-            foreach (var t in _tinfo.Type.ImplementedInterfaces)
+            foreach (var t in _tinfo.Type.GetInterfaces())
             {
                 var iinfo = t.GetPhpTypeInfo();
                 result.Add(iinfo.Name, PhpValue.FromClass(new ReflectionClass(iinfo)));

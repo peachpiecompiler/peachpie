@@ -1,10 +1,8 @@
-﻿using Pchp.Core;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
+using Pchp.Core;
 
 namespace Pchp.Library
 {
@@ -187,7 +185,7 @@ namespace Pchp.Library
 
         private static string GetOsName()
         {
-            foreach (var osDesc in typeof(OSPlatform).GetTypeInfo().GetProperties(BindingFlags.Public | BindingFlags.Static).Where(p => p.PropertyType == typeof(OSPlatform)).Select(p => new { Prop = p, Val = (OSPlatform)p.GetValue(null) }))
+            foreach (var osDesc in typeof(OSPlatform).GetProperties(BindingFlags.Public | BindingFlags.Static).Where(p => p.PropertyType == typeof(OSPlatform)).Select(p => new { Prop = p, Val = (OSPlatform)p.GetValue(null) }))
             {
                 if (RuntimeInformation.IsOSPlatform(osDesc.Val))
                 {

@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Pchp.Core.Dynamic
 {
@@ -74,12 +70,12 @@ namespace Pchp.Core.Dynamic
 
         public static class Properties
         {
-            public static readonly PropertyInfo PhpValue_Object = Types.PhpValue[0].GetTypeInfo().GetDeclaredProperty("Object");
-            public static readonly FieldInfo PhpValue_Void = Types.PhpValue[0].GetTypeInfo().GetDeclaredField("Void");
-            public static readonly FieldInfo PhpValue_Null = Types.PhpValue[0].GetTypeInfo().GetDeclaredField("Null");
-            public static readonly PropertyInfo PhpValue_False = Types.PhpValue[0].GetTypeInfo().GetDeclaredProperty("False");
-            public static readonly PropertyInfo PhpValue_True = Types.PhpValue[0].GetTypeInfo().GetDeclaredProperty("True");
-            public static readonly FieldInfo PhpNumber_Default = Types.PhpNumber[0].GetTypeInfo().GetDeclaredField("Default");
+            public static readonly PropertyInfo PhpValue_Object = Types.PhpValue[0].GetProperty("Object");
+            public static readonly FieldInfo PhpValue_Void = Types.PhpValue[0].GetField("Void");
+            public static readonly FieldInfo PhpValue_Null = Types.PhpValue[0].GetField("Null");
+            public static readonly PropertyInfo PhpValue_False = Types.PhpValue[0].GetProperty("False");
+            public static readonly PropertyInfo PhpValue_True = Types.PhpValue[0].GetProperty("True");
+            public static readonly FieldInfo PhpNumber_Default = Types.PhpNumber[0].GetField("Default");
         }
 
         public static class PhpString
@@ -88,7 +84,7 @@ namespace Pchp.Core.Dynamic
             public static ConstructorInfo ctor_ByteArray = typeof(Core.PhpString).GetCtor(typeof(byte[]));
             public static readonly MethodInfo ToString_Context = typeof(Core.PhpString).GetMethod("ToString", typeof(Context));
             public static readonly MethodInfo ToBytes_Context = typeof(Core.PhpString).GetMethod("ToBytes", typeof(Context));
-            public static readonly PropertyInfo IsDefault = Types.PhpString[0].GetTypeInfo().GetDeclaredProperty("IsDefault");
+            public static readonly PropertyInfo IsDefault = Types.PhpString[0].GetProperty("IsDefault");
         }
 
         public static class IntStringKey
@@ -99,7 +95,7 @@ namespace Pchp.Core.Dynamic
 
         public static class PhpAlias
         {
-            public static readonly FieldInfo Value = Types.PhpAlias[0].GetTypeInfo().GetDeclaredField("Value");
+            public static readonly FieldInfo Value = Types.PhpAlias[0].GetField("Value");
             public static ConstructorInfo ctor_PhpValue_int => Types.PhpAlias[0].GetCtor(Types.PhpValue[0], Types.Int[0]);
         }
 
@@ -107,7 +103,7 @@ namespace Pchp.Core.Dynamic
         {
             public static ConstructorInfo ctor_ctx_object_int = typeof(Context.RecursionCheckToken).GetCtor(typeof(Context), Types.Object[0], Types.Int[0]);
             public static MethodInfo Dispose = typeof(Context.RecursionCheckToken).GetMethod("Dispose");
-            public static readonly PropertyInfo IsInRecursion = typeof(Context.RecursionCheckToken).GetTypeInfo().GetDeclaredProperty("IsInRecursion");
+            public static readonly PropertyInfo IsInRecursion = typeof(Context.RecursionCheckToken).GetProperty("IsInRecursion");
         }
 
         public static class Object
@@ -123,25 +119,11 @@ namespace Pchp.Core.Dynamic
         /// </summary>
         public static MethodInfo GetMethod(this Type type, string name, params Type[] ptypes)
         {
-            var result = type.GetRuntimeMethod(name, ptypes);
-            if (result == null)
-            {
-                foreach (var m in type.GetTypeInfo().GetDeclaredMethods(name))  // non public methods
-                {
-                    if (ParamsMatch(m.GetParameters(), ptypes))
-                        return m;
-                }
-            }
-
+            var result = type.GetRuntimeMethod(name, ptypes) ?? type.GetMethod(name, ptypes);
+            
             Debug.Assert(result != null);
-            return result;
-        }
 
-        static bool ParamsMatch(ParameterInfo[] ps, Type[] ptypes)
-        {
-            if (ps.Length != ptypes.Length) return false;
-            for (int i = 0; i < ps.Length; i++) if (ps[i].ParameterType != ptypes[i]) return false;
-            return true;
+            return result;
         }
 
         /// <summary>
@@ -149,20 +131,7 @@ namespace Pchp.Core.Dynamic
         /// </summary>
         public static ConstructorInfo GetCtor(this Type type, params Type[] ptypes)
         {
-            var ctors = type.GetTypeInfo().DeclaredConstructors;
-            foreach (var ctor in ctors)
-            {
-                var ps = ctor.GetParameters();
-                if (ps.Length == ptypes.Length)
-                {
-                    if (Enumerable.SequenceEqual(ptypes, ps.Select(p => p.ParameterType)))
-                    {
-                        return ctor;
-                    }
-                }
-            }
-
-            throw new ArgumentException();
+            return type.GetConstructor(ptypes) ?? throw new ArgumentException();
         }
     }
 }

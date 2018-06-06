@@ -838,12 +838,11 @@ namespace Pchp.Core
                 // TODO: cache following for the enumerable type
 
                 // find IEnumerable<>
-                foreach (var iface_type in enumerable.GetType().GetTypeInfo().GetInterfaces())
+                foreach (var iface_type in enumerable.GetType().GetInterfaces())
                 {
-                    var iface_info = iface_type.GetTypeInfo();
-                    if (iface_info.IsGenericType && iface_info.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                    if (iface_type.IsGenericType && iface_type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                     {
-                        var item_type = iface_info.GenericTypeArguments[0].GetTypeInfo();
+                        var item_type = iface_type.GenericTypeArguments[0];
                         if (item_type.IsGenericType)
                         {
                             // ValueTuple<A, B>

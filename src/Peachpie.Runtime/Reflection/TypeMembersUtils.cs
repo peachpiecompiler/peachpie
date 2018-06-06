@@ -29,7 +29,7 @@ namespace Pchp.Core.Reflection
         public static PhpArray GetRuntimeFields(this PhpTypeInfo tinfo, object instance)
         {
             Debug.Assert(instance != null);
-            Debug.Assert(instance.GetType() == tinfo.Type.AsType());
+            Debug.Assert(instance.GetType() == tinfo.Type);
 
             // PhpArray __runtime_fields
             if (tinfo.RuntimeFieldsHolder != null)
@@ -248,12 +248,8 @@ namespace Pchp.Core.Reflection
 
             if (!tinfo.IsInterface && !tinfo.IsTrait)
             {
-                var ctors = tinfo.Type.DeclaredConstructors;
-
-                foreach (var c in ctors)
+                foreach (var c in tinfo.Type.GetConstructors(BindingFlags.Instance | BindingFlags.DeclaredOnly))
                 {
-                    if (c.IsStatic) continue;
-
                     if (c.IsPhpFieldsOnlyCtor())
                     {
                         return (_ctx) => c.Invoke(new object[] { _ctx });
@@ -339,7 +335,7 @@ namespace Pchp.Core.Reflection
         {
             Debug.Assert(memberctx != null);
 
-            return caller != null && memberctx.GetTypeInfo().IsAssignableFrom(caller);
+            return caller != null && memberctx.IsAssignableFrom(caller);
         }
 
         /// <summary>
@@ -365,10 +361,9 @@ namespace Pchp.Core.Reflection
                 }
                 else
                 {
-                    var m_type = ((MethodInfo)m).GetBaseDefinition().DeclaringType.GetTypeInfo();
-                    var classCtx_type = classCtx.GetTypeInfo();
+                    var m_type = ((MethodInfo)m).GetBaseDefinition().DeclaringType;
 
-                    return classCtx_type.IsAssignableFrom(m_type) || m_type.IsAssignableFrom(classCtx_type);
+                    return classCtx.IsAssignableFrom(m_type) || m_type.IsAssignableFrom(classCtx);
                 }
             }
 

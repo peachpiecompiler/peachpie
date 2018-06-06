@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
-using System.Text;
 using Pchp.Core;
 using Pchp.Core.Reflection;
 
@@ -155,7 +152,7 @@ namespace Pchp.Library.Reflection
 
         public static string export(string function, string parameter, bool @return = false) { throw new NotImplementedException(); }
 
-        public ReflectionClass getClass() => (_type != null && Core.Reflection.ReflectionUtils.IsPhpClassType(_type.GetTypeInfo()))
+        public ReflectionClass getClass() => (_type != null && Core.Reflection.ReflectionUtils.IsPhpClassType(_type))
             ? new ReflectionClass(_type.GetPhpTypeInfo())
             : null;
 

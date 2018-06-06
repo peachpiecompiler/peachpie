@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using Pchp.Core.Utilities;
+﻿using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
@@ -22,7 +16,7 @@ namespace Pchp.Library
         public const string PHP_EXTRA_VERSION = "-peachpie";
         public static readonly string PHP_OS = CurrentPlatform.IsWindows ? "WINNT" : CurrentPlatform.IsLinux ? "Linux" : CurrentPlatform.IsOsx ? "Darwin" : "Unix";
 
-        public static readonly string PEACHPIE_VERSION = typeof(Core.Context).GetTypeInfo().Assembly.GetName().Version.ToString();
+        public static readonly string PEACHPIE_VERSION = typeof(Core.Context).Assembly.GetName().Version.ToString();
 
         /// <summary>
         /// The operating system family PHP was built for.

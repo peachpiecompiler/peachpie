@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Text;
 using Pchp.Core;
 using Pchp.Core.Reflection;
-using Pchp.Library.Spl;
 
 namespace Pchp.Library.Reflection
 {
@@ -31,7 +28,7 @@ namespace Pchp.Library.Reflection
         public virtual string getExecutingFile()
         {
             var m = Operators.GetGeneratorMethod(_g).GetMethodInfo();
-            var t = m.DeclaringType.GetTypeInfo();
+            var t = m.DeclaringType;
 
             string path = null;
 
@@ -62,7 +59,7 @@ namespace Pchp.Library.Reflection
             if (owner != null)
             {
 
-                var container = owner.DeclaringType.GetTypeInfo();
+                var container = owner.DeclaringType;
                 var phpt = container.GetCustomAttribute<PhpTypeAttribute>();
                 if (phpt != null) // declared inside class
                 {

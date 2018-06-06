@@ -1,11 +1,8 @@
-﻿using Pchp.Core;
-using Pchp.Core.Reflection;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
+using Pchp.Core;
+using Pchp.Core.Reflection;
 
 namespace Pchp.Library.Reflection
 {
@@ -65,7 +62,7 @@ namespace Pchp.Library.Reflection
             var methods = _routine.Methods;
             if (methods.Length == 1 && methods[0].IsStatic)
             {
-                var scriptattr = methods[0].DeclaringType.GetTypeInfo().GetCustomAttribute<ScriptAttribute>(false);
+                var scriptattr = methods[0].DeclaringType.GetCustomAttribute<ScriptAttribute>(false);
                 if (scriptattr != null)
                 {
                     return System.IO.Path.Combine(ctx.RootPath, scriptattr.Path);
