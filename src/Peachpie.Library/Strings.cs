@@ -1372,10 +1372,10 @@ namespace Pchp.Library
         static string SubstringReplace(string subject, string replacement, int offset, int length)
         {
             PhpMath.AbsolutizeRange(ref offset, ref length, subject.Length);
-            return string.Concat(    // note: faster than StringBuilder
-                offset < subject.Length ? subject.Remove(offset) : string.Empty,
-                replacement,
-                subject.Substring(offset + length));
+
+            return (offset < subject.Length)
+                ? string.Concat(subject.Remove(offset), replacement, subject.Substring(offset + length))   // note: faster than StringBuilder
+                : string.Concat(subject, replacement);
         }
 
         /// <summary>
