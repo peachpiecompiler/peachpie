@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Pchp.Core.Dynamic
 {
@@ -123,25 +119,11 @@ namespace Pchp.Core.Dynamic
         /// </summary>
         public static MethodInfo GetMethod(this Type type, string name, params Type[] ptypes)
         {
-            var result = type.GetRuntimeMethod(name, ptypes);
-            if (result == null)
-            {
-                foreach (var m in type.GetTypeInfo().GetDeclaredMethods(name))  // non public methods
-                {
-                    if (ParamsMatch(m.GetParameters(), ptypes))
-                        return m;
-                }
-            }
-
+            var result = type.GetRuntimeMethod(name, ptypes) ?? type.GetMethod(name, ptypes);
+            
             Debug.Assert(result != null);
-            return result;
-        }
 
-        static bool ParamsMatch(ParameterInfo[] ps, Type[] ptypes)
-        {
-            if (ps.Length != ptypes.Length) return false;
-            for (int i = 0; i < ps.Length; i++) if (ps[i].ParameterType != ptypes[i]) return false;
-            return true;
+            return result;
         }
 
         /// <summary>
@@ -149,20 +131,7 @@ namespace Pchp.Core.Dynamic
         /// </summary>
         public static ConstructorInfo GetCtor(this Type type, params Type[] ptypes)
         {
-            var ctors = type.GetConstructors(BindingFlags.Instance | BindingFlags.DeclaredOnly);
-            foreach (var ctor in ctors)
-            {
-                var ps = ctor.GetParameters();
-                if (ps.Length == ptypes.Length)
-                {
-                    if (Enumerable.SequenceEqual(ptypes, ps.Select(p => p.ParameterType)))
-                    {
-                        return ctor;
-                    }
-                }
-            }
-
-            throw new ArgumentException();
+            return type.GetConstructor(ptypes) ?? throw new ArgumentException();
         }
     }
 }
