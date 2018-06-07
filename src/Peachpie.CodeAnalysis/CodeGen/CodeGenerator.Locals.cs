@@ -208,9 +208,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns>Place or <c>null</c>.</returns>
         internal IPlace PlaceOrNull(BoundExpression expr)
         {
-            if (expr is BoundReferenceExpression)
+            if (expr is BoundReferenceExpression boundReference)
             {
-                return ((BoundReferenceExpression)expr).Place(_il);
+                return boundReference.Place(_il);
             }
 
             return null;

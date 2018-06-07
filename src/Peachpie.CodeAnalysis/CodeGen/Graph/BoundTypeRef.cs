@@ -73,9 +73,9 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 return EmitLoadPhpTypeInfo(cg, this.ResolvedType);
             }
-            else if (_typeRef is ReservedTypeRef) // late static bound
+            else if (_typeRef is ReservedTypeRef reservedTypeRef) // late static bound
             {
-                switch (((ReservedTypeRef)_typeRef).Type)
+                switch (reservedTypeRef.Type)
                 {
                     case ReservedTypeRef.ReservedType.@static:
                         return EmitLoadStaticPhpTypeInfo(cg);

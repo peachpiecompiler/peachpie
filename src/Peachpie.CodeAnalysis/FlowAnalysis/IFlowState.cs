@@ -123,7 +123,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override int GetHashCode() => _index * 2;
 
-        public override bool Equals(object obj) => obj is VariableHandle && ((VariableHandle)obj)._index == _index;
+        public override bool Equals(object obj) => obj is VariableHandle other && other._index == _index;
 
         #endregion
 
