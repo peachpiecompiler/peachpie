@@ -488,6 +488,21 @@ namespace Peachpie.Library.Network
         }
 
         /// <summary>
+        /// Return the content of a cURL handle if <see cref="CURLConstants.CURLOPT_RETURNTRANSFER"/> is set.
+        /// </summary>
+        public static PhpValue curl_multi_getcontent(CURLResource ch)
+        {
+            if (ch.ReturnTransfer && ch.Result?.ExecValue.TypeCode == PhpTypeCode.MutableString)
+            {
+                return ch.Result.ExecValue;
+            }
+            else
+            {
+                return PhpValue.Null;
+            }
+        }
+
+        /// <summary>
         /// Return a new cURL multi handle.
         /// </summary>
         [return: NotNull]
@@ -514,9 +529,11 @@ namespace Peachpie.Library.Network
         /// </remarks>
         public static int curl_multi_remove_handle(CURLMultiResource mh, CURLResource ch)
         {
-            if (mh.Handles.Remove(ch))
+            if (mh.Handles.Remove(ch) && ch.ResponseTask != null)
             {
-                // TODO: Halt the transfer in progress, if any
+                // We will simply remove the only reference to the ongoing request and let the framework either
+                // finish it or cancel it
+                ch.ResponseTask = null;
             }
 
             return CURLConstants.CURLM_OK;
@@ -614,5 +631,15 @@ namespace Peachpie.Library.Network
         /// Return string describing error code.
         /// </summary>
         public static string curl_multi_strerror(int errornum) => CURLConstants.GetMultiErrorString(errornum);
+
+        /// <summary>
+        /// Set an option for the cURL multi handle.
+        /// </summary>
+        public static bool curl_multi_setopt(CURLMultiResource mh, int option, PhpValue value)
+        {
+            // We keep the responsibility of multiple request handling completely on .NET framework
+            PhpException.FunctionNotSupported(nameof(curl_multi_setopt));
+            return false;
+        }
     }
 }
