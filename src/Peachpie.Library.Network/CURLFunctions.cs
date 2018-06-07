@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Security;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Core.Utilities;
 
@@ -209,35 +210,46 @@ namespace Peachpie.Library.Network
             return result;
         }
 
-        static CURLResponse ExecHttpRequest(Context ctx, CURLResource ch, Uri uri)
+        static CURLResponse ProcessHttpResponseTask(Context ctx, CURLResource ch, Task<WebResponse> responseTask)
         {
             try
             {
-                return ExecHttpRequestInternal(ctx, ch, uri);
-            }
-            catch (WebException ex)
-            {
-                switch (ex.Status)
+                using (var response = (HttpWebResponse)responseTask.Result)
                 {
-                    case WebExceptionStatus.Timeout:
-                        return CURLResponse.CreateError(CURLConstants.CURLE_OPERATION_TIMEDOUT, ex);
-                    case WebExceptionStatus.TrustFailure:
-                        return CURLResponse.CreateError(CURLConstants.CURLE_SSL_CACERT, ex);
-                    default:
-                        return CURLResponse.CreateError(CURLConstants.CURLE_COULDNT_CONNECT, ex);
+                    return new CURLResponse(ProcessResponse(ctx, ch, response), response);
                 }
             }
-            catch (ProtocolViolationException ex)
+            catch (AggregateException agEx)
             {
-                return CURLResponse.CreateError(CURLConstants.CURLE_FAILED_INIT, ex);
-            }
-            catch (CryptographicException ex)
-            {
-                return CURLResponse.CreateError(CURLConstants.CURLE_SSL_CERTPROBLEM, ex);
+                var ex = agEx.InnerException;
+                if (ex is WebException webEx)
+                {
+                    switch (webEx.Status)
+                    {
+                        case WebExceptionStatus.Timeout:
+                            return CURLResponse.CreateError(CURLConstants.CURLE_OPERATION_TIMEDOUT, webEx);
+                        case WebExceptionStatus.TrustFailure:
+                            return CURLResponse.CreateError(CURLConstants.CURLE_SSL_CACERT, webEx);
+                        default:
+                            return CURLResponse.CreateError(CURLConstants.CURLE_COULDNT_CONNECT, webEx);
+                    }
+                }
+                else if (ex is ProtocolViolationException)
+                {
+                    return CURLResponse.CreateError(CURLConstants.CURLE_FAILED_INIT, ex);
+                }
+                else if (ex is CryptographicException)
+                {
+                    return CURLResponse.CreateError(CURLConstants.CURLE_SSL_CERTPROBLEM, ex);
+                }
+                else
+                {
+                    throw ex;
+                }
             }
         }
 
-        static CURLResponse ExecHttpRequestInternal(Context ctx, CURLResource ch, Uri uri)
+        static Task<WebResponse> ExecHttpRequestInternalAsync(Context ctx, CURLResource ch, Uri uri)
         {
             var req = WebRequest.CreateHttp(uri);
 
@@ -281,12 +293,7 @@ namespace Peachpie.Library.Network
                 // custom method, nothing to do
             }
 
-            // process response:
-
-            using (var response = (HttpWebResponse)req.GetResponse())    // NOTE: GetResponse() internally throws an exception, ignore it
-            {
-                return new CURLResponse(ProcessResponse(ctx, ch, response), response);
-            }
+            return req.GetResponseAsync();
         }
 
         static void ProcessPut(HttpWebRequest req, CURLResource ch)
@@ -434,12 +441,9 @@ namespace Peachpie.Library.Network
                 : PhpValue.True;
         }
 
-        /// <summary>
-        /// Perform a cURL session.
-        /// </summary>
-        public static PhpValue curl_exec(Context ctx, CURLResource ch)
+        static void StartRequestExecution(Context ctx, CURLResource ch)
         {
-            var start = DateTime.UtcNow;
+            ch.StartTime = DateTime.UtcNow;
 
             var uri = TryCreateUri(ch);
             if (uri == null)
@@ -450,17 +454,34 @@ namespace Peachpie.Library.Network
                 string.Equals(uri.Scheme, "http", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(uri.Scheme, "https", StringComparison.OrdinalIgnoreCase))
             {
-                ch.Result = ExecHttpRequest(ctx, ch, uri);
+                ch.Result = null;
+                ch.ResponseTask = ExecHttpRequestInternalAsync(ctx, ch, uri);
             }
             else
             {
                 ch.Result = CURLResponse.CreateError(CURLConstants.CURLE_UNSUPPORTED_PROTOCOL);
             }
+        }
 
-            //
+        static void EndRequestExecution(Context ctx, CURLResource ch)
+        {
+            if (ch.ResponseTask != null)
+            {
+                ch.Result = ProcessHttpResponseTask(ctx, ch, ch.ResponseTask);
+                ch.ResponseTask = null;
+            }
 
-            ch.Result.TotalTime = (DateTime.UtcNow - start);
+            ch.Result.TotalTime = (DateTime.UtcNow - ch.StartTime);
             ch.Result.Private = ch.Private;
+        }
+
+        /// <summary>
+        /// Perform a cURL session.
+        /// </summary>
+        public static PhpValue curl_exec(Context ctx, CURLResource ch)
+        {
+            StartRequestExecution(ctx, ch);
+            EndRequestExecution(ctx, ch);
 
             return ch.Result.ExecValue;
         }
