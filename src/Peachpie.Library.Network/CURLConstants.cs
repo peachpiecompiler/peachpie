@@ -17,6 +17,8 @@ namespace Peachpie.Library.Network
 
         internal const string CurlResourceName = "curl";
 
+        internal const string CurlMultiResourceName = "curl_multi";
+
         internal static Version FakeCurlVersion => new Version(7, 10, 1);
 
         #region Constants

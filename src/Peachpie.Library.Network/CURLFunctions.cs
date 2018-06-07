@@ -464,5 +464,42 @@ namespace Peachpie.Library.Network
 
             return ch.Result.ExecValue;
         }
+
+        /// <summary>
+        /// Return a new cURL multi handle.
+        /// </summary>
+        [return: NotNull]
+        public static CURLMultiResource/*!*/curl_multi_init() => new CURLMultiResource();
+
+        /// <summary>
+        /// Close a set of cURL handles.
+        /// </summary>
+        public static void curl_multi_close(CURLMultiResource mh) => mh?.Dispose();
+
+        /// <summary>
+        /// Add a normal cURL handle to a cURL multi handle.
+        /// </summary>
+        public static int curl_multi_add_handle(CURLMultiResource mh, CURLResource ch) => mh.Handles.Add(ch)
+            ? CURLConstants.CURLM_OK
+            : CURLConstants.CURLM_ADDED_ALREADY;
+
+        /// <summary>
+        /// Remove a multi handle from a set of cURL handles
+        /// </summary>
+        /// <remarks>
+        /// Removes a given <paramref name="ch"/> handle from the given <paramref name="mh"/> handle.
+        /// When the <paramref name="ch"/> handle has been removed, it is again perfectly legal to run
+        /// <see cref="curl_exec(Context, CURLResource)"/> on this handle. Removing the <paramref name="ch"/>
+        /// handle while being used, will effectively halt the transfer in progress involving that handle.
+        /// </remarks>
+        public static int curl_multi_remove_handle(CURLMultiResource mh, CURLResource ch)
+        {
+            if (mh.Handles.Remove(ch))
+            {
+                // TODO: Halt the transfer in progress, if any
+            }
+
+            return CURLConstants.CURLM_OK;
+        }
     }
 }
