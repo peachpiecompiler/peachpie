@@ -27,13 +27,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        bool Cci.IArrayTypeReference.IsSZArray
-        {
-            get
-            {
-                return this.IsSZArray;
-            }
-        }
+        bool Cci.IArrayTypeReference.IsSZArray => this.IsSZArray;
 
         IEnumerable<int> Cci.IArrayTypeReference.LowerBounds
         {
@@ -52,13 +46,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        uint Cci.IArrayTypeReference.Rank
-        {
-            get
-            {
-                return (uint)this.Rank;
-            }
-        }
+        uint Cci.IArrayTypeReference.Rank => (uint)this.Rank;
 
         IEnumerable<ulong> Cci.IArrayTypeReference.Sizes
         {

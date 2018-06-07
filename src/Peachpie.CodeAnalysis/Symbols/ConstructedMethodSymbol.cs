@@ -16,12 +16,6 @@ namespace Pchp.CodeAnalysis.Symbols
             _typeArguments = typeArguments;
         }
 
-        public override ImmutableArray<TypeSymbol> TypeArguments
-        {
-            get
-            {
-                return _typeArguments;
-            }
-        }
+        public override ImmutableArray<TypeSymbol> TypeArguments => _typeArguments;
     }
 }

@@ -62,13 +62,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// primitive types and the owning assembly cannot be used as the source too. Otherwise, it is one of 
         /// the referenced assemblies returned by GetReferencedAssemblySymbols() method or the owning assembly.
         /// </summary>
-        internal AssemblySymbol CorLibrary
-        {
-            get
-            {
-                return _corLibrary;
-            }
-        }
+        internal AssemblySymbol CorLibrary => _corLibrary;
 
         /// <summary>
         /// A helper method for ReferenceManager to set the system assembly, which provides primitive 

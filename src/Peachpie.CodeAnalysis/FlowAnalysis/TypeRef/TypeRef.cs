@@ -25,17 +25,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region ITypeRef Members
 
-        public QualifiedName QualifiedName { get { return _qname; } }
+        public QualifiedName QualifiedName => _qname;
 
-        public virtual ImmutableArray<ITypeRef> TypeArguments { get { return ImmutableArray<ITypeRef>.Empty; } }
+        public virtual ImmutableArray<ITypeRef> TypeArguments => ImmutableArray<ITypeRef>.Empty;
 
-        public bool IsObject { get { return true; } }
+        public bool IsObject => true;
 
-        public bool IsArray { get { return false; } }
+        public bool IsArray => false;
 
-        public bool IsPrimitiveType { get { return false; } }
+        public bool IsPrimitiveType => false;
 
-        public bool IsLambda { get { return false; } }
+        public bool IsLambda => false;
 
         public IEnumerable<object> Keys { get { throw new InvalidOperationException(); } }
 
@@ -45,7 +45,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public AST.Signature LambdaSignature { get { throw new InvalidOperationException(); } }
 
-        public PhpTypeCode TypeCode { get { return PhpTypeCode.Object; } }
+        public PhpTypeCode TypeCode => PhpTypeCode.Object;
 
         /// <summary>
         /// Gets corresponding CLR type for the type reference.
@@ -151,30 +151,27 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region ITypeRef Members
 
-        public QualifiedName QualifiedName
-        {
-            get { return QualifiedName.Array; }
-        }
+        public QualifiedName QualifiedName => QualifiedName.Array;
 
-        public ImmutableArray<ITypeRef> TypeArguments { get { return ImmutableArray<ITypeRef>.Empty; } }
+        public ImmutableArray<ITypeRef> TypeArguments => ImmutableArray<ITypeRef>.Empty;
 
-        public bool IsObject { get { return false; } }
+        public bool IsObject => false;
 
-        public bool IsArray { get { return true; } }
+        public bool IsArray => true;
 
-        public bool IsPrimitiveType { get { return true; } }
+        public bool IsPrimitiveType => true;
 
-        public bool IsLambda { get { return false; } }
+        public bool IsLambda => false;
 
-        public IEnumerable<object> Keys { get { return (IEnumerable<object>)_keys ?? ArrayUtils.EmptyObjects; } }
+        public IEnumerable<object> Keys => (IEnumerable<object>)_keys ?? ArrayUtils.EmptyObjects;
 
-        public TypeRefMask ElementType { get { return _elementType; } }
+        public TypeRefMask ElementType => _elementType;
 
         public TypeRefMask LambdaReturnType { get { throw new InvalidOperationException(); } }
 
         public AST.Signature LambdaSignature { get { throw new InvalidOperationException(); } }
 
-        public PhpTypeCode TypeCode { get { return PhpTypeCode.PhpArray; } }
+        public PhpTypeCode TypeCode => PhpTypeCode.PhpArray;
 
         /// <summary>
         /// Gets corresponding CLR type for the type reference.
@@ -264,23 +261,23 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        public ImmutableArray<ITypeRef> TypeArguments { get { return ImmutableArray<ITypeRef>.Empty; } }
+        public ImmutableArray<ITypeRef> TypeArguments => ImmutableArray<ITypeRef>.Empty;
 
-        public bool IsObject { get { return _code == PhpTypeCode.Object; } }
+        public bool IsObject => _code == PhpTypeCode.Object;
 
-        public bool IsArray { get { return _code == PhpTypeCode.PhpArray; } }
+        public bool IsArray => _code == PhpTypeCode.PhpArray;
 
-        public bool IsPrimitiveType { get { return true; } }
+        public bool IsPrimitiveType => true;
 
-        public bool IsLambda { get { return false; } }
+        public bool IsLambda => false; 
 
-        public IEnumerable<object> Keys { get { return null; } }
+        public IEnumerable<object> Keys => null;
 
-        public TypeRefMask ElementType { get { return TypeRefMask.AnyType; } }
+        public TypeRefMask ElementType => TypeRefMask.AnyType;
 
-        public TypeRefMask LambdaReturnType { get { return TypeRefMask.AnyType; } }
+        public TypeRefMask LambdaReturnType => TypeRefMask.AnyType;
 
-        public AST.Signature LambdaSignature { get { return default(AST.Signature); } }
+        public AST.Signature LambdaSignature => default(AST.Signature);
 
         /// <summary>
         /// Gets underlaying type code of the primitive type.
@@ -360,36 +357,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Lambda function is of sub class of <c>Closure</c>.
         /// </summary>
-        public QualifiedName QualifiedName
-        {
-            get { return NameUtils.SpecialNames.Closure; }
-        }
+        public QualifiedName QualifiedName => NameUtils.SpecialNames.Closure;
 
-        public ImmutableArray<ITypeRef> TypeArguments { get { return ImmutableArray<ITypeRef>.Empty; } }
+        public ImmutableArray<ITypeRef> TypeArguments => ImmutableArray<ITypeRef>.Empty;
 
         /// <summary>
         /// Lambda function is an object of type <c>Closure</c>.
         /// This handles case when lambda is used as object with methods <c>bindTo</c> or <c>__invoke</c>.
         /// </summary>
-        public bool IsObject
-        {
-            get { return true; }
-        }
+        public bool IsObject => true;
 
-        public bool IsArray
-        {
-            get { return false; }
-        }
+        public bool IsArray => false;
 
-        public bool IsPrimitiveType
-        {
-            get { return false; }
-        }
+        public bool IsPrimitiveType => false;
 
-        public bool IsLambda
-        {
-            get { return true; }
-        }
+        public bool IsLambda => true;
 
         public IEnumerable<object> Keys
         {
@@ -401,11 +383,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             get { throw new InvalidOperationException(); }
         }
 
-        public TypeRefMask LambdaReturnType { get { return _returnType; } }
+        public TypeRefMask LambdaReturnType => _returnType;
 
-        public AST.Signature LambdaSignature { get { return _signature; } }
+        public AST.Signature LambdaSignature => _signature;
 
-        public PhpTypeCode TypeCode { get { return PhpTypeCode.Object; } }
+        public PhpTypeCode TypeCode => PhpTypeCode.Object;
 
         /// <summary>
         /// Gets corresponding CLR type for the type reference.

@@ -17,13 +17,7 @@ namespace Pchp.CodeAnalysis.Emit
             this.UnderlyingMethod = underlyingMethod;
         }
 
-        protected override Symbol UnderlyingSymbol
-        {
-            get
-            {
-                return UnderlyingMethod;
-            }
-        }
+        protected override Symbol UnderlyingSymbol => UnderlyingMethod;
 
         bool Cci.IMethodReference.AcceptsExtraArguments
         {

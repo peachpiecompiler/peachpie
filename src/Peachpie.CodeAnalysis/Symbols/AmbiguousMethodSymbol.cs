@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.Semantics.Graph;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -140,11 +143,7 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         readonly string _name;
 
-        public override ErrorMethodKind ErrorKind
-        {
-            get { return ErrorMethodKind.Missing; }
-
-        }
+        public override ErrorMethodKind ErrorKind => ErrorMethodKind.Missing;
 
         public override string Name => _name;
 

@@ -22,7 +22,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
         private readonly DiagnosticFormatter _diagnosticFormatter = new DiagnosticFormatter();
 
-        protected internal new PhpCommandLineArguments Arguments { get { return (PhpCommandLineArguments)base.Arguments; } }
+        protected internal new PhpCommandLineArguments Arguments => (PhpCommandLineArguments)base.Arguments;
 
         public PhpCompiler(CommandLineParser parser, string responseFile, string[] args, string clientDirectory, string baseDirectory, string sdkDirectory, string additionalReferenceDirectories, IAnalyzerAssemblyLoader analyzerLoader)
             : base(parser, responseFile, args, clientDirectory, baseDirectory, sdkDirectory, additionalReferenceDirectories, analyzerLoader)

@@ -17,15 +17,9 @@ namespace Pchp.CodeAnalysis.Symbols
         Cci.IGenericMethodParameter,
         Cci.IGenericTypeParameter
     {
-        bool Cci.ITypeReference.IsEnum
-        {
-            get { return false; }
-        }
+        bool Cci.ITypeReference.IsEnum => false;
 
-        bool Cci.ITypeReference.IsValueType
-        {
-            get { return false; }
-        }
+        bool Cci.ITypeReference.IsValueType => false;
 
         Cci.ITypeDefinition Cci.ITypeReference.GetResolvedType(EmitContext context)
         {
@@ -187,18 +181,9 @@ namespace Pchp.CodeAnalysis.Symbols
             return null;
         }
 
-        string Cci.INamedEntity.Name
-        {
-            get { return this.MetadataName; }
-        }
+        string Cci.INamedEntity.Name => this.MetadataName;
 
-        ushort Cci.IParameterListEntry.Index
-        {
-            get
-            {
-                return (ushort)this.Ordinal;
-            }
-        }
+        ushort Cci.IParameterListEntry.Index => (ushort)this.Ordinal;
 
         Cci.IMethodReference Cci.IGenericMethodParameterReference.DefiningMethod
         {
@@ -246,21 +231,9 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        bool Cci.IGenericParameter.MustBeReferenceType
-        {
-            get
-            {
-                return this.HasReferenceTypeConstraint;
-            }
-        }
+        bool Cci.IGenericParameter.MustBeReferenceType => this.HasReferenceTypeConstraint;
 
-        bool Cci.IGenericParameter.MustBeValueType
-        {
-            get
-            {
-                return this.HasValueTypeConstraint;
-            }
-        }
+        bool Cci.IGenericParameter.MustBeValueType => this.HasValueTypeConstraint;
 
         bool Cci.IGenericParameter.MustHaveDefaultConstructor
         {

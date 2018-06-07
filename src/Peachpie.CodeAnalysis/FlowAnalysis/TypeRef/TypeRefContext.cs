@@ -21,9 +21,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Its bits corresponds to <see cref="_typeRefs"/> indices.
         /// </summary>
         private ulong _isNullMask, _isObjectMask, _isArrayMask, _isLongMask, _isDoubleMask, _isBoolMask, _isStringMask, _isWritableStringMask, _isPrimitiveMask, _isLambdaMask;
-        private ulong IsNumberMask { get { return _isLongMask | _isDoubleMask; } }
-        private ulong IsAStringMask { get { return _isStringMask | _isWritableStringMask; } }
-        private ulong IsNullableMask { get { return _isNullMask | _isObjectMask | _isArrayMask | IsAStringMask | _isLambdaMask; } }
+        private ulong IsNumberMask =>_isLongMask | _isDoubleMask;
+        private ulong IsAStringMask =>_isStringMask | _isWritableStringMask;
+        private ulong IsNullableMask => _isNullMask | _isObjectMask | _isArrayMask | IsAStringMask | _isLambdaMask;
 
         ///// <summary>
         ///// Allowed types for array key.
@@ -641,7 +641,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets enumeration of all types in the context.
         /// </summary>
-        public IList<ITypeRef>/*!*/Types { get { return _typeRefs; } }
+        public IList<ITypeRef>/*!*/Types =>_typeRefs;
 
         /// <summary>
         /// Gets types referenced by given type mask.

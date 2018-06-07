@@ -22,13 +22,7 @@ namespace Pchp.CodeAnalysis.Emit
             _underlyingField = underlyingField;
         }
 
-        protected override Symbol UnderlyingSymbol
-        {
-            get
-            {
-                return _underlyingField;
-            }
-        }
+        protected override Symbol UnderlyingSymbol => _underlyingField;
 
         public override void Dispatch(Cci.MetadataVisitor visitor)
         {

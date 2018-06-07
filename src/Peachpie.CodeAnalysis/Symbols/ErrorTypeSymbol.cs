@@ -96,13 +96,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override CandidateReason CandidateReason => CandidateReason.None;
 
-        internal override bool MangleName
-        {
-            get
-            {
-                return false;
-            }
-        }
+        internal override bool MangleName => false;
     }
 
     internal class MissingMetadataTypeSymbol : ErrorTypeSymbol
@@ -135,13 +129,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
             }
 
-            public override Symbol ContainingSymbol
-            {
-                get
-                {
-                    return _containingType;
-                }
-            }
+            public override Symbol ContainingSymbol => _containingType;
 
 
             public override SpecialType SpecialType

@@ -21,25 +21,16 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        bool Cci.ITypeReference.IsEnum
-        {
-            get { return false; }
-        }
+        bool Cci.ITypeReference.IsEnum => false;
 
-        bool Cci.ITypeReference.IsValueType
-        {
-            get { return false; }
-        }
+        bool Cci.ITypeReference.IsValueType => false;
 
         Cci.ITypeDefinition Cci.ITypeReference.GetResolvedType(EmitContext context)
         {
             return null;
         }
 
-        TypeDefinitionHandle Cci.ITypeReference.TypeDef
-        {
-            get { return default(TypeDefinitionHandle); }
-        }
+        TypeDefinitionHandle Cci.ITypeReference.TypeDef => default(TypeDefinitionHandle);
 
         Cci.IGenericMethodParameterReference Cci.ITypeReference.AsGenericMethodParameterReference
         {

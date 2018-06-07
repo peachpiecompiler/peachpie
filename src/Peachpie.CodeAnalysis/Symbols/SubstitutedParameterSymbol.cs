@@ -1,11 +1,6 @@
-﻿using Microsoft.CodeAnalysis;
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -36,11 +31,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected override Symbol OriginalSymbolDefinition => underlyingParameter.OriginalDefinition;
 
-        public override Symbol ContainingSymbol
-        {
-            get { return _containingSymbol; }
-        }
-
+        public override Symbol ContainingSymbol => _containingSymbol;
         internal override TypeSymbol Type
         {
             get

@@ -20,13 +20,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// A type used as a tag that indicates which type of modification applies.
         /// </summary>
-        public override INamedTypeSymbol Modifier
-        {
-            get
-            {
-                return modifier;
-            }
-        }
+        public override INamedTypeSymbol Modifier => modifier;
 
         public abstract override int GetHashCode();
 
@@ -95,13 +89,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 : base(modifier)
             { }
 
-            public override bool IsOptional
-            {
-                get
-                {
-                    return false;
-                }
-            }
+            public override bool IsOptional => false;
 
             public override int GetHashCode()
             {

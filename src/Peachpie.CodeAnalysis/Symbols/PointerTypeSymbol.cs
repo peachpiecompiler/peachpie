@@ -38,53 +38,20 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// The list of custom modifiers, if any, associated with the pointer type.
         /// </summary>
-        public ImmutableArray<CustomModifier> CustomModifiers
-        {
-            get
-            {
-                return _customModifiers;
-            }
-        }
+        public ImmutableArray<CustomModifier> CustomModifiers => _customModifiers;
 
-        public override Accessibility DeclaredAccessibility
-        {
-            get { return Accessibility.NotApplicable; }
-        }
+        public override Accessibility DeclaredAccessibility => Accessibility.NotApplicable;
 
-        public override bool IsStatic
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool IsStatic => false;
 
-        public override bool IsAbstract
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool IsAbstract => false;
 
-        public override bool IsSealed
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool IsSealed => false;
 
         /// <summary>
         /// Gets the type of the storage location that an instance of the pointer type points to.
         /// </summary>
-        public TypeSymbol PointedAtType
-        {
-            get
-            {
-                return _pointedAtType;
-            }
-        }
+        public TypeSymbol PointedAtType => _pointedAtType;
 
         //internal override NamedTypeSymbol BaseTypeNoUseSiteDiagnostics
         //{

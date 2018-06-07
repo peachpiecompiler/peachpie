@@ -36,10 +36,7 @@ namespace Pchp.CodeAnalysis.Symbols
         //    get { return TypeParameters.Cast<TypeParameterSymbol, TypeSymbol>(); }
         //}
 
-        public override NamedTypeSymbol ConstructedFrom
-        {
-            get { return this; }
-        }
+        public override NamedTypeSymbol ConstructedFrom => this;
     }
 
     /// <summary>
@@ -74,21 +71,9 @@ namespace Pchp.CodeAnalysis.Symbols
             Debug.Assert(constructedFrom.Arity != 0);
         }
 
-        public override NamedTypeSymbol ConstructedFrom
-        {
-            get
-            {
-                return _constructedFrom;
-            }
-        }
+        public override NamedTypeSymbol ConstructedFrom => _constructedFrom;
 
-        public override ImmutableArray<TypeSymbol> TypeArguments
-        {
-            get
-            {
-                return _typeArguments;
-            }
-        }
+        public override ImmutableArray<TypeSymbol> TypeArguments => _typeArguments;
 
         internal override bool HasTypeArgumentsCustomModifiers => _hasTypeArgumentsCustomModifiers;
 

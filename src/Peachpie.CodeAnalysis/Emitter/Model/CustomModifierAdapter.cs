@@ -6,10 +6,7 @@ namespace Pchp.CodeAnalysis.Symbols
 {
     internal partial class CSharpCustomModifier : Cci.ICustomModifier
     {
-        bool Cci.ICustomModifier.IsOptional
-        {
-            get { return this.IsOptional; }
-        }
+        bool Cci.ICustomModifier.IsOptional => this.IsOptional;
 
         Cci.ITypeReference Cci.ICustomModifier.GetModifier(EmitContext context)
         {

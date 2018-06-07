@@ -99,7 +99,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Resolved type symbol if any.
         /// </summary>
-        public ITypeSymbol Symbol { get { return this.ResolvedType; } }
+        public ITypeSymbol Symbol => this.ResolvedType;
 
         /// <summary>
         /// Expression getting type name.

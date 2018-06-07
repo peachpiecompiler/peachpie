@@ -110,42 +110,15 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        string Cci.INamedEntity.Name
-        {
-            get { return this.MetadataName; }
-        }
+        string Cci.INamedEntity.Name => this.MetadataName;
 
-        bool Cci.IMethodReference.AcceptsExtraArguments
-        {
-            get
-            {
-                return this.IsVararg;
-            }
-        }
+        bool Cci.IMethodReference.AcceptsExtraArguments => this.IsVararg;
 
-        ushort Cci.IMethodReference.GenericParameterCount
-        {
-            get
-            {
-                return (ushort)this.Arity;
-            }
-        }
+        ushort Cci.IMethodReference.GenericParameterCount => (ushort)this.Arity;
 
-        bool Cci.IMethodReference.IsGeneric
-        {
-            get
-            {
-                return this.IsGenericMethod;
-            }
-        }
+        bool Cci.IMethodReference.IsGeneric => this.IsGenericMethod;
 
-        ushort Cci.ISignature.ParameterCount
-        {
-            get
-            {
-                return (ushort)this.Parameters.Length;
-            }
-        }
+        ushort Cci.ISignature.ParameterCount => (ushort)this.Parameters.Length;
 
         Cci.IMethodDefinition Cci.IMethodReference.GetResolvedMethod(EmitContext context)
         {

@@ -24,15 +24,9 @@ namespace Pchp.CodeAnalysis.Symbols
         Cci.IGenericTypeInstanceReference,
         Cci.ISpecializedNestedTypeReference
     {
-        bool Cci.ITypeReference.IsEnum
-        {
-            get { return this.TypeKind == TypeKind.Enum; }
-        }
+        bool Cci.ITypeReference.IsEnum => this.TypeKind == TypeKind.Enum;
 
-        bool Cci.ITypeReference.IsValueType
-        {
-            get { return this.IsValueType; }
-        }
+        bool Cci.ITypeReference.IsValueType => this.IsValueType;
 
         Cci.ITypeDefinition Cci.ITypeReference.GetResolvedType(EmitContext context)
         {

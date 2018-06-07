@@ -117,13 +117,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Gets the list of custom modifiers associated with the array.
         /// Returns an empty list if there are no custom modifiers.
         /// </summary>
-        public ImmutableArray<CustomModifier> CustomModifiers
-        {
-            get
-            {
-                return _customModifiers;
-            }
-        }
+        public ImmutableArray<CustomModifier> CustomModifiers => _customModifiers;
 
         /// <summary>
         /// Gets the number of dimensions of the array. A regular single-dimensional array
@@ -146,26 +140,14 @@ namespace Pchp.CodeAnalysis.Symbols
         /// meaning that some trailing dimensions don't have the size specified.
         /// The most common case is none of the dimensions have the size specified - an empty array is returned.
         /// </summary>
-        internal virtual ImmutableArray<int> Sizes
-        {
-            get
-            {
-                return ImmutableArray<int>.Empty;
-            }
-        }
+        internal virtual ImmutableArray<int> Sizes => ImmutableArray<int>.Empty;
 
         /// <summary>
         /// Specified lower bounds for dimensions, by position. The length can be less than <see cref="Rank"/>,
         /// meaning that some trailing dimensions don't have the lower bound specified.
         /// The most common case is all dimensions are zero bound - a null array is returned in this case.
         /// </summary>
-        internal virtual ImmutableArray<int> LowerBounds
-        {
-            get
-            {
-                return default(ImmutableArray<int>);
-            }
-        }
+        internal virtual ImmutableArray<int> LowerBounds => default(ImmutableArray<int>);
 
         /// <summary>
         /// Note, <see cref="Rank"/> equality should be checked separately!!!
@@ -198,13 +180,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets the type of the elements stored in the array.
         /// </summary>
-        public TypeSymbol ElementType
-        {
-            get
-            {
-                return _elementType;
-            }
-        }
+        public TypeSymbol ElementType => _elementType;
 
         //internal override NamedTypeSymbol BaseTypeNoUseSiteDiagnostics
         //{
@@ -214,21 +190,9 @@ namespace Pchp.CodeAnalysis.Symbols
         //    }
         //}
 
-        public override bool IsReferenceType
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool IsReferenceType => true;
 
-        public override bool IsValueType
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool IsValueType => false;
 
         //internal sealed override bool IsManagedType
         //{
@@ -268,29 +232,11 @@ namespace Pchp.CodeAnalysis.Symbols
             return ImmutableArray<NamedTypeSymbol>.Empty;
         }
 
-        public override SymbolKind Kind
-        {
-            get
-            {
-                return SymbolKind.ArrayType;
-            }
-        }
+        public override SymbolKind Kind => SymbolKind.ArrayType;
 
-        public override TypeKind TypeKind
-        {
-            get
-            {
-                return TypeKind.Array;
-            }
-        }
+        public override TypeKind TypeKind => TypeKind.Array;
 
-        public override Symbol ContainingSymbol
-        {
-            get
-            {
-                return null;
-            }
-        }
+        public override Symbol ContainingSymbol => null;
 
         public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences
         {

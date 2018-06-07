@@ -19,45 +19,15 @@ namespace Pchp.CodeAnalysis.Emit
             this.UnderlyingNamedType = underlyingNamedType;
         }
 
-        ushort Cci.INamedTypeReference.GenericParameterCount
-        {
-            get
-            {
-                return (ushort)UnderlyingNamedType.Arity;
-            }
-        }
+        ushort Cci.INamedTypeReference.GenericParameterCount => (ushort)UnderlyingNamedType.Arity;
 
-        bool Cci.INamedTypeReference.MangleName
-        {
-            get
-            {
-                return UnderlyingNamedType.MangleName;
-            }
-        }
+        bool Cci.INamedTypeReference.MangleName => UnderlyingNamedType.MangleName;
 
-        string Cci.INamedEntity.Name
-        {
-            get
-            {
-                return UnderlyingNamedType.MetadataName;
-            }
-        }
+        string Cci.INamedEntity.Name => UnderlyingNamedType.MetadataName;
 
-        bool Cci.ITypeReference.IsEnum
-        {
-            get
-            {
-                return UnderlyingNamedType.IsEnumType();
-            }
-        }
+        bool Cci.ITypeReference.IsEnum => UnderlyingNamedType.IsEnumType();
 
-        bool Cci.ITypeReference.IsValueType
-        {
-            get
-            {
-                return UnderlyingNamedType.IsValueType;
-            }
-        }
+        bool Cci.ITypeReference.IsValueType => UnderlyingNamedType.IsValueType;
 
         Cci.ITypeDefinition Cci.ITypeReference.GetResolvedType(EmitContext context)
         {
