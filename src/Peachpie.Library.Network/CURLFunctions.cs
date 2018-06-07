@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Security.Cryptography;
@@ -578,6 +579,32 @@ namespace Peachpie.Library.Network
                 msgs_in_queue = mh.MessageQueue.Count;
                 return msg;
             }
+        }
+
+        /// <summary>
+        /// Wait for activity on any curl_multi connection.
+        /// </summary>
+        public static int curl_multi_select(CURLMultiResource mh, float timeout = 1.0f)
+        {
+            var tasks = mh.Handles
+                .Select(h => h.ResponseTask)
+                .Where(t => t != null)
+                .ToArray();
+
+            if (tasks.Length == 0)
+            {
+                return 0;
+            }
+
+            // Already completed and not yet processed by curl_multi_exec -> no waiting
+            int finished = tasks.Count(t => t.IsCompleted);
+            if (finished > 0 || timeout == 0.0f)
+            {
+                return finished;
+            }
+
+            Task.WaitAny(tasks, TimeSpan.FromSeconds(timeout));
+            return tasks.Count(t => t.IsCompleted);
         }
     }
 }
