@@ -12,8 +12,22 @@ namespace Peachpie.Library.Network
     {
         internal HashSet<CURLResource> Handles { get; } = new HashSet<CURLResource>();
 
+        internal Queue<PhpArray> MessageQueue { get; } = new Queue<PhpArray>();
+
         public CURLMultiResource() : base(CURLConstants.CurlMultiResourceName)
         {
+        }
+
+        internal void AddResultMessage(CURLResource handle)
+        {
+            var msg = new PhpArray
+            {
+                { "msg", CURLConstants.CURLMSG_DONE },
+                { "result", handle.Result.ErrorCode },
+                { "handle", handle }
+            };
+
+            MessageQueue.Enqueue(msg);
         }
 
         protected override void FreeManaged()
@@ -24,6 +38,7 @@ namespace Peachpie.Library.Network
             }
 
             Handles.Clear();
+            MessageQueue.Clear();
 
             base.FreeManaged();
         }

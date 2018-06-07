@@ -84,6 +84,9 @@ namespace Peachpie.Library.Network
 
         internal DateTime StartTime { get; set; }
 
+        /// <summary>
+        /// Ongoing request handled by the framework. Must be set to null after being processed.
+        /// </summary>
         internal Task<WebResponse> ResponseTask { get; set; }
 
         /// <summary>

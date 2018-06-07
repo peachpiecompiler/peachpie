@@ -522,5 +522,62 @@ namespace Peachpie.Library.Network
 
             return CURLConstants.CURLM_OK;
         }
+
+        /// <summary>
+        /// Run the sub-connections of the current cURL handle.
+        /// </summary>
+        public static int curl_multi_exec(Context ctx, CURLMultiResource mh, out int still_running)
+        {
+            int runningCount = 0;
+
+            foreach (var handle in mh.Handles)
+            {
+                if (handle.ResponseTask != null)
+                {
+                    if (handle.ResponseTask.IsCompleted)
+                    {
+                        EndRequestExecution(ctx, handle);
+                        mh.AddResultMessage(handle);
+                    }
+                    else
+                    {
+                        runningCount++;
+                    }
+                }
+                else if (handle.Result == null)
+                {
+                    StartRequestExecution(ctx, handle);
+                    runningCount++;
+                }
+            }
+
+            still_running = runningCount;
+            return CURLConstants.CURLM_OK;
+        }
+
+        /// <summary>
+        /// Get information about the current transfers.
+        /// </summary>
+        [return: CastToFalse]
+        public static PhpArray curl_multi_info_read(CURLMultiResource mh) => curl_multi_info_read(mh, out _);
+
+        /// <summary>
+        /// Get information about the current transfers.
+        /// </summary>
+        [return: CastToFalse]
+        public static PhpArray curl_multi_info_read(CURLMultiResource mh, out int msgs_in_queue)
+        {
+            if (mh.MessageQueue.Count == 0)
+            {
+                msgs_in_queue = 0;
+                return null;
+            }
+            else
+            {
+                var msg = mh.MessageQueue.Dequeue();
+                msgs_in_queue = mh.MessageQueue.Count;
+                return msg;
+            }
+        }
     }
 }
