@@ -1,15 +1,13 @@
-﻿using Pchp.Core;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using Pchp.Library.Resources;
+using Pchp.Core;
+using Pchp.Core.Text;
 using Pchp.Core.Utilities;
+using Pchp.Library.Resources;
 
 namespace Pchp.Library
 {
@@ -45,11 +43,16 @@ namespace Pchp.Library
         public static int ord(string str) => string.IsNullOrEmpty(str) ? 0 : (int)str[0];
 
         /// <summary>
+        /// Returns ASCII code of the first character of a string of bytes or <c>0</c> if string is empty.
+        /// </summary>
+        public static int ord(PhpString str) => str.Ord();
+
+        /// <summary>
         /// Converts ordinal number of character to a binary string containing that character.
         /// </summary>
         /// <param name="charCode">The ASCII code.</param>
         /// <returns>The character with <paramref name="charCode"/> ASCIT code.</returns>
-        public static string chr(int charCode) => unchecked((char)charCode).ToString();
+        public static PhpString chr(int charCode) => new PhpString(new byte[] { (byte)charCode });
 
         /// <summary>
         /// Converts ordinal number of Unicode character to a string containing that character.
@@ -1247,7 +1250,7 @@ namespace Pchp.Library
         /// See <see cref="substr_replace(PhpValue, PhpValue, PhpValue, PhpValue)"/>.
         /// </summary>
         public static PhpString substr_replace(PhpString subject, PhpString replacement, int offset, int length = int.MaxValue)
-            =>  SubstringReplace(subject, replacement, offset, length);
+            => SubstringReplace(subject, replacement, offset, length);
 
         /// <summary>
         /// Replaces a portion of a string or multiple strings with another string.

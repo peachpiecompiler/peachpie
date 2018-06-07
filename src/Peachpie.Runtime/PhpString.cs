@@ -34,7 +34,7 @@ namespace Pchp.Core.Text
         /// Character needs to be stored as a single byte,
         /// conversion to char would change its semantic.
         /// </summary>
-        public bool IsBinary => _b >= 0xf0;
+        public bool IsBinary => _b > 0x7f;
 
         public BlobChar(byte b) : this() { _b = b; }
         public BlobChar(char c) : this() { _ch = c; _b = -1; }
@@ -62,6 +62,8 @@ namespace Pchp.Core.Text
         public char AsChar() => IsByte ? (char)_b : _ch;
 
         public byte AsByte() => IsByte ? (byte)_b : (byte)_ch;
+
+        public int Ord() => IsByte ? _b : (int)_ch;
 
         public void Output(Context ctx)
         {
@@ -240,6 +242,48 @@ namespace Pchp.Core.Text
         BlobChar this[int index] { get; set; }
 
         int Length { get; }
+    }
+
+    #endregion
+
+    #region PhpStringExtension
+
+    /// <summary>
+    /// <see cref="PhpString"/> operations.
+    /// </summary>
+    public static class PhpStringExtension
+    {
+        /// <summary>
+        /// Gets first characters <c>ord</c>.
+        /// </summary>
+        public static int Ord(this PhpString str) => str.IsEmpty ? 0 : PhpString.AsArray(str)[0].Ord();
+
+        /// <summary>
+        /// Gets substring of this instance.
+        /// The operation safely maintains single byte and unicode characters, and reuses existing underlaying chunks of text.
+        /// </summary>
+        public static PhpString Substring(this PhpString str, int startIndex) => Substring(str, startIndex, int.MaxValue);
+
+        /// <summary>
+        /// Gets substring of this instance.
+        /// The operation safely maintains single byte and unicode characters, and reuses existing underlaying chunks of text.
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">The start index is less than zero.</exception>
+        public static PhpString Substring(this PhpString str, int startIndex, int length)
+        {
+            if (str.IsDefault || length <= 0)
+            {
+                return default(PhpString); // FALSE
+            }
+
+            //
+
+            var blob = new PhpString.Blob();
+
+            str.CopyTo(blob, startIndex, length);
+
+            return new PhpString(blob);
+        }
     }
 
     #endregion
@@ -447,7 +491,7 @@ namespace Pchp.Core
                     {
                         Debug.Assert(IsArrayOfChunks);
                         var arr = (object[])chunks;
-                        var newarr = new object[arr.Length];
+                        var newarr = new object[_chunksCount];
                         Array.Copy(arr, newarr, _chunksCount);
 
                         if ((_flags & Flags.ContainsMutables) != 0)
@@ -457,6 +501,8 @@ namespace Pchp.Core
                                 InplaceDeepCopy(ref newarr[i]);
                             }
                         }
+
+                        _chunks = newarr;
                     }
                     else
                     {
@@ -1408,33 +1454,6 @@ namespace Pchp.Core
         /// Operator that checks the string is default/uninitialized not containing any value.
         /// </summary>
         public static bool IsNull(PhpString value) => value.IsDefault;
-
-        /// <summary>
-        /// Gets substring of this instance.
-        /// The operation safely maintains single byte and unicode characters, and reuses existing underlaying chunks of text.
-        /// </summary>
-        public PhpString Substring(int startIndex) => Substring(startIndex, int.MaxValue);
-
-        /// <summary>
-        /// Gets substring of this instance.
-        /// The operation safely maintains single byte and unicode characters, and reuses existing underlaying chunks of text.
-        /// </summary>
-        /// <exception cref="ArgumentOutOfRangeException">The start index is less than zero.</exception>
-        public PhpString Substring(int startIndex, int length)
-        {
-            if (ReferenceEquals(_blob, null) || length <= 0)
-            {
-                return default(PhpString); // FALSE
-            }
-
-            //
-
-            var blob = new Blob();
-
-            CopyTo(blob, startIndex, length);
-
-            return new PhpString(blob);
-        }
 
         /// <summary>
         /// Copies portion of this instance to the target string.
