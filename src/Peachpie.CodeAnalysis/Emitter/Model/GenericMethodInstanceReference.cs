@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using Microsoft.CodeAnalysis.Emit;
-using Cci = Microsoft.Cci;
 using Pchp.CodeAnalysis.Symbols;
+using Cci = Microsoft.Cci;
 
 namespace Pchp.CodeAnalysis.Emit
 {

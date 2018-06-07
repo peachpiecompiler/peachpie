@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
 
 namespace Pchp.CodeAnalysis.Symbols

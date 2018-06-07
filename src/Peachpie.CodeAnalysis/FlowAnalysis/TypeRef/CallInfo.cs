@@ -1,9 +1,5 @@
-﻿using Devsense.PHP.Syntax;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {

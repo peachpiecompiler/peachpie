@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;
+using System.Globalization;
 using Devsense.PHP.Errors;
+using Microsoft.CodeAnalysis;
 using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Errors

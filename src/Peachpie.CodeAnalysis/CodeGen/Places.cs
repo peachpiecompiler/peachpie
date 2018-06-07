@@ -1,18 +1,14 @@
-﻿using Devsense.PHP.Syntax;
+﻿using System;
+using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Reflection.Metadata;
+using Devsense.PHP.Syntax;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Symbols;
 using Peachpie.CodeAnalysis.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
 using Cci = Microsoft.Cci;
 
 namespace Pchp.CodeAnalysis.CodeGen

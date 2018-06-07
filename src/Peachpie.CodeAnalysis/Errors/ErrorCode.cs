@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace Pchp.CodeAnalysis.Errors
+﻿namespace Pchp.CodeAnalysis.Errors
 {
     /// <summary>
     /// A database of all possible diagnostics used by PHP compiler. The severity can be determined by the prefix:

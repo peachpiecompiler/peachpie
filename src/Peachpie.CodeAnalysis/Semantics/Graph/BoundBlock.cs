@@ -2,7 +2,6 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using Devsense.PHP.Syntax;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Semantics;
 

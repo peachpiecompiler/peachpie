@@ -1,12 +1,5 @@
-﻿using Pchp.CodeAnalysis.Symbols;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Collections.Immutable;
-using Devsense.PHP.Syntax;
-using Devsense.PHP.Syntax.Ast;
+﻿using Devsense.PHP.Syntax;
+using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {

@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Reflection.Metadata;
-using Roslyn.Utilities;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.CodeAnalysis.Emit;
-using Cci = Microsoft.Cci;
+using System.Reflection.Metadata;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.Emit;
+using Roslyn.Utilities;
+using Cci = Microsoft.Cci;
 
 namespace Pchp.CodeAnalysis.Symbols
 {

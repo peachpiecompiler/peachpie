@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Pchp.CodeAnalysis.Symbols
+﻿namespace Pchp.CodeAnalysis.Symbols
 {
     /// <summary>
     /// Mask of single bits representing a true-false state.

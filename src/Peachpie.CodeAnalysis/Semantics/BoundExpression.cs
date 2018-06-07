@@ -1,17 +1,14 @@
-﻿using Microsoft.CodeAnalysis.Semantics;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.CodeAnalysis;
 using System.Collections.Immutable;
-using Pchp.CodeAnalysis.FlowAnalysis;
 using System.Diagnostics;
-using Pchp.CodeAnalysis.Symbols;
-using Pchp.CodeAnalysis.CodeGen;
-using Microsoft.CodeAnalysis.CodeGen;
+using System.Linq;
 using Devsense.PHP.Syntax;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.CodeGen;
+using Pchp.CodeAnalysis.FlowAnalysis;
+using Pchp.CodeAnalysis.Symbols;
 using Ast = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.Semantics

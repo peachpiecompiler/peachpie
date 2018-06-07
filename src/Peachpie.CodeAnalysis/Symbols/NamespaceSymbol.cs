@@ -1,9 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using Cci = Microsoft.Cci;
 using Microsoft.CodeAnalysis;
-using System;
 
 namespace Pchp.CodeAnalysis.Symbols
 {

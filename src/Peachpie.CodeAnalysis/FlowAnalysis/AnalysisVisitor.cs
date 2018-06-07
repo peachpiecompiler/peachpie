@@ -1,15 +1,7 @@
-﻿using Pchp.CodeAnalysis.Semantics.Graph;
-using System;
-using System.Collections.Generic;
+﻿using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.CodeAnalysis.Semantics;
-using System.Diagnostics;
 using Pchp.CodeAnalysis.Semantics;
-using Devsense.PHP.Text;
-using Devsense.PHP.Syntax;
-using Devsense.PHP.Syntax.Ast;
+using Pchp.CodeAnalysis.Semantics.Graph;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {

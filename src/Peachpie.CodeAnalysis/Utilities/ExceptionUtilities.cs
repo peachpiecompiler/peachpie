@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics;
+using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Semantics;
-using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Symbols;
-using System.Diagnostics;
 
 namespace Peachpie.CodeAnalysis.Utilities
 {

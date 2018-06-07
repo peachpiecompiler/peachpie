@@ -1,18 +1,16 @@
-﻿using Microsoft.CodeAnalysis;
-using Roslyn.Utilities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Cci;
-using System.Globalization;
 using System.Threading;
+using Microsoft.Cci;
+using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.DocumentationComments;
+using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {

@@ -2,8 +2,8 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
+using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {

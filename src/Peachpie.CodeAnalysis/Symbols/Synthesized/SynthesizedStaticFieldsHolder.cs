@@ -2,13 +2,9 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Devsense.PHP.Syntax;
 using Microsoft.CodeAnalysis;
 using Roslyn.Utilities;
-using System.Threading;
-using Devsense.PHP.Syntax;
-using Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.Symbols
 {

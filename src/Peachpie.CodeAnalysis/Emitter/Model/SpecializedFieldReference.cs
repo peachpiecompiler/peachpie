@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using Microsoft.CodeAnalysis.Emit;
-using Microsoft.CodeAnalysis.Text;
 using Pchp.CodeAnalysis.Symbols;
 using Cci = Microsoft.Cci;
 

@@ -2,14 +2,10 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.CodeAnalysis;
-using Pchp.CodeAnalysis.Semantics;
-using Pchp.CodeAnalysis.Semantics.Graph;
-using Pchp.CodeAnalysis.FlowAnalysis;
-using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
+using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.FlowAnalysis;
 
 namespace Pchp.CodeAnalysis.Symbols
 {

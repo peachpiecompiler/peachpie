@@ -2,12 +2,11 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Microsoft.CodeAnalysis;
-using Roslyn.Utilities;
-using Pchp.CodeAnalysis.Utilities;
-using Devsense.PHP.Syntax.Ast;
-using static Pchp.CodeAnalysis.AstUtils;
 using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
+using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.Utilities;
+using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
