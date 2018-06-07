@@ -501,9 +501,7 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Add a normal cURL handle to a cURL multi handle.
         /// </summary>
-        public static int curl_multi_add_handle(CURLMultiResource mh, CURLResource ch) => mh.Handles.Add(ch)
-            ? CURLConstants.CURLM_OK
-            : CURLConstants.CURLM_ADDED_ALREADY;
+        public static int curl_multi_add_handle(CURLMultiResource mh, CURLResource ch) => mh.TryAddHandle(ch);
 
         /// <summary>
         /// Remove a multi handle from a set of cURL handles
@@ -606,5 +604,15 @@ namespace Peachpie.Library.Network
             Task.WaitAny(tasks, TimeSpan.FromSeconds(timeout));
             return tasks.Count(t => t.IsCompleted);
         }
+
+        /// <summary>
+        /// Return the last multi curl error number.
+        /// </summary>
+        public static int curl_multi_errno(CURLMultiResource mh) => mh.LastError;
+
+        /// <summary>
+        /// Return string describing error code.
+        /// </summary>
+        public static string curl_multi_strerror(int errornum) => CURLConstants.GetMultiErrorString(errornum);
     }
 }

@@ -14,8 +14,16 @@ namespace Peachpie.Library.Network
 
         internal Queue<PhpArray> MessageQueue { get; } = new Queue<PhpArray>();
 
+        internal int LastError { get; private set; }
+
         public CURLMultiResource() : base(CURLConstants.CurlMultiResourceName)
         {
+        }
+
+        internal int TryAddHandle(CURLResource handle)
+        {
+            LastError = Handles.Add(handle) ? CURLConstants.CURLM_OK : CURLConstants.CURLM_ADDED_ALREADY;
+            return LastError;
         }
 
         internal void AddResultMessage(CURLResource handle)
