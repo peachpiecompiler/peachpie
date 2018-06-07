@@ -40,7 +40,7 @@ namespace Pchp.Core
         /// Script descriptor.
         /// </summary>
         [DebuggerDisplay("{Index}: {Path,nq}")]
-        public struct ScriptInfo : IScript
+        public readonly struct ScriptInfo : IScript
         {
             /// <summary>
             /// Undefined script.
@@ -61,12 +61,12 @@ namespace Pchp.Core
             /// Internal ID.
             /// Index to the internal array of compiled scripts.
             /// </summary>
-            readonly public int Index;
+            public readonly int Index;
 
             /// <summary>
             /// Script path, relative to the <see cref="Context.RootPath"/>.
             /// </summary>
-            readonly public string Path;
+            public readonly string Path;
 
             /// <summary>
             /// Emtry method (main method) of the script.

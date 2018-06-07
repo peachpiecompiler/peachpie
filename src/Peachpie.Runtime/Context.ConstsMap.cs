@@ -1,13 +1,8 @@
-﻿using Pchp.Core.Utilities;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Pchp.Core
 {
@@ -16,7 +11,7 @@ namespace Pchp.Core
         #region ConstName
 
         [DebuggerDisplay("{Name,nq}")]
-        struct ConstName : IEquatable<ConstName>
+        readonly struct ConstName : IEquatable<ConstName>
         {
             public class ConstNameComparer : IEqualityComparer<ConstName>
             {

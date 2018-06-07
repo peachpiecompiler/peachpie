@@ -9,6 +9,7 @@
     <PackageTags>peachpie;runtime</PackageTags>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Description>Peachpie application runtime.</Description>
+    <LangVersion>7.2</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\Peachpie.CodeAnalysis\Semantics\AccessMask.cs" Link="Dynamic\AccessMask.cs" />

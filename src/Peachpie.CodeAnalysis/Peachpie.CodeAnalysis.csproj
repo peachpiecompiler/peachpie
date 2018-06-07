@@ -10,6 +10,7 @@
     <PackageTags>php;peachpie;dotnet;compiler</PackageTags>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Description>Peachpie PHP language compiler platform.</Description>
+    <LangVersion>7.2</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
