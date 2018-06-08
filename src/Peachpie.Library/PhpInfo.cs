@@ -14,7 +14,7 @@ namespace Pchp.Library
     public static partial class PhpInfo
     {
         [PhpHidden, Flags]
-        public enum PhpInfoWhat
+        public enum PhpInfoWhat : long
         {
             /// <summary>
             /// The configuration line, php.ini location, build date, Web Server, System and more
@@ -47,7 +47,7 @@ namespace Pchp.Library
             /// <summary>
             /// Shows all of the above
             /// </summary>
-            INFO_ALL = -1,
+            INFO_ALL = 0xffffffff,
         }
         /// <summary>
         /// The configuration line, php.ini location, build date, Web Server, System and more
@@ -80,7 +80,7 @@ namespace Pchp.Library
         /// <summary>
         /// Shows all of the above
         /// </summary>
-        public const int INFO_ALL = (int)PhpInfoWhat.INFO_ALL;
+        public const long INFO_ALL = (long)PhpInfoWhat.INFO_ALL;
 
         /// <summary>
         /// Outputs information about PHP's configuration
