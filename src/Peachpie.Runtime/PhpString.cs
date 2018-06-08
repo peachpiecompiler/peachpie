@@ -1388,7 +1388,23 @@ namespace Pchp.Core
         /// <summary>
         /// Gets mutable access to the string value.
         /// </summary>
-        public Blob EnsureWritable() => _blob.IsShared ? (_blob = _blob.ReleaseOne()) : _blob;
+        public Blob EnsureWritable()
+        {
+            var blob = _blob;
+
+            if (ReferenceEquals(blob, null))
+            {
+                _blob = blob = new Blob();
+            }
+            else if (blob.IsShared)
+            {
+                _blob = blob = blob.ReleaseOne();
+            }
+
+            //
+
+            return blob;
+        }
 
         /// <summary>
         /// Outputs the string content to the context output streams.

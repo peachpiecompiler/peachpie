@@ -1,6 +1,7 @@
 using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Pchp.Core;
+using Pchp.Core.Text;
 
 namespace Peachpie.Runtime.Tests
 {
