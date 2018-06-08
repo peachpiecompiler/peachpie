@@ -27,8 +27,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override TypeSymbol GetByRefReturnTypeSymbol(PEModuleSymbol moduleSymbol, TypeSymbol referencedType, ushort countOfCustomModifiersPrecedingByRef)
         {
-            throw new NotImplementedException();
-            //return new ByRefReturnErrorTypeSymbol(referencedType, countOfCustomModifiersPrecedingByRef);
+            // this method will be removed after we use CodeAnalysis 0.9.0
+            return new ByRefReturnErrorTypeSymbol(referencedType);
         }
 
         internal override TypeSymbol GetSpecialType(PEModuleSymbol moduleSymbol, SpecialType specialType)

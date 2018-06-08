@@ -742,8 +742,13 @@ namespace Pchp.CodeAnalysis.Symbols
                 @params = ImmutableArray<ParameterSymbol>.Empty;
             }
 
-            // paramInfo[0] contains information about return "parameter"
-            Debug.Assert(!paramInfo[0].IsByRef);
+            // workaround for CodeAnalysis 0.6.0 // remove after we use 0.9.0+
+            if (paramInfo[0].Type is ByRefReturnErrorTypeSymbol rtype)
+            {
+                // fix paramInfo
+                paramInfo[0].IsByRef = true;
+                paramInfo[0].Type = rtype.TheReturnType;
+            }
 
             //// Dynamify object type if necessary
             //paramInfo[0].Type = paramInfo[0].Type.AsDynamicIfNoPia(_containingType);
@@ -822,6 +827,8 @@ namespace Pchp.CodeAnalysis.Symbols
         public override ImmutableArray<ParameterSymbol> Parameters => Signature.Parameters;
 
         public override int ParameterCount => Signature.Parameters.Length;
+
+        public override RefKind RefKind => Signature.ReturnParam.RefKind;
 
         public override TypeSymbol ReturnType => Signature.ReturnParam.Type;
         internal ParameterSymbol ReturnTypeParameter => Signature.ReturnParam;

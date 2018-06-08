@@ -343,6 +343,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool ReturnsVoid => ReturnType.SpecialType == SpecialType.System_Void;
 
+        public override RefKind RefKind => RefKind.None;
+
         public override TypeSymbol ReturnType => PhpRoutineSymbolExtensions.ConstructClrReturnType(this);
 
         internal override ObsoleteAttributeData ObsoleteAttributeData => null;   // TODO: from PHPDoc

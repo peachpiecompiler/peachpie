@@ -229,8 +229,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                //return this.ReturnType is ByRefReturnErrorTypeSymbol;
-                return false;
+                return RefKind != RefKind.None;
             }
         }
 

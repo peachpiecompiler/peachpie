@@ -211,4 +211,17 @@ namespace Pchp.CodeAnalysis.Symbols
         internal override bool MangleName => _candidates[0].MangleName;
         public override int Arity => 0;
     }
+
+    // to be removed after CodeAnalysis 0.9.0
+    internal sealed class ByRefReturnErrorTypeSymbol : ErrorTypeSymbol // remove after we use CodeAnalysis 0.9.0
+    {
+        public TypeSymbol TheReturnType { get; }
+
+        public ByRefReturnErrorTypeSymbol(TypeSymbol type)
+        {
+            TheReturnType = type;
+        }
+
+        public override CandidateReason CandidateReason => CandidateReason.NotAValue; // does not matetr
+    }
 }

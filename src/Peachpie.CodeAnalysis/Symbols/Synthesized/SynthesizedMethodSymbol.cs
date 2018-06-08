@@ -106,6 +106,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool ReturnsVoid => ReturnType.SpecialType == SpecialType.System_Void;
 
+        public override RefKind RefKind => RefKind.None;
+
         public override TypeSymbol ReturnType => _return ?? ForwardedCall?.ReturnType ?? throw new InvalidOperationException();
 
         internal override ObsoleteAttributeData ObsoleteAttributeData => null;

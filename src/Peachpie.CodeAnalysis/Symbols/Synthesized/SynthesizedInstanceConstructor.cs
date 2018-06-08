@@ -143,6 +143,8 @@ namespace Pchp.CodeAnalysis.Symbols
             get { return ContainingType.Locations; }
         }
 
+        public override RefKind RefKind => RefKind.None;
+
         public sealed override TypeSymbol ReturnType
         {
             get { return ContainingAssembly.GetSpecialType(SpecialType.System_Void); }

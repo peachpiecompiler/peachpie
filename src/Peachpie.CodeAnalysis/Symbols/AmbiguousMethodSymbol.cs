@@ -34,6 +34,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual ImmutableArray<IMethodSymbol> OriginalSymbols => ImmutableArray<IMethodSymbol>.Empty;
 
+        public override RefKind RefKind => RefKind.None;
+
         public override bool IsExtern => false;
 
         public override ImmutableArray<ParameterSymbol> Parameters => ImmutableArray<ParameterSymbol>.Empty;
@@ -123,6 +125,8 @@ namespace Pchp.CodeAnalysis.Symbols
         public override MethodKind MethodKind => _ambiguities[0].MethodKind;
 
         public override bool ReturnsVoid => _ambiguities.Any(a => a.ReturnsVoid);
+
+        public override RefKind RefKind => _ambiguities[0].RefKind;
 
         public override TypeSymbol ReturnType => _ambiguities[0].ReturnType;
     }

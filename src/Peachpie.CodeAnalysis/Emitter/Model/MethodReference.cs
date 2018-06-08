@@ -97,7 +97,7 @@ namespace Pchp.CodeAnalysis.Emit
         {
             get
             {
-                return false; // return UnderlyingMethod.ReturnType is ByRefReturnErrorTypeSymbol;
+                return UnderlyingMethod.ReturnValueIsByRef;
             }
         }
 

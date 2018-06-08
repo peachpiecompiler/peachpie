@@ -151,7 +151,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get
             {
                 CheckDefinitionInvariant();
-                return this.RefKind == Microsoft.CodeAnalysis.RefKind.Out; // IsMetadataOut;
+                return false; // IsMetadataOut;
             }
         }
 

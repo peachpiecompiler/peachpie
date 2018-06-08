@@ -155,6 +155,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         ITypeSymbol IMethodSymbol.ReturnType => ReturnType;
 
+        public abstract RefKind RefKind { get; }
+
         public abstract TypeSymbol ReturnType { get; }
 
         public virtual ImmutableArray<CustomModifier> ReturnTypeCustomModifiers => ImmutableArray<CustomModifier>.Empty;

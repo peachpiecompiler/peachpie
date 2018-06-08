@@ -451,6 +451,8 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public override RefKind RefKind => originalDefinition.RefKind;
+
         public sealed override TypeSymbol ReturnType
         {
             get
