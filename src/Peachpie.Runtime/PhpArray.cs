@@ -306,6 +306,11 @@ namespace Pchp.Core
         /// <remarks>See <see cref="NameValueCollectionUtils.AddVariable(IPhpArray, string, string, string)"/> for details.</remarks>
         public void AddVariable(string name, string value) => NameValueCollectionUtils.AddVariable(this, name, value);
 
+        /// <summary>
+        /// Gets reference (<c>ref</c> <see cref="PhpValue"/>) to the item at given index.
+        /// </summary>
+        public ref PhpValue GetItemRef(IntStringKey key) => ref table._getref(key);
+
         #endregion
 
         #region IPhpConvertible

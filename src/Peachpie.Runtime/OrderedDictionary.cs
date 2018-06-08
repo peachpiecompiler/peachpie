@@ -1498,15 +1498,42 @@ namespace Pchp.Core
 
         internal PhpValue _get(ref IntStringKey key)
         {
-            var _entries = this.entries;
-            var nIndex = key.Integer & this.tableMask;// index(ref key);// h & ht->nTableMask;
-            for (var p = this.buckets[nIndex]; p >= 0; p = _entries[p].next)
-                if (_entries[p].KeyEquals(ref key))
-                    return _entries[p]._value;
+            var entries = this.entries;
+            for (var p = this.buckets[key.Integer & this.tableMask]; p >= 0; p = entries[p].next)
+            {
+                if (entries[p].KeyEquals(ref key))
+                {
+                    return entries[p]._value;
+                }
+            }
 
             // not found:
             return PhpValue.Void;// throw new KeyNotFoundException();
         }
+
+        /// <summary>
+        /// Gets reference to value at given index.
+        /// </summary>
+        /// <remarks>
+        /// The method does not "unshare" the collection in case there are more arrays using this data structure.
+        /// Caller should be responsible for ensuring it is writeable.
+        /// </remarks>
+        /// <exception cref="KeyNotFoundException">In case the item at given index is not found.</exception>
+        internal ref PhpValue _getref(IntStringKey key)
+        {
+            var entries = this.entries;
+            for (var p = this.buckets[key.Integer & this.tableMask]; p >= 0; p = entries[p].next)
+            {
+                if (entries[p].KeyEquals(ref key))
+                {
+                    return ref entries[p]._value;
+                }
+            }
+
+            // not found:
+            throw new KeyNotFoundException();   // TODO: create the entry
+        }
+
         internal bool _contains(ref IntStringKey key)
         {
             return _findEntry(ref key) >= 0;
@@ -2013,7 +2040,7 @@ namespace Pchp.Core
 
         #endregion
 
-        #region _ensure_item_ref, _ensure_item_array
+        #region _ensure_item_alias, _ensure_item_object, _ensure_item_array
 
         /// <summary>
         /// Ensures item at specified key is aliased.
