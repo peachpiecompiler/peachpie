@@ -1110,12 +1110,10 @@ namespace Pchp.Core
 
             EnsureInitialized();
 
-            int nIndex = key.Integer & this.tableMask;// index(ref key);
             var _entries = this.entries;
 
             // find
-            int p;
-            for (p = this.buckets[nIndex]; p >= 0; p = _entries[p].next) // TODO: unsafe
+            for (int p = this.buckets[key.Integer & this.tableMask]; p >= 0; p = _entries[p].next) // TODO: unsafe
             {
                 if (_entries[p].KeyEquals(ref key))
                 {
@@ -1144,12 +1142,10 @@ namespace Pchp.Core
             this.ThrowIfShared();
             EnsureInitialized();
 
-            int nIndex = key.Integer & this.tableMask;// index(ref key);
             var _entries = this.entries;
 
             // find
-            int p;
-            for (p = this.buckets[nIndex]; p >= 0; p = _entries[p].next) // TODO: unsafe
+            for (int p = this.buckets[key.Integer & this.tableMask]; p >= 0; p = _entries[p].next) // TODO: unsafe
             {
                 if (_entries[p].KeyEquals(ref key))
                 {
@@ -1530,8 +1526,9 @@ namespace Pchp.Core
                 }
             }
 
-            // not found:
-            throw new KeyNotFoundException();   // TODO: create the entry
+            // not found, create the entry:
+            _add_last(ref key, PhpValue.Void); // changes this.entries, this.buckets, this.tableMask
+            return ref this.entries[this.buckets[key.Integer & this.tableMask]]._value;
         }
 
         internal bool _contains(ref IntStringKey key)

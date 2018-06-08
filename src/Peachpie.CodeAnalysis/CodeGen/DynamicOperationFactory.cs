@@ -41,11 +41,29 @@ namespace Pchp.CodeAnalysis.CodeGen
             public ImmutableArray<TypeSymbol> Arguments => _arguments.AsImmutable();
             readonly List<TypeSymbol> _arguments = new List<TypeSymbol>();
 
+            public ImmutableArray<RefKind> ArgumentsRefKinds
+            {
+                get
+                {
+                    if (_argumentsByRef == null)
+                    {
+                        return default(ImmutableArray<RefKind>);
+                    }
+                    else
+                    {
+                        while (_arguments.Count > _argumentsByRef.Count) _argumentsByRef.Add(RefKind.None);
+                        return _argumentsByRef.AsImmutable();
+                    }
+                }
+            }
+            List<RefKind> _argumentsByRef = null;
+
             public void Prepare(CodeGenerator cg)
             {
                 Debug.Assert(cg != null);
                 _factory = cg.Factory;  // update cg and factory instance
                 _arguments.Clear();
+                _argumentsByRef = null;
             }
 
             public void Construct(NamedTypeSymbol functype, Action<CodeGenerator> binder_builder)
@@ -123,7 +141,17 @@ namespace Pchp.CodeAnalysis.CodeGen
             /// <summary>
             /// Notes arguments pushed on the stack to be passed to callsite.
             /// </summary>
-            internal void AddArg(TypeSymbol t) => _arguments.Add(t);
+            internal void AddArg(TypeSymbol t, bool byref)
+            {
+                if (byref)
+                {
+                    if (_argumentsByRef == null) _argumentsByRef = new List<RefKind>(_arguments.Count + 1);
+                    while (_argumentsByRef.Count < _arguments.Count) _argumentsByRef.Add(RefKind.None);
+                    _argumentsByRef.Add(RefKind.Ref);
+                }
+
+                _arguments.Add(t);
+            }
 
             public TypeSymbol EmitTargetInstance(Func<CodeGenerator, TypeSymbol>/*!*/emitter)
             {
@@ -138,7 +166,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         t = _cg.CoreTypes.Object;
                     }
 
-                    AddArg(t);
+                    AddArg(t, byref: false);
                 }
 
                 //
@@ -163,7 +191,44 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else
                 {
-                    AddArg(_cg.Emit(a.Value));
+                    TypeSymbol t = null;
+                    bool byref = false;
+
+                    if (a.Value is BoundReferenceExpression varref)
+                    {
+                        // try read the value by ref,
+                        // we might need the value ref in the callsite:
+
+                        var place = varref.Place(_cg.Builder);
+                        if (place != null && place.HasAddress && place.TypeOpt == _cg.CoreTypes.PhpValue)
+                        {
+                            place.EmitLoadAddress(_cg.Builder);
+
+                            t = place.TypeOpt;
+                            byref = true;
+                        }
+                        else
+                        {
+                            var bound = varref.BindPlace(_cg);
+                            bound.EmitLoadPrepare(_cg);
+                            if ((bound.TypeOpt == null || bound.TypeOpt == _cg.CoreTypes.PhpValue) && // makes sense only if type is PhpValue (or unknown)
+                                (t = bound.EmitLoadAddress(_cg)) != null) // try to load address
+                            {
+                                byref = true;
+                            }
+                            else
+                            {
+                                t = bound.EmitLoad(_cg); // just load by value if address cannot be loaded
+                            }
+                        }
+                    }
+
+                    if (t == null)
+                    {
+                        t = _cg.Emit(a.Value);
+                    }
+
+                    AddArg(t, byref: byref);
                 }
             }
 
@@ -176,14 +241,14 @@ namespace Pchp.CodeAnalysis.CodeGen
                 Debug.Assert(ctor.Parameters[0].Type == value);
                 var t = _cg.EmitCall(ILOpCode.Newobj, ctor);
 
-                AddArg(t);
+                AddArg(t, byref: false);
 
                 return t;
             }
 
             /// <summary>Template: &lt;ctx&gt;</summary>
             public void EmitLoadContext()
-                => AddArg(_cg.EmitLoadContext());
+                => AddArg(_cg.EmitLoadContext(), byref: false);
 
             /// <summary>
             /// If needed in runtime, emits caller type context.

@@ -559,11 +559,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <param name="valueType">Type of value on the stack to be stored. Can be <c>null</c> in case of <c>Unset</c> semantic.</param>
         void EmitStore(CodeGenerator cg, TypeSymbol valueType);
 
-        ///// <summary>
-        ///// Emits code that loads address of this storage place.
-        ///// Expects <see cref="EmitPrepare(CodeGenerator)"/> to be called first. 
-        ///// </summary>
-        //void EmitLoadAddress(CodeGenerator cg);
+        /// <summary>
+        /// Emits code that loads address of this storage place.
+        /// Expects <see cref="EmitLoadPrepare"/> to be called first. 
+        /// </summary>
+        /// <returns>Type of value. Gets <c>null</c> if address cannot be loaded.</returns>
+        TypeSymbol EmitLoadAddress(CodeGenerator cg);
 
         ///// <summary>
         ///// Gets whether the place has an address.
@@ -795,6 +796,23 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        /// <summary>
+        /// Emits code that loads address of this storage place.
+        /// Expects <see cref="EmitLoadPrepare"/> to be called first. 
+        /// </summary>
+        /// <returns>Type of value. Gets <c>null</c> if address cannot be loaded.</returns>
+        public TypeSymbol EmitLoadAddress(CodeGenerator cg)
+        {
+            if (_place.HasAddress)
+            {
+                Debug.Assert(_place.TypeOpt != null);
+                _place.EmitLoadAddress(cg.Builder);
+                return _place.TypeOpt;
+            }
+
+            return null;
+        }
+
         public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
         {
             var type = _place.TypeOpt;
@@ -1018,6 +1036,13 @@ namespace Pchp.CodeAnalysis.CodeGen
             cg.EmitCall(p.SetMethod.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, p.SetMethod);
         }
 
+        /// <summary>
+        /// Emits code that loads address of this storage place.
+        /// Expects <see cref="EmitLoadPrepare"/> to be called first. 
+        /// </summary>
+        /// <returns>Type of value. Gets <c>null</c> if address cannot be loaded.</returns>
+        public TypeSymbol EmitLoadAddress(CodeGenerator cg) => null;
+
         #endregion
 
         PropertySymbol ResolveSuperglobalProperty(CodeGenerator cg)
@@ -1125,6 +1150,20 @@ namespace Pchp.CodeAnalysis.CodeGen
                 //
                 return result;
             }
+        }
+
+        /// <summary>
+        /// Emits code that loads address of this storage place.
+        /// Expects <see cref="EmitLoadPrepare"/> to be called first. 
+        /// </summary>
+        /// <returns>Type of value. Gets <c>null</c> if address cannot be loaded.</returns>
+        public TypeSymbol EmitLoadAddress(CodeGenerator cg)
+        {
+            // STACK: <PhpArray> <key>
+
+            // Template: ref PhpArray.GetItemRef(key)
+            Debug.Assert(cg.CoreMethods.PhpArray.GetItemRef_IntStringKey.Symbol.ReturnValueIsByRef);
+            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.GetItemRef_IntStringKey);
         }
 
         public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null)
@@ -1265,10 +1304,12 @@ namespace Pchp.CodeAnalysis.CodeGen
             return cg.EmitCall(getter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, getter);
         }
 
-        public void EmitLoadAddress(CodeGenerator cg)
-        {
-            throw new NotSupportedException();
-        }
+        /// <summary>
+        /// Emits code that loads address of this storage place.
+        /// Expects <see cref="EmitLoadPrepare"/> to be called first. 
+        /// </summary>
+        /// <returns>Type of value. Gets <c>null</c> if address cannot be loaded.</returns>
+        public TypeSymbol EmitLoadAddress(CodeGenerator cg) => null;
 
         public void EmitStore(CodeGenerator cg, TypeSymbol valueType)
         {
@@ -1635,6 +1676,22 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        /// <summary>
+        /// Emits code that loads address of this storage place.
+        /// Expects <see cref="EmitLoadPrepare"/> to be called first. 
+        /// </summary>
+        /// <returns>Type of value. Gets <c>null</c> if address cannot be loaded.</returns>
+        public TypeSymbol EmitLoadAddress(CodeGenerator cg)
+        {
+            if (Field.IsConst)
+            {
+                return null;
+            }
+
+            EmitOpCode_LoadAddress(cg);
+            return Field.Type;
+        }
+
         public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
         {
             Debug.Assert(Access.IsWrite || Access.IsUnset);
@@ -1819,7 +1876,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             var functype = cg.Factory.GetCallSiteDelegateType(
                 null, RefKind.None,
                 _lazyLoadCallSite.Arguments,
-                default(ImmutableArray<RefKind>),
+                _lazyLoadCallSite.ArgumentsRefKinds,
                 null,
                 return_type);
 
@@ -1839,6 +1896,13 @@ namespace Pchp.CodeAnalysis.CodeGen
             //
             return return_type;
         }
+
+        /// <summary>
+        /// Emits code that loads address of this storage place.
+        /// Expects <see cref="EmitLoadPrepare"/> to be called first. 
+        /// </summary>
+        /// <returns>Type of value. Gets <c>null</c> if address cannot be loaded.</returns>
+        public TypeSymbol EmitLoadAddress(CodeGenerator cg) => null;    // TODO
 
         public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null)
         {
@@ -1873,14 +1937,14 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (valueType != null)
             {
-                _lazyStoreCallSite.AddArg(valueType);
+                _lazyStoreCallSite.AddArg(valueType, byref: false);
             }
 
             // Target()
             var functype = cg.Factory.GetCallSiteDelegateType(
                 null, RefKind.None,
                 _lazyStoreCallSite.Arguments,
-                default(ImmutableArray<RefKind>),
+                _lazyStoreCallSite.ArgumentsRefKinds,
                 null,
                 cg.CoreTypes.Void);
 
@@ -1966,7 +2030,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             var functype = cg.Factory.GetCallSiteDelegateType(
                 null, RefKind.None,
                 _lazyLoadCallSite.Arguments,
-                default(ImmutableArray<RefKind>),
+                _lazyLoadCallSite.ArgumentsRefKinds,
                 null,
                 return_type);
 
@@ -1990,6 +2054,13 @@ namespace Pchp.CodeAnalysis.CodeGen
             //
             return return_type;
         }
+
+        /// <summary>
+        /// Emits code that loads address of this storage place.
+        /// Expects <see cref="EmitLoadPrepare"/> to be called first. 
+        /// </summary>
+        /// <returns>Type of value. Gets <c>null</c> if address cannot be loaded.</returns>
+        public TypeSymbol EmitLoadAddress(CodeGenerator cg) => null;    // TODO
 
         public void EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt = null)
         {
@@ -2020,14 +2091,14 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (valueType != null)
             {
-                _lazyStoreCallSite.AddArg(valueType);
+                _lazyStoreCallSite.AddArg(valueType, byref: false);
             }
 
             // Target()
             var functype = cg.Factory.GetCallSiteDelegateType(
                 null, RefKind.None,
                 _lazyStoreCallSite.Arguments,
-                default(ImmutableArray<RefKind>),
+                _lazyStoreCallSite.ArgumentsRefKinds,
                 null,
                 cg.CoreTypes.Void);
 

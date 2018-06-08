@@ -924,6 +924,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 RemoveKey_IntStringKey = t.Method("RemoveKey", ct.IntStringKey);
 
                 GetItemValue_IntStringKey = t.Method("GetItemValue", ct.IntStringKey);
+                GetItemRef_IntStringKey = t.Method("GetItemRef", ct.IntStringKey);
 
                 DeepCopy = t.Method("DeepCopy");
                 GetForeachEnumerator_Boolean = t.Method("GetForeachEnumerator", ct.Boolean);
@@ -947,7 +948,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreMethod
                 ToClass, ToString_Context, ToBoolean,
                 RemoveKey_IntStringKey,
-                GetItemValue_IntStringKey,
+                GetItemValue_IntStringKey, GetItemRef_IntStringKey,
                 SetItemValue_IntStringKey_PhpValue, SetItemAlias_IntStringKey_PhpAlias, Add_PhpValue,
                 EnsureItemObject_IntStringKey, EnsureItemArray_IntStringKey, EnsureItemAlias_IntStringKey,
                 DeepCopy, GetForeachEnumerator_Boolean,

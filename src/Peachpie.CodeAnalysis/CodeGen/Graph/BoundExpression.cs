@@ -2292,6 +2292,11 @@ namespace Pchp.CodeAnalysis.Semantics
             throw new InvalidOperationException();
         }
 
+        TypeSymbol IBoundReference.EmitLoadAddress(CodeGenerator cg)
+        {
+            throw new InvalidOperationException();
+        }
+
         void IBoundReference.EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
         {
             // nop
@@ -2461,7 +2466,7 @@ namespace Pchp.CodeAnalysis.Semantics
             var functype = cg.Factory.GetCallSiteDelegateType(
                 null, RefKind.None,
                 callsite.Arguments,
-                default(ImmutableArray<RefKind>),
+                callsite.ArgumentsRefKinds,
                 null,
                 return_type);
 
@@ -3991,6 +3996,24 @@ namespace Pchp.CodeAnalysis.Semantics
             else
             {
                 throw cg.NotImplementedException($"LOAD {stack.tArray.Name}[]");
+            }
+        }
+
+        TypeSymbol IBoundReference.EmitLoadAddress(CodeGenerator cg)
+        {
+            var stack = PopEmittedArray();
+            if (stack.tArray == cg.CoreTypes.PhpArray && stack.tIndex == cg.CoreTypes.IntStringKey)
+            {
+                // STACK: <PhpArray> <key>
+
+                // Template: ref PhpArray.GetItemRef(key)
+                Debug.Assert(cg.CoreMethods.PhpArray.GetItemRef_IntStringKey.Symbol.ReturnValueIsByRef);
+                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.GetItemRef_IntStringKey);
+            }
+            else
+            {
+                PushEmittedArray(stack.tArray, stack.tIndex);
+                return null;    // TODO: IPhpArray if needed
             }
         }
 
