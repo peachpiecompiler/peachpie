@@ -194,7 +194,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     TypeSymbol t = null;
                     bool byref = false;
 
-                    if (a.Value is BoundReferenceExpression varref)
+                    if (a.Value is BoundReferenceExpression varref && !varref.ConstantValue.HasValue)
                     {
                         // try read the value by ref,
                         // we might need the value ref in the callsite:
