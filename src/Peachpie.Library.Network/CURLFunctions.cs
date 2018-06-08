@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Core.Utilities;
 
@@ -209,35 +211,46 @@ namespace Peachpie.Library.Network
             return result;
         }
 
-        static CURLResponse ExecHttpRequest(Context ctx, CURLResource ch, Uri uri)
+        static CURLResponse ProcessHttpResponseTask(Context ctx, CURLResource ch, Task<WebResponse> responseTask)
         {
             try
             {
-                return ExecHttpRequestInternal(ctx, ch, uri);
-            }
-            catch (WebException ex)
-            {
-                switch (ex.Status)
+                using (var response = (HttpWebResponse)responseTask.Result)
                 {
-                    case WebExceptionStatus.Timeout:
-                        return CURLResponse.CreateError(CURLConstants.CURLE_OPERATION_TIMEDOUT, ex);
-                    case WebExceptionStatus.TrustFailure:
-                        return CURLResponse.CreateError(CURLConstants.CURLE_SSL_CACERT, ex);
-                    default:
-                        return CURLResponse.CreateError(CURLConstants.CURLE_COULDNT_CONNECT, ex);
+                    return new CURLResponse(ProcessResponse(ctx, ch, response), response);
                 }
             }
-            catch (ProtocolViolationException ex)
+            catch (AggregateException agEx)
             {
-                return CURLResponse.CreateError(CURLConstants.CURLE_FAILED_INIT, ex);
-            }
-            catch (CryptographicException ex)
-            {
-                return CURLResponse.CreateError(CURLConstants.CURLE_SSL_CERTPROBLEM, ex);
+                var ex = agEx.InnerException;
+                if (ex is WebException webEx)
+                {
+                    switch (webEx.Status)
+                    {
+                        case WebExceptionStatus.Timeout:
+                            return CURLResponse.CreateError(CURLConstants.CURLE_OPERATION_TIMEDOUT, webEx);
+                        case WebExceptionStatus.TrustFailure:
+                            return CURLResponse.CreateError(CURLConstants.CURLE_SSL_CACERT, webEx);
+                        default:
+                            return CURLResponse.CreateError(CURLConstants.CURLE_COULDNT_CONNECT, webEx);
+                    }
+                }
+                else if (ex is ProtocolViolationException)
+                {
+                    return CURLResponse.CreateError(CURLConstants.CURLE_FAILED_INIT, ex);
+                }
+                else if (ex is CryptographicException)
+                {
+                    return CURLResponse.CreateError(CURLConstants.CURLE_SSL_CERTPROBLEM, ex);
+                }
+                else
+                {
+                    throw ex;
+                }
             }
         }
 
-        static CURLResponse ExecHttpRequestInternal(Context ctx, CURLResource ch, Uri uri)
+        static Task<WebResponse> ExecHttpRequestInternalAsync(Context ctx, CURLResource ch, Uri uri)
         {
             var req = WebRequest.CreateHttp(uri);
 
@@ -281,12 +294,7 @@ namespace Peachpie.Library.Network
                 // custom method, nothing to do
             }
 
-            // process response:
-
-            using (var response = (HttpWebResponse)req.GetResponse())    // NOTE: GetResponse() internally throws an exception, ignore it
-            {
-                return new CURLResponse(ProcessResponse(ctx, ch, response), response);
-            }
+            return req.GetResponseAsync();
         }
 
         static void ProcessPut(HttpWebRequest req, CURLResource ch)
@@ -434,12 +442,9 @@ namespace Peachpie.Library.Network
                 : PhpValue.True;
         }
 
-        /// <summary>
-        /// Perform a cURL session.
-        /// </summary>
-        public static PhpValue curl_exec(Context ctx, CURLResource ch)
+        static void StartRequestExecution(Context ctx, CURLResource ch)
         {
-            var start = DateTime.UtcNow;
+            ch.StartTime = DateTime.UtcNow;
 
             var uri = TryCreateUri(ch);
             if (uri == null)
@@ -450,19 +455,191 @@ namespace Peachpie.Library.Network
                 string.Equals(uri.Scheme, "http", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(uri.Scheme, "https", StringComparison.OrdinalIgnoreCase))
             {
-                ch.Result = ExecHttpRequest(ctx, ch, uri);
+                ch.Result = null;
+                ch.ResponseTask = ExecHttpRequestInternalAsync(ctx, ch, uri);
             }
             else
             {
                 ch.Result = CURLResponse.CreateError(CURLConstants.CURLE_UNSUPPORTED_PROTOCOL);
             }
+        }
 
-            //
+        static void EndRequestExecution(Context ctx, CURLResource ch)
+        {
+            if (ch.ResponseTask != null)
+            {
+                ch.Result = ProcessHttpResponseTask(ctx, ch, ch.ResponseTask);
+                ch.ResponseTask = null;
+            }
 
-            ch.Result.TotalTime = (DateTime.UtcNow - start);
+            ch.Result.TotalTime = (DateTime.UtcNow - ch.StartTime);
             ch.Result.Private = ch.Private;
+        }
+
+        /// <summary>
+        /// Perform a cURL session.
+        /// </summary>
+        public static PhpValue curl_exec(Context ctx, CURLResource ch)
+        {
+            StartRequestExecution(ctx, ch);
+            EndRequestExecution(ctx, ch);
 
             return ch.Result.ExecValue;
+        }
+
+        /// <summary>
+        /// Return the content of a cURL handle if <see cref="CURLConstants.CURLOPT_RETURNTRANSFER"/> is set.
+        /// </summary>
+        public static PhpValue curl_multi_getcontent(CURLResource ch)
+        {
+            if (ch.ReturnTransfer && ch.Result?.ExecValue.TypeCode == PhpTypeCode.MutableString)
+            {
+                return ch.Result.ExecValue;
+            }
+            else
+            {
+                return PhpValue.Null;
+            }
+        }
+
+        /// <summary>
+        /// Return a new cURL multi handle.
+        /// </summary>
+        [return: NotNull]
+        public static CURLMultiResource/*!*/curl_multi_init() => new CURLMultiResource();
+
+        /// <summary>
+        /// Close a set of cURL handles.
+        /// </summary>
+        public static void curl_multi_close(CURLMultiResource mh) => mh?.Dispose();
+
+        /// <summary>
+        /// Add a normal cURL handle to a cURL multi handle.
+        /// </summary>
+        public static int curl_multi_add_handle(CURLMultiResource mh, CURLResource ch) => mh.TryAddHandle(ch);
+
+        /// <summary>
+        /// Remove a multi handle from a set of cURL handles
+        /// </summary>
+        /// <remarks>
+        /// Removes a given <paramref name="ch"/> handle from the given <paramref name="mh"/> handle.
+        /// When the <paramref name="ch"/> handle has been removed, it is again perfectly legal to run
+        /// <see cref="curl_exec(Context, CURLResource)"/> on this handle. Removing the <paramref name="ch"/>
+        /// handle while being used, will effectively halt the transfer in progress involving that handle.
+        /// </remarks>
+        public static int curl_multi_remove_handle(CURLMultiResource mh, CURLResource ch)
+        {
+            if (mh.Handles.Remove(ch) && ch.ResponseTask != null)
+            {
+                // We will simply remove the only reference to the ongoing request and let the framework either
+                // finish it or cancel it
+                ch.ResponseTask = null;
+            }
+
+            return CURLConstants.CURLM_OK;
+        }
+
+        /// <summary>
+        /// Run the sub-connections of the current cURL handle.
+        /// </summary>
+        public static int curl_multi_exec(Context ctx, CURLMultiResource mh, out int still_running)
+        {
+            int runningCount = 0;
+
+            foreach (var handle in mh.Handles)
+            {
+                if (handle.ResponseTask != null)
+                {
+                    if (handle.ResponseTask.IsCompleted)
+                    {
+                        EndRequestExecution(ctx, handle);
+                        mh.AddResultMessage(handle);
+                    }
+                    else
+                    {
+                        runningCount++;
+                    }
+                }
+                else if (handle.Result == null)
+                {
+                    StartRequestExecution(ctx, handle);
+                    runningCount++;
+                }
+            }
+
+            still_running = runningCount;
+            return CURLConstants.CURLM_OK;
+        }
+
+        /// <summary>
+        /// Get information about the current transfers.
+        /// </summary>
+        [return: CastToFalse]
+        public static PhpArray curl_multi_info_read(CURLMultiResource mh) => curl_multi_info_read(mh, out _);
+
+        /// <summary>
+        /// Get information about the current transfers.
+        /// </summary>
+        [return: CastToFalse]
+        public static PhpArray curl_multi_info_read(CURLMultiResource mh, out int msgs_in_queue)
+        {
+            if (mh.MessageQueue.Count == 0)
+            {
+                msgs_in_queue = 0;
+                return null;
+            }
+            else
+            {
+                var msg = mh.MessageQueue.Dequeue();
+                msgs_in_queue = mh.MessageQueue.Count;
+                return msg;
+            }
+        }
+
+        /// <summary>
+        /// Wait for activity on any curl_multi connection.
+        /// </summary>
+        public static int curl_multi_select(CURLMultiResource mh, float timeout = 1.0f)
+        {
+            var tasks = mh.Handles
+                .Select(h => h.ResponseTask)
+                .Where(t => t != null)
+                .ToArray();
+
+            if (tasks.Length == 0)
+            {
+                return 0;
+            }
+
+            // Already completed and not yet processed by curl_multi_exec -> no waiting
+            int finished = tasks.Count(t => t.IsCompleted);
+            if (finished > 0 || timeout == 0.0f)
+            {
+                return finished;
+            }
+
+            Task.WaitAny(tasks, TimeSpan.FromSeconds(timeout));
+            return tasks.Count(t => t.IsCompleted);
+        }
+
+        /// <summary>
+        /// Return the last multi curl error number.
+        /// </summary>
+        public static int curl_multi_errno(CURLMultiResource mh) => mh.LastError;
+
+        /// <summary>
+        /// Return string describing error code.
+        /// </summary>
+        public static string curl_multi_strerror(int errornum) => CURLConstants.GetMultiErrorString(errornum);
+
+        /// <summary>
+        /// Set an option for the cURL multi handle.
+        /// </summary>
+        public static bool curl_multi_setopt(CURLMultiResource mh, int option, PhpValue value)
+        {
+            // We keep the responsibility of multiple request handling completely on .NET framework
+            PhpException.FunctionNotSupported(nameof(curl_multi_setopt));
+            return false;
         }
     }
 }

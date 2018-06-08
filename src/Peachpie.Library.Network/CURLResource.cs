@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Library.Streams;
 
@@ -80,6 +81,13 @@ namespace Peachpie.Library.Network
         internal PhpValue Private { get; set; }
 
         #endregion
+
+        internal DateTime StartTime { get; set; }
+
+        /// <summary>
+        /// Ongoing request handled by the framework. Must be set to null after being processed.
+        /// </summary>
+        internal Task<WebResponse> ResponseTask { get; set; }
 
         /// <summary>
         /// Response after the execution.
