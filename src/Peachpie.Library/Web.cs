@@ -40,6 +40,13 @@ namespace Pchp.Library
                 return default(PhpString);
             }
 
+            //
+            var remainder = encoded_data.Length % 4;
+            if (remainder != 0)
+            {
+                encoded_data = encoded_data.PadRight(encoded_data.Length + 4 - remainder, '=');
+            }
+
             try
             {
                 return new PhpString(System.Convert.FromBase64String(encoded_data));
