@@ -143,7 +143,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public void SetReference(int varindex)
         {
-            if (varindex >= 0 && varindex < BitsCount)
+            if (varindex >= 0 && varindex < _varsType.Length)
             {
                 _varsType[varindex] |= TypeRefMask.IsRefMask;
             }

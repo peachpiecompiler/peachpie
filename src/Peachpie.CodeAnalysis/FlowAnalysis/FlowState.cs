@@ -238,8 +238,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             handle.ThrowIfInvalid();
 
             this.FlowContext.SetReference(handle);
+            this.FlowContext.SetUsed(handle);
             this.SetVarInitialized(handle);
-            _flowCtx.SetUsed(handle);
         }
 
         /// <summary>

@@ -1149,8 +1149,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // bind ref parameters to variables:
             if (expected.IsAlias || expected.IsByRef)  // => args[i] must be a variable
             {
-                var refexpr = givenarg.Value as BoundReferenceExpression;
-                if (refexpr != null)
+                if (givenarg.Value is BoundReferenceExpression refexpr)
                 {
                     if (expected.IsByRef && !refexpr.Access.IsWrite)
                     {
@@ -1164,8 +1163,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         Worklist.Enqueue(CurrentBlock);
                     }
 
-                    var refvar = refexpr as BoundVariableRef;
-                    if (refvar != null)
+                    if (refexpr is BoundVariableRef refvar)
                     {
                         if (refvar.Name.IsDirect)
                         {
@@ -1202,7 +1200,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         void BindTargetMethod(BoundRoutineCall x, bool maybeOverload = false)
         {
-            if (false == x.TargetMethod.IsErrorMethodOrNull())
+            if (MethodSymbolExtensions.IsValidMethod(x.TargetMethod))
             {
                 // analyze TargetMethod with x.Arguments
                 // require method result type if access != none
@@ -1224,6 +1222,26 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     x.TargetMethod = null; // nullify the target method -> call dynamically, arguments cannot be bound at compile time
                 }
+            }
+            else if (x.TargetMethod is MissingMethodSymbol)
+            {
+                //// locals passed as arguments should be marked as possible refs:
+                //x.ArgumentsInSourceOrder.ForEach(a =>
+                //{
+                //    if (a.Value is BoundVariableRef bvar && bvar.Name.IsDirect && !a.IsUnpacking)
+                //    {
+                //        var local = State.GetLocalHandle(bvar.Name.NameValue);
+                //        State.SetLocalType(local, State.GetLocalType(local).WithRefFlag);
+                //    }
+                //});
+            }
+            else if (x.TargetMethod is AmbiguousMethodSymbol ambiguity)
+            {
+                // check if arguments are not passed by bref, mark locals eventually as refs:
+                // ...
+
+                // get the return type from all the ambiguities:
+                // ... 
             }
 
             //
