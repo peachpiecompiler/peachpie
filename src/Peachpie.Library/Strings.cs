@@ -1635,7 +1635,15 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpArray str_split(string str)
         {
-            return Split(str, 1);
+            if (string.IsNullOrEmpty(str))
+            {
+                // seems like an incosistency, but in PHP they really return this for an empty string:
+                return new PhpArray(1) { string.Empty }; // array(1){ [0] => "" }
+            }
+            else
+            {
+                return Split(str, splitLength: 1);
+            }
         }
 
         /// <summary>
