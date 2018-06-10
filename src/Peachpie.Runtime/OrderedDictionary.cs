@@ -272,14 +272,13 @@ namespace Pchp.Core
         {
             Debug.Assert(this.entries == null, "Initialized already!");
 
-            int[] _buckets;
-
-            this.buckets = _buckets = new int[this.tableSize];
+            //
+            this.buckets = new int[this.tableSize];
             this.tableMask = this.tableSize - 1;
             this.entries = new Entry[this.tableSize];
 
-            for (int i = 0; i < _buckets.Length; i++)
-                _buckets[i] = -1;
+            //
+            this.buckets.AsSpan().Fill(-1);
         }
 
         #endregion
@@ -1060,8 +1059,7 @@ namespace Pchp.Core
             int new_mask = new_size - 1;
 
             var new_buckets = new int[new_size];
-            for (int i = 0; i < new_buckets.Length; i++)    // JIT optimization
-                new_buckets[i] = -1;
+            new_buckets.AsSpan().Fill(-1);
 
             var new_entries = new Entry[new_size];
             Array.Copy(this.entries, 0, new_entries, 0, this.count);
@@ -2124,7 +2122,7 @@ namespace Pchp.Core
             Debug.Assert(array.table == this, "array.table != this");
 
             var p = buckets[_index(ref key)];
-            while(p >= 0)
+            while (p >= 0)
             {
                 ref var pentry = ref entries[p];
                 if (pentry.KeyEquals(ref key))

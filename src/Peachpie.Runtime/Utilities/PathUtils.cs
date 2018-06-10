@@ -123,9 +123,9 @@ namespace Pchp.Core.Utilities
                 if (pass_end > url_start)
                 {
                     StringBuilder sb = new StringBuilder(url.Length);
-                    sb.Append(url.Substring(0, url_start));
+                    sb.Append(url, 0, url_start);
                     sb.Append("...");
-                    sb.Append(url.Substring(pass_end));  // results in: scheme://...@host
+                    sb.Append(url, pass_end, url.Length - pass_end);  // results in: scheme://...@host
                     return sb.ToString();
                 }
             }
