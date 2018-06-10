@@ -927,7 +927,7 @@ namespace Pchp.Library
                 }
 
                 // when HTTP protocol requested, store responded headers into local variable $http_response_header:
-                if (string.Compare(stream.Wrapper.Scheme, "http", StringComparison.OrdinalIgnoreCase) == 0)
+                if (string.Compare(stream.Wrapper.Scheme, HttpStreamWrapper.scheme, StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     var headers = stream.WrapperSpecificData as PhpArray;
                     locals.SetItemValue(new IntStringKey(HttpResponseHeaderName), (PhpValue)headers);

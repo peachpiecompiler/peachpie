@@ -118,7 +118,7 @@ namespace Pchp.Library.Streams
                 }
             }
 
-            return PhpValue.Null;
+            return result;
         }
     }
 }

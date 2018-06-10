@@ -471,6 +471,7 @@ namespace Pchp.Library.Streams
                     case FileStreamWrapper.scheme:
                         return (SystemStreamWrappers[scheme] = new FileStreamWrapper());
                     case HttpStreamWrapper.scheme:
+                    case HttpStreamWrapper.schemes:
                         return (SystemStreamWrappers[scheme] = new HttpStreamWrapper());
                     case InputOutputStreamWrapper.scheme:
                         return (SystemStreamWrappers[scheme] = new InputOutputStreamWrapper());
@@ -1316,15 +1317,12 @@ namespace Pchp.Library.Streams
             //
             // content - Additional data to be sent after the headers. Typically used with POST or PUT requests.    
             //
-            var content = context.GetOption(scheme, "content").AsString();
-            if (content != null)
+            var content = context.GetOption(scheme, "content").ToBytes(ctx);
+            if (content != null && content.Length != 0)
             {
-                // Review - encoding?
-                byte[] formBytes = Encoding.UTF8.GetBytes(content);
-
                 using (var body = request.GetRequestStreamAsync().Result)
                 {
-                    body.Write(formBytes, 0, formBytes.Length);
+                    body.Write(content, 0, content.Length);
                 }
             }
         }
@@ -1362,6 +1360,11 @@ namespace Pchp.Library.Streams
         /// The protocol portion of URL handled by this wrapper.
         /// </summary>
         public const string scheme = "http";
+
+        /// <summary>
+        /// The protocol portion of URL handled by this wrapper.
+        /// </summary>
+        public const string schemes = "https";
 
         #endregion
     }
