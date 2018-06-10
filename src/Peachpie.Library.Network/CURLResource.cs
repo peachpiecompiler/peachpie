@@ -117,7 +117,7 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Error code number if exception happened.
         /// </summary>
-        public int ErrorCode { get; set; } = CURLConstants.CURLE_OK;
+        public CurlErrors ErrorCode { get; set; } = CurlErrors.CURLE_OK;
 
         /// <summary>
         /// Optional. Error message.
@@ -170,7 +170,7 @@ namespace Peachpie.Library.Network
 
         public PhpValue ExecValue { get; }
 
-        public static CURLResponse CreateError(int errcode, Exception ex = null) => new CURLResponse(PhpValue.False) { ErrorCode = errcode, ErrorMessage = ex?.Message };
+        public static CURLResponse CreateError(CurlErrors errcode, Exception ex = null) => new CURLResponse(PhpValue.False) { ErrorCode = errcode, ErrorMessage = ex?.Message };
 
         public CURLResponse(PhpValue execvalue, HttpWebResponse response = null)
         {

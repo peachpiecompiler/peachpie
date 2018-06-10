@@ -112,16 +112,25 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Return the last error number.
         /// </summary>
-        public static int curl_errno(CURLResource ch) => ch?.Result != null
-            ? ch.Result.ErrorCode
-            : CURLConstants.CURLE_OK;
+        public static int curl_errno(CURLResource ch)
+            => (int)(ch?.Result != null ? ch.Result.ErrorCode : CurlErrors.CURLE_OK);
 
         /// <summary>
         /// Return a string containing the last error for the current session.
         /// </summary>
-        public static string curl_error(CURLResource ch) => ch?.Result != null && ch.Result.HasError
-            ? (ch.Result.ErrorMessage ?? ch.Result.ErrorCode.ToString())
-            : string.Empty;
+        public static string curl_error(CURLResource ch)
+        {
+            if (ch != null && ch.Result != null)
+            {
+                var err = ch.Result.ErrorCode;
+                if (err != CurlErrors.CURLE_OK)
+                {
+                    return ch.Result.ErrorMessage ?? err.ToString(); // TODO: default error messages in resources
+                }
+            }
+
+            return string.Empty;
+        }
 
         /// <summary>
         /// Get information regarding a specific transfer.
@@ -228,20 +237,20 @@ namespace Peachpie.Library.Network
                     switch (webEx.Status)
                     {
                         case WebExceptionStatus.Timeout:
-                            return CURLResponse.CreateError(CURLConstants.CURLE_OPERATION_TIMEDOUT, webEx);
+                            return CURLResponse.CreateError(CurlErrors.CURLE_OPERATION_TIMEDOUT, webEx);
                         case WebExceptionStatus.TrustFailure:
-                            return CURLResponse.CreateError(CURLConstants.CURLE_SSL_CACERT, webEx);
+                            return CURLResponse.CreateError(CurlErrors.CURLE_SSL_CACERT, webEx);
                         default:
-                            return CURLResponse.CreateError(CURLConstants.CURLE_COULDNT_CONNECT, webEx);
+                            return CURLResponse.CreateError(CurlErrors.CURLE_COULDNT_CONNECT, webEx);
                     }
                 }
                 else if (ex is ProtocolViolationException)
                 {
-                    return CURLResponse.CreateError(CURLConstants.CURLE_FAILED_INIT, ex);
+                    return CURLResponse.CreateError(CurlErrors.CURLE_FAILED_INIT, ex);
                 }
                 else if (ex is CryptographicException)
                 {
-                    return CURLResponse.CreateError(CURLConstants.CURLE_SSL_CERTPROBLEM, ex);
+                    return CURLResponse.CreateError(CurlErrors.CURLE_SSL_CERTPROBLEM, ex);
                 }
                 else
                 {
@@ -449,7 +458,7 @@ namespace Peachpie.Library.Network
             var uri = TryCreateUri(ch);
             if (uri == null)
             {
-                ch.Result = CURLResponse.CreateError(CURLConstants.CURLE_URL_MALFORMAT);
+                ch.Result = CURLResponse.CreateError(CurlErrors.CURLE_URL_MALFORMAT);
             }
             else if (
                 string.Equals(uri.Scheme, "http", StringComparison.OrdinalIgnoreCase) ||
@@ -460,7 +469,7 @@ namespace Peachpie.Library.Network
             }
             else
             {
-                ch.Result = CURLResponse.CreateError(CURLConstants.CURLE_UNSUPPORTED_PROTOCOL);
+                ch.Result = CURLResponse.CreateError(CurlErrors.CURLE_UNSUPPORTED_PROTOCOL);
             }
         }
 
