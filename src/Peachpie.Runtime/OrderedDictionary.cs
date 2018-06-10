@@ -1074,7 +1074,7 @@ namespace Pchp.Core
 
             // _rehash():
             var p = this.listHead;
-            while(p >= 0)
+            while (p >= 0)
             {
                 ref var pentry = ref new_entries[p];
                 ref var pbucket = ref new_buckets[pentry._key.Integer & new_mask];
@@ -1144,7 +1144,7 @@ namespace Pchp.Core
 
             // find
             int p = this.buckets[_index(ref key)];
-            while(p >= 0)
+            while (p >= 0)
             {
                 ref var pentry = ref _entries[p];
 
@@ -1178,16 +1178,18 @@ namespace Pchp.Core
             this.ThrowIfShared();
             EnsureInitialized();
 
-            var _entries = this.entries;
-
             // find
-            for (int p = this.buckets[_index(ref key)]; p >= 0; p = _entries[p].next) // TODO: unsafe
+            int p = buckets[_index(ref key)];
+            while (p >= 0)
             {
-                if (_entries[p].KeyEquals(ref key))
+                ref var pentry = ref entries[p];
+                if (pentry.KeyEquals(ref key))
                 {
-                    Operators.SetValue(ref _entries[p]._value, value);
+                    Operators.SetValue(ref pentry._value, value);
                     return;// true;
                 }
+                //
+                p = pentry.next;
             }
 
             // not found, _add_last:
@@ -1708,7 +1710,7 @@ namespace Pchp.Core
             int max_key = -1;
             // iterate backwards, find the max faster
             int p = this.listTail;
-            while( p >= 0)
+            while (p >= 0)
             {
                 ref var pentry = ref _entries[p];
                 if (pentry._key.Integer > max_key && pentry._key.IsInteger)
@@ -2051,9 +2053,14 @@ namespace Pchp.Core
         /// </summary>
         public void _deep_copy_inplace()
         {
-            var _entries = this.entries;
-            for (var p = this.listHead; p >= 0; p = _entries[p].listNext)
-                _deep_copy_entry_value(ref _entries[p]);
+            var entries = this.entries;
+            var p = this.listHead;
+            while (p >= 0)
+            {
+                ref var pentry = ref entries[p];
+                _deep_copy_entry_value(ref pentry);
+                p = pentry.listNext;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2075,10 +2082,13 @@ namespace Pchp.Core
             }
             else
             {
-                var _entries = this.entries;
-                for (var p = this.listHead; p >= 0; p = _entries[p].listNext)
+                var entries = this.entries;
+                var p = this.listHead;
+                while (p >= 0)
                 {
-                    _deep_copy_entry_value(ref _entries[p], oldref, newref);
+                    ref var pentry = ref entries[p];
+                    _deep_copy_entry_value(ref pentry, oldref, newref);
+                    p = pentry.listNext;
                 }
             }
         }
@@ -2086,8 +2096,7 @@ namespace Pchp.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void _deep_copy_entry_value(ref Entry entry, PhpArray oldref, PhpArray newref)
         {
-
-            if (entry._value.IsAlias && entry._value.Alias.Value.IsArray && entry._value.Alias.Value.Array == oldref)
+            if (entry._value.Object is PhpAlias alias && alias.Value.Object is PhpArray array && array == oldref)
             {
                 Debug.Assert(newref != null);
                 entry._value = PhpValue.Create(new PhpAlias(PhpValue.Create(newref)));
@@ -2114,14 +2123,15 @@ namespace Pchp.Core
             Debug.Assert(array != null, "array == null");
             Debug.Assert(array.table == this, "array.table != this");
 
-            var _entries = this.entries;
-            for (var p = this.buckets[_index(ref key)]; p >= 0; p = _entries[p].next)
-                if (_entries[p].KeyEquals(ref key))
+            var p = buckets[_index(ref key)];
+            while(p >= 0)
+            {
+                ref var pentry = ref entries[p];
+                if (pentry.KeyEquals(ref key))
                 {
-                    var value = _entries[p]._value;
-                    if (value.IsAlias)
+                    if (pentry._value.Object is PhpAlias alias)
                     {
-                        return value.Alias;
+                        return alias;
 
                         //// if valueref references the array itself, array must be lazily copied:
                         //if (this.IsShared && valueref.Value.Object == this.owner)
@@ -2142,14 +2152,18 @@ namespace Pchp.Core
                         {
                             // we have to unshare this, so we can modify the content:
                             array.EnsureWritable();
-                            // "this" is not "array.table" anymore!
-                            _entries = array.table.entries;
+                            // IMPORTANT: "this" != "array.table" anymore!
+                            return array.table.entries[p]._value.EnsureAlias(); // C# 7.3: pentry = ref array.table.entries[p];
                         }
 
                         // wrap _entries[p].Value into PhpAlias
-                        return _entries[p]._value.EnsureAlias();
+                        return pentry._value.EnsureAlias();
                     }
                 }
+
+                //
+                p = pentry.next;
+            }
 
             // not found, create new item:
             var valueref = new PhpAlias(PhpValue.Void);

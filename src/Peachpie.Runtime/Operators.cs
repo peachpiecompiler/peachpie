@@ -176,9 +176,9 @@ namespace Pchp.Core
         public static void SetValue(ref PhpValue target, PhpValue value)
         {
             Debug.Assert(!value.IsAlias);
-            if (target.IsAlias)
+            if (target.Object is PhpAlias alias)
             {
-                target.Alias.Value = value;
+                alias.Value = value;
             }
             else
             {
@@ -191,8 +191,9 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="target">Target of the assignment.</param>
         /// <param name="value">Value to be assigned.</param>
-        public static void SetValue(PhpAlias target, PhpValue value)
+        public static void SetValue(PhpAlias/*!*/target, PhpValue value)
         {
+            Debug.Assert(target != null);
             Debug.Assert(!value.IsAlias);
             target.Value = value;
         }
