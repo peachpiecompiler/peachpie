@@ -147,7 +147,7 @@ namespace Peachpie.Library.MySql
             var config = ctx.Configuration.Get<MySqlConfiguration>();
             Debug.Assert(config != null);
 
-            var connection_string = BuildConnectionString(config, ref server, username, password, (ConnectFlags)client_flags, characterset: "utf8mb4");
+            var connection_string = BuildConnectionString(config, ref server, username, password, (ConnectFlags)client_flags);
 
             bool success;
             var connection = MySqlConnectionManager.GetInstance(ctx)
@@ -179,7 +179,7 @@ namespace Peachpie.Library.MySql
             return mysql_connect(ctx, server, username, password, new_link, client_flags);
         }
 
-        internal static string BuildConnectionString(MySqlConfiguration config, ref string server, string user, string password, ConnectFlags flags, int connectiontimeout = 0, string characterset = null)
+        internal static string BuildConnectionString(MySqlConfiguration config, ref string server, string user, string password, ConnectFlags flags, int connectiontimeout = 0)
         {
             // connection strings:
             if (server == null && user == null && password == null && flags == ConnectFlags.None && !string.IsNullOrEmpty(config.ConnectionString))
@@ -202,11 +202,11 @@ namespace Peachpie.Library.MySql
             if (user == null) user = config.User;
             if (password == null) password = config.Password;
 
-            // build the connection string to be used with MySQL Connector/.NET
-            // see http://dev.mysql.com/doc/refman/5.5/en/connector-net-connection-options.html
+            // build the connection string to be used with MySqlConnector
+            // see https://mysql-net.github.io/MySqlConnector/connection-options/ and http://dev.mysql.com/doc/refman/5.5/en/connector-net-connection-options.html
             return BuildConnectionString(
               server, user, password,
-              string.Format("allowzerodatetime=true;allow user variables=true;connect timeout={0};Port={1};SSL Mode={2};Use Compression={3}{4}{5};Max Pool Size={6}{7}{8}",
+              string.Format("allowzerodatetime=true;allow user variables=true;connect timeout={0};Port={1};SSL Mode={2};Use Compression={3}{4}{5};Max Pool Size={6}{7}",
                 (connectiontimeout > 0) ? connectiontimeout : (config.ConnectTimeout > 0) ? config.ConnectTimeout : 15,
                 port,
                 (flags & ConnectFlags.SSL) != 0 ? "Preferred" : "None",     // (since Connector 6.2.1.) ssl mode={None|Preferred|Required|VerifyCA|VerifyFull}   // (Jakub) use ssl={true|false} has been deprecated
@@ -214,8 +214,7 @@ namespace Peachpie.Library.MySql
                 (pipe_name != null) ? ";Pipe=" + pipe_name : null,  // Pipe={...}
                 (flags & ConnectFlags.Interactive) != 0 ? ";Interactive=true" : null,    // Interactive={true|false}
                 config.MaxPoolSize,                                          // Max Pool Size=100
-                (config.DefaultCommandTimeout >= 0) ? ";DefaultCommandTimeout=" + config.DefaultCommandTimeout : null,
-                string.IsNullOrEmpty(characterset) ? null : ";characterset="+ characterset
+                (config.DefaultCommandTimeout >= 0) ? ";DefaultCommandTimeout=" + config.DefaultCommandTimeout : null
                 )
             );
         }
