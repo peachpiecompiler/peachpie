@@ -14,16 +14,15 @@ namespace Peachpie.Library.Network
 
         internal Queue<PhpArray> MessageQueue { get; } = new Queue<PhpArray>();
 
-        internal int LastError { get; private set; }
+        internal CurlMultiErrors LastError { get; private set; }
 
         public CURLMultiResource() : base(CURLConstants.CurlMultiResourceName)
         {
         }
 
-        internal int TryAddHandle(CURLResource handle)
+        internal CurlMultiErrors TryAddHandle(CURLResource handle)
         {
-            LastError = Handles.Add(handle) ? CURLConstants.CURLM_OK : CURLConstants.CURLM_ADDED_ALREADY;
-            return LastError;
+            return (LastError = Handles.Add(handle) ? CurlMultiErrors.CURLM_OK : CurlMultiErrors.CURLM_ADDED_ALREADY);
         }
 
         internal void AddResultMessage(CURLResource handle)

@@ -212,13 +212,13 @@ namespace Peachpie.Library.Network
         public const int CURLINFO_TOTAL_TIME = 3145731;
         public const int CURLMSG_DONE = 1;
         public const int CURLVERSION_NOW = 4;
-        public const int CURLM_BAD_EASY_HANDLE = 2;
-        public const int CURLM_BAD_HANDLE = 1;
-        public const int CURLM_CALL_MULTI_PERFORM = -1;
-        public const int CURLM_INTERNAL_ERROR = 4;
-        public const int CURLM_OK = 0;
-        public const int CURLM_OUT_OF_MEMORY = 3;
-        public const int CURLM_ADDED_ALREADY = 7;
+        public const int CURLM_BAD_EASY_HANDLE = (int)CurlMultiErrors.CURLM_BAD_EASY_HANDLE;
+        public const int CURLM_BAD_HANDLE = (int)CurlMultiErrors.CURLM_BAD_HANDLE;
+        public const int CURLM_CALL_MULTI_PERFORM = (int)CurlMultiErrors.CURLM_CALL_MULTI_PERFORM;
+        public const int CURLM_INTERNAL_ERROR = (int)CurlMultiErrors.CURLM_INTERNAL_ERROR;
+        public const int CURLM_OK = (int)CurlMultiErrors.CURLM_OK;
+        public const int CURLM_OUT_OF_MEMORY = (int)CurlMultiErrors.CURLM_OUT_OF_MEMORY;
+        public const int CURLM_ADDED_ALREADY = (int)CurlMultiErrors.CURLM_ADDED_ALREADY;
         public const int CURLPROXY_HTTP = 0;
         public const int CURLPROXY_SOCKS4 = 4;
         public const int CURLPROXY_SOCKS5 = 5;
@@ -554,29 +554,30 @@ namespace Peachpie.Library.Network
             }
         }
 
-        internal static string GetMultiErrorString(int err)
+        internal static string GetErrorString(this CurlMultiErrors err)
         {
-            switch (err)
-            {
-                case CURLM_BAD_EASY_HANDLE:
-                    return "Invalid easy handle";
-                case CURLM_BAD_HANDLE:
-                    return "Invalid multi handle";
-                case CURLM_CALL_MULTI_PERFORM:
-                    return "Please call curl_multi_perform() soon";
-                case CURLM_INTERNAL_ERROR:
-                    return "Internal error";
-                case CURLM_OK:
-                    return "No error";
-                case CURLM_OUT_OF_MEMORY:
-                    return "Out of memory";
-                case CURLM_ADDED_ALREADY:
-                    return "The easy handle is already added to a multi handle";
-                default:
-                    return "Unknown error";
-            }
+            return Resources.ResourceManager.GetString(err.ToString()) ?? Resources.UnknownError;
         }
 
         #endregion
     }
+
+    #region CurlMultiErrors
+
+    /// <summary>
+    /// <c>CURLM_*</c> constants.
+    /// </summary>
+    /// <remarks>The names correspond to resources, see <see cref="Resources"/>.</remarks>
+    public enum CurlMultiErrors
+    {
+        CURLM_OK = 0,
+        CURLM_BAD_HANDLE = 1,
+        CURLM_BAD_EASY_HANDLE = 2,
+        CURLM_OUT_OF_MEMORY = 3,
+        CURLM_INTERNAL_ERROR = 4,
+        CURLM_ADDED_ALREADY = 7,
+        CURLM_CALL_MULTI_PERFORM = -1,
+    }
+
+    #endregion
 }

@@ -117,4 +117,28 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="CURLM_ADDED_ALREADY" xml:space="preserve">
+    <value>The easy handle is already added to a multi handle</value>
+  </data>
+  <data name="CURLM_BAD_EASY_HANDLE" xml:space="preserve">
+    <value>Invalid easy handle</value>
+  </data>
+  <data name="CURLM_BAD_HANDLE" xml:space="preserve">
+    <value>Invalid multi handle</value>
+  </data>
+  <data name="CURLM_CALL_MULTI_PERFORM" xml:space="preserve">
+    <value>Please call curl_multi_perform() soon</value>
+  </data>
+  <data name="CURLM_INTERNAL_ERROR" xml:space="preserve">
+    <value>Internal error</value>
+  </data>
+  <data name="CURLM_OK" xml:space="preserve">
+    <value>No error</value>
+  </data>
+  <data name="CURLM_OUT_OF_MEMORY" xml:space="preserve">
+    <value>Out of memory</value>
+  </data>
+  <data name="UnknownError" xml:space="preserve">
+    <value>Unknown error</value>
+  </data>
 </root>
