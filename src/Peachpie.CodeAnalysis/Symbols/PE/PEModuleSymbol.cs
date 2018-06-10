@@ -1,15 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.CodeAnalysis;
 using System.Collections.Concurrent;
-using System.Reflection.Metadata;
+using System.Collections.Immutable;
 using System.Diagnostics;
-using Cci = Microsoft.Cci;
+using System.Reflection.Metadata;
 using System.Threading;
+using Microsoft.CodeAnalysis;
+using Cci = Microsoft.Cci;
 
 namespace Pchp.CodeAnalysis.Symbols
 {

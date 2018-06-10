@@ -1,10 +1,6 @@
-﻿using Devsense.PHP.Syntax;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
@@ -127,7 +123,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override int GetHashCode() => _index * 2;
 
-        public override bool Equals(object obj) => obj is VariableHandle && ((VariableHandle)obj)._index == _index;
+        public override bool Equals(object obj) => obj is VariableHandle other && other._index == _index;
 
         #endregion
 

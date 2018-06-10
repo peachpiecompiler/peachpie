@@ -4,10 +4,9 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
-using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
+using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -438,13 +437,7 @@ namespace Pchp.CodeAnalysis.Symbols
         //    return builder.ToImmutableAndFree();
         //}
 
-        public sealed override NamedTypeSymbol EnumUnderlyingType
-        {
-            get
-            {
-                return _originalDefinition.EnumUnderlyingType;
-            }
-        }
+        public sealed override NamedTypeSymbol EnumUnderlyingType => _originalDefinition.EnumUnderlyingType;
 
         public override int GetHashCode()
         {
@@ -456,10 +449,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return _hashCode;
         }
 
-        internal sealed override TypeMap TypeSubstitution
-        {
-            get { return this.Map; }
-        }
+        internal sealed override TypeMap TypeSubstitution => this.Map;
 
         //internal sealed override bool IsComImport
         //{
@@ -481,10 +471,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get { return _originalDefinition.IsWindowsRuntimeImport; }
         }
 
-        internal sealed override TypeLayout Layout
-        {
-            get { return _originalDefinition.Layout; }
-        }
+        internal sealed override TypeLayout Layout => _originalDefinition.Layout;
 
         //internal override CharSet MarshallingCharSet
         //{

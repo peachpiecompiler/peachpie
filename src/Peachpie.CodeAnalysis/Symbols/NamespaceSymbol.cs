@@ -1,9 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using Cci = Microsoft.Cci;
 using Microsoft.CodeAnalysis;
-using System;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -28,13 +27,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Returns whether this namespace is the unnamed, global namespace that is 
         /// at the root of all namespaces.
         /// </summary>
-        public virtual bool IsGlobalNamespace
-        {
-            get
-            {
-                return (object)ContainingNamespace == null;
-            }
-        }
+        public virtual bool IsGlobalNamespace => (object)ContainingNamespace == null;
 
         /// <summary>
         /// The kind of namespace: Module, Assembly or Compilation.

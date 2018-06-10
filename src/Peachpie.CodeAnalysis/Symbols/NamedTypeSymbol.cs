@@ -3,11 +3,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
-using Cci = Microsoft.Cci;
+using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {

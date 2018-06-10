@@ -1,9 +1,8 @@
-﻿using Microsoft.CodeAnalysis;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection.Metadata;
+using Microsoft.CodeAnalysis;
 
 namespace Pchp.CodeAnalysis.Symbols.PE
 {

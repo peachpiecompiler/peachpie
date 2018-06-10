@@ -1,10 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Immutable;
+using Microsoft.CodeAnalysis;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -21,12 +16,6 @@ namespace Pchp.CodeAnalysis.Symbols
             _typeArguments = typeArguments;
         }
 
-        public override ImmutableArray<TypeSymbol> TypeArguments
-        {
-            get
-            {
-                return _typeArguments;
-            }
-        }
+        public override ImmutableArray<TypeSymbol> TypeArguments => _typeArguments;
     }
 }

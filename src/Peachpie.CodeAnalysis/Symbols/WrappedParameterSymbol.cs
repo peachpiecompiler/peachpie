@@ -1,12 +1,7 @@
-﻿using Microsoft.CodeAnalysis;
-using Roslyn.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {

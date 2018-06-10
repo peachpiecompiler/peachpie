@@ -1,17 +1,9 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Emit;
-using Pchp.CodeAnalysis.Emit;
-using Pchp.CodeAnalysis.Semantics;
-using Roslyn.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-using Pchp.CodeAnalysis.FlowAnalysis;
+using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.Emit;
+using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -36,13 +28,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets the type of this field.
         /// </summary>
-        public TypeSymbol Type
-        {
-            get
-            {
-                return GetFieldType(ConsList<FieldSymbol>.Empty);
-            }
-        }
+        public TypeSymbol Type => GetFieldType(ConsList<FieldSymbol>.Empty);
 
         internal abstract TypeSymbol GetFieldType(ConsList<FieldSymbol> fieldsBeingBound);
 
@@ -158,68 +144,32 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets the kind of this symbol.
         /// </summary>
-        public sealed override SymbolKind Kind
-        {
-            get
-            {
-                return SymbolKind.Field;
-            }
-        }
+        public sealed override SymbolKind Kind => SymbolKind.Field;
 
         /// <summary>
         /// Returns false because field can't be abstract.
         /// </summary>
-        public sealed override bool IsAbstract
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public sealed override bool IsAbstract => false;
 
         /// <summary>
         /// Returns false because field can't be defined externally.
         /// </summary>
-        public sealed override bool IsExtern
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public sealed override bool IsExtern => false;
 
         /// <summary>
         /// Returns false because field can't be overridden.
         /// </summary>
-        public sealed override bool IsOverride
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public sealed override bool IsOverride => false;
 
         /// <summary>
         /// Returns false because field can't be sealed.
         /// </summary>
-        public sealed override bool IsSealed
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public sealed override bool IsSealed => false;
 
         /// <summary>
         /// Returns false because field can't be virtual.
         /// </summary>
-        public sealed override bool IsVirtual
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public sealed override bool IsVirtual => false;
 
         /// <summary>
         /// True if this symbol has a special name (metadata flag SpecialName is set).

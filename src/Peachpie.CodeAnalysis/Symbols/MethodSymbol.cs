@@ -1,15 +1,10 @@
-﻿using Microsoft.CodeAnalysis;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 using System.Collections.Immutable;
-using Pchp.CodeAnalysis.Semantics;
-using Pchp.CodeAnalysis.FlowAnalysis;
-using Pchp.CodeAnalysis.Semantics.Graph;
-using System.Reflection;
 using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
+using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.Semantics.Graph;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -52,13 +47,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// True if this method is hidden if a derived type declares a method with the same name and signature. 
         /// If false, any method with the same name hides this method. This flag is ignored by the runtime and is only used by compilers.
         /// </summary>
-        public virtual bool HidesBaseMethodsByName
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public virtual bool HidesBaseMethodsByName => true;
 
         public virtual bool IsAsync => false;
 
@@ -75,13 +64,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Returns whether this method is generic; i.e., does it have any type parameters?
         /// </summary>
-        public virtual bool IsGenericMethod
-        {
-            get
-            {
-                return this.Arity != 0;
-            }
-        }
+        public virtual bool IsGenericMethod => this.Arity != 0;
 
         public virtual bool IsVararg => false;
 
@@ -135,13 +118,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// If this method can be applied to an object, returns the type of object it is applied to.
         /// </summary>
-        public virtual ITypeSymbol ReceiverType
-        {
-            get
-            {
-                return this.ContainingType;
-            }
-        }
+        public virtual ITypeSymbol ReceiverType => this.ContainingType;
 
         public virtual IMethodSymbol ReducedFrom
         {

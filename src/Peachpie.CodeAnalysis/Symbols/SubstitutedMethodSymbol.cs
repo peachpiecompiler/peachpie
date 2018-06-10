@@ -1,13 +1,9 @@
-﻿using Microsoft.CodeAnalysis;
-using Roslyn.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -58,13 +54,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override IMethodSymbol ConstructedFrom
-        {
-            get
-            {
-                return _constructedFrom;
-            }
-        }
+        public override IMethodSymbol ConstructedFrom => _constructedFrom;
 
         //public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
         //{
@@ -122,29 +112,11 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public sealed override int Arity
-        {
-            get
-            {
-                return originalDefinition.Arity;
-            }
-        }
+        public sealed override int Arity => originalDefinition.Arity;
 
-        public sealed override string Name
-        {
-            get
-            {
-                return originalDefinition.Name;
-            }
-        }
+        public sealed override string Name => originalDefinition.Name;
 
-        internal sealed override bool HasSpecialName
-        {
-            get
-            {
-                return originalDefinition.HasSpecialName;
-            }
-        }
+        internal sealed override bool HasSpecialName => originalDefinition.HasSpecialName;
 
         internal sealed override System.Reflection.MethodImplAttributes ImplementationAttributes
         {
@@ -154,13 +126,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        internal sealed override bool RequiresSecurityObject
-        {
-            get
-            {
-                return originalDefinition.RequiresSecurityObject;
-            }
-        }
+        internal sealed override bool RequiresSecurityObject => originalDefinition.RequiresSecurityObject;
 
         public sealed override DllImportData GetDllImportData()
         {
@@ -187,13 +153,7 @@ namespace Pchp.CodeAnalysis.Symbols
         //    return originalDefinition.GetAppliedConditionalSymbols();
         //}
 
-        public sealed override AssemblySymbol ContainingAssembly
-        {
-            get
-            {
-                return originalDefinition.ContainingAssembly;
-            }
-        }
+        public sealed override AssemblySymbol ContainingAssembly => originalDefinition.ContainingAssembly;
 
         public sealed override ImmutableArray<Location> Locations
         {
@@ -227,69 +187,21 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public sealed override bool IsExtern
-        {
-            get
-            {
-                return originalDefinition.IsExtern;
-            }
-        }
+        public sealed override bool IsExtern => originalDefinition.IsExtern;
 
-        public sealed override bool IsSealed
-        {
-            get
-            {
-                return originalDefinition.IsSealed;
-            }
-        }
+        public sealed override bool IsSealed => originalDefinition.IsSealed;
 
-        public sealed override bool IsVirtual
-        {
-            get
-            {
-                return originalDefinition.IsVirtual;
-            }
-        }
+        public sealed override bool IsVirtual => originalDefinition.IsVirtual;
 
-        public sealed override bool IsAsync
-        {
-            get
-            {
-                return originalDefinition.IsAsync;
-            }
-        }
+        public sealed override bool IsAsync => originalDefinition.IsAsync;
 
-        public sealed override bool IsAbstract
-        {
-            get
-            {
-                return originalDefinition.IsAbstract;
-            }
-        }
+        public sealed override bool IsAbstract => originalDefinition.IsAbstract;
 
-        public sealed override bool IsOverride
-        {
-            get
-            {
-                return originalDefinition.IsOverride;
-            }
-        }
+        public sealed override bool IsOverride => originalDefinition.IsOverride;
 
-        public sealed override bool IsStatic
-        {
-            get
-            {
-                return originalDefinition.IsStatic;
-            }
-        }
+        public sealed override bool IsStatic => originalDefinition.IsStatic;
 
-        public sealed override bool IsExtensionMethod
-        {
-            get
-            {
-                return originalDefinition.IsExtensionMethod;
-            }
-        }
+        public sealed override bool IsExtensionMethod => originalDefinition.IsExtensionMethod;
 
         internal override ObsoleteAttributeData ObsoleteAttributeData
         {
@@ -331,63 +243,27 @@ namespace Pchp.CodeAnalysis.Symbols
             return this.TypeArguments[reducedFromTypeParameter.Ordinal];
         }
 
-        public sealed override IMethodSymbol ReducedFrom
-        {
-            get
-            {
-                return originalDefinition.ReducedFrom;
-            }
-        }
+        public sealed override IMethodSymbol ReducedFrom => originalDefinition.ReducedFrom;
 
-        public sealed override bool HidesBaseMethodsByName
-        {
-            get
-            {
-                return originalDefinition.HidesBaseMethodsByName;
-            }
-        }
+        public sealed override bool HidesBaseMethodsByName => originalDefinition.HidesBaseMethodsByName;
 
-        public sealed override Accessibility DeclaredAccessibility
-        {
-            get
-            {
-                return originalDefinition.DeclaredAccessibility;
-            }
-        }
+        public sealed override Accessibility DeclaredAccessibility => originalDefinition.DeclaredAccessibility;
 
         internal sealed override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false)
         {
             return originalDefinition.IsMetadataVirtual(ignoreInterfaceImplementationChanges);
         }
 
-        internal override bool IsMetadataFinal
-        {
-            get
-            {
-                return originalDefinition.IsMetadataFinal;
-            }
-        }
+        internal override bool IsMetadataFinal => originalDefinition.IsMetadataFinal;
 
         internal sealed override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false)
         {
             return originalDefinition.IsMetadataNewSlot(ignoreInterfaceImplementationChanges);
         }
 
-        public sealed override Symbol ContainingSymbol
-        {
-            get
-            {
-                return _containingType;
-            }
-        }
+        public sealed override Symbol ContainingSymbol => _containingType;
 
-        public override NamedTypeSymbol ContainingType
-        {
-            get
-            {
-                return _containingType;
-            }
-        }
+        public override NamedTypeSymbol ContainingType => _containingType;
 
         public sealed override ImmutableArray<AttributeData> GetAttributes()
         {
@@ -403,29 +279,11 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public sealed override MethodKind MethodKind
-        {
-            get
-            {
-                return originalDefinition.MethodKind;
-            }
-        }
+        public sealed override MethodKind MethodKind => originalDefinition.MethodKind;
 
-        public sealed override bool ReturnsVoid
-        {
-            get
-            {
-                return originalDefinition.ReturnsVoid;
-            }
-        }
+        public sealed override bool ReturnsVoid => originalDefinition.ReturnsVoid;
 
-        public sealed override bool IsGenericMethod
-        {
-            get
-            {
-                return originalDefinition.IsGenericMethod;
-            }
-        }
+        public sealed override bool IsGenericMethod => originalDefinition.IsGenericMethod;
 
         public sealed override bool IsImplicitlyDeclared
         {
@@ -443,13 +301,7 @@ namespace Pchp.CodeAnalysis.Symbols
         //    }
         //}
 
-        public sealed override bool IsVararg
-        {
-            get
-            {
-                return originalDefinition.IsVararg;
-            }
-        }
+        public sealed override bool IsVararg => originalDefinition.IsVararg;
 
         public override RefKind RefKind => originalDefinition.RefKind;
 

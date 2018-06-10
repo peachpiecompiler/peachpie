@@ -1,12 +1,9 @@
-﻿using Devsense.PHP.Syntax;
-using Pchp.CodeAnalysis.Symbols;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
+using Devsense.PHP.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Semantics
 {

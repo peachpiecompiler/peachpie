@@ -1,15 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Roslyn.Utilities;
-using Cci = Microsoft.Cci;
 using System.Collections.Immutable;
-using Pchp.CodeAnalysis.Emit;
-using Microsoft.CodeAnalysis.Emit;
 using System.Diagnostics;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Emit;
+using Pchp.CodeAnalysis.Emit;
+using Roslyn.Utilities;
+using Cci = Microsoft.Cci;
 
 namespace Pchp.CodeAnalysis.Symbols
 {

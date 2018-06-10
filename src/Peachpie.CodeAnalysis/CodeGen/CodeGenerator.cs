@@ -1,20 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Reflection.Metadata;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
-using Microsoft.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.FlowAnalysis;
-using Pchp.CodeAnalysis.Symbols;
-using Pchp.CodeAnalysis.Semantics.Graph;
-using System.Reflection.Metadata;
-using System.Diagnostics;
-using System.Collections.Immutable;
-using Cci = Microsoft.Cci;
 using Pchp.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.Semantics.Graph;
+using Pchp.CodeAnalysis.Symbols;
+using Cci = Microsoft.Cci;
 
 namespace Pchp.CodeAnalysis.CodeGen
 {

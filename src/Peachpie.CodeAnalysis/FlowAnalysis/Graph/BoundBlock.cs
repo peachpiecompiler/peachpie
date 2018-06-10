@@ -1,13 +1,6 @@
-﻿using Pchp.CodeAnalysis.FlowAnalysis;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Diagnostics;
-using Peachpie.CodeAnalysis.Utilities;
-using System.Collections.Concurrent;
+using Pchp.CodeAnalysis.FlowAnalysis;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {

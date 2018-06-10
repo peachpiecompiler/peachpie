@@ -1,11 +1,8 @@
-﻿using Microsoft.CodeAnalysis;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using Microsoft.CodeAnalysis;
 using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
@@ -99,13 +96,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override CandidateReason CandidateReason => CandidateReason.None;
 
-        internal override bool MangleName
-        {
-            get
-            {
-                return false;
-            }
-        }
+        internal override bool MangleName => false;
     }
 
     internal class MissingMetadataTypeSymbol : ErrorTypeSymbol
@@ -138,13 +129,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
             }
 
-            public override Symbol ContainingSymbol
-            {
-                get
-                {
-                    return _containingType;
-                }
-            }
+            public override Symbol ContainingSymbol => _containingType;
 
 
             public override SpecialType SpecialType

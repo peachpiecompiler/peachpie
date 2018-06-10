@@ -1,18 +1,12 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using System;
+using System.Diagnostics;
+using System.Reflection.Metadata;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
-using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
 using Peachpie.CodeAnalysis.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.CodeGen
 {

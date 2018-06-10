@@ -1,14 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Emit;
+using Pchp.CodeAnalysis.Emit;
 using Roslyn.Utilities;
 using Cci = Microsoft.Cci;
-using Pchp.CodeAnalysis.Emit;
-using Microsoft.CodeAnalysis;
-using System.Linq;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -24,15 +24,9 @@ namespace Pchp.CodeAnalysis.Symbols
         Cci.IGenericTypeInstanceReference,
         Cci.ISpecializedNestedTypeReference
     {
-        bool Cci.ITypeReference.IsEnum
-        {
-            get { return this.TypeKind == TypeKind.Enum; }
-        }
+        bool Cci.ITypeReference.IsEnum => this.TypeKind == TypeKind.Enum;
 
-        bool Cci.ITypeReference.IsValueType
-        {
-            get { return this.IsValueType; }
-        }
+        bool Cci.ITypeReference.IsValueType => this.IsValueType;
 
         Cci.ITypeDefinition Cci.ITypeReference.GetResolvedType(EmitContext context)
         {

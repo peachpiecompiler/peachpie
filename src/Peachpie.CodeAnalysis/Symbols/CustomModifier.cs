@@ -1,11 +1,6 @@
-﻿using Microsoft.CodeAnalysis;
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -25,13 +20,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// A type used as a tag that indicates which type of modification applies.
         /// </summary>
-        public override INamedTypeSymbol Modifier
-        {
-            get
-            {
-                return modifier;
-            }
-        }
+        public override INamedTypeSymbol Modifier => modifier;
 
         public abstract override int GetHashCode();
 
@@ -87,10 +76,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     return true;
                 }
-
-                OptionalCustomModifier other = obj as OptionalCustomModifier;
-
-                return other != null && other.modifier.Equals(this.modifier);
+                
+                return obj is OptionalCustomModifier other && other.modifier.Equals(this.modifier);
             }
         }
 
@@ -100,13 +87,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 : base(modifier)
             { }
 
-            public override bool IsOptional
-            {
-                get
-                {
-                    return false;
-                }
-            }
+            public override bool IsOptional => false;
 
             public override int GetHashCode()
             {
@@ -119,10 +100,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     return true;
                 }
-
-                RequiredCustomModifier other = obj as RequiredCustomModifier;
-
-                return other != null && other.modifier.Equals(this.modifier);
+                
+                return obj is RequiredCustomModifier other && other.modifier.Equals(this.modifier);
             }
         }
     }

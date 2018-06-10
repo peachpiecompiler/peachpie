@@ -1,16 +1,9 @@
-﻿using Microsoft.CodeAnalysis.Semantics;
-using Pchp.CodeAnalysis.Symbols;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CodeGen;
-using Pchp.CodeAnalysis.CodeGen;
-using Pchp.CodeAnalysis.FlowAnalysis;
-using Devsense.PHP.Syntax;
+﻿using System;
 using System.Diagnostics;
+using Devsense.PHP.Syntax;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Semantics
 {

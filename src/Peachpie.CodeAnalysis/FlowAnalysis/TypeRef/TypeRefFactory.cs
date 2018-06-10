@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Immutable;
-using System.Diagnostics;
 using Devsense.PHP.Syntax;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;

@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using Microsoft.CodeAnalysis.Emit;
-using Microsoft.CodeAnalysis.Text;
 using Pchp.CodeAnalysis.Symbols;
 using Cci = Microsoft.Cci;
 
@@ -23,13 +22,7 @@ namespace Pchp.CodeAnalysis.Emit
             _underlyingField = underlyingField;
         }
 
-        protected override Symbol UnderlyingSymbol
-        {
-            get
-            {
-                return _underlyingField;
-            }
-        }
+        protected override Symbol UnderlyingSymbol => _underlyingField;
 
         public override void Dispatch(Cci.MetadataVisitor visitor)
         {

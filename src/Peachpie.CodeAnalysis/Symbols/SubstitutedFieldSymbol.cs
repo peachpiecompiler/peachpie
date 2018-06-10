@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Immutable;
-using System.Threading;
-using Microsoft.CodeAnalysis.Text;
-using Roslyn.Utilities;
-using System.Globalization;
-using Microsoft.CodeAnalysis;
 using System.Diagnostics;
+using System.Globalization;
+using System.Threading;
+using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.CodeGen;
+using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -70,66 +69,24 @@ namespace Pchp.CodeAnalysis.Symbols
             return _lazyType;
         }
 
-        public override string Name
-        {
-            get
-            {
-                return _originalDefinition.Name;
-            }
-        }
+        public override string Name => _originalDefinition.Name;
 
         public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
         {
             return _originalDefinition.GetDocumentationCommentXml(preferredCulture, expandIncludes, cancellationToken);
         }
 
-        internal override bool HasSpecialName
-        {
-            get
-            {
-                return _originalDefinition.HasSpecialName;
-            }
-        }
+        internal override bool HasSpecialName => _originalDefinition.HasSpecialName;
 
-        internal override bool HasRuntimeSpecialName
-        {
-            get
-            {
-                return _originalDefinition.HasRuntimeSpecialName;
-            }
-        }
+        internal override bool HasRuntimeSpecialName => _originalDefinition.HasRuntimeSpecialName;
 
-        internal override bool IsNotSerialized
-        {
-            get
-            {
-                return _originalDefinition.IsNotSerialized;
-            }
-        }
+        internal override bool IsNotSerialized => _originalDefinition.IsNotSerialized;
 
-        internal override int? TypeLayoutOffset
-        {
-            get
-            {
-                return _originalDefinition.TypeLayoutOffset;
-            }
-        }
+        internal override int? TypeLayoutOffset => _originalDefinition.TypeLayoutOffset;
 
-        public override Symbol ContainingSymbol
-        {
-            get
-            {
-                return _containingType;
-            }
-        }
+        public override Symbol ContainingSymbol => _containingType;
 
-        public override NamedTypeSymbol ContainingType
-        {
-            get
-            {
-                return _containingType;
-            }
-        }
+        public override NamedTypeSymbol ContainingType => _containingType;
 
         internal void SetContainingType(SubstitutedNamedTypeSymbol type)
         {
@@ -139,34 +96,13 @@ namespace Pchp.CodeAnalysis.Symbols
             _containingType = type;
         }
 
-        public override FieldSymbol OriginalDefinition
-        {
-            get
-            {
-                return _originalDefinition.OriginalDefinition;
-            }
-        }
+        public override FieldSymbol OriginalDefinition => _originalDefinition.OriginalDefinition;
 
-        public override ImmutableArray<Location> Locations
-        {
-            get
-            {
-                return _originalDefinition.Locations;
-            }
-        }
+        public override ImmutableArray<Location> Locations => _originalDefinition.Locations;
 
-        public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences
-        {
-            get
-            {
-                return _originalDefinition.DeclaringSyntaxReferences;
-            }
-        }
+        public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences => _originalDefinition.DeclaringSyntaxReferences;
 
-        public override ImmutableArray<AttributeData> GetAttributes()
-        {
-            return _originalDefinition.GetAttributes();
-        }
+        public override ImmutableArray<AttributeData> GetAttributes() => _originalDefinition.GetAttributes();
 
         public override Symbol AssociatedSymbol
         {
@@ -183,82 +119,28 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public override bool IsStatic
-        {
-            get
-            {
-                return _originalDefinition.IsStatic;
-            }
-        }
+        public override bool IsStatic => _originalDefinition.IsStatic;
 
-        public override bool IsReadOnly
-        {
-            get
-            {
-                return _originalDefinition.IsReadOnly;
-            }
-        }
+        public override bool IsReadOnly => _originalDefinition.IsReadOnly;
 
-        public override bool IsConst
-        {
-            get
-            {
-                return _originalDefinition.IsConst;
-            }
-        }
+        public override bool IsConst => _originalDefinition.IsConst;
 
-        internal override ObsoleteAttributeData ObsoleteAttributeData
-        {
-            get
-            {
-                return _originalDefinition.ObsoleteAttributeData;
-            }
-        }
+        internal override ObsoleteAttributeData ObsoleteAttributeData => _originalDefinition.ObsoleteAttributeData;
 
-        public override object ConstantValue
-        {
-            get
-            {
-                return _originalDefinition.ConstantValue;
-            }
-        }
+        public override object ConstantValue => _originalDefinition.ConstantValue;
 
         internal override ConstantValue GetConstantValue(bool earlyDecodingWellKnownAttributes)
         {
             return _originalDefinition.GetConstantValue(earlyDecodingWellKnownAttributes);
         }
 
-        internal override MarshalPseudoCustomAttributeData MarshallingInformation
-        {
-            get
-            {
-                return _originalDefinition.MarshallingInformation;
-            }
-        }
+        internal override MarshalPseudoCustomAttributeData MarshallingInformation => _originalDefinition.MarshallingInformation;
 
-        public override bool IsVolatile
-        {
-            get
-            {
-                return _originalDefinition.IsVolatile;
-            }
-        }
+        public override bool IsVolatile => _originalDefinition.IsVolatile;
 
-        public override bool IsImplicitlyDeclared
-        {
-            get
-            {
-                return _originalDefinition.IsImplicitlyDeclared;
-            }
-        }
+        public override bool IsImplicitlyDeclared => _originalDefinition.IsImplicitlyDeclared;
 
-        public override Accessibility DeclaredAccessibility
-        {
-            get
-            {
-                return _originalDefinition.DeclaredAccessibility;
-            }
-        }
+        public override Accessibility DeclaredAccessibility => _originalDefinition.DeclaredAccessibility;
 
         public override ImmutableArray<CustomModifier> CustomModifiers
         {

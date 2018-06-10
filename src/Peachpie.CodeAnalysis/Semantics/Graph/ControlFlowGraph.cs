@@ -1,11 +1,7 @@
-﻿using Devsense.PHP.Syntax;
+﻿using System;
+using System.Collections.Generic;
 using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Text;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
-using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
+using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -23,13 +23,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// If this is a type parameter of a reduced extension method, gets the type parameter definition that
         /// this type parameter was reduced from. Otherwise, returns Nothing.
         /// </summary>
-        public virtual TypeParameterSymbol ReducedFrom
-        {
-            get
-            {
-                return null;
-            }
-        }
+        public virtual TypeParameterSymbol ReducedFrom => null;
 
         /// <summary>
         /// The ordinal position of the type parameter in the parameter list which declares
@@ -53,13 +47,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Duplicates and cycles are removed, although the collection may include
         /// redundant constraints where one constraint is a base type of another.
         /// </summary>
-        public ImmutableArray<TypeSymbol> ConstraintTypes
-        {
-            get
-            {
-                return this.ConstraintTypesNoUseSiteDiagnostics;
-            }
-        }
+        public ImmutableArray<TypeSymbol> ConstraintTypes => this.ConstraintTypesNoUseSiteDiagnostics;
 
         internal ImmutableArray<TypeSymbol> ConstraintTypesNoUseSiteDiagnostics
         {
@@ -123,13 +111,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// The type that declared this type parameter, or null.
         /// </summary>
-        public NamedTypeSymbol DeclaringType
-        {
-            get
-            {
-                return this.ContainingSymbol as NamedTypeSymbol;
-            }
-        }
+        public NamedTypeSymbol DeclaringType => this.ContainingSymbol as NamedTypeSymbol;
 
         // Type parameters do not have members
         public sealed override ImmutableArray<Symbol> GetMembers()
@@ -161,21 +143,9 @@ namespace Pchp.CodeAnalysis.Symbols
             return ImmutableArray<NamedTypeSymbol>.Empty;
         }
 
-        public sealed override SymbolKind Kind
-        {
-            get
-            {
-                return SymbolKind.TypeParameter;
-            }
-        }
+        public sealed override SymbolKind Kind => SymbolKind.TypeParameter;
 
-        public sealed override TypeKind TypeKind
-        {
-            get
-            {
-                return TypeKind.TypeParameter;
-            }
-        }
+        public sealed override TypeKind TypeKind => TypeKind.TypeParameter;
 
         // Only the compiler can create TypeParameterSymbols.
         internal TypeParameterSymbol()

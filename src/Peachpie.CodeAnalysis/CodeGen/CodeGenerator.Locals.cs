@@ -1,14 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.CodeAnalysis.CodeGen;
-using Pchp.CodeAnalysis.Symbols;
-using Microsoft.CodeAnalysis;
-using System.Collections.Immutable;
 using System.Diagnostics;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.CodeGen
 {
@@ -213,9 +208,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns>Place or <c>null</c>.</returns>
         internal IPlace PlaceOrNull(BoundExpression expr)
         {
-            if (expr is BoundReferenceExpression)
+            if (expr is BoundReferenceExpression boundReference)
             {
-                return ((BoundReferenceExpression)expr).Place(_il);
+                return boundReference.Place(_il);
             }
 
             return null;

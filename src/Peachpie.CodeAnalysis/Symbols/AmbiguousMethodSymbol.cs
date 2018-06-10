@@ -147,11 +147,7 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         readonly string _name;
 
-        public override ErrorMethodKind ErrorKind
-        {
-            get { return ErrorMethodKind.Missing; }
-
-        }
+        public override ErrorMethodKind ErrorKind => ErrorMethodKind.Missing;
 
         public override string Name => _name;
 

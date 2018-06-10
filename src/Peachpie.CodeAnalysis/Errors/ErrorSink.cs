@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Collections.Immutable;
 using Devsense.PHP.Errors;
-using Devsense.PHP.Syntax;
 using Devsense.PHP.Text;
 using Microsoft.CodeAnalysis;
-using System.Collections.Immutable;
 
 namespace Pchp.CodeAnalysis.Errors
 {

@@ -144,7 +144,7 @@ namespace Pchp.Core.Reflection
             }
 
             // <Script> type
-            var tinfo = method.DeclaringType.GetTypeInfo();
+            var tinfo = method.DeclaringType;
             if (tinfo.Name == "<Script>")
             {
                 return false;
@@ -267,7 +267,7 @@ namespace Pchp.Core.Reflection
             get
             {
                 var method = _clrframe.GetMethod();
-                var tinfo = method.DeclaringType.GetTypeInfo();
+                var tinfo = method.DeclaringType;
 
                 if (method.IsStatic)
                 {

@@ -1,9 +1,9 @@
 ﻿using System.Collections.Immutable;
-using Microsoft.CodeAnalysis.Emit;
 using System.Diagnostics;
-using Cci = Microsoft.Cci;
-using Pchp.CodeAnalysis.Symbols;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Emit;
+using Pchp.CodeAnalysis.Symbols;
+using Cci = Microsoft.Cci;
 
 namespace Pchp.CodeAnalysis.Emit
 {

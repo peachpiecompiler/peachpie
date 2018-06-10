@@ -339,7 +339,7 @@ namespace Pchp.Core.Reflection
         {
             Debug.Assert(memberctx != null);
 
-            return caller != null && memberctx.GetTypeInfo().IsAssignableFrom(caller);
+            return caller != null && memberctx.IsAssignableFrom(caller);
         }
 
         /// <summary>
@@ -365,10 +365,9 @@ namespace Pchp.Core.Reflection
                 }
                 else
                 {
-                    var m_type = ((MethodInfo)m).GetBaseDefinition().DeclaringType.GetTypeInfo();
-                    var classCtx_type = classCtx.GetTypeInfo();
+                    var m_type = ((MethodInfo)m).GetBaseDefinition().DeclaringType;
 
-                    return classCtx_type.IsAssignableFrom(m_type) || m_type.IsAssignableFrom(classCtx_type);
+                    return classCtx.IsAssignableFrom(m_type) || m_type.IsAssignableFrom(classCtx);
                 }
             }
 

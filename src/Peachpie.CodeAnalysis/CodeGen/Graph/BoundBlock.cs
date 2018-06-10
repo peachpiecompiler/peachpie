@@ -1,13 +1,9 @@
-﻿using Microsoft.CodeAnalysis;
-using Pchp.CodeAnalysis.CodeGen;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
 using Devsense.PHP.Text;
+using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph

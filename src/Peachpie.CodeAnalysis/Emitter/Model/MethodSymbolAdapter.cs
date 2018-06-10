@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Emit;
+using Pchp.CodeAnalysis.Emit;
 using Roslyn.Utilities;
 using Cci = Microsoft.Cci;
-using Pchp.CodeAnalysis.Emit;
-using Microsoft.CodeAnalysis;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -110,42 +110,15 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        string Cci.INamedEntity.Name
-        {
-            get { return this.MetadataName; }
-        }
+        string Cci.INamedEntity.Name => this.MetadataName;
 
-        bool Cci.IMethodReference.AcceptsExtraArguments
-        {
-            get
-            {
-                return this.IsVararg;
-            }
-        }
+        bool Cci.IMethodReference.AcceptsExtraArguments => this.IsVararg;
 
-        ushort Cci.IMethodReference.GenericParameterCount
-        {
-            get
-            {
-                return (ushort)this.Arity;
-            }
-        }
+        ushort Cci.IMethodReference.GenericParameterCount => (ushort)this.Arity;
 
-        bool Cci.IMethodReference.IsGeneric
-        {
-            get
-            {
-                return this.IsGenericMethod;
-            }
-        }
+        bool Cci.IMethodReference.IsGeneric => this.IsGenericMethod;
 
-        ushort Cci.ISignature.ParameterCount
-        {
-            get
-            {
-                return (ushort)this.Parameters.Length;
-            }
-        }
+        ushort Cci.ISignature.ParameterCount => (ushort)this.Parameters.Length;
 
         Cci.IMethodDefinition Cci.IMethodReference.GetResolvedMethod(EmitContext context)
         {

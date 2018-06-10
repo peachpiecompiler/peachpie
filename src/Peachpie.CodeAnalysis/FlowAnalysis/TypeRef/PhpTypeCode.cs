@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Pchp.CodeAnalysis.FlowAnalysis
+﻿namespace Pchp.CodeAnalysis.FlowAnalysis
 {
     /// <summary>
     /// Compatible PHP type codes.

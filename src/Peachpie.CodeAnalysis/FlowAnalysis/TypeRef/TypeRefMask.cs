@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
@@ -64,24 +61,24 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Each bit corresponds to a type within its <see cref="TypeRefContext"/>.
         /// </summary>
-        public ulong Mask { get { return _mask; } }
+        public ulong Mask => _mask;
         private ulong _mask;
 
         /// <summary>
         /// Gets value indicating whether the type represents an any type.
         /// </summary>
-        public bool IsAnyType { get { return (_mask & AnyTypeMask) == AnyTypeMask; } }
+        public bool IsAnyType => (_mask & AnyTypeMask) == AnyTypeMask;
 
         /// <summary>
         /// Gets value indicating whether the type information is not initialized.
         /// </summary>
         /// <remarks>Also represents <c>void</c> type.</remarks>
-        public bool IsUninitialized { get { return _mask == (ulong)0; } }
+        public bool IsUninitialized => _mask == (ulong)0;
 
         /// <summary>
         /// Gets value indicating whether the type represents <c>void</c>.
         /// </summary>
-        public bool IsVoid { get { return (_mask & ~(ulong)(MaskFlags.Mask)) == 0; } }
+        public bool IsVoid => (_mask & ~(ulong)(MaskFlags.Mask)) == 0;
 
         /// <summary>
         /// Gets or sets value indicating whether the type might represent an alias.
@@ -139,7 +136,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets type mask representing any type.
         /// </summary>
-        public static TypeRefMask AnyType { get { return new TypeRefMask(AnyTypeMask); } }
+        public static TypeRefMask AnyType => new TypeRefMask(AnyTypeMask);
 
         #endregion
 

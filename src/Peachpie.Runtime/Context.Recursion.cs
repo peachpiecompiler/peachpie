@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Pchp.Core
 {
     partial class Context
     {
-        struct RecursionCheckKey : IEquatable<RecursionCheckKey>
+        readonly struct RecursionCheckKey : IEquatable<RecursionCheckKey>
         {
             public class EqualityComparer : IEqualityComparer<RecursionCheckKey>
             {
@@ -33,7 +31,7 @@ namespace Pchp.Core
             public override bool Equals(object obj) => obj is RecursionCheckKey && Equals((RecursionCheckKey)obj);
         }
 
-        public struct RecursionCheckToken : IDisposable
+        public readonly struct RecursionCheckToken : IDisposable
         {
             readonly Stack<RecursionCheckKey> _list;
             readonly bool _isrecursion;

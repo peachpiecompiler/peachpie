@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Roslyn.Utilities;
 
@@ -24,34 +21,16 @@ namespace Pchp.CodeAnalysis.Symbols
             this.identity = identity;
         }
 
-        internal sealed override bool IsMissing
-        {
-            get
-            {
-                return true;
-            }
-        }
+        internal sealed override bool IsMissing => true;
 
-        internal override bool IsLinked
-        {
-            get
-            {
-                return false;
-            }
-        }
+        internal override bool IsLinked => false;
 
         internal override Symbol GetDeclaredSpecialTypeMember(SpecialMember member)
         {
             return null;
         }
 
-        public override AssemblyIdentity Identity
-        {
-            get
-            {
-                return identity;
-            }
-        }
+        public override AssemblyIdentity Identity => identity;
 
         public override Version AssemblyVersionPattern => null;
 
@@ -133,13 +112,7 @@ namespace Pchp.CodeAnalysis.Symbols
             throw Roslyn.Utilities.ExceptionUtilities.Unreachable;
         }
 
-        public override bool MightContainExtensionMethods
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public override bool MightContainExtensionMethods => false;
 
         public override AssemblyMetadata GetMetadata() => null;
     }

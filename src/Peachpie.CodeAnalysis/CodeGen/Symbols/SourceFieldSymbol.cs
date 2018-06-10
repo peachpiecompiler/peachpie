@@ -1,12 +1,6 @@
-﻿using Pchp.CodeAnalysis.CodeGen;
-using Pchp.CodeAnalysis.Semantics;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
+﻿using System.Diagnostics;
 using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
+using Pchp.CodeAnalysis.CodeGen;
 
 namespace Pchp.CodeAnalysis.Symbols
 {

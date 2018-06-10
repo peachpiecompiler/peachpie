@@ -1,14 +1,10 @@
-﻿using Devsense.PHP.Syntax;
-using Devsense.PHP.Syntax.Ast;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using Roslyn.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.Symbols
 {

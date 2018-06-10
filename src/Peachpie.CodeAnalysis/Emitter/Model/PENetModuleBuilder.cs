@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.CodeAnalysis.Emit;
-using Roslyn.Utilities;
+﻿using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Emit;
 
 namespace Pchp.CodeAnalysis.Emit
 {

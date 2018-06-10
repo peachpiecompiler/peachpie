@@ -1,12 +1,8 @@
-﻿using Microsoft.CodeAnalysis;
-using Roslyn.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Roslyn.Utilities;
 using Cci = Microsoft.Cci;
 
 namespace Pchp.CodeAnalysis.Symbols
@@ -30,13 +26,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// symbol by type substitution then OriginalDefinition gets the original symbol as it was defined in
         /// source or metadata.
         /// </summary>
-        public new virtual PropertySymbol OriginalDefinition
-        {
-            get
-            {
-                return this;
-            }
-        }
+        public new virtual PropertySymbol OriginalDefinition => this;
 
         protected override sealed Symbol OriginalSymbolDefinition
         {
@@ -147,18 +137,12 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// The 'get' accessor of the property, or null if the property is write-only.
         /// </summary>
-        public abstract MethodSymbol GetMethod
-        {
-            get;
-        }
-
+        public abstract MethodSymbol GetMethod { get; }
+        
         /// <summary>
         /// The 'set' accessor of the property, or null if the property is read-only.
         /// </summary>
-        public abstract MethodSymbol SetMethod
-        {
-            get;
-        }
+        public abstract MethodSymbol SetMethod { get; }
 
         internal abstract Cci.CallingConvention CallingConvention { get; }
 
@@ -269,13 +253,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets the kind of this symbol.
         /// </summary>
-        public sealed override SymbolKind Kind
-        {
-            get
-            {
-                return SymbolKind.Property;
-            }
-        }
+        public sealed override SymbolKind Kind => SymbolKind.Property;
 
         public bool HasRefOrOutParameter()
         {

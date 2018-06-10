@@ -3,13 +3,10 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Reflection;
-using Microsoft.CodeAnalysis.CodeGen;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Collections;
 using Roslyn.Utilities;
-using Microsoft.CodeAnalysis;
 
 namespace Pchp.CodeAnalysis.Symbols
 {

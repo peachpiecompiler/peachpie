@@ -1,10 +1,6 @@
-﻿using Microsoft.CodeAnalysis;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
 using System.Globalization;
+using Microsoft.CodeAnalysis;
 using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Errors
@@ -16,18 +12,9 @@ namespace Pchp.CodeAnalysis.Errors
     {
         public static readonly MessageProvider Instance = new MessageProvider();
 
-        public override string CodePrefix
-        {
-            get
-            {
-                return "PHP";
-            }
-        }
+        public override string CodePrefix => "PHP";
 
-        public override Type ErrorCodeType
-        {
-            get { return typeof(ErrorCode); }
-        }
+        public override Type ErrorCodeType => typeof(ErrorCode);
 
         public override int ERR_BadCompilationOptionValue => (int)ErrorCode.ERR_BadCompilationOptionValue;
 

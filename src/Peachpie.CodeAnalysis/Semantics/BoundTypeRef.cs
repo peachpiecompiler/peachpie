@@ -1,14 +1,10 @@
-﻿using Devsense.PHP.Syntax.Ast;
-using Microsoft.CodeAnalysis;
-using Pchp.CodeAnalysis.Symbols;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Devsense.PHP.Syntax.Ast;
+using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.CodeGen;
-using System.Collections.Immutable;
+using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -103,7 +99,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Resolved type symbol if any.
         /// </summary>
-        public ITypeSymbol Symbol { get { return this.ResolvedType; } }
+        public ITypeSymbol Symbol => this.ResolvedType;
 
         /// <summary>
         /// Expression getting type name.

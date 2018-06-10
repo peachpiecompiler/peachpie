@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Threading;
-using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
+using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {

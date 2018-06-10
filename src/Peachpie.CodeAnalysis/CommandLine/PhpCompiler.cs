@@ -1,21 +1,15 @@
-﻿using Microsoft.CodeAnalysis;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.VisualStudio.Shell.Interop;
 using System.Collections.Immutable;
 using System.IO;
-using Microsoft.CodeAnalysis.Text;
-using Roslyn.Utilities;
-using Devsense.PHP.Syntax;
-using Devsense.PHP.Errors;
-using Devsense.PHP.Text;
-using Pchp.CodeAnalysis.Errors;
-using Devsense.PHP.Syntax.Ast;
+using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
+using Devsense.PHP.Syntax;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.VisualStudio.Shell.Interop;
+using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.CommandLine
 {
@@ -28,7 +22,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
         private readonly DiagnosticFormatter _diagnosticFormatter = new DiagnosticFormatter();
 
-        protected internal new PhpCommandLineArguments Arguments { get { return (PhpCommandLineArguments)base.Arguments; } }
+        protected internal new PhpCommandLineArguments Arguments => (PhpCommandLineArguments)base.Arguments;
 
         public PhpCompiler(CommandLineParser parser, string responseFile, string[] args, string clientDirectory, string baseDirectory, string sdkDirectory, string additionalReferenceDirectories, IAnalyzerAssemblyLoader analyzerLoader)
             : base(parser, responseFile, args, clientDirectory, baseDirectory, sdkDirectory, additionalReferenceDirectories, analyzerLoader)

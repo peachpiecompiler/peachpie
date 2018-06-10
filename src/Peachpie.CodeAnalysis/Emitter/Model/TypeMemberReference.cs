@@ -15,13 +15,7 @@ namespace Pchp.CodeAnalysis.Emit
             return moduleBeingBuilt.Translate(UnderlyingSymbol.ContainingType, context.SyntaxNodeOpt, context.Diagnostics);
         }
 
-        string Cci.INamedEntity.Name
-        {
-            get
-            {
-                return UnderlyingSymbol.MetadataName;
-            }
-        }
+        string Cci.INamedEntity.Name => UnderlyingSymbol.MetadataName;
 
         ///// <remarks>
         ///// Used only for testing.

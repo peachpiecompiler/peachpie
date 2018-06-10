@@ -1,11 +1,8 @@
-﻿using Microsoft.CodeAnalysis;
-using Pchp.CodeAnalysis.Symbols;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Collections.Immutable;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.DocumentationComments
 {
@@ -13,8 +10,8 @@ namespace Pchp.CodeAnalysis.DocumentationComments
     {
         public static string GetId(Symbol symbol)
         {
-            if (symbol is MethodSymbol) return GetId((MethodSymbol)symbol);
-            if (symbol is TypeSymbol) return GetId((TypeSymbol)symbol);
+            if (symbol is MethodSymbol methodSymbol) return GetId(methodSymbol);
+            if (symbol is TypeSymbol typeSymbol) return GetId(typeSymbol);
 
             return null;
         }
@@ -25,9 +22,8 @@ namespace Pchp.CodeAnalysis.DocumentationComments
 
         static string TypeId(TypeSymbol type)
         {
-            if (type is ArrayTypeSymbol)
+            if (type is ArrayTypeSymbol arrtype)
             {
-                var arrtype = (ArrayTypeSymbol)type;
                 return TypeId(arrtype.ElementType) + "[]";  // TODO: MDSize
             }
             else if (type.ContainingType != null) // nested type

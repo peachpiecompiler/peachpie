@@ -137,7 +137,7 @@ namespace Pchp.Core.Reflection
 
             foreach (var m in routine.Methods)
             {
-                var tinfo = m.DeclaringType.GetTypeInfo();
+                var tinfo = m.DeclaringType;
 
                 //
                 var extinfo = tinfo.GetCustomAttribute<PhpExtensionAttribute>();

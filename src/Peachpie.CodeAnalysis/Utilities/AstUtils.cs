@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.CodeAnalysis.Text;
-using Devsense.PHP.Text;
-using Devsense.PHP.Syntax.Ast;
-using Devsense.PHP.Syntax;
 using System.Diagnostics;
+using System.Linq;
+using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
+using Devsense.PHP.Text;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Pchp.CodeAnalysis
 {

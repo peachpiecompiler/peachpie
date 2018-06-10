@@ -1,13 +1,10 @@
-﻿using Devsense.PHP.Syntax.Ast;
-using Microsoft.CodeAnalysis;
-using Pchp.CodeAnalysis.CodeGen;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
+using Devsense.PHP.Syntax.Ast;
+using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Semantics
@@ -76,9 +73,9 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 return EmitLoadPhpTypeInfo(cg, this.ResolvedType);
             }
-            else if (_typeRef is ReservedTypeRef) // late static bound
+            else if (_typeRef is ReservedTypeRef reservedTypeRef) // late static bound
             {
-                switch (((ReservedTypeRef)_typeRef).Type)
+                switch (reservedTypeRef.Type)
                 {
                     case ReservedTypeRef.ReservedType.@static:
                         return EmitLoadStaticPhpTypeInfo(cg);

@@ -1,5 +1,4 @@
-﻿using Microsoft.CodeAnalysis.Text;
-using Pchp.CodeAnalysis.Symbols;
+﻿using Pchp.CodeAnalysis.Symbols;
 using Cci = Microsoft.Cci;
 
 namespace Pchp.CodeAnalysis.Emit

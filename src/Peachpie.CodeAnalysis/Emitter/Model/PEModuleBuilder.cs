@@ -4,16 +4,15 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection.PortableExecutable;
 using System.Threading;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
 using Microsoft.CodeAnalysis.Emit;
-using Roslyn.Utilities;
-using Microsoft.CodeAnalysis;
-using Cci = Microsoft.Cci;
 using Microsoft.CodeAnalysis.Emit.NoPia;
-using Pchp.CodeAnalysis.Symbols;
 using Pchp.CodeAnalysis.Emitter;
+using Pchp.CodeAnalysis.Symbols;
+using Roslyn.Utilities;
+using Cci = Microsoft.Cci;
 
 namespace Pchp.CodeAnalysis.Emit
 {

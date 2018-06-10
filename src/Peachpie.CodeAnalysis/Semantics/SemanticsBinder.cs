@@ -1,19 +1,17 @@
-﻿using Devsense.PHP.Syntax;
-using Devsense.PHP.Text;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Semantics;
-using Pchp.CodeAnalysis.Symbols;
-using Roslyn.Utilities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using AST = Devsense.PHP.Syntax.Ast;
-using Pchp.CodeAnalysis.Semantics.Graph;
+using Devsense.PHP.Syntax;
+using Devsense.PHP.Text;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.FlowAnalysis;
+using Pchp.CodeAnalysis.Semantics.Graph;
+using Pchp.CodeAnalysis.Symbols;
+using Roslyn.Utilities;
+using AST = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.Semantics
 {

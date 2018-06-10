@@ -1,9 +1,4 @@
-﻿using Microsoft.CodeAnalysis.Semantics;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.Semantics
 {

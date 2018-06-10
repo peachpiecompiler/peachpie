@@ -1,21 +1,15 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Semantics;
+﻿using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Globalization;
+using System.Linq;
+using System.Threading;
+using Devsense.PHP.Syntax;
+using Devsense.PHP.Syntax.Ast;
+using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Diagnostics;
-using Pchp.CodeAnalysis.CodeGen;
-using Pchp.CodeAnalysis.FlowAnalysis;
-using Devsense.PHP.Syntax.Ast;
-using Devsense.PHP.Syntax;
-using Devsense.PHP.Text;
-using System.Globalization;
-using System.Threading;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
