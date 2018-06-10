@@ -1225,23 +1225,43 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else if (x.TargetMethod is MissingMethodSymbol)
             {
-                //// locals passed as arguments should be marked as possible refs:
-                //x.ArgumentsInSourceOrder.ForEach(a =>
-                //{
-                //    if (a.Value is BoundVariableRef bvar && bvar.Name.IsDirect && !a.IsUnpacking)
-                //    {
-                //        var local = State.GetLocalHandle(bvar.Name.NameValue);
-                //        State.SetLocalType(local, State.GetLocalType(local).WithRefFlag);
-                //    }
-                //});
+                // locals passed as arguments should be marked as possible refs:
+                x.ArgumentsInSourceOrder.ForEach(a =>
+                {
+                    if (a.Value is BoundVariableRef bvar && bvar.Name.IsDirect && !a.IsUnpacking)
+                    {
+                        State.SetLocalRef(State.GetLocalHandle(bvar.Name.NameValue));
+                    }
+                });
             }
             else if (x.TargetMethod is AmbiguousMethodSymbol ambiguity)
             {
                 // check if arguments are not passed by bref, mark locals eventually as refs:
-                // ...
+                foreach (var m in ambiguity.Ambiguities)
+                {
+                    var expected = m.GetExpectedArguments(this.TypeCtx);
+                    var given = x.ArgumentsInSourceOrder;
+
+                    for (int i = 0; i < given.Length && i < expected.Length; i++)
+                    {
+                        if (expected[i].IsAlias && given[i].Value is BoundVariableRef bvar && bvar.Name.IsDirect)
+                        {
+                            State.SetLocalRef(State.GetLocalHandle(bvar.Name.NameValue));
+                        }
+                    }
+                }
 
                 // get the return type from all the ambiguities:
-                // ... 
+                if (!maybeOverload)
+                {
+                    var r = (TypeRefMask)0;
+                    foreach (var m in ambiguity.Ambiguities)
+                    {
+                        r |= m.GetResultType(TypeCtx);
+                    }
+
+                    x.TypeRefMask = r;
+                }
             }
 
             //

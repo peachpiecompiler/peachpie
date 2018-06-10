@@ -215,6 +215,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         }
 
         /// <summary>
+        /// Sets variable type with byref flag in this state.
+        /// </summary>
+        /// <param name="handle">Variable handle.</param>
+        public void SetLocalRef(VariableHandle handle)
+        {
+            SetLocalType(handle, GetLocalType(handle).WithRefFlag);
+        }
+
+        /// <summary>
         /// Gets type of variable at this state.
         /// </summary>
         public TypeRefMask GetLocalType(VariableHandle handle)
