@@ -1252,11 +1252,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
 
                 // get the return type from all the ambiguities:
-                if (!maybeOverload)
+                if (!maybeOverload && x.Access.IsRead)
                 {
                     var r = (TypeRefMask)0;
                     foreach (var m in ambiguity.Ambiguities)
                     {
+                        Worklist.EnqueueRoutine(m, CurrentBlock);
                         r |= m.GetResultType(TypeCtx);
                     }
 
