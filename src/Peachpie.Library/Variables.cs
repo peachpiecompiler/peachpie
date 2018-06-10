@@ -466,7 +466,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region is_scalar, is_numeric, is_callable, get_resource_type
+        #region is_scalar, is_numeric, is_callable, is_countable, get_resource_type
 
         /// <summary>
         /// Checks whether a dereferenced variable is a scalar.
@@ -540,6 +540,26 @@ namespace Pchp.Library
             }
 
             callableName = variable.ToString(ctx);
+            return false;
+        }
+
+        /// <summary>
+        /// Verify that the contents of a variable is an array or an object implementing <see cref="Spl.Countable"/> or <see cref="System.Collections.ICollection"/>.
+        /// </summary>
+        public static bool is_countable(PhpValue value)
+        {
+            if (value.Object is System.Collections.ICollection ||   // PhpArray, CLR Collection
+                value.Object is Spl.Countable)                      // SPL Countable
+            {
+                return true;
+            }
+
+            if (value.Object is PhpAlias alias)
+            {
+                return is_countable(alias.Value);
+            }
+
+            //
             return false;
         }
 
