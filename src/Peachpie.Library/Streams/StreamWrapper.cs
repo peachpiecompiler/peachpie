@@ -1156,7 +1156,6 @@ namespace Pchp.Library.Streams
                 //
                 // get response synchronously
                 //
-
                 var response_async = request.GetResponseAsync();
                 if (response_async.Wait((int)(dtimeout * 1000)))
                 {
@@ -1204,14 +1203,15 @@ namespace Pchp.Library.Streams
         static void ApplyContext(Context ctx, HttpWebRequest request, StreamContext context, out double dtimeout)
         {
             var config = ctx.Configuration.Core;
+            var options = context.GetOptions(scheme) ?? PhpArray.Empty;
 
             //
             // timeout.
             //
-            var timeout = context.GetOption(scheme, "timeout");
+            var timeout = options["timeout"];
             dtimeout = (!timeout.IsEmpty) ? timeout.ToDouble() : config.DefaultSocketTimeout;
             // request.ReadWriteTimeout = (int)(dtimeout * 1000); // to be used by Task.Wait
-
+            
             ////
             //// TODO: max_redirects
             ////
@@ -1232,7 +1232,7 @@ namespace Pchp.Library.Streams
             //
             // method - GET, POST, or any other HTTP method supported by the remote server.
             //
-            string method = PhpVariable.AsString(context.GetOption(scheme, "method"));
+            var method = options["method"].AsString();
             if (method != null)
             {
                 request.Method = method;
@@ -1241,11 +1241,7 @@ namespace Pchp.Library.Streams
             //
             // user_agent - Value to send with User-Agent: header. This value will only be used if user-agent is not specified in the header context option above.  php.ini setting: user_agent  
             //
-            var agent = context.GetOption(scheme, "user_agent").AsString() ?? config.UserAgent;
-            if (agent != null)
-            {
-                request.Headers["User-Agent"] = agent;
-            }
+            request.Headers["User-Agent"] = options["user_agent"].AsString() ?? config.UserAgent;
 
             // TODO: proxy - URI specifying address of proxy server. (e.g. tcp://proxy.example.com:5100 ).    
             // TODO: request_fulluri - When set to TRUE, the entire URI will be used when constructing the request. (i.e. GET http://www.example.com/path/to/file.html HTTP/1.0). While this is a non-standard request format, some proxy servers require it.  FALSE 
@@ -1253,15 +1249,19 @@ namespace Pchp.Library.Streams
             //
             // header - Additional headers to be sent during request. Values in this option will override other values (such as User-agent:, Host:, and Authentication:).    
             //
-            var header = context.GetOption(scheme, "header").AsString();
+            var header = options["header"].AsString();
             if (header != null)
             {
                 // EX: Use the individual headers, respect the system restricted-header list?
-                string[] lines = header.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (string line in lines)
+                var lines = new StringReader(header);
+                string line;
+                while ((line = lines.ReadLine()) != null)
                 {
                     int separator = line.IndexOf(':');
                     if (separator <= 0) continue;
+
+                    // TODO: Span<char> for name, value, line
+
                     string name = line.Substring(0, separator).Trim().ToLowerInvariant();
                     string value = line.Substring(separator + 1, line.Length - separator - 1).Trim();
 
@@ -1317,7 +1317,7 @@ namespace Pchp.Library.Streams
             //
             // content - Additional data to be sent after the headers. Typically used with POST or PUT requests.    
             //
-            var content = context.GetOption(scheme, "content").ToBytes(ctx);
+            var content = options["content"].ToBytes(ctx);
             if (content != null && content.Length != 0)
             {
                 using (var body = request.GetRequestStreamAsync().Result)

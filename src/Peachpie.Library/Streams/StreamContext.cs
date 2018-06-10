@@ -100,6 +100,14 @@ namespace Pchp.Library.Streams
         }
 
         /// <summary>
+        /// Gets wrapper specific options.
+        /// </summary>
+        public PhpArray GetOptions(string scheme)
+        {
+            return (_data != null && _data.TryGetValue(scheme, out var options)) ? options.ArrayOrNull() : null;
+        }
+
+        /// <summary>
         /// Gets a wrapper-specific option identified by the scheme and the option name.
         /// </summary>
         /// <param name="scheme">The target wrapper scheme.</param>
@@ -107,17 +115,10 @@ namespace Pchp.Library.Streams
         /// <returns>The specific option or <b>null</b> if no such option exists.</returns>
         public PhpValue GetOption(string scheme, string option)
         {
-            var result = PhpValue.Null;
+            var options = GetOptions(scheme);
+            var result = options != null ? options[option] : PhpValue.Null;
 
-            if (_data != null)
-            {
-                var options = _data[scheme].ArrayOrNull();
-                if (options != null)
-                {
-                    result = options[option];
-                }
-            }
-
+            //
             return result;
         }
     }
