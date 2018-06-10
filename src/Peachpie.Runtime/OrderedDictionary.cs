@@ -561,7 +561,7 @@ namespace Pchp.Core
             public ReadonlyEnumerator(PhpHashtable/*!*/hashtable)
                 : base(hashtable.table.Share()) // enumerates over readonly copy of given array
             {
-                
+
             }
 
             public override PhpValue CurrentValue => base.CurrentValue.DeepCopy();
@@ -579,7 +579,7 @@ namespace Pchp.Core
         internal class DictionaryEnumerator : Enumerator
         {
             public DictionaryEnumerator(OrderedDictionary/*!*/table)
-                :base(table)
+                : base(table)
             {
             }
 
@@ -684,7 +684,7 @@ namespace Pchp.Core
         {
             private readonly OrderedDictionary/*!*/_table;
             private int _currentEntry;
-            
+
             public FastEnumerator(OrderedDictionary/*!*/table)
             {
                 Debug.Assert(table != null);
@@ -844,7 +844,7 @@ namespace Pchp.Core
             {
                 Debug.Assert(IsValid);
                 int p = _currentEntry;
-                int nIndex = CurrentKey.Integer & _table.tableMask;
+                int nIndex = _table._index(CurrentKey.Integer);
                 bool hasMore = MoveNext();
 
                 _table._remove_entry(ref _table.entries[p], p, nIndex, activeEnumerators);
@@ -905,6 +905,24 @@ namespace Pchp.Core
         #region table operations
 
         #region _enlist_*, _debug_check_consistency
+
+        /// <summary>
+        /// Calculates bucket index.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int _index(ref IntStringKey key)
+        {
+            return _index(key.Integer);
+        }
+
+        /// <summary>
+        /// Calculates bucket index.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int _index(int ikey)
+        {
+            return this.tableMask & ikey;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void _enlist_to_bucket(ref Entry entry, int entry_index, int list_head)
@@ -1055,12 +1073,18 @@ namespace Pchp.Core
             this.entries = new_entries;
 
             // _rehash():
-            int nIndex;
-            for (var p = this.listHead; p >= 0; p = new_entries[p].listNext)
+            var p = this.listHead;
+            while(p >= 0)
             {
-                nIndex = new_entries[p]._key.Integer & new_mask;
-                _enlist_to_bucket(ref new_entries[p], p, new_buckets[nIndex]);
-                new_buckets[nIndex] = p;
+                ref var pentry = ref new_entries[p];
+                ref var pbucket = ref new_buckets[pentry._key.Integer & new_mask];
+
+                //
+                _enlist_to_bucket(ref pentry, p, pbucket);
+                pbucket = p;
+
+                //
+                p = pentry.listNext;
             }
 
             // check
@@ -1079,15 +1103,21 @@ namespace Pchp.Core
 
             // empty buckets
             for (int i = 0; i < _buckets.Length; i++)
+            {
                 _buckets[i] = -1;
+            }
 
             // rehash all the entries:
-            int nIndex;
-            for (var p = this.listHead; p >= 0; p = _entries[p].listNext)
+            var p = this.listHead;
+            while (p >= 0)
             {
-                nIndex = _entries[p]._key.Integer & _mask;
-                _enlist_to_bucket(ref _entries[p], p, _buckets[nIndex]);
-                _buckets[nIndex] = p;
+                ref Entry pentry = ref _entries[p];
+                ref int pbucket = ref _buckets[pentry._key.Integer & _mask];
+                _enlist_to_bucket(ref pentry, p, pbucket);
+                pbucket = p;
+
+                //
+                p = pentry.listNext;
             }
 
             // check
@@ -1113,16 +1143,22 @@ namespace Pchp.Core
             var _entries = this.entries;
 
             // find
-            for (int p = this.buckets[key.Integer & this.tableMask]; p >= 0; p = _entries[p].next) // TODO: unsafe
+            int p = this.buckets[_index(ref key)];
+            while(p >= 0)
             {
-                if (_entries[p].KeyEquals(ref key))
+                ref var pentry = ref _entries[p];
+
+                if (pentry.KeyEquals(ref key))
                 {
                     //if (add)
                     //    return;// false;
 
-                    _entries[p]._value = value;
+                    pentry._value = value;
                     return;// true;
                 }
+
+                //
+                p = pentry.next;
             }
 
             // not found, _add_last:
@@ -1145,7 +1181,7 @@ namespace Pchp.Core
             var _entries = this.entries;
 
             // find
-            for (int p = this.buckets[key.Integer & this.tableMask]; p >= 0; p = _entries[p].next) // TODO: unsafe
+            for (int p = this.buckets[_index(ref key)]; p >= 0; p = _entries[p].next) // TODO: unsafe
             {
                 if (_entries[p].KeyEquals(ref key))
                 {
@@ -1176,7 +1212,6 @@ namespace Pchp.Core
 
             EnsureInitialized();
 
-            int nIndex = key.Integer & this.tableMask;// index(ref key);
             var _entries = this.entries;
 
             // add:
@@ -1196,11 +1231,13 @@ namespace Pchp.Core
                     _do_resize();  // double the capacity
 
                     // update locals affected by resize:
-                    nIndex = key.Integer & this.tableMask;// index(ref key);    // new index
                     _entries = this.entries;
                 }
                 p = this.count++;
             }
+
+            //
+            var nIndex = _index(ref key);
 
             //
             _entries[p]._key = key;
@@ -1262,12 +1299,13 @@ namespace Pchp.Core
             }
 
             //
-            var nIndex = key.Integer & this.tableMask;// index(ref key);
+            ref var pentry = ref _entries[p];
+            ref var pbucket = ref buckets[_index(ref key)];
 
-            _entries[p]._key = key;
-            _enlist(ref _entries[p], p, this.buckets[nIndex]);
-            _entries[p]._value = value;
-            this.buckets[nIndex] = p;
+            pentry._key = key;
+            pentry._value = value;
+            _enlist(ref pentry, p, pbucket);
+            pbucket = p;
 
             //// update nextNewIndex: // moved to PhpArray
             //if (key.IsInteger && key.Integer >= this.nextNewIndex)
@@ -1316,7 +1354,7 @@ namespace Pchp.Core
             }
 
             //
-            var nIndex = key.Integer & this.tableMask;// index(ref key);
+            var nIndex = _index(ref key);
 
             _entries[p]._key = key;
             // enlist to bucket:
@@ -1388,13 +1426,18 @@ namespace Pchp.Core
         /// by passing <paramref name="active_enumerators"/>List of active enumerators do they can be updated.</remarks>
         public bool _del_key_or_index(ref IntStringKey key, Enumerator active_enumerators)
         {
-            var nIndex = key.Integer & this.tableMask;// index(ref key);
-            for (var p = this.buckets[nIndex]; p >= 0; p = this.entries[p].next)
-                if (this.entries[p].KeyEquals(ref key))
+            var nIndex = _index(ref key);
+            var p = buckets[nIndex];
+            while (p >= 0)
+            {
+                ref var pentry = ref entries[p];
+                if (pentry.KeyEquals(ref key))
                 {
-                    _remove_entry(ref this.entries[p], p, nIndex, active_enumerators);
+                    _remove_entry(ref pentry, p, nIndex, active_enumerators);
                     return true;
                 }
+                p = pentry.next;
+            }
 
             return false;
         }
@@ -1407,7 +1450,8 @@ namespace Pchp.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void _remove_entry(int p, Enumerator active_enumerators)
         {
-            _remove_entry(ref this.entries[p], p, this.entries[p]._key.Integer & this.tableMask, active_enumerators);   // remove the entry
+            ref var pentry = ref entries[p];
+            _remove_entry(ref pentry, p, _index(ref pentry._key), active_enumerators);   // remove the entry
         }
 
         /// <summary>
@@ -1454,24 +1498,28 @@ namespace Pchp.Core
 
         private int _findEntry(ref IntStringKey key)
         {
-            var nIndex = key.Integer & this.tableMask;  // index(ref key);// h & ht->nTableMask;
-            for (var p = this.buckets[nIndex]; p >= 0; p = entries[p].next)
-                if (entries[p].KeyEquals(ref key))
-                    return p;
+            var p = buckets[_index(ref key)];
+            while (p >= 0 && !entries[p].KeyEquals(ref key))
+            {
+                p = entries[p].next;
+            }
 
-            return -1;
+            return p; // -1 in case entry was not found
         }
 
         private bool _tryGetValue(IntStringKey key, out PhpValue value)
         {
-            var nIndex = key.Integer & this.tableMask;// index(ref key);// h & ht->nTableMask;
-            var/*!*/_entries = this.entries;
-            for (var p = this.buckets[nIndex]; p >= 0; p = _entries[p].next)
-                if (_entries[p].KeyEquals(ref key))
+            var p = buckets[_index(ref key)];
+            while (p >= 0)
+            {
+                ref var pentry = ref entries[p];
+                if (pentry.KeyEquals(ref key))
                 {
-                    value = _entries[p]._value;
+                    value = pentry._value;
                     return true;
                 }
+                p = pentry.next;
+            }
 
             value = PhpValue.Void;
             return false;
@@ -1479,14 +1527,17 @@ namespace Pchp.Core
 
         private bool _tryGetValue(int ikey, out PhpValue value)
         {
-            var nIndex = ikey & this.tableMask;// index(ref key);// h & ht->nTableMask;
-            var/*!*/_entries = this.entries;
-            for (var p = this.buckets[nIndex]; p >= 0; p = _entries[p].next)
-                if (_entries[p].KeyEquals(ikey))
+            var p = this.buckets[_index(ikey)];
+            while (p >= 0)
+            {
+                ref var pentry = ref this.entries[p];
+                if (pentry.KeyEquals(ikey))
                 {
-                    value = _entries[p]._value;
+                    value = pentry._value;
                     return true;
                 }
+                p = pentry.next;
+            }
 
             value = PhpValue.Void;
             return false;
@@ -1494,13 +1545,15 @@ namespace Pchp.Core
 
         internal PhpValue _get(ref IntStringKey key)
         {
-            var entries = this.entries;
-            for (var p = this.buckets[key.Integer & this.tableMask]; p >= 0; p = entries[p].next)
+            var p = this.buckets[_index(ref key)];
+            while (p >= 0)
             {
-                if (entries[p].KeyEquals(ref key))
+                ref var pentry = ref this.entries[p];
+                if (pentry.KeyEquals(ref key))
                 {
-                    return entries[p]._value;
+                    return pentry._value;
                 }
+                p = pentry.next;
             }
 
             // not found:
@@ -1517,18 +1570,21 @@ namespace Pchp.Core
         /// <exception cref="KeyNotFoundException">In case the item at given index is not found.</exception>
         internal ref PhpValue _getref(IntStringKey key)
         {
-            var entries = this.entries;
-            for (var p = this.buckets[key.Integer & this.tableMask]; p >= 0; p = entries[p].next)
+            var p = this.buckets[_index(ref key)];
+            while (p >= 0)
             {
-                if (entries[p].KeyEquals(ref key))
+                ref var pentry = ref this.entries[p];
+                if (pentry.KeyEquals(ref key))
                 {
-                    return ref entries[p]._value;
+                    return ref pentry._value;
                 }
+
+                p = pentry.next;
             }
 
             // not found, create the entry:
             _add_last(ref key, PhpValue.Void); // changes this.entries, this.buckets, this.tableMask
-            return ref this.entries[this.buckets[key.Integer & this.tableMask]]._value;
+            return ref this.entries[this.buckets[_index(ref key)]]._value;
         }
 
         internal bool _contains(ref IntStringKey key)
@@ -1651,10 +1707,17 @@ namespace Pchp.Core
 
             int max_key = -1;
             // iterate backwards, find the max faster
-            for (int p = this.listTail; p >= 0; p = _entries[p].listLast)
+            int p = this.listTail;
+            while( p >= 0)
             {
-                if (_entries[p]._key.Integer > max_key && _entries[p]._key.IsInteger)
-                    max_key = _entries[p]._key.Integer;
+                ref var pentry = ref _entries[p];
+                if (pentry._key.Integer > max_key && pentry._key.IsInteger)
+                {
+                    max_key = pentry._key.Integer;
+                }
+
+                //
+                p = pentry.listLast;
             }
 
             //
@@ -1713,7 +1776,7 @@ namespace Pchp.Core
             // "a" and "b" references moves along the respective lists:
             var iterator = result;
             Debug.Assert(alen > 0 && blen > 0);
-            for (;;)
+            for (; ; )
             {
                 if (comparer.Compare(entries[a].KeyValuePair, entries[b].KeyValuePair) <= 0)
                 {
@@ -1915,7 +1978,6 @@ namespace Pchp.Core
 
                 minor.CurrentEntryListNext = -1;
             }
-
         }
 
         #endregion
@@ -1970,8 +2032,9 @@ namespace Pchp.Core
             // reverse the listLast links
             for (p = this.listTail; p >= 0; p = prev)
             {
-                prev = _entries[p].listLast;
-                _entries[p].listLast = next;
+                ref var pentry = ref _entries[p];
+                prev = pentry.listLast;
+                pentry.listLast = next;
                 next = p;
             }
 
@@ -2052,8 +2115,7 @@ namespace Pchp.Core
             Debug.Assert(array.table == this, "array.table != this");
 
             var _entries = this.entries;
-            var nIndex = key.Integer & this.tableMask;// index(ref key);// h & ht->nTableMask;
-            for (var p = this.buckets[nIndex]; p >= 0; p = _entries[p].next)
+            for (var p = this.buckets[_index(ref key)]; p >= 0; p = _entries[p].next)
                 if (_entries[p].KeyEquals(ref key))
                 {
                     var value = _entries[p]._value;
@@ -2107,8 +2169,7 @@ namespace Pchp.Core
             Debug.Assert(array.table == this, "array.table != this");
 
             var _entries = this.entries;
-            var nIndex = key.Integer & this.tableMask;// index(ref key);// h & ht->nTableMask;
-            for (var p = this.buckets[nIndex]; p >= 0; p = _entries[p].next)
+            for (var p = this.buckets[_index(ref key)]; p >= 0; p = _entries[p].next)
                 if (_entries[p].KeyEquals(ref key))
                 {
                     if (this.IsShared)
@@ -2140,8 +2201,7 @@ namespace Pchp.Core
             Debug.Assert(array.table == this, "array.table != this");
 
             var _entries = this.entries;
-            var nIndex = key.Integer & this.tableMask;// index(ref key);// h & ht->nTableMask;
-            for (var p = this.buckets[nIndex]; p >= 0; p = _entries[p].next)
+            for (var p = this.buckets[_index(ref key)]; p >= 0; p = _entries[p].next)
                 if (_entries[p].KeyEquals(ref key))
                 {
                     if (this.IsShared)
