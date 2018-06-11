@@ -13,7 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Peachpie.Library\Peachpie.Library.csproj" />
     <ProjectReference Include="..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
-    <PackageReference Include="MySql.Data" Version="8.0.11" />
+    <PackageReference Include="MySqlConnector" Version="0.42.0" />
   </ItemGroup>
 
 </Project>

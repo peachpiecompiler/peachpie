@@ -280,13 +280,11 @@ namespace Peachpie.Library.MySql.MySqli
         {
             var config = ctx.Configuration.Get<MySqlConfiguration>();
             int connectiontimeout = 0;
-            string characterset = "utf8mb4"; // default characterset that solves all the problems
 
             if (_lazyoptions != null)
             {
                 PhpValue value;
                 if (_lazyoptions.TryGetValue(Constants.MYSQLI_OPT_CONNECT_TIMEOUT, out value)) connectiontimeout = (int)value.ToLong();
-                if (_lazyoptions.TryGetValue(Constants.MYSQLI_SET_CHARSET_NAME, out value)) characterset = value.ToStringOrThrow(ctx);
             }
 
             // string $host = ini_get("mysqli.default_host")
@@ -298,8 +296,7 @@ namespace Peachpie.Library.MySql.MySqli
 
             var connection_string = MySql.BuildConnectionString(config, ref host, username, passwd,
                 flags: (MySql.ConnectFlags)flags,
-                connectiontimeout: connectiontimeout,
-                characterset: characterset);
+                connectiontimeout: connectiontimeout);
 
             _connection = MySqlConnectionManager.GetInstance(ctx)
                 .CreateConnection(connection_string, false, -1, out bool success);
