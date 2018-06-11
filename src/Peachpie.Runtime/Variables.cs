@@ -515,9 +515,8 @@ namespace Pchp.Core
         /// </summary>
         public static byte[] AsBytesOrNull(this PhpValue value, Context ctx)
         {
-            var phpstr = (value.IsAlias ? value.Alias.Value.Object : value.Object) as PhpString.Blob;
-            return (phpstr != null && phpstr.ContainsBinaryData)
-                ? phpstr.ToBytes(ctx)
+            return (value.Object is PhpAlias alias ? alias.Value.Object : value.Object) is PhpString.Blob blob && blob.ContainsBinaryData
+                ? blob.ToBytes(ctx)
                 : null;
         }
 
@@ -527,7 +526,7 @@ namespace Pchp.Core
         /// </summary>
         public static PhpArray AsArray(this PhpValue value)
         {
-            return (value.IsAlias ? value.Alias.Value.Object : value.Object) as PhpArray;
+            return (value.Object is PhpAlias alias ? alias.Value.Object : value.Object) as PhpArray;
         }
 
         public static bool IsLong(this PhpValue value, out long l)
