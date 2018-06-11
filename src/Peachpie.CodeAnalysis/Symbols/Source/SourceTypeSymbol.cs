@@ -289,6 +289,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             IEnumerable<Symbol> CreateMembers()
             {
+                // properties
                 foreach (var p in Symbol.EnumerateProperties())
                 {
                     yield return new SynthesizedTraitFieldSymbol(ContainingType, (FieldSymbol)TraitInstanceField, p);
@@ -1092,7 +1093,32 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
                 else
                 {
-                    return TraitUses.SelectMany(t => t.GetMembers());
+                    HashSet<string> fieldsset = null;
+
+                    return TraitUses
+                        .SelectMany(t => t.GetMembers())
+                        // duplicity checks for fields
+                        .Where(s =>
+                        {
+                            if (s is SynthesizedFieldSymbol fld)
+                            {
+                                if (fieldsset == null) fieldsset = new HashSet<string>();
+
+                                if (fieldsset.Add(fld.Name) == false)
+                                {
+                                    // field already declared
+                                    return false;
+                                }
+
+                                if (this.Syntax.Members.OfType<FieldDeclList>().SelectMany(list => list.Fields).Select(fdecl => fdecl.Name.Value).Contains(fld.Name))
+                                {
+                                    // field already declared by containing class
+                                    return false;
+                                }
+                            }
+
+                            return true;
+                        });
                 }
             }
         }
