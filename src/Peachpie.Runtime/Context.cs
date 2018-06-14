@@ -417,11 +417,6 @@ namespace Pchp.Core
             return ScriptsMap.TryGetDirectory(path, out scripts);
         }
 
-        /// <summary>
-        /// Declares script within runtime. The script will be available for inclusions.
-        /// </summary>
-        public static void DeclareScript(string relpath, MainDelegate main) => ScriptsMap.DeclareScript(relpath, main);
-
         #endregion
 
         #region Shutdown

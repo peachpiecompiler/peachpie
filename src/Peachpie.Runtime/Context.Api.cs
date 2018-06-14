@@ -154,7 +154,13 @@ namespace Pchp.Core
         /// </summary>
         public IEnumerable<ScriptInfo> GetIncludedScripts() => _scripts.GetIncludedScripts();
 
-        // TODO: static AddScript(string path, MainDelegate @delegate)
+        /// <summary>
+        /// Declares or redeclares script within runtime using delegate.
+        /// The script will be available for inclusions.
+        /// </summary>
+        /// <param name="relpath">Relative path of the script without leading slash.</param>
+        /// <param name="main">Script entry point.</param>
+        public static void DeclareScript(string relpath, MainDelegate main) => ScriptsMap.DeclareScript(relpath, main);
 
         #endregion
 
