@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Text;
 using Pchp.Core;
@@ -537,11 +538,27 @@ namespace Peachpie.Library.Network
                 case CURLOPT_PRIVATE: ch.Private = value.GetValue().DeepCopy(); return true;
 
                 default:
-                    PhpException.ArgumentValueNotSupported(nameof(option), option);
+                    PhpException.ArgumentValueNotSupported(nameof(option), TryGetOptionName(option));
                     return false;
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Lookups the constant name (CURLOPT_*) with given value.
+        /// </summary>
+        static string TryGetOptionName(int optionValue)
+        {
+            var field = typeof(CURLConstants).GetFields()
+                .Where(f => f.Name.StartsWith("CURLOPT_", StringComparison.Ordinal))
+                .First(f =>
+                {
+                    var fval = f.GetRawConstantValue();
+                    return (fval is int i && i == optionValue);
+                });
+
+            return field != null ? field.Name : optionValue.ToString();
         }
 
         internal static bool TryGetOption(this CURLResource ch, int option, out PhpValue value)
