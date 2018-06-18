@@ -240,6 +240,7 @@ namespace Peachpie.Library.Network
                             return CURLResponse.CreateError(CurlErrors.CURLE_OPERATION_TIMEDOUT, webEx);
                         case WebExceptionStatus.TrustFailure:
                             return CURLResponse.CreateError(CurlErrors.CURLE_SSL_CACERT, webEx);
+                        case WebExceptionStatus.ProtocolError:
                         default:
                             return CURLResponse.CreateError(CurlErrors.CURLE_COULDNT_CONNECT, webEx);
                     }
@@ -269,8 +270,11 @@ namespace Peachpie.Library.Network
 
             req.Method = ch.Method;
             req.AllowAutoRedirect = ch.FollowLocation;
+            req.Timeout = ch.Timeout;
+            req.ContinueTimeout = ch.ContinueTimeout;
             req.MaximumAutomaticRedirections = ch.MaxRedirects;
             if (ch.UserAgent != null) req.UserAgent = ch.UserAgent;
+            if (ch.ProtocolVersion != null) req.ProtocolVersion = ch.ProtocolVersion;
             if (ch.Referer != null) req.Referer = ch.Referer;
             if (ch.Headers != null) AddHeaders(req, ch.Headers);
             if (ch.CookieHeader != null) TryAddCookieHeader(req, ch.CookieHeader);

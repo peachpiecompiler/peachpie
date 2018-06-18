@@ -24,6 +24,16 @@ namespace Peachpie.Library.Network
         public int MaxRedirects { get; set; } = 50;
 
         /// <summary>
+        /// The maximum number of miliseconds to allow cURL functions to execute.
+        /// </summary>
+        public int Timeout { get; set; } = 100_000; // 100s is HttpWebRequest default
+
+        /// <summary>
+        /// Gets or sets a timeout, in milliseconds, to wait until the 100-Continue is received from the server.
+        /// </summary>
+        public int ContinueTimeout { get; set; } = 1000; // libcurl default
+
+        /// <summary>
         /// The contents of the "User-Agent: " header to be used in a HTTP request.
         /// </summary>
         public string UserAgent { get; set; }
@@ -31,6 +41,11 @@ namespace Peachpie.Library.Network
         public string Referer { get; set; }
 
         public string Method { get; set; } = WebRequestMethods.Http.Get;
+
+        /// <summary>
+        /// If set, specifies the HTTP protocol version to be used for the request.
+        /// </summary>
+        public Version ProtocolVersion { get; set; }
 
         /// <summary>
         /// The full data to post in a HTTP "POST" operation.
@@ -57,6 +72,9 @@ namespace Peachpie.Library.Network
         /// </summary>
         public bool CookieFileSet { get; set; } = false;
 
+        /// <summary>
+        /// Gets or sets the value indicating whether to return the response as result of the `exec` function or to output the content to the output stream (default).
+        /// </summary>
         public bool ReturnTransfer { get; set; } = false;
 
         /// <summary>

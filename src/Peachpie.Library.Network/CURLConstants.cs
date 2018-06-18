@@ -534,8 +534,25 @@ namespace Peachpie.Library.Network
                 case CURLOPT_FILE: return (ch.OutputTransfer = value.Object as PhpStream) != null;
                 case CURLOPT_INFILE: return (ch.PutStream = value.Object as PhpStream) != null;
                 case CURLOPT_USERAGENT: return (ch.UserAgent = value.AsString()) != null;
-                case CURLOPT_BINARYTRANSFER: return true;   // no effect
-                case CURLOPT_PRIVATE: ch.Private = value.GetValue().DeepCopy(); return true;
+                case CURLOPT_BINARYTRANSFER: break;   // no effect
+                case CURLOPT_PRIVATE: ch.Private = value.GetValue().DeepCopy(); break;
+                case CURLOPT_TIMEOUT: { if (value.IsLong(out long l)) ch.Timeout = (int)l * 1000; break; }
+                case CURLOPT_TIMEOUT_MS: { if (value.IsLong(out long l)) ch.Timeout = (int)l; break; }
+                //case CURLOPT_CONNECTTIMEOUT: return false;
+                //case CURLOPT_CONNECTTIMEOUT_MS: return false;
+                case CURLOPT_EXPECT_100_TIMEOUT_MS: { if (value.IsLong(out long l)) ch.ContinueTimeout = (int)l; break; }
+                case CURLOPT_HTTP_VERSION:
+                    switch ((int)value.ToLong())
+                    {
+                        case CURL_HTTP_VERSION_NONE: ch.ProtocolVersion = null; break;
+                        case CURL_HTTP_VERSION_1_0: ch.ProtocolVersion = HttpVersion.Version10; break;
+                        case CURL_HTTP_VERSION_1_1: ch.ProtocolVersion = HttpVersion.Version11; break;
+                        //case CURL_HTTP_VERSION_2:
+                        case CURL_HTTP_VERSION_2_0:
+                        case CURL_HTTP_VERSION_2TLS: ch.ProtocolVersion = new Version(2, 0); break; // HttpVersion.Version20
+                        default: return false;
+                    }
+                    break;
 
                 default:
                     PhpException.ArgumentValueNotSupported(nameof(option), TryGetOptionName(option));
