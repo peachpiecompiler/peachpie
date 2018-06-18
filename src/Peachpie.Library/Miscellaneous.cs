@@ -373,10 +373,7 @@ namespace Pchp.Library
         /// Gets the name of the current user.
         /// </summary>
         /// <returns>The name of the current user.</returns>
-        public static string get_current_user()
-        {
-            throw new NotImplementedException();
-        }
+        public static string get_current_user() => System.Environment.UserName;
 
         /// <summary>
         /// Not supported.
