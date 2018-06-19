@@ -511,6 +511,28 @@ namespace Peachpie.Library.Network
 
         #region Helpers
 
+        static bool TryProcessMethodFromStream(PhpValue value, ProcessMethod @default, ref ProcessMethod processing)
+        {
+            if (Operators.IsSet(value))
+            {
+                var stream = value.AsObject() as PhpStream;
+                if (stream != null && stream.CanWrite)
+                {
+                    processing = new ProcessMethod(stream);
+                }
+                else
+                {
+                    return false; // failure
+                }
+            }
+            else
+            {
+                processing = @default;
+            }
+
+            return true;
+        }
+
         internal static bool TrySetOption(this CURLResource ch, int option, PhpValue value)
         {
             switch (option)
@@ -526,13 +548,30 @@ namespace Peachpie.Library.Network
                 case CURLOPT_FOLLOWLOCATION: ch.FollowLocation = value.ToBoolean(); break;
                 case CURLOPT_MAXREDIRS: ch.MaxRedirects = (int)value.ToLong(); break;
                 case CURLOPT_REFERER: return (ch.Referer = value.AsString()) != null;
-                case CURLOPT_RETURNTRANSFER: ch.ReturnTransfer = value.ToBoolean(); break;
-                case CURLOPT_HEADER: ch.OutputHeader = value.ToBoolean(); break;
+                case CURLOPT_RETURNTRANSFER:
+                    ch.ProcessingResponse = value.ToBoolean()
+                        ? ProcessMethod.Return
+                        : ProcessMethod.StdOut;
+                    break;
+                case CURLOPT_HEADER:
+                    ch.ProcessingHeaders = value.ToBoolean()
+                        ? ProcessMethod.StdOut // NOTE: if ProcessingResponse is RETURN, RETURN headers as well
+                        : ProcessMethod.Ignore;
+                    break;
                 case CURLOPT_HTTPHEADER: ch.Headers = value.GetValue().DeepCopy().ToArray(); break;
                 case CURLOPT_COOKIE: return (ch.CookieHeader = value.AsString()) != null;
                 case CURLOPT_COOKIEFILE: ch.CookieFileSet = true; break;
-                case CURLOPT_FILE: return (ch.OutputTransfer = value.Object as PhpStream) != null;
-                case CURLOPT_INFILE: return (ch.PutStream = value.Object as PhpStream) != null;
+
+                case CURLOPT_FILE: return TryProcessMethodFromStream(value, ProcessMethod.StdOut, ref ch.ProcessingResponse);
+                case CURLOPT_INFILE: return TryProcessMethodFromStream(value, ProcessMethod.Ignore, ref ch.ProcessingRequest);
+                case CURLOPT_WRITEHEADER: return TryProcessMethodFromStream(value, ProcessMethod.Ignore, ref ch.ProcessingHeaders);
+                //case CURLOPT_STDERR: return TryProcessMethodFromStream(value, ProcessMethod.Ignore, ref ch.ProcessingErr);
+
+                case CURLOPT_HEADERFUNCTION: ch.ProcessingHeaders = new ProcessMethod(value.AsCallable()); break;
+                case CURLOPT_WRITEFUNCTION: ch.ProcessingResponse = new ProcessMethod(value.AsCallable()); break;
+                //case CURLOPT_READFUNCTION:
+                //case CURLOPT_PROGRESSFUNCTION:
+
                 case CURLOPT_USERAGENT: return (ch.UserAgent = value.AsString()) != null;
                 case CURLOPT_BINARYTRANSFER: break;   // no effect
                 case CURLOPT_PRIVATE: ch.Private = value.GetValue().DeepCopy(); break;

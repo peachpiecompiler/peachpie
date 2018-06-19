@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
@@ -73,25 +74,20 @@ namespace Peachpie.Library.Network
         public bool CookieFileSet { get; set; } = false;
 
         /// <summary>
-        /// Gets or sets the value indicating whether to return the response as result of the `exec` function or to output the content to the output stream (default).
+        /// Specify how to process headers.
+        /// WARN: if <see cref="ProcessingResponse"/> is RETURN => STDOUT means RETURN.
         /// </summary>
-        public bool ReturnTransfer { get; set; } = false;
+        public ProcessMethod ProcessingHeaders = ProcessMethod.Ignore;
 
         /// <summary>
-        /// <c>true</c> to include the header in the output.
-        /// Default is <c>false</c>.
+        /// Specify how to process content.
         /// </summary>
-        public bool OutputHeader { get; set; } = false;
+        public ProcessMethod ProcessingResponse = ProcessMethod.StdOut;
 
         /// <summary>
-        /// The file that the transfer should be written to.
+        /// Specify how to process request stream.
         /// </summary>
-        public PhpStream OutputTransfer { get; set; }
-
-        /// <summary>
-        /// The file that the transfer should be read from when uploading using <c>PUT</c> method.
-        /// </summary>
-        public PhpStream PutStream { get; set; }
+        public ProcessMethod ProcessingRequest = new ProcessMethod() { Method = ProcessMethodEnum.FILE };
 
         /// <summary>
         /// Private data set to the handle.
@@ -120,8 +116,9 @@ namespace Peachpie.Library.Network
         {
             // clear references
             this.Result = null;
-            this.OutputTransfer = null;
-            this.PutStream = null;
+            this.ProcessingHeaders = ProcessMethod.Ignore;
+            this.ProcessingResponse = ProcessMethod.StdOut;
+            this.ProcessingRequest = new ProcessMethod() { Method = ProcessMethodEnum.FILE };
             this.Headers = null;
             this.PostFields = PhpValue.Void;
 
@@ -129,6 +126,67 @@ namespace Peachpie.Library.Network
             base.FreeManaged();
         }
     }
+
+    #region ProcessMethod, ProcessMethodEnum
+
+    /// <summary>
+    /// How to process the data (headers, read, write).
+    /// </summary>
+    public enum ProcessMethodEnum
+    {
+        /// <summary>
+        /// Data will be written to the output.
+        /// </summary>
+        STDOUT = 0,
+
+        /// <summary>
+        /// Data will be wrtten to (file) stream. See <see cref="ProcessMethod.Stream"/>.
+        /// </summary>
+        FILE = 1,
+
+        /// <summary>
+        /// Data will be passed to a user function. See <see cref="ProcessMethod.User"/>.
+        /// </summary>
+        USER = 2,
+
+        ///// <summary>
+        ///// Data will be passed from <see cref="ProcessMethod.Stream"/> if provided.
+        ///// </summary>
+        //DIRECT = 3,
+
+        /// <summary>
+        /// Data will be returned from `exec` as string.
+        /// </summary>
+        RETURN = 4,
+
+        /// <summary>
+        /// Data are ignored.
+        /// </summary>
+        IGNORE = 7,
+    }
+
+    /// <summary>
+    /// Specifies how to process data (headers, read, write).
+    /// </summary>
+    public struct ProcessMethod
+    {
+        public static ProcessMethod StdOut => new ProcessMethod(ProcessMethodEnum.STDOUT);
+        public static ProcessMethod Return => new ProcessMethod(ProcessMethodEnum.RETURN);
+        public static ProcessMethod Ignore => new ProcessMethod(ProcessMethodEnum.IGNORE);
+
+        public ProcessMethod(ProcessMethodEnum method) { Method = method; Stream = null; User = null; }
+        public ProcessMethod(PhpStream stream) : this(ProcessMethodEnum.FILE) { Debug.Assert(stream != null); Stream = stream; }
+        public ProcessMethod(IPhpCallable user) : this(ProcessMethodEnum.USER) { Debug.Assert(user != null); User = user; }
+
+        public ProcessMethodEnum Method;
+        public PhpStream Stream;
+        public IPhpCallable User;
+
+        /// <summary>Whether there is no routine to be called.</summary>
+        public bool IsEmpty => Method == ProcessMethodEnum.IGNORE;
+    }
+
+    #endregion
 
     sealed class CURLResponse
     {

@@ -312,11 +312,15 @@ namespace Peachpie.Library.Network
 
         static void ProcessPut(HttpWebRequest req, CURLResource ch)
         {
-            // req.ContentLength = bytes.Length;
-
-            using (var stream = req.GetRequestStream())
+            var fs = ch.ProcessingRequest.Stream;
+            if (fs != null)
             {
-                ch.PutStream.RawStream.CopyTo(stream);
+                // req.ContentLength = bytes.Length;
+
+                using (var stream = req.GetRequestStream())
+                {
+                    fs.RawStream.CopyTo(stream);
+                }
             }
         }
 
@@ -423,30 +427,62 @@ namespace Peachpie.Library.Network
 
         static PhpValue ProcessResponse(Context ctx, CURLResource ch, WebResponse response)
         {
-            var stream = response.GetResponseStream();
+            // in case we are returning the response value
+            var returnstream = ch.ProcessingResponse.Method == ProcessMethodEnum.RETURN
+                ? new MemoryStream()
+                : null;
 
-            // figure out the output stream:
-
-            MemoryStream returnstream = null;   // in case we are returning the response value
-
-            var outputstream =
-                (ch.OutputTransfer != null)
-                    ? ch.OutputTransfer.RawStream
-                    : ch.ReturnTransfer
-                        ? (returnstream = new MemoryStream())
-                        : ctx.OutputStream;
-
-            Debug.Assert(outputstream != null);
-
-            // read into output stream:
-
-            if (ch.OutputHeader)
+            // handle headers
+            if (!ch.ProcessingHeaders.IsEmpty)
             {
-                var headers = response.Headers.ToByteArray();
-                outputstream.Write(headers, 0, headers.Length);
+                switch (ch.ProcessingHeaders.Method)
+                {
+                    case ProcessMethodEnum.RETURN:
+                    case ProcessMethodEnum.STDOUT:
+                        (returnstream ?? ctx.OutputStream).Write(response.Headers.ToByteArray());
+                        break;
+                    case ProcessMethodEnum.FILE:
+                        ch.ProcessingHeaders.Stream.RawStream.Write(response.Headers.ToByteArray());
+                        break;
+                    case ProcessMethodEnum.USER:
+                        // pass headers one by one:
+                        for (int i = 0; i < response.Headers.Count; i++)
+                        {
+                            ch.ProcessingHeaders.User.Invoke(ctx, new[]
+                            {
+                                PhpValue.FromClr(ch),
+                                PhpValue.Create(response.Headers[i] + "\r\n"),
+                            });
+                        }
+                        break;
+                    default:
+                        Debug.Fail("Unexpected ProcessingHeaders " + ch.ProcessingHeaders.Method);
+                        break;
+                }
             }
 
-            stream.CopyTo(outputstream);
+            var stream = response.GetResponseStream();
+
+            // read into output stream:
+            switch (ch.ProcessingResponse.Method)
+            {
+                case ProcessMethodEnum.STDOUT: stream.CopyTo(ctx.OutputStream); break;
+                case ProcessMethodEnum.RETURN: stream.CopyTo(returnstream); break;
+                case ProcessMethodEnum.FILE: stream.CopyTo(ch.ProcessingResponse.Stream.RawStream); break;
+                case ProcessMethodEnum.USER:
+                    using (var ms = new MemoryStream((int)response.ContentLength))
+                    {
+                        stream.CopyTo(ms);
+
+                        ch.ProcessingResponse.User.Invoke(ctx, new[]
+                        {
+                            PhpValue.FromClr(ch),
+                            PhpValue.Create(new PhpString(ms.ToArray())),
+                        });
+                    }
+                    break;
+                case ProcessMethodEnum.IGNORE: break;
+            }
 
             //
 
@@ -505,7 +541,7 @@ namespace Peachpie.Library.Network
         /// </summary>
         public static PhpValue curl_multi_getcontent(CURLResource ch)
         {
-            if (ch.ReturnTransfer && ch.Result?.ExecValue.TypeCode == PhpTypeCode.MutableString)
+            if (ch.ProcessingResponse.Method == ProcessMethodEnum.RETURN && ch.Result != null && ch.Result.ExecValue.IsSet)
             {
                 return ch.Result.ExecValue;
             }
