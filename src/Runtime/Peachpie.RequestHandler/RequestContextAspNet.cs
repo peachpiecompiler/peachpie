@@ -311,7 +311,7 @@ namespace Peachpie.RequestHandler
 
         void SetupHeaders()
         {
-            _httpctx.Response.Headers["x-powered-by"] = XPoweredBy;
+            _httpctx.Response.Headers["X-Powered-By"] = XPoweredBy;
         }
 
         static void AddVariables(PhpArray result, NameValueCollection collection)
