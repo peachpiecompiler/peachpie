@@ -34,6 +34,9 @@ namespace Peachpie.Library.Network
         /// </summary>
         public int ContinueTimeout { get; set; } = 1000; // libcurl default
 
+        /// <summary>If set, specifies the size of internal buffer used for read when passing response content to user's function.</summary>
+        public int BufferSize { get; set; } = 2048;
+
         /// <summary>
         /// The contents of the "User-Agent: " header to be used in a HTTP request.
         /// </summary>

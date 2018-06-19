@@ -487,15 +487,21 @@ namespace Peachpie.Library.Network
                 case ProcessMethodEnum.RETURN: stream.CopyTo(returnstream); break;
                 case ProcessMethodEnum.FILE: stream.CopyTo(ch.ProcessingResponse.Stream.RawStream); break;
                 case ProcessMethodEnum.USER:
-                    using (var ms = new MemoryStream(Math.Max(0, ((int)response.ContentLength))))
+                    if (response.ContentLength != 0)
                     {
-                        stream.CopyTo(ms);
+                        // preallocate a buffer to read to,
+                        // this should be according to PHP's behavior and slightly more effective than memory stream
+                        byte[] buffer = new byte[ch.BufferSize > 0 ? ch.BufferSize : 2048];
+                        int bufferread;
 
-                        ch.ProcessingResponse.User.Invoke(ctx, new[]
+                        while ((bufferread = stream.Read(buffer, 0, buffer.Length)) > 0)
                         {
-                            PhpValue.FromClr(ch),
-                            PhpValue.Create(new PhpString(ms.ToArray())),
-                        });
+                            ch.ProcessingResponse.User.Invoke(ctx, new[]
+                            {
+                                PhpValue.FromClr(ch),
+                                PhpValue.Create(new PhpString(buffer.AsSpan(0, bufferread).ToArray())), // clone the array and pass to function
+                            });
+                        }
                     }
                     break;
                 case ProcessMethodEnum.IGNORE: break;
