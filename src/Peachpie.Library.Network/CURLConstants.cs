@@ -602,6 +602,9 @@ namespace Peachpie.Library.Network
                     }
                     break;
 
+                case CURLOPT_USERNAME: ch.Username = value.ToString(); break;
+                case CURLOPT_USERPWD: (ch.Username, ch.Password) = SplitUserPwd(value.ToString()); break;
+
                 default:
                     PhpException.ArgumentValueNotSupported(nameof(option), TryGetOptionName(option));
                     return false;
@@ -624,6 +627,19 @@ namespace Peachpie.Library.Network
                 });
 
             return field != null ? field.Name : optionValue.ToString();
+        }
+
+        static (string username, string password) SplitUserPwd(string value)
+        {
+            int colPos = value.IndexOf(':');
+            if (colPos == -1)
+            {
+                return (value, string.Empty);
+            }
+            else
+            {
+                return (value.Substring(0, colPos), value.Substring(colPos + 1));
+            }
         }
 
         internal static bool TryGetOption(this CURLResource ch, int option, out PhpValue value)

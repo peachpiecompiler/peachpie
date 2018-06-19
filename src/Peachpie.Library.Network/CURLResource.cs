@@ -76,6 +76,10 @@ namespace Peachpie.Library.Network
         /// </summary>
         public bool CookieFileSet { get; set; } = false;
 
+        public string Username { get; set; }
+
+        public string Password { get; set; }
+
         /// <summary>
         /// Specify how to process headers.
         /// WARN: if <see cref="ProcessingResponse"/> is RETURN => STDOUT means RETURN.
