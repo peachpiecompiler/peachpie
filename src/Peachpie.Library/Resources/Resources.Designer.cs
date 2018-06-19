@@ -10,7 +10,6 @@
 
 namespace Pchp.Library.Resources {
     using System;
-    using System.Reflection;
     
     
     /// <summary>
@@ -20,7 +19,7 @@ namespace Pchp.Library.Resources {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -40,7 +39,7 @@ namespace Pchp.Library.Resources {
         public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Peachpie.Library.Resources.Resources", typeof(Resources).GetTypeInfo().Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Peachpie.Library.Resources.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -1385,24 +1384,6 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to # Copyright (C) 1999-2003 Free Software Foundation, Inc.
-        ///# This file is part of the GNU LIBICONV Library.
-        ///#
-        ///# The GNU LIBICONV Library is free software; you can redistribute it
-        ///# and/or modify it under the terms of the GNU Library General Public
-        ///# License as published by the Free Software Foundation; either version 2
-        ///# of the License, or (at your option) any later version.
-        ///#
-        ///# The GNU LIBICONV Library is distributed in the hope that it will be
-        ///# useful, but WITHOUT ANY WARRANTY; without even the im [rest of string was truncated]&quot;;.
-        /// </summary>
-        public static string translit {
-            get {
-                return ResourceManager.GetString("translit", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Unenclosed bracket expression.
         /// </summary>
         public static string unenclosed_bracket_expression {
@@ -1552,25 +1533,6 @@ namespace Pchp.Library.Resources {
         public static string web_server_not_available {
             get {
                 return ResourceManager.GetString("web_server_not_available", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; ?&gt;
-        ///&lt;!-- document downloaded from http://unicode.org/repos/cldr/trunk/common/supplemental/windowsZones.xml --&gt;
-        ///&lt;supplementalData&gt;
-        ///	&lt;windowsZones&gt;
-        ///		&lt;mapTimezones otherVersion=&quot;07dc0000&quot; typeVersion=&quot;2012a&quot;&gt;
-        ///
-        ///			&lt;!-- (UTC-12:00) International Date Line West --&gt;
-        ///			&lt;mapZone other=&quot;Dateline Standard Time&quot; territory=&quot;001&quot; type=&quot;Etc/GMT+12&quot;/&gt;
-        ///			&lt;mapZone other=&quot;Dateline Standard Time&quot; territory=&quot;ZZ&quot; type=&quot;Etc/GMT+12&quot;/&gt;
-        ///
-        ///			&lt;!-- (UTC-11:00) Coordinated Universal Time- [rest of string was truncated]&quot;;.
-        /// </summary>
-        public static string WindowsTZ {
-            get {
-                return ResourceManager.GetString("WindowsTZ", resourceCulture);
             }
         }
         

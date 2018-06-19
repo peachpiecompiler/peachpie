@@ -172,7 +172,7 @@ namespace Pchp.Library.DateTime
             }
 
             // collect php time zone names and match them with Windows TZ IDs:
-            using (var xml = XmlReader.Create(new System.IO.StringReader(Resources.Resources.WindowsTZ)))
+            using (var xml = XmlReader.Create(new System.IO.StreamReader(typeof(PhpTimeZone).Assembly.GetManifestResourceStream("Peachpie.Library.Resources.WindowsTZ.xml"))))
             {
                 while (xml.Read())
                 {
@@ -466,7 +466,7 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
-        #region timezone_identifiers_list, timezone_version_get
+        #region timezone_identifiers_list, timezone_version_get, timezone_abbreviations_list 
 
         static readonly Dictionary<string, int> s_what = new Dictionary<string, int>(10, StringComparer.OrdinalIgnoreCase)
         {
@@ -542,10 +542,19 @@ namespace Pchp.Library.DateTime
             //        return reg.GetValue("TzVersion", 0).ToString() + ".system";
             //}
             //catch { }
-            Debug.WriteLine("TODO: timezone_version_get()");    // TODO: timezone_version_get
+            
 
             // no windows update installed
             return "0.system";
+        }
+
+        /// <summary>
+        /// Returns associative array containing dst, offset and the timezone name.
+        /// Alias to <see cref="DateTimeZone.listAbbreviations"/>.
+        /// </summary>
+        public static PhpArray timezone_abbreviations_list()
+        {
+            throw new NotImplementedException();
         }
 
         #endregion

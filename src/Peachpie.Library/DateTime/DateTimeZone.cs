@@ -141,11 +141,10 @@ namespace Pchp.Library.DateTime
             return null;
         }
 
-        //public static array listAbbreviations ( void )
-        public PhpArray listAbbreviations()
-        {
-            throw new NotImplementedException();
-        }
+        /// <summary>
+        /// Returns associative array containing dst, offset and the timezone name.
+        /// </summary>
+        public static PhpArray listAbbreviations() => PhpTimeZone.timezone_abbreviations_list();
 
         //public static array listIdentifiers ([ int $what = DateTimeZone::ALL [, string $country = NULL ]] )
         public static PhpArray listIdentifiers(int what = DateTimeZone.ALL, string country = null) => PhpTimeZone.timezone_identifiers_list(what, country);

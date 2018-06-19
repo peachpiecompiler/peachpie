@@ -10,6 +10,14 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Description>Peachpie PHP language library functions.</Description>
   </PropertyGroup>
+  <ItemGroup>
+    <None Remove="Resources\translit.def" />
+    <None Remove="Resources\WindowsTZ.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\translit.def" />
+    <EmbeddedResource Include="Resources\WindowsTZ.xml" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
