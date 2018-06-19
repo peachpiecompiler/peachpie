@@ -236,11 +236,14 @@ namespace Peachpie.Library.Network
                 {
                     switch (webEx.Status)
                     {
+                        case WebExceptionStatus.ProtocolError:
+                            // actually ok, 301, 500, etc .. process the response:
+                            return new CURLResponse(ProcessResponse(ctx, ch, (HttpWebResponse)webEx.Response), (HttpWebResponse)webEx.Response);
+
                         case WebExceptionStatus.Timeout:
                             return CURLResponse.CreateError(CurlErrors.CURLE_OPERATION_TIMEDOUT, webEx);
                         case WebExceptionStatus.TrustFailure:
                             return CURLResponse.CreateError(CurlErrors.CURLE_SSL_CACERT, webEx);
-                        case WebExceptionStatus.ProtocolError:
                         default:
                             return CURLResponse.CreateError(CurlErrors.CURLE_COULDNT_CONNECT, webEx);
                     }
@@ -425,7 +428,7 @@ namespace Peachpie.Library.Network
             }
         }
 
-        static PhpValue ProcessResponse(Context ctx, CURLResource ch, WebResponse response)
+        static PhpValue ProcessResponse(Context ctx, CURLResource ch, HttpWebResponse response)
         {
             // in case we are returning the response value
             var returnstream = ch.ProcessingResponse.Method == ProcessMethodEnum.RETURN
@@ -445,15 +448,29 @@ namespace Peachpie.Library.Network
                         ch.ProcessingHeaders.Stream.RawStream.Write(response.Headers.ToByteArray());
                         break;
                     case ProcessMethodEnum.USER:
-                        // pass headers one by one:
+                        // pass headers one by one,
+                        // in original implementation we should pass them as they are read from socket:
+
+                        ch.ProcessingHeaders.User.Invoke(ctx, new[] {
+                            PhpValue.FromClr(ch),
+                            PhpValue.Create(HttpHeaders.StatusHeader(response) + HttpHeaders.HeaderSeparator)
+                        });
+
                         for (int i = 0; i < response.Headers.Count; i++)
                         {
-                            ch.ProcessingHeaders.User.Invoke(ctx, new[]
-                            {
+                            // header
+                            ch.ProcessingHeaders.User.Invoke(ctx, new[] {
                                 PhpValue.FromClr(ch),
-                                PhpValue.Create(response.Headers[i] + "\r\n"),
+                                PhpValue.Create(response.Headers[i] + HttpHeaders.HeaderSeparator),
                             });
                         }
+
+                        // \r\n
+                        ch.ProcessingHeaders.User.Invoke(ctx, new[] {
+                            PhpValue.FromClr(ch),
+                            PhpValue.Create(HttpHeaders.HeaderSeparator)
+                        });
+
                         break;
                     default:
                         Debug.Fail("Unexpected ProcessingHeaders " + ch.ProcessingHeaders.Method);
@@ -470,7 +487,7 @@ namespace Peachpie.Library.Network
                 case ProcessMethodEnum.RETURN: stream.CopyTo(returnstream); break;
                 case ProcessMethodEnum.FILE: stream.CopyTo(ch.ProcessingResponse.Stream.RawStream); break;
                 case ProcessMethodEnum.USER:
-                    using (var ms = new MemoryStream((int)response.ContentLength))
+                    using (var ms = new MemoryStream(Math.Max(0, ((int)response.ContentLength))))
                     {
                         stream.CopyTo(ms);
 

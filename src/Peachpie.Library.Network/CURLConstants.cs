@@ -635,6 +635,12 @@ namespace Peachpie.Library.Network
         #endregion
     }
 
+    internal static class HttpHeaders
+    {
+        public static string StatusHeader(HttpWebResponse response) => $"HTTP/{response.ProtocolVersion.ToString(2)} {(int)response.StatusCode} {response.StatusDescription}";
+        public const string HeaderSeparator = "\r\n";
+    }
+
     #region CurlErrors
 
     /// <summary>
