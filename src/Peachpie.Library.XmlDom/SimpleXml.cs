@@ -14,10 +14,10 @@ using Pchp.Library.Streams;
 namespace Peachpie.Library.XmlDom
 {
     /// <summary>
-	/// Contains implementation of SimpleXML functions.
-	/// </summary>
+    /// Contains implementation of SimpleXML functions.
+    /// </summary>
     //[PhpExtension("simplexml")]
-	public static class SimpleXml
+    public static class SimpleXml
     {
         #region simplexml_load_file
 
@@ -330,9 +330,12 @@ namespace Peachpie.Library.XmlDom
             }
             set
             {
+                Debug.Assert(value != null);
+
                 _element = value;
-                //this.namespaceUri = this._element.GetNamespaceOfPrefix(String.Empty);
-                iterationNamespace = IterationNamespace.CreateWithPrefix(this._element);
+
+                //namespaceUri = value.GetNamespaceOfPrefix(String.Empty);
+                iterationNamespace = IterationNamespace.CreateWithPrefix(value);
             }
         }
 
@@ -409,13 +412,13 @@ namespace Peachpie.Library.XmlDom
             __construct(data, options, dataIsUrl);
         }
 
-        internal SimpleXMLElement(Context ctx, XmlElement/*!*/ xmlElement, IterationType iterationType, IterationNamespace/*!*/iterationNamespace)
+        internal SimpleXMLElement(Context ctx, XmlElement xmlElement, IterationType iterationType, IterationNamespace/*!*/iterationNamespace)
         {
-            Debug.Assert(xmlElement != null && iterationNamespace != null);
+            Debug.Assert(iterationNamespace != null);
 
             _ctx = ctx;
+            _element = xmlElement;
 
-            this.XmlElement = xmlElement;
             this.iterationType = iterationType;
             this.iterationNamespace = iterationNamespace;
         }
@@ -454,14 +457,21 @@ namespace Peachpie.Library.XmlDom
                         if (stream != null) doc.Load(stream.RawStream);
                     }
                 }
-                else doc.LoadXml(data);
+                else
+                {
+                    doc.LoadXml(data);
+                }
             }
             catch (XmlException e)
             {
                 PhpException.Throw(PhpError.Warning, e.Message);
             }
 
-            if (doc.DocumentElement == null) doc.AppendChild(doc.CreateElement("empty"));
+            if (doc.DocumentElement == null)
+            {
+                doc.AppendChild(doc.CreateElement("empty"));
+            }
+
             this.XmlElement = doc.DocumentElement;
         }
 
@@ -473,7 +483,7 @@ namespace Peachpie.Library.XmlDom
         /// <returns>A new <see cref="SimpleXMLElement"/> or a derived class.</returns>
         internal static SimpleXMLElement Create(Context ctx, string className)
         {
-            if (className == null || className.Equals("SimpleXMLElement", StringComparison.OrdinalIgnoreCase))
+            if (className == null || className.Equals(nameof(SimpleXMLElement), StringComparison.OrdinalIgnoreCase))
             {
                 return new SimpleXMLElement(ctx);
             }
@@ -482,6 +492,7 @@ namespace Peachpie.Library.XmlDom
             var type = ctx.ResolveType(className, default(RuntimeTypeHandle), true);
             if (type == null)
             {
+                // TODO: err
                 return null;
             }
 
@@ -492,7 +503,14 @@ namespace Peachpie.Library.XmlDom
                 return null;
             }
 
-            var instance = (SimpleXMLElement)type.Creator(ctx);
+            // protected .ctor( Context ctx ) // does not call __construct
+            var instance = (SimpleXMLElement)Activator.CreateInstance(
+                type.Type,
+                bindingAttr: System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly,
+                binder: null,
+                args: new object[] { ctx },
+                culture: System.Globalization.CultureInfo.InvariantCulture);
+
             instance.className = className;
 
             return instance;
@@ -552,12 +570,18 @@ namespace Peachpie.Library.XmlDom
         /// <returns>A new <see cref="SimpleXMLElement"/> or a derived class.</returns>
         internal static SimpleXMLElement Create(Context ctx, string className, XmlElement/*!*/ xmlElement)
         {
-            if (className == null) return new SimpleXMLElement(ctx, xmlElement);
+            if (className == null)
+            {
+                return new SimpleXMLElement(ctx, xmlElement);
+            }
+            else
+            {
+                var instance = Create(ctx, className);
+                instance.XmlElement = xmlElement;
+                instance.iterationNamespace = IterationNamespace.CreateWithPrefix(string.Empty, null);
 
-            var instance = Create(ctx, className);
-            instance.XmlElement = xmlElement;
-
-            return instance;
+                return instance;
+            }
         }
 
         /// <summary>

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Text;
 using Pchp.Core;
@@ -510,6 +511,50 @@ namespace Peachpie.Library.Network
 
         #region Helpers
 
+        static bool TryProcessMethodFromStream(PhpValue value, ProcessMethod @default, ref ProcessMethod processing, bool readable = false)
+        {
+            if (Operators.IsSet(value))
+            {
+                var stream = value.AsObject() as PhpStream;
+                if (stream != null && (readable ? stream.CanRead: stream.CanWrite))
+                {
+                    processing = new ProcessMethod(stream);
+                }
+                else
+                {
+                    return false; // failure
+                }
+            }
+            else
+            {
+                processing = @default;
+            }
+
+            return true;
+        }
+
+        static bool TryProcessMethodFromCallable(PhpValue value, ProcessMethod @default, ref ProcessMethod processing)
+        {
+            if (Operators.IsSet(value))
+            {
+                var callable = value.AsCallable();
+                if (callable != null)
+                {
+                    processing = new ProcessMethod(callable);
+                }
+                else
+                {
+                    return false; // failure
+                }
+            }
+            else
+            {
+                processing = @default;
+            }
+
+            return true;
+        }
+
         internal static bool TrySetOption(this CURLResource ch, int option, PhpValue value)
         {
             switch (option)
@@ -525,23 +570,98 @@ namespace Peachpie.Library.Network
                 case CURLOPT_FOLLOWLOCATION: ch.FollowLocation = value.ToBoolean(); break;
                 case CURLOPT_MAXREDIRS: ch.MaxRedirects = (int)value.ToLong(); break;
                 case CURLOPT_REFERER: return (ch.Referer = value.AsString()) != null;
-                case CURLOPT_RETURNTRANSFER: ch.ReturnTransfer = value.ToBoolean(); break;
-                case CURLOPT_HEADER: ch.OutputHeader = value.ToBoolean(); break;
+                case CURLOPT_RETURNTRANSFER:
+                    ch.ProcessingResponse = value.ToBoolean()
+                        ? ProcessMethod.Return
+                        : ProcessMethod.StdOut;
+                    break;
+                case CURLOPT_HEADER:
+                    ch.ProcessingHeaders = value.ToBoolean()
+                        ? ProcessMethod.StdOut // NOTE: if ProcessingResponse is RETURN, RETURN headers as well
+                        : ProcessMethod.Ignore;
+                    break;
                 case CURLOPT_HTTPHEADER: ch.Headers = value.GetValue().DeepCopy().ToArray(); break;
                 case CURLOPT_COOKIE: return (ch.CookieHeader = value.AsString()) != null;
                 case CURLOPT_COOKIEFILE: ch.CookieFileSet = true; break;
-                case CURLOPT_FILE: return (ch.OutputTransfer = value.Object as PhpStream) != null;
-                case CURLOPT_INFILE: return (ch.PutStream = value.Object as PhpStream) != null;
+
+                case CURLOPT_FILE: return TryProcessMethodFromStream(value, ProcessMethod.StdOut, ref ch.ProcessingResponse);
+                case CURLOPT_INFILE: return TryProcessMethodFromStream(value, ProcessMethod.Ignore, ref ch.ProcessingRequest, readable: true);
+                case CURLOPT_WRITEHEADER: return TryProcessMethodFromStream(value, ProcessMethod.Ignore, ref ch.ProcessingHeaders);
+                //case CURLOPT_STDERR: return TryProcessMethodFromStream(value, ProcessMethod.Ignore, ref ch.ProcessingErr);
+
+                case CURLOPT_HEADERFUNCTION: return TryProcessMethodFromCallable(value, ProcessMethod.Ignore, ref ch.ProcessingHeaders);
+                case CURLOPT_WRITEFUNCTION: return TryProcessMethodFromCallable(value, ProcessMethod.StdOut, ref ch.ProcessingResponse);
+                //case CURLOPT_READFUNCTION:
+                //case CURLOPT_PROGRESSFUNCTION:
+
                 case CURLOPT_USERAGENT: return (ch.UserAgent = value.AsString()) != null;
-                case CURLOPT_BINARYTRANSFER: return true;   // no effect
-                case CURLOPT_PRIVATE: ch.Private = value.GetValue().DeepCopy(); return true;
+                case CURLOPT_BINARYTRANSFER: break;   // no effect
+                case CURLOPT_PRIVATE: ch.Private = value.GetValue().DeepCopy(); break;
+                case CURLOPT_TIMEOUT: { if (value.IsLong(out long l)) ch.Timeout = (int)l * 1000; break; }
+                case CURLOPT_TIMEOUT_MS: { if (value.IsLong(out long l)) ch.Timeout = (int)l; break; }
+                case CURLOPT_CONNECTTIMEOUT: return false;      // TODO: is there an alternative in .NET ?
+                case CURLOPT_CONNECTTIMEOUT_MS: return false;   // TODO: is there an alternative in .NET ?
+                case CURLOPT_BUFFERSIZE:
+                    {
+                        if (value.IsLong(out long l) && l < int.MaxValue && l >= 0)
+                        {
+                            ch.BufferSize = (int)l;
+                            return true;
+                        }
+                        return false;
+                    }
+                case CURLOPT_EXPECT_100_TIMEOUT_MS: { if (value.IsLong(out long l)) ch.ContinueTimeout = (int)l; break; }
+                case CURLOPT_HTTP_VERSION:
+                    switch ((int)value.ToLong())
+                    {
+                        case CURL_HTTP_VERSION_NONE: ch.ProtocolVersion = null; break;
+                        case CURL_HTTP_VERSION_1_0: ch.ProtocolVersion = HttpVersion.Version10; break;
+                        case CURL_HTTP_VERSION_1_1: ch.ProtocolVersion = HttpVersion.Version11; break;
+                        //case CURL_HTTP_VERSION_2:
+                        case CURL_HTTP_VERSION_2_0:
+                        case CURL_HTTP_VERSION_2TLS: ch.ProtocolVersion = new Version(2, 0); break; // HttpVersion.Version20
+                        default: return false;
+                    }
+                    break;
+
+                case CURLOPT_USERNAME: ch.Username = value.ToString(); break;
+                case CURLOPT_USERPWD: (ch.Username, ch.Password) = SplitUserPwd(value.ToString()); break;
 
                 default:
-                    PhpException.ArgumentValueNotSupported(nameof(option), option);
+                    PhpException.ArgumentValueNotSupported(nameof(option), TryGetOptionName(option));
                     return false;
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Lookups the constant name (CURLOPT_*) with given value.
+        /// </summary>
+        static string TryGetOptionName(int optionValue)
+        {
+            var field = typeof(CURLConstants).GetFields()
+                .Where(f => f.Name.StartsWith("CURLOPT_", StringComparison.Ordinal))
+                .First(f =>
+                {
+                    var fval = f.GetRawConstantValue();
+                    return (fval is int i && i == optionValue);
+                });
+
+            return field != null ? field.Name : optionValue.ToString();
+        }
+
+        static (string username, string password) SplitUserPwd(string value)
+        {
+            int colPos = value.IndexOf(':');
+            if (colPos == -1)
+            {
+                return (value, string.Empty);
+            }
+            else
+            {
+                return (value.Substring(0, colPos), value.Substring(colPos + 1));
+            }
         }
 
         internal static bool TryGetOption(this CURLResource ch, int option, out PhpValue value)
@@ -560,6 +680,12 @@ namespace Peachpie.Library.Network
         }
 
         #endregion
+    }
+
+    internal static class HttpHeaders
+    {
+        public static string StatusHeader(HttpWebResponse response) => $"HTTP/{response.ProtocolVersion.ToString(2)} {(int)response.StatusCode} {response.StatusDescription}";
+        public const string HeaderSeparator = "\r\n";
     }
 
     #region CurlErrors

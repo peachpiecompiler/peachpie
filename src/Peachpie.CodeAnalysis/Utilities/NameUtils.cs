@@ -173,7 +173,7 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public static string GetFullName(this NamedTypeSymbol t)
         {
-            return Microsoft.CodeAnalysis.MetadataHelpers.BuildQualifiedName(t.NamespaceName, t.MetadataName);
+            return Microsoft.CodeAnalysis.MetadataHelpers.BuildQualifiedName(t.OriginalDefinition.NamespaceName, t.MetadataName);
         }
 
         /// <summary>

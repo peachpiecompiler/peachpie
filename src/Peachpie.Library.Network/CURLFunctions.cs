@@ -236,6 +236,10 @@ namespace Peachpie.Library.Network
                 {
                     switch (webEx.Status)
                     {
+                        case WebExceptionStatus.ProtocolError:
+                            // actually ok, 301, 500, etc .. process the response:
+                            return new CURLResponse(ProcessResponse(ctx, ch, (HttpWebResponse)webEx.Response), (HttpWebResponse)webEx.Response);
+
                         case WebExceptionStatus.Timeout:
                             return CURLResponse.CreateError(CurlErrors.CURLE_OPERATION_TIMEDOUT, webEx);
                         case WebExceptionStatus.TrustFailure:
@@ -269,14 +273,17 @@ namespace Peachpie.Library.Network
 
             req.Method = ch.Method;
             req.AllowAutoRedirect = ch.FollowLocation;
+            req.Timeout = ch.Timeout;
+            req.ContinueTimeout = ch.ContinueTimeout;
             req.MaximumAutomaticRedirections = ch.MaxRedirects;
             if (ch.UserAgent != null) req.UserAgent = ch.UserAgent;
+            if (ch.ProtocolVersion != null) req.ProtocolVersion = ch.ProtocolVersion;
             if (ch.Referer != null) req.Referer = ch.Referer;
             if (ch.Headers != null) AddHeaders(req, ch.Headers);
             if (ch.CookieHeader != null) TryAddCookieHeader(req, ch.CookieHeader);
             if (ch.CookieFileSet) req.CookieContainer = new CookieContainer();
+            if (ch.Username != null) req.Credentials = new NetworkCredential(ch.Username, ch.Password ?? string.Empty);
             // TODO: certificate
-            // TODO: credentials
             // TODO: proxy
 
             // make request:
@@ -308,11 +315,15 @@ namespace Peachpie.Library.Network
 
         static void ProcessPut(HttpWebRequest req, CURLResource ch)
         {
-            // req.ContentLength = bytes.Length;
-
-            using (var stream = req.GetRequestStream())
+            var fs = ch.ProcessingRequest.Stream;
+            if (fs != null)
             {
-                ch.PutStream.RawStream.CopyTo(stream);
+                // req.ContentLength = bytes.Length;
+
+                using (var stream = req.GetRequestStream())
+                {
+                    fs.RawStream.CopyTo(stream);
+                }
             }
         }
 
@@ -417,32 +428,84 @@ namespace Peachpie.Library.Network
             }
         }
 
-        static PhpValue ProcessResponse(Context ctx, CURLResource ch, WebResponse response)
+        static PhpValue ProcessResponse(Context ctx, CURLResource ch, HttpWebResponse response)
         {
-            var stream = response.GetResponseStream();
+            // in case we are returning the response value
+            var returnstream = ch.ProcessingResponse.Method == ProcessMethodEnum.RETURN
+                ? new MemoryStream()
+                : null;
 
-            // figure out the output stream:
-
-            MemoryStream returnstream = null;   // in case we are returning the response value
-
-            var outputstream =
-                (ch.OutputTransfer != null)
-                    ? ch.OutputTransfer.RawStream
-                    : ch.ReturnTransfer
-                        ? (returnstream = new MemoryStream())
-                        : ctx.OutputStream;
-
-            Debug.Assert(outputstream != null);
-
-            // read into output stream:
-
-            if (ch.OutputHeader)
+            // handle headers
+            if (!ch.ProcessingHeaders.IsEmpty)
             {
-                var headers = response.Headers.ToByteArray();
-                outputstream.Write(headers, 0, headers.Length);
+                switch (ch.ProcessingHeaders.Method)
+                {
+                    case ProcessMethodEnum.RETURN:
+                    case ProcessMethodEnum.STDOUT:
+                        (returnstream ?? ctx.OutputStream).Write(response.Headers.ToByteArray());
+                        break;
+                    case ProcessMethodEnum.FILE:
+                        ch.ProcessingHeaders.Stream.RawStream.Write(response.Headers.ToByteArray());
+                        break;
+                    case ProcessMethodEnum.USER:
+                        // pass headers one by one,
+                        // in original implementation we should pass them as they are read from socket:
+
+                        ch.ProcessingHeaders.User.Invoke(ctx, new[] {
+                            PhpValue.FromClr(ch),
+                            PhpValue.Create(HttpHeaders.StatusHeader(response) + HttpHeaders.HeaderSeparator)
+                        });
+
+                        for (int i = 0; i < response.Headers.Count; i++)
+                        {
+                            // header
+                            ch.ProcessingHeaders.User.Invoke(ctx, new[] {
+                                PhpValue.FromClr(ch),
+                                PhpValue.Create(response.Headers[i] + HttpHeaders.HeaderSeparator),
+                            });
+                        }
+
+                        // \r\n
+                        ch.ProcessingHeaders.User.Invoke(ctx, new[] {
+                            PhpValue.FromClr(ch),
+                            PhpValue.Create(HttpHeaders.HeaderSeparator)
+                        });
+
+                        break;
+                    default:
+                        Debug.Fail("Unexpected ProcessingHeaders " + ch.ProcessingHeaders.Method);
+                        break;
+                }
             }
 
-            stream.CopyTo(outputstream);
+            var stream = response.GetResponseStream();
+
+            // read into output stream:
+            switch (ch.ProcessingResponse.Method)
+            {
+                case ProcessMethodEnum.STDOUT: stream.CopyTo(ctx.OutputStream); break;
+                case ProcessMethodEnum.RETURN: stream.CopyTo(returnstream); break;
+                case ProcessMethodEnum.FILE: stream.CopyTo(ch.ProcessingResponse.Stream.RawStream); break;
+                case ProcessMethodEnum.USER:
+                    if (response.ContentLength != 0)
+                    {
+                        // preallocate a buffer to read to,
+                        // this should be according to PHP's behavior and slightly more effective than memory stream
+                        byte[] buffer = new byte[ch.BufferSize > 0 ? ch.BufferSize : 2048];
+                        int bufferread;
+
+                        while ((bufferread = stream.Read(buffer, 0, buffer.Length)) > 0)
+                        {
+                            ch.ProcessingResponse.User.Invoke(ctx, new[]
+                            {
+                                PhpValue.FromClr(ch),
+                                PhpValue.Create(new PhpString(buffer.AsSpan(0, bufferread).ToArray())), // clone the array and pass to function
+                            });
+                        }
+                    }
+                    break;
+                case ProcessMethodEnum.IGNORE: break;
+            }
 
             //
 
@@ -501,7 +564,7 @@ namespace Peachpie.Library.Network
         /// </summary>
         public static PhpValue curl_multi_getcontent(CURLResource ch)
         {
-            if (ch.ReturnTransfer && ch.Result?.ExecValue.TypeCode == PhpTypeCode.MutableString)
+            if (ch.ProcessingResponse.Method == ProcessMethodEnum.RETURN && ch.Result != null && ch.Result.ExecValue.IsSet)
             {
                 return ch.Result.ExecValue;
             }

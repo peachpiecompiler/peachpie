@@ -8,7 +8,7 @@
 
 <h3 align="center">The open-source PHP compiler to .NET</h3>
 
-> **PeachPie** is still in the alpha stages of development and not fully compatible with the PHP language yet. We recommend using the project with caution and testing it thoroughly before utilizing PeachPie in a production environment.
+> We recommend using the project with caution and testing it thoroughly before utilizing PeachPie in a production environment. There may still be inconsistencies and incompatibilities with the PHP language; if you run into any issues, kindly let us know and we'll do our best to address them. Take a look at our [Roadmap](https://github.com/peachpiecompiler/peachpie/wiki/Peachpie-Roadmap) to see which features and extensions we still have to implement.
 
 <p align="center">
 <a href="http://www.nuget.org/profiles/peachpie"><img src="https://img.shields.io/nuget/v/Peachpie.App.svg?style=flat"></a>

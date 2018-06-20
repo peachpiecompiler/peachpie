@@ -304,7 +304,7 @@ namespace Peachpie.Web
 
         void SetupHeaders()
         {
-            _httpctx.Response.Headers["x-powered-by"] = new StringValues(XPoweredBy);
+            _httpctx.Response.Headers["X-Powered-By"] = new StringValues(XPoweredBy);
         }
 
         static void AddVariables(PhpArray target, IEnumerable<KeyValuePair<string, StringValues>> values)
