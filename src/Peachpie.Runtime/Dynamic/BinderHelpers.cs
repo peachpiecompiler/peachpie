@@ -543,7 +543,7 @@ namespace Pchp.Core.Dynamic
 
                 // arr.RemoveKey(name)
                 // TODO: if (arr != null)
-                return Expression.Call(arr, Cache.Operators.PhpArray_RemoveKey, key);
+                return Expression.Call(arr, Cache.Operators.PhpArray_Remove, key);
             }
             else if (access.Write())
             {
@@ -704,9 +704,11 @@ namespace Pchp.Core.Dynamic
                 else if (access.Unset())
                 {
                     // unset(target->field)
-                    // Template: if (!runtimeflds.RemoveKey(key)) __unset(key)
+                    // Template: if (runtimeflds == null || !runtimeflds.RemoveKey(key)) __unset(key)
 
-                    var removekey = Expression.Call(runtimeflds, Cache.Operators.PhpArray_RemoveKey, fieldkey);
+                    var removekey = Expression.Call(runtimeflds, Cache.Operators.PhpArray_Remove, fieldkey);
+                    Debug.Assert(removekey.Type == typeof(bool));
+
                     var __unset = BindMagicMethod(type, classCtx, target, ctx, TypeMethods.MagicMethods.__unset, field, null);
                     if (__unset != null)
                     {
