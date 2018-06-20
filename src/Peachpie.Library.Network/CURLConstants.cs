@@ -511,14 +511,36 @@ namespace Peachpie.Library.Network
 
         #region Helpers
 
-        static bool TryProcessMethodFromStream(PhpValue value, ProcessMethod @default, ref ProcessMethod processing)
+        static bool TryProcessMethodFromStream(PhpValue value, ProcessMethod @default, ref ProcessMethod processing, bool readable = false)
         {
             if (Operators.IsSet(value))
             {
                 var stream = value.AsObject() as PhpStream;
-                if (stream != null && stream.CanWrite)
+                if (stream != null && (readable ? stream.CanRead: stream.CanWrite))
                 {
                     processing = new ProcessMethod(stream);
+                }
+                else
+                {
+                    return false; // failure
+                }
+            }
+            else
+            {
+                processing = @default;
+            }
+
+            return true;
+        }
+
+        static bool TryProcessMethodFromCallable(PhpValue value, ProcessMethod @default, ref ProcessMethod processing)
+        {
+            if (Operators.IsSet(value))
+            {
+                var callable = value.AsCallable();
+                if (callable != null)
+                {
+                    processing = new ProcessMethod(callable);
                 }
                 else
                 {
@@ -563,12 +585,12 @@ namespace Peachpie.Library.Network
                 case CURLOPT_COOKIEFILE: ch.CookieFileSet = true; break;
 
                 case CURLOPT_FILE: return TryProcessMethodFromStream(value, ProcessMethod.StdOut, ref ch.ProcessingResponse);
-                case CURLOPT_INFILE: return TryProcessMethodFromStream(value, ProcessMethod.Ignore, ref ch.ProcessingRequest);
+                case CURLOPT_INFILE: return TryProcessMethodFromStream(value, ProcessMethod.Ignore, ref ch.ProcessingRequest, readable: true);
                 case CURLOPT_WRITEHEADER: return TryProcessMethodFromStream(value, ProcessMethod.Ignore, ref ch.ProcessingHeaders);
                 //case CURLOPT_STDERR: return TryProcessMethodFromStream(value, ProcessMethod.Ignore, ref ch.ProcessingErr);
 
-                case CURLOPT_HEADERFUNCTION: ch.ProcessingHeaders = new ProcessMethod(value.AsCallable()); break;
-                case CURLOPT_WRITEFUNCTION: ch.ProcessingResponse = new ProcessMethod(value.AsCallable()); break;
+                case CURLOPT_HEADERFUNCTION: return TryProcessMethodFromCallable(value, ProcessMethod.Ignore, ref ch.ProcessingHeaders);
+                case CURLOPT_WRITEFUNCTION: return TryProcessMethodFromCallable(value, ProcessMethod.StdOut, ref ch.ProcessingResponse);
                 //case CURLOPT_READFUNCTION:
                 //case CURLOPT_PROGRESSFUNCTION:
 
