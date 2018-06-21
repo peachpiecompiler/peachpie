@@ -454,7 +454,7 @@ namespace Pchp.Core
         sealed class ClassTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Object;
-            public override bool IsEmpty(ref PhpValue me) => false;
+            public override bool IsEmpty(ref PhpValue me) => !Convert.ToBoolean(me.Object);
             public override object ToClass(ref PhpValue me) => (me.Object is IPhpConvertible conv) ? conv.ToClass() : me.Object;
             public override string ToStringQuiet(ref PhpValue me) => me.Object.ToString();
             public override string ToString(ref PhpValue me, Context ctx) => ToStringOrThrow(ref me, ctx);
