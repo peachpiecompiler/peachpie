@@ -1094,6 +1094,54 @@ namespace Pchp.Core
             return result * sign;
         }
 
+        /// <summary>
+        /// Helper method that constructs an integer from leading digits starting at s[offset].  "offset" is
+        /// updated to contain an offset just beyond the last digit.  The number of digits consumed is returned in
+        /// cntDigits.  The integer is returned (0 if no digits).  If the digits cannot fit into an Int32:
+        ///   1. If eatDigits is true, then additional digits will be silently discarded (don't count towards numDigits)
+        ///   2. If eatDigits is false, an overflow exception is thrown
+        /// </summary>
+        public static bool TryParseDigits(string s, ref int offset, bool eatDigits, out int result, out int numDigits)
+        {
+            int offsetStart = offset;
+            int offsetEnd = s.Length;
+            int digit;
+
+            result = 0;
+            numDigits = 0;
+
+            while (offset < offsetEnd && s[offset] >= '0' && s[offset] <= '9')
+            {
+                digit = s[offset] - '0';
+
+                if (result > (int.MaxValue - digit) / 10)
+                {
+                    if (!eatDigits)
+                    {
+                        // overflow
+                        //return false;
+                        throw new OverflowException();
+                    }
+
+                    // Skip past any remaining digits
+                    numDigits = offset - offsetStart;
+
+                    while (offset < offsetEnd && s[offset] >= '0' && s[offset] <= '9')
+                    {
+                        offset++;
+                    }
+
+                    return true;
+                }
+
+                result = result * 10 + digit;
+                offset++;
+            }
+
+            numDigits = offset - offsetStart;
+            return true;
+        }
+
         #endregion
     }
 
