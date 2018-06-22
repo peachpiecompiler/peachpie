@@ -66,7 +66,12 @@ namespace Peachpie.Library.MySql
             /// <summary>
             /// Use SSL encryption.
             /// </summary>
-            SSL = MYSQL_CLIENT_SSL
+            SSL = MYSQL_CLIENT_SSL,
+
+            /// <summary>
+            /// Whether to enable polling on the connection string.
+            /// </summary>
+            Pooling = 8192,
         }
 
         /// <summary>
@@ -142,12 +147,12 @@ namespace Peachpie.Library.MySql
         /// Open a connection to a MySQL Server.
         /// </summary>
         [return: CastToFalse]
-        public static PhpResource mysql_connect(Context ctx, string server = null, string username = null, string password = null, bool new_link = false, int client_flags = 0)
+        public static PhpResource mysql_connect(Context ctx, string server = null, string username = null, string password = null, bool new_link = false, ConnectFlags client_flags = ConnectFlags.None)
         {
             var config = ctx.Configuration.Get<MySqlConfiguration>();
             Debug.Assert(config != null);
 
-            var connection_string = BuildConnectionString(config, ref server, username, password, (ConnectFlags)client_flags);
+            var connection_string = BuildConnectionString(config, ref server, username, password, client_flags);
 
             bool success;
             var connection = MySqlConnectionManager.GetInstance(ctx)
@@ -173,10 +178,9 @@ namespace Peachpie.Library.MySql
         /// Resource representing the connection or a <B>null</B> reference (<B>false</B> in PHP) on failure.
         /// </returns>
         [return: CastToFalse]
-        public static PhpResource mysql_pconnect(Context ctx, string server = null, string username = null, string password = null, bool new_link = false, int client_flags = 0)
+        public static PhpResource mysql_pconnect(Context ctx, string server = null, string username = null, string password = null, bool new_link = false, ConnectFlags client_flags = ConnectFlags.None)
         {
-            // TODO: Notice: unsupported
-            return mysql_connect(ctx, server, username, password, new_link, client_flags);
+            return mysql_connect(ctx, server, username, password, new_link, client_flags | ConnectFlags.Pooling);
         }
 
         internal static string BuildConnectionString(MySqlConfiguration config, ref string server, string user, string password, ConnectFlags flags, int connectiontimeout = 0)
@@ -206,14 +210,15 @@ namespace Peachpie.Library.MySql
             // see https://mysql-net.github.io/MySqlConnector/connection-options/ and http://dev.mysql.com/doc/refman/5.5/en/connector-net-connection-options.html
             return BuildConnectionString(
               server, user, password,
-              string.Format("allowzerodatetime=true;allow user variables=true;connect timeout={0};Port={1};SSL Mode={2};Use Compression={3}{4}{5};Max Pool Size={6}{7}",
+              string.Format("allowzerodatetime=true;allow user variables=true;connect timeout={0};Port={1};SSL Mode={2};Use Compression={3}{4}{5};Max Pool Size={6};Pooling={7}{8}",
                 (connectiontimeout > 0) ? connectiontimeout : (config.ConnectTimeout > 0) ? config.ConnectTimeout : 15,
                 port,
                 (flags & ConnectFlags.SSL) != 0 ? "Preferred" : "None",     // (since Connector 6.2.1.) ssl mode={None|Preferred|Required|VerifyCA|VerifyFull}   // (Jakub) use ssl={true|false} has been deprecated
-                (flags & ConnectFlags.Compress) != 0 ? "true" : "false",    // Use Compression={true|false}
-                (pipe_name != null) ? ";Pipe=" + pipe_name : null,  // Pipe={...}
+                ((flags & ConnectFlags.Compress) != 0).ToString(),          // Use Compression={true|false}
+                (pipe_name != null) ? ";Pipe=" + pipe_name : null,          // Pipe={...}
                 (flags & ConnectFlags.Interactive) != 0 ? ";Interactive=true" : null,    // Interactive={true|false}
-                config.MaxPoolSize,                                          // Max Pool Size=100
+                config.MaxPoolSize,                                         // Max Pool Size=100
+                ((flags & ConnectFlags.Pooling) != 0).ToString(),           // Pooling=True|False
                 (config.DefaultCommandTimeout >= 0) ? ";DefaultCommandTimeout=" + config.DefaultCommandTimeout : null
                 )
             );

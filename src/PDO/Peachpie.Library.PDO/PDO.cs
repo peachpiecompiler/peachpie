@@ -99,9 +99,9 @@ namespace Peachpie.Library.PDO
             this.m_extensionMethods = this.m_driver.GetPDObjectExtensionMethods();
 
             this.m_con = this.m_driver.OpenConnection(items[1], username, password, options);
-            this.m_attributes.Set(PDO_ATTR.ATTR_SERVER_VERSION, (PhpValue)this.m_con.ServerVersion);
-            this.m_attributes.Set(PDO_ATTR.ATTR_DRIVER_NAME, (PhpValue)this.m_driver.Name);
-            this.m_attributes.Set(PDO_ATTR.ATTR_CLIENT_VERSION, (PhpValue)this.m_driver.ClientVersion);
+            this.m_attributes[PDO_ATTR.ATTR_SERVER_VERSION] = (PhpValue)this.m_con.ServerVersion;
+            this.m_attributes[PDO_ATTR.ATTR_DRIVER_NAME] = (PhpValue)this.m_driver.Name;
+            this.m_attributes[PDO_ATTR.ATTR_CLIENT_VERSION] = (PhpValue)this.m_driver.ClientVersion;
         }
 
         /// <inheritDoc />
@@ -310,27 +310,27 @@ namespace Peachpie.Library.PDO
 
         private void SetDefaultAttributes()
         {
-            this.m_attributes.Set(PDO_ATTR.ATTR_AUTOCOMMIT, (PhpValue)true);
-            this.m_attributes.Set(PDO_ATTR.ATTR_PREFETCH, (PhpValue)0);
-            this.m_attributes.Set(PDO_ATTR.ATTR_TIMEOUT, (PhpValue)30);
-            this.m_attributes.Set(PDO_ATTR.ATTR_ERRMODE, (PhpValue)ERRMODE_SILENT);
-            this.m_attributes.Set(PDO_ATTR.ATTR_SERVER_VERSION, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_CLIENT_VERSION, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_SERVER_INFO, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_CONNECTION_STATUS, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_CASE, (PhpValue)(int)PDO_CASE.CASE_LOWER);
-            this.m_attributes.Set(PDO_ATTR.ATTR_CURSOR_NAME, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_CURSOR, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_DRIVER_NAME, (PhpValue)"");
-            this.m_attributes.Set(PDO_ATTR.ATTR_ORACLE_NULLS, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_PERSISTENT, (PhpValue)false);
-            this.m_attributes.Set(PDO_ATTR.ATTR_STATEMENT_CLASS, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_FETCH_CATALOG_NAMES, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_FETCH_TABLE_NAMES, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_STRINGIFY_FETCHES, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_MAX_COLUMN_LEN, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_DEFAULT_FETCH_MODE, (PhpValue)(int)PDO_FETCH.FETCH_USE_DEFAULT);
-            this.m_attributes.Set(PDO_ATTR.ATTR_EMULATE_PREPARES, (PhpValue)false);
+            this.m_attributes[PDO_ATTR.ATTR_AUTOCOMMIT] = (PhpValue)true;
+            this.m_attributes[PDO_ATTR.ATTR_PREFETCH] = (PhpValue)0;
+            this.m_attributes[PDO_ATTR.ATTR_TIMEOUT] = (PhpValue)30;
+            this.m_attributes[PDO_ATTR.ATTR_ERRMODE] = (PhpValue)ERRMODE_SILENT;
+            this.m_attributes[PDO_ATTR.ATTR_SERVER_VERSION] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_CLIENT_VERSION] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_SERVER_INFO] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_CONNECTION_STATUS] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_CASE] = (PhpValue)(int)PDO_CASE.CASE_LOWER;
+            this.m_attributes[PDO_ATTR.ATTR_CURSOR_NAME] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_CURSOR] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_DRIVER_NAME] = (PhpValue)"";
+            this.m_attributes[PDO_ATTR.ATTR_ORACLE_NULLS] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_PERSISTENT] = PhpValue.False;
+            this.m_attributes[PDO_ATTR.ATTR_STATEMENT_CLASS] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_FETCH_CATALOG_NAMES] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_FETCH_TABLE_NAMES] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_STRINGIFY_FETCHES] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_MAX_COLUMN_LEN] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_DEFAULT_FETCH_MODE] = (PhpValue)(int)PDO_FETCH.FETCH_USE_DEFAULT;
+            this.m_attributes[PDO_ATTR.ATTR_EMULATE_PREPARES] = PhpValue.False;
         }
 
         #region Interface artifacts

@@ -1,4 +1,5 @@
-﻿using MySql.Data.MySqlClient;
+﻿using System;
+using MySql.Data.MySqlClient;
 
 using Pchp.Core;
 
@@ -22,23 +23,32 @@ namespace Peachpie.Library.PDO.MySQL
         /// <inheritDoc />
         protected override string BuildConnectionString(string dsn, string user, string password, PhpArray options)
         {
-            //TODO mysql pdo parameters to dotnet connectionstring
+            // TODO: mysql pdo parameters to dotnet connectionstring
             var csb = new MySqlConnectionStringBuilder(dsn)
             {
                 UserID = user,
-                Password = password
+                Password = password,
+                Pooling = options != null && options[PDO.ATTR_PERSISTENT].ToBoolean(), // default: false
             };
+
+            //
             return csb.ConnectionString;
         }
 
         /// <inheritDoc />
         public override string GetLastInsertId(PDO pdo, string name)
         {
-            using (var cmd = pdo.CreateCommand("SELECT LAST_INSERT_ID()"))
-            {
-                object value = cmd.ExecuteScalar();
-                return value?.ToString();
-            }
+            //MySqlCommand command = get it somewhere;
+            //command.LastInsertedId
+
+            throw new NotImplementedException();
+
+            // NOTE: this is not correct:
+            //using (var cmd = pdo.CreateCommand("SELECT LAST_INSERT_ID()"))
+            //{
+            //    object value = cmd.ExecuteScalar();
+            //    return value?.ToString();
+            //}
         }
 
         /// <inheritDoc />
