@@ -79,7 +79,7 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEQAAABECAYAAAA4E5OyAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAACXBIWXMAAAsRAAALEQF/ZF+RAAAABmJLR0QA/wD/AP+gvaeTAAAP2klEQVR4Xu1bC3RV1Zn+zjn3lZsEMAkveSr4BMHiaBWhM6Ot9Vkf47QqVcciIxW0IzBWizPFDg7GAa1odYqdDq4W7SAyo7VLO+o4ilABFR8o6PAUE8IjIZDkPs9jvv/sfUluchNukhvBhd9aJzfnP+fus/e3/+fe5xpNVx3vea4NwOBxNMODYQZgNF053IPrkI+jnBDPA0wL5kHFEEKO5sPngJyo/75CBl8R0gp0qvQhDn2I2QPciF1m1FHguVpEt5VMAokY4KT0RYLXEAgCkWKYoTA8/V3DyN03N9bA79swS3rzpm7233 [rest of string was truncated]&quot;;.
+        ///   Looks up a localized string similar to data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACoAAAAqCAIAAABKoV4MAAAACXBIWXMAAAsTAAALEwEAmpwYAAA7pmlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNS42LWMwNjcgNzkuMTU3NzQ3LCAyMDE1LzAzLzMwLTIzOjQwOjQyICAgICAgICAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAgICB4bW [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string LogoSrc {
             get {
