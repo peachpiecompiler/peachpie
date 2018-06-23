@@ -1639,128 +1639,79 @@ namespace Peachpie.Library.Graphics
         }
 
         #endregion
-
+        /// <summary>
+        /// Perform a flood fill of an image. Either until a border with specified color is reached, or the region with original color.
+        /// </summary>
+        /// <param name="image">image to fill</param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="color">Color to be filled with</param>
+        /// <param name="toBorder">False - color the connected region of same color, True - color until border is reached</param>
+        /// <param name="border">Color of the region border, used if toBorder = True</param>
         private static void FloodFill(Image<Rgba32>/*!*/image, int x, int y, Rgba32 color, bool toBorder, Rgba32 border)
         {
             Debug.Assert(image != null);
 
-            image.Mutate(context =>
+            var pointQueue = new Queue<Point>();
+            pointQueue.Enqueue(new Point(x, y));
+            var floodFrom = image[x, y];
+
+            // The same color cannot be filled with itself
+            if (floodFrom == color)
+                return;
+
+            while (pointQueue.Count > 0)
             {
-                int currentY = x;
-                var pointQueue = new Queue<Point>();
-                pointQueue.Enqueue(new Point(x, y));
+                var currentPoint = pointQueue.Dequeue();
+                var currentY = currentPoint.Y;
+                var currentX = currentPoint.X;
 
-                var floodFrom = image[x, y];
+                int leftEdge, rightEdge;
+                leftEdge = rightEdge = currentX;
 
-                while(pointQueue.Count > 0)
+                // Filling until reaching a border of specified color
+                if (toBorder)
                 {
-                    var currentPoint = pointQueue.Dequeue();
-                    currentY = currentPoint.Y;
-                    var currentX = currentPoint.X;
+                    // Get the row segment to be colored
+                    while (rightEdge + 1 < image.Width && image[rightEdge + 1, currentY] != border && image[rightEdge + 1, currentY] != color)
+                        rightEdge++;
+                    while (leftEdge > 0 && image[leftEdge - 1, currentY] != border && image[leftEdge - 1, currentY] != color)
+                        leftEdge--;
 
-                    int leftEdge, rightEdge;
-                    leftEdge = rightEdge = currentX;
-
-                    // Filling until reaching a border of specified color
-                    if (toBorder)
+                    // Actually color the row
+                    for (int workingX = leftEdge; workingX <= rightEdge; workingX++)
                     {
-                        // Move right end of row
-                        while (rightEdge + 1 < image.Width && image[rightEdge + 1, currentY] != border)
-                            rightEdge++;
-                        // Move left end of row
-                        while (leftEdge > 0 && image[leftEdge - 1, currentY] != border)
-                            leftEdge--;
+                        image[workingX, currentY] = color;
 
-                        // Actually color the row
-                        for (int workingX = leftEdge; workingX <= rightEdge; workingX++)
-                        {
-                            image[workingX, currentY] = color;
-                            if (currentY > 0 && image[workingX, currentY - 1] != border && image[workingX, currentY - 1] != color)
-                                pointQueue.Enqueue(new Point(workingX, currentY - 1));
-
-                            if (currentY + 1 < image.Height && image[workingX, currentY + 1] != border && image[workingX, currentY + 1] != color)
-                                pointQueue.Enqueue(new Point(workingX, currentY + 1));
-                        }
-                    } else
-                    // Filling whole region of same color
-                    {
-                        // Move right end of row
-                        while (rightEdge + 1 < image.Width && image[rightEdge + 1, currentY] == floodFrom)
-                            rightEdge++;
-                        // Move left end of row
-                        while (leftEdge > 0 && image[leftEdge - 1, currentY] == floodFrom)
-                            leftEdge--;
-
-                        // Actually color the row
-                        for (int workingX = leftEdge; workingX <= rightEdge; workingX++)
-                        {
-                            image[workingX, currentY] = color;
-                            if (currentY > 0 && image[workingX, currentY - 1] == floodFrom)
-                                pointQueue.Enqueue(new Point(workingX, currentY - 1));
-
-                            if (currentY + 1 < image.Height && image[workingX, currentY + 1] == floodFrom)
-                                pointQueue.Enqueue(new Point(workingX, currentY + 1));
-                        }
+                        //Add the pixels above and below to the queue
+                        if (currentY > 0 && image[workingX, currentY - 1] != border && image[workingX, currentY - 1] != color)
+                            pointQueue.Enqueue(new Point(workingX, currentY - 1));
+                        if (currentY + 1 < image.Height && image[workingX, currentY + 1] != border && image[workingX, currentY + 1] != color)
+                            pointQueue.Enqueue(new Point(workingX, currentY + 1));
                     }
                 }
-            });
+                else
+                // Filling whole region of same color
+                {
+                    // Get the row segment to be colored
+                    while (rightEdge + 1 < image.Width && image[rightEdge + 1, currentY] == floodFrom)
+                        rightEdge++;
+                    while (leftEdge > 0 && image[leftEdge - 1, currentY] == floodFrom)
+                        leftEdge--;
 
-            //BitmapData data = image.LockBits(
-            //    new Rectangle(0, 0, image.Width, image.Height),
-            //    ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+                    // Actually color the row
+                    for (int workingX = leftEdge; workingX <= rightEdge; workingX++)
+                    {
+                        image[workingX, currentY] = color;
 
-            //int[] bits = new int[data.Stride / 4 * data.Height];
-            //Marshal.Copy(data.Scan0, bits, 0, bits.Length);
-
-            //LinkedList<Point> check = new LinkedList<Point>();
-            //int floodTo = color.ToArgb();
-            //uint floodTo = color.Rgba; // Correct?
-            //int floodFrom = bits[x + y * data.Stride / 4];
-            //bits[x + y * data.Stride / 4] = floodTo;
-
-            //int floodBorder = border.ToArgb();
-            //uint floodBorder = border.Rgba; // Correct?
-
-            //if (floodFrom != floodTo)
-            //{
-            //    check.AddLast(new Point(x, y));
-            //    while (check.Count > 0)
-            //    {
-            //        Point cur = check.First.Value;
-            //        check.RemoveFirst();
-
-            //        foreach (Point off in new Point[]{
-            //            new Point(0, -1), new Point(0, 1),
-            //            new Point(-1, 0), new Point(1, 0)})
-            //        {
-            //            Point next = new Point(cur.X + off.X, cur.Y + off.Y);
-            //            if (next.X >= 0 && next.Y >= 0 &&
-            //                next.X < data.Width &&
-            //                next.Y < data.Height)
-            //            {
-            //                if (toBorder == false)
-            //                {
-            //                    if (bits[next.X + next.Y * data.Stride / 4] == floodFrom)
-            //                    {
-            //                        check.AddLast(next);
-            //                        bits[next.X + next.Y * data.Stride / 4] = floodTo;
-            //                    }
-            //                }
-            //                else
-            //                {
-            //                    if ((bits[next.X + next.Y * data.Stride / 4] != floodBorder && bits[next.X + next.Y * data.Stride / 4] != floodTo))
-            //                    {
-            //                        check.AddLast(next);
-            //                        bits[next.X + next.Y * data.Stride / 4] = floodTo;
-            //                    }
-            //                }
-            //            }
-            //        }
-            //    }
-            //}
-
-            //Marshal.Copy(bits, 0, data.Scan0, bits.Length);
-            //image.UnlockBits(data);
+                        //Add the pixels above and below to the queue
+                        if (currentY > 0 && image[workingX, currentY - 1] == floodFrom)
+                            pointQueue.Enqueue(new Point(workingX, currentY - 1));
+                        if (currentY + 1 < image.Height && image[workingX, currentY + 1] == floodFrom)
+                            pointQueue.Enqueue(new Point(workingX, currentY + 1));
+                    }
+                }
+            }
         }
 
         #region imagefilledpolygon, imagepolygon 
