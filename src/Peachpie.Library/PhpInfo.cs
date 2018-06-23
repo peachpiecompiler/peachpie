@@ -6,7 +6,7 @@ using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Pchp.Core;
-using Peachpie.Library.Resources;
+using Pchp.Library.Resources;
 
 namespace Pchp.Library
 {

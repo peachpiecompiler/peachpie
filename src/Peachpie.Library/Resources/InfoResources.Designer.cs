@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Peachpie.Library.Resources {
+namespace Pchp.Library.Resources {
     using System;
     
     
