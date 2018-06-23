@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
@@ -12,6 +13,7 @@ using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Primitives;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Processing.Convolution;
 using SixLabors.ImageSharp.Processing.Drawing;
@@ -1410,7 +1412,7 @@ namespace Peachpie.Library.Graphics
                 return false;
 
             if (x < 0 || y < 0) return true;
-            if (x > img.Image.Width || x > img.Image.Height) return true;
+            if (x > img.Image.Width || y > img.Image.Height) return true;
 
             FloodFill(img.Image, x, y, FromRGBA(col), false, Rgba32.Red);
 
@@ -1545,7 +1547,18 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         public static bool imagefilledarc(PhpResource im, int cx, int cy, int w, int h, int s, int e, int col, int style)
         {
-            throw new NotImplementedException();
+            PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+                return false;
+
+            if (cx < 0 || cy < 0) return true;
+            if (cx > img.Image.Width || cy > img.Image.Height) return true;
+
+            var color = FromRGBA(col);
+
+            var pen = new Pen<Rgba32>(color, 1);
+
+            return true;
 
             //PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
             //if (img == null)
@@ -1629,9 +1642,68 @@ namespace Peachpie.Library.Graphics
 
         private static void FloodFill(Image<Rgba32>/*!*/image, int x, int y, Rgba32 color, bool toBorder, Rgba32 border)
         {
-            throw new NotImplementedException();
+            Debug.Assert(image != null);
 
-            //Debug.Assert(image != null);
+            image.Mutate(context =>
+            {
+                int currentY = x;
+                var pointQueue = new Queue<Point>();
+                pointQueue.Enqueue(new Point(x, y));
+
+                var floodFrom = image[x, y];
+
+                while(pointQueue.Count > 0)
+                {
+                    var currentPoint = pointQueue.Dequeue();
+                    currentY = currentPoint.Y;
+                    var currentX = currentPoint.X;
+
+                    int leftEdge, rightEdge;
+                    leftEdge = rightEdge = currentX;
+
+                    // Filling until reaching a border of specified color
+                    if (toBorder)
+                    {
+                        // Move right end of row
+                        while (rightEdge + 1 < image.Width && image[rightEdge + 1, currentY] != border)
+                            rightEdge++;
+                        // Move left end of row
+                        while (leftEdge > 0 && image[leftEdge - 1, currentY] != border)
+                            leftEdge--;
+
+                        // Actually color the row
+                        for (int workingX = leftEdge; workingX <= rightEdge; workingX++)
+                        {
+                            image[workingX, currentY] = color;
+                            if (currentY > 0 && image[workingX, currentY - 1] != border && image[workingX, currentY - 1] != color)
+                                pointQueue.Enqueue(new Point(workingX, currentY - 1));
+
+                            if (currentY + 1 < image.Height && image[workingX, currentY + 1] != border && image[workingX, currentY + 1] != color)
+                                pointQueue.Enqueue(new Point(workingX, currentY + 1));
+                        }
+                    } else
+                    // Filling whole region of same color
+                    {
+                        // Move right end of row
+                        while (rightEdge + 1 < image.Width && image[rightEdge + 1, currentY] == floodFrom)
+                            rightEdge++;
+                        // Move left end of row
+                        while (leftEdge > 0 && image[leftEdge - 1, currentY] == floodFrom)
+                            leftEdge--;
+
+                        // Actually color the row
+                        for (int workingX = leftEdge; workingX <= rightEdge; workingX++)
+                        {
+                            image[workingX, currentY] = color;
+                            if (currentY > 0 && image[workingX, currentY - 1] == floodFrom)
+                                pointQueue.Enqueue(new Point(workingX, currentY - 1));
+
+                            if (currentY + 1 < image.Height && image[workingX, currentY + 1] == floodFrom)
+                                pointQueue.Enqueue(new Point(workingX, currentY + 1));
+                        }
+                    }
+                }
+            });
 
             //BitmapData data = image.LockBits(
             //    new Rectangle(0, 0, image.Width, image.Height),
@@ -1641,12 +1713,12 @@ namespace Peachpie.Library.Graphics
             //Marshal.Copy(data.Scan0, bits, 0, bits.Length);
 
             //LinkedList<Point> check = new LinkedList<Point>();
-            ////int floodTo = color.ToArgb();
+            //int floodTo = color.ToArgb();
             //uint floodTo = color.Rgba; // Correct?
             //int floodFrom = bits[x + y * data.Stride / 4];
             //bits[x + y * data.Stride / 4] = floodTo;
 
-            ////int floodBorder = border.ToArgb();
+            //int floodBorder = border.ToArgb();
             //uint floodBorder = border.Rgba; // Correct?
 
             //if (floodFrom != floodTo)
