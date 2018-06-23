@@ -428,9 +428,9 @@ namespace Pchp.Library
         {
             writer.Header("Variables");
             writer.Table(
-                ((IDictionary<IntStringKey, PhpValue>)ctx.Request).Select(pair => new[] { $"_REQUEST['{pair.Key}']", Export(ctx, pair.Value) }).Concat(
-                ((IDictionary<IntStringKey, PhpValue>)ctx.Get).Select(pair => new[] { $"_GET['{pair.Key}']", Export(ctx, pair.Value) }).Concat(
-                ((IDictionary<IntStringKey, PhpValue>)ctx.Post).Select(pair => new[] { $"_POST['{pair.Key}']", Export(ctx, pair.Value) }).Concat(
+                ((IDictionary<IntStringKey, PhpValue>)ctx.Request).Select(pair => new[] { $"$_REQUEST['{pair.Key}']", Export(ctx, pair.Value) }).Concat(
+                ((IDictionary<IntStringKey, PhpValue>)ctx.Get).Select(pair => new[] { $"$_GET['{pair.Key}']", Export(ctx, pair.Value) }).Concat(
+                ((IDictionary<IntStringKey, PhpValue>)ctx.Post).Select(pair => new[] { $"$_POST['{pair.Key}']", Export(ctx, pair.Value) }).Concat(
                 ((IDictionary<IntStringKey, PhpValue>)ctx.Cookie).Select(pair => new[] { $"$_COOKIE['{pair.Key}']", Export(ctx, pair.Value) }).Concat(
                 ((IDictionary<IntStringKey, PhpValue>)ctx.Server).Select(pair => new[] { $"$_SERVER['{pair.Key}']", Export(ctx, pair.Value) })
                 )))),
