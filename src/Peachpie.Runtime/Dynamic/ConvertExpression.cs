@@ -65,6 +65,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(byte[])) return Expression.Call(BindToPhpString(arg, ctx), Cache.PhpString.ToBytes_Context, ctx);
             if (target == typeof(PhpAlias))
             {
+                Debug.Assert(arg.Type.IsByRef && arg.Type == typeof(PhpValue), "Variable should be PhpValue and passed by ref so things will work out!");
                 if (arg.Type == typeof(PhpValue)) return Expression.Call(arg, Cache.Operators.PhpValue_EnsureAlias);
                 return Expression.New(Cache.PhpAlias.ctor_PhpValue_int, BindToValue(arg), Expression.Constant(1));
             }
@@ -449,9 +450,17 @@ namespace Pchp.Core.Dynamic
                 return BindCost(Expression.Field(arg, Cache.PhpAlias.Value), target);
             }
 
-            if (target == typeof(PhpAlias) || target == typeof(PhpValue))
+            if (target == typeof(PhpValue))
             {
                 return Expression.Constant(ConversionCost.PassCostly);
+            }
+
+            if (target == typeof(PhpAlias))
+            {
+                if (arg.Type.IsByRef && arg.Type == typeof(PhpValue))
+                    return Expression.Constant(ConversionCost.PassCostly);
+                else
+                    return Expression.Constant(ConversionCost.Warning);
             }
 
             if (t == typeof(PhpValue)) return BindCostFromValue(arg, target);
