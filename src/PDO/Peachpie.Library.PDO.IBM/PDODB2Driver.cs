@@ -6,6 +6,7 @@ namespace Peachpie.Library.PDO
     using System;
     //IBM pure ADO.NET Driver is not available on dotnet core, only on framework
     using IBM.Data.DB2.Core;
+    using Peachpie.Library.PDO.Utilities;
 
     /// <summary>
     /// PDO driver class for IBM DB2

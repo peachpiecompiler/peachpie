@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FirebirdSql.Data.FirebirdClient;
+using Peachpie.Library.PDO.Utilities;
 
 namespace Peachpie.Library.PDO.Firebird
 {

@@ -91,17 +91,6 @@ namespace Peachpie.Library.PDO
             return PhpValue.Null;
         }
 
-        /// <summary>
-        /// Registers all referenced PDO drivers.
-        /// </summary>
-        public static void RegisterAllDrivers()
-        {
-            foreach (var driver in Context.CompositionContext.GetExports<IPDODriver>())
-            {
-                PDOEngine.RegisterDriver(driver);
-            }
-        }
-
         /// <inheritDoc />
         public virtual PDOStatement PrepareStatement(PDO pdo, string statement, PhpArray driver_options)
         {

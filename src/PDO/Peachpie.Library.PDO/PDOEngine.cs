@@ -1,7 +1,9 @@
 ﻿using Pchp.Core;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Peachpie.Library.PDO
@@ -12,37 +14,33 @@ namespace Peachpie.Library.PDO
     [PhpHidden]
     public static class PDOEngine
     {
-        static readonly Dictionary<string, IPDODriver> s_drivers = new Dictionary<string, IPDODriver>();
-
         /// <summary>
-        /// Registers the driver.
+        /// Gets set of loaded PDO drivers.
         /// </summary>
-        public static void RegisterDriver(IPDODriver driver)
+        static Dictionary<string, IPDODriver> GetDrivers()
         {
-            lock (s_drivers)
+            if (ReferenceEquals(s_lazydrivers, null))
             {
-                s_drivers[driver.Name] = driver;
+                Interlocked.CompareExchange(ref s_lazydrivers, CollectPdoDrivers(), null);
             }
+
+            return s_lazydrivers;
+        }
+        static Dictionary<string, IPDODriver> s_lazydrivers;
+
+        static Dictionary<string, IPDODriver> CollectPdoDrivers()
+        {
+            return Context
+                .CompositionContext
+                .GetExports<IPDODriver>()
+                .ToDictionary(driver => driver.Name, StringComparer.OrdinalIgnoreCase);
         }
 
-        internal static string[] GetDriverNames()
+        internal static IReadOnlyCollection<string> GetDriverNames() => GetDrivers().Keys;
+
+        internal static IPDODriver TryGetDriver(string driverName)
         {
-            lock (s_drivers)
-            {
-                return s_drivers.Keys.ToArray();
-            }
-        }
-
-        internal static IPDODriver GetDriver(string driverName)
-        {
-
-            IPDODriver driver;
-
-            lock (s_drivers)
-            {
-                s_drivers.TryGetValue(driverName, out driver);
-            }
-
+            GetDrivers().TryGetValue(driverName, out var driver);
             return driver;
         }
     }

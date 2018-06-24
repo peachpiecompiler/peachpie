@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Text;
+using Pchp.Core;
 
 namespace Peachpie.Library.PDO.Utilities
 {
     /// <summary>
     /// Extension methods to <see cref="PDO"/>.
     /// </summary>
+    [PhpHidden]
     public static class PdoExtension
     {
         /// <summary>

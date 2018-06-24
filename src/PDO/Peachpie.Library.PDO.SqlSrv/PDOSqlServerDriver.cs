@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Data.SqlClient;
 using Pchp.Core;
+using Peachpie.Library.PDO.Utilities;
 
 namespace Peachpie.Library.PDO.SqlSrv
 {

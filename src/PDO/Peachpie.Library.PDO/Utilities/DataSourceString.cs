@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Pchp.Core;
 
 namespace Peachpie.Library.PDO.Utilities
 {
     /// <summary>
     /// Helper class for manipulation with data source string as it is in PDO.
     /// </summary>
+    [PhpHidden]
     public static class DataSourceString
     {
         static bool TryNextNameValue(ReadOnlySpan<char> datasource, ref int position, out ReadOnlySpan<char> name, out ReadOnlySpan<char> value)

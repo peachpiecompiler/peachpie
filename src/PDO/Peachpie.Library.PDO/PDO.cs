@@ -100,11 +100,8 @@ namespace Peachpie.Library.PDO
             }
 
             // DSN mode
-            this.m_driver = PDOEngine.GetDriver(driver);
-            if (this.m_driver == null)
-            {
-                throw new PDOException($"Driver '{driver}' not found"); // TODO: resources
-            }
+            this.m_driver = PDOEngine.TryGetDriver(driver)
+                ?? throw new PDOException($"Driver '{driver}' not found"); // TODO: resources
 
             this.m_con = this.m_driver.OpenConnection(connstring, username, password, options);
             this.m_attributes[PDO_ATTR.ATTR_SERVER_VERSION] = (PhpValue)this.m_con.ServerVersion;
