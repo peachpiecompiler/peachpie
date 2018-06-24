@@ -186,12 +186,10 @@ namespace Peachpie.Library.MySql
         internal static string BuildConnectionString(MySqlConfiguration config, ref string server, string user, string password, ConnectFlags flags, int connectiontimeout = 0)
         {
             // connection strings:
-            if (server == null && user == null && password == null && flags == ConnectFlags.None && !string.IsNullOrEmpty(config.ConnectionString))
+            if (!string.IsNullOrEmpty(config.ConnectionString) && server == null && user == null && password == null)
             {
                 return config.ConnectionString;
             }
-
-            // TODO: local.ConnectionStringName
 
             // build connection string:
             string pipe_name = null;
@@ -205,47 +203,32 @@ namespace Peachpie.Library.MySql
             if (port == -1) port = config.Port;
             if (user == null) user = config.User;
             if (password == null) password = config.Password;
+            if (connectiontimeout <= 0) connectiontimeout = config.ConnectTimeout;
 
-            // build the connection string to be used with MySqlConnector
-            // see https://mysql-net.github.io/MySqlConnector/connection-options/ and http://dev.mysql.com/doc/refman/5.5/en/connector-net-connection-options.html
-            return BuildConnectionString(
-              server, user, password,
-              string.Format("allowzerodatetime=true;allow user variables=true;connect timeout={0};Port={1};SSL Mode={2};Use Compression={3}{4}{5};Max Pool Size={6};Pooling={7}{8}",
-                (connectiontimeout > 0) ? connectiontimeout : (config.ConnectTimeout > 0) ? config.ConnectTimeout : 15,
-                port,
-                (flags & ConnectFlags.SSL) != 0 ? "Preferred" : "None",     // (since Connector 6.2.1.) ssl mode={None|Preferred|Required|VerifyCA|VerifyFull}   // (Jakub) use ssl={true|false} has been deprecated
-                ((flags & ConnectFlags.Compress) != 0).ToString(),          // Use Compression={true|false}
-                (pipe_name != null) ? ";Pipe=" + pipe_name : null,          // Pipe={...}
-                (flags & ConnectFlags.Interactive) != 0 ? ";Interactive=true" : null,    // Interactive={true|false}
-                config.MaxPoolSize,                                         // Max Pool Size=100
-                ((flags & ConnectFlags.Pooling) != 0).ToString(),           // Pooling=True|False
-                (config.DefaultCommandTimeout >= 0) ? ";DefaultCommandTimeout=" + config.DefaultCommandTimeout : null
-                )
-            );
-        }
-
-        /// <summary>
-		/// Builds a connection string.
-		/// </summary>
-		static string/*!*/ BuildConnectionString(string server, string user, string password, string additionalSettings)
-        {
-            var result = new StringBuilder(8);
-            result.Append("server=");
-            result.Append(server);
-            //			result.Append(";database=");
-            //			result.Append(database);
-            result.Append(";user id=");
-            result.Append(user);
-            result.Append(";password=");
-            result.Append(password);
-
-            if (!string.IsNullOrEmpty(additionalSettings))
+            //
+            var builder = new MySqlConnectionStringBuilder()
             {
-                result.Append(';');
-                result.AppendFormat(additionalSettings);
-            }
+                Server = server,
+                UserID = user,
+                Password = password,
+                //Database = dbname,
+                AllowZeroDateTime = true,
+                AllowUserVariables = true,
+                Port = (uint)port,
+                SslMode = (flags & ConnectFlags.SSL) != 0 ? MySqlSslMode.Preferred : MySqlSslMode.None,
+                UseCompression = (flags & ConnectFlags.Compress) != 0,
+                MaximumPoolSize = (uint)config.MaxPoolSize,
+                Pooling = (flags & ConnectFlags.Pooling) != 0,
+            };
 
-            return result.ToString();
+            // optional:
+            if (connectiontimeout > 0) builder.ConnectionTimeout = (uint)connectiontimeout;
+            if (pipe_name != null) builder.PipeName = pipe_name;
+            if ((flags & ConnectFlags.Interactive) != 0) builder.InteractiveSession = true;
+            if (config.DefaultCommandTimeout >= 0) builder.DefaultCommandTimeout = (uint)config.DefaultCommandTimeout;
+
+            //
+            return builder.ToString();
         }
 
         static void ParseServerName(ref string/*!*/ server, out int port, out string socketPath)
