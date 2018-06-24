@@ -98,6 +98,11 @@ namespace Peachpie.Library.PDO
 
             this.m_extensionMethods = this.m_driver.GetPDObjectExtensionMethods();
 
+            if (this.m_driver.Name == "mysql")
+            {
+                items[1] = PDOMySQLWrapper.convertDSN(items[1]);
+            }
+            
             this.m_con = this.m_driver.OpenConnection(items[1], username, password, options);
             this.m_attributes[PDO_ATTR.ATTR_SERVER_VERSION] = (PhpValue)this.m_con.ServerVersion;
             this.m_attributes[PDO_ATTR.ATTR_DRIVER_NAME] = (PhpValue)this.m_driver.Name;
