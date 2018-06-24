@@ -19,7 +19,7 @@ namespace Peachpie.Library.PDO
         /// </summary>
         static Dictionary<string, IPDODriver> GetDrivers()
         {
-            if (ReferenceEquals(s_lazydrivers, null))
+            if (s_lazydrivers == null)
             {
                 Interlocked.CompareExchange(ref s_lazydrivers, CollectPdoDrivers(), null);
             }
