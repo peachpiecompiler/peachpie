@@ -36,9 +36,9 @@ namespace Peachpie.Library.PDO
 
         /// <summary>
         /// Gets the methods added to the PDO instance when this driver is used.
+        /// Returns <c>null</c> if the method is not defined.
         /// </summary>
-        /// <returns></returns>
-        Dictionary<string, ExtensionMethodDelegate> GetPDObjectExtensionMethods();
+        ExtensionMethodDelegate TryGetExtensionMethod(string name);
 
         /// <summary>
         /// Opens a new database connection.

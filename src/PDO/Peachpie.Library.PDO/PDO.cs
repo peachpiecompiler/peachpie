@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Library;
 using System.Data.Common;
+using System.Diagnostics;
 
 namespace Peachpie.Library.PDO
 {
@@ -16,15 +17,17 @@ namespace Peachpie.Library.PDO
     [PhpType(PhpTypeAttribute.InheritName)]
     public partial class PDO : IDisposable, IPDO
     {
-        private readonly Context m_ctx;
+        /// <summary>Runtime context. Cannot be <c>null</c>.</summary>
+        protected readonly Context _ctx; // "_ctx" is a special name recognized by compiler. Will be reused by inherited classes.
+
         private IPDODriver m_driver;
         private DbConnection m_con;
         private DbTransaction m_tx;
         private readonly Dictionary<PDO_ATTR, PhpValue> m_attributes = new Dictionary<PDO_ATTR, PhpValue>();
-        private Dictionary<string, ExtensionMethodDelegate> m_extensionMethods;
-
+        
         internal DbTransaction CurrentTransaction { get { return this.m_tx; } }
         internal IPDODriver Driver { get { return this.m_driver; } }
+        internal DbCommand CurrentCommand { get; private set; }
 
         /// <summary>
         /// Gets the native connection instance
@@ -35,9 +38,10 @@ namespace Peachpie.Library.PDO
         /// Empty constructor.
         /// </summary>
         [PhpFieldsOnlyCtor]
-        protected PDO(Context ctx)
+        protected PDO(Context/*!*/ctx)
         {
-            this.m_ctx = ctx;
+            Debug.Assert(ctx != null);
+            _ctx = ctx;
         }
 
         /// <summary>
@@ -102,8 +106,6 @@ namespace Peachpie.Library.PDO
                 throw new PDOException($"Driver '{driver}' not found"); // TODO: resources
             }
 
-            this.m_extensionMethods = this.m_driver.GetPDObjectExtensionMethods();
-
             this.m_con = this.m_driver.OpenConnection(connstring, username, password, options);
             this.m_attributes[PDO_ATTR.ATTR_SERVER_VERSION] = (PhpValue)this.m_con.ServerVersion;
             this.m_attributes[PDO_ATTR.ATTR_DRIVER_NAME] = (PhpValue)this.m_driver.Name;
@@ -116,12 +118,11 @@ namespace Peachpie.Library.PDO
         /// <inheritDoc />
         public PhpValue __call(string name, PhpArray arguments)
         {
-            if (m_extensionMethods.TryGetValue(name, out var method))
-            {
-                return method.Invoke(this, arguments);
-            }
+            var method =
+                m_driver.TryGetExtensionMethod(name)
+                ?? throw new PDOException($"Method '{name}' not found"); // TODO: resources
 
-            throw new PDOException("Method not found");
+            return method.Invoke(this, arguments);
         }
 
         /// <inheritDoc />
@@ -139,19 +140,20 @@ namespace Peachpie.Library.PDO
             return PDOStatic.pdo_drivers();
         }
 
-
         /// <summary>
         /// Creates a DbCommand object.
         /// </summary>
         /// <param name="statement">The statement.</param>
         /// <returns></returns>
-        [PhpHidden]
-        public DbCommand CreateCommand(string statement)
+        internal DbCommand CreateCommand(string statement)
         {
             var dbCommand = this.m_con.CreateCommand();
             dbCommand.CommandText = statement;
             dbCommand.Transaction = this.m_tx;
             dbCommand.CommandTimeout = (int)(this.m_attributes[PDO_ATTR.ATTR_TIMEOUT]) * 1000;
+
+            CurrentCommand = dbCommand;
+
             return dbCommand;
         }
 

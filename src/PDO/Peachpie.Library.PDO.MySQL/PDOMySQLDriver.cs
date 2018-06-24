@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using MySql.Data.MySqlClient;
 
 using Pchp.Core;
+using Peachpie.Library.PDO.Utilities;
 
 namespace Peachpie.Library.PDO.MySQL
 {
@@ -13,11 +14,6 @@ namespace Peachpie.Library.PDO.MySQL
     [System.Composition.Export(typeof(IPDODriver))]
     public sealed class PDOMySQLDriver : PDODriver
     {
-        static readonly Dictionary<string, string> s_optionasliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            {"dbname", "Database"},
-        };
-
         /// <summary>
         /// Initializes a new instance of the <see cref="PDOMySQLDriver"/> class.
         /// </summary>
@@ -32,20 +28,23 @@ namespace Peachpie.Library.PDO.MySQL
             var csb = new MySqlConnectionStringBuilder();
 
             // parse and validate the datasource string:
-            Utilities.DataSourceString.ParseNameValue(dsn, csb, (_csb, name, value) =>
+            DataSourceString.ParseNameValue(dsn, csb, (_csb, name, value) =>
             {
-                if (s_optionasliases.TryGetValue(name, out var realname))
-                {
-                    name = realname;
-                }
+                // unknown option aliases:
+                if (name.Equals("dbname", StringComparison.OrdinalIgnoreCase)) name = "Database";
 
+                //
                 _csb[name] = value;
             });
 
             //
             if (!string.IsNullOrEmpty(user)) csb.UserID = user;
             if (!string.IsNullOrEmpty(password)) csb.Password = password;
-            if (options != null && options[PDO.ATTR_PERSISTENT].ToBoolean()) csb.Pooling = true;
+
+            if (options != null && options.Count != 0)
+            {
+                csb.Pooling = options[PDO.ATTR_PERSISTENT].ToBoolean();
+            }
 
             //
             return csb.ConnectionString;
@@ -54,17 +53,10 @@ namespace Peachpie.Library.PDO.MySQL
         /// <inheritDoc />
         public override string GetLastInsertId(PDO pdo, string name)
         {
-            //MySqlCommand command = get it somewhere;
-            //command.LastInsertedId
+            var command = (MySqlCommand)pdo.GetCurrentCommand();
+            var lastid = (command != null) ? command.LastInsertedId : -1;
 
-            throw new NotImplementedException();
-
-            // NOTE: this is not correct:
-            //using (var cmd = pdo.CreateCommand("SELECT LAST_INSERT_ID()"))
-            //{
-            //    object value = cmd.ExecuteScalar();
-            //    return value?.ToString();
-            //}
+            return lastid.ToString();
         }
 
         /// <inheritDoc />

@@ -68,10 +68,7 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public virtual Dictionary<string, ExtensionMethodDelegate> GetPDObjectExtensionMethods()
-        {
-            return new Dictionary<string, ExtensionMethodDelegate>();
-        }
+        public virtual ExtensionMethodDelegate TryGetExtensionMethod(string name) => null;
 
         /// <inheritDoc />
         public abstract string GetLastInsertId(PDO pdo, string name);
