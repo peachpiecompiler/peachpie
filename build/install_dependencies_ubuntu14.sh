@@ -8,7 +8,7 @@ sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 417A0893
 sudo apt-get update
 
 # Install .NET Core SDK
-sudo apt-get install dotnet-sdk-2.1.0 -y
+sudo apt-get install dotnet-sdk-2.1 -y
 
 
 # Install Powershell (https://www.rootusers.com/how-to-install-powershell-on-linux)
