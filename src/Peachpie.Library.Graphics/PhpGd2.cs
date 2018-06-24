@@ -1551,91 +1551,103 @@ namespace Peachpie.Library.Graphics
             if (img == null)
                 return false;
 
+            var image = img.Image;
+
             if (cx < 0 || cy < 0) return true;
-            if (cx > img.Image.Width || cy > img.Image.Height) return true;
+            if (cx > image.Width || cy > image.Height) return true;
 
+            int range = 0;
+            AdjustAnglesAndSize(ref w, ref h, ref s, ref e, ref range);
+
+            // Path Builder object ot be used in all the branches
+            PathBuilder pathBuilder = new PathBuilder();
             var color = FromRGBA(col);
-
             var pen = new Pen<Rgba32>(color, 1);
 
+            image.Mutate<Rgba32>(context =>
+            {
+                // All PIE variants - IMG_ARC_PIE = 0
+                if (style % 2 == 0)
+                {
+                    var ellipse = new SixLabors.Shapes.EllipsePolygon(cx, cy, w, h);
+                    ISimplePath simplePath = ellipse;
+                    var points = simplePath.Points;
+
+                    int pointCount = (int)Math.Floor((float)points.Count * ((float)range / 360.0f));
+                    float angleSegment = (float)points.Count / 360.0f;
+
+                    // Move the starting angle 180 degrees forward, and ensure its between 0 and 359, because points in the ellipses path start on the left, but PHP imagefilledarc angles start on the right
+                    s += 180;
+                    while (s >= 360)
+                        s -= 360;
+
+                    int startPoint = (int)Math.Ceiling((s) * angleSegment);
+                    PointF lastPoint = points[startPoint];
+                    var startingPoint = lastPoint;
+
+                    for (int i = startPoint + 1; i < startPoint + pointCount; i++)
+                    {
+                        int index = i;
+                        // Overflow in the ellipsis points array allowed
+                        if (index >= points.Count)
+                            index -= points.Count;
+
+                        pathBuilder.AddLine(lastPoint, points[index]);
+                        lastPoint = points[index];
+                    }
+
+                    // Draw the prepared lines or fill the pie
+                    if (style == ((int)FilledArcStyles.PIE | (int)FilledArcStyles.NOFILL))
+                    {
+                        context.Draw<Rgba32>(pen, pathBuilder.Build());
+                    }
+                    else {
+                        //Add the lines to the center
+                        pathBuilder.AddLine(lastPoint, new PointF(cx, cy));
+                        pathBuilder.AddLine(new PointF(cx, cy), startingPoint);
+
+                        if (style == ((int)FilledArcStyles.PIE | (int)FilledArcStyles.NOFILL | (int)FilledArcStyles.EDGED))
+                        {
+                            context.Draw<Rgba32>(pen, pathBuilder.Build());
+                        }
+                        else
+                        {
+                            //Last not-excluded option for PIE, a simple filled PIE
+                            context.Fill<Rgba32>(color, pathBuilder.Build());
+                        }
+                    }
+                }
+                //The other exclusive branch - IMG_ARC_CHORD
+                else
+                {
+                    PointF startingPoint = new PointF(cx + (int)(Math.Cos(s * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(s * Math.PI / 180) * (h / 2.0)));
+                    PointF endingPoint = new PointF(cx + (int)(Math.Cos(e * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(e * Math.PI / 180) * (h / 2.0)));
+
+                    pathBuilder.AddLine(startingPoint, endingPoint);
+
+                    if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL))
+                    {
+                        context.Draw<Rgba32>(pen, pathBuilder.Build());
+                    }
+                    else
+                    {
+                        //Add the lines to the center
+                        pathBuilder.AddLine(endingPoint, new PointF(cx, cy));
+                        pathBuilder.AddLine(new PointF(cx, cy), startingPoint);
+
+                        if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL | (int)FilledArcStyles.EDGED))
+                        {
+                            context.Draw<Rgba32>(pen, pathBuilder.Build());
+                        }
+                        else
+                        {
+                            // Last remaining option is to fill the chord arc
+                            context.Fill<Rgba32>(color, pathBuilder.Build());
+                        }
+                    }
+                }
+            });
             return true;
-
-            //PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
-            //if (img == null)
-            //    return false;
-
-            //using (var g = Graphics.FromImage(img.Image))
-            //{
-            //    g.SmoothingMode = SmoothingMode.None;
-            //    Pen pen = CreatePen(col, img, false);
-
-            //    int range = 0;
-            //    AdjustAnglesAndSize(ref w, ref h, ref s, ref e, ref range);
-
-            //    // IMG_ARC_PIE
-            //    if (style == (int)FilledArcStyles.PIE || style == (int)FilledArcStyles.EDGED)
-            //    {
-            //        g.DrawArc(pen, new Rectangle(cx - (w / 2), cy - (h / 2), w, h), s, range);
-            //        var brush = new SolidBrush<Rgba32>(GetAlphaColor(img, col));
-            //        g.FillPie(brush, new Rectangle(cx - (w / 2), cy - (h / 2), w, h), s, range);
-            //    }
-
-            //    if (style == (int)FilledArcStyles.NOFILL)
-            //    {
-            //        g.DrawArc(pen, new Rectangle(cx - (w / 2), cy - (h / 2), w, h), s, range);
-            //    }
-
-            //    if (style == ((int)FilledArcStyles.EDGED | (int)FilledArcStyles.NOFILL))
-            //    {
-            //        Point[] points =
-            //        {
-            //            new Point(cx+(int)(Math.Cos(s*Math.PI/180) * (w / 2.0)), cy+(int)(Math.Sin(s*Math.PI/180) * (h / 2.0))),
-            //            new Point(cx, cy),
-            //            new Point(cx+(int)(Math.Cos(e*Math.PI/180) * (w / 2.0)), cy+(int)(Math.Sin(e*Math.PI/180) * (h / 2.0)))
-            //        };
-
-            //        g.DrawLines(pen, points);
-            //        g.DrawArc(pen, new Rectangle(cx - (w / 2), cy - (h / 2), w, h), s, range);
-            //    }
-
-            //    // IMG_ARC_CHORD
-            //    if (style == ((int)FilledArcStyles.CHORD) || style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.EDGED))
-            //    {
-            //        var brush = new SolidBrush<Rgba32>(GetAlphaColor(img, col));
-
-            //        Point point1 = new Point(cx + (int)(Math.Cos(s * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(s * Math.PI / 180) * (h / 2.0)));
-            //        Point point2 = new Point(cx + (int)(Math.Cos(e * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(e * Math.PI / 180) * (h / 2.0)));
-
-            //        Point[] points = { new Point(cx, cy), point1, point2 };
-
-            //        g.FillPolygon(brush, points);
-
-            //    }
-
-            //    if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL))
-            //    {
-            //        g.DrawLine(pen,
-            //            new Point(cx + (int)(Math.Cos(s * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(s * Math.PI / 180) * (h / 2.0))),
-            //            new Point(cx + (int)(Math.Cos(e * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(e * Math.PI / 180) * (h / 2.0)))
-            //            );
-            //    }
-
-            //    if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL | (int)FilledArcStyles.EDGED))
-            //    {
-            //        Point[] points =
-            //        {
-            //            new Point(cx, cy),
-            //            new Point(cx+(int)(Math.Cos(s*Math.PI/180) * (w / 2.0)), cy+(int)(Math.Sin(s*Math.PI/180) * (h / 2.0))),
-            //            new Point(cx+(int)(Math.Cos(e*Math.PI/180) * (w / 2.0)), cy+(int)(Math.Sin(e*Math.PI/180) * (h / 2.0)))
-            //        };
-
-            //        g.DrawPolygon(pen, points);
-            //    }
-
-            //    pen.Dispose();
-            //}
-
-            //return true;
         }
 
         #endregion
