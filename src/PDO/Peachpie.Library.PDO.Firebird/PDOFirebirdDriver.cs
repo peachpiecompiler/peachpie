@@ -23,10 +23,10 @@ namespace Peachpie.Library.PDO.Firebird
         }
 
         /// <inheritDoc />
-        protected override string BuildConnectionString(string dsn, string user, string password, PhpArray options)
+        protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
         {
             //TODO firebird pdo parameters to dotnet connectionstring
-            var csb = new FbConnectionStringBuilder(dsn);
+            var csb = new FbConnectionStringBuilder(dsn.ToString());
             csb.UserID = user;
             csb.Password = password;
             return csb.ConnectionString;

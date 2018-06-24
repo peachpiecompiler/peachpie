@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using MySql.Data.MySqlClient;
 
 using Pchp.Core;
@@ -12,6 +13,11 @@ namespace Peachpie.Library.PDO.MySQL
     [System.Composition.Export(typeof(IPDODriver))]
     public sealed class PDOMySQLDriver : PDODriver
     {
+        static readonly Dictionary<string, string> s_optionasliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            {"dbname", "Database"},
+        };
+
         /// <summary>
         /// Initializes a new instance of the <see cref="PDOMySQLDriver"/> class.
         /// </summary>
@@ -21,15 +27,25 @@ namespace Peachpie.Library.PDO.MySQL
         }
 
         /// <inheritDoc />
-        protected override string BuildConnectionString(string dsn, string user, string password, PhpArray options)
+        protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
         {
-            // TODO: mysql pdo parameters to dotnet connectionstring
-            var csb = new MySqlConnectionStringBuilder(dsn)
+            var csb = new MySqlConnectionStringBuilder();
+
+            // parse and validate the datasource string:
+            Utilities.DataSourceString.ParseNameValue(dsn, csb, (_csb, name, value) =>
             {
-                UserID = user,
-                Password = password,
-                Pooling = options != null && options[PDO.ATTR_PERSISTENT].ToBoolean(), // default: false
-            };
+                if (s_optionasliases.TryGetValue(name, out var realname))
+                {
+                    name = realname;
+                }
+
+                _csb[name] = value;
+            });
+
+            //
+            if (!string.IsNullOrEmpty(user)) csb.UserID = user;
+            if (!string.IsNullOrEmpty(password)) csb.Password = password;
+            if (options != null && options[PDO.ATTR_PERSISTENT].ToBoolean()) csb.Pooling = true;
 
             //
             return csb.ConnectionString;

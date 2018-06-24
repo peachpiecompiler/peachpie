@@ -58,13 +58,26 @@ namespace Peachpie.Library.PDO
         {
             this.SetDefaultAttributes();
 
-            string[] items = dsn.Split(new[] { ':' }, 2);
+            string driver;
+            ReadOnlySpan<char> connstring;
 
-            if (items[0].Equals("uri", StringComparison.Ordinal))
+            int doublecolon = dsn.IndexOf(':');
+            if (doublecolon >= 0)
             {
-                //Uri mode
-                Uri uri;
-                if (Uri.TryCreate(items[1], UriKind.Absolute, out uri))
+                driver = dsn.Remove(doublecolon);
+                connstring = dsn.AsSpan(doublecolon + 1);
+            }
+            else
+            {
+                // Alias mode
+                throw new NotImplementedException("PDO DSN alias not implemented");
+                // replace DSN alias with value
+            }
+
+            if (driver == "uri") // TODO: move to a driver "UriDriver"
+            {
+                // Uri mode
+                if (Uri.TryCreate(connstring.ToString(), UriKind.Absolute, out var uri))
                 {
                     if (uri.Scheme.Equals("file", StringComparison.Ordinal))
                     {
@@ -82,23 +95,16 @@ namespace Peachpie.Library.PDO
                 }
             }
 
-            if (items.Length == 1)
-            {
-                //Alias mode
-                throw new NotImplementedException("PDO DSN alias not implemented");
-                //replace DSN alias with value
-            }
-
-            //DSN mode
-            this.m_driver = PDOEngine.GetDriver(items[0]);
+            // DSN mode
+            this.m_driver = PDOEngine.GetDriver(driver);
             if (this.m_driver == null)
             {
-                throw new PDOException(string.Format("Driver '{0}' not found", items[0]));
+                throw new PDOException($"Driver '{driver}' not found"); // TODO: resources
             }
 
             this.m_extensionMethods = this.m_driver.GetPDObjectExtensionMethods();
 
-            this.m_con = this.m_driver.OpenConnection(items[1], username, password, options);
+            this.m_con = this.m_driver.OpenConnection(connstring, username, password, options);
             this.m_attributes[PDO_ATTR.ATTR_SERVER_VERSION] = (PhpValue)this.m_con.ServerVersion;
             this.m_attributes[PDO_ATTR.ATTR_DRIVER_NAME] = (PhpValue)this.m_driver.Name;
             this.m_attributes[PDO_ATTR.ATTR_CLIENT_VERSION] = (PhpValue)this.m_driver.ClientVersion;
@@ -110,18 +116,18 @@ namespace Peachpie.Library.PDO
         /// <inheritDoc />
         public PhpValue __call(string name, PhpArray arguments)
         {
-            if (this.m_extensionMethods.ContainsKey(name))
+            if (m_extensionMethods.TryGetValue(name, out var method))
             {
-                var method = this.m_extensionMethods[name];
                 return method.Invoke(this, arguments);
             }
+
             throw new PDOException("Method not found");
         }
 
         /// <inheritDoc />
         void IDisposable.Dispose()
         {
-            this.m_con.Dispose();
+            m_con?.Dispose();
         }
 
         /// <summary>

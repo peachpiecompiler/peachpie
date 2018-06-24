@@ -48,7 +48,7 @@ namespace Peachpie.Library.PDO
         /// <param name="password">The password.</param>
         /// <param name="options">The options.</param>
         /// <returns></returns>
-        DbConnection OpenConnection(string dsn, string user, string password, PhpArray options);
+        DbConnection OpenConnection(ReadOnlySpan<char> dsn, string user, string password, PhpArray options);
 
         /// <summary>
         /// Gets the last insert identifier.

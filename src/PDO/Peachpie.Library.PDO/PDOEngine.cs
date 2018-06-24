@@ -12,7 +12,7 @@ namespace Peachpie.Library.PDO
     [PhpHidden]
     public static class PDOEngine
     {
-        private static readonly Dictionary<string, IPDODriver> s_drivers = new Dictionary<string, IPDODriver>();
+        static readonly Dictionary<string, IPDODriver> s_drivers = new Dictionary<string, IPDODriver>();
 
         /// <summary>
         /// Registers the driver.
@@ -21,10 +21,7 @@ namespace Peachpie.Library.PDO
         {
             lock (s_drivers)
             {
-                if (!s_drivers.ContainsKey(driver.Name))
-                {
-                    s_drivers.Add(driver.Name, driver);
-                }
+                s_drivers[driver.Name] = driver;
             }
         }
 
@@ -38,12 +35,15 @@ namespace Peachpie.Library.PDO
 
         internal static IPDODriver GetDriver(string driverName)
         {
+
+            IPDODriver driver;
+
             lock (s_drivers)
             {
-                if (!s_drivers.ContainsKey(driverName))
-                    return null;
-                return s_drivers[driverName];
+                s_drivers.TryGetValue(driverName, out driver);
             }
+
+            return driver;
         }
     }
 }

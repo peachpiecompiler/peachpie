@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Pchp.Core;
 using ConnectionStringBuilder = Microsoft.Data.Sqlite.SqliteConnectionStringBuilder;
 using Factory = Microsoft.Data.Sqlite.SqliteFactory;
@@ -21,11 +22,16 @@ namespace Peachpie.Library.PDO.Sqlite
         }
 
         /// <inheritDoc />
-        protected override string BuildConnectionString(string dsn, string user, string password, PhpArray options)
+        protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
         {
+            // TODO: Sqlite connection string
+
             var csb = new ConnectionStringBuilder();
-            csb.DataSource = dsn;
+
+            csb.DataSource = dsn.ToString();
             csb.Add("Password", password);
+            csb.Add("UserId", password);
+
             return csb.ConnectionString;
         }
 
