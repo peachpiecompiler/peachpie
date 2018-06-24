@@ -1,15 +1,13 @@
-# Install .NET Core (see https://www.microsoft.com/net/core#ubuntu)
+# Install .NET Core # https://www.microsoft.com/net/download/linux-package-manager/ubuntu14-04/sdk-current
 
-# Add the dotnet apt-get feed (for .NET Core)
-sudo sh -c 'echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/dotnet-release/ trusty main" > /etc/apt/sources.list.d/dotnetdev.list'
-sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 417A0893
-
-# Update apt-get cache
-sudo apt-get update
+# Register Microsoft key and feed
+wget -q https://packages.microsoft.com/config/ubuntu/14.04/packages-microsoft-prod.deb
+sudo dpkg -i packages-microsoft-prod.deb
 
 # Install .NET Core SDK
+sudo apt-get install apt-transport-https
+sudo apt-get update
 sudo apt-get install dotnet-sdk-2.1 -y
-
 
 # Install Powershell (https://www.rootusers.com/how-to-install-powershell-on-linux)
 
