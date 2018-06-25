@@ -197,8 +197,6 @@ namespace Peachpie.Library.Network
             return result;
         }
 
-        static void Write(this Stream stream, byte[] bytes) => stream.Write(bytes, 0, bytes.Length);
-
         static Uri TryCreateUri(CURLResource ch)
         {
             var url = ch.Url;
@@ -344,6 +342,11 @@ namespace Peachpie.Library.Network
             else
             {
                 bytes = ch.PostFields.ToBytes(ctx);
+
+                if (string.IsNullOrEmpty(req.ContentType))
+                {
+                    req.ContentType = "application/x-www-form-urlencoded";
+                }
             }
 
             req.ContentLength = bytes.Length;
