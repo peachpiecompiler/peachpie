@@ -1453,8 +1453,6 @@ namespace Peachpie.Library.Graphics
             if (s > 360) e = e - (e / 360) * 360;
         }
 
-        #region TODO (Convert from System.Drawing to ImageSharp)
-
         #region imagecolorstotal
 
         // NOTE: See https://github.com/SixLabors/ImageSharp/issues/488
@@ -1601,7 +1599,8 @@ namespace Peachpie.Library.Graphics
                     {
                         context.Draw<Rgba32>(pen, pathBuilder.Build());
                     }
-                    else {
+                    else
+                    {
                         //Add the lines to the center
                         pathBuilder.AddLine(lastPoint, new PointF(cx, cy));
                         pathBuilder.AddLine(new PointF(cx, cy), startingPoint);
@@ -1651,6 +1650,7 @@ namespace Peachpie.Library.Graphics
         }
 
         #endregion
+
         /// <summary>
         /// Perform a flood fill of an image. Either until a border with specified color is reached, or the region with original color.
         /// </summary>
@@ -1806,8 +1806,6 @@ namespace Peachpie.Library.Graphics
 
             return true;
         }
-
-        #endregion
 
         #endregion
     }
