@@ -1450,7 +1450,7 @@ namespace Peachpie.Library.Graphics
             if (e < 0) e = 360 + e;
 
             if (e > 360) e = e - (e / 360) * 360;
-            if (s > 360) e = e - (e / 360) * 360;
+            if (s > 360) s = s - (s / 360) * 360;
         }
 
         #region TODO (Convert from System.Drawing to ImageSharp)
@@ -1559,42 +1559,34 @@ namespace Peachpie.Library.Graphics
             int range = 0;
             AdjustAnglesAndSize(ref w, ref h, ref s, ref e, ref range);
 
-            // Path Builder object ot be used in all the branches
+            // Path Builder object to be used in all the branches
             PathBuilder pathBuilder = new PathBuilder();
             var color = FromRGBA(col);
             var pen = new Pen<Rgba32>(color, 1);
+
+            // edge points, used for both pie and chord
+            PointF startingPoint = new PointF(cx + (int)(Math.Cos(s * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(s * Math.PI / 180) * (h / 2.0)));
+            PointF endingPoint = new PointF(cx + (int)(Math.Cos(e * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(e * Math.PI / 180) * (h / 2.0)));
 
             image.Mutate<Rgba32>(context =>
             {
                 // All PIE variants - IMG_ARC_PIE = 0
                 if (style % 2 == 0)
                 {
-                    var ellipse = new SixLabors.Shapes.EllipsePolygon(cx, cy, w, h);
-                    ISimplePath simplePath = ellipse;
-                    var points = simplePath.Points;
+                    // Negative range menas that starting point is grreater than the ending one. Then we will create a correct arc by using the rest to 360 from range from the starting point
+                    while (range < 0)
+                        range += 360;
 
-                    int pointCount = (int)Math.Floor((float)points.Count * ((float)range / 360.0f));
-                    float angleSegment = (float)points.Count / 360.0f;
-
-                    // Move the starting angle 180 degrees forward, and ensure its between 0 and 359, because points in the ellipses path start on the left, but PHP imagefilledarc angles start on the right
-                    s += 180;
-                    while (s >= 360)
-                        s -= 360;
-
-                    int startPoint = (int)Math.Ceiling((s) * angleSegment);
-                    PointF lastPoint = points[startPoint];
-                    var startingPoint = lastPoint;
-
-                    for (int i = startPoint + 1; i < startPoint + pointCount; i++)
+                    // Calculate the arc points, one point per degree
+                    var lastPoint = startingPoint;
+                    for (int angle = s + 1; angle < s + range; angle++)
                     {
-                        int index = i;
-                        // Overflow in the ellipsis points array allowed
-                        if (index >= points.Count)
-                            index -= points.Count;
+                        var nextPoint = new PointF(cx + (int)(Math.Cos(angle * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(angle * Math.PI / 180) * (h / 2.0)));
 
-                        pathBuilder.AddLine(lastPoint, points[index]);
-                        lastPoint = points[index];
+                        pathBuilder.AddLine(lastPoint, nextPoint);
+                        lastPoint = nextPoint;
                     }
+                    pathBuilder.AddLine(lastPoint, endingPoint);
 
                     // Draw the prepared lines or fill the pie
                     if (style == ((int)FilledArcStyles.PIE | (int)FilledArcStyles.NOFILL))
@@ -1603,7 +1595,7 @@ namespace Peachpie.Library.Graphics
                     }
                     else {
                         //Add the lines to the center
-                        pathBuilder.AddLine(lastPoint, new PointF(cx, cy));
+                        pathBuilder.AddLine(endingPoint, new PointF(cx, cy));
                         pathBuilder.AddLine(new PointF(cx, cy), startingPoint);
 
                         if (style == ((int)FilledArcStyles.PIE | (int)FilledArcStyles.NOFILL | (int)FilledArcStyles.EDGED))
@@ -1620,9 +1612,6 @@ namespace Peachpie.Library.Graphics
                 //The other exclusive branch - IMG_ARC_CHORD
                 else
                 {
-                    PointF startingPoint = new PointF(cx + (int)(Math.Cos(s * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(s * Math.PI / 180) * (h / 2.0)));
-                    PointF endingPoint = new PointF(cx + (int)(Math.Cos(e * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(e * Math.PI / 180) * (h / 2.0)));
-
                     pathBuilder.AddLine(startingPoint, endingPoint);
 
                     if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL))

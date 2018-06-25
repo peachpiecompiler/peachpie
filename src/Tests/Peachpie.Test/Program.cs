@@ -34,8 +34,6 @@ namespace Peachpie.Test
                 //
                 script.Evaluate(ctx, ctx.Globals, null);
             }
-
-            //Console.ReadLine();
         }
     }
 }
