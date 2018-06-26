@@ -1400,6 +1400,44 @@ namespace Peachpie.Library.Graphics
 
         #endregion
 
+        #region imagestring
+
+        public static bool imagestring(PhpResource im, int fontInd, int x, int y, string text, long col)
+        {
+            PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+                return false;
+
+            if (x < 0 || y < 0) return true;
+            if (x > img.Image.Width || y > img.Image.Height) return true;
+
+            FontFamily fontFamily = null;
+            var result = SystemFonts.TryFind("Arial", out fontFamily);
+
+            // Counl'd not find the system font.
+            if (!result)
+                return false;
+
+            var color = FromRGBA(col);
+
+            int fontSize = 8;
+            if (fontInd > 1) fontSize += 4;
+            if (fontSize > 3) fontSize += 2;
+
+            var fontStyle = FontStyle.Regular;
+            if (fontInd == 3 || fontInd == 5)
+                fontStyle = FontStyle.Bold;
+
+            var font = fontFamily.CreateFont(fontSize, fontStyle);
+
+            // Correct position
+
+            img.Image.Mutate<Rgba32>(context => context.DrawText<Rgba32>(text, font, color, new PointF(x, y)));
+
+            return true;
+        }
+        #endregion
+
         #region imagefill
 
         /// <summary>
