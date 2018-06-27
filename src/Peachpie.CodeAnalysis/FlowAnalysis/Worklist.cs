@@ -1,8 +1,10 @@
-﻿using Microsoft.CodeAnalysis.Semantics;
+﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
 using Pchp.CodeAnalysis.Utilities;
+using Peachpie.CodeAnalysis.FlowAnalysis.Graph;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -45,6 +47,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         readonly DistinctQueue<T> _queue = new DistinctQueue<T>();
 
+        readonly CallGraph _callGraph = new CallGraph();
+
+        /// <summary>
+        /// List of blocks that need to be processed, but the methods they call haven't been processed yet.
+        /// </summary>
+        readonly ConcurrentDictionary<T, object> _dirtyCallBlocks = new ConcurrentDictionary<T, object>();
+
         ///// <summary>
         ///// Adds an analysis driver into the list of analyzers to be performed on bound operations.
         ///// </summary>
@@ -65,11 +74,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (block != null)
             {
+                _dirtyCallBlocks.TryRemove(block, out _);
                 _queue.Enqueue(block);
             }
         }
 
-        public bool EnqueueRoutine(IPhpRoutineSymbol routine, T caller)
+        public bool EnqueueRoutine(IPhpRoutineSymbol routine, T caller, BoundRoutineCall callExpression)
         {
             Contract.ThrowIfNull(routine);
 
@@ -81,20 +91,36 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 if (routine2 != null && !ReferenceEquals(routine, routine2))
                 {
-                    return EnqueueRoutine(routine2, caller);
+                    return EnqueueRoutine(routine2, caller, callExpression);
                 }
 
                 // library (sourceless) function
                 return false;
             }
 
+            var sourceRoutine = (SourceRoutineSymbol)routine;
+            _callGraph.AddEdge(caller.FlowState.Routine, sourceRoutine, new CallSite(caller, callExpression));
+
             // ensure caller is subscribed to routine's ExitBlock
             ((ExitBlock)routine.ControlFlowGraph.Exit).Subscribe(caller);
 
             // TODO: check if routine has to be reanalyzed => enqueue routine's StartBlock
 
-            //
-            return false;
+            // Return whether the routine exit block will certainly be analysed in the future
+            return !sourceRoutine.IsReturnAnalysed;
+        }
+
+        public void PingReturnUpdate(ExitBlock updatedExit, T callingBlock)
+        {
+            var caller = callingBlock.FlowState?.Routine;
+            if (caller == null || _callGraph.GetCalleeEdges(caller).All(edge => edge.Callee.IsReturnAnalysed))
+            {
+                Enqueue(callingBlock);
+            }
+            else
+            {
+                _dirtyCallBlocks.TryAdd(callingBlock, null);
+            }
         }
 
         void Process(T block)
@@ -115,8 +141,24 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var todo = new T[256];
             int n;
             
-            while ((n = Dequeue(todo)) != 0)
+            while (true)
             {
+                n = Dequeue(todo);
+                if (n == 0)
+                {
+                    if (_dirtyCallBlocks.IsEmpty)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        // Process also the call blocks that weren't analysed due to circular dependencies
+                        // TODO: Consider using something more advanced such as cycle detection
+                        _dirtyCallBlocks.ForEach(kvp => Enqueue(kvp.Key));
+                        continue;
+                    }
+                }
+
                 if (concurrent)
                 {
                     Parallel.For(0, n, (i) => Process(todo[i]));

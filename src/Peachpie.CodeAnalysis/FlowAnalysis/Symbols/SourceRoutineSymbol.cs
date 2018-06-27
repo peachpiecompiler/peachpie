@@ -35,5 +35,10 @@ namespace Pchp.CodeAnalysis.Symbols
                     : TypeRefMask.AnyType;
             }
         }
+
+        /// <summary>
+        /// Marks whether the exit block or any block with a return statement was already processed at least once.
+        /// </summary>
+        internal bool IsReturnAnalysed { get; set; } = false;
     }
 }

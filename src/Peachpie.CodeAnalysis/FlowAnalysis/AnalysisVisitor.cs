@@ -327,15 +327,24 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             VisitCFGBlock(x);
 
             // TODO: EdgeToCallers:
-            EnqueueSubscribers(x);
+            PingSubscribers(x);
         }
 
-        protected void EnqueueSubscribers(ExitBlock exit)
+        protected void PingSubscribers(ExitBlock exit)
         {
             if (exit != null)
             {
+                bool wasNotAnalysed = false;
+                if (_state.Routine?.IsReturnAnalysed == false)
+                {
+                    wasNotAnalysed = true;
+                    _state.Routine.IsReturnAnalysed = true;
+                }
+
+                // Ping the subscribers either if the return type has changed or
+                // it is the first time the analysis reached the routine exit
                 var rtype = _state.GetReturnType();
-                if (rtype != exit._lastReturnTypeMask)
+                if (rtype != exit._lastReturnTypeMask || wasNotAnalysed)
                 {
                     exit._lastReturnTypeMask = rtype;
                     var subscribers = exit.Subscribers;
@@ -343,7 +352,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     {
                         lock (subscribers)
                         {
-                            subscribers.ForEach(_worklist.Enqueue);
+                            subscribers.ForEach(subscriber => _worklist.PingReturnUpdate(exit, subscriber));
                         }
                     }
                 }
