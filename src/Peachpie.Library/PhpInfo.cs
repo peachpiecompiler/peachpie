@@ -214,7 +214,7 @@ namespace Pchp.Library
                 _output.WriteLine(@"<title>phpinfo()</title><meta name=""ROBOTS"" content=""NOINDEX, NOFOLLOW, NOARCHIVE"" />");
                 _output.WriteLine("</head>");
                 _output.WriteLine(@"<body><div class=""center"">");
-                LegalNotice("PeachPie Version " + Core.Utilities.ContextExtensions.GetRuntimeInformationalVersion(),
+                LegalNotice($"{InfoResources.Peachpie} {InfoResources.Version} " + Core.Utilities.ContextExtensions.GetRuntimeInformationalVersion(),
                     InfoResources.LogoSrc,
                     InfoResources.LogoHref,
                     InfoResources.LogoAlt);
@@ -278,8 +278,8 @@ namespace Pchp.Library
             protected override void BeginInfo()
             {
                 _output.WriteLine("phpinfo()");
-                _output.WriteLine($"PHP Version => {Environment.PHP_VERSION}");
-                _output.WriteLine($"PeachPie Version => {Core.Utilities.ContextExtensions.GetRuntimeInformationalVersion()}");
+                _output.WriteLine($"PHP {InfoResources.Version} => {Environment.PHP_VERSION}");
+                _output.WriteLine($"{InfoResources.Peachpie} {InfoResources.Version} => {Core.Utilities.ContextExtensions.GetRuntimeInformationalVersion()}");
                 _output.WriteLine();
             }
 
@@ -367,20 +367,15 @@ namespace Pchp.Library
             return true;
         }
 
-        static string AsYesNo(bool value) => value ? "yes" : "no"; // TODO: localize
+        static string AsYesNo(bool value) => value ? InfoResources.Yes : InfoResources.No;
         static string Export(Context ctx, PhpValue value) => Library.Variables.print_r(ctx, value, true).ToString(ctx).Trim();
 
         static IEnumerable<string[]> General(Context ctx)
         {
             yield return new[] { "System", $"{GetOsName()} {System.Environment.MachineName} {RuntimeInformation.OSDescription} {RuntimeInformation.OSArchitecture}" };
+            yield return new[] { InfoResources.Compiler, $"{InfoResources.Peachpie} {Core.Utilities.ContextExtensions.GetRuntimeInformationalVersion()}" };
             yield return new[] { "Architecture", RuntimeInformation.ProcessArchitecture.ToString() };
-            yield return new[] { "Debug Build", AsYesNo(
-#if DEBUG
-                    true
-#else
-                    false
-#endif
-                )};
+            yield return new[] { "Debug Build", AsYesNo(Core.Utilities.ContextExtensions.IsDebugRuntime()) };
             yield return new[] { "IPv6 Support", AsYesNo(System.Net.Sockets.Socket.OSSupportsIPv6) };
             yield return new[] { "Registered PHP Streams", string.Join(", ", Streams.StreamWrapper.SystemStreamWrappers.Keys) };
             yield return new[] { "Registered Stream Filters", string.Join(", ", Streams.PhpFilter.GetFilterNames()) };
@@ -395,12 +390,12 @@ namespace Pchp.Library
                     return osDesc.Val.ToString();
                 }
             }
-            return "Unknown";
+            return InfoResources.UnknownOS;
         }
 
         static void Configuration(Context ctx, InfoWriter writer)
         {
-            writer.Header("Configuration");
+            writer.Header(InfoResources.Configuration);
 
             foreach (string ext in Context.GetLoadedExtensions())
             {
@@ -420,8 +415,8 @@ namespace Pchp.Library
 
         static void Env(Context ctx, InfoWriter writer)
         {
-            writer.Header("Environment");
-            writer.Table(ctx, ctx.Env, new[] { "Variable", "Value" });
+            writer.Header(InfoResources.Environment);
+            writer.Table(ctx, ctx.Env, new[] { InfoResources.Variable, InfoResources.Value });
         }
 
         static void Variables(Context ctx, InfoWriter writer)
@@ -434,12 +429,12 @@ namespace Pchp.Library
                 ((IDictionary<IntStringKey, PhpValue>)ctx.Cookie).Select(pair => new[] { $"$_COOKIE['{pair.Key}']", Export(ctx, pair.Value) }).Concat(
                 ((IDictionary<IntStringKey, PhpValue>)ctx.Server).Select(pair => new[] { $"$_SERVER['{pair.Key}']", Export(ctx, pair.Value) })
                 )))),
-                new[] { "Variable", "Value" });
+                new[] { InfoResources.Variable, InfoResources.Value });
         }
 
         static void Credits(InfoWriter writer)
         {
-            writer.Header("Credits");
+            writer.Header(InfoResources.Credits);
 
             // TODO: creditz, can we pull it from git?
             writer.Table(new string[][] { }, new[] { "Contribution", "Authors" });
