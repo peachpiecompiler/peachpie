@@ -48,6 +48,11 @@ namespace Pchp.CodeAnalysis.Symbols
             return type is IPhpTypeSymbol phpt && phpt.IsTrait;
         }
 
+        /// <summary>
+        /// Gets value indicating the type represents PHP script (<see cref="SourceFileSymbol"/>).
+        /// </summary>
+        public static bool IsPhpSourceFile(this ITypeSymbol type) => (type as IPhpScriptTypeSymbol)?.MainMethod != null;
+
         public static bool ImplementsInterface(this TypeSymbol subType, TypeSymbol superInterface/*, ref HashSet<DiagnosticInfo> useSiteDiagnostics*/)
         {
             if (subType == superInterface)

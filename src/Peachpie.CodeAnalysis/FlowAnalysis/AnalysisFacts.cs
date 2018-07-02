@@ -52,8 +52,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             var tmp = analysis.Model.ResolveFunction(NameUtils.MakeQualifiedName(str, true));
                             if (tmp is PEMethodSymbol || (tmp is AmbiguousMethodSymbol && ((AmbiguousMethodSymbol)tmp).Ambiguities.All(f => f is PEMethodSymbol)))  // TODO: unconditional declaration ?
                             {
-                                call.ConstantValue = ConstantValueExtensions.AsOptional(true);
-                                return;
+                                if (!tmp.ContainingType.IsPhpSourceFile()) // only functions declared in libraries, not in PHP source file
+                                {
+                                    call.ConstantValue = ConstantValueExtensions.AsOptional(true);
+                                    return;
+                                }
                             }
                         }
                         break;
