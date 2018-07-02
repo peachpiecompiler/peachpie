@@ -63,7 +63,7 @@ We have a custom [VSCode extension](https://marketplace.visualstudio.com/items?i
 alt="Peachpie Extension" border="10" /></a> 
 </p>
 
-To install the PeachPie extension, simply launch VS Code Quick Open (Ctrl+P), paste the following command, and press enter: `ext install peachpie-vscode`. Watch the [intro video](https://youtu.be/hBiixbockK4) below to see how to work with the extension.
+To install the PeachPie extension, simply launch VS Code Quick Open (Ctrl+P), paste the following command, and press enter: `ext install peachpie-vscode`. Watch the [intro video](https://youtu.be/hBiixbockK4) to see how to work with the extension.
 
 ### Command line building
 Alternatively, you can also work with PeachPie on the command line. Please refer to our [short introduction video](https://www.youtube.com/watch?v=GVWVInYiYLY) to see how to run the compiler on the command line and to our [Getting Started](https://github.com/peachpiecompiler/peachpie/wiki/Getting-Started) section. 
