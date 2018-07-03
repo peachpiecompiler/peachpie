@@ -93,7 +93,7 @@ namespace Pchp.Core
         {
             if (assembly == null)
             {
-                throw new ArgumentNullException("assembly");
+                throw new ArgumentNullException(nameof(assembly));
             }
 
             var t = assembly.GetType(ScriptInfo.ScriptTypeName);
