@@ -357,7 +357,7 @@ namespace Pchp.Library
         public static void closedir(PhpResource dirHandle)
         {
             // Note: PHP allows other all stream resources to be closed with closedir().
-            ValidListing(dirHandle)?.Dispose(); // releases the DirectoryListing and sets to invalid.
+            dirHandle?.Dispose();
         }
 
         /// <summary>Lists files and directories inside the specified path.</summary>
