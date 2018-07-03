@@ -231,10 +231,13 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         public IPhpRoutineSymbol ResolveFunction(QualifiedName name)
         {
+            bool isUserFunc = false;
+
             // library functions, public static methods
             var methods = new List<MethodSymbol>();
             foreach (var m in ExtensionContainers.SelectMany(r => r.GetMembers(name.ClrName(), true)).OfType<MethodSymbol>().Where(IsFunction))
             {
+                isUserFunc |= m.ContainingType.IsPhpSourceFile(); // the function is user defined (PHP), we might not treat this as CLR method (ie do not resolve overloads in compile time)
                 methods.Add(m);
             }
 
@@ -249,7 +252,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             }
             else
             {
-                return new AmbiguousMethodSymbol(methods.AsImmutable(), true);
+                return new AmbiguousMethodSymbol(methods.AsImmutable(), overloadable: !isUserFunc);
             }
         }
 
