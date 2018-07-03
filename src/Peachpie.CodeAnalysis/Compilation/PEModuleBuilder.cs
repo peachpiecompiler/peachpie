@@ -268,6 +268,11 @@ namespace Pchp.CodeAnalysis.Emit
 
                     foreach (var t in types)
                     {
+                        if (t.IsPhpUserType())
+                        {
+                            continue;   // the type is a PHP user type, do not export as app type
+                        }
+
                         // callback.Invoke(t)
                         il.EmitLoadArgumentOpcode(0);
                         il.EmitCall(this, diagnostic, ILOpCode.Call, Compilation.CoreMethods.Dynamic.GetPhpTypeInfo_T.Symbol.Construct(t));

@@ -53,6 +53,13 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public static bool IsPhpSourceFile(this ITypeSymbol type) => (type as IPhpScriptTypeSymbol)?.MainMethod != null;
 
+        /// <summary>
+        /// Gets value indicating the type is a PHP user type (declared in a PHP code).
+        /// </summary>
+        public static bool IsPhpUserType(this TypeSymbol/*!*/type) =>
+            type.OriginalDefinition is SourceTypeSymbol ||  // either declared in source code
+            (type.TryGetPhpTypeAttribute(out var tname, out var fname) && fname != null); // or referenced with [PhpType("name", "path to original PHP file")]
+
         public static bool ImplementsInterface(this TypeSymbol subType, TypeSymbol superInterface/*, ref HashSet<DiagnosticInfo> useSiteDiagnostics*/)
         {
             if (subType == superInterface)

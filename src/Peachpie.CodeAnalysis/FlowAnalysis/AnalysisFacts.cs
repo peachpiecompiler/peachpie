@@ -71,7 +71,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             if (class_name != null)
                             {
                                 var tmp = (TypeSymbol)analysis.Model.ResolveType(NameUtils.MakeQualifiedName(class_name, true));
-                                if (tmp is PENamedTypeSymbol)   // TODO: + SourceTypeSymbol when reachable unconditional declaration
+                                if (tmp is PENamedTypeSymbol && !tmp.IsPhpUserType())   // TODO: + SourceTypeSymbol when reachable unconditional declaration
                                 {
                                     bool @interface = (name == "interface_exists");
                                     if (tmp.TypeKind == (@interface ? TypeKind.Interface : TypeKind.Class))

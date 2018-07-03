@@ -2435,12 +2435,14 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (d is NamedTypeSymbol ntype)
             {
-                if (d.IsAnonymousType || !(d.ContainingAssembly is SourceAssemblySymbol))   // TODO: only user defined PHP types properly
+                if (d.IsAnonymousType || !d.IsPhpUserType())
                 {
                     // anonymous classes are not declared
                     // regular CLR types declared in app context
                     return;
                 }
+
+                // TODO: type has been checked already in current branch -> skip
 
                 if (d.OriginalDefinition is SourceTypeSymbol srct && ReferenceEquals(srct.ContainingFile, this.ContainingFile) && !srct.Syntax.IsConditional)
                 {
@@ -2458,7 +2460,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (ntype.Arity != 0)
                 {
-                    // workaround for traits - constructed traits do not match the declaratin in Context
+                    // workaround for traits - constructed traits do not match the declaration in Context
                     // TODO: ctx.ExpectTypeDeclared(GetPhpTypeInfo(RuntimeTypeHandle(T<>)))
                     return;
                 }
