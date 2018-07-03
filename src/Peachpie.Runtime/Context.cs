@@ -397,7 +397,7 @@ namespace Pchp.Core
         public static bool TryGetScriptsInDirectory(string root, string path, out IEnumerable<ScriptInfo> scripts)
         {
             // trim leading {root} path:
-            if (!string.IsNullOrEmpty(root) && path.StartsWith(root, StringComparison.Ordinal))
+            if (!string.IsNullOrEmpty(root) && path.StartsWith(root, StringComparison.Ordinal)) // TODO: CurrentPlatform comparer
             {
                 if (path.Length == root.Length)
                 {
@@ -405,11 +405,12 @@ namespace Pchp.Core
                 }
                 else if (path[root.Length] == CurrentPlatform.DirectorySeparator)
                 {
-                    path = path.Remove(root.Length + 1);
+                    path = (path.Length > root.Length + 1) ? path.Substring(root.Length + 1) : string.Empty;
                 }
-                else if (root[root.Length - 1] == CurrentPlatform.DirectorySeparator)
+                else
                 {
-                    path = path.Remove(root.Length);
+                    scripts = Enumerable.Empty<ScriptInfo>();
+                    return false;
                 }
             }
             
