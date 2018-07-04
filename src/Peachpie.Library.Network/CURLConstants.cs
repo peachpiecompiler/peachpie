@@ -630,6 +630,12 @@ namespace Peachpie.Library.Network
                     PhpException.ArgumentValueNotSupported(nameof(option), nameof(CURLOPT_REDIR_PROTOCOLS));
                     break;
 
+                case CURLOPT_SSL_VERIFYHOST:
+                case CURLOPT_SSL_VERIFYPEER:
+                case CURLOPT_SSL_VERIFYSTATUS:
+                    // always enabled
+                    break;
+
                 default:
                     PhpException.ArgumentValueNotSupported(nameof(option), TryGetOptionName(option));
                     return false;
