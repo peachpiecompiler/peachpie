@@ -386,38 +386,6 @@ namespace Pchp.Core
             }
         }
 
-        /// <summary>
-        /// Tries to resolve compiled script according to given path.
-        /// </summary>
-        public static ScriptInfo TryResolveScript(string root, string path) => ScriptsMap.ResolveInclude(path, root, null, null, null);
-
-        /// <summary>
-        /// Gets scripts in given directory.
-        /// </summary>
-        public static bool TryGetScriptsInDirectory(string root, string path, out IEnumerable<ScriptInfo> scripts)
-        {
-            // trim leading {root} path:
-            if (!string.IsNullOrEmpty(root) && path.StartsWith(root, StringComparison.Ordinal)) // TODO: CurrentPlatform comparer
-            {
-                if (path.Length == root.Length)
-                {
-                    path = string.Empty;
-                }
-                else if (path[root.Length] == CurrentPlatform.DirectorySeparator)
-                {
-                    path = (path.Length > root.Length + 1) ? path.Substring(root.Length + 1) : string.Empty;
-                }
-                else
-                {
-                    scripts = Enumerable.Empty<ScriptInfo>();
-                    return false;
-                }
-            }
-            
-            // try to get compiled scripts within path:
-            return ScriptsMap.TryGetDirectory(path, out scripts);
-        }
-
         #endregion
 
         #region Shutdown
