@@ -517,6 +517,13 @@ namespace Peachpie.Library.Network
                 : PhpValue.True;
         }
 
+        static bool IsProtocol(CURLResource ch, Uri uri, string scheme, int proto)
+        {
+            return
+                string.Equals(uri.Scheme, scheme, StringComparison.OrdinalIgnoreCase) &&
+                (ch.Protocols & proto) != 0;
+        }
+
         static void StartRequestExecution(Context ctx, CURLResource ch)
         {
             ch.StartTime = DateTime.UtcNow;
@@ -527,8 +534,8 @@ namespace Peachpie.Library.Network
                 ch.Result = CURLResponse.CreateError(CurlErrors.CURLE_URL_MALFORMAT);
             }
             else if (
-                string.Equals(uri.Scheme, "http", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(uri.Scheme, "https", StringComparison.OrdinalIgnoreCase))
+                IsProtocol(ch, uri, "http", CURLConstants.CURLPROTO_HTTP) ||
+                IsProtocol(ch, uri, "https", CURLConstants.CURLPROTO_HTTPS))
             {
                 ch.Result = null;
                 ch.ResponseTask = ExecHttpRequestInternalAsync(ctx, ch, uri);
