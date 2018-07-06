@@ -594,6 +594,8 @@ namespace Pchp.Core
 
         internal static PhpValue Create(PhpString.Blob blob) => new PhpValue(blob);
 
+        internal static PhpValue Create(byte[] bytes) => new PhpValue(new PhpString.Blob(bytes));
+
         public static PhpValue Create(PhpArray value) => new PhpValue(TypeTable.ArrayTable, value);
 
         public static PhpValue Create(PhpAlias value) => new PhpValue(TypeTable.AliasTable, value);

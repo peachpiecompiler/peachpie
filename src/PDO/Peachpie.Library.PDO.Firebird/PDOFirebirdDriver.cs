@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FirebirdSql.Data.FirebirdClient;
+using Peachpie.Library.PDO.Utilities;
 
 namespace Peachpie.Library.PDO.Firebird
 {
@@ -23,10 +24,10 @@ namespace Peachpie.Library.PDO.Firebird
         }
 
         /// <inheritDoc />
-        protected override string BuildConnectionString(string dsn, string user, string password, PhpArray options)
+        protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
         {
             //TODO firebird pdo parameters to dotnet connectionstring
-            var csb = new FbConnectionStringBuilder(dsn);
+            var csb = new FbConnectionStringBuilder(dsn.ToString());
             csb.UserID = user;
             csb.Password = password;
             return csb.ConnectionString;

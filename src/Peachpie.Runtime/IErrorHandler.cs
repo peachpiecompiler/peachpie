@@ -39,12 +39,12 @@ namespace Pchp.Core
             
             if ((error & (PhpError)PhpErrorSets.Fatal) != 0)
             {
-                LogEventSource.Instance.HandleFatal(message);
+                LogEventSource.Log.HandleFatal(message);
                 Trace.Fail(message);
             }
             else
             {
-                LogEventSource.Instance.HandleWarning(message);
+                LogEventSource.Log.HandleWarning(message);
             }
         }
 

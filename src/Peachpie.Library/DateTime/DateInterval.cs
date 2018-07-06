@@ -64,7 +64,13 @@ namespace Pchp.Library.DateTime
 
         public void __construct(string interval_spec)
         {
-            FromTimeSpan(System.Xml.XmlConvert.ToTimeSpan(interval_spec));
+            //var ts = System.Xml.XmlConvert.ToTimeSpan(interval_spec);
+            if (!DateInfo.TryParseIso8601Duration(interval_spec, out TimeSpan ts))
+            {
+                throw new ArgumentException(nameof(interval_spec));
+            }
+
+            FromTimeSpan(ts);
         }
 
         public static DateInterval createFromDateString(string time)

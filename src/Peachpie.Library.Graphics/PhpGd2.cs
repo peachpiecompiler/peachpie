@@ -1857,7 +1857,7 @@ namespace Peachpie.Library.Graphics
         }
 
         #endregion
-
-        #endregion
     }
+
+    #endregion
 }

@@ -312,7 +312,11 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         static TypeSymbol GetSelfType(TypeSymbol scope) => scope is SourceTraitTypeSymbol t ? t.TSelfParameter : scope;
 
-        public SourceFileSymbol ContainingFile => _containingFile;
+        public SourceFileSymbol ContainingFile
+        {
+            get => _containingFile;
+            internal set => _containingFile = value;
+        }
         SourceFileSymbol _containingFile;
 
         #endregion

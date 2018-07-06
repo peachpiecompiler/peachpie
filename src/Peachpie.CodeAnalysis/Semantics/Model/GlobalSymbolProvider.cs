@@ -249,7 +249,8 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             }
             else
             {
-                return new AmbiguousMethodSymbol(methods.AsImmutable(), true);
+                bool userfunc = methods.Any(m => m.ContainingType.IsPhpSourceFile()); // if the function is user defined (PHP), we might not treat this as CLR method (ie do not resolve overloads in compile time)
+                return new AmbiguousMethodSymbol(methods.AsImmutable(), overloadable: !userfunc);
             }
         }
 

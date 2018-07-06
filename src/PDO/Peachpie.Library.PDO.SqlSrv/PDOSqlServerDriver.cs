@@ -1,5 +1,7 @@
-﻿using System.Data.SqlClient;
+﻿using System;
+using System.Data.SqlClient;
 using Pchp.Core;
+using Peachpie.Library.PDO.Utilities;
 
 namespace Peachpie.Library.PDO.SqlSrv
 {
@@ -28,10 +30,10 @@ namespace Peachpie.Library.PDO.SqlSrv
         }
 
         /// <inheritDoc />
-        protected override string BuildConnectionString(string dsn, string user, string password, PhpArray options)
+        protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
         {
             //TODO sqlserver pdo dsn to dotnet connectionstring
-            var csb = new SqlConnectionStringBuilder(dsn)
+            var csb = new SqlConnectionStringBuilder(dsn.ToString())
             {
                 UserID = user,
                 Password = password

@@ -191,10 +191,11 @@ namespace Pchp.Core
         /// Keys will correspond order of values in the array.</param>
         public static PhpArray New(params object[] values)
         {
-            PhpArray result = new PhpArray(values.Length);
-            foreach (object value in values)
+            var result = new PhpArray(values.Length);
+
+            for (int i = 0; i < values.Length; i++)
             {
-                result.Add(value);
+                result.Add(values[i]);
             }
 
             return result;
@@ -207,10 +208,11 @@ namespace Pchp.Core
         /// Keys will correspond order of values in the array.</param>
         public static PhpArray New(params PhpValue[] values)
         {
-            PhpArray result = new PhpArray(values.Length);
-            foreach (var value in values)
+            var result = new PhpArray(values.Length);
+
+            for (int i = 0; i < values.Length; i++)
             {
-                result.Add(value);
+                result.AddToEnd(values[i]);
             }
 
             return result;

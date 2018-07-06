@@ -319,26 +319,36 @@ namespace Pchp.Core
     {
         /// <summary>
         /// Public singleton to be used.
+        /// Cannot be <c>null</c>.
         /// </summary>
-        public static readonly LogEventSource Instance = new LogEventSource();
+        public static readonly LogEventSource/*!*/Log = new LogEventSource();
 
         /// <summary>
         /// Logs user's error message.
         /// </summary>
-        [Event(1, Message = "error_log: {0}", Level = EventLevel.Error, Keywords = EventKeywords.All)]
-        public void ErrorLog(string message) => WriteEvent(1, message);
+        [Event(1, Message = "error_log: {0}", Level = EventLevel.Error)]
+        public void ErrorLog(string message)
+        {
+            if (IsEnabled()) WriteEvent(1, message);
+        }
 
         /// <summary>
         /// Logs non-fatal error.
         /// </summary>
-        [Event(2, Message = "Warning: {0}", Level = EventLevel.Warning, Keywords = EventKeywords.All)]
-        public void HandleWarning(string message) => WriteEvent(2, message);
+        [Event(2, Message = "Warning: {0}", Level = EventLevel.Warning)]
+        public void HandleWarning(string message)
+        {
+            if (IsEnabled()) WriteEvent(2, message);
+        }
 
         /// <summary>
         /// Logs fatal error.
         /// </summary>
-        [Event(3, Message = "Error: {0}", Level = EventLevel.Error, Keywords = EventKeywords.All)]
-        public void HandleFatal(string message) => WriteEvent(3, message);
+        [Event(3, Message = "Error: {0}", Level = EventLevel.Error)]
+        public void HandleFatal(string message)
+        {
+            if (IsEnabled()) WriteEvent(3, message);
+        }
     }
 
     #endregion

@@ -53,7 +53,7 @@ namespace Peachpie.Library.PDO
 
         private void SetDefaultAttributes()
         {
-            this.m_attributes.Set(PDO.PDO_ATTR.ATTR_CURSOR, (PhpValue)(int)PDO.PDO_CURSOR.CURSOR_FWDONLY);
+            this.m_attributes[PDO.PDO_ATTR.ATTR_CURSOR] = (PhpValue)(int)PDO.PDO_CURSOR.CURSOR_FWDONLY;
         }
 
         /// <inheritDoc />

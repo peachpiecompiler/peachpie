@@ -16,8 +16,9 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     /// <remarks>
     /// namespace [DIR]{
-    ///     class [FNAME] {
-    ///         object [Main](){ ... }
+    ///     [PhpScript]
+    ///     statc class [FNAME] {
+    ///         static PhpValue [Main](){ ... }
     ///     }
     /// }</remarks>
     sealed partial class SourceFileSymbol : NamedTypeSymbol, ILambdaContainerSymbol, IPhpScriptTypeSymbol
@@ -224,9 +225,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsAbstract => false;
 
-        public override bool IsSealed => true;
+        public override bool IsSealed => false;
 
-        public override bool IsStatic => false;
+        public override bool IsStatic => true;
 
         public override ImmutableArray<Location> Locations
         {

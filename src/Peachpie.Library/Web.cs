@@ -35,7 +35,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpString base64_decode(string encoded_data, bool strict = false)
         {
-            if (encoded_data == null)
+            if (string.IsNullOrEmpty(encoded_data))
             {
                 return default(PhpString);
             }
@@ -53,9 +53,8 @@ namespace Pchp.Library
             }
             catch (FormatException)
             {
-                // TODO: Err
-                //PhpException.Throw(PhpError.Warning, LibResources.GetString("invalid_base64_encoded_data"));
-                throw new ArgumentException();
+                PhpException.Throw(PhpError.Warning, Resources.Resources.invalid_base64_encoded_data);
+                return default(PhpString);
             }
         }
 

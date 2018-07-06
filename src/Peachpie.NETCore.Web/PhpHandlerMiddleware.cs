@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Hosting;
 using Pchp.Core.Utilities;
 using System.Diagnostics;
 using System.IO;
+using Pchp.Core;
 
 namespace Peachpie.Web
 {
@@ -59,11 +60,11 @@ namespace Peachpie.Web
                     var ass = System.Reflection.Assembly.Load(assname);
                     if (ass != null)
                     {
-                        Pchp.Core.Context.AddScriptReference(ass);
+                        Context.AddScriptReference(ass);
                     }
                     else
                     {
-                        Debug.Assert(false, $"Assembly '{assname}' couldn't be loaded.");
+                        LogEventSource.Log.ErrorLog($"Assembly '{assname}' couldn't be loaded.");
                     }
                 }
             }

@@ -21,14 +21,24 @@ namespace Pchp.Core.Utilities
         }
 
         /// <summary>
-        /// Gets runtime version suffix including the leading dash, or empty string is runtime is build without siffix.
+        /// Gets runtime version suffix including the leading dash, or empty string if runtime is build without suffix.
         /// </summary>
-        /// <returns></returns>
         public static string GetRuntimeVersionSuffix()
         {
             var str = GetRuntimeInformationalVersion();
             var dash = str.IndexOf('-');
             return dash < 0 ? string.Empty : str.Substring(dash);
         }
+
+        /// <summary>
+        /// Gets value indicating whether the runtime was built as debug.
+        /// </summary>
+        public static bool IsDebugRuntime() =>
+#if DEBUG
+                    true
+#else
+                    false
+#endif
+            ;
     }
 }

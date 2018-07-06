@@ -101,6 +101,11 @@ namespace Peachpie.Library.Network
         /// </summary>
         internal PhpValue Private { get; set; }
 
+        /// <summary>
+        /// Bit mask of enabled protocols. All by default.
+        /// </summary>
+        internal int Protocols { get; set; } = CURLConstants.CURLPROTO_ALL;
+
         #endregion
 
         internal DateTime StartTime { get; set; }

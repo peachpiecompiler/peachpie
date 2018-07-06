@@ -1,6 +1,9 @@
-﻿using MySql.Data.MySqlClient;
+﻿using System;
+using System.Collections.Generic;
+using MySql.Data.MySqlClient;
 
 using Pchp.Core;
+using Peachpie.Library.PDO.Utilities;
 
 namespace Peachpie.Library.PDO.MySQL
 {
@@ -20,25 +23,40 @@ namespace Peachpie.Library.PDO.MySQL
         }
 
         /// <inheritDoc />
-        protected override string BuildConnectionString(string dsn, string user, string password, PhpArray options)
+        protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
         {
-            //TODO mysql pdo parameters to dotnet connectionstring
-            var csb = new MySqlConnectionStringBuilder(dsn)
+            var csb = new MySqlConnectionStringBuilder();
+
+            // parse and validate the datasource string:
+            DataSourceString.ParseNameValue(dsn, csb, (_csb, name, value) =>
             {
-                UserID = user,
-                Password = password
-            };
+                // unknown option aliases:
+                if (name.Equals("dbname", StringComparison.OrdinalIgnoreCase)) name = "Database";
+
+                //
+                _csb[name] = value;
+            });
+
+            //
+            if (!string.IsNullOrEmpty(user)) csb.UserID = user;
+            if (!string.IsNullOrEmpty(password)) csb.Password = password;
+
+            if (options != null && options.Count != 0)
+            {
+                csb.Pooling = options[PDO.ATTR_PERSISTENT].ToBoolean();
+            }
+
+            //
             return csb.ConnectionString;
         }
 
         /// <inheritDoc />
         public override string GetLastInsertId(PDO pdo, string name)
         {
-            using (var cmd = pdo.CreateCommand("SELECT LAST_INSERT_ID()"))
-            {
-                object value = cmd.ExecuteScalar();
-                return value?.ToString();
-            }
+            var command = (MySqlCommand)pdo.GetCurrentCommand();
+            var lastid = (command != null) ? command.LastInsertedId : -1;
+
+            return lastid.ToString();
         }
 
         /// <inheritDoc />

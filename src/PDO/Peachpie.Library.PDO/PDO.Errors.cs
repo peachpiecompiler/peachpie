@@ -37,7 +37,7 @@ namespace Peachpie.Library.PDO
                 case PDO_ERRMODE.ERRMODE_SILENT:
                     break;
                 case PDO_ERRMODE.ERRMODE_WARNING:
-                    this.m_ctx.Throw(PhpError.E_WARNING, ex.Message);
+                    _ctx.Throw(PhpError.E_WARNING, ex.Message);
                     break;
                 case PDO_ERRMODE.ERRMODE_EXCEPTION:
                     if (ex is Pchp.Library.Spl.Exception)

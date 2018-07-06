@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Library;
 using System.Data.Common;
+using System.Diagnostics;
 
 namespace Peachpie.Library.PDO
 {
@@ -16,15 +17,17 @@ namespace Peachpie.Library.PDO
     [PhpType(PhpTypeAttribute.InheritName)]
     public partial class PDO : IDisposable, IPDO
     {
-        private readonly Context m_ctx;
+        /// <summary>Runtime context. Cannot be <c>null</c>.</summary>
+        protected readonly Context _ctx; // "_ctx" is a special name recognized by compiler. Will be reused by inherited classes.
+
         private IPDODriver m_driver;
         private DbConnection m_con;
         private DbTransaction m_tx;
         private readonly Dictionary<PDO_ATTR, PhpValue> m_attributes = new Dictionary<PDO_ATTR, PhpValue>();
-        private Dictionary<string, ExtensionMethodDelegate> m_extensionMethods;
-
+        
         internal DbTransaction CurrentTransaction { get { return this.m_tx; } }
         internal IPDODriver Driver { get { return this.m_driver; } }
+        internal DbCommand CurrentCommand { get; private set; }
 
         /// <summary>
         /// Gets the native connection instance
@@ -35,9 +38,10 @@ namespace Peachpie.Library.PDO
         /// Empty constructor.
         /// </summary>
         [PhpFieldsOnlyCtor]
-        protected PDO(Context ctx)
+        protected PDO(Context/*!*/ctx)
         {
-            this.m_ctx = ctx;
+            Debug.Assert(ctx != null);
+            _ctx = ctx;
         }
 
         /// <summary>
@@ -58,13 +62,26 @@ namespace Peachpie.Library.PDO
         {
             this.SetDefaultAttributes();
 
-            string[] items = dsn.Split(new[] { ':' }, 2);
+            string driver;
+            ReadOnlySpan<char> connstring;
 
-            if (items[0].Equals("uri", StringComparison.Ordinal))
+            int doublecolon = dsn.IndexOf(':');
+            if (doublecolon >= 0)
             {
-                //Uri mode
-                Uri uri;
-                if (Uri.TryCreate(items[1], UriKind.Absolute, out uri))
+                driver = dsn.Remove(doublecolon);
+                connstring = dsn.AsSpan(doublecolon + 1);
+            }
+            else
+            {
+                // Alias mode
+                throw new NotImplementedException("PDO DSN alias not implemented");
+                // replace DSN alias with value
+            }
+
+            if (driver == "uri") // TODO: move to a driver "UriDriver"
+            {
+                // Uri mode
+                if (Uri.TryCreate(connstring.ToString(), UriKind.Absolute, out var uri))
                 {
                     if (uri.Scheme.Equals("file", StringComparison.Ordinal))
                     {
@@ -82,26 +99,14 @@ namespace Peachpie.Library.PDO
                 }
             }
 
-            if (items.Length == 1)
-            {
-                //Alias mode
-                throw new NotImplementedException("PDO DSN alias not implemented");
-                //replace DSN alias with value
-            }
+            // DSN mode
+            this.m_driver = PDOEngine.TryGetDriver(driver)
+                ?? throw new PDOException($"Driver '{driver}' not found"); // TODO: resources
 
-            //DSN mode
-            this.m_driver = PDOEngine.GetDriver(items[0]);
-            if (this.m_driver == null)
-            {
-                throw new PDOException(string.Format("Driver '{0}' not found", items[0]));
-            }
-
-            this.m_extensionMethods = this.m_driver.GetPDObjectExtensionMethods();
-
-            this.m_con = this.m_driver.OpenConnection(items[1], username, password, options);
-            this.m_attributes.Set(PDO_ATTR.ATTR_SERVER_VERSION, (PhpValue)this.m_con.ServerVersion);
-            this.m_attributes.Set(PDO_ATTR.ATTR_DRIVER_NAME, (PhpValue)this.m_driver.Name);
-            this.m_attributes.Set(PDO_ATTR.ATTR_CLIENT_VERSION, (PhpValue)this.m_driver.ClientVersion);
+            this.m_con = this.m_driver.OpenConnection(connstring, username, password, options);
+            this.m_attributes[PDO_ATTR.ATTR_SERVER_VERSION] = (PhpValue)this.m_con.ServerVersion;
+            this.m_attributes[PDO_ATTR.ATTR_DRIVER_NAME] = (PhpValue)this.m_driver.Name;
+            this.m_attributes[PDO_ATTR.ATTR_CLIENT_VERSION] = (PhpValue)this.m_driver.ClientVersion;
         }
 
         /// <inheritDoc />
@@ -110,18 +115,17 @@ namespace Peachpie.Library.PDO
         /// <inheritDoc />
         public PhpValue __call(string name, PhpArray arguments)
         {
-            if (this.m_extensionMethods.ContainsKey(name))
-            {
-                var method = this.m_extensionMethods[name];
-                return method.Invoke(this, arguments);
-            }
-            throw new PDOException("Method not found");
+            var method =
+                m_driver.TryGetExtensionMethod(name)
+                ?? throw new PDOException($"Method '{name}' not found"); // TODO: resources
+
+            return method.Invoke(this, arguments);
         }
 
         /// <inheritDoc />
         void IDisposable.Dispose()
         {
-            this.m_con.Dispose();
+            m_con?.Dispose();
         }
 
         /// <summary>
@@ -133,19 +137,20 @@ namespace Peachpie.Library.PDO
             return PDOStatic.pdo_drivers();
         }
 
-
         /// <summary>
         /// Creates a DbCommand object.
         /// </summary>
         /// <param name="statement">The statement.</param>
         /// <returns></returns>
-        [PhpHidden]
-        public DbCommand CreateCommand(string statement)
+        internal DbCommand CreateCommand(string statement)
         {
             var dbCommand = this.m_con.CreateCommand();
             dbCommand.CommandText = statement;
             dbCommand.Transaction = this.m_tx;
             dbCommand.CommandTimeout = (int)(this.m_attributes[PDO_ATTR.ATTR_TIMEOUT]) * 1000;
+
+            CurrentCommand = dbCommand;
+
             return dbCommand;
         }
 
@@ -310,27 +315,27 @@ namespace Peachpie.Library.PDO
 
         private void SetDefaultAttributes()
         {
-            this.m_attributes.Set(PDO_ATTR.ATTR_AUTOCOMMIT, (PhpValue)true);
-            this.m_attributes.Set(PDO_ATTR.ATTR_PREFETCH, (PhpValue)0);
-            this.m_attributes.Set(PDO_ATTR.ATTR_TIMEOUT, (PhpValue)30);
-            this.m_attributes.Set(PDO_ATTR.ATTR_ERRMODE, (PhpValue)ERRMODE_SILENT);
-            this.m_attributes.Set(PDO_ATTR.ATTR_SERVER_VERSION, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_CLIENT_VERSION, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_SERVER_INFO, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_CONNECTION_STATUS, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_CASE, (PhpValue)(int)PDO_CASE.CASE_LOWER);
-            this.m_attributes.Set(PDO_ATTR.ATTR_CURSOR_NAME, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_CURSOR, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_DRIVER_NAME, (PhpValue)"");
-            this.m_attributes.Set(PDO_ATTR.ATTR_ORACLE_NULLS, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_PERSISTENT, (PhpValue)false);
-            this.m_attributes.Set(PDO_ATTR.ATTR_STATEMENT_CLASS, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_FETCH_CATALOG_NAMES, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_FETCH_TABLE_NAMES, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_STRINGIFY_FETCHES, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_MAX_COLUMN_LEN, PhpValue.Null);
-            this.m_attributes.Set(PDO_ATTR.ATTR_DEFAULT_FETCH_MODE, (PhpValue)(int)PDO_FETCH.FETCH_USE_DEFAULT);
-            this.m_attributes.Set(PDO_ATTR.ATTR_EMULATE_PREPARES, (PhpValue)false);
+            this.m_attributes[PDO_ATTR.ATTR_AUTOCOMMIT] = (PhpValue)true;
+            this.m_attributes[PDO_ATTR.ATTR_PREFETCH] = (PhpValue)0;
+            this.m_attributes[PDO_ATTR.ATTR_TIMEOUT] = (PhpValue)30;
+            this.m_attributes[PDO_ATTR.ATTR_ERRMODE] = (PhpValue)ERRMODE_SILENT;
+            this.m_attributes[PDO_ATTR.ATTR_SERVER_VERSION] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_CLIENT_VERSION] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_SERVER_INFO] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_CONNECTION_STATUS] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_CASE] = (PhpValue)(int)PDO_CASE.CASE_LOWER;
+            this.m_attributes[PDO_ATTR.ATTR_CURSOR_NAME] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_CURSOR] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_DRIVER_NAME] = (PhpValue)"";
+            this.m_attributes[PDO_ATTR.ATTR_ORACLE_NULLS] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_PERSISTENT] = PhpValue.False;
+            this.m_attributes[PDO_ATTR.ATTR_STATEMENT_CLASS] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_FETCH_CATALOG_NAMES] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_FETCH_TABLE_NAMES] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_STRINGIFY_FETCHES] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_MAX_COLUMN_LEN] = PhpValue.Null;
+            this.m_attributes[PDO_ATTR.ATTR_DEFAULT_FETCH_MODE] = (PhpValue)(int)PDO_FETCH.FETCH_USE_DEFAULT;
+            this.m_attributes[PDO_ATTR.ATTR_EMULATE_PREPARES] = PhpValue.False;
         }
 
         #region Interface artifacts

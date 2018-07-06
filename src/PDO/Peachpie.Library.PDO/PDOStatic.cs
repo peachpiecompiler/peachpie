@@ -18,8 +18,7 @@ namespace Peachpie.Library.PDO
         /// <returns></returns>
         public static PhpArray pdo_drivers()
         {
-            var phpNames = PDOEngine.GetDriverNames().Select(d => PhpValue.Create(d)).ToArray();
-            return PhpArray.New(phpNames);
+            return PhpArray.New(PDOEngine.GetDriverNames());
         }
     }
 }

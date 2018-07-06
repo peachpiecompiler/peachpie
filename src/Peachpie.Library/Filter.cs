@@ -507,11 +507,6 @@ namespace Pchp.Library
             return arrayobj;
         }
 
-        public static PhpValue filter_var(Context ctx, PhpValue variable, int filter = FILTER_DEFAULT)
-        {
-            return filter_var(ctx, variable, filter, PhpValue.Null);
-        }
-
         /// <summary>
         /// Filters a variable with a specified filter.
         /// </summary>
@@ -520,7 +515,7 @@ namespace Pchp.Library
         /// <param name="filter">The ID of the filter to apply.</param>
         /// <param name="options">Associative array of options or bitwise disjunction of flags. If filter accepts options, flags can be provided in "flags" field of array. For the "callback" filter, callback type should be passed. The callback must accept one argument, the value to be filtered, and return the value after filtering/sanitizing it.</param>
         /// <returns>Returns the filtered data, or <c>false</c> if the filter fails.</returns>
-        public static PhpValue filter_var(Context ctx, PhpValue variable, int filter /*= FILTER_DEFAULT*/ , PhpValue options /*= NULL*/)
+        public static PhpValue filter_var(Context ctx, PhpValue variable, int filter = FILTER_DEFAULT, PhpValue options = default(PhpValue))
         {
             switch (filter)
             {
@@ -544,10 +539,17 @@ namespace Pchp.Library
                 // VALIDATE
                 //
 
+                case (int)FilterValidate.URL:
+                    return Uri.TryCreate(variable.ToString(ctx), UriKind.Absolute, out var uri)
+                        ? (PhpValue)uri.AbsoluteUri
+                        : PhpValue.False;
+
                 case (int)FilterValidate.EMAIL:
                     {
                         var str = variable.ToString(ctx);
-                        return RegexUtilities.IsValidEmail(str) ? (PhpValue)str : PhpValue.False;
+                        return RegexUtilities.IsValidEmail(str)
+                            ? (PhpValue)str
+                            : PhpValue.False;
                     }
 
                 case (int)FilterValidate.INT:
@@ -555,7 +557,9 @@ namespace Pchp.Library
                         int result;
                         if (int.TryParse((PhpVariable.AsString(variable) ?? string.Empty).Trim(), out result))
                         {
-                            if (!options.IsNull) PhpException.ArgumentValueNotSupported("options", "!null");
+                            if (Operators.IsSet(options))
+                                PhpException.ArgumentValueNotSupported("options", "!null");
+
                             return (PhpValue)result;  // TODO: options: min_range, max_range
                         }
                         else
@@ -565,7 +569,8 @@ namespace Pchp.Library
                     {
                         PhpArray optarray;
                         // options = options['options']['regexp']
-                        if ((optarray = options.ArrayOrNull()) != null &&
+                        if (Operators.IsSet(options) &&
+                            (optarray = options.ArrayOrNull()) != null &&
                             optarray.TryGetValue("options", out options) && (optarray = options.ArrayOrNull()) != null &&
                             optarray.TryGetValue("regexp", out options))
                         {
@@ -633,7 +638,7 @@ namespace Pchp.Library
                 return match.Groups[1].Value + domainName;
             }
         }
-        
+
         /// <summary>
         /// Remove all characters not valid by given <paramref name="predicate"/>.
         /// </summary>

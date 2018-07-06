@@ -368,6 +368,7 @@ namespace Pchp.Core.Reflection
                     var m_type = ((MethodInfo)m).GetBaseDefinition().DeclaringType.GetTypeInfo();
                     var classCtx_type = classCtx.GetTypeInfo();
 
+                    // language.oop5.visibility: Members declared protected can be accessed only within the class itself and by inheriting and parent classes
                     return classCtx_type.IsAssignableFrom(m_type) || m_type.IsAssignableFrom(classCtx_type);
                 }
             }

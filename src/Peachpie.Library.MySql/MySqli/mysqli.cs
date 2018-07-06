@@ -294,6 +294,14 @@ namespace Peachpie.Library.MySql.MySqli
             // int $port = ini_get("mysqli.default_port")
             // string $socket = ini_get("mysqli.default_socket")
 
+            // p:
+            if (host != null && host.StartsWith("p:", StringComparison.Ordinal))
+            {
+                host = host.Substring(2);
+                flags |= (int)MySql.ConnectFlags.Pooling;
+            }
+
+            //
             var connection_string = MySql.BuildConnectionString(config, ref host, username, passwd,
                 flags: (MySql.ConnectFlags)flags,
                 connectiontimeout: connectiontimeout);

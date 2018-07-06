@@ -219,6 +219,7 @@ namespace Pchp.CodeAnalysis.Emit
         {
             var method = this.ScriptType.EnumerateBuiltinFunctionsSymbol;
             var functions = GlobalSymbolProvider.ResolveExtensionContainers(this.Compilation)
+                .Where(t => !t.IsPhpSourceFile()) // not PHP source file containers
                 .SelectMany(c => c.GetMembers().OfType<MethodSymbol>())
                 .Where(Compilation.GlobalSemantics.IsFunction);
 
@@ -267,6 +268,11 @@ namespace Pchp.CodeAnalysis.Emit
 
                     foreach (var t in types)
                     {
+                        if (t.IsPhpUserType())
+                        {
+                            continue;   // the type is a PHP user type, do not export as app type
+                        }
+
                         // callback.Invoke(t)
                         il.EmitLoadArgumentOpcode(0);
                         il.EmitCall(this, diagnostic, ILOpCode.Call, Compilation.CoreMethods.Dynamic.GetPhpTypeInfo_T.Symbol.Construct(t));

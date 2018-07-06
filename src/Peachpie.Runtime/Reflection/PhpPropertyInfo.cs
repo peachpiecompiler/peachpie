@@ -330,17 +330,19 @@ namespace Pchp.Core.Reflection
         /// <param name="caller">Class context. By default the method check if the property is publically visible.</param>
         public bool IsVisible(RuntimeTypeHandle caller = default(RuntimeTypeHandle))
         {
-            if (IsPublic) return true;
+            // quickly check without resolving RuntimeTypeHandle:
+            if (IsPublic)
+            {
+                return true;
+            }
 
-            if (caller.Equals(default(RuntimeTypeHandle))) return false;
+            if (caller.Equals(default(RuntimeTypeHandle)))
+            {
+                return false;
+            }
 
-            var callerType = Type.GetTypeFromHandle(caller);
-
-            // private
-            if (IsPrivate) return _tinfo.Type.Equals(callerType);
-
-            // protected|internal
-            return _tinfo.Type.IsAssignableFrom(callerType);
+            //
+            return IsVisible(Type.GetTypeFromHandle(caller));
         }
 
         /// <summary>
@@ -349,15 +351,25 @@ namespace Pchp.Core.Reflection
         /// <param name="caller">Class context. By default the method check if the property is publically visible.</param>
         public bool IsVisible(Type caller = null)
         {
-            if (IsPublic) return true;
+            if (IsPublic)
+            {
+                return true;
+            }
 
-            if (caller == null) return false;
+            if (caller == null)
+            {
+                return false;
+            }
 
             // private
-            if (IsPrivate) return _tinfo.Type.Equals(caller);
+            if (IsPrivate)
+            {
+                return _tinfo.Type == caller;
+            }
 
             // protected|internal
-            return _tinfo.Type.IsAssignableFrom(caller);
+            // language.oop5.visibility: Members declared protected can be accessed only within the class itself and by inheriting and parent classes
+            return _tinfo.Type.IsAssignableFrom(caller) || caller.IsAssignableFrom(_tinfo.Type);
         }
 
         /// <summary>
