@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Core
 {
@@ -513,7 +512,7 @@ namespace Pchp.Core
 
                         if (bytes != null)
                         {
-                            _byteSink.Write(bytes, 0, bytes.Length);
+                            _byteSink.Write(bytes);
                         }
                         else
                         {
@@ -530,7 +529,7 @@ namespace Pchp.Core
                         // checks whether the filtered data are binary at first; if not so, converts them to a string:
                         if (bytes != null)
                         {
-                            _stream.Write(bytes, 0, bytes.Length);
+                            _stream.Write(bytes);
                         }
                         else
                         {

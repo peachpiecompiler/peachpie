@@ -241,7 +241,7 @@ namespace Pchp.Library
                 // initialize the transliterations table:
 
                 // load "translit.def" file content:
-                using (var translit = new System.IO.StreamReader(typeof(PhpIconv).Assembly.GetManifestResourceStream("Peachpie.Library.Resources.translit.def")))
+                using (var translit = new System.IO.StreamReader(typeof(PhpIconv).Assembly.GetManifestResourceStream("Pchp.Library.Resources.translit.def")))
                 {
                     string line;
                     while ((line = translit.ReadLine()) != null)

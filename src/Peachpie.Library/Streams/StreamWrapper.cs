@@ -1328,6 +1328,12 @@ namespace Pchp.Library.Streams
         }
 
         /// <summary>
+        /// Gets (actually constructs) the HTTP response header.
+        /// </summary>
+        /// <remarks>see Peachpie.Library.Network</remarks>
+        static string StatusHeader(HttpWebResponse response) => $"HTTP/{response.ProtocolVersion.ToString(2)} {(int)response.StatusCode} {response.StatusDescription}";
+
+        /// <summary>
         /// see stream_get_meta_data()["wrapper_data"]
         /// </summary>
         /// <param name="response"></param>
@@ -1337,16 +1343,18 @@ namespace Pchp.Library.Streams
             if (response == null)
                 return null;
 
-            var array = new PhpArray();
+            var array = new PhpArray(1 + response.Headers.Count);
 
-            // TODO: actual protocol version from HttpWebResponse
-            array.Add("HTTP/" + "1.0"/*response.ProtocolVersion.ToString() */ + " " + (int)response.StatusCode + " " + response.StatusDescription);
+            // HTTP/x.x
+            array.Add(StatusHeader(response));
 
-            foreach (string key in response.Headers.AllKeys)
+            // other headers
+            for (int i = 0; i < response.Headers.Count; i++)
             {
-                array.Add(key + ": " + response.Headers[key]);
+                array.Add(response.Headers[i]);
             }
 
+            //
             return array;
         }
 

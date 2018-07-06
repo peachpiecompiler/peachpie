@@ -339,7 +339,7 @@ namespace Pchp.Library
             switch (message_type)
             {
                 case ErrorLogType.Default:
-                    LogEventSource.Instance.ErrorLog(message);
+                    LogEventSource.Log.ErrorLog(message);
                     return true;
 
                 default:

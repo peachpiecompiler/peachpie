@@ -131,7 +131,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     Debug.Assert(SpecialParameterSymbol.IsContextParameter(ctor.Parameters[0]));
 
-                    var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, this, new ParamPlace(ctor.Parameters[0]), new ArgPlace(this, 0));
+                    var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, this, new ParamPlace(ctor.Parameters[0]), new ArgPlace(this, 0))
+                    {
+                        CallerType = this,
+                        ContainingFile = ContainingFile,
+                    };
 
                     Debug.Assert(ctor.BaseCtor != null);
 

@@ -23,10 +23,10 @@ namespace Peachpie.Library.PDO.PgSQL
         }
 
         /// <inheritDoc />
-        protected override string BuildConnectionString(string dsn, string user, string password, PhpArray options)
+        protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
         {
             //TODO pgsql pdo parameters to dotnet connectionstring
-            var csb = new NpgsqlConnectionStringBuilder(dsn);
+            var csb = new NpgsqlConnectionStringBuilder(dsn.ToString());
             csb.Username = user;
             csb.Password = password;
             return csb.ConnectionString;

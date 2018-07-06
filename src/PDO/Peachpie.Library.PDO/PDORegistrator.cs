@@ -12,7 +12,6 @@ namespace Peachpie.Library.PDO
         public PDORegistrator()
         {
             Context.RegisterConfiguration(new PDOConfiguration());
-            PDODriver.RegisterAllDrivers();
         }
     }
 }

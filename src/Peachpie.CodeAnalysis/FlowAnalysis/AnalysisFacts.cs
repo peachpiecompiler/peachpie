@@ -42,7 +42,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 string str;
 
                 var args = call.ArgumentsInSourceOrder;
-                switch (name)
+                switch (name) // TODO: case insensitive
                 {
                     case "is_callable":     // bool is_callable( string $function_name )
                     case "function_exists": // bool function_exists ( string $function_name )
@@ -52,25 +52,32 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             var tmp = analysis.Model.ResolveFunction(NameUtils.MakeQualifiedName(str, true));
                             if (tmp is PEMethodSymbol || (tmp is AmbiguousMethodSymbol && ((AmbiguousMethodSymbol)tmp).Ambiguities.All(f => f is PEMethodSymbol)))  // TODO: unconditional declaration ?
                             {
-                                call.ConstantValue = ConstantValueExtensions.AsOptional(true);
-                                return;
+                                if (!tmp.ContainingType.IsPhpSourceFile()) // only functions declared in libraries, not in PHP source file
+                                {
+                                    call.ConstantValue = ConstantValueExtensions.AsOptional(true);
+                                    return;
+                                }
                             }
                         }
                         break;
 
                     // bool class_exists ( string $class_name [, bool $autoload = true ] )
                     case "class_exists":
+                    case "interface_exists":
                         if (args.Length >= 1)
                         {
                             // TRUE <=> class is defined unconditionally in a reference library (PE assembly)
                             var class_name = args[0].Value.ConstantValue.Value as string;
                             if (class_name != null)
                             {
-                                var tmp = analysis.Model.ResolveType(NameUtils.MakeQualifiedName(class_name, true));
-                                if (tmp is PENamedTypeSymbol)   // TODO: unconditional declaration ?
+                                var tmp = (TypeSymbol)analysis.Model.ResolveType(NameUtils.MakeQualifiedName(class_name, true));
+                                if (tmp is PENamedTypeSymbol && !tmp.IsPhpUserType())   // TODO: + SourceTypeSymbol when reachable unconditional declaration
                                 {
-                                    call.ConstantValue = ConstantValueExtensions.AsOptional(true);
-                                    return;
+                                    bool @interface = (name == "interface_exists");
+                                    if (tmp.TypeKind == (@interface ? TypeKind.Interface : TypeKind.Class))
+                                    {
+                                        call.ConstantValue = ConstantValueExtensions.AsOptional(true);
+                                    }
                                 }
                             }
                         }

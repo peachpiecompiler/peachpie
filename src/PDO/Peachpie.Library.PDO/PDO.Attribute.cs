@@ -91,14 +91,14 @@ namespace Peachpie.Library.PDO
                     //boolean
                     case PDO_ATTR.ATTR_AUTOCOMMIT:
                     case PDO_ATTR.ATTR_EMULATE_PREPARES:
-                        this.m_attributes.Set(attribute, value);
+                        this.m_attributes[attribute] = value;
                         return true;
 
 
                     //strict positif integers
                     case PDO_ATTR.ATTR_PREFETCH:
                     case PDO_ATTR.ATTR_TIMEOUT:
-                        this.m_attributes.Set(attribute, value);
+                        this.m_attributes[attribute] = value;
                         return true;
 
                     //remaining
@@ -107,7 +107,7 @@ namespace Peachpie.Library.PDO
                         int errmodeValue = (int)value.ToLong();
                         if (Enum.IsDefined(typeof(PDO_ERRMODE), errmodeValue))
                         {
-                            this.m_attributes.Set(attribute, (PhpValue)errmodeValue);
+                            this.m_attributes[attribute] = (PhpValue)errmodeValue;
                             return true;
                         }
                         return false;
@@ -115,7 +115,7 @@ namespace Peachpie.Library.PDO
                         int caseValue = (int)value.ToLong();
                         if (Enum.IsDefined(typeof(PDO_CASE), caseValue))
                         {
-                            this.m_attributes.Set(attribute, (PhpValue)caseValue);
+                            this.m_attributes[attribute] = (PhpValue)caseValue;
                             return true;
                         }
                         return false;
@@ -123,7 +123,7 @@ namespace Peachpie.Library.PDO
                         int cursorValue = (int)value.ToLong();
                         if (Enum.IsDefined(typeof(PDO_CURSOR), cursorValue))
                         {
-                            this.m_attributes.Set(attribute, (PhpValue)cursorValue);
+                            this.m_attributes[attribute] = (PhpValue)cursorValue;
                             return true;
                         }
                         return false;

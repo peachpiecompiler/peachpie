@@ -42,7 +42,7 @@ namespace Pchp.Core.Reflection
                 int index;
                 if (_nameToIndex.TryGetValue(name, out index))
                 {
-                    throw new ArgumentException();  // redeclaration
+                    throw new ArgumentException($"Type '{name}' already declared!");  // redeclaration
                 }
                 else
                 {

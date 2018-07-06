@@ -93,7 +93,7 @@ namespace Pchp.Core
         {
             if (assembly == null)
             {
-                throw new ArgumentNullException("assembly");
+                throw new ArgumentNullException(nameof(assembly));
             }
 
             var t = assembly.GetType(ScriptInfo.ScriptTypeName);
@@ -384,37 +384,6 @@ namespace Pchp.Core
             {
                 return false;
             }
-        }
-
-        /// <summary>
-        /// Tries to resolve compiled script according to given path.
-        /// </summary>
-        public static ScriptInfo TryResolveScript(string root, string path) => ScriptsMap.ResolveInclude(path, root, null, null, null);
-
-        /// <summary>
-        /// Gets scripts in given directory.
-        /// </summary>
-        public static bool TryGetScriptsInDirectory(string root, string path, out IEnumerable<ScriptInfo> scripts)
-        {
-            // trim leading {root} path:
-            if (!string.IsNullOrEmpty(root) && path.StartsWith(root, StringComparison.Ordinal))
-            {
-                if (path.Length == root.Length)
-                {
-                    path = string.Empty;
-                }
-                else if (path[root.Length] == CurrentPlatform.DirectorySeparator)
-                {
-                    path = path.Remove(root.Length + 1);
-                }
-                else if (root[root.Length - 1] == CurrentPlatform.DirectorySeparator)
-                {
-                    path = path.Remove(root.Length);
-                }
-            }
-            
-            // try to get compiled scripts within path:
-            return ScriptsMap.TryGetDirectory(path, out scripts);
         }
 
         #endregion

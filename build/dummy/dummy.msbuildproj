@@ -13,6 +13,7 @@
     <PackageReference Include="Peachpie.NET.Sdk" Version="$(VersionPrefix)-$(VersionSuffix)" PrivateAssets="Build" />
 	<PackageReference Include="Peachpie.NETCore.Web" Version="$(VersionPrefix)-$(VersionSuffix)" PrivateAssets="Build" />
 	<PackageReference Include="Peachpie.Library.PDO" Version="$(VersionPrefix)-$(VersionSuffix)" PrivateAssets="Build" />
+        <PackageReference Include="Peachpie.Library.PDO.MySQL" Version="$(VersionPrefix)-$(VersionSuffix)" PrivateAssets="Build" />
 	<PackageReference Include="Peachpie.Library.Graphics" Version="$(VersionPrefix)-$(VersionSuffix)" PrivateAssets="Build" />
 	<PackageReference Include="Peachpie.Library.Network" Version="$(VersionPrefix)-$(VersionSuffix)" PrivateAssets="Build" />
     <DotNetCliToolReference Include="Peachpie.Compiler.Tools" Version="$(VersionPrefix)-$(VersionSuffix)" />

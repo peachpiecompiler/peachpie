@@ -3,8 +3,10 @@ using Pchp.Core;
 
 namespace Peachpie.Library.PDO
 {
+    using System;
     //IBM pure ADO.NET Driver is not available on dotnet core, only on framework
     using IBM.Data.DB2.Core;
+    using Peachpie.Library.PDO.Utilities;
 
     /// <summary>
     /// PDO driver class for IBM DB2
@@ -22,20 +24,17 @@ namespace Peachpie.Library.PDO
 
 
         /// <inheritDoc />
-        protected override string BuildConnectionString(string dsn, string user, string password, PhpArray options)
+        protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
         {
             //TODO ibm db2 pdo parameters to dotnet connectionstring
-            var csb = new DB2ConnectionStringBuilder(dsn);
+            var csb = new DB2ConnectionStringBuilder(dsn.ToString());
             csb.UserID = user;
             csb.Password = password;
             return csb.ConnectionString;
         }
 
         /// <inheritDoc />
-        public override Dictionary<string, ExtensionMethodDelegate> GetPDObjectExtensionMethods()
-        {
-            return new Dictionary<string, ExtensionMethodDelegate>();
-        }
+        public override ExtensionMethodDelegate TryGetExtensionMethod(string name) => base.TryGetExtensionMethod(name);
 
         /// <inheritDoc />
         public override string GetLastInsertId(PDO pdo, string name)

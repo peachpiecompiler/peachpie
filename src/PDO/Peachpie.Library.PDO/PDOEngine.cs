@@ -1,7 +1,9 @@
 ﻿using Pchp.Core;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Peachpie.Library.PDO
@@ -12,38 +14,34 @@ namespace Peachpie.Library.PDO
     [PhpHidden]
     public static class PDOEngine
     {
-        private static readonly Dictionary<string, IPDODriver> s_drivers = new Dictionary<string, IPDODriver>();
-
         /// <summary>
-        /// Registers the driver.
+        /// Gets set of loaded PDO drivers.
         /// </summary>
-        public static void RegisterDriver(IPDODriver driver)
+        static Dictionary<string, IPDODriver> GetDrivers()
         {
-            lock (s_drivers)
+            if (s_lazydrivers == null)
             {
-                if (!s_drivers.ContainsKey(driver.Name))
-                {
-                    s_drivers.Add(driver.Name, driver);
-                }
+                Interlocked.CompareExchange(ref s_lazydrivers, CollectPdoDrivers(), null);
             }
+
+            return s_lazydrivers;
+        }
+        static Dictionary<string, IPDODriver> s_lazydrivers;
+
+        static Dictionary<string, IPDODriver> CollectPdoDrivers()
+        {
+            return Context
+                .CompositionContext
+                .GetExports<IPDODriver>()
+                .ToDictionary(driver => driver.Name, StringComparer.OrdinalIgnoreCase);
         }
 
-        internal static string[] GetDriverNames()
-        {
-            lock (s_drivers)
-            {
-                return s_drivers.Keys.ToArray();
-            }
-        }
+        internal static IReadOnlyCollection<string> GetDriverNames() => GetDrivers().Keys;
 
-        internal static IPDODriver GetDriver(string driverName)
+        internal static IPDODriver TryGetDriver(string driverName)
         {
-            lock (s_drivers)
-            {
-                if (!s_drivers.ContainsKey(driverName))
-                    return null;
-                return s_drivers[driverName];
-            }
+            GetDrivers().TryGetValue(driverName, out var driver);
+            return driver;
         }
     }
 }

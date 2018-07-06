@@ -1,5 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using Pchp.Core;
+using Peachpie.Library.PDO.Utilities;
 using ConnectionStringBuilder = Microsoft.Data.Sqlite.SqliteConnectionStringBuilder;
 using Factory = Microsoft.Data.Sqlite.SqliteFactory;
 
@@ -21,22 +24,27 @@ namespace Peachpie.Library.PDO.Sqlite
         }
 
         /// <inheritDoc />
-        protected override string BuildConnectionString(string dsn, string user, string password, PhpArray options)
+        protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
         {
+            // TODO: Sqlite connection string
+
             var csb = new ConnectionStringBuilder();
-            csb.DataSource = dsn;
+
+            csb.DataSource = dsn.ToString();
             csb.Add("Password", password);
+            csb.Add("UserId", password);
+
             return csb.ConnectionString;
         }
 
         /// <inheritDoc />
-        public override Dictionary<string, ExtensionMethodDelegate> GetPDObjectExtensionMethods()
+        public override ExtensionMethodDelegate TryGetExtensionMethod(string name)
         {
-            var methods = new Dictionary<string, ExtensionMethodDelegate>();
-            methods.Add("sqliteCreateAggregate", sqliteCreateAggregate);
-            methods.Add("sqliteCreateCollation", sqliteCreateCollation);
-            methods.Add("sqliteCreateFunction", sqliteCreateFunction);
-            return methods;
+            if (name.Equals("sqliteCreateAggregate", StringComparison.OrdinalIgnoreCase)) return sqliteCreateAggregate;
+            if (name.Equals("sqliteCreateCollation", StringComparison.OrdinalIgnoreCase)) return sqliteCreateCollation;
+            if (name.Equals("sqliteCreateFunction", StringComparison.OrdinalIgnoreCase)) return sqliteCreateFunction;
+
+            return null;
         }
 
         private static PhpValue sqliteCreateAggregate(PDO pdo, PhpArray arguments)
@@ -58,6 +66,9 @@ namespace Peachpie.Library.PDO.Sqlite
 
         public override string GetLastInsertId(PDO pdo, string name)
         {
+            Debug.Fail("last_insert_id not implemented");
+
+            // this is probably not correct:
             using (var cmd = pdo.CreateCommand("SELECT LAST_INSERT_ROWID()"))
             {
                 object value = cmd.ExecuteScalar();

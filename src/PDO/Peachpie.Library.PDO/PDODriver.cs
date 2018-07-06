@@ -25,7 +25,7 @@ namespace Peachpie.Library.PDO
         {
             get
             {
-                return this.DbFactory.GetType().GetTypeInfo().Assembly.GetName().Version.ToString();
+                return this.DbFactory.GetType().Assembly.GetName().Version.ToString();
             }
         }
 
@@ -44,13 +44,8 @@ namespace Peachpie.Library.PDO
         /// </exception>
         public PDODriver(string name, DbProviderFactory dbFactory)
         {
-            if (string.IsNullOrEmpty(name))
-                throw new ArgumentNullException(nameof(name));
-            if (dbFactory == null)
-                throw new ArgumentNullException(nameof(dbFactory));
-
-            this.Name = name;
-            this.DbFactory = dbFactory;
+            this.Name = name ?? throw new ArgumentNullException(nameof(name));
+            this.DbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
         }
 
         /// <summary>
@@ -61,23 +56,19 @@ namespace Peachpie.Library.PDO
         /// <param name="password">The password.</param>
         /// <param name="options">The options.</param>
         /// <returns></returns>
-        protected abstract string BuildConnectionString(string dsn, string user, string password, PhpArray options);
+        protected abstract string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options);
 
         /// <inheritDoc />
-        public virtual DbConnection OpenConnection(string dsn, string user, string password, PhpArray options)
+        public virtual DbConnection OpenConnection(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
         {
-            string connectionString = this.BuildConnectionString(dsn, user, password, options);
             var connection = this.DbFactory.CreateConnection();
-            connection.ConnectionString = connectionString;
+            connection.ConnectionString = this.BuildConnectionString(dsn, user, password, options);
             connection.Open();
             return connection;
         }
 
         /// <inheritDoc />
-        public virtual Dictionary<string, ExtensionMethodDelegate> GetPDObjectExtensionMethods()
-        {
-            return new Dictionary<string, ExtensionMethodDelegate>();
-        }
+        public virtual ExtensionMethodDelegate TryGetExtensionMethod(string name) => null;
 
         /// <inheritDoc />
         public abstract string GetLastInsertId(PDO pdo, string name);
@@ -98,17 +89,6 @@ namespace Peachpie.Library.PDO
         public virtual PhpValue GetAttribute(PDO pdo, int attribute)
         {
             return PhpValue.Null;
-        }
-
-        /// <summary>
-        /// Registers all referenced PDO drivers.
-        /// </summary>
-        public static void RegisterAllDrivers()
-        {
-            foreach (var driver in Context.CompositionContext.GetExports<IPDODriver>())
-            {
-                PDOEngine.RegisterDriver(driver);
-            }
         }
 
         /// <inheritDoc />

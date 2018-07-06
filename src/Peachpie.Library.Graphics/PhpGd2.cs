@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
@@ -12,6 +13,7 @@ using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Primitives;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Processing.Convolution;
 using SixLabors.ImageSharp.Processing.Drawing;
@@ -665,9 +667,9 @@ namespace Peachpie.Library.Graphics
         static long RGBA(long red, long green, long blue, long alpha = 0xff)
         {
             return (alpha << 24)
-                | ((red & 0x0000FF) << 16)
+                | ((blue & 0x0000FF) << 16)
                 | ((green & 0x0000FF) << 8)
-                | (blue & 0x0000FF);
+                | (red & 0x0000FF);
         }
 
         static Rgba32 FromRGB(long color) => new Rgba32((uint)color | 0xff000000u);
@@ -1410,7 +1412,7 @@ namespace Peachpie.Library.Graphics
                 return false;
 
             if (x < 0 || y < 0) return true;
-            if (x > img.Image.Width || x > img.Image.Height) return true;
+            if (x > img.Image.Width || y > img.Image.Height) return true;
 
             FloodFill(img.Image, x, y, FromRGBA(col), false, Rgba32.Red);
 
@@ -1450,8 +1452,6 @@ namespace Peachpie.Library.Graphics
             if (e > 360) e = e - (e / 360) * 360;
             if (s > 360) e = e - (e / 360) * 360;
         }
-
-        #region TODO (Convert from System.Drawing to ImageSharp)
 
         #region imagecolorstotal
 
@@ -1545,150 +1545,185 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         public static bool imagefilledarc(PhpResource im, int cx, int cy, int w, int h, int s, int e, int col, int style)
         {
-            throw new NotImplementedException();
+            PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+                return false;
 
-            //PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
-            //if (img == null)
-            //    return false;
+            var image = img.Image;
 
-            //using (var g = Graphics.FromImage(img.Image))
-            //{
-            //    g.SmoothingMode = SmoothingMode.None;
-            //    Pen pen = CreatePen(col, img, false);
+            if (cx < 0 || cy < 0) return true;
+            if (cx > image.Width || cy > image.Height) return true;
 
-            //    int range = 0;
-            //    AdjustAnglesAndSize(ref w, ref h, ref s, ref e, ref range);
+            int range = 0;
+            AdjustAnglesAndSize(ref w, ref h, ref s, ref e, ref range);
 
-            //    // IMG_ARC_PIE
-            //    if (style == (int)FilledArcStyles.PIE || style == (int)FilledArcStyles.EDGED)
-            //    {
-            //        g.DrawArc(pen, new Rectangle(cx - (w / 2), cy - (h / 2), w, h), s, range);
-            //        var brush = new SolidBrush<Rgba32>(GetAlphaColor(img, col));
-            //        g.FillPie(brush, new Rectangle(cx - (w / 2), cy - (h / 2), w, h), s, range);
-            //    }
+            // Path Builder object ot be used in all the branches
+            PathBuilder pathBuilder = new PathBuilder();
+            var color = FromRGBA(col);
+            var pen = new Pen<Rgba32>(color, 1);
 
-            //    if (style == (int)FilledArcStyles.NOFILL)
-            //    {
-            //        g.DrawArc(pen, new Rectangle(cx - (w / 2), cy - (h / 2), w, h), s, range);
-            //    }
+            image.Mutate<Rgba32>(context =>
+            {
+                // All PIE variants - IMG_ARC_PIE = 0
+                if (style % 2 == 0)
+                {
+                    var ellipse = new SixLabors.Shapes.EllipsePolygon(cx, cy, w, h);
+                    ISimplePath simplePath = ellipse;
+                    var points = simplePath.Points;
 
-            //    if (style == ((int)FilledArcStyles.EDGED | (int)FilledArcStyles.NOFILL))
-            //    {
-            //        Point[] points =
-            //        {
-            //            new Point(cx+(int)(Math.Cos(s*Math.PI/180) * (w / 2.0)), cy+(int)(Math.Sin(s*Math.PI/180) * (h / 2.0))),
-            //            new Point(cx, cy),
-            //            new Point(cx+(int)(Math.Cos(e*Math.PI/180) * (w / 2.0)), cy+(int)(Math.Sin(e*Math.PI/180) * (h / 2.0)))
-            //        };
+                    int pointCount = (int)Math.Floor((float)points.Count * ((float)range / 360.0f));
+                    float angleSegment = (float)points.Count / 360.0f;
 
-            //        g.DrawLines(pen, points);
-            //        g.DrawArc(pen, new Rectangle(cx - (w / 2), cy - (h / 2), w, h), s, range);
-            //    }
+                    // Move the starting angle 180 degrees forward, and ensure its between 0 and 359, because points in the ellipses path start on the left, but PHP imagefilledarc angles start on the right
+                    s += 180;
+                    while (s >= 360)
+                        s -= 360;
 
-            //    // IMG_ARC_CHORD
-            //    if (style == ((int)FilledArcStyles.CHORD) || style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.EDGED))
-            //    {
-            //        var brush = new SolidBrush<Rgba32>(GetAlphaColor(img, col));
+                    int startPoint = (int)Math.Ceiling((s) * angleSegment);
+                    PointF lastPoint = points[startPoint];
+                    var startingPoint = lastPoint;
 
-            //        Point point1 = new Point(cx + (int)(Math.Cos(s * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(s * Math.PI / 180) * (h / 2.0)));
-            //        Point point2 = new Point(cx + (int)(Math.Cos(e * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(e * Math.PI / 180) * (h / 2.0)));
+                    for (int i = startPoint + 1; i < startPoint + pointCount; i++)
+                    {
+                        int index = i;
+                        // Overflow in the ellipsis points array allowed
+                        if (index >= points.Count)
+                            index -= points.Count;
 
-            //        Point[] points = { new Point(cx, cy), point1, point2 };
+                        pathBuilder.AddLine(lastPoint, points[index]);
+                        lastPoint = points[index];
+                    }
 
-            //        g.FillPolygon(brush, points);
+                    // Draw the prepared lines or fill the pie
+                    if (style == ((int)FilledArcStyles.PIE | (int)FilledArcStyles.NOFILL))
+                    {
+                        context.Draw<Rgba32>(pen, pathBuilder.Build());
+                    }
+                    else
+                    {
+                        //Add the lines to the center
+                        pathBuilder.AddLine(lastPoint, new PointF(cx, cy));
+                        pathBuilder.AddLine(new PointF(cx, cy), startingPoint);
 
-            //    }
+                        if (style == ((int)FilledArcStyles.PIE | (int)FilledArcStyles.NOFILL | (int)FilledArcStyles.EDGED))
+                        {
+                            context.Draw<Rgba32>(pen, pathBuilder.Build());
+                        }
+                        else
+                        {
+                            //Last not-excluded option for PIE, a simple filled PIE
+                            context.Fill<Rgba32>(color, pathBuilder.Build());
+                        }
+                    }
+                }
+                //The other exclusive branch - IMG_ARC_CHORD
+                else
+                {
+                    PointF startingPoint = new PointF(cx + (int)(Math.Cos(s * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(s * Math.PI / 180) * (h / 2.0)));
+                    PointF endingPoint = new PointF(cx + (int)(Math.Cos(e * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(e * Math.PI / 180) * (h / 2.0)));
 
-            //    if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL))
-            //    {
-            //        g.DrawLine(pen,
-            //            new Point(cx + (int)(Math.Cos(s * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(s * Math.PI / 180) * (h / 2.0))),
-            //            new Point(cx + (int)(Math.Cos(e * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(e * Math.PI / 180) * (h / 2.0)))
-            //            );
-            //    }
+                    pathBuilder.AddLine(startingPoint, endingPoint);
 
-            //    if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL | (int)FilledArcStyles.EDGED))
-            //    {
-            //        Point[] points =
-            //        {
-            //            new Point(cx, cy),
-            //            new Point(cx+(int)(Math.Cos(s*Math.PI/180) * (w / 2.0)), cy+(int)(Math.Sin(s*Math.PI/180) * (h / 2.0))),
-            //            new Point(cx+(int)(Math.Cos(e*Math.PI/180) * (w / 2.0)), cy+(int)(Math.Sin(e*Math.PI/180) * (h / 2.0)))
-            //        };
+                    if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL))
+                    {
+                        context.Draw<Rgba32>(pen, pathBuilder.Build());
+                    }
+                    else
+                    {
+                        //Add the lines to the center
+                        pathBuilder.AddLine(endingPoint, new PointF(cx, cy));
+                        pathBuilder.AddLine(new PointF(cx, cy), startingPoint);
 
-            //        g.DrawPolygon(pen, points);
-            //    }
-
-            //    pen.Dispose();
-            //}
-
-            //return true;
+                        if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL | (int)FilledArcStyles.EDGED))
+                        {
+                            context.Draw<Rgba32>(pen, pathBuilder.Build());
+                        }
+                        else
+                        {
+                            // Last remaining option is to fill the chord arc
+                            context.Fill<Rgba32>(color, pathBuilder.Build());
+                        }
+                    }
+                }
+            });
+            return true;
         }
 
         #endregion
 
+        /// <summary>
+        /// Perform a flood fill of an image. Either until a border with specified color is reached, or the region with original color.
+        /// </summary>
+        /// <param name="image">image to fill</param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="color">Color to be filled with</param>
+        /// <param name="toBorder">False - color the connected region of same color, True - color until border is reached</param>
+        /// <param name="border">Color of the region border, used if toBorder = True</param>
         private static void FloodFill(Image<Rgba32>/*!*/image, int x, int y, Rgba32 color, bool toBorder, Rgba32 border)
         {
-            throw new NotImplementedException();
+            Debug.Assert(image != null);
 
-            //Debug.Assert(image != null);
+            var pointQueue = new Queue<Point>();
+            pointQueue.Enqueue(new Point(x, y));
+            var floodFrom = image[x, y];
 
-            //BitmapData data = image.LockBits(
-            //    new Rectangle(0, 0, image.Width, image.Height),
-            //    ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+            // The same color cannot be filled with itself
+            if (floodFrom == color)
+                return;
 
-            //int[] bits = new int[data.Stride / 4 * data.Height];
-            //Marshal.Copy(data.Scan0, bits, 0, bits.Length);
+            while (pointQueue.Count > 0)
+            {
+                var currentPoint = pointQueue.Dequeue();
+                var currentY = currentPoint.Y;
+                var currentX = currentPoint.X;
 
-            //LinkedList<Point> check = new LinkedList<Point>();
-            ////int floodTo = color.ToArgb();
-            //uint floodTo = color.Rgba; // Correct?
-            //int floodFrom = bits[x + y * data.Stride / 4];
-            //bits[x + y * data.Stride / 4] = floodTo;
+                int leftEdge, rightEdge;
+                leftEdge = rightEdge = currentX;
 
-            ////int floodBorder = border.ToArgb();
-            //uint floodBorder = border.Rgba; // Correct?
+                // Filling until reaching a border of specified color
+                if (toBorder)
+                {
+                    // Get the row segment to be colored
+                    while (rightEdge + 1 < image.Width && image[rightEdge + 1, currentY] != border && image[rightEdge + 1, currentY] != color)
+                        rightEdge++;
+                    while (leftEdge > 0 && image[leftEdge - 1, currentY] != border && image[leftEdge - 1, currentY] != color)
+                        leftEdge--;
 
-            //if (floodFrom != floodTo)
-            //{
-            //    check.AddLast(new Point(x, y));
-            //    while (check.Count > 0)
-            //    {
-            //        Point cur = check.First.Value;
-            //        check.RemoveFirst();
+                    // Actually color the row
+                    for (int workingX = leftEdge; workingX <= rightEdge; workingX++)
+                    {
+                        image[workingX, currentY] = color;
 
-            //        foreach (Point off in new Point[]{
-            //            new Point(0, -1), new Point(0, 1),
-            //            new Point(-1, 0), new Point(1, 0)})
-            //        {
-            //            Point next = new Point(cur.X + off.X, cur.Y + off.Y);
-            //            if (next.X >= 0 && next.Y >= 0 &&
-            //                next.X < data.Width &&
-            //                next.Y < data.Height)
-            //            {
-            //                if (toBorder == false)
-            //                {
-            //                    if (bits[next.X + next.Y * data.Stride / 4] == floodFrom)
-            //                    {
-            //                        check.AddLast(next);
-            //                        bits[next.X + next.Y * data.Stride / 4] = floodTo;
-            //                    }
-            //                }
-            //                else
-            //                {
-            //                    if ((bits[next.X + next.Y * data.Stride / 4] != floodBorder && bits[next.X + next.Y * data.Stride / 4] != floodTo))
-            //                    {
-            //                        check.AddLast(next);
-            //                        bits[next.X + next.Y * data.Stride / 4] = floodTo;
-            //                    }
-            //                }
-            //            }
-            //        }
-            //    }
-            //}
+                        //Add the pixels above and below to the queue
+                        if (currentY > 0 && image[workingX, currentY - 1] != border && image[workingX, currentY - 1] != color)
+                            pointQueue.Enqueue(new Point(workingX, currentY - 1));
+                        if (currentY + 1 < image.Height && image[workingX, currentY + 1] != border && image[workingX, currentY + 1] != color)
+                            pointQueue.Enqueue(new Point(workingX, currentY + 1));
+                    }
+                }
+                else
+                // Filling whole region of same color
+                {
+                    // Get the row segment to be colored
+                    while (rightEdge + 1 < image.Width && image[rightEdge + 1, currentY] == floodFrom)
+                        rightEdge++;
+                    while (leftEdge > 0 && image[leftEdge - 1, currentY] == floodFrom)
+                        leftEdge--;
 
-            //Marshal.Copy(bits, 0, data.Scan0, bits.Length);
-            //image.UnlockBits(data);
+                    // Actually color the row
+                    for (int workingX = leftEdge; workingX <= rightEdge; workingX++)
+                    {
+                        image[workingX, currentY] = color;
+
+                        //Add the pixels above and below to the queue
+                        if (currentY > 0 && image[workingX, currentY - 1] == floodFrom)
+                            pointQueue.Enqueue(new Point(workingX, currentY - 1));
+                        if (currentY + 1 < image.Height && image[workingX, currentY + 1] == floodFrom)
+                            pointQueue.Enqueue(new Point(workingX, currentY + 1));
+                    }
+                }
+            }
         }
 
         #region imagefilledpolygon, imagepolygon 
@@ -1771,8 +1806,6 @@ namespace Peachpie.Library.Graphics
 
             return true;
         }
-
-        #endregion
 
         #endregion
     }

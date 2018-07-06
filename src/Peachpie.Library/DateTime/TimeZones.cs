@@ -172,7 +172,7 @@ namespace Pchp.Library.DateTime
             }
 
             // collect php time zone names and match them with Windows TZ IDs:
-            using (var xml = XmlReader.Create(new System.IO.StreamReader(typeof(PhpTimeZone).Assembly.GetManifestResourceStream("Peachpie.Library.Resources.WindowsTZ.xml"))))
+            using (var xml = XmlReader.Create(new System.IO.StreamReader(typeof(PhpTimeZone).Assembly.GetManifestResourceStream("Pchp.Library.Resources.WindowsTZ.xml"))))
             {
                 while (xml.Read())
                 {

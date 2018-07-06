@@ -1,10 +1,12 @@
-﻿using Pchp.Core;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
+using Pchp.Core;
+using Pchp.Library.Resources;
 
 namespace Pchp.Library
 {
@@ -13,6 +15,8 @@ namespace Pchp.Library
     /// </summary>
     public static partial class PhpInfo
     {
+        #region enum PhpInfoWhat
+
         [PhpHidden, Flags]
         public enum PhpInfoWhat : long
         {
@@ -49,6 +53,11 @@ namespace Pchp.Library
             /// </summary>
             INFO_ALL = 0xffffffff,
         }
+
+        #endregion
+
+        #region Constants
+
         /// <summary>
         /// The configuration line, php.ini location, build date, Web Server, System and more
         /// </summary>
@@ -82,6 +91,245 @@ namespace Pchp.Library
         /// </summary>
         public const long INFO_ALL = (long)PhpInfoWhat.INFO_ALL;
 
+        #endregion
+
+        #region InfoWriter
+
+        abstract class InfoWriter : IDisposable
+        {
+            readonly protected TextWriter _output;
+
+            protected InfoWriter(TextWriter output)
+            {
+                _output = output ?? throw new ArgumentNullException(nameof(output));
+
+                BeginInfo();
+            }
+
+            /// <summary>
+            /// The info header.
+            /// </summary>
+            protected virtual void BeginInfo() { }
+
+            /// <summary>
+            /// The info footer.
+            /// </summary>
+            protected virtual void EndInfo() { }
+
+            /// <summary>
+            /// A table header without header row.
+            /// </summary>
+            public virtual void BeginTable(int tableColumns)
+            {
+
+            }
+
+            /// <summary>
+            /// A table header.
+            /// </summary>
+            public virtual void BeginTable(params string[] header)
+            {
+
+            }
+
+            /// <summary>
+            /// A table footer.
+            /// </summary>
+            public virtual void EndTable()
+            {
+
+            }
+
+            /// <summary>
+            /// A table row.
+            /// </summary>
+            public abstract void TableRow(params string[] values);
+
+            public void Table(Context ctx, IDictionary<IntStringKey, PhpValue> dict, string[] header)
+            {
+                Table(
+                    dict.Select(pair => new[] { pair.Key.ToString(), Export(ctx, pair.Value) }),
+                    header);
+            }
+
+            public void Table(IEnumerable<string[]> rows, string[] header = null)
+            {
+                using (var enumerator = rows.GetEnumerator())
+                {
+                    bool opened = false;
+
+                    if (header != null)
+                    {
+                        BeginTable(header);
+                        opened = true;
+                    }
+
+                    while (enumerator.MoveNext())
+                    {
+                        if (!opened)
+                        {
+                            opened = true;
+                            BeginTable(enumerator.Current.Length);
+                        }
+
+                        TableRow(enumerator.Current);
+                    }
+
+                    //
+                    if (opened)
+                    {
+                        EndTable();
+                    }
+                }
+            }
+
+            /// <summary>
+            /// A header string.
+            /// </summary>
+            public abstract void Header(string header);
+
+            /// <summary>
+            /// A legal notice with optional image.
+            /// </summary>
+            public abstract void LegalNotice(string notice, string logo_img, string logo_url, string logo_text);
+
+            void IDisposable.Dispose()
+            {
+                EndInfo();
+            }
+        }
+
+        sealed class HtmlInfoWriter : InfoWriter
+        {
+            public HtmlInfoWriter(TextWriter output) : base(output)
+            {
+            }
+            protected override void BeginInfo()
+            {
+                _output.WriteLine(@"
+<!DOCTYPE html PUBLIC ""-//W3C//DTD XHTML 1.0 Transitional//EN"" ""DTD/xhtml1-transitional.dtd"">
+<html xmlns=""http://www.w3.org/1999/xhtml"">");
+                _output.WriteLine("<head>");
+                _output.WriteLine(InfoResources.Style);
+                _output.WriteLine(@"<title>phpinfo()</title><meta name=""ROBOTS"" content=""NOINDEX, NOFOLLOW, NOARCHIVE"" />");
+                _output.WriteLine("</head>");
+                _output.WriteLine(@"<body><div class=""center"">");
+                LegalNotice($"{InfoResources.Peachpie} {InfoResources.Version} " + Core.Utilities.ContextExtensions.GetRuntimeInformationalVersion(),
+                    InfoResources.LogoSrc,
+                    InfoResources.LogoHref,
+                    InfoResources.LogoAlt);
+            }
+
+            protected override void EndInfo()
+            {
+                _output.WriteLine(@"</div></body></html>");
+            }
+
+            public override void BeginTable(int tableColumns)
+            {
+                _output.WriteLine("<table>");
+            }
+
+            public override void BeginTable(params string[] header)
+            {
+                BeginTable(header.Length);
+
+                _output.Write("<tr class=\"h\">");
+                foreach (var h in header) _output.Write($"<th>{WebUtility.HtmlEncode(h)}</th>");
+                _output.WriteLine("</tr>");
+            }
+
+            public override void EndTable()
+            {
+                _output.WriteLine("</table>");
+            }
+
+            public override void TableRow(params string[] values)
+            {
+                _output.Write("<tr>");
+                for (int i = 0; i < values.Length; i++)
+                {
+                    _output.Write($"<td class=\"{(i == 0 ? "e" : "v")}\">{WebUtility.HtmlEncode(values[i])}</td>");
+                }
+                _output.WriteLine("</tr>");
+            }
+
+            public override void Header(string header)
+            {
+                _output.WriteLine("<h1>{0}</h1>", WebUtility.HtmlEncode(header));
+            }
+
+            public override void LegalNotice(string notice, string logo_img, string logo_url, string logo_text)
+            {
+                _output.WriteLine(@"<table>
+<tr class=""h""><td>
+<a href=""{0}""><img border=""0"" src=""{1}"" alt=""{2}"" /></a><h1 class=""p"">{3}</h1>
+</td></tr>
+</table>", logo_url, logo_img, logo_text, WebUtility.HtmlEncode(notice));
+            }
+        }
+
+        sealed class CliInfoWriter : InfoWriter
+        {
+            public CliInfoWriter(TextWriter output) : base(output)
+            {
+            }
+
+            protected override void BeginInfo()
+            {
+                _output.WriteLine("phpinfo()");
+                _output.WriteLine($"PHP {InfoResources.Version} => {Environment.PHP_VERSION}");
+                _output.WriteLine($"{InfoResources.Peachpie} {InfoResources.Version} => {Core.Utilities.ContextExtensions.GetRuntimeInformationalVersion()}");
+                _output.WriteLine();
+            }
+
+            protected override void EndInfo()
+            {
+            }
+
+            public override void BeginTable(int tableColumns)
+            {
+            }
+
+            public override void BeginTable(params string[] header)
+            {
+                BeginTable(header.Length);
+                TableRow(header);
+            }
+
+            public override void EndTable()
+            {
+                _output.WriteLine();
+            }
+
+            public override void TableRow(params string[] values)
+            {
+                _output.WriteLine(string.Join(" => ", values));
+            }
+
+            public override void Header(string header)
+            {
+                _output.WriteLine(header);
+                _output.WriteLine();
+            }
+
+            public override void LegalNotice(string notice, string logo_img, string logo_url, string logo_text)
+            {
+                _output.WriteLine(notice);
+                _output.WriteLine();
+            }
+        }
+
+        static InfoWriter/*!*/CreateInfoWriter(Context/*!*/ctx)
+        {
+            if (ctx.IsWebApplication)
+                return new HtmlInfoWriter(ctx.Output);
+            else
+                return new CliInfoWriter(ctx.Output);
+        }
+
+        #endregion
+
         /// <summary>
         /// Outputs information about PHP's configuration
         /// </summary>
@@ -91,48 +339,27 @@ namespace Pchp.Library
         /// One can also combine the respective constants or bitwise values together with the or operator.</param>
         public static bool phpinfo(Context ctx, PhpInfoWhat what = PhpInfoWhat.INFO_ALL)
         {
-            // TODO: ctx.IsWebApplication == false => text output
-            // TODO: 'HtmlTagWriter' -> 'PhpInfoWriter', two implementations of PhpInfoWriter: "HtmlInfoWriter", "TextInfoWriter"
-
-            // TODO: Localize
-
-            ctx.Echo(@"<!DOCTYPE html PUBLIC ""-//W3C//DTD XHTML 1.0 Transitional//EN"" ""DTD/xhtml1-transitional.dtd"">");
-            using (var html = ctx.Tag("html", new { xmlns = "http://www.w3.org/1999/xhtml" }))
+            using (var writer = CreateInfoWriter(ctx))
             {
-                using (var head = html.Tag("head"))
+                if ((what & PhpInfoWhat.INFO_GENERAL) != 0)
                 {
-                    using (var style = head.Tag("style", new { type = "text/css" }))
-                    {
-                        style.EchoRaw(Resources.InfoResources.Style);
-                    }
-                    head.EchoTag("title", "phpinfo()");
-                    head.EchoTagSelf("meta", new { name = "ROBOTS", content = "NOINDEX,NOFOLLOW,NOARCHIVE" });
+                    writer.Table(General(ctx));
                 }
-                using (var body = html.Tag("body"))
-                using (var center = body.Tag("div", new { @class = "center" }))
+                if ((what & PhpInfoWhat.INFO_CONFIGURATION) != 0)
                 {
-                    PageTitle(center);
-
-                    if ((what & PhpInfoWhat.INFO_GENERAL) != 0)
-                    {
-                        General(center);
-                    }
-                    if ((what & PhpInfoWhat.INFO_CONFIGURATION) != 0)
-                    {
-                        Configuration(center, ctx);
-                    }
-                    if ((what & PhpInfoWhat.INFO_ENVIRONMENT) != 0)
-                    {
-                        Env(center);
-                    }
-                    if ((what & PhpInfoWhat.INFO_VARIABLES) != 0)
-                    {
-                        Variables(center);
-                    }
-                    if ((what & PhpInfoWhat.INFO_CREDITS) != 0)
-                    {
-                        Credits(center);
-                    }
+                    Configuration(ctx, writer);
+                }
+                if ((what & PhpInfoWhat.INFO_ENVIRONMENT) != 0)
+                {
+                    Env(ctx, writer);
+                }
+                if ((what & PhpInfoWhat.INFO_VARIABLES) != 0)
+                {
+                    Variables(ctx, writer);
+                }
+                if ((what & PhpInfoWhat.INFO_CREDITS) != 0)
+                {
+                    Credits(writer);
                 }
             }
 
@@ -140,52 +367,21 @@ namespace Pchp.Library
             return true;
         }
 
-        private static void PageTitle(HtmlTagWriter container)
+        static string AsYesNo(bool value) => value ? InfoResources.Yes : InfoResources.No;
+        static string Export(Context ctx, PhpValue value) => Library.Variables.print_r(ctx, value, true).ToString(ctx).Trim();
+
+        static IEnumerable<string[]> General(Context ctx)
         {
-            using (var table = container.Tag("table"))
-            using (var tr = table.Tag("tr", new { @class = "h" }))
-            using (var td = tr.Tag("td"))
-            {
-                using (var a = td.Tag("a", new { href = Resources.InfoResources.LogoHref, target = "_blank" }))
-                {
-                    a.EchoTagSelf("img", new { border = "0", src = Resources.InfoResources.LogoSrc, alt = Resources.InfoResources.LogoAlt });
-                }
-                using (var title = td.Tag("h1", new { @class = "p" }))
-                {
-                    title.EchoEscaped("Peachpie Version " + Core.Utilities.ContextExtensions.GetRuntimeInformationalVersion());
-                }
-            }
+            yield return new[] { "System", $"{GetOsName()} {System.Environment.MachineName} {RuntimeInformation.OSDescription} {RuntimeInformation.OSArchitecture}" };
+            yield return new[] { InfoResources.Compiler, $"{InfoResources.Peachpie} {Core.Utilities.ContextExtensions.GetRuntimeInformationalVersion()}" };
+            yield return new[] { "Architecture", RuntimeInformation.ProcessArchitecture.ToString() };
+            yield return new[] { "Debug Build", AsYesNo(Core.Utilities.ContextExtensions.IsDebugRuntime()) };
+            yield return new[] { "IPv6 Support", AsYesNo(System.Net.Sockets.Socket.OSSupportsIPv6) };
+            yield return new[] { "Registered PHP Streams", string.Join(", ", Streams.StreamWrapper.SystemStreamWrappers.Keys) };
+            yield return new[] { "Registered Stream Filters", string.Join(", ", Streams.PhpFilter.GetFilterNames()) };
         }
 
-        private static void General(HtmlTagWriter container)
-        {
-            using (var table = container.Tag("table"))
-            {
-                Action<string, string> Line = (name, value) =>
-                {
-                    using (var tr = table.Tag("tr"))
-                    {
-                        tr.EchoTag("td", name, new { @class = "e" });
-                        tr.EchoTag("td", value, new { @class = "v" });
-                    }
-                };
-
-                Line("System", $"{GetOsName()} {System.Environment.MachineName} {RuntimeInformation.OSDescription} {RuntimeInformation.OSArchitecture}");
-                Line("Architecture", RuntimeInformation.ProcessArchitecture.ToString());
-                Line("Debug build",
-#if DEBUG
-                    true
-#else
-                    false
-#endif
-                    ? "yes" : "no");
-                Line("IPv6 Support", System.Net.Sockets.Socket.OSSupportsIPv6 ? "yes" : "no");
-                Line("Registered PHP Streams", string.Join(", ", Streams.StreamWrapper.SystemStreamWrappers.Keys));
-                Line("Registered Stream Filters", string.Join(", ", Streams.PhpFilter.GetFilterNames()));
-            }
-        }
-
-        private static string GetOsName()
+        static string GetOsName()
         {
             foreach (var osDesc in typeof(OSPlatform).GetTypeInfo().GetProperties(BindingFlags.Public | BindingFlags.Static).Where(p => p.PropertyType == typeof(OSPlatform)).Select(p => new { Prop = p, Val = (OSPlatform)p.GetValue(null) }))
             {
@@ -194,112 +390,54 @@ namespace Pchp.Library
                     return osDesc.Val.ToString();
                 }
             }
-            return "Unknown";
+            return InfoResources.UnknownOS;
         }
 
-        private static void Configuration(HtmlTagWriter container, Context ctx)
+        static void Configuration(Context ctx, InfoWriter writer)
         {
-            container.EchoTag("h1", "Configuration");
+            writer.Header(InfoResources.Configuration);
 
-            var extensions = Context.GetLoadedExtensions();
-            foreach (string ext in extensions)
+            foreach (string ext in Context.GetLoadedExtensions())
             {
-                container.EchoTag("h2", ext);
+                //container.EchoTag("h2", ext);
             }
 
             // TODO: extensions configuration
             var options = StandardPhpOptions.DumpOptions(ctx, null);
-            foreach (var extensionopt in options.GroupBy(opt => opt.ExtensionName))
+            foreach (var opts in options.GroupBy(opt => opt.ExtensionName))
             {
-
-            }
-        }
-
-        private static void Env(HtmlTagWriter container)
-        {
-            container.EchoTag("h2", "Environment");
-            using (var table = container.Tag("table"))
-            {
-                using (var tr = table.Tag("tr", new { @class = "h" }))
+                foreach (var o in opts)
                 {
-                    tr.EchoTag("th", "Variable");
-                    tr.EchoTag("th", "Value");
-                }
-
-                Action<string, string> Line = (name, value) =>
-                {
-                    using (var tr = table.Tag("tr", new { @class = "h" }))
-                    {
-                        tr.EchoTag("td", name, new { @class = "e" });
-                        using (var td = tr.Tag("td", new { @class = "v" }))
-                        {
-                            if (string.IsNullOrEmpty(value))
-                            {
-                                td.EchoRaw("&nbsp;");
-                            }
-                            else
-                            {
-                                td.EchoEscaped(value);
-                            }
-                        }
-                    }
-                };
-
-                foreach (var entry in container.Context.Env.Keys)
-                {
-                    Line(entry.ToString(), container.Context.Env[entry].ToStringOrNull());
+                    //yield return new[] { o.Name, o.LocalValue.ToString(ctx), o.DefaultValue.ToString(ctx) };
                 }
             }
         }
 
-        private static void Variables(HtmlTagWriter container)
+        static void Env(Context ctx, InfoWriter writer)
         {
-            container.EchoTag("h2", "PHP Variables");
-            using (var table = container.Tag("table"))
-            {
-                using (var tr = table.Tag("tr", new { @class = "h" }))
-                {
-                    tr.EchoTag("th", "Variable");
-                    tr.EchoTag("th", "Value");
-                }
-
-                Action<string, string> Line = (name, value) =>
-                {
-                    using (var tr = table.Tag("tr", new { @class = "h" }))
-                    {
-                        tr.EchoTag("td", name, new { @class = "e" });
-                        using (var td = tr.Tag("td", new { @class = "v" }))
-                        {
-                            if (string.IsNullOrEmpty(value))
-                            {
-                                td.EchoRaw("&nbsp;");
-                            }
-                            else
-                            {
-                                td.EchoEscaped(value);
-                            }
-                        }
-                    }
-                };
-
-                Action<PhpArray, string> DumpArray = (arr, name) =>
-                {
-                    foreach (var entry in arr.Keys)
-                    {
-                        Line($"{name}[{entry}]", arr[entry].ToStringOrNull());
-                    }
-                };
-
-                DumpArray(container.Context.Cookie, "_COOKIE");
-                DumpArray(container.Context.Server, "_SERVER");
-            }
+            writer.Header(InfoResources.Environment);
+            writer.Table(ctx, ctx.Env, new[] { InfoResources.Variable, InfoResources.Value });
         }
 
-        private static void Credits(HtmlTagWriter container)
+        static void Variables(Context ctx, InfoWriter writer)
         {
-            container.EchoTag("h1", "Credits");
-            
+            writer.Header("Variables");
+            writer.Table(
+                ((IDictionary<IntStringKey, PhpValue>)ctx.Request).Select(pair => new[] { $"$_REQUEST['{pair.Key}']", Export(ctx, pair.Value) }).Concat(
+                ((IDictionary<IntStringKey, PhpValue>)ctx.Get).Select(pair => new[] { $"$_GET['{pair.Key}']", Export(ctx, pair.Value) }).Concat(
+                ((IDictionary<IntStringKey, PhpValue>)ctx.Post).Select(pair => new[] { $"$_POST['{pair.Key}']", Export(ctx, pair.Value) }).Concat(
+                ((IDictionary<IntStringKey, PhpValue>)ctx.Cookie).Select(pair => new[] { $"$_COOKIE['{pair.Key}']", Export(ctx, pair.Value) }).Concat(
+                ((IDictionary<IntStringKey, PhpValue>)ctx.Server).Select(pair => new[] { $"$_SERVER['{pair.Key}']", Export(ctx, pair.Value) })
+                )))),
+                new[] { InfoResources.Variable, InfoResources.Value });
+        }
+
+        static void Credits(InfoWriter writer)
+        {
+            writer.Header(InfoResources.Credits);
+
             // TODO: creditz, can we pull it from git?
+            writer.Table(new string[][] { }, new[] { "Contribution", "Authors" });
         }
     }
 }

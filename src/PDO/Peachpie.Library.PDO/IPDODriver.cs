@@ -36,9 +36,9 @@ namespace Peachpie.Library.PDO
 
         /// <summary>
         /// Gets the methods added to the PDO instance when this driver is used.
+        /// Returns <c>null</c> if the method is not defined.
         /// </summary>
-        /// <returns></returns>
-        Dictionary<string, ExtensionMethodDelegate> GetPDObjectExtensionMethods();
+        ExtensionMethodDelegate TryGetExtensionMethod(string name);
 
         /// <summary>
         /// Opens a new database connection.
@@ -48,7 +48,7 @@ namespace Peachpie.Library.PDO
         /// <param name="password">The password.</param>
         /// <param name="options">The options.</param>
         /// <returns></returns>
-        DbConnection OpenConnection(string dsn, string user, string password, PhpArray options);
+        DbConnection OpenConnection(ReadOnlySpan<char> dsn, string user, string password, PhpArray options);
 
         /// <summary>
         /// Gets the last insert identifier.

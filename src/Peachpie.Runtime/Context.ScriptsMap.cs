@@ -186,11 +186,7 @@ namespace Pchp.Core
 
                 lock (_scriptsMap)  // TODO: remove lock, not needed
                 {
-                    if (_scriptsMap.TryGetValue(path, out index))
-                    {
-                        return index;
-                    }
-                    else
+                    if (!_scriptsMap.TryGetValue(path, out index))
                     {
                         index = _scriptsMap.Count;
                         AddToMapNoLock(path, index);
