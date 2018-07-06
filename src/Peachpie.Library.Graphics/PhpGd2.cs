@@ -1402,6 +1402,19 @@ namespace Peachpie.Library.Graphics
 
         #region imagestring
 
+        /// <summary>
+        /// A function to write simple text to a gd2 image. 
+        /// 
+        /// NOTICE: Only system font are supported (indexes 1-5).
+        ///         Loading custom fonts with loadfont is currently not supported.
+        /// </summary>
+        /// <param name="im"></param>
+        /// <param name="fontInd">Font index - Only system fonts are supported currently, numbered 1-5. Anything higher than 5 will work as 5.</param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="text"></param>
+        /// <param name="col">Packed color number</param>
+        /// <returns></returns>
         public static bool imagestring(PhpResource im, int fontInd, int x, int y, string text, long col)
         {
             PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
@@ -1411,26 +1424,33 @@ namespace Peachpie.Library.Graphics
             if (x < 0 || y < 0) return true;
             if (x > img.Image.Width || y > img.Image.Height) return true;
 
-            FontFamily fontFamily = null;
-            var result = SystemFonts.TryFind("Arial", out fontFamily);
 
-            // Counl'd not find the system font.
+            // Get the first available of specified sans serif system fonts
+            FontFamily fontFamily = null;
+            var result = SystemFonts.TryFind("Consolas", out fontFamily) || SystemFonts.TryFind("Lucida Console", out fontFamily) || SystemFonts.TryFind("Arial", out fontFamily) || SystemFonts.TryFind("Verdana", out fontFamily) || SystemFonts.TryFind("Tahoma", out fontFamily);
+
+            // Counl'd find the system font.
             if (!result)
                 return false;
 
+            // Use Bold if required and available
+            var fontStyle = FontStyle.Regular;
+            if (fontInd == 3 || fontInd >= 5)
+            {
+                if(fontFamily.IsStyleAvailible(FontStyle.Bold))
+                {
+                    fontStyle = FontStyle.Bold;
+                }
+            }
+
             var color = FromRGBA(col);
 
+            // Make the font size equivalent to the original PHP version
             int fontSize = 8;
             if (fontInd > 1) fontSize += 4;
-            if (fontSize > 3) fontSize += 2;
-
-            var fontStyle = FontStyle.Regular;
-            if (fontInd == 3 || fontInd == 5)
-                fontStyle = FontStyle.Bold;
+            if (fontInd > 3) fontSize += 4;
 
             var font = fontFamily.CreateFont(fontSize, fontStyle);
-
-            // Correct position
 
             img.Image.Mutate<Rgba32>(context => context.DrawText<Rgba32>(text, font, color, new PointF(x, y)));
 
@@ -1455,6 +1475,183 @@ namespace Peachpie.Library.Graphics
             FloodFill(img.Image, x, y, FromRGBA(col), false, Rgba32.Red);
 
             return true;
+        }
+
+        #region imagefilledarc
+
+        /// <summary>
+        /// Draw a filled partial ellipse
+        /// </summary>
+        public static bool imagefilledarc(PhpResource im, int cx, int cy, int w, int h, int s, int e, int col, int style)
+        {
+            PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+                return false;
+
+            var image = img.Image;
+
+            if (cx < 0 || cy < 0) return true;
+            if (cx > image.Width || cy > image.Height) return true;
+
+            int range = 0;
+            AdjustAnglesAndSize(ref w, ref h, ref s, ref e, ref range);
+
+            // Path Builder object to be used in all the branches
+            PathBuilder pathBuilder = new PathBuilder();
+            var color = FromRGBA(col);
+            var pen = new Pen<Rgba32>(color, 1);
+
+            // edge points, used for both pie and chord
+            PointF startingPoint = new PointF(cx + (int)(Math.Cos(s * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(s * Math.PI / 180) * (h / 2.0)));
+            PointF endingPoint = new PointF(cx + (int)(Math.Cos(e * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(e * Math.PI / 180) * (h / 2.0)));
+
+            image.Mutate<Rgba32>(context =>
+            {
+                // All PIE variants - IMG_ARC_PIE = 0
+                if (style % 2 == 0)
+                {
+                    // Negative range menas that starting point is grreater than the ending one. Then we will create a correct arc by using the rest to 360 from range from the starting point
+                    while (range < 0)
+                        range += 360;
+
+                    // Calculate the arc points, one point per degree
+                    var lastPoint = startingPoint;
+                    for (int angle = s + 1; angle < s + range; angle++)
+                    {
+                        var nextPoint = new PointF(cx + (int)(Math.Cos(angle * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(angle * Math.PI / 180) * (h / 2.0)));
+
+                        pathBuilder.AddLine(lastPoint, nextPoint);
+                        lastPoint = nextPoint;
+                    }
+                    pathBuilder.AddLine(lastPoint, endingPoint);
+
+                    // Draw the prepared lines or fill the pie
+                    if (style == ((int)FilledArcStyles.PIE | (int)FilledArcStyles.NOFILL))
+                    {
+                        context.Draw<Rgba32>(pen, pathBuilder.Build());
+                    }
+                    else
+                    {
+                        //Add the lines to the center
+                        pathBuilder.AddLine(endingPoint, new PointF(cx, cy));
+                        pathBuilder.AddLine(new PointF(cx, cy), startingPoint);
+
+                        if (style == ((int)FilledArcStyles.PIE | (int)FilledArcStyles.NOFILL | (int)FilledArcStyles.EDGED))
+                        {
+                            context.Draw<Rgba32>(pen, pathBuilder.Build());
+                        }
+                        else
+                        {
+                            //Last not-excluded option for PIE, a simple filled PIE
+                            context.Fill<Rgba32>(color, pathBuilder.Build());
+                        }
+                    }
+                }
+                //The other exclusive branch - IMG_ARC_CHORD
+                else
+                {
+                    pathBuilder.AddLine(startingPoint, endingPoint);
+
+                    if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL))
+                    {
+                        context.Draw<Rgba32>(pen, pathBuilder.Build());
+                    }
+                    else
+                    {
+                        //Add the lines to the center
+                        pathBuilder.AddLine(endingPoint, new PointF(cx, cy));
+                        pathBuilder.AddLine(new PointF(cx, cy), startingPoint);
+
+                        if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL | (int)FilledArcStyles.EDGED))
+                        {
+                            context.Draw<Rgba32>(pen, pathBuilder.Build());
+                        }
+                        else
+                        {
+                            // Last remaining option is to fill the chord arc
+                            context.Fill<Rgba32>(color, pathBuilder.Build());
+                        }
+                    }
+                }
+            });
+            return true;
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Perform a flood fill of an image. Either until a border with specified color is reached, or the region with original color.
+        /// </summary>
+        /// <param name="image">image to fill</param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="color">Color to be filled with</param>
+        /// <param name="toBorder">False - color the connected region of same color, True - color until border is reached</param>
+        /// <param name="border">Color of the region border, used if toBorder = True</param>
+        private static void FloodFill(Image<Rgba32>/*!*/image, int x, int y, Rgba32 color, bool toBorder, Rgba32 border)
+        {
+            Debug.Assert(image != null);
+
+            var pointQueue = new Queue<Point>();
+            pointQueue.Enqueue(new Point(x, y));
+            var floodFrom = image[x, y];
+
+            // The same color cannot be filled with itself
+            if (floodFrom == color)
+                return;
+
+            while (pointQueue.Count > 0)
+            {
+                var currentPoint = pointQueue.Dequeue();
+                var currentY = currentPoint.Y;
+                var currentX = currentPoint.X;
+
+                int leftEdge, rightEdge;
+                leftEdge = rightEdge = currentX;
+
+                // Filling until reaching a border of specified color
+                if (toBorder)
+                {
+                    // Get the row segment to be colored
+                    while (rightEdge + 1 < image.Width && image[rightEdge + 1, currentY] != border && image[rightEdge + 1, currentY] != color)
+                        rightEdge++;
+                    while (leftEdge > 0 && image[leftEdge - 1, currentY] != border && image[leftEdge - 1, currentY] != color)
+                        leftEdge--;
+
+                    // Actually color the row
+                    for (int workingX = leftEdge; workingX <= rightEdge; workingX++)
+                    {
+                        image[workingX, currentY] = color;
+
+                        //Add the pixels above and below to the queue
+                        if (currentY > 0 && image[workingX, currentY - 1] != border && image[workingX, currentY - 1] != color)
+                            pointQueue.Enqueue(new Point(workingX, currentY - 1));
+                        if (currentY + 1 < image.Height && image[workingX, currentY + 1] != border && image[workingX, currentY + 1] != color)
+                            pointQueue.Enqueue(new Point(workingX, currentY + 1));
+                    }
+                }
+                else
+                // Filling whole region of same color
+                {
+                    // Get the row segment to be colored
+                    while (rightEdge + 1 < image.Width && image[rightEdge + 1, currentY] == floodFrom)
+                        rightEdge++;
+                    while (leftEdge > 0 && image[leftEdge - 1, currentY] == floodFrom)
+                        leftEdge--;
+
+                    // Actually color the row
+                    for (int workingX = leftEdge; workingX <= rightEdge; workingX++)
+                    {
+                        image[workingX, currentY] = color;
+
+                        //Add the pixels above and below to the queue
+                        if (currentY > 0 && image[workingX, currentY - 1] == floodFrom)
+                            pointQueue.Enqueue(new Point(workingX, currentY - 1));
+                        if (currentY + 1 < image.Height && image[workingX, currentY + 1] == floodFrom)
+                            pointQueue.Enqueue(new Point(workingX, currentY + 1));
+                    }
+                }
+            }
         }
 
         #endregion
@@ -1577,181 +1774,6 @@ namespace Peachpie.Library.Graphics
         }
 
         #endregion
-
-        #region imagefilledarc
-
-        /// <summary>
-        /// Draw a filled partial ellipse
-        /// </summary>
-        public static bool imagefilledarc(PhpResource im, int cx, int cy, int w, int h, int s, int e, int col, int style)
-        {
-            PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
-            if (img == null)
-                return false;
-
-            var image = img.Image;
-
-            if (cx < 0 || cy < 0) return true;
-            if (cx > image.Width || cy > image.Height) return true;
-
-            int range = 0;
-            AdjustAnglesAndSize(ref w, ref h, ref s, ref e, ref range);
-
-            // Path Builder object to be used in all the branches
-            PathBuilder pathBuilder = new PathBuilder();
-            var color = FromRGBA(col);
-            var pen = new Pen<Rgba32>(color, 1);
-
-            // edge points, used for both pie and chord
-            PointF startingPoint = new PointF(cx + (int)(Math.Cos(s * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(s * Math.PI / 180) * (h / 2.0)));
-            PointF endingPoint = new PointF(cx + (int)(Math.Cos(e * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(e * Math.PI / 180) * (h / 2.0)));
-
-            image.Mutate<Rgba32>(context =>
-            {
-                // All PIE variants - IMG_ARC_PIE = 0
-                if (style % 2 == 0)
-                {
-                    // Negative range menas that starting point is grreater than the ending one. Then we will create a correct arc by using the rest to 360 from range from the starting point
-                    while (range < 0)
-                        range += 360;
-
-                    // Calculate the arc points, one point per degree
-                    var lastPoint = startingPoint;
-                    for (int angle = s + 1; angle < s + range; angle++)
-                    {
-                        var nextPoint = new PointF(cx + (int)(Math.Cos(angle * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(angle * Math.PI / 180) * (h / 2.0)));
-
-                        pathBuilder.AddLine(lastPoint, nextPoint);
-                        lastPoint = nextPoint;
-                    }
-                    pathBuilder.AddLine(lastPoint, endingPoint);
-
-                    // Draw the prepared lines or fill the pie
-                    if (style == ((int)FilledArcStyles.PIE | (int)FilledArcStyles.NOFILL))
-                    {
-                        context.Draw<Rgba32>(pen, pathBuilder.Build());
-                    }
-                    else {
-                        //Add the lines to the center
-                        pathBuilder.AddLine(endingPoint, new PointF(cx, cy));
-                        pathBuilder.AddLine(new PointF(cx, cy), startingPoint);
-
-                        if (style == ((int)FilledArcStyles.PIE | (int)FilledArcStyles.NOFILL | (int)FilledArcStyles.EDGED))
-                        {
-                            context.Draw<Rgba32>(pen, pathBuilder.Build());
-                        }
-                        else
-                        {
-                            //Last not-excluded option for PIE, a simple filled PIE
-                            context.Fill<Rgba32>(color, pathBuilder.Build());
-                        }
-                    }
-                }
-                //The other exclusive branch - IMG_ARC_CHORD
-                else
-                {
-                    pathBuilder.AddLine(startingPoint, endingPoint);
-
-                    if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL))
-                    {
-                        context.Draw<Rgba32>(pen, pathBuilder.Build());
-                    }
-                    else
-                    {
-                        //Add the lines to the center
-                        pathBuilder.AddLine(endingPoint, new PointF(cx, cy));
-                        pathBuilder.AddLine(new PointF(cx, cy), startingPoint);
-
-                        if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL | (int)FilledArcStyles.EDGED))
-                        {
-                            context.Draw<Rgba32>(pen, pathBuilder.Build());
-                        }
-                        else
-                        {
-                            // Last remaining option is to fill the chord arc
-                            context.Fill<Rgba32>(color, pathBuilder.Build());
-                        }
-                    }
-                }
-            });
-            return true;
-        }
-
-        #endregion
-        /// <summary>
-        /// Perform a flood fill of an image. Either until a border with specified color is reached, or the region with original color.
-        /// </summary>
-        /// <param name="image">image to fill</param>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
-        /// <param name="color">Color to be filled with</param>
-        /// <param name="toBorder">False - color the connected region of same color, True - color until border is reached</param>
-        /// <param name="border">Color of the region border, used if toBorder = True</param>
-        private static void FloodFill(Image<Rgba32>/*!*/image, int x, int y, Rgba32 color, bool toBorder, Rgba32 border)
-        {
-            Debug.Assert(image != null);
-
-            var pointQueue = new Queue<Point>();
-            pointQueue.Enqueue(new Point(x, y));
-            var floodFrom = image[x, y];
-
-            // The same color cannot be filled with itself
-            if (floodFrom == color)
-                return;
-
-            while (pointQueue.Count > 0)
-            {
-                var currentPoint = pointQueue.Dequeue();
-                var currentY = currentPoint.Y;
-                var currentX = currentPoint.X;
-
-                int leftEdge, rightEdge;
-                leftEdge = rightEdge = currentX;
-
-                // Filling until reaching a border of specified color
-                if (toBorder)
-                {
-                    // Get the row segment to be colored
-                    while (rightEdge + 1 < image.Width && image[rightEdge + 1, currentY] != border && image[rightEdge + 1, currentY] != color)
-                        rightEdge++;
-                    while (leftEdge > 0 && image[leftEdge - 1, currentY] != border && image[leftEdge - 1, currentY] != color)
-                        leftEdge--;
-
-                    // Actually color the row
-                    for (int workingX = leftEdge; workingX <= rightEdge; workingX++)
-                    {
-                        image[workingX, currentY] = color;
-
-                        //Add the pixels above and below to the queue
-                        if (currentY > 0 && image[workingX, currentY - 1] != border && image[workingX, currentY - 1] != color)
-                            pointQueue.Enqueue(new Point(workingX, currentY - 1));
-                        if (currentY + 1 < image.Height && image[workingX, currentY + 1] != border && image[workingX, currentY + 1] != color)
-                            pointQueue.Enqueue(new Point(workingX, currentY + 1));
-                    }
-                }
-                else
-                // Filling whole region of same color
-                {
-                    // Get the row segment to be colored
-                    while (rightEdge + 1 < image.Width && image[rightEdge + 1, currentY] == floodFrom)
-                        rightEdge++;
-                    while (leftEdge > 0 && image[leftEdge - 1, currentY] == floodFrom)
-                        leftEdge--;
-
-                    // Actually color the row
-                    for (int workingX = leftEdge; workingX <= rightEdge; workingX++)
-                    {
-                        image[workingX, currentY] = color;
-
-                        //Add the pixels above and below to the queue
-                        if (currentY > 0 && image[workingX, currentY - 1] == floodFrom)
-                            pointQueue.Enqueue(new Point(workingX, currentY - 1));
-                        if (currentY + 1 < image.Height && image[workingX, currentY + 1] == floodFrom)
-                            pointQueue.Enqueue(new Point(workingX, currentY + 1));
-                    }
-                }
-            }
-        }
 
         #region imagefilledpolygon, imagepolygon 
 
