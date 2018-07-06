@@ -1400,6 +1400,64 @@ namespace Peachpie.Library.Graphics
 
         #endregion
 
+        #region imagestring
+
+        /// <summary>
+        /// A function to write simple text to a gd2 image. 
+        /// 
+        /// NOTICE: Only system font are supported (indexes 1-5).
+        ///         Loading custom fonts with loadfont is currently not supported.
+        /// </summary>
+        /// <param name="im"></param>
+        /// <param name="fontInd">Font index - Only system fonts are supported currently, numbered 1-5. Anything higher than 5 will work as 5.</param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="text"></param>
+        /// <param name="col">Packed color number</param>
+        /// <returns></returns>
+        public static bool imagestring(PhpResource im, int fontInd, int x, int y, string text, long col)
+        {
+            PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+                return false;
+
+            if (x < 0 || y < 0) return true;
+            if (x > img.Image.Width || y > img.Image.Height) return true;
+
+
+            // Get the first available of specified sans serif system fonts
+            FontFamily fontFamily = null;
+            var result = SystemFonts.TryFind("Consolas", out fontFamily) || SystemFonts.TryFind("Lucida Console", out fontFamily) || SystemFonts.TryFind("Arial", out fontFamily) || SystemFonts.TryFind("Verdana", out fontFamily) || SystemFonts.TryFind("Tahoma", out fontFamily);
+
+            // Counl'd find the system font.
+            if (!result)
+                return false;
+
+            // Use Bold if required and available
+            var fontStyle = FontStyle.Regular;
+            if (fontInd == 3 || fontInd >= 5)
+            {
+                if(fontFamily.IsStyleAvailible(FontStyle.Bold))
+                {
+                    fontStyle = FontStyle.Bold;
+                }
+            }
+
+            var color = FromRGBA(col);
+
+            // Make the font size equivalent to the original PHP version
+            int fontSize = 8;
+            if (fontInd > 1) fontSize += 4;
+            if (fontInd > 3) fontSize += 4;
+
+            var font = fontFamily.CreateFont(fontSize, fontStyle);
+
+            img.Image.Mutate<Rgba32>(context => context.DrawText<Rgba32>(text, font, color, new PointF(x, y)));
+
+            return true;
+        }
+        #endregion
+
         #region imagefill
 
         /// <summary>
@@ -1418,125 +1476,6 @@ namespace Peachpie.Library.Graphics
 
             return true;
         }
-
-        #endregion
-
-        /// <summary>
-        /// Adjust angles and size for same behavior as in PHP
-        /// </summary>
-        /// <param name="w"></param>
-        /// <param name="h"></param>
-        /// <param name="s"></param>
-        /// <param name="e"></param>
-        /// <param name="range"></param>
-        private static void AdjustAnglesAndSize(ref int w, ref int h, ref int s, ref int e, ref int range)
-        {
-            if (w < 0) w = 0;
-            if (h < 0) h = 0;
-
-            if (w > 1 && w <= 4) w -= 1;
-            if (h > 1 && h <= 4) h -= 1;
-            if (w > 4) w -= 2;
-            if (h > 4) h -= 2;
-
-            range = e - s;
-            if (range < 360) range = range + (range / 360) * 360;
-            if (range > 360) range = range - (range / 360) * 360;
-
-            if (s < 360) s = s + (s / 360) * 360;
-            if (e < 360) e = e + (e / 360) * 360;
-
-            if (s < 0) s = 360 + s;
-            if (e < 0) e = 360 + e;
-
-            if (e > 360) e = e - (e / 360) * 360;
-            if (s > 360) e = e - (e / 360) * 360;
-        }
-
-        #region imagecolorstotal
-
-        // NOTE: See https://github.com/SixLabors/ImageSharp/issues/488
-        /// <summary>
-        /// Find out the number of colors in an image's palette
-        /// </summary>
-        public static int imagecolorstotal(PhpResource im)
-        {
-            throw new NotImplementedException();
-
-            //PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
-            //if (img == null)
-            //    return 0;
-
-            //var format = img.Image.PixelFormat;
-
-            //if ((format & PixelFormat.Format1bppIndexed) != 0)
-            //    return 2;
-            //if ((format & PixelFormat.Format4bppIndexed) != 0)
-            //    return 16;
-            //if ((format & PixelFormat.Format8bppIndexed) != 0)
-            //    return 256;
-
-            //if ((format & PixelFormat.Indexed) != 0)
-            //{
-            //    // count the palette
-            //    try
-            //    {
-            //        return img.Image.Palette.Entries.Length;
-            //    }
-            //    catch
-            //    {
-            //        // ignored, some error during SafeNativeMethods.Gdip.GdipGetImagePalette
-            //    }
-            //}
-
-            //// non indexed image
-            //return 0;
-        }
-
-        #endregion
-
-        #region imagetruecolortopalette
-
-        /// <summary>
-        /// Convert a true colour image to a palette based image with a number of colours, optionally using dithering.
-        /// </summary>
-        public static bool imagetruecolortopalette(PhpResource im, bool ditherFlag, int colorsWanted)
-        {
-            throw new NotImplementedException();
-
-            //if (colorsWanted <= 0)
-            //    return false;
-
-            //PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
-            //if (img == null)
-            //    return false;
-
-            //if (img.IsIndexed)
-            //    return true;     // already indexed
-
-            //// determine new pixel format:
-            //PixelFormat newformat;
-            //if (colorsWanted <= 2)
-            //    newformat = PixelFormat.Format1bppIndexed;
-            //else if (colorsWanted <= 16)
-            //    newformat = PixelFormat.Format4bppIndexed;
-            //else if (colorsWanted <= 256)
-            //    newformat = PixelFormat.Format8bppIndexed;
-            //else
-            //    newformat = PixelFormat.Indexed;
-
-            //// clone the image as indexed:
-            //var image = img.Image;
-            //var newimage = image.Clone(new Rectangle(0, 0, image.Width, image.Height), newformat);
-
-            //if (newimage == null)
-            //    return false;
-
-            //img.Image = newimage;
-            //return true;
-        }
-
-        #endregion
 
         #region imagefilledarc
 
@@ -1557,42 +1496,34 @@ namespace Peachpie.Library.Graphics
             int range = 0;
             AdjustAnglesAndSize(ref w, ref h, ref s, ref e, ref range);
 
-            // Path Builder object ot be used in all the branches
+            // Path Builder object to be used in all the branches
             PathBuilder pathBuilder = new PathBuilder();
             var color = FromRGBA(col);
             var pen = new Pen<Rgba32>(color, 1);
+
+            // edge points, used for both pie and chord
+            PointF startingPoint = new PointF(cx + (int)(Math.Cos(s * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(s * Math.PI / 180) * (h / 2.0)));
+            PointF endingPoint = new PointF(cx + (int)(Math.Cos(e * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(e * Math.PI / 180) * (h / 2.0)));
 
             image.Mutate<Rgba32>(context =>
             {
                 // All PIE variants - IMG_ARC_PIE = 0
                 if (style % 2 == 0)
                 {
-                    var ellipse = new SixLabors.Shapes.EllipsePolygon(cx, cy, w, h);
-                    ISimplePath simplePath = ellipse;
-                    var points = simplePath.Points;
+                    // Negative range menas that starting point is grreater than the ending one. Then we will create a correct arc by using the rest to 360 from range from the starting point
+                    while (range < 0)
+                        range += 360;
 
-                    int pointCount = (int)Math.Floor((float)points.Count * ((float)range / 360.0f));
-                    float angleSegment = (float)points.Count / 360.0f;
-
-                    // Move the starting angle 180 degrees forward, and ensure its between 0 and 359, because points in the ellipses path start on the left, but PHP imagefilledarc angles start on the right
-                    s += 180;
-                    while (s >= 360)
-                        s -= 360;
-
-                    int startPoint = (int)Math.Ceiling((s) * angleSegment);
-                    PointF lastPoint = points[startPoint];
-                    var startingPoint = lastPoint;
-
-                    for (int i = startPoint + 1; i < startPoint + pointCount; i++)
+                    // Calculate the arc points, one point per degree
+                    var lastPoint = startingPoint;
+                    for (int angle = s + 1; angle < s + range; angle++)
                     {
-                        int index = i;
-                        // Overflow in the ellipsis points array allowed
-                        if (index >= points.Count)
-                            index -= points.Count;
+                        var nextPoint = new PointF(cx + (int)(Math.Cos(angle * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(angle * Math.PI / 180) * (h / 2.0)));
 
-                        pathBuilder.AddLine(lastPoint, points[index]);
-                        lastPoint = points[index];
+                        pathBuilder.AddLine(lastPoint, nextPoint);
+                        lastPoint = nextPoint;
                     }
+                    pathBuilder.AddLine(lastPoint, endingPoint);
 
                     // Draw the prepared lines or fill the pie
                     if (style == ((int)FilledArcStyles.PIE | (int)FilledArcStyles.NOFILL))
@@ -1602,7 +1533,7 @@ namespace Peachpie.Library.Graphics
                     else
                     {
                         //Add the lines to the center
-                        pathBuilder.AddLine(lastPoint, new PointF(cx, cy));
+                        pathBuilder.AddLine(endingPoint, new PointF(cx, cy));
                         pathBuilder.AddLine(new PointF(cx, cy), startingPoint);
 
                         if (style == ((int)FilledArcStyles.PIE | (int)FilledArcStyles.NOFILL | (int)FilledArcStyles.EDGED))
@@ -1619,9 +1550,6 @@ namespace Peachpie.Library.Graphics
                 //The other exclusive branch - IMG_ARC_CHORD
                 else
                 {
-                    PointF startingPoint = new PointF(cx + (int)(Math.Cos(s * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(s * Math.PI / 180) * (h / 2.0)));
-                    PointF endingPoint = new PointF(cx + (int)(Math.Cos(e * Math.PI / 180) * (w / 2.0)), cy + (int)(Math.Sin(e * Math.PI / 180) * (h / 2.0)));
-
                     pathBuilder.AddLine(startingPoint, endingPoint);
 
                     if (style == ((int)FilledArcStyles.CHORD | (int)FilledArcStyles.NOFILL))
@@ -1726,6 +1654,127 @@ namespace Peachpie.Library.Graphics
             }
         }
 
+        #endregion
+
+        /// <summary>
+        /// Adjust angles and size for same behavior as in PHP
+        /// </summary>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="s"></param>
+        /// <param name="e"></param>
+        /// <param name="range"></param>
+        private static void AdjustAnglesAndSize(ref int w, ref int h, ref int s, ref int e, ref int range)
+        {
+            if (w < 0) w = 0;
+            if (h < 0) h = 0;
+
+            if (w > 1 && w <= 4) w -= 1;
+            if (h > 1 && h <= 4) h -= 1;
+            if (w > 4) w -= 2;
+            if (h > 4) h -= 2;
+
+            range = e - s;
+            if (range < 360) range = range + (range / 360) * 360;
+            if (range > 360) range = range - (range / 360) * 360;
+
+            if (s < 360) s = s + (s / 360) * 360;
+            if (e < 360) e = e + (e / 360) * 360;
+
+            if (s < 0) s = 360 + s;
+            if (e < 0) e = 360 + e;
+
+            if (e > 360) e = e - (e / 360) * 360;
+            if (s > 360) s = s - (s / 360) * 360;
+        }
+
+        #region TODO (Convert from System.Drawing to ImageSharp)
+
+        #region imagecolorstotal
+
+        // NOTE: See https://github.com/SixLabors/ImageSharp/issues/488
+        /// <summary>
+        /// Find out the number of colors in an image's palette
+        /// </summary>
+        public static int imagecolorstotal(PhpResource im)
+        {
+            throw new NotImplementedException();
+
+            //PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            //if (img == null)
+            //    return 0;
+
+            //var format = img.Image.PixelFormat;
+
+            //if ((format & PixelFormat.Format1bppIndexed) != 0)
+            //    return 2;
+            //if ((format & PixelFormat.Format4bppIndexed) != 0)
+            //    return 16;
+            //if ((format & PixelFormat.Format8bppIndexed) != 0)
+            //    return 256;
+
+            //if ((format & PixelFormat.Indexed) != 0)
+            //{
+            //    // count the palette
+            //    try
+            //    {
+            //        return img.Image.Palette.Entries.Length;
+            //    }
+            //    catch
+            //    {
+            //        // ignored, some error during SafeNativeMethods.Gdip.GdipGetImagePalette
+            //    }
+            //}
+
+            //// non indexed image
+            //return 0;
+        }
+
+        #endregion
+
+        #region imagetruecolortopalette
+
+        /// <summary>
+        /// Convert a true colour image to a palette based image with a number of colours, optionally using dithering.
+        /// </summary>
+        public static bool imagetruecolortopalette(PhpResource im, bool ditherFlag, int colorsWanted)
+        {
+            throw new NotImplementedException();
+
+            //if (colorsWanted <= 0)
+            //    return false;
+
+            //PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            //if (img == null)
+            //    return false;
+
+            //if (img.IsIndexed)
+            //    return true;     // already indexed
+
+            //// determine new pixel format:
+            //PixelFormat newformat;
+            //if (colorsWanted <= 2)
+            //    newformat = PixelFormat.Format1bppIndexed;
+            //else if (colorsWanted <= 16)
+            //    newformat = PixelFormat.Format4bppIndexed;
+            //else if (colorsWanted <= 256)
+            //    newformat = PixelFormat.Format8bppIndexed;
+            //else
+            //    newformat = PixelFormat.Indexed;
+
+            //// clone the image as indexed:
+            //var image = img.Image;
+            //var newimage = image.Clone(new Rectangle(0, 0, image.Width, image.Height), newformat);
+
+            //if (newimage == null)
+            //    return false;
+
+            //img.Image = newimage;
+            //return true;
+        }
+
+        #endregion
+
         #region imagefilledpolygon, imagepolygon 
 
         /// <summary>
@@ -1809,4 +1858,6 @@ namespace Peachpie.Library.Graphics
 
         #endregion
     }
+
+    #endregion
 }
