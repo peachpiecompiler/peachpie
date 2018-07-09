@@ -15,8 +15,13 @@ namespace Pchp.CodeAnalysis.Utilities
     {
         readonly object _syncRoot = new object();
 
-        readonly HashSet<T> _set = new HashSet<T>();
-        readonly Queue<T> _queue = new Queue<T>();
+        // TODO: Use a heap (with possible duplicate key values) instead
+        readonly SortedSet<T> _queue;
+
+        public DistinctQueue(IComparer<T> comparer)
+        {
+            _queue = new SortedSet<T>(comparer);
+        }
 
         /// <summary>
         /// Count of items in the queue.
@@ -35,15 +40,7 @@ namespace Pchp.CodeAnalysis.Utilities
 
             lock (_syncRoot)
             {
-                if (_set.Add(value))
-                {
-                    _queue.Enqueue(value);
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+                return _queue.Add(value);
             }
         }
 
@@ -56,8 +53,8 @@ namespace Pchp.CodeAnalysis.Utilities
             {
                 if (_queue.Count != 0)
                 {
-                    value = _queue.Dequeue();
-                    _set.Remove(value);
+                    value = _queue.First();
+                    _queue.Remove(value);
                     return true;
                 }
                 else

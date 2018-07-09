@@ -45,7 +45,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// List of blocks to be processed.
         /// </summary>
-        readonly DistinctQueue<T> _queue = new DistinctQueue<T>();
+        readonly DistinctQueue<T> _queue = new DistinctQueue<T>(new BoundBlockComparer());
 
         readonly CallGraph _callGraph = new CallGraph();
 
@@ -182,6 +182,42 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             return n;
+        }
+
+        sealed class BoundBlockComparer : IComparer<BoundBlock>
+        {
+            int IComparer<BoundBlock>.Compare(BoundBlock x, BoundBlock y)
+            {
+                if (ReferenceEquals(x, y))
+                {
+                    return 0;
+                }
+
+                int ordRes = x.Ordinal - y.Ordinal;
+                if (ordRes != 0)
+                {
+                    return ordRes;
+                }
+
+                // TODO: Skip the following part (returning 0) when a heap with possible duplicate key values is used
+
+                // We must ensure that two blocks from two different routines are not considered equal
+                int hashRes = x.GetHashCode() - y.GetHashCode();
+                if (hashRes != 0)
+                {
+                    return hashRes;
+                }
+
+                Debug.Assert(x.FlowState != null && y.FlowState != null);
+                Debug.Assert(x.FlowState.FlowContext != y.FlowState.FlowContext);
+                int stateHashRes = x.FlowState.FlowContext.GetHashCode() - y.FlowState.FlowContext.GetHashCode();
+                if (stateHashRes != 0)
+                {
+                    return stateHashRes;
+                }
+
+                throw new NotImplementedException();
+            }
         }
     }
 }

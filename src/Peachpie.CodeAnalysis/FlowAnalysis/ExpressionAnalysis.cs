@@ -2096,9 +2096,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // remember "void" type explicitly
                 State.FlowThroughReturn(0);
             }
-
-            // Potentially reanalyse blocks depending on this routine processing and return type
-            PingSubscribers((ExitBlock)this.Routine?.ControlFlowGraph.Exit);
         }
 
         public override void VisitThrow(BoundThrowStatement x)

@@ -89,9 +89,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // merge and check whether state changed
                 state = state.Merge(targetState);   // merge states into new one
 
-                if (state.Equals(targetState))
+                if (state.Equals(targetState) && !(target is ExitBlock))
                 {
-                    return; // state convergated, we don't have to analyse target block again
+                    // state convergated, we don't have to analyse target block again
+                    // unless it's an ExitBlock, because it propagates the return type
+                    // (which is not a part of a state) to all the callers
+
+                    // TODO: Consider marking the return type as dirty for these cases
+                    return;
                 }
             }
             else
