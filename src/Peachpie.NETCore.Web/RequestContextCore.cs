@@ -270,7 +270,9 @@ namespace Peachpie.Web
         /// <summary>
         /// Informational string exposing technology powering the web request and version.
         /// </summary>
-        public static readonly string XPoweredBy = "PeachPie" + " " + ContextExtensions.GetRuntimeInformationalVersion();
+        static readonly string XPoweredBy = "PeachPie" + " " + ContextExtensions.GetRuntimeInformationalVersion();
+
+        static string DefaultContentType = "text/html; charset=UTF-8";
 
         /// <summary>
         /// Reference to current <see cref="HttpContext"/>.
@@ -304,7 +306,7 @@ namespace Peachpie.Web
 
         void SetupHeaders()
         {
-            _httpctx.Response.ContentType = "text/html; charset=UTF-8";                 // default content type if not set anything by the application
+            _httpctx.Response.ContentType = DefaultContentType;                         // default content type if not set anything by the application
             _httpctx.Response.Headers["X-Powered-By"] = new StringValues(XPoweredBy);   //
         }
 

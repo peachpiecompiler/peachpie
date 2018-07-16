@@ -1319,7 +1319,7 @@ namespace Pchp.Core
 
         /// <summary>
         /// Content of the string, may be shared.
-        /// Cannot be <c>null</c>.
+        /// Can be <c>null</c>.
         /// </summary>
         Blob _blob; // TODO: allow union of "null|string|Blob"
 
