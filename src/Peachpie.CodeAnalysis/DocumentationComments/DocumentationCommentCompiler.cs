@@ -146,21 +146,21 @@ namespace Pchp.CodeAnalysis.DocumentationComments
                 }
             }
 
-            // implicit parameters
-            foreach (var p in ps)
-            {
-                if (p.IsImplicitlyDeclared)
-                {
-                    if (SpecialParameterSymbol.IsContextParameter(p))
-                    {
-                        WriteParam(p.MetadataName, PhpResources.XmlDoc_ContextParamDescription);
-                    }
-                }
-                else
-                {
-                    break;  // implicit parameters are always at begining
-                }
-            }
+            //// implicit parameters
+            //foreach (var p in ps)
+            //{
+            //    if (p.IsImplicitlyDeclared)
+            //    {
+            //        if (SpecialParameterSymbol.IsContextParameter(p))
+            //        {
+            //            // WriteParam(p.MetadataName, PhpResources.XmlDoc_ContextParamDescription);
+            //        }
+            //    }
+            //    else
+            //    {
+            //        break;  // implicit parameters are always at begining
+            //    }
+            //}
 
             _writer.WriteLine("</member>");
 
