@@ -204,15 +204,27 @@ namespace Pchp.CodeAnalysis.DocumentationComments
                 if ((phpdoc = field.PhpDocBlock) != null)
                 {
                     var summary = phpdoc.Summary;
+                    var value = string.Empty;
                     if (string.IsNullOrEmpty(summary))
                     {
-                        // TODO: summary = phpdoc.GetElement<PHPDocBlock.VarTag>().Description;
+                        // try @var or @staticvar:
+                        var vartag = field.FindPhpDocVarTag();
+                        if (vartag != null)
+                        {
+                            summary = vartag.Description;
+
+                            if (!string.IsNullOrEmpty(vartag.TypeNames))
+                            {
+                                value = string.Format("<value>{0}</value>", XmlEncode(vartag.TypeNames));
+                            }
+                        }
                     }
 
                     if (!string.IsNullOrWhiteSpace(summary))
                     {
                         _writer.WriteLine($"<member name=\"{CommentIdResolver.GetId(field)}\">");
                         WriteSummary(summary);
+                        _writer.WriteLine(value);
                         _writer.WriteLine("</member>");
                     }
                 }

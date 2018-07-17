@@ -235,7 +235,7 @@ namespace Pchp.CodeAnalysis.Symbols
             // PHPDoc @var type
             if ((DeclaringCompilation.Options.PhpDocTypes & PhpDocTypes.FieldTypes) != 0)
             {
-                var vartag = _phpDoc?.GetElement<PHPDocBlock.VarTag>();
+                var vartag = FindPhpDocVarTag();
                 if (vartag != null && vartag.TypeNamesArray.Length != 0)
                 {
                     var dummyctx = TypeRefFactory.CreateTypeRefContext(_containingType);
@@ -263,10 +263,42 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public override bool IsStatic => _fieldKind == PhpPropertyKind.AppStaticField || IsConst; // either field is CLR static field or constant (Literal field must be Static).
 
+        internal PHPDocBlock.TypeVarDescTag FindPhpDocVarTag()
+        {
+            if (_phpDoc != null)
+            {
+                foreach (var vartype in _phpDoc.Elements.OfType<PHPDocBlock.TypeVarDescTag>())
+                {
+                    if (string.IsNullOrEmpty(vartype.VariableName) || vartype.VariableName.Substring(1) == this.MetadataName)
+                    {
+                        return vartype;
+                    }
+                }
+            }
+
+            return null;
+        }
+
         public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
         {
-            return _phpDoc?.Summary ?? string.Empty;
-            // TODO: @var X $f >>Summary<<.
+            var summary = string.Empty;
+
+            if (_phpDoc != null)
+            {
+                summary = _phpDoc.Summary;
+
+                if (string.IsNullOrWhiteSpace(summary))
+                {
+                    // try @var or @staticvar:
+                    var vartag = FindPhpDocVarTag();
+                    if (vartag != null)
+                    {
+                        summary = vartag.Description;
+                    }
+                }
+            }
+
+            return summary;
         }
     }
 }
