@@ -524,6 +524,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindFunctionCall(AST.FunctionCall x)
         {
+            //
+            Routine.Flags |= RoutineFlags.HasUserFunctionCall; // TODO: ignore well-known library functions
+
+            //
             var boundTarget = x.IsMemberOf != null ? BindExpression(x.IsMemberOf, BoundAccess.Read/*Object?*/) : null;
 
             if (x is AST.DirectFcnCall)
