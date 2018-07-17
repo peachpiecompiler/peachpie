@@ -167,6 +167,8 @@ namespace Pchp.CodeAnalysis.DocumentationComments
                 }
             }
 
+            // TODO: <exception> ... if any
+
             //// implicit parameters
             //foreach (var p in ps)
             //{
@@ -196,6 +198,25 @@ namespace Pchp.CodeAnalysis.DocumentationComments
                 WriteSummary(phpdoc.Summary);
             }
             _writer.WriteLine("</member>");
+
+            foreach (var field in type.GetMembers().OfType<SourceFieldSymbol>())
+            {
+                if ((phpdoc = field.PhpDocBlock) != null)
+                {
+                    var summary = phpdoc.Summary;
+                    if (string.IsNullOrEmpty(summary))
+                    {
+                        // TODO: summary = phpdoc.GetElement<PHPDocBlock.VarTag>().Description;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(summary))
+                    {
+                        _writer.WriteLine($"<member name=\"{CommentIdResolver.GetId(field)}\">");
+                        WriteSummary(summary);
+                        _writer.WriteLine("</member>");
+                    }
+                }
+            }
         }
 
         void WriteFile(SourceFileSymbol file)

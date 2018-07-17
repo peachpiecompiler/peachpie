@@ -56,6 +56,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Optional associated PHPDoc block defining the field type hint.
         /// </summary>
+        internal PHPDocBlock PhpDocBlock => _phpDoc;
         readonly PHPDocBlock _phpDoc;
 
         /// <summary>
@@ -265,6 +266,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
         {
             return _phpDoc?.Summary ?? string.Empty;
+            // TODO: @var X $f >>Summary<<.
         }
     }
 }
