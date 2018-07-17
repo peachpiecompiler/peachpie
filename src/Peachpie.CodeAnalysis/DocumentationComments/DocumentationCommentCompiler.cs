@@ -111,9 +111,30 @@ namespace Pchp.CodeAnalysis.DocumentationComments
             _writer.WriteLine("</summary>");
         }
 
-        void WriteParam(string pname, string pdesc)
+        void WriteParam(string pname, string pdesc, string type = null)
         {
-            _writer.WriteLine("<param name=\"{0}\">{1}</param>", XmlEncode(pname), XmlEncode(pdesc));
+            if (string.IsNullOrWhiteSpace(pdesc) && string.IsNullOrEmpty(type))
+            {
+                return;
+            }
+
+            //
+
+            _writer.Write("<param name=\"");
+            _writer.Write(XmlEncode(pname));
+            _writer.Write('\"');
+
+            if (!string.IsNullOrEmpty(type))
+            {
+                // type="int|string|bool"
+                _writer.Write(" type=\"");
+                _writer.Write(XmlEncode(type));
+                _writer.Write('\"');
+            }
+
+            _writer.Write('>');
+            _writer.Write(XmlEncode(pdesc));
+            _writer.WriteLine("</param>");
         }
 
         void WriteRoutine(SourceRoutineSymbol routine)
@@ -134,9 +155,9 @@ namespace Pchp.CodeAnalysis.DocumentationComments
                 {
                     // TODO: note the parameter type into Doc comment
 
-                    if (p.VariableName != null && !string.IsNullOrWhiteSpace(p.Description))
+                    if (p.VariableName != null)
                     {
-                        WriteParam(p.VariableName.TrimStart('$'), p.Description);
+                        WriteParam(p.VariableName.TrimStart('$'), p.Description, p.TypeNames);
                     }
                 }
                 var rtag = phpdoc.Returns;
@@ -179,7 +200,7 @@ namespace Pchp.CodeAnalysis.DocumentationComments
 
         void WriteFile(SourceFileSymbol file)
         {
-            
+
         }
     }
 }
