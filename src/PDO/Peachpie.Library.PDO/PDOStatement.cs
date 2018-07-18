@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
+using System.Diagnostics;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Pchp.Core;
 
@@ -23,6 +27,11 @@ namespace Peachpie.Library.PDO
         private readonly Dictionary<PDO.PDO_ATTR, PhpValue> m_attributes = new Dictionary<PDO.PDO_ATTR, PhpValue>();
         private string[] m_dr_names;
 
+        private bool m_positionalAttr;
+        private bool m_namedAttr;
+        private Dictionary<string, string> m_namedPlaceholders;
+        private List<String> m_positionalPlaceholders;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="PDOStatement" /> class.
         /// </summary>
@@ -37,6 +46,9 @@ namespace Peachpie.Library.PDO
 
             this.m_cmd = pdo.CreateCommand(this.m_stmt);
 
+            this.m_positionalAttr = false;
+            this.m_namedAttr = false;
+
             this.SetDefaultAttributes();
         }
 
@@ -49,6 +61,140 @@ namespace Peachpie.Library.PDO
             m_stmt = null;
             m_options = PhpArray.Empty;
             m_cmd = null;
+        }
+
+        private static readonly Regex regName = new Regex(@"[\w_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+        /// <summary>
+        /// Prepare the PDOStatement command.
+        /// Set either positional, named or neither parameters mode.
+        /// Create the parameters, add them to the command and prepare the command.
+        /// </summary>
+        /// <returns></returns>
+        private bool PrepareStatement()
+        {
+            Debug.Assert(m_stmt != null && m_stmt.Length > 0);
+
+            m_namedPlaceholders = new Dictionary<string, string>();
+            m_positionalPlaceholders = new List<string>();
+            m_namedAttr = false;
+            m_positionalAttr = false;
+
+            int pos = 0;
+            var rewrittenQuery = new StringBuilder();
+
+            // Go throught the text query and find either positional or named parameters
+            while(pos < m_stmt.Length)
+            {
+                char currentChar = m_stmt[pos];
+                string paramName = "";
+
+                switch (currentChar)
+                {
+                    case '?':
+                        if(m_namedAttr)
+                        {
+                            throw new PDOException("Mixing positional and named parameters not allowed. Use only '?' or ':name' pattern");
+                        }
+
+                        m_positionalAttr = true;
+
+                        paramName = "@p" + m_positionalPlaceholders.Count();
+                        m_positionalPlaceholders.Add(paramName);
+                        rewrittenQuery.Append(paramName);
+
+                        break;
+
+                    case ':':
+                        if(m_positionalAttr)
+                        {
+                            throw new PDOException("Mixing positional and named parameters not allowed.Use only '?' or ':name' pattern");
+                        }
+
+                        m_namedAttr = true;
+
+                        var match= regName.Match(m_stmt, pos);
+                        string param = match.Value;
+
+                        paramName = "@" + param;
+                        m_namedPlaceholders[param] = paramName;
+                        rewrittenQuery.Append(paramName);
+
+                        pos += param.Length; 
+
+                        break;
+
+                    case '"':
+                        rewrittenQuery.Append(currentChar);
+                        pos = SkipQuotedWord(m_stmt, rewrittenQuery, pos, '"');
+                        break;
+
+                    case '\'':
+                        rewrittenQuery.Append(currentChar);
+                        pos = SkipQuotedWord(m_stmt, rewrittenQuery, pos, '\'');
+                        break;
+
+                    default:
+                        rewrittenQuery.Append(currentChar);
+                        break;
+                }
+                pos++;
+            }
+
+            m_cmd.CommandText = rewrittenQuery.ToString();
+            m_cmd.Parameters.Clear();
+
+            if(m_positionalAttr)
+            {
+                foreach (var paramName in m_positionalPlaceholders.ToArray())
+                {
+                    var param = m_cmd.CreateParameter();
+                    param.ParameterName = paramName;
+                    m_cmd.Parameters.Add(param);
+                }
+            } else if(m_namedAttr)
+            {
+                foreach (var paramPair in m_namedPlaceholders)
+                {
+                    var param = m_cmd.CreateParameter();
+                    param.ParameterName = paramPair.Value;
+                    m_cmd.Parameters.Add(param);
+                }
+            }
+
+            // Finalise the command preparation
+            m_cmd.Prepare();
+
+            return true;
+        }
+
+        private void SetAttributesType()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Skip the quoted part of query
+        /// </summary>
+        /// <param name="query">Textual query</param>
+        /// <param name="rewrittenBuilder">StringBuilder for the rewritten query</param>
+        /// <param name="pos">Current position in the query</param>
+        /// <param name="quoteType">Quotational character used</param>
+        /// <returns>New position in the query</returns>
+        private int SkipQuotedWord(string query, StringBuilder rewrittenBuilder, int pos, char quoteType)
+        {
+            while(++pos < query.Length)
+            {
+                char currentChar = query[pos];
+                rewrittenBuilder.Append(currentChar);
+
+                if (currentChar == quoteType)
+                    break;
+
+                if (currentChar == '\\')
+                    pos++;
+            }
+            return pos;
         }
 
         private void SetDefaultAttributes()
@@ -103,6 +249,30 @@ namespace Peachpie.Library.PDO
         /// <inheritDoc />
         public bool bindValue(PhpValue parameter, PhpValue value, int data_type = 2)
         {
+            Debug.Assert(this.m_cmd != null);
+
+            string key = parameter.String;
+
+            if (key.Length > 0 && key[0] == ':')
+            {
+                key = key.Substring(1);
+            }
+
+            IDataParameter param;
+
+            param = this.m_cmd.Parameters[key];
+
+            param.Value = value.AsString();
+
+
+
+
+            return true;
+        }
+
+        /// <inheritDoc />
+        public bool bindValues(PhpValue parameter, PhpValue value, int data_type = 2)
+        {
             throw new NotImplementedException();
         }
 
@@ -150,7 +320,16 @@ namespace Peachpie.Library.PDO
         /// <inheritDoc />
         public bool execute(PhpArray input_parameters = null)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
+
+            foreach(var param in input_parameters)
+            {
+                m_cmd.Parameters.Add(param); 
+            }
+
+            m_dr = m_cmd.ExecuteReader();
+
+            return true;
         }
 
         /// <inheritDoc />
