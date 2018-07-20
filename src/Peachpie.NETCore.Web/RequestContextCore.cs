@@ -275,6 +275,11 @@ namespace Peachpie.Web
         static string DefaultContentType = "text/html; charset=UTF-8";
 
         /// <summary>
+        /// Unique key of item within <see cref="HttpContext.Items"/> associated with this <see cref="Context"/>.
+        /// </summary>
+        static object HttpContextItemKey => typeof(Context);
+
+        /// <summary>
         /// Reference to current <see cref="HttpContext"/>.
         /// Cannot be <c>null</c>.
         /// </summary>
@@ -294,6 +299,9 @@ namespace Peachpie.Web
             _httpctx = httpcontext;
             _encoding = encoding;
 
+            httpcontext.Items[HttpContextItemKey] = this;
+            httpcontext.Response.RegisterForDispose(this);
+
             this.RootPath = rootPath;
 
             this.InitOutput(httpcontext.Response.Body, new ResponseTextWriter(httpcontext.Response, encoding));
@@ -302,6 +310,19 @@ namespace Peachpie.Web
             // TODO: start session if AutoStart is On
 
             this.SetupHeaders();
+        }
+
+        /// <summary>
+        /// Gets (non disposed) context associated to given <see cref="HttpContext"/>.
+        /// </summary>
+        internal static Context TryGetFromHttpContext(HttpContext httpctx)
+        {
+            if (httpctx != null && httpctx.Items.TryGetValue(HttpContextItemKey, out object obj) && obj is Context ctx && !ctx.IsDisposed)
+            {
+                return ctx;
+            }
+
+            return null;
         }
 
         void SetupHeaders()

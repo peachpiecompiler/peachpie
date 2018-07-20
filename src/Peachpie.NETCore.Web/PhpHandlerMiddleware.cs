@@ -31,7 +31,7 @@ namespace Peachpie.Web
             _options = options;
 
             // determine Root Path:
-            _rootPath = hostingEnv.WebRootPath ?? hostingEnv.ContentRootPath ?? Directory.GetCurrentDirectory();
+            _rootPath = hostingEnv.GetDefaultRootPath();
 
             if (!string.IsNullOrEmpty(options.RootPath))
             {
@@ -75,15 +75,9 @@ namespace Peachpie.Web
         /// </summary>
         static string NormalizeRootPath(string path)
         {
-            if (string.IsNullOrEmpty(path))
-            {
-                return "/";
-            }
-            else
-            {
-                path = path.Replace('\\', '/');
-                return path.Last() != '/' ? path : path.Substring(0, path.Length - 1);
-            }
+            return string.IsNullOrEmpty(path)
+                ? string.Empty
+                : CurrentPlatform.NormalizeSlashes(path).TrimEndSeparator();
         }
 
         /// <summary>

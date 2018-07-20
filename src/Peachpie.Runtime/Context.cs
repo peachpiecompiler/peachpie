@@ -448,7 +448,7 @@ namespace Pchp.Core
 
         HashSet<IDisposable> _lazyDisposables = null;
 
-        public void RegisterDisposable(IDisposable obj)
+        public virtual void RegisterDisposable(IDisposable obj)
         {
             if (_lazyDisposables == null)
             {
@@ -458,7 +458,7 @@ namespace Pchp.Core
             _lazyDisposables.Add(obj);
         }
 
-        public void UnregisterDisposable(IDisposable obj)
+        public virtual void UnregisterDisposable(IDisposable obj)
         {
             if (_lazyDisposables != null)
             {
@@ -559,11 +559,14 @@ namespace Pchp.Core
 
         #region IDisposable
 
-        bool _disposed;
+        /// <summary>
+        /// Gets value indicating the context has been disposed.
+        /// </summary>
+        public bool IsDisposed { get; private set; }
 
         public virtual void Dispose()
         {
-            if (!_disposed)
+            if (!IsDisposed)
             {
                 try
                 {
@@ -586,7 +589,7 @@ namespace Pchp.Core
                     //    this.FinallyDispose();
 
                     //
-                    _disposed = true;
+                    IsDisposed = true;
                 }
             }
         }
