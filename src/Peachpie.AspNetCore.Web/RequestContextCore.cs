@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Reflection;
 
-namespace Peachpie.Web
+namespace Peachpie.AspNetCore.Web
 {
     /// <summary>
     /// Runtime context for ASP.NET Core request.

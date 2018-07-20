@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Session;
 using Pchp.Core;
 using Pchp.Library;
 
-namespace Peachpie.Web
+namespace Peachpie.AspNetCore.Web
 {
     /// <summary>
     /// Session handler for ASP.NET Core.

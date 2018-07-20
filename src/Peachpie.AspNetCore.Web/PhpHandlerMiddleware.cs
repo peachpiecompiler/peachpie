@@ -9,7 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using Pchp.Core;
 
-namespace Peachpie.Web
+namespace Peachpie.AspNetCore.Web
 {
     /// <summary>
     /// ASP.NET Core application middleware handling requests to compiled PHP scripts.
