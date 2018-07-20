@@ -53,12 +53,16 @@ function foo(/*|mixed|*/$x)
       break;
   }
 
-  echo /*|array|boolean|double|integer|resource|stdClass|string|System\Object|*/$result;
+  return /*|array|boolean|double|integer|resource|stdClass|string|System\Object|*/$result;
 }
 
+/*|array|boolean|double|integer|resource|stdClass|string|System\Object|*/$res = foo(42);
+
 function bar(bool .../*|boolean[]|*/$x) {
-  echo /*|boolean[]|*/$x;
+  return /*|boolean[]|*/$x;
 }
+
+/*|boolean[]|*/$res = bar();
 
 function baz(int /*|integer|*/$x) {
   echo /*|integer|*/$x;
@@ -66,8 +70,10 @@ function baz(int /*|integer|*/$x) {
   // TODO: Enable annotations also for this statement (it's not in the CFG -> unable to be annotated)
   global $k;
 
-  echo /*|mixed|*/$k;
+  return /*|mixed|*/$k;
 }
+
+/*|mixed|*/$res = baz(42);
 
 /*|integer|*/$i = 5;
 // global variables may be changed from outside, so the type is always mixed
