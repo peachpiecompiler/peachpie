@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Pchp.Core;
+using static Peachpie.Library.PDO.PDO;
 
 namespace Peachpie.Library.PDO
 {
@@ -27,10 +28,14 @@ namespace Peachpie.Library.PDO
         private readonly Dictionary<PDO.PDO_ATTR, PhpValue> m_attributes = new Dictionary<PDO.PDO_ATTR, PhpValue>();
         private string[] m_dr_names;
 
-        private bool m_positionalAttr;
-        private bool m_namedAttr;
+        private bool m_positionalAttr = false;
+        private bool m_namedAttr = false;
         private Dictionary<string, string> m_namedPlaceholders;
         private List<String> m_positionalPlaceholders;
+         
+        private PDO.PDO_FETCH m_fetchStyle = PDO.PDO_FETCH.FETCH_BOTH;
+        public int FetchColNo { get; set; } = -1;
+        public string FetchClassName { get; set; } = null;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PDOStatement" /> class.
@@ -45,9 +50,6 @@ namespace Peachpie.Library.PDO
             this.m_options = driver_options ?? PhpArray.Empty;
 
             this.m_cmd = pdo.CreateCommand(this.m_stmt);
-
-            this.m_positionalAttr = false;
-            this.m_namedAttr = false;
 
             this.SetDefaultAttributes();
         }
@@ -342,13 +344,14 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public PhpValue fetch(int fetch_style = default(int), int cursor_orientation = default(int), int cursor_offet = 0)
+        public PhpValue fetch(int fetch_style = -1, int cursor_orientation = default(int), int cursor_offet = 0)
         {
             this.m_pdo.ClearError();
             try
             {
-                PDO.PDO_FETCH style = PDO.PDO_FETCH.FETCH_BOTH;
-                if (Enum.IsDefined(typeof(PDO.PDO_FETCH), fetch_style))
+                PDO.PDO_FETCH style = this.m_fetchStyle;
+
+                if (fetch_style != -1 && Enum.IsDefined(typeof(PDO.PDO_FETCH), fetch_style))
                 {
                     style = (PDO.PDO_FETCH)fetch_style;
                 }
@@ -395,6 +398,9 @@ namespace Peachpie.Library.PDO
                         return PhpValue.Create(this.ReadArray(true, true));
                     case PDO.PDO_FETCH.FETCH_NUM:
                         return PhpValue.Create(this.ReadArray(false, true));
+                    case PDO.PDO_FETCH.FETCH_COLUMN:
+                        return this.ReadArray(false, true)[FetchColNo].GetValue();
+                    case PDO.PDO_FETCH.FETCH_CLASS:
                     default:
                         throw new NotImplementedException();
                 }
@@ -519,9 +525,92 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public bool setFetchMode(int mode, PhpValue param1, PhpValue param2)
+        public bool setFetchMode(params PhpValue[] args)
         {
-            throw new NotImplementedException();
+            PDO_FETCH fetch = PDO_FETCH.FETCH_USE_DEFAULT;
+
+            PhpValue fetchMode = args[0];
+            if (fetchMode.IsInteger())
+            {
+                int value = (int)fetchMode.Long;
+                if (Enum.IsDefined(typeof(PDO_FETCH), value))
+                {
+                    fetch = (PDO_FETCH)value;
+
+                    this.m_fetchStyle = fetch;
+                }
+                else
+                {
+                    throw new PDOException("Given PDO_FETCH constant is not implemented.");
+                }
+            }
+
+            if (fetch == PDO_FETCH.FETCH_COLUMN)
+            {
+                int colNo = -1;
+                if (args.Length > 1)
+                {
+                    if (args[1].IsInteger())
+                    {
+                        colNo = (int)args[1].ToLong();
+                        this.FetchColNo = colNo;
+                    }
+                    else
+                    {
+                        throw new PDOException("General error: colno must be an integer");
+                    }
+                }
+                else
+                {
+                    throw new PDOException("General error: fetch mode requires the colno argument");
+
+                    //TODO what to do if missing parameter ?
+                    //fetch = PDO_FETCH.FETCH_USE_DEFAULT;
+                }
+            }
+            string className = null;
+            PhpArray ctorArgs = null;
+            if (fetch == PDO_FETCH.FETCH_CLASS)
+            {
+                if (args.Length > 2)
+                {
+                    className = args[1].ToStringOrNull();
+                    this.FetchClassName = className;
+
+                    if (args.Length > 3)
+                    {
+                        ctorArgs = args[2].ArrayOrNull();
+                    }
+                }
+                else
+                {
+                    throw new PDOException("General error: fetch mode requires the classname argument.");
+
+                    //TODO what to do if missing parameter ?
+                    //fetch = PDO_FETCH.FETCH_USE_DEFAULT;
+                }
+            }
+            //TODO: FETCH_OBJ does not require additional parameters
+
+            /*PhpValue? fetchObject = null;
+            if (fetch == PDO_FETCH.FETCH_OBJ)
+            {
+                if (args.Length > 2)
+                {
+                    fetchObject = args[1];
+                    if (fetchObject.Value.IsNull)
+                    {
+                        //TODO passed object is null
+                    }
+                }
+                else
+                {
+                    //TODO what to do if missing parameter ?
+                    fetch = PDO_FETCH.FETCH_USE_DEFAULT;
+                }
+            }*/
+
+            return true;
         }
     }
 }

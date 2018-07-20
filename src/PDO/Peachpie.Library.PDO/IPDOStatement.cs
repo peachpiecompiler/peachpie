@@ -147,11 +147,14 @@ namespace Peachpie.Library.PDO
 
         /// <summary>
         /// Set the default fetch mode for this statement
+        /// 
         /// </summary>
-        /// <param name="mode">The fetch mode must be one of the PDO::FETCH_* constants.</param>
-        /// <param name="param1">For FETCH_COLUMN : column number. For FETCH_CLASS : the class name. For FETCH_INTO, the object</param>
-        /// <param name="param2">For FETCH_CLASS : the constructor arguments.</param>
+        /// <param name="args">
+        /// args[0] The fetch mode must be one of the PDO::FETCH_* constants.
+        /// args[1] For FETCH_COLUMN : column number. For FETCH_CLASS : the class name. For FETCH_INTO, the object.
+        /// args[2] For FETCH_CLASS : the constructor arguments.
+        /// </param>
         /// <returns>Returns TRUE on success or FALSE on failure</returns>
-        bool setFetchMode(int mode, PhpValue param1, PhpValue param2);
+        bool setFetchMode(params PhpValue[] args);
     }
 }
