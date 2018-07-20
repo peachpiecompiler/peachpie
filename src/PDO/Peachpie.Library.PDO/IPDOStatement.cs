@@ -85,7 +85,7 @@ namespace Peachpie.Library.PDO
         /// <param name="cursor_orientation">This value determines which row will be returned to the caller.</param>
         /// <param name="cursor_offet">Relative or absolute position move for the cursor.</param>
         /// <returns>The return value of this function on success depends on the fetch type. In all cases, FALSE is returned on failure.</returns>
-        PhpValue fetch(int? fetch_style = null, int cursor_orientation = PDO.FETCH_ORI_NEXT, int cursor_offet = 0);
+        PhpValue fetch(int fetch_style = 0, int cursor_orientation = PDO.FETCH_ORI_NEXT, int cursor_offet = 0);
 
         /// <summary>
         /// Controls the contents of the returned array as documented in PDOStatement::fetch()
@@ -147,11 +147,14 @@ namespace Peachpie.Library.PDO
 
         /// <summary>
         /// Set the default fetch mode for this statement
+        /// 
         /// </summary>
-        /// <param name="mode">The fetch mode must be one of the PDO::FETCH_* constants.</param>
-        /// <param name="param1">For FETCH_COLUMN : column number. For FETCH_CLASS : the class name. For FETCH_INTO, the object</param>
-        /// <param name="param2">For FETCH_CLASS : the constructor arguments.</param>
+        /// <param name="args">
+        /// args[0] The fetch mode must be one of the PDO::FETCH_* constants.
+        /// args[1] For FETCH_COLUMN : column number. For FETCH_CLASS : the class name. For FETCH_INTO, the object.
+        /// args[2] For FETCH_CLASS : the constructor arguments.
+        /// </param>
         /// <returns>Returns TRUE on success or FALSE on failure</returns>
-        bool setFetchMode(int mode, PhpValue param1, PhpValue param2);
+        bool setFetchMode(params PhpValue[] args);
     }
 }
