@@ -5,22 +5,26 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.CodeAnalysis.Semantics.Graph;
+using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Utilities
 {
     /// <summary>
-    /// Represents queue where items are enqueued just once and queue can be accessed in parralel.
+    /// Represents priority queue where items are enqueued just once and queue can be accessed in parallel.
     /// </summary>
-    internal sealed class DistinctQueue<T>
+    internal sealed class DistinctQueue<T> where T : BoundBlock
     {
         readonly object _syncRoot = new object();
 
-        // TODO: Use a heap (with possible duplicate key values) instead
-        readonly SortedSet<T> _queue;
+        /// <summary>
+        /// A heap to enable fast insertion and minimum extraction.
+        /// </summary>
+        readonly PriorityQueue<T> _queue;
 
         public DistinctQueue(IComparer<T> comparer)
         {
-            _queue = new SortedSet<T>(comparer);
+            _queue = new PriorityQueue<T>(comparer);
         }
 
         /// <summary>
@@ -40,7 +44,16 @@ namespace Pchp.CodeAnalysis.Utilities
 
             lock (_syncRoot)
             {
-                return _queue.Add(value);
+                if (!value.IsEnqueued)
+                {
+                    _queue.Push(value);
+                    value.IsEnqueued = true;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             }
         }
 
@@ -53,8 +66,12 @@ namespace Pchp.CodeAnalysis.Utilities
             {
                 if (_queue.Count != 0)
                 {
-                    value = _queue.First();
-                    _queue.Remove(value);
+                    value = _queue.Top;
+                    _queue.Pop();
+
+                    Debug.Assert(value.IsEnqueued);
+                    value.IsEnqueued = false;
+
                     return true;
                 }
                 else

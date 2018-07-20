@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using Peachpie.CodeAnalysis.Utilities;
 using System.Collections.Concurrent;
+using Pchp.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
@@ -18,6 +19,16 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// Can be <c>null</c> in case there is no flow into the block or the state was released.
         /// </summary>
         internal FlowState FlowState
+        {
+            get; set;
+        }
+
+        /// <summary>
+        /// Whether is the block currently inserted into the analysis worklist queue. This
+        /// information is stored here to save memory and time - otherwise we would need to use
+        /// a dynamically allocated binary tree in <see cref="DistinctQueue"/> instead of a heap.
+        /// </summary>
+        internal bool IsEnqueued
         {
             get; set;
         }

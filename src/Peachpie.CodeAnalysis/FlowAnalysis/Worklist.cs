@@ -193,30 +193,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     return 0;
                 }
 
-                int ordRes = x.Ordinal - y.Ordinal;
-                if (ordRes != 0)
-                {
-                    return ordRes;
-                }
-
-                // TODO: Skip the following part (returning 0) when a heap with possible duplicate key values is used
-
-                // We must ensure that two blocks from two different routines are not considered equal
-                int hashRes = x.GetHashCode() - y.GetHashCode();
-                if (hashRes != 0)
-                {
-                    return hashRes;
-                }
-
-                Debug.Assert(x.FlowState != null && y.FlowState != null);
-                Debug.Assert(x.FlowState.FlowContext != y.FlowState.FlowContext);
-                int stateHashRes = x.FlowState.FlowContext.GetHashCode() - y.FlowState.FlowContext.GetHashCode();
-                if (stateHashRes != 0)
-                {
-                    return stateHashRes;
-                }
-
-                throw new NotImplementedException();
+                return x.Ordinal - y.Ordinal;
             }
         }
     }
