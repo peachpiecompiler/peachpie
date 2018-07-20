@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Peachpie.NETCore.Web\Peachpie.NETCore.Web.csproj" />
+    <ProjectReference Include="..\Peachpie.AspNetCore.Web\Peachpie.AspNetCore.Web.csproj" />
     <ProjectReference Include="..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
   </ItemGroup>
 
