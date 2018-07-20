@@ -320,28 +320,37 @@ namespace Peachpie.Library.PDO
         /// <inheritDoc />
         public bool execute(PhpArray input_parameters = null)
         {
-            //throw new NotImplementedException();
-
-            foreach(var param in input_parameters)
+            if (input_parameters != null)
             {
-                m_cmd.Parameters.Add(param); 
+                foreach (var param in input_parameters)
+                {
+                    m_cmd.Parameters.Add(param);
+                }
             }
 
-            m_dr = m_cmd.ExecuteReader();
+            m_dr = null;
+            try
+            {
+                m_dr = m_cmd.ExecuteReader();
+            } catch(Exception e)
+            {
+                throw new PDOException("Query could not be executed; \n" + e.Message);
+            }
+            
 
             return true;
         }
 
         /// <inheritDoc />
-        public PhpValue fetch(int? fetch_style = default(int?), int cursor_orientation = default(int), int cursor_offet = 0)
+        public PhpValue fetch(int fetch_style = default(int), int cursor_orientation = default(int), int cursor_offet = 0)
         {
             this.m_pdo.ClearError();
             try
             {
                 PDO.PDO_FETCH style = PDO.PDO_FETCH.FETCH_BOTH;
-                if (fetch_style.HasValue && Enum.IsDefined(typeof(PDO.PDO_FETCH), fetch_style.Value))
+                if (Enum.IsDefined(typeof(PDO.PDO_FETCH), fetch_style))
                 {
-                    style = (PDO.PDO_FETCH)fetch_style.Value;
+                    style = (PDO.PDO_FETCH)fetch_style;
                 }
                 PDO.PDO_FETCH_ORI ori = PDO.PDO_FETCH_ORI.FETCH_ORI_NEXT;
                 if (Enum.IsDefined(typeof(PDO.PDO_FETCH_ORI), cursor_orientation))
@@ -359,6 +368,21 @@ namespace Peachpie.Library.PDO
 
                 if (!this.m_dr.Read())
                     return PhpValue.False;
+
+                // Get the column schema, if possible, for the associative fetch
+                if(this.m_dr_names == null)
+                {
+                    this.m_dr_names = new string[m_dr.FieldCount];
+
+                    if (this.m_dr.CanGetColumnSchema()) {
+                        var columnSchema = this.m_dr.GetColumnSchema();
+
+                        for (int i = 0; i < m_dr.FieldCount; i++)
+                        {
+                            this.m_dr_names[i] = columnSchema[i].ColumnName;
+                        }
+                    }
+                }
 
                 switch (style)
                 {

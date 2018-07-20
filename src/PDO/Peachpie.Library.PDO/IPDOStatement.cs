@@ -85,7 +85,7 @@ namespace Peachpie.Library.PDO
         /// <param name="cursor_orientation">This value determines which row will be returned to the caller.</param>
         /// <param name="cursor_offet">Relative or absolute position move for the cursor.</param>
         /// <returns>The return value of this function on success depends on the fetch type. In all cases, FALSE is returned on failure.</returns>
-        PhpValue fetch(int? fetch_style = null, int cursor_orientation = PDO.FETCH_ORI_NEXT, int cursor_offet = 0);
+        PhpValue fetch(int fetch_style = 0, int cursor_orientation = PDO.FETCH_ORI_NEXT, int cursor_offet = 0);
 
         /// <summary>
         /// Controls the contents of the returned array as documented in PDOStatement::fetch()
