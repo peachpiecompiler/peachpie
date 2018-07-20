@@ -22,6 +22,22 @@ namespace Peachpie.Web
         }
 
         /// <summary>
+        /// Gets <see cref="HttpContext"/> associated with given Web <see cref="Context"/>.
+        /// </summary>
+        /// <exception cref="ArgumentException">Given context is not a web context.</exception>
+        public static HttpContext/*!*/GetHttpContext(this Context context)
+        {
+            if (context is RequestContextCore reqcontext)
+            {
+                return reqcontext.HttpContext;
+            }
+            else
+            {
+                throw new ArgumentException(nameof(context));
+            }
+        }
+
+        /// <summary>
         /// Gets existing context associated with given <see cref="HttpContext"/> or creates new one with default settings.
         /// </summary>
         public static Context/*!*/GetOrCreateContext(this HttpContext httpctx)
