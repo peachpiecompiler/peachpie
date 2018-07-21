@@ -541,7 +541,7 @@ namespace Peachpie.Library.PDO
                 }
                 else
                 {
-                    throw new PDOException("Given PDO_FETCH constant is not implemented.");
+                    m_pdo.HandleError(new PDOException("Given PDO_FETCH constant is not implemented."));
                 }
             }
 
@@ -557,12 +557,12 @@ namespace Peachpie.Library.PDO
                     }
                     else
                     {
-                        throw new PDOException("General error: colno must be an integer");
+                        m_pdo.HandleError(new PDOException("General error: colno must be an integer"));
                     }
                 }
                 else
                 {
-                    throw new PDOException("General error: fetch mode requires the colno argument");
+                    m_pdo.HandleError(new PDOException("General error: fetch mode requires the colno argument"));
 
                     //TODO what to do if missing parameter ?
                     //fetch = PDO_FETCH.FETCH_USE_DEFAULT;
