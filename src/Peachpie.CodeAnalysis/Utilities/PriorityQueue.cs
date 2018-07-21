@@ -18,19 +18,20 @@ namespace Peachpie.CodeAnalysis.Utilities
     /// 
     /// The original implementation was taken from the Microsoft .NET
     /// Framework Reference Source, author: Niklas Borson (niklasb).
+    /// Fixes from https://stackoverflow.com/q/44221454/2105235 were applied.
     /// </remarks>
     internal class PriorityQueue<T>
     {
         private T[] _heap;
         private int _count;
-        private IComparer<T> _comparer;
+        private readonly IComparer<T> _comparer;
         private const int DefaultCapacity = 6;
 
         public PriorityQueue(IComparer<T> comparer)
         {
             _heap = new T[DefaultCapacity];
             _count = 0;
-            _comparer = comparer;
+            _comparer = comparer ?? throw new ArgumentNullException(nameof(comparer));
         }
 
         /// <summary>
@@ -49,7 +50,8 @@ namespace Peachpie.CodeAnalysis.Utilities
         {
             get
             {
-                Debug.Assert(_count > 0);
+                if (_count <= 0) throw new InvalidOperationException("The queue is empty.");
+
                 return _heap[0];
             }
         }
@@ -57,52 +59,26 @@ namespace Peachpie.CodeAnalysis.Utilities
         /// <summary>
         /// Adds an object to the priority queue.
         /// </summary>
-        internal void Push(T value)
+        public void Push(T value)
         {
             // Increase the size of the array if necessary.
             if (_count == _heap.Length)
             {
-                T[] temp = new T[_count * 2];
-                for (int i = 0; i < _count; ++i)
-                {
-                    temp[i] = _heap[i];
-                }
-                _heap = temp;
+                Array.Resize(ref _heap, _count * 2);
             }
 
-            // Loop invariant:
-            //
-            //  1.  index is a gap where we might insert the new node; initially
-            //      it's the end of the array (bottom-right of the logical tree).
-            //
-            int index = _count;
-            while (index > 0)
-            {
-                int parentIndex = HeapParent(index);
-                if (_comparer.Compare(value, _heap[parentIndex]) < 0)
-                {
-                    // value is a better match than the parent node so exchange
-                    // places to preserve the "heap" property.
-                    _heap[index] = _heap[parentIndex];
-                    index = parentIndex;
-                }
-                else
-                {
-                    // we can insert here.
-                    break;
-                }
-            }
+            // Find a place for the new value and insert it, starting at the bottom-rightmost node
+            InsertValue(_count, value);
 
-            _heap[index] = value;
             _count++;
         }
 
         /// <summary>
         /// Removes the first node (i.e., the logical root) from the heap.
         /// </summary>
-        internal void Pop()
+        public void Pop()
         {
-            Debug.Assert(_count != 0);
+            if (_count <= 0) throw new InvalidOperationException("The queue is empty.");
 
             if (_count > 1)
             {
@@ -131,11 +107,47 @@ namespace Peachpie.CodeAnalysis.Utilities
                     leftChild = HeapLeftChild(parent);
                 }
 
-                // Fill the last gap by moving the last (i.e., bottom-rightmost) node.
-                _heap[parent] = _heap[_count - 1];
+                int gapIndex = parent;
+
+                // Rebalance the heap and fill the gap by moving the last (i.e., bottom-rightmost) node.
+                // (Unless it was eliminated by moving the gap there.)
+                if (gapIndex != _count - 1)
+                {
+                    InsertValue(gapIndex, _heap[_count - 1]);
+                }
             }
 
+            _heap[_count - 1] = default(T); // Prevent memory leaks
             _count--;
+        }
+
+        private void InsertValue(int startGapIndex, T value)
+        {
+            // Loop invariant:
+            //
+            //  1.  index is a gap where we might insert the new node.
+            //
+            int index = startGapIndex;
+
+            while (index > 0)
+            {
+                int parentIndex = HeapParent(index);
+                if (_comparer.Compare(value, _heap[parentIndex]) < 0)
+                {
+                    // value is a better match than the parent node so exchange
+                    // places to preserve the "heap" property.
+                    _heap[index] = _heap[parentIndex];
+                    index = parentIndex;
+                }
+                else
+                {
+                    // Heap is balanced
+                    break;
+                }
+            }
+
+            // Insert the value to the gap
+            _heap[index] = value;
         }
 
         /// <summary>
