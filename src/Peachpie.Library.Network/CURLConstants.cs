@@ -383,6 +383,22 @@ namespace Peachpie.Library.Network
         public const int CURLPROTO_SFTP = 32;
         public const int CURLPROTO_TELNET = 64;
         public const int CURLPROTO_TFTP = 2048;
+        public const int CURLPROTO_IMAP = 4096;
+        public const int CURLPROTO_IMAPS = 8192;
+        public const int CURLPROTO_POP3 = 16384;
+        public const int CURLPROTO_POP3S = 32768;
+        public const int CURLPROTO_RTSP = 262144;
+        public const int CURLPROTO_SMTP = 65536;
+        public const int CURLPROTO_SMTPS = 131072;
+        public const int CURLPROTO_RTMP = 524288;
+        public const int CURLPROTO_RTMPE = 2097152;
+        public const int CURLPROTO_RTMPS = 8388608;
+        public const int CURLPROTO_RTMPT = 1048576;
+        public const int CURLPROTO_RTMPTE = 4194304;
+        public const int CURLPROTO_RTMPTS = 16777216;
+        public const int CURLPROTO_GOPHER = 33554432;
+        public const int CURLPROTO_SMB = 67108864;
+        public const int CURLPROTO_SMBS = 134217728;
         public const int CURLPROXY_HTTP_1_0 = 1;
         public const int CURLFTP_CREATE_DIR = 1;
         public const int CURLFTP_CREATE_DIR_NONE = 0;
@@ -401,13 +417,6 @@ namespace Peachpie.Library.Network
         public const int CURLOPT_RTSP_SESSION_ID = 10190;
         public const int CURLOPT_RTSP_STREAM_URI = 10191;
         public const int CURLOPT_RTSP_TRANSPORT = 10192;
-        public const int CURLPROTO_IMAP = 4096;
-        public const int CURLPROTO_IMAPS = 8192;
-        public const int CURLPROTO_POP3 = 16384;
-        public const int CURLPROTO_POP3S = 32768;
-        public const int CURLPROTO_RTSP = 262144;
-        public const int CURLPROTO_SMTP = 65536;
-        public const int CURLPROTO_SMTPS = 131072;
         public const int CURL_RTSPREQ_ANNOUNCE = 3;
         public const int CURL_RTSPREQ_DESCRIBE = 2;
         public const int CURL_RTSPREQ_GET_PARAMETER = 8;
@@ -424,16 +433,9 @@ namespace Peachpie.Library.Network
         public const int CURLINFO_PRIMARY_PORT = 2097192;
         public const int CURLOPT_FNMATCH_FUNCTION = 20200;
         public const int CURLOPT_WILDCARDMATCH = 197;
-        public const int CURLPROTO_RTMP = 524288;
-        public const int CURLPROTO_RTMPE = 2097152;
-        public const int CURLPROTO_RTMPS = 8388608;
-        public const int CURLPROTO_RTMPT = 1048576;
-        public const int CURLPROTO_RTMPTE = 4194304;
-        public const int CURLPROTO_RTMPTS = 16777216;
         public const int CURL_FNMATCHFUNC_FAIL = 2;
         public const int CURL_FNMATCHFUNC_MATCH = 0;
         public const int CURL_FNMATCHFUNC_NOMATCH = 1;
-        public const int CURLPROTO_GOPHER = 33554432;
         public const long CURLAUTH_ONLY = 2147483648;
         public const int CURLOPT_RESOLVE = 10203;
         public const int CURLOPT_TLSAUTH_PASSWORD = 10205;
@@ -482,8 +484,6 @@ namespace Peachpie.Library.Network
         public const int CURLAUTH_NEGOTIATE = 4;
         public const int CURLOPT_PINNEDPUBLICKEY = 10230;
         public const int CURLOPT_UNIX_SOCKET_PATH = 10231;
-        public const int CURLPROTO_SMB = 67108864;
-        public const int CURLPROTO_SMBS = 134217728;
         public const int CURLOPT_SSL_VERIFYSTATUS = 232;
         public const int CURLOPT_PATH_AS_IS = 234;
         public const int CURLOPT_SSL_FALSESTART = 233;
@@ -516,7 +516,7 @@ namespace Peachpie.Library.Network
             if (Operators.IsSet(value))
             {
                 var stream = value.AsObject() as PhpStream;
-                if (stream != null && (readable ? stream.CanRead: stream.CanWrite))
+                if (stream != null && (readable ? stream.CanRead : stream.CanWrite))
                 {
                     processing = new ProcessMethod(stream);
                 }
@@ -617,8 +617,7 @@ namespace Peachpie.Library.Network
                         case CURL_HTTP_VERSION_NONE: ch.ProtocolVersion = null; break;
                         case CURL_HTTP_VERSION_1_0: ch.ProtocolVersion = HttpVersion.Version10; break;
                         case CURL_HTTP_VERSION_1_1: ch.ProtocolVersion = HttpVersion.Version11; break;
-                        //case CURL_HTTP_VERSION_2:
-                        case CURL_HTTP_VERSION_2_0:
+                        case CURL_HTTP_VERSION_2_0: // == CURL_HTTP_VERSION_2:
                         case CURL_HTTP_VERSION_2TLS: ch.ProtocolVersion = new Version(2, 0); break; // HttpVersion.Version20
                         default: return false;
                     }
@@ -626,6 +625,16 @@ namespace Peachpie.Library.Network
 
                 case CURLOPT_USERNAME: ch.Username = value.ToString(); break;
                 case CURLOPT_USERPWD: (ch.Username, ch.Password) = SplitUserPwd(value.ToString()); break;
+                case CURLOPT_PROTOCOLS: ch.Protocols = (int)value.ToLong(); break;
+                case CURLOPT_REDIR_PROTOCOLS:
+                    PhpException.ArgumentValueNotSupported(nameof(option), nameof(CURLOPT_REDIR_PROTOCOLS));
+                    break;
+
+                case CURLOPT_SSL_VERIFYHOST:
+                case CURLOPT_SSL_VERIFYPEER:
+                case CURLOPT_SSL_VERIFYSTATUS:
+                    // always enabled
+                    break;
 
                 default:
                     PhpException.ArgumentValueNotSupported(nameof(option), TryGetOptionName(option));

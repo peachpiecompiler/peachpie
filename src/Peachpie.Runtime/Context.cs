@@ -93,7 +93,7 @@ namespace Pchp.Core
         {
             if (assembly == null)
             {
-                throw new ArgumentNullException("assembly");
+                throw new ArgumentNullException(nameof(assembly));
             }
 
             var t = assembly.GetType(ScriptInfo.ScriptTypeName);
@@ -386,37 +386,6 @@ namespace Pchp.Core
             }
         }
 
-        /// <summary>
-        /// Tries to resolve compiled script according to given path.
-        /// </summary>
-        public static ScriptInfo TryResolveScript(string root, string path) => ScriptsMap.ResolveInclude(path, root, null, null, null);
-
-        /// <summary>
-        /// Gets scripts in given directory.
-        /// </summary>
-        public static bool TryGetScriptsInDirectory(string root, string path, out IEnumerable<ScriptInfo> scripts)
-        {
-            // trim leading {root} path:
-            if (!string.IsNullOrEmpty(root) && path.StartsWith(root, StringComparison.Ordinal))
-            {
-                if (path.Length == root.Length)
-                {
-                    path = string.Empty;
-                }
-                else if (path[root.Length] == CurrentPlatform.DirectorySeparator)
-                {
-                    path = path.Remove(root.Length + 1);
-                }
-                else if (root[root.Length - 1] == CurrentPlatform.DirectorySeparator)
-                {
-                    path = path.Remove(root.Length);
-                }
-            }
-            
-            // try to get compiled scripts within path:
-            return ScriptsMap.TryGetDirectory(path, out scripts);
-        }
-
         #endregion
 
         #region Shutdown
@@ -479,7 +448,7 @@ namespace Pchp.Core
 
         HashSet<IDisposable> _lazyDisposables = null;
 
-        public void RegisterDisposable(IDisposable obj)
+        public virtual void RegisterDisposable(IDisposable obj)
         {
             if (_lazyDisposables == null)
             {
@@ -489,7 +458,7 @@ namespace Pchp.Core
             _lazyDisposables.Add(obj);
         }
 
-        public void UnregisterDisposable(IDisposable obj)
+        public virtual void UnregisterDisposable(IDisposable obj)
         {
             if (_lazyDisposables != null)
             {
@@ -590,11 +559,14 @@ namespace Pchp.Core
 
         #region IDisposable
 
-        bool _disposed;
+        /// <summary>
+        /// Gets value indicating the context has been disposed.
+        /// </summary>
+        public bool IsDisposed { get; private set; }
 
         public virtual void Dispose()
         {
-            if (!_disposed)
+            if (!IsDisposed)
             {
                 try
                 {
@@ -617,7 +589,7 @@ namespace Pchp.Core
                     //    this.FinallyDispose();
 
                     //
-                    _disposed = true;
+                    IsDisposed = true;
                 }
             }
         }

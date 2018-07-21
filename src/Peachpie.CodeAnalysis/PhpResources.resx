@@ -197,7 +197,4 @@
   <data name="IDS_ToolName" xml:space="preserve">
     <value>PeachPie PHP Compiler</value>
   </data>
-  <data name="XmlDoc_ContextParamDescription" xml:space="preserve">
-    <value>Runtime context.</value>
-  </data>
 </root>

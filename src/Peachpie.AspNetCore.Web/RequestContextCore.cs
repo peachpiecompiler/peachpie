@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Reflection;
 
-namespace Peachpie.Web
+namespace Peachpie.AspNetCore.Web
 {
     /// <summary>
     /// Runtime context for ASP.NET Core request.
@@ -270,7 +270,14 @@ namespace Peachpie.Web
         /// <summary>
         /// Informational string exposing technology powering the web request and version.
         /// </summary>
-        public static readonly string XPoweredBy = "PeachPie" + " " + ContextExtensions.GetRuntimeInformationalVersion();
+        static readonly string XPoweredBy = "PeachPie" + " " + ContextExtensions.GetRuntimeInformationalVersion();
+
+        static string DefaultContentType = "text/html; charset=UTF-8";
+
+        /// <summary>
+        /// Unique key of item within <see cref="HttpContext.Items"/> associated with this <see cref="Context"/>.
+        /// </summary>
+        static object HttpContextItemKey => typeof(Context);
 
         /// <summary>
         /// Reference to current <see cref="HttpContext"/>.
@@ -292,6 +299,9 @@ namespace Peachpie.Web
             _httpctx = httpcontext;
             _encoding = encoding;
 
+            httpcontext.Items[HttpContextItemKey] = this;
+            httpcontext.Response.RegisterForDispose(this);
+
             this.RootPath = rootPath;
 
             this.InitOutput(httpcontext.Response.Body, new ResponseTextWriter(httpcontext.Response, encoding));
@@ -302,9 +312,23 @@ namespace Peachpie.Web
             this.SetupHeaders();
         }
 
+        /// <summary>
+        /// Gets (non disposed) context associated to given <see cref="HttpContext"/>.
+        /// </summary>
+        internal static Context TryGetFromHttpContext(HttpContext httpctx)
+        {
+            if (httpctx != null && httpctx.Items.TryGetValue(HttpContextItemKey, out object obj) && obj is Context ctx && !ctx.IsDisposed)
+            {
+                return ctx;
+            }
+
+            return null;
+        }
+
         void SetupHeaders()
         {
-            _httpctx.Response.Headers["X-Powered-By"] = new StringValues(XPoweredBy);
+            _httpctx.Response.ContentType = DefaultContentType;                         // default content type if not set anything by the application
+            _httpctx.Response.Headers["X-Powered-By"] = new StringValues(XPoweredBy);   //
         }
 
         static void AddVariables(PhpArray target, IEnumerable<KeyValuePair<string, StringValues>> values)

@@ -108,7 +108,8 @@ namespace Pchp.Core.Reflection
         /// Adds extensions specified within the assembly attribute into the table.
         /// </summary>
         /// <param name="ass">The assembly to be added.</param>
-        public void AddAssembly(Assembly ass)
+        /// <returns>The same value as provided in <paramref name="ass"/>.</returns>
+        public Assembly AddAssembly(Assembly ass)
         {
             if (AddAssembly(ass.GetName()))
             {
@@ -122,6 +123,8 @@ namespace Pchp.Core.Reflection
                     }
                 }
             }
+
+            return ass;
         }
 
         /// <summary>

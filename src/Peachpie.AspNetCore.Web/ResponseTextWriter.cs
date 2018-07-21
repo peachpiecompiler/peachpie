@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 
-namespace Peachpie.Web
+namespace Peachpie.AspNetCore.Web
 {
     /// <summary>
     /// <see cref="TextWriter"/> implementation passing text to underlaying response stream in given encoding.

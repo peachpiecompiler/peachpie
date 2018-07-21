@@ -16,9 +16,21 @@ using Devsense.PHP.Text;
 using Pchp.CodeAnalysis.Errors;
 using Devsense.PHP.Syntax.Ast;
 using System.Reflection;
+using Pchp.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.CommandLine
 {
+    /// <summary>
+    /// Main phases of the compilation.
+    /// </summary>
+    internal enum CompilationPhase
+    {
+        Parse,
+        Bind,
+        Analyse,
+        Emit
+    }
+
     /// <summary>
     /// Implementation of <c>pchp.exe</c>.
     /// </summary>
@@ -40,6 +52,8 @@ namespace Pchp.CodeAnalysis.CommandLine
 
         public override Compilation CreateCompilation(TextWriter consoleOutput, TouchedFileLogger touchedFilesLogger, ErrorLogger errorLogger)
         {
+            CompilerLogSource.Log.StartPhase(CompilationPhase.Parse.ToString());
+
             var parseOptions = Arguments.ParseOptions;
 
             // We compute script parse options once so we don't have to do it repeatedly in
@@ -67,6 +81,8 @@ namespace Pchp.CodeAnalysis.CommandLine
                     trees[i] = ParseFile(consoleOutput, parseOptions, scriptParseOptions, ref hadErrors, sourceFiles[i], errorLogger);
                 }
             }
+
+            CompilerLogSource.Log.EndPhase();
 
             // If errors had been reported in ParseFile, while trying to read files, then we should simply exit.
             if (hadErrors)

@@ -128,6 +128,13 @@ namespace Peachpie.Library.PDO
                         }
                         return false;
                     case PDO_ATTR.ATTR_DEFAULT_FETCH_MODE:
+                        int fetchValue = (int)value.ToLong();
+                        if (Enum.IsDefined(typeof(PDO_FETCH), fetchValue))
+                        {
+                            this.m_attributes[attribute] = (PhpValue)fetchValue;
+                            return true;
+                        }
+                        return false;
                     case PDO_ATTR.ATTR_FETCH_CATALOG_NAMES:
                     case PDO_ATTR.ATTR_FETCH_TABLE_NAMES:
                     case PDO_ATTR.ATTR_MAX_COLUMN_LEN:

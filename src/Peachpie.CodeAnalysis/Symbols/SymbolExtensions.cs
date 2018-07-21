@@ -121,6 +121,30 @@ namespace Pchp.CodeAnalysis.Symbols
             return true;
         }
 
+        /// <summary>
+        /// Gets [PhpType] attribute and its parameters.
+        /// </summary>
+        public static bool TryGetPhpTypeAttribute(this TypeSymbol symbol, out string typename, out string filename)
+        {
+            var attrs = symbol.GetAttributes();
+            for (int i = 0; i < attrs.Length; i++)
+            {
+                var a = attrs[i];
+                var fullname = MetadataHelpers.BuildQualifiedName((a.AttributeClass as NamedTypeSymbol)?.NamespaceName, a.AttributeClass.Name);
+                if (fullname == CoreTypes.PhpTypeAttributeFullName)
+                {
+                    var args = a.CommonConstructorArguments;
+                    typename = (string)args[0].Value;
+                    filename = (string)args[1].Value;
+                    return true;
+                }
+            }
+
+            //
+            typename = filename = null;
+            return false;
+        }
+
         public static AttributeData GetPhpExtensionAttribute(this Symbol symbol)
         {
             var attrs = symbol.GetAttributes();

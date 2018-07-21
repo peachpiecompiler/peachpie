@@ -229,66 +229,10 @@ namespace Peachpie.Library.PDO
         public PDOStatement query(string statement, params PhpValue[] args)
         {
             PDOStatement stmt = new PDOStatement(this, statement, null);
-            PDO_FETCH fetch = PDO_FETCH.FETCH_USE_DEFAULT;
             if (args.Length > 0)
             {
-                PhpValue fetchMode = args[0];
-                if (fetchMode.IsInteger())
-                {
-                    int value = (int)fetchMode.Long;
-                    if (Enum.IsDefined(typeof(PDO_FETCH), value))
-                    {
-                        fetch = (PDO_FETCH)value;
-                    }
-                }
-            }
-            int? colNo = null;
-            if (fetch == PDO_FETCH.FETCH_COLUMN)
-            {
-                if (args.Length > 2)
-                {
-                    colNo = (int)args[1].ToLong();
-                }
-                else
-                {
-                    //TODO what to do if missing parameter ?
-                    fetch = PDO_FETCH.FETCH_USE_DEFAULT;
-                }
-            }
-            string className = null;
-            PhpArray ctorArgs = null;
-            if (fetch == PDO_FETCH.FETCH_CLASS)
-            {
-                if (args.Length > 2)
-                {
-                    className = args[1].ToStringOrNull();
-                    if (args.Length > 3)
-                    {
-                        ctorArgs = args[2].ArrayOrNull();
-                    }
-                }
-                else
-                {
-                    //TODO what to do if missing parameter ?
-                    fetch = PDO_FETCH.FETCH_USE_DEFAULT;
-                }
-            }
-            PhpValue? fetchObject = null;
-            if (fetch == PDO_FETCH.FETCH_OBJ)
-            {
-                if (args.Length > 2)
-                {
-                    fetchObject = args[1];
-                    if (fetchObject.Value.IsNull)
-                    {
-                        //TODO passed object is null
-                    }
-                }
-                else
-                {
-                    //TODO what to do if missing parameter ?
-                    fetch = PDO_FETCH.FETCH_USE_DEFAULT;
-                }
+                // Set the fetch mode, logic inside PDOStatement
+                stmt.setFetchMode(args);
             }
 
             if (stmt.execute())

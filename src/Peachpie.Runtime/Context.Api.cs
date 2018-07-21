@@ -1,9 +1,8 @@
-﻿using Pchp.Core.Reflection;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Pchp.Core.Reflection;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Core
 {
@@ -161,6 +160,47 @@ namespace Pchp.Core
         /// <param name="relpath">Relative path of the script without leading slash.</param>
         /// <param name="main">Script entry point.</param>
         public static void DeclareScript(string relpath, MainDelegate main) => ScriptsMap.DeclareScript(relpath, main);
+
+        /// <summary>
+        /// Tries to resolve compiled script according to given path.
+        /// </summary>
+        public static ScriptInfo TryResolveScript(string root, string path) => ScriptsMap.ResolveInclude(path, root, null, null, null);
+
+        /// <summary>
+        /// Gets script according to its relative path as it was declared in <see cref="Context"/>.
+        /// </summary>
+        /// <param name="relpath">Relative script path.</param>
+        /// <returns>Script descriptor, can be invalid if script was not declared.</returns>
+        public static ScriptInfo TryGetDeclaredScript(string relpath) => ScriptsMap.GetDeclaredScript(relpath);
+
+        /// <summary>
+        /// Gets scripts in given directory.
+        /// </summary>
+        public static bool TryGetScriptsInDirectory(string root, string path, out IEnumerable<ScriptInfo> scripts)
+        {
+            // assert: root is not suffixed with directory separator
+            
+            // trim leading {root} path:
+            if (!string.IsNullOrEmpty(root) && path.StartsWith(root, CurrentPlatform.PathStringComparison))
+            {
+                if (path.Length == root.Length)
+                {
+                    path = string.Empty;
+                }
+                else if (path[root.Length] == CurrentPlatform.DirectorySeparator)
+                {
+                    path = (path.Length > root.Length + 1) ? path.Substring(root.Length + 1) : string.Empty;
+                }
+                else
+                {
+                    scripts = Enumerable.Empty<ScriptInfo>();
+                    return false;
+                }
+            }
+
+            // try to get compiled scripts within path:
+            return ScriptsMap.TryGetDirectory(path, out scripts);
+        }
 
         #endregion
 

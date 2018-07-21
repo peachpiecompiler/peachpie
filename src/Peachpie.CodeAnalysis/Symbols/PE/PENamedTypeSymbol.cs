@@ -125,7 +125,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                if (this.DeclaredAccessibility == Accessibility.Public && this.IsSealed)
+                if (this.DeclaredAccessibility == Accessibility.Public && this.IsStatic)
                 {
                     var method = GetMembers(WellKnownPchpNames.GlobalRoutineName).OfType<IMethodSymbol>().SingleOrDefault();
                     Debug.Assert(method == null || (method.Parameters.Length == 4 && method.IsStatic && method.DeclaredAccessibility == Accessibility.Public));

@@ -7,8 +7,9 @@ using Microsoft.AspNetCore.Hosting;
 using Pchp.Core.Utilities;
 using System.Diagnostics;
 using System.IO;
+using Pchp.Core;
 
-namespace Peachpie.Web
+namespace Peachpie.AspNetCore.Web
 {
     /// <summary>
     /// ASP.NET Core application middleware handling requests to compiled PHP scripts.
@@ -30,7 +31,7 @@ namespace Peachpie.Web
             _options = options;
 
             // determine Root Path:
-            _rootPath = hostingEnv.WebRootPath ?? hostingEnv.ContentRootPath ?? Directory.GetCurrentDirectory();
+            _rootPath = hostingEnv.GetDefaultRootPath();
 
             if (!string.IsNullOrEmpty(options.RootPath))
             {
@@ -59,11 +60,11 @@ namespace Peachpie.Web
                     var ass = System.Reflection.Assembly.Load(assname);
                     if (ass != null)
                     {
-                        Pchp.Core.Context.AddScriptReference(ass);
+                        Context.AddScriptReference(ass);
                     }
                     else
                     {
-                        Debug.Assert(false, $"Assembly '{assname}' couldn't be loaded.");
+                        LogEventSource.Log.ErrorLog($"Assembly '{assname}' couldn't be loaded.");
                     }
                 }
             }
@@ -74,15 +75,9 @@ namespace Peachpie.Web
         /// </summary>
         static string NormalizeRootPath(string path)
         {
-            if (string.IsNullOrEmpty(path))
-            {
-                return "/";
-            }
-            else
-            {
-                path = path.Replace('\\', '/');
-                return path.Last() != '/' ? path : path.Substring(0, path.Length - 1);
-            }
+            return string.IsNullOrEmpty(path)
+                ? string.Empty
+                : CurrentPlatform.NormalizeSlashes(path).TrimEndSeparator();
         }
 
         /// <summary>

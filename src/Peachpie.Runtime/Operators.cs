@@ -32,7 +32,7 @@ namespace Pchp.Core
                 var by = y.ToBytesOrNull();
                 if (by != null)
                 {
-                    throw new NotImplementedException();
+                    return PhpValue.Create(BitAnd(bx, by));
                 }
             }
 
@@ -51,7 +51,7 @@ namespace Pchp.Core
                 var by = y.ToBytesOrNull();
                 if (by != null)
                 {
-                    throw new NotImplementedException();
+                    return PhpValue.Create(BitOr(bx, by));
                 }
             }
 
@@ -70,12 +70,57 @@ namespace Pchp.Core
                 var by = y.ToBytesOrNull();
                 if (by != null)
                 {
-                    return PhpValue.Create(new PhpString(BitXor(bx, by)));
+                    return PhpValue.Create(BitXor(bx, by));
                 }
             }
 
             //
             return PhpValue.Create(x.ToLong() ^ y.ToLong());
+        }
+
+        static byte[] BitAnd(byte[] bx, byte[] by)
+        {
+            int length = Math.Min(bx.Length, by.Length);
+            if (length == 0)
+            {
+                return Array.Empty<byte>();
+            }
+
+            byte[] result = new byte[length];
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = (byte)(bx[i] & by[i]);
+            }
+
+            return result;
+        }
+
+        static byte[] BitOr(byte[] bx, byte[] by)
+        {
+            if (bx.Length == 0 && by.Length == 0)
+            {
+                return Array.Empty<byte>();
+            }
+
+            byte[] result, or;
+            if (bx.Length > by.Length)
+            {
+                result = (byte[])bx.Clone();
+                or = by;
+            }
+            else
+            {
+                result = (byte[])by.Clone();
+                or = bx;
+            }
+
+            for (int i = 0; i < or.Length; i++)
+            {
+                result[i] |= or[i];
+            }
+
+            return result;
         }
 
         static byte[] BitXor(byte[] bx, byte[] by)

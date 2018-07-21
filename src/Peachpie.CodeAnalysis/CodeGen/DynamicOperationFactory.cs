@@ -228,6 +228,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                         t = _cg.Emit(a.Value);
                     }
 
+                    if (t.SpecialType == SpecialType.System_Void)
+                    {
+                        Debug.Fail("Unexpected: argument evaluates to 'void'.");
+                        // NOTE: this is an error somewhere, no expression shall return void
+                        t = _cg.Emit_PhpValue_Null();
+                    }
+
                     AddArg(t, byref: byref);
                 }
             }
