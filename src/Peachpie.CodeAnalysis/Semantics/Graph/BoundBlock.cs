@@ -5,6 +5,7 @@ using System.Linq;
 using Devsense.PHP.Syntax;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
@@ -69,6 +70,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             Debug.Assert(statements != null);
             _statements = statements;
+
+            CompilerLogSource.Log.Count("TotalBoundBlocks");
         }
 
         /// <summary>
