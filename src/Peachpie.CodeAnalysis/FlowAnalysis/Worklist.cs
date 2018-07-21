@@ -190,11 +190,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             int IComparer<BoundBlock>.Compare(BoundBlock x, BoundBlock y)
             {
-                if (ReferenceEquals(x, y))
-                {
-                    return 0;
-                }
+                // Each block must be inserted only once to a worklist
+                Debug.Assert(!ReferenceEquals(x, y));
 
+                // Sort the blocks via their topological order to minimize the analysis repetition
                 return x.Ordinal - y.Ordinal;
             }
         }
