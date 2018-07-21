@@ -13,9 +13,14 @@ namespace Pchp.CodeAnalysis.Utilities
     /// <summary>
     /// Represents priority queue where items are enqueued just once and queue can be accessed in parallel.
     /// </summary>
-    internal sealed class DistinctQueue<T> where T : BoundBlock
+    internal sealed class DistinctQueue<T>
     {
         readonly object _syncRoot = new object();
+
+        /// <summary>
+        /// A set to mark already inserted objects.
+        /// </summary>
+        readonly HashSet<T> _set;
 
         /// <summary>
         /// A heap to enable fast insertion and minimum extraction.
@@ -25,6 +30,7 @@ namespace Pchp.CodeAnalysis.Utilities
         public DistinctQueue(IComparer<T> comparer)
         {
             _queue = new PriorityQueue<T>(comparer);
+            _set = new HashSet<T>();
         }
 
         /// <summary>
@@ -44,10 +50,10 @@ namespace Pchp.CodeAnalysis.Utilities
 
             lock (_syncRoot)
             {
-                if (!value.IsEnqueued)
+                if (!_set.Contains(value))
                 {
                     _queue.Push(value);
-                    value.IsEnqueued = true;
+                    _set.Add(value);
                     return true;
                 }
                 else
@@ -69,8 +75,8 @@ namespace Pchp.CodeAnalysis.Utilities
                     value = _queue.Top;
                     _queue.Pop();
 
-                    Debug.Assert(value.IsEnqueued);
-                    value.IsEnqueued = false;
+                    Debug.Assert(_set.Contains(value));
+                    _set.Remove(value);
 
                     return true;
                 }
