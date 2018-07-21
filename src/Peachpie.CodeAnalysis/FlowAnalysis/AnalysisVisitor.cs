@@ -89,13 +89,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // merge and check whether state changed
                 state = state.Merge(targetState);   // merge states into new one
 
-                if (state.Equals(targetState) && !(target is ExitBlock))
+                if (state.Equals(targetState) && !target.ForceRepeatedAnalysis)
                 {
-                    // state convergated, we don't have to analyse target block again
-                    // unless it's an ExitBlock, because it propagates the return type
-                    // (which is not a part of a state) to all the callers
-
-                    // TODO: Consider marking the return type as dirty for these cases
+                    // state converged, we don't have to analyse the target block again
+                    // unless it is specially needed (e.g. ExitBlock)
                     return;
                 }
             }
@@ -357,7 +354,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     {
                         lock (subscribers)
                         {
-                            subscribers.ForEach(subscriber => _worklist.PingReturnUpdate(exit, subscriber));
+                            foreach (var subscriber in subscribers)
+                            {
+                                _worklist.PingReturnUpdate(exit, subscriber);
+                            }
                         }
                     }
                 }
