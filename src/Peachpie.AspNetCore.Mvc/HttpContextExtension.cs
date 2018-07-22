@@ -99,7 +99,7 @@ namespace Peachpie.AspNetCore.Mvc
 
             // find the view:
             var action = new ActionContext(context, routedata, new ActionDescriptor());
-            viewEngine = viewEngine ?? context.RequestServices.GetService<IViewEngine>();
+            viewEngine = viewEngine ?? context.RequestServices.GetService<ICompositeViewEngine>() ?? context.RequestServices.GetService<IViewEngine>();
             var view = viewEngine.FindView(action, viewName, isMainPage: false);
 
             if (view.Success)
