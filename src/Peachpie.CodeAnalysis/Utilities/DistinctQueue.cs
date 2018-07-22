@@ -50,10 +50,9 @@ namespace Pchp.CodeAnalysis.Utilities
 
             lock (_syncRoot)
             {
-                if (!_set.Contains(value))
+                if (_set.Add(value))
                 {
                     _queue.Push(value);
-                    _set.Add(value);
                     return true;
                 }
                 else
