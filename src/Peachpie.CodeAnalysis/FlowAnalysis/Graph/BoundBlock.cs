@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 using Peachpie.CodeAnalysis.Utilities;
 using System.Collections.Concurrent;
+using Pchp.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
@@ -21,10 +22,23 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             get; set;
         }
+
+        /// <summary>
+        /// Whether to reanalyse this block regardless of the flow state convergence.
+        /// </summary>
+        internal virtual bool ForceRepeatedAnalysis => false;
     }
 
     partial class ExitBlock
     {
+        /// <summary>
+        /// ExitBlock propagates the return type (which is not a part of a flow state) to all the callers.
+        /// Therefore, it must be reanalysed every time it is encountered, even if the flow state didn't change.
+        /// 
+        /// TODO: Consider marking the return type as dirty and return true only in that case.
+        /// </summary>
+        internal override bool ForceRepeatedAnalysis => true;
+
         #region Callers // TODO: EdgeToCallers
 
         /// <summary>

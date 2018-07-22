@@ -1206,10 +1206,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // require method result type if access != none
                 if (x.Access.IsRead)
                 {
-                    if (Worklist.EnqueueRoutine(x.TargetMethod, CurrentBlock))
+                    if (Worklist.EnqueueRoutine(x.TargetMethod, CurrentBlock, x))
                     {
                         // target will be reanalysed
-                        // note: continuing current block may be waste of time
+                        // note: continuing current block may be waste of time, but it might gather other called targets
+
+                        // The next blocks will be analysed after this routine is re-enqueued due to the dependency
+                        IsEdgeVisitingStopped = true;
                     }
                 }
 
@@ -1257,7 +1260,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     var r = (TypeRefMask)0;
                     foreach (var m in ambiguity.Ambiguities)
                     {
-                        Worklist.EnqueueRoutine(m, CurrentBlock);
+                        if (Worklist.EnqueueRoutine(m, CurrentBlock, x))
+                        {
+                            // The next blocks will be analysed after this routine is re-enqueued due to the dependency
+                            IsEdgeVisitingStopped = true;
+                        }
+
                         r |= m.GetResultType(TypeCtx);
                     }
 
@@ -2082,9 +2090,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 Accept(x.Returned);
                 State.FlowThroughReturn(x.Returned.TypeRefMask);
-
-                // reanalyse blocks depending on this routine return type
-                EnqueueSubscribers((ExitBlock)this.Routine?.ControlFlowGraph.Exit);
             }
             else
             {
