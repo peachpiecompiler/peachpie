@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 using Pchp.CodeAnalysis.Symbols;
 using Devsense.PHP.Syntax.Ast;
 
-namespace Pchp.CodeAnalysis.FlowAnalysis
+namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
     internal partial class DiagnosingVisitor : GraphVisitor
     {

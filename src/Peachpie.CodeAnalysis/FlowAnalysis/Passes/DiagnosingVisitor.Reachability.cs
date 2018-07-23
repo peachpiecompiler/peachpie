@@ -8,7 +8,7 @@ using Devsense.PHP.Syntax.Ast;
 using Pchp.CodeAnalysis.Errors;
 using Pchp.CodeAnalysis.Semantics.Graph;
 
-namespace Pchp.CodeAnalysis.FlowAnalysis
+namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
     internal partial class DiagnosingVisitor
     {
