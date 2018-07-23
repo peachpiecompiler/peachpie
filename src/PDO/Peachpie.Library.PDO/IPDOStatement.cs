@@ -40,7 +40,7 @@ namespace Peachpie.Library.PDO
         /// <param name="value">The value to bind to the parameter.</param>
         /// <param name="data_type">Explicit data type for the parameter using the PDO::PARAM_* constants.</param>
         /// <returns>Returns TRUE on success or FALSE on failure</returns>
-        bool bindValue(PhpValue parameter, PhpValue value, int data_type = PDO.PARAM_STR);
+        bool bindValue(PhpValue parameter, PhpValue value, PDO.PARAM data_type = (PDO.PARAM)PDO.PARAM_STR);
 
         /// <summary>
         /// Closes the cursor, enabling the statement to be executed again.

@@ -34,13 +34,19 @@ namespace Peachpie.Library.PDO
         private List<String> m_positionalPlaceholders;
          
         private PDO.PDO_FETCH m_fetchStyle = PDO.PDO_FETCH.FETCH_BOTH;
+        /// <summary>
+        /// Column Number property for FETCH_COLUMN fetching.
+        /// </summary>
         public int FetchColNo { get; set; } = -1;
+        /// <summary>
+        /// Class Name property for FETCH_CLASS fetching.
+        /// </summary>
         public string FetchClassName { get; set; } = null;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PDOStatement" /> class.
         /// </summary>
-        /// <param name="pdo">The pdo.</param>
+        /// <param name="pdo">The PDO statement is created for.</param>
         /// <param name="statement">The statement.</param>
         /// <param name="driver_options">The driver options.</param>
         internal PDOStatement(PDO pdo, string statement, PhpArray driver_options)
@@ -50,6 +56,8 @@ namespace Peachpie.Library.PDO
             this.m_options = driver_options ?? PhpArray.Empty;
 
             this.m_cmd = pdo.CreateCommand(this.m_stmt);
+
+            PrepareStatement();
 
             this.SetDefaultAttributes();
         }
@@ -148,6 +156,13 @@ namespace Peachpie.Library.PDO
 
             if(m_positionalAttr)
             {
+                // Mixed parameters not allowed
+                if (m_namedAttr)
+                {
+                    m_pdo.HandleError(new PDOException("Mixed parameters mode not allowed. Use either only positional, or only named parameters."));
+                    return false;
+                }
+
                 foreach (var paramName in m_positionalPlaceholders.ToArray())
                 {
                     var param = m_cmd.CreateParameter();
@@ -159,7 +174,7 @@ namespace Peachpie.Library.PDO
                 foreach (var paramPair in m_namedPlaceholders)
                 {
                     var param = m_cmd.CreateParameter();
-                    param.ParameterName = paramPair.Value;
+                    param.ParameterName = paramPair.Key;
                     m_cmd.Parameters.Add(param);
                 }
             }
@@ -249,25 +264,54 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public bool bindValue(PhpValue parameter, PhpValue value, int data_type = 2)
+        public bool bindValue(PhpValue parameter, PhpValue value, PDO.PARAM data_type = (PDO.PARAM)PDO.PARAM_STR)
         {
             Debug.Assert(this.m_cmd != null);
 
-            string key = parameter.String;
-
-            if (key.Length > 0 && key[0] == ':')
+            if (m_namedAttr)
             {
-                key = key.Substring(1);
+                // Mixed parameters not allowed
+                if (m_positionalAttr)
+                {
+                    m_pdo.HandleError(new PDOException("Mixed parameters mode not allowed. Use either only positional, or only named parameters."));
+                    return false;
+                }
+
+                string key = parameter.AsString();
+                if(key == null)
+                {
+                    m_pdo.HandleError(new PDOException("Supplied parameter name must be a string."));
+                    return false;
+                }
+
+                if (key.Length > 0 && key[0] == ':')
+                {
+                    key = key.Substring(1);
+                }
+
+                var param = m_cmd.Parameters[key];
+                param.Value = value;
+
+            } else if(m_positionalAttr)
+            {
+                if (!parameter.IsInteger())
+                {
+                    m_pdo.HandleError(new PDOException("Supplied parameter index must be an integer."));
+                    return false;
+                }
+                int paramIndex = parameter.ToIntStringKey().Integer;
+
+                if(paramIndex < m_positionalPlaceholders.Count)
+                {
+                    var param = m_cmd.Parameters[paramIndex];
+                    param.Value = value;
+                }
+
+            } else
+            {
+                m_pdo.HandleError(new PDOException("No parameter mode set yet for this Statement. Possibly no parameters required?"));
+                return false;
             }
-
-            IDataParameter param;
-
-            param = this.m_cmd.Parameters[key];
-
-            param.Value = value.AsString();
-
-
-
 
             return true;
         }
