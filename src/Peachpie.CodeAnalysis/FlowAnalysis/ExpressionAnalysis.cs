@@ -1217,8 +1217,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
 
                 //
-                Routine.Flags |= x.TargetMethod.InvocationFlags();
                 x.TypeRefMask = x.TargetMethod.GetResultType(TypeCtx);
+
+                if (Routine != null)
+                {
+                    Routine.Flags |= x.TargetMethod.InvocationFlags();
+                }
 
                 // process arguments
                 if (!BindParams(x.TargetMethod.GetExpectedArguments(this.TypeCtx), x.ArgumentsInSourceOrder) && maybeOverload)
