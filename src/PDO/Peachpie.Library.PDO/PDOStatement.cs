@@ -268,6 +268,8 @@ namespace Peachpie.Library.PDO
         {
             Debug.Assert(this.m_cmd != null);
 
+            IDbDataParameter param = null;
+
             if (m_namedAttr)
             {
                 // Mixed parameters not allowed
@@ -289,8 +291,7 @@ namespace Peachpie.Library.PDO
                     key = key.Substring(1);
                 }
 
-                var param = m_cmd.Parameters[key];
-                param.Value = value;
+                param = m_cmd.Parameters[key];
 
             } else if(m_positionalAttr)
             {
@@ -299,18 +300,83 @@ namespace Peachpie.Library.PDO
                     m_pdo.HandleError(new PDOException("Supplied parameter index must be an integer."));
                     return false;
                 }
-                int paramIndex = parameter.ToIntStringKey().Integer;
+                int paramIndex = (int)parameter;
 
                 if(paramIndex < m_positionalPlaceholders.Count)
                 {
-                    var param = m_cmd.Parameters[paramIndex];
-                    param.Value = value;
+                    param = m_cmd.Parameters[paramIndex];
                 }
 
             } else
             {
                 m_pdo.HandleError(new PDOException("No parameter mode set yet for this Statement. Possibly no parameters required?"));
                 return false;
+            }
+
+            if(param == null)
+            {
+                m_pdo.HandleError(new PDOException("No matching parameter found."));
+                return false;
+            }
+
+            switch(data_type)
+            {
+                case PDO.PARAM.PARAM_INT:
+                    if (value.IsInteger())
+                    {
+                        param.DbType = DbType.Int32;
+                        param.Value = (int)value;
+                    }
+                    else
+                    {
+                        m_pdo.HandleError(new PDOException("Parameter type does not match the declared type."));
+                        return false;
+                    }
+                    break;
+
+                case PDO.PARAM.PARAM_STR:
+                    string str = null;
+                    if ((str = value.ToStringOrNull()) != null)
+                    {
+                        param.DbType = DbType.String;
+                        param.Value = str;
+                    }
+                    else
+                    {
+                        m_pdo.HandleError(new PDOException("Parameter type does not match the declared type."));
+                        return false;
+                    }
+                    break;
+                case PDO.PARAM.PARAM_BOOL:
+                    if (value.IsBoolean())
+                    {
+                        param.DbType = DbType.Boolean;
+                        param.Value = value.ToBoolean();
+                    } else
+                    {
+                        m_pdo.HandleError(new PDOException("Parameter type does not match the declared type."));
+                        return false;
+                    }
+                    break;
+
+                case PDO.PARAM.PARAM_LOB:
+                    byte[] bytes = null;
+                    if ((bytes = value.ToBytesOrNull()) != null)
+                    {
+                        param.DbType = DbType.Binary;
+                        param.Value = bytes;
+                    }
+                    else
+                    {
+                        m_pdo.HandleError(new PDOException("Parameter type does not match the declared type."));
+                        return false;
+                    }
+                    break;
+                    
+                    // Currently not supported by any drivers
+                case PDO.PARAM.PARAM_NULL:
+                case PDO.PARAM.PARAM_STMT:
+                    throw new NotImplementedException();
             }
 
             return true;
