@@ -32,6 +32,9 @@ namespace Peachpie.Library.PDO
         private bool m_namedAttr = false;
         private Dictionary<string, string> m_namedPlaceholders;
         private List<String> m_positionalPlaceholders;
+
+        private bool m_hasParamsBounded = false;
+        private Dictionary<string, PhpValue> m_boundedParams;
          
         private PDO.PDO_FETCH m_fetchStyle = PDO.PDO_FETCH.FETCH_BOTH;
         /// <summary>
@@ -54,6 +57,7 @@ namespace Peachpie.Library.PDO
             this.m_pdo = pdo;
             this.m_stmt = statement;
             this.m_options = driver_options ?? PhpArray.Empty;
+            this.m_hasParamsBounded = false;
 
             this.m_cmd = pdo.CreateCommand(this.m_stmt);
 
@@ -71,6 +75,7 @@ namespace Peachpie.Library.PDO
             m_stmt = null;
             m_options = PhpArray.Empty;
             m_cmd = null;
+            m_hasParamsBounded = false;
         }
 
         private static readonly Regex regName = new Regex(@"[\w_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -262,6 +267,8 @@ namespace Peachpie.Library.PDO
         {
             Debug.Assert(this.m_cmd != null);
 
+            m_hasParamsBounded = true;
+
             IDbDataParameter param = null;
 
             if (m_namedAttr)
@@ -285,6 +292,9 @@ namespace Peachpie.Library.PDO
                     key = key.Substring(1);
                 }
 
+                //Store the bounded variable reference in the dictionary
+                m_boundedParams.Add(key, variable);
+
                 param = m_cmd.Parameters[key];
 
             }
@@ -297,11 +307,13 @@ namespace Peachpie.Library.PDO
                 }
                 int paramIndex = (int)parameter;
 
+                //Store the bounded variable reference in the dictionary
+                m_boundedParams.Add(paramIndex.ToString(), variable);
+
                 if (paramIndex < m_positionalPlaceholders.Count)
                 {
                     param = m_cmd.Parameters[paramIndex];
                 }
-
             }
             else
             {
@@ -321,7 +333,6 @@ namespace Peachpie.Library.PDO
                     if (variable.IsInteger())
                     {
                         param.DbType = DbType.Int32;
-                        param.Value = (int)variable;
                     }
                     else
                     {
@@ -335,7 +346,6 @@ namespace Peachpie.Library.PDO
                     if ((str = variable.ToStringOrNull()) != null)
                     {
                         param.DbType = DbType.String;
-                        param.Value = str;
                     }
                     else
                     {
@@ -347,7 +357,6 @@ namespace Peachpie.Library.PDO
                     if (variable.IsBoolean())
                     {
                         param.DbType = DbType.Boolean;
-                        param.Value = variable.ToBoolean();
                     }
                     else
                     {
@@ -361,7 +370,6 @@ namespace Peachpie.Library.PDO
                     if ((bytes = variable.ToBytesOrNull()) != null)
                     {
                         param.DbType = DbType.Binary;
-                        param.Value = bytes;
                     }
                     else
                     {
@@ -409,6 +417,10 @@ namespace Peachpie.Library.PDO
 
                 param = m_cmd.Parameters[key];
 
+                //rewrite the bounded params dictionary
+                if (m_boundedParams.ContainsKey(key))
+                    m_boundedParams.Remove(key);
+
             } else if(m_positionalAttr)
             {
                 if (!parameter.IsInteger())
@@ -422,6 +434,10 @@ namespace Peachpie.Library.PDO
                 {
                     param = m_cmd.Parameters[paramIndex];
                 }
+
+                //rewrite the bounded params dictionary
+                if (m_boundedParams.ContainsKey(paramIndex.ToString()))
+                    m_boundedParams.Remove(paramIndex.ToString());
 
             } else
             {
@@ -552,8 +568,17 @@ namespace Peachpie.Library.PDO
             {
                 foreach (var param in input_parameters)
                 {
-                    m_cmd.Parameters.Add(param);
+                    // TODO
+
+                    throw new NotImplementedException();
+                    //m_cmd.Parameters.Add(param);
                 }
+            }
+
+            // TODO
+            if(m_hasParamsBounded)
+            {
+
             }
 
             m_dr = null;
