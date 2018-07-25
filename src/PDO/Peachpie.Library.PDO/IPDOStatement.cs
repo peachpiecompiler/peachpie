@@ -31,7 +31,7 @@ namespace Peachpie.Library.PDO
         /// <param name="length">Length of the data type. To indicate that a parameter is an OUT parameter from a stored procedure, you must explicitly set the length.</param>
         /// <param name="driver_options"></param>
         /// <returns>Returns TRUE on success or FALSE on failure.</returns>
-        bool bindParam(PhpValue parameter, ref PhpValue variable, PDO.PARAM data_type = (PDO.PARAM)PDO.PARAM_STR, int? length = null, PhpValue? driver_options = null);
+        bool bindParam(PhpValue parameter, PhpAlias variable, PDO.PARAM data_type = (PDO.PARAM)PDO.PARAM_STR, int length = -1, PhpValue driver_options = default(PhpValue));
 
         /// <summary>
         /// Binds a value to a parameter.

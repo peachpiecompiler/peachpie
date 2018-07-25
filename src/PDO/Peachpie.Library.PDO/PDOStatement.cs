@@ -34,7 +34,7 @@ namespace Peachpie.Library.PDO
         private List<String> m_positionalPlaceholders;
 
         private bool m_hasParamsBounded = false;
-        private Dictionary<string, PhpValue> m_boundedParams;
+        private Dictionary<string, PhpAlias> m_boundedParams;
          
         private PDO.PDO_FETCH m_fetchStyle = PDO.PDO_FETCH.FETCH_BOTH;
         /// <summary>
@@ -263,13 +263,13 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public bool bindParam(PhpValue parameter, ref PhpValue variable, PDO.PARAM data_type = PDO.PARAM.PARAM_STR, int? length = default(int?), PhpValue? driver_options = default(PhpValue?))
+        public bool bindParam(PhpValue parameter, PhpAlias variable, PDO.PARAM data_type = PDO.PARAM.PARAM_STR, int length = default(int), PhpValue driver_options = default(PhpValue))
         {
             Debug.Assert(this.m_cmd != null);
 
             // lazy instantization
             if (m_boundedParams == null)
-                m_boundedParams = new Dictionary<string, PhpValue>();
+                m_boundedParams = new Dictionary<string, PhpAlias>();
 
             m_hasParamsBounded = true;
             IDbDataParameter param = null;
@@ -296,7 +296,7 @@ namespace Peachpie.Library.PDO
                 }
 
                 //Store the bounded variable reference in the dictionary
-                m_boundedParams.Add(key, variable);
+                m_boundedParams.Add(key, new PhpAlias(variable.Value));
 
                 param = m_cmd.Parameters[key];
 
@@ -310,8 +310,8 @@ namespace Peachpie.Library.PDO
                 }
                 int paramIndex = (int)parameter;
 
-                //Store the bounded variable reference in the dictionary
-                m_boundedParams.Add(paramIndex.ToString(), variable);
+                //Store the bounded variable.Value reference in the dictionary
+                m_boundedParams.Add(paramIndex.ToString(), new PhpAlias(variable.Value));
 
                 if (paramIndex < m_positionalPlaceholders.Count)
                 {
@@ -333,7 +333,7 @@ namespace Peachpie.Library.PDO
             switch (data_type)
             {
                 case PDO.PARAM.PARAM_INT:
-                    if (variable.IsInteger())
+                    if (variable.Value.IsInteger())
                     {
                         param.DbType = DbType.Int32;
                     }
@@ -346,7 +346,7 @@ namespace Peachpie.Library.PDO
 
                 case PDO.PARAM.PARAM_STR:
                     string str = null;
-                    if ((str = variable.ToStringOrNull()) != null)
+                    if ((str = variable.Value.ToStringOrNull()) != null)
                     {
                         param.DbType = DbType.String;
                     }
@@ -357,7 +357,7 @@ namespace Peachpie.Library.PDO
                     }
                     break;
                 case PDO.PARAM.PARAM_BOOL:
-                    if (variable.IsBoolean())
+                    if (variable.Value.IsBoolean())
                     {
                         param.DbType = DbType.Boolean;
                     }
@@ -370,7 +370,7 @@ namespace Peachpie.Library.PDO
 
                 case PDO.PARAM.PARAM_LOB:
                     byte[] bytes = null;
-                    if ((bytes = variable.ToBytesOrNull()) != null)
+                    if ((bytes = variable.Value.ToBytesOrNull()) != null)
                     {
                         param.DbType = DbType.Binary;
                     }
@@ -573,7 +573,7 @@ namespace Peachpie.Library.PDO
             // Assign the bound variables from bindParam() function if any present
             if(m_hasParamsBounded)
             {
-                foreach(KeyValuePair<string, PhpValue> pair in m_boundedParams)
+                foreach(KeyValuePair<string, PhpAlias> pair in m_boundedParams)
                 {
                     IDbDataParameter param = null;
 
@@ -610,9 +610,9 @@ namespace Peachpie.Library.PDO
                     switch (param.DbType)
                     {
                         case DbType.Int32:
-                            if (pair.Value.IsInteger())
+                            if (pair.Value.Value.IsInteger())
                             {
-                                param.Value = (int)pair.Value;
+                                param.Value = (int)pair.Value.Value;
                             }
                             else
                             {
@@ -623,7 +623,7 @@ namespace Peachpie.Library.PDO
 
                         case DbType.String:
                             string str = null;
-                            if ((str = pair.Value.ToStringOrNull()) != null)
+                            if ((str = pair.Value.Value.ToStringOrNull()) != null)
                             {
                                 param.Value = str;
                             }
@@ -634,7 +634,7 @@ namespace Peachpie.Library.PDO
                             }
                             break;
                         case DbType.Boolean:
-                            if (pair.Value.IsBoolean())
+                            if (pair.Value.Value.IsBoolean())
                             {
                                 param.Value = pair.Value.ToBoolean();
                             }
@@ -647,7 +647,7 @@ namespace Peachpie.Library.PDO
 
                         case DbType.Binary:
                             byte[] bytes = null;
-                            if ((bytes = pair.Value.ToBytesOrNull()) != null)
+                            if ((bytes = pair.Value.Value.ToBytesOrNull()) != null)
                             {
                                 param.Value = bytes;
                             }
