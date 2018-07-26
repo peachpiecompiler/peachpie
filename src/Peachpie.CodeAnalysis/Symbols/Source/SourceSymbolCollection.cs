@@ -259,7 +259,7 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
-        /// Gets enumeration of all routines (global code, functions and methods) in source code.
+        /// Gets enumeration of all routines (global code, functions, lambdas and class methods) in source code.
         /// </summary>
         public IEnumerable<SourceRoutineSymbol> AllRoutines    // all functions + global code + methods + lambdas
         {
