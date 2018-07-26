@@ -33,10 +33,13 @@ namespace Peachpie.Library.PDO
         private Dictionary<string, string> m_namedPlaceholders;
         private List<String> m_positionalPlaceholders;
 
-        private bool m_hasParamsBounded = false;
-        private Dictionary<string, PhpAlias> m_boundedParams;
-         
+        private Dictionary<string, PhpAlias> m_boundParams;      
         private PDO.PDO_FETCH m_fetchStyle = PDO.PDO_FETCH.FETCH_BOTH;
+
+        /// <summary>
+        /// Property telling whether there are any command parameter variables bound with bindParam.
+        /// </summary>
+        bool HasParamsBound => (m_boundParams != null && m_boundParams.Count > 0);
         /// <summary>
         /// Column Number property for FETCH_COLUMN fetching.
         /// </summary>
@@ -57,7 +60,6 @@ namespace Peachpie.Library.PDO
             this.m_pdo = pdo;
             this.m_stmt = statement;
             this.m_options = driver_options ?? PhpArray.Empty;
-            this.m_hasParamsBounded = false;
 
             this.m_cmd = pdo.CreateCommand(this.m_stmt);
 
@@ -75,7 +77,6 @@ namespace Peachpie.Library.PDO
             m_stmt = null;
             m_options = PhpArray.Empty;
             m_cmd = null;
-            m_hasParamsBounded = false;
         }
 
         private static readonly Regex regName = new Regex(@"[\w_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -263,15 +264,14 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public bool bindParam(PhpValue parameter, PhpAlias variable, PDO.PARAM data_type = PDO.PARAM.PARAM_STR, int length = default(int), PhpValue driver_options = default(PhpValue))
+        public bool bindParam(PhpValue parameter, PhpAlias variable, PDO.PARAM data_type = PDO.PARAM.PARAM_STR, int length = -1, PhpValue driver_options = default(PhpValue))
         {
             Debug.Assert(this.m_cmd != null);
 
             // lazy instantization
-            if (m_boundedParams == null)
-                m_boundedParams = new Dictionary<string, PhpAlias>();
+            if (m_boundParams == null)
+                m_boundParams = new Dictionary<string, PhpAlias>();
 
-            m_hasParamsBounded = true;
             IDbDataParameter param = null;
 
             if (m_namedAttr)
@@ -296,7 +296,7 @@ namespace Peachpie.Library.PDO
                 }
 
                 //Store the bounded variable reference in the dictionary
-                m_boundedParams.Add(key, new PhpAlias(variable.Value));
+                m_boundParams.Add(key, new PhpAlias(variable.Value));
 
                 param = m_cmd.Parameters[key];
 
@@ -311,7 +311,7 @@ namespace Peachpie.Library.PDO
                 int paramIndex = (int)parameter;
 
                 //Store the bounded variable.Value reference in the dictionary
-                m_boundedParams.Add(paramIndex.ToString(), new PhpAlias(variable.Value));
+                m_boundParams.Add(paramIndex.ToString(), new PhpAlias(variable.Value));
 
                 if (paramIndex < m_positionalPlaceholders.Count)
                 {
@@ -421,9 +421,9 @@ namespace Peachpie.Library.PDO
                 param = m_cmd.Parameters[key];
 
                 //rewrite the bounded params dictionary
-                if(m_hasParamsBounded)
-                    if (m_boundedParams.ContainsKey(key))
-                        m_boundedParams.Remove(key);
+                if(HasParamsBound)
+                    if (m_boundParams.ContainsKey(key))
+                        m_boundParams.Remove(key);
 
             } else if(m_positionalAttr)
             {
@@ -440,9 +440,9 @@ namespace Peachpie.Library.PDO
                 }
 
                 //rewrite the bounded params dictionary
-                if(m_hasParamsBounded)
-                    if (m_boundedParams.ContainsKey(paramIndex.ToString()))
-                        m_boundedParams.Remove(paramIndex.ToString());
+                if(HasParamsBound)
+                    if (m_boundParams.ContainsKey(paramIndex.ToString()))
+                        m_boundParams.Remove(paramIndex.ToString());
 
             } else
             {
@@ -571,9 +571,9 @@ namespace Peachpie.Library.PDO
         public bool execute(PhpArray input_parameters = null)
         {
             // Assign the bound variables from bindParam() function if any present
-            if(m_hasParamsBounded)
+            if(HasParamsBound)
             {
-                foreach(KeyValuePair<string, PhpAlias> pair in m_boundedParams)
+                foreach(KeyValuePair<string, PhpAlias> pair in m_boundParams)
                 {
                     IDbDataParameter param = null;
 
