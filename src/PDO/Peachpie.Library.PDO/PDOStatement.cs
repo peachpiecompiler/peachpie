@@ -831,7 +831,13 @@ namespace Peachpie.Library.PDO
         /// <inheritDoc />
         public PhpValue fetchColumn(int column_number = 0)
         {
-            throw new NotImplementedException();
+            if(m_dr == null)
+            {
+                m_pdo.HandleError(new PDOException("The dara reader is null"));
+                return default(PhpValue);
+            }
+
+            return this.ReadArray(false, true)[column_number].GetValue();
         }
 
         /// <inheritDoc />
@@ -895,7 +901,28 @@ namespace Peachpie.Library.PDO
         /// <inheritDoc />
         public int rowCount()
         {
-            throw new NotImplementedException();
+            if(m_cmd == null)
+            {
+                m_pdo.HandleError(new PDOException("Command cannot be null."));
+                return -1;
+            }
+            if(m_pdo == null)
+            {
+                m_pdo.HandleError(new PDOException("The associated PDO object cannot be null."));
+                return -1;
+            }
+
+            var statement = m_pdo.query("SELECT ROW_COUNT()");
+            var rowCount = statement.fetchColumn(0);
+            
+            if(rowCount.IsInteger())
+            {
+                return (int)rowCount;
+            } else
+            {
+                m_pdo.HandleError(new PDOException("The rowCount returned by the database is not a integer."));
+                return -1;
+            }
         }
 
         /// <inheritDoc />
