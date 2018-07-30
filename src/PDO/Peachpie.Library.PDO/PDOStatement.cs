@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Pchp.Core;
 using static Peachpie.Library.PDO.PDO;
+using static Pchp.Library.Objects;
 
 namespace Peachpie.Library.PDO
 {
@@ -724,14 +725,14 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public PhpValue fetch(int fetch_style = -1, int cursor_orientation = default(int), int cursor_offet = 0)
+        public PhpValue fetch(PDO.PDO_FETCH fetch_style = PDO.PDO_FETCH.FETCH_USE_DEFAULT ,int cursor_orientation = default(int), int cursor_offet = 0)
         {
             this.m_pdo.ClearError();
             try
             {
                 PDO.PDO_FETCH style = this.m_fetchStyle;
 
-                if (fetch_style != -1 && Enum.IsDefined(typeof(PDO.PDO_FETCH), fetch_style))
+                if ((int)fetch_style != -1 && Enum.IsDefined(typeof(PDO.PDO_FETCH), fetch_style))
                 {
                     style = (PDO.PDO_FETCH)fetch_style;
                 }
@@ -823,9 +824,36 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public PhpArray fetchAll(int? fetch_style = default(int?), PhpValue? fetch_argument = default(PhpValue?), PhpArray ctor_args = null)
+        public PhpArray fetchAll(PDO.PDO_FETCH fetch_style = FETCH_USE_DEFAULT, PhpValue fetch_argument = default(PhpValue), PhpArray ctor_args = null)
         {
-            throw new NotImplementedException();
+            if (m_dr == null)
+            {
+                m_pdo.HandleError(new PDOException("The data reader can not be null."));
+                return null;
+            }
+
+            if(fetch_style == PDO.PDO_FETCH.FETCH_COLUMN)
+            {
+                if(fetch_argument.IsInteger())
+                {
+                    FetchColNo = (int)fetch_argument
+                } else
+                {
+                    m_pdo.HandleError(new PDOException("The fetch_argument must be an integer for FETCH_COLUMN."));
+                    return null;
+                }
+            }
+
+            PhpArray returnArray = new PhpArray();
+
+            while(m_dr.HasRows)
+            {
+                var value = fetch(fetch_style);
+
+                returnArray.Add(value);
+            }
+
+            return returnArray;
         }
 
         /// <inheritDoc />
@@ -833,17 +861,31 @@ namespace Peachpie.Library.PDO
         {
             if(m_dr == null)
             {
-                m_pdo.HandleError(new PDOException("The dara reader is null"));
+                m_pdo.HandleError(new PDOException("The data reader can not be null."));
                 return default(PhpValue);
             }
 
             return this.ReadArray(false, true)[column_number].GetValue();
         }
 
-        /// <inheritDoc />
+        /// <inheritDoc />cp
         public PhpValue fetchObject(string class_name = "stdClass", PhpArray ctor_args = null)
         {
-            throw new NotImplementedException();
+            if (m_dr == null)
+            {
+                m_pdo.HandleError(new PDOException("The data reader can not be null."));
+                return default(PhpValue);
+            }
+
+            if(class_name == "stdClass")
+            {
+                return this.ReadObj();
+            } else
+            {
+                throw new NotImplementedException();
+            }
+
+            return default(PhpValue);
         }
 
         /// <inheritDoc />
