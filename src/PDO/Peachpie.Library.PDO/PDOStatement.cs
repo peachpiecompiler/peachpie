@@ -20,6 +20,9 @@ namespace Peachpie.Library.PDO
     [PhpType(PhpTypeAttribute.InheritName)]
     public class PDOStatement : IPDOStatement, IDisposable
     {
+        /// <summary>Runtime context. Cannot be <c>null</c>.</summary>
+        protected readonly Context _ctx; // "_ctx" is a special name recognized by compiler. Will be reused by inherited classes.
+
         private readonly PDO m_pdo;
         private readonly string m_stmt;
         private readonly PhpArray m_options;
@@ -44,21 +47,27 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// Column Number property for FETCH_COLUMN fetching.
         /// </summary>
-        public int FetchColNo { get; set; } = -1;
+        int FetchColNo { get; set; } = -1;
         /// <summary>
-        /// Class Name property for FETCH_CLASS fetching.
+        /// Class Name property for FETCH_CLASS fetching mode.
         /// </summary>
-        public string FetchClassName { get; set; } = null;
+        string FetchClassName { get; set; } = null;
+        /// <summary>
+        /// Class Constructor Args for FETCH_CLASS fetching mode.
+        /// </summary>
+        PhpArray FetchClassCtorArgs { get; set; } = null;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PDOStatement" /> class.
         /// </summary>
+        /// <param name="ctx">The php context.</param>
         /// <param name="pdo">The PDO statement is created for.</param>
         /// <param name="statement">The statement.</param>
         /// <param name="driver_options">The driver options.</param>
-        internal PDOStatement(PDO pdo, string statement, PhpArray driver_options)
+        internal PDOStatement(Context ctx, PDO pdo, string statement, PhpArray driver_options)
         {
             this.m_pdo = pdo;
+            this._ctx = ctx;
             this.m_stmt = statement;
             this.m_options = driver_options ?? PhpArray.Empty;
 
@@ -72,8 +81,12 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// Empty ctor.
         /// </summary>
-        protected PDOStatement()
+        [PhpFieldsOnlyCtor]
+        protected PDOStatement(Context ctx)
         {
+            Debug.Assert(ctx != null);
+
+            _ctx = ctx;
             m_pdo = null;
             m_stmt = null;
             m_options = PhpArray.Empty;
@@ -780,8 +793,30 @@ namespace Peachpie.Library.PDO
                     case PDO.PDO_FETCH.FETCH_NUM:
                         return PhpValue.Create(this.ReadArray(false, true));
                     case PDO.PDO_FETCH.FETCH_COLUMN:
+                        if (FetchColNo != -1)
+                        {
+                            m_pdo.HandleError(new PDOException("The column number for FETCH_COLUMN mode is not set."));
+                            return PhpValue.False;
+                        }
+
                         return this.ReadArray(false, true)[FetchColNo].GetValue();
                     case PDO.PDO_FETCH.FETCH_CLASS:
+                        if(FetchClassName == null)
+                        {
+                            m_pdo.HandleError(new PDOException("The className for FETCH_CLASS mode is not set."));
+                            return PhpValue.False;
+                        }
+
+                        dynamic obj = null;
+                        if(FetchClassCtorArgs == null)
+                        {
+                            obj = _ctx.Create(FetchClassName);
+                        } else
+                        {
+                            _ctx.Create(FetchClassName, FetchClassCtorArgs);
+                        }
+
+                        return PhpValue.FromClass(obj);
                     default:
                         throw new NotImplementedException();
                 }
@@ -836,7 +871,7 @@ namespace Peachpie.Library.PDO
             {
                 if(fetch_argument.IsInteger())
                 {
-                    FetchColNo = (int)fetch_argument
+                    FetchColNo = (int)fetch_argument;
                 } else
                 {
                     m_pdo.HandleError(new PDOException("The fetch_argument must be an integer for FETCH_COLUMN."));
@@ -862,7 +897,7 @@ namespace Peachpie.Library.PDO
             if(m_dr == null)
             {
                 m_pdo.HandleError(new PDOException("The data reader can not be null."));
-                return default(PhpValue);
+                return PhpValue.False;
             }
 
             return this.ReadArray(false, true)[column_number].GetValue();
@@ -874,7 +909,7 @@ namespace Peachpie.Library.PDO
             if (m_dr == null)
             {
                 m_pdo.HandleError(new PDOException("The data reader can not be null."));
-                return default(PhpValue);
+                return PhpValue.False;
             }
 
             if(class_name == "stdClass")
@@ -882,10 +917,9 @@ namespace Peachpie.Library.PDO
                 return this.ReadObj();
             } else
             {
-                throw new NotImplementedException();
+                dynamic obj = _ctx.Create(class_name, ctor_args);
+                return PhpValue.FromClass(obj);
             }
-
-            return default(PhpValue);
         }
 
         /// <inheritDoc />
@@ -1018,7 +1052,7 @@ namespace Peachpie.Library.PDO
                 }
             }
             string className = null;
-            PhpArray ctorArgs = null;
+
             if (fetch == PDO_FETCH.FETCH_CLASS)
             {
                 if (args.Length > 2)
@@ -1028,18 +1062,14 @@ namespace Peachpie.Library.PDO
 
                     if (args.Length > 3)
                     {
-                        ctorArgs = args[2].ArrayOrNull();
+                        this.FetchClassCtorArgs = args[2].ArrayOrNull();
                     }
                 }
                 else
                 {
                     throw new PDOException("General error: fetch mode requires the classname argument.");
-
-                    //TODO what to do if missing parameter ?
-                    //fetch = PDO_FETCH.FETCH_USE_DEFAULT;
                 }
             }
-            //TODO: FETCH_OBJ does not require additional parameters
 
             return true;
         }

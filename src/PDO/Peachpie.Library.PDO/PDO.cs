@@ -215,7 +215,7 @@ namespace Peachpie.Library.PDO
         {
             try
             {
-                return this.m_driver.PrepareStatement(this, statement, driver_options);
+                return this.m_driver.PrepareStatement(_ctx, this, statement, driver_options);
             }
             catch (System.Exception ex)
             {
@@ -228,7 +228,7 @@ namespace Peachpie.Library.PDO
         [return: CastToFalse]
         public PDOStatement query(string statement, params PhpValue[] args)
         {
-            PDOStatement stmt = new PDOStatement(this, statement, null);
+            PDOStatement stmt = new PDOStatement(_ctx, this, statement, null);
             if (args.Length > 0)
             {
                 // Set the fetch mode, logic inside PDOStatement

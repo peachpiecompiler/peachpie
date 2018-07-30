@@ -92,9 +92,9 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public virtual PDOStatement PrepareStatement(PDO pdo, string statement, PhpArray driver_options)
+        public virtual PDOStatement PrepareStatement(Context ctx, PDO pdo, string statement, PhpArray driver_options)
         {
-            PDOStatement stmt = new PDOStatement(pdo, statement, driver_options);
+            PDOStatement stmt = new PDOStatement(ctx, pdo, statement, driver_options);
             return stmt;
         }
 
