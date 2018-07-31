@@ -142,15 +142,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // Store the current batch and its count
             var todoBlocks = new T[256];
             int n;
-            
-            // Helper data structures to enable adding only one block per routine to a batch
-            var todoContexts = new HashSet<FlowContext>();
-            var delayedBlocks = new List<T>();
 
             // Deque a batch of blocks and analyse them in parallel
             while (true)
             {
-                n = Dequeue(todoBlocks, todoContexts, delayedBlocks);
+                n = Dequeue(todoBlocks);
 
                 if (n == 0)
                 {
@@ -181,16 +177,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        int Dequeue(T[] todoBlocks, HashSet<FlowContext> todoContexts, List<T> delayedBlocks)
+        /// <summary>
+        /// Fills the given array with dequeued blocks from <see cref="_queue"/>./
+        /// </summary>
+        int Dequeue(T[] todoBlocks)
         {
-            // We reuse these data structures from the outer loop to save memory
-            Debug.Assert(todoContexts.Count == 0);
-            Debug.Assert(delayedBlocks.Count == 0);
+            // Helper data structures to enable adding only one block per routine to a batch
+            var todoContexts = new HashSet<FlowContext>();
+            List<T> delayedBlocks = null;
 
             // Insert the blocks with the highest priority to the batch while having at most one block
             // from each routine, delaying the rest
             int n = 0;
-            while (n < todoBlocks.Length && _queue.TryDequeue(out T block))
+            while (n < todoBlocks.Length && _queue.TryDequeue(out T block)) // TODO: TryDequeue() with a predicate so we won't have to maintain {delayedBlocks}
             {
                 var flowCtx = block.FlowState.FlowContext;
 
@@ -200,18 +199,23 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
                 else
                 {
+                    if (delayedBlocks == null)
+                    {
+                        delayedBlocks = new List<T>();
+                    }
+
                     delayedBlocks.Add(block);
                 }
             }
 
             // Return the delayed blocks back to the queue to be deenqueued the next time
-            foreach (var block in delayedBlocks)
+            if (delayedBlocks != null)
             {
-                _queue.Enqueue(block);
+                foreach (var block in delayedBlocks)
+                {
+                    _queue.Enqueue(block);
+                }
             }
-
-            todoContexts.Clear();
-            delayedBlocks.Clear();
 
             return n;
         }

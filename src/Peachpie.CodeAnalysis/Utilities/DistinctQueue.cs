@@ -42,6 +42,19 @@ namespace Pchp.CodeAnalysis.Utilities
         }
 
         /// <summary>
+        /// Gets value indicating 
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public bool Contains(T value)
+        {
+            lock (_syncRoot)
+            {
+                return _set.Contains(value);
+            }
+        }
+
+        /// <summary>
         /// Enqueues item into the queue.
         /// </summary>
         public bool Enqueue(T value)
