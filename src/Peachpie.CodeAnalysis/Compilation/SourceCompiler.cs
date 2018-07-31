@@ -154,7 +154,7 @@ namespace Pchp.CodeAnalysis
             // LowerBody(block)
 
             // analyse blocks
-            _worklist.DoAll(concurrent: false/*TODO: ConcurrentBuild*/);
+            _worklist.DoAll(concurrent: ConcurrentBuild);
         }
 
         void AnalyzeBlock(BoundBlock block) // TODO: driver
