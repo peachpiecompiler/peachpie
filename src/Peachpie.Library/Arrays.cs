@@ -824,8 +824,7 @@ namespace Pchp.Library
             var iterator = keys.GetFastEnumerator();
             while (iterator.MoveNext())
             {
-                IntStringKey key;
-                if (Core.Convert.TryToIntStringKey(iterator.CurrentValue, out key) && !result.ContainsKey(key))
+                if (Core.Convert.TryToIntStringKey(iterator.CurrentValue, out var key) && !result.ContainsKey(key))
                 {
                     result[key] = value;
                 }
@@ -1759,13 +1758,12 @@ namespace Pchp.Library
         //[return: PhpDeepCopy]
         public static PhpArray array_diff_ukey(Context ctx, PhpArray array, PhpArray array0, params PhpValue[] arraysAndComparer)
         {
-            PhpArray[] arrays;
-            IPhpCallable key_comparer, cmp;
+            if (SplitArraysAndComparers(1, array0, arraysAndComparer, out var arrays, out var key_comparer, out var cmp))
+            {
+                return SetOperation(SetOperations.Difference, array, arrays, new KeyComparer(new PhpUserComparer(ctx, key_comparer), false));
+            }
 
-            if (!SplitArraysAndComparers(1, array0, arraysAndComparer, out arrays, out key_comparer, out cmp)) return null;
-
-            return SetOperation(SetOperations.Difference, array, arrays,
-                new KeyComparer(new PhpUserComparer(ctx, key_comparer), false));
+            return null;
         }
 
         /// <summary>
@@ -1774,13 +1772,12 @@ namespace Pchp.Library
         //[return: PhpDeepCopy]
         public static PhpArray array_intersect_ukey(Context ctx, PhpArray array, PhpArray array0, params PhpValue[] arraysAndComparer)
         {
-            PhpArray[] arrays;
-            IPhpCallable key_comparer, cmp;
+            if (SplitArraysAndComparers(1, array0, arraysAndComparer, out var arrays, out var key_comparer, out var cmp))
+            {
+                return SetOperation(SetOperations.Intersection, array, arrays, new KeyComparer(new PhpUserComparer(ctx, key_comparer), false));
+            }
 
-            if (!SplitArraysAndComparers(1, array0, arraysAndComparer, out arrays, out key_comparer, out cmp)) return null;
-
-            return SetOperation(SetOperations.Intersection, array, arrays,
-                new KeyComparer(new PhpUserComparer(ctx, key_comparer), false));
+            return null;
         }
 
         /// <summary>
@@ -1789,13 +1786,12 @@ namespace Pchp.Library
         //[return: PhpDeepCopy]
         public static PhpArray array_udiff(Context ctx, PhpArray array, PhpArray array0, params PhpValue[] arraysAndComparer)
         {
-            PhpArray[] arrays;
-            IPhpCallable value_comparer, cmp;
+            if (SplitArraysAndComparers(1, array0, arraysAndComparer, out var arrays, out var value_comparer, out var cmp))
+            {
+                return SetOperation(SetOperations.Difference, array, arrays, new ValueComparer(new PhpUserComparer(ctx, value_comparer), false));
+            }
 
-            if (!SplitArraysAndComparers(1, array0, arraysAndComparer, out arrays, out value_comparer, out cmp)) return null;
-
-            return SetOperation(SetOperations.Difference, array, arrays,
-                new ValueComparer(new PhpUserComparer(ctx, value_comparer), false));
+            return null;
         }
 
         /// <summary>
@@ -1804,13 +1800,12 @@ namespace Pchp.Library
         //[return: PhpDeepCopy]
         public static PhpArray array_uintersect(Context ctx, PhpArray array, PhpArray array0, params PhpValue[] arraysAndComparer)
         {
-            PhpArray[] arrays;
-            IPhpCallable value_comparer, cmp;
+            if (SplitArraysAndComparers(1, array0, arraysAndComparer, out var arrays, out var value_comparer, out var cmp))
+            {
+                return SetOperation(SetOperations.Intersection, array, arrays, new ValueComparer(new PhpUserComparer(ctx, value_comparer), false));
+            }
 
-            if (!SplitArraysAndComparers(1, array0, arraysAndComparer, out arrays, out value_comparer, out cmp)) return null;
-
-            return SetOperation(SetOperations.Intersection, array, arrays,
-                new ValueComparer(new PhpUserComparer(ctx, value_comparer), false));
+            return null;
         }
 
         /// <summary>
@@ -1819,13 +1814,12 @@ namespace Pchp.Library
         //[return: PhpDeepCopy]
         public static PhpArray array_udiff_assoc(Context ctx, PhpArray array, PhpArray array0, params PhpValue[] arraysAndComparer)
         {
-            PhpArray[] arrays;
-            IPhpCallable value_comparer, cmp;
+            if (SplitArraysAndComparers(1, array0, arraysAndComparer, out var arrays, out var value_comparer, out var cmp))
+            {
+                return SetOperation(SetOperations.Difference, array, arrays, new EntryComparer(new PhpStringComparer(ctx), false, new PhpUserComparer(ctx, value_comparer), false));
+            }
 
-            if (!SplitArraysAndComparers(1, array0, arraysAndComparer, out arrays, out value_comparer, out cmp)) return null;
-
-            return SetOperation(SetOperations.Difference, array, arrays,
-                new EntryComparer(new PhpStringComparer(ctx), false, new PhpUserComparer(ctx, value_comparer), false));
+            return null;
         }
 
         /// <summary>
@@ -1834,13 +1828,12 @@ namespace Pchp.Library
         //[return: PhpDeepCopy]
         public static PhpArray array_uintersect_assoc(Context ctx, PhpArray array, PhpArray array0, params PhpValue[] arraysAndComparer)
         {
-            PhpArray[] arrays;
-            IPhpCallable value_comparer, cmp;
+            if (SplitArraysAndComparers(1, array0, arraysAndComparer, out var arrays, out var value_comparer, out var cmp))
+            {
+                return SetOperation(SetOperations.Intersection, array, arrays, new EntryComparer(new PhpStringComparer(ctx), false, new PhpUserComparer(ctx, value_comparer), false));
+            }
 
-            if (!SplitArraysAndComparers(1, array0, arraysAndComparer, out arrays, out value_comparer, out cmp)) return null;
-
-            return SetOperation(SetOperations.Intersection, array, arrays,
-                new EntryComparer(new PhpStringComparer(ctx), false, new PhpUserComparer(ctx, value_comparer), false));
+            return null;
         }
 
 
@@ -1850,13 +1843,12 @@ namespace Pchp.Library
         //[return: PhpDeepCopy]
         public static PhpArray array_diff_uassoc(Context ctx, PhpArray array, PhpArray array0, params PhpValue[] arraysAndComparer)
         {
-            PhpArray[] arrays;
-            IPhpCallable key_comparer, cmp;
+            if (SplitArraysAndComparers(1, array0, arraysAndComparer, out var arrays, out var key_comparer, out var cmp))
+            {
+                return SetOperation(SetOperations.Difference, array, arrays, new EntryComparer(new PhpUserComparer(ctx, key_comparer), false, new PhpStringComparer(ctx), false));
+            }
 
-            if (!SplitArraysAndComparers(1, array0, arraysAndComparer, out arrays, out key_comparer, out cmp)) return null;
-
-            return SetOperation(SetOperations.Difference, array, arrays,
-                new EntryComparer(new PhpUserComparer(ctx, key_comparer), false, new PhpStringComparer(ctx), false));
+            return null;
         }
 
         /// <summary>
@@ -1865,13 +1857,12 @@ namespace Pchp.Library
         //[return: PhpDeepCopy]
         public static PhpArray array_intersect_uassoc(Context ctx, PhpArray array, PhpArray array0, params PhpValue[] arraysAndComparer)
         {
-            PhpArray[] arrays;
-            IPhpCallable key_comparer, cmp;
+            if (SplitArraysAndComparers(1, array0, arraysAndComparer, out var arrays, out var key_comparer, out var cmp))
+            {
+                return SetOperation(SetOperations.Intersection, array, arrays, new EntryComparer(new PhpUserComparer(ctx, key_comparer), false, new PhpStringComparer(ctx), false));
+            }
 
-            if (!SplitArraysAndComparers(1, array0, arraysAndComparer, out arrays, out key_comparer, out cmp)) return null;
-
-            return SetOperation(SetOperations.Intersection, array, arrays,
-                new EntryComparer(new PhpUserComparer(ctx, key_comparer), false, new PhpStringComparer(ctx), false));
+            return null;
         }
 
         /// <summary>
@@ -1880,14 +1871,12 @@ namespace Pchp.Library
         //[return: PhpDeepCopy]
         public static PhpArray array_udiff_uassoc(Context ctx, PhpArray array, PhpArray array0, params PhpValue[] arraysAndComparers)
         {
-            PhpArray[] arrays;
-            IPhpCallable key_comparer, value_comparer;
+            if (SplitArraysAndComparers(2, array0, arraysAndComparers, out var arrays, out var value_comparer, out var key_comparer))
+            {
+                return SetOperation(SetOperations.Difference, array, arrays, new EntryComparer(new PhpUserComparer(ctx, key_comparer), false, new PhpUserComparer(ctx, value_comparer), false));
+            }
 
-            if (!SplitArraysAndComparers(2, array0, arraysAndComparers, out arrays, out value_comparer, out key_comparer))
-                return null;
-
-            return SetOperation(SetOperations.Difference, array, arrays,
-                new EntryComparer(new PhpUserComparer(ctx, key_comparer), false, new PhpUserComparer(ctx, value_comparer), false));
+            return null;
         }
 
         /// <summary>
@@ -1896,14 +1885,12 @@ namespace Pchp.Library
         //[return: PhpDeepCopy]
         public static PhpArray array_uintersect_uassoc(Context ctx, PhpArray array, PhpArray array0, params PhpValue[] arraysAndComparers)
         {
-            PhpArray[] arrays;
-            IPhpCallable key_comparer, value_comparer;
+            if (SplitArraysAndComparers(2, array0, arraysAndComparers, out var arrays, out var value_comparer, out var key_comparer))
+            {
+                return SetOperation(SetOperations.Intersection, array, arrays, new EntryComparer(new PhpUserComparer(ctx, key_comparer), false, new PhpUserComparer(ctx, value_comparer), false));
+            }
 
-            if (!SplitArraysAndComparers(2, array0, arraysAndComparers, out arrays, out value_comparer, out key_comparer))
-                return null;
-
-            return SetOperation(SetOperations.Intersection, array, arrays,
-                new EntryComparer(new PhpUserComparer(ctx, key_comparer), false, new PhpUserComparer(ctx, value_comparer), false));
+            return null;
         }
 
         #endregion
@@ -3006,7 +2993,7 @@ namespace Pchp.Library
                     default:
                         args[0] = entry.Value;
                         break;
-                }                
+                }
 
                 // adds entry to the resulting array if callback returns true:
                 if (callback.Invoke(ctx, args).ToBoolean())
