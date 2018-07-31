@@ -28,13 +28,13 @@ namespace Pchp.Core
         struct ValueField
         {
             [FieldOffset(0)]
+            public bool Bool; // NOTE: must be first field, having bool as the last field confuses .NET debugger and converts the netire struct to `0` or `1` // https://github.com/peachpiecompiler/peachpie/issues/249 // if still causes issues, remove this field and use Long only
+
+            [FieldOffset(0)]
             public long Long;
+
             [FieldOffset(0)]
             public double Double;
-            [FieldOffset(0)]
-            public int Int;
-            [FieldOffset(0)]
-            public bool Bool;
         }
 
         #endregion
@@ -426,7 +426,7 @@ namespace Pchp.Core
             {
                 case PhpTypeCode.Boolean: return Boolean;
                 case PhpTypeCode.Double: return Double;
-                case PhpTypeCode.Int32: return _value.Int;
+                case PhpTypeCode.Int32: return (int)Long;
                 case PhpTypeCode.Long: return Long;
                 case PhpTypeCode.Object: return Object;
                 case PhpTypeCode.PhpArray: return Array;
