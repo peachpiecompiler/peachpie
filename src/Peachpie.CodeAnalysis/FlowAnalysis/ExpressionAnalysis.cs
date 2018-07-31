@@ -2109,7 +2109,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             else
             {
                 // remember "void" type explicitly
-                State.FlowThroughReturn(0);
+                var voidMask = State.TypeRefContext.GetTypeMask(TypeRefFactory.VoidTypeRef, false); // NOTE: or remember the routine may return Void
+                State.FlowThroughReturn(voidMask);
             }
         }
 
