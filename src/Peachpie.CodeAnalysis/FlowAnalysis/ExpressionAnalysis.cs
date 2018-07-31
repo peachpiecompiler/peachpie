@@ -246,7 +246,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // update state
             if (x.Access.IsRead)
             {
-                var vartype = TypeCtx.GetArrayTypeMask();
+                TypeRefMask vartype;
+
+                if (x.Name.NameValue == VariableName.HttpRawPostDataName)
+                {
+                    // $HTTP_RAW_POST_DATA : string // TODO: make it mixed or string | binary string
+                    vartype = TypeCtx.GetStringTypeMask();
+                }
+                else
+                {
+                    // all the other autoglobals are arrays:
+                    vartype = TypeCtx.GetArrayTypeMask();
+                }
 
                 if (x.Access.IsReadRef)
                 {
@@ -1217,8 +1228,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
 
                 //
-                Routine.Flags |= x.TargetMethod.InvocationFlags();
                 x.TypeRefMask = x.TargetMethod.GetResultType(TypeCtx);
+
+                if (Routine != null)
+                {
+                    Routine.Flags |= x.TargetMethod.InvocationFlags();
+                }
 
                 // process arguments
                 if (!BindParams(x.TargetMethod.GetExpectedArguments(this.TypeCtx), x.ArgumentsInSourceOrder) && maybeOverload)

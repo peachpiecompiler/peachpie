@@ -119,7 +119,10 @@ namespace Pchp.CodeAnalysis.Utilities
 
         public static void TrackMetric(TimeSpanMetric metric)
         {
-            Log.TrackMetric(metric.Source, metric.Message, (long)(DateTime.UtcNow - metric.Start).TotalMilliseconds, "ms");
+            var ms = (long)(DateTime.UtcNow - metric.Start).TotalMilliseconds;
+
+            Trace.WriteLine($"{metric.Message}: {ms} ms");
+            Log.TrackMetric(metric.Source, metric.Message, ms, "ms");
         }
 
         /// <summary>
