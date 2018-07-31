@@ -189,8 +189,7 @@ namespace Pchp.Core
         /// in which case an integer value will be returned.</remarks>
         internal static PhpNumber Div(ref PhpValue x, ref PhpValue y)
         {
-            PhpNumber nx, ny;
-            var info = x.ToNumber(out nx) | y.ToNumber(out ny);
+            var info = x.ToNumber(out var nx) | y.ToNumber(out var ny);
 
             if ((info & Convert.NumberInfo.IsPhpArray) != 0)
             {
@@ -1321,8 +1320,7 @@ namespace Pchp.Core
         {
             Debug.Assert(name != null, nameof(name));
 
-            PhpValue value;
-            if (ctx.TryGetConstant(name, out value, ref idx) == false)
+            if (ctx.TryGetConstant(name, out var value, ref idx) == false)
             {
                 // Warning: undefined constant
                 PhpException.Throw(PhpError.Notice, Resources.ErrResources.undefined_constant, name);
