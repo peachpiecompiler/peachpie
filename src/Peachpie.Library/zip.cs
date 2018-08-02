@@ -226,20 +226,27 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="zip_entry">A directory entry returned by <see cref="zip_read(ZipArchiveResource)"/>.</param>
         /// <param name="length">The number of bytes to return.</param>
-        /// <returns>Returns the data read, empty string on end of a file and on error.</returns>
-        public static PhpString zip_entry_read(ZipEntryResource zip_entry, int length = 1024)
+        /// <returns>Returns the data read, empty string or NULL on end of a file and on error.</returns>
+        public static PhpValue zip_entry_read(ZipEntryResource zip_entry, int length = 1024)
         {
-            // Although according to the PHP documentation error codes should be retrieved, it returns empty strings instead
+            // Although according to the PHP documentation error codes should be retrieved,
+            // it returns empty strings or NULL instead
+            if (zip_entry == null)
+            {
+                PhpException.ArgumentNull(nameof(zip_entry));
+                return PhpValue.Null;
+            }
+
             if (zip_entry == null || !zip_entry.IsValid || zip_entry.DataStream == null)
             {
                 PhpException.InvalidArgument(nameof(zip_entry));
-                return new PhpString(string.Empty);
+                return PhpValue.Create(new PhpString(string.Empty));
             }
 
             if (length <= 0)
             {
                 PhpException.InvalidArgument(nameof(length));
-                return new PhpString(string.Empty);
+                return PhpValue.Create(new PhpString(string.Empty));
             }
 
             try
@@ -252,12 +259,12 @@ namespace Pchp.Library
                     Array.Resize(ref buffer, read);
                 }
 
-                return new PhpString(buffer);
+                return PhpValue.Create(new PhpString(buffer));
             }
             catch (Exception e)
             {
                 PhpException.Throw(PhpError.Warning, e.Message);
-                return new PhpString(string.Empty);
+                return PhpValue.Create(new PhpString(string.Empty));
             }
         }
     }

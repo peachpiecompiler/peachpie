@@ -5,8 +5,10 @@ function print_ret($ret) {
     echo ($ret ? "true\n" : "false\n");
   } else if (is_numeric($ret)) {
     echo $ret ."\n";
-  } else if (is_string) {
+  } else if (is_string($ret)) {
     echo "\"$ret\"\n";
+  } else if (is_null($ret)) {
+    echo "NULL\n";
   } else {
     print_r($ret);
     echo "\n";
@@ -14,8 +16,8 @@ function print_ret($ret) {
 }
 
 function test($file) {
-  print_ret(zip_open("nonexisting.zip"));
-  print_ret(zip_entry_read("nonsense"));
+  print_ret(@zip_open("nonexisting.zip"));
+  print_ret(@zip_entry_read("nonsense"));
 
   $zip = zip_open($file);
   echo get_resource_type($zip) ."\n";
@@ -25,11 +27,11 @@ function test($file) {
 
   zip_close($zip);
 
-  print_ret(zip_read($zip));
-  print_ret(zip_entry_open($zip, $zip_entry));
-  print_ret(zip_entry_read($zip_entry));
+  print_ret(@zip_read($zip));
+  print_ret(@zip_entry_open($zip, $zip_entry));
+  print_ret(@zip_entry_read($zip_entry));
 
-  print_ret(zip_entry_close($zip_entry));
+  print_ret(@zip_entry_close($zip_entry));
 }
 
 test("archive.zip");
