@@ -273,7 +273,7 @@ namespace Pchp.Core
             return dx / ny;
         }
 
-        public static explicit operator bool(PhpValue value) => value.ToBoolean();
+        public static implicit operator bool(PhpValue value) => value.ToBoolean();
 
         public static explicit operator long(PhpValue value) => value.ToLong();
 
