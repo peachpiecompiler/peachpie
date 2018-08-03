@@ -10,7 +10,7 @@ namespace Pchp.Library
     /// <summary>
     /// Represents a zip archive.
     /// </summary>
-    public class ZipArchiveResource : PhpResource
+    public sealed class ZipArchiveResource : PhpResource
     {
         internal ZipArchiveResource(System.IO.Compression.ZipArchive archive)
             : base("Zip Directory")
@@ -34,7 +34,7 @@ namespace Pchp.Library
     /// <summary>
     /// Represents an entry in a zip archive.
     /// </summary>
-    public class ZipEntryResource : PhpResource
+    public sealed class ZipEntryResource : PhpResource
     {
         internal ZipEntryResource(ZipArchiveEntry entry)
             : base("Zip Entry")
