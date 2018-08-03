@@ -164,15 +164,15 @@ namespace Pchp.Library
 
         private System.IO.Compression.ZipArchive _archive;
 
-        public int status { get { throw new NotImplementedException(); } }
+        public int status => 0;
 
-        public int statusSys { get { throw new NotImplementedException(); } }
+        public int statusSys => 0;
 
         public int numFiles => _archive?.Entries?.Count ?? 0;
 
         public string filename { get; private set; } = string.Empty;
 
-        public string comment { get { throw new NotImplementedException(); } }
+        public string comment => string.Empty;
 
         #endregion
 
@@ -180,21 +180,53 @@ namespace Pchp.Library
 
         public PhpValue open(Context ctx, string filename, int flags = 0)
         {
-            if (flags != 0)
+            if ((flags & CHECKCONS) != 0)
             {
-                PhpException.ArgumentValueNotSupported(nameof(flags), flags);
+                PhpException.ArgumentValueNotSupported(nameof(flags), nameof(CHECKCONS));
             }
 
             if (_archive != null)
             {
                 // Save the changes to the current archive before opening another one
                 _archive.Dispose();
+                _archive = null;
             }
 
             try
             {
                 string fullPath = PhpPath.AbsolutePath(ctx, filename);
-                var fileStream = File.Open(fullPath, FileMode.OpenOrCreate);
+
+                FileMode mode;
+                if (File.Exists(fullPath))
+                {
+                    if ((flags & EXCL) != 0)
+                    {
+                        PhpException.Throw(PhpError.Warning, Resources.Resources.file_exists, fullPath);
+                        return ER_EXISTS;
+                    }
+                    else if ((flags & OVERWRITE) != 0)
+                    {
+                        mode = FileMode.Truncate;
+                    }
+                    else
+                    {
+                        mode = FileMode.Open;
+                    }
+                }
+                else
+                {
+                    if ((flags & CREATE) != 0)
+                    {
+                        mode = FileMode.Create;
+                    }
+                    else
+                    {
+                        PhpException.Throw(PhpError.Warning, Resources.Resources.file_not_exists, fullPath);
+                        return ER_NOENT;
+                    }
+                }
+
+                var fileStream = File.Open(fullPath, mode);
                 _archive = new System.IO.Compression.ZipArchive(fileStream, ZipArchiveMode.Update);
                 this.filename = fullPath;
 
@@ -250,7 +282,7 @@ namespace Pchp.Library
 
             try
             {
-                _archive.CreateEntry(dirname);
+                CreateEntryIfNotExists(dirname);
                 return true;
             }
             catch (System.Exception e)
@@ -269,7 +301,7 @@ namespace Pchp.Library
 
             try
             {
-                var entry = _archive.CreateEntry(localname ?? Path.GetFileName(filename));
+                var entry = CreateEntryIfNotExists(localname ?? Path.GetFileName(filename));
 
                 using (var entryStream = entry.Open())
                 using (PhpStream handle = PhpStream.Open(ctx, filename, "r", StreamOpenOptions.Empty))
@@ -313,7 +345,7 @@ namespace Pchp.Library
 
             try
             {
-                var entry = _archive.CreateEntry(localname);
+                var entry = CreateEntryIfNotExists(localname);
 
                 using (var entryStream = entry.Open())
                 {
@@ -356,6 +388,19 @@ namespace Pchp.Library
                 PhpException.Throw(PhpError.Warning, Resources.Resources.zip_archive_uninitialized);
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Creates an archive entry or throw an <see cref="InvalidOperationException"/> if already exists.
+        /// </summary>
+        private ZipArchiveEntry CreateEntryIfNotExists(string entryName)
+        {
+            if (_archive.GetEntry(entryName) != null)
+            {
+                throw new InvalidOperationException(string.Format(Resources.Resources.zip_entry_exists, entryName));
+            }
+
+            return _archive.CreateEntry(entryName);
         }
 
         #endregion

@@ -624,4 +624,13 @@
   <data name="zip_archive_uninitialized" xml:space="preserve">
     <value>Invalid or uninitialized Zip object</value>
   </data>
+  <data name="file_exists" xml:space="preserve">
+    <value>File '{0}' already exists</value>
+  </data>
+  <data name="file_not_exists" xml:space="preserve">
+    <value>File '{0}' doesn't exist</value>
+  </data>
+  <data name="zip_entry_exists" xml:space="preserve">
+    <value>Zip archive entry '{0}' already exists</value>
+  </data>
 </root>
