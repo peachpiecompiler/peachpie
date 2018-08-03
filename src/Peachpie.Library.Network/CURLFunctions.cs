@@ -145,7 +145,7 @@ namespace Peachpie.Library.Network
                 {
                     case 0:
                         // array of all information
-                        return (PhpValue)new PhpArray()
+                        return new PhpArray()
                         {
                             { "url", r.ResponseUri?.AbsoluteUri },
                             { "content_type", r.ContentType },
@@ -156,23 +156,23 @@ namespace Peachpie.Library.Network
                             { "redirect_url", ch.FollowLocation && r.ResponseUri != null ? string.Empty : r.ResponseUri.AbsoluteUri }
                         };
                     case CURLConstants.CURLINFO_EFFECTIVE_URL:
-                        return (PhpValue)r.ResponseUri?.AbsoluteUri;
+                        return r.ResponseUri?.AbsoluteUri;
                     case CURLConstants.CURLINFO_REDIRECT_URL:
-                        return (PhpValue)(ch.FollowLocation && r.ResponseUri != null ? string.Empty : r.ResponseUri.AbsoluteUri);
+                        return (ch.FollowLocation && r.ResponseUri != null ? string.Empty : r.ResponseUri.AbsoluteUri);
                     case CURLConstants.CURLINFO_HTTP_CODE:
-                        return (PhpValue)(int)r.StatusCode;
+                        return (int)r.StatusCode;
                     case CURLConstants.CURLINFO_FILETIME:
-                        return (PhpValue)DateTimeUtils.UtcToUnixTimeStamp(r.LastModified);
+                        return DateTimeUtils.UtcToUnixTimeStamp(r.LastModified);
                     case CURLConstants.CURLINFO_CONTENT_TYPE:
-                        return (PhpValue)r.ContentType;
+                        return r.ContentType;
                     case CURLConstants.CURLINFO_CONTENT_LENGTH_DOWNLOAD:
-                        return (PhpValue)r.ContentLength;
+                        return r.ContentLength;
                     case CURLConstants.CURLINFO_TOTAL_TIME:
-                        return (PhpValue)r.TotalTime.TotalSeconds;
+                        return r.TotalTime.TotalSeconds;
                     case CURLConstants.CURLINFO_PRIVATE:
                         return r.Private.IsSet ? r.Private : PhpValue.False;
                     case CURLConstants.CURLINFO_COOKIELIST:
-                        return (PhpValue)((ch.CookieFileSet && ch.Result != null) ? CreateCookieArray(ch.Result.Cookies) : PhpArray.Empty);
+                        return ((ch.CookieFileSet && ch.Result != null) ? CreateCookieArray(ch.Result.Cookies) : PhpArray.Empty);
                     default:
                         PhpException.ArgumentValueNotSupported(nameof(opt), opt);
                         break;

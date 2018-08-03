@@ -498,7 +498,7 @@ namespace Pchp.Core
             }
         }
 
-        public static object EnsureItemObject(IPhpArray array, PhpValue index)
+        public static object EnsureItemObject(this IPhpArray array, PhpValue index)
         {
             if (Convert.TryToIntStringKey(index, out IntStringKey key))
             {
@@ -510,7 +510,7 @@ namespace Pchp.Core
             }
         }
 
-        public static IPhpArray EnsureItemArray(IPhpArray array, PhpValue index)
+        public static IPhpArray EnsureItemArray(this IPhpArray array, PhpValue index)
         {
             if (Convert.TryToIntStringKey(index, out IntStringKey key))
             {
@@ -522,7 +522,7 @@ namespace Pchp.Core
             }
         }
 
-        public static PhpAlias EnsureItemAlias(IPhpArray array, PhpValue index, bool quiet)
+        public static PhpAlias EnsureItemAlias(this IPhpArray array, PhpValue index, bool quiet)
         {
             if (Convert.TryToIntStringKey(index, out IntStringKey key))
             {
