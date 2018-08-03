@@ -271,9 +271,14 @@ namespace Pchp.Core.Text
         /// <exception cref="ArgumentOutOfRangeException">The start index is less than zero.</exception>
         public static PhpString Substring(this PhpString str, int startIndex, int length)
         {
-            if (str.IsDefault || length <= 0)
+            if (str.IsDefault || length < 0)
             {
                 return default(PhpString); // FALSE
+            }
+
+            if (length == 0)
+            {
+                return new PhpString(string.Empty);
             }
 
             //

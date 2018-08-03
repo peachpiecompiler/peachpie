@@ -90,23 +90,35 @@ namespace Pchp.Library
         /// <remarks>
         /// Ensures that <c>[offset,offset + length]</c> is subrange of <c>[0,count]</c>.
         /// </remarks>
-        internal static void AbsolutizeRange(ref int offset, ref int length, int count)
+        /// <returns>Value indicating whether the offset is within a valid range, otherwise the caller should return <c>FALSE</c>.</returns>
+        internal static bool AbsolutizeRange(ref int offset, ref int length, int count)
         {
             Debug.Assert(count >= 0);
 
             // prevents overflows:
             if (offset >= count || count == 0)
             {
-                offset = count;
                 length = 0;
-                return;
+
+                if (offset == count)
+                {
+                    return true;
+                }
+                else
+                {
+                    offset = count;
+                    return false;
+                }
             }
 
             // negative offset => offset is relative to the end of the string:
             if (offset < 0)
             {
                 offset += count;
-                if (offset < 0) offset = 0;
+                if (offset < 0)
+                {
+                    offset = 0;
+                }
             }
 
             Debug.Assert(offset >= 0 && offset < count);
@@ -125,6 +137,8 @@ namespace Pchp.Library
             }
 
             Debug.Assert(length >= 0 && offset + length <= count);
+
+            return true;
         }
 
         #endregion
@@ -535,7 +549,7 @@ namespace Pchp.Library
         private static byte[] digits = new byte[] {(byte)'0',(byte)'1',(byte)'2',(byte)'3',(byte)'4',(byte)'5',(byte)'6',(byte)'7',(byte)'8',(byte)'9',
             (byte)'a',(byte)'b',(byte)'c',(byte)'d',(byte)'e',(byte)'f',(byte)'g',(byte)'h',(byte)'i',(byte)'j',(byte)'k',(byte)'l',(byte)'m',(byte)'n',
             (byte)'o',(byte)'p',(byte)'q',(byte)'r',(byte)'s',(byte)'t',(byte)'u',(byte)'v',(byte)'w',(byte)'x',(byte)'y',(byte)'z' };
-        
+
         private static string DoubleToBase(double number, int toBase)
         {
             if (toBase < 2 || toBase > 36)
