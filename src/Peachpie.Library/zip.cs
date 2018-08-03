@@ -12,14 +12,14 @@ namespace Pchp.Library
     /// </summary>
     public class ZipArchiveResource : PhpResource
     {
-        internal ZipArchiveResource(ZipArchive archive)
+        internal ZipArchiveResource(System.IO.Compression.ZipArchive archive)
             : base("Zip Directory")
         {
             Archive = archive;
             Enumerator = archive.Entries.GetEnumerator();
         }
 
-        internal ZipArchive Archive { get; }
+        internal System.IO.Compression.ZipArchive Archive { get; }
 
         internal IEnumerator<ZipArchiveEntry> Enumerator { get; }
 
@@ -81,7 +81,7 @@ namespace Pchp.Library
             {
                 string fullPath = PhpPath.AbsolutePath(ctx, filename);
                 var fileStream = File.Open(fullPath, FileMode.Open);
-                var archive = new ZipArchive(fileStream, ZipArchiveMode.Read);
+                var archive = new System.IO.Compression.ZipArchive(fileStream, ZipArchiveMode.Read);
                 return PhpValue.FromClass(new ZipArchiveResource(archive));
             }
             catch (FileNotFoundException e)

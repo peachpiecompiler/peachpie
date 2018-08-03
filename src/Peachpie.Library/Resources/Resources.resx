@@ -621,4 +621,7 @@
   <data name="method_does_not_exist" xml:space="preserve">
     <value>Method {0}::{1}() does not exist</value>
   </data>
+  <data name="zip_archive_uninitialized" xml:space="preserve">
+    <value>Invalid or uninitialized Zip object</value>
+  </data>
 </root>

@@ -1571,5 +1571,14 @@ namespace Pchp.Library.Resources {
                 return ResourceManager.GetString("zero_argument_invalid", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid or uninitialized Zip object.
+        /// </summary>
+        public static string zip_archive_uninitialized {
+            get {
+                return ResourceManager.GetString("zip_archive_uninitialized", resourceCulture);
+            }
+        }
     }
 }
