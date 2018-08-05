@@ -2363,7 +2363,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             EmitBeforeCall(cg);
 
-            if (!TargetMethod.IsErrorMethodOrNull())
+            if (TargetMethod.IsValidMethod())
             {
                 // the most preferred case when method is known,
                 // the method can be called directly

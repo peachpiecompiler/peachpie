@@ -119,6 +119,12 @@ namespace Pchp.CodeAnalysis
                         if (t.Name == "PhpResource") return ctx.GetResourceTypeMask();
                     }
 
+                    if (t.IsNullableType())
+                    {
+                        // <T> | FALSE
+                        return CreateMask(ctx, ((NamedTypeSymbol)t).TypeArguments[0]) | ctx.GetBooleanTypeMask();
+                    }
+
                     break;
             }
 

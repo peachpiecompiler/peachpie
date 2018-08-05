@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core.Dynamic;
 
 namespace Pchp.Core
 {
@@ -460,10 +461,15 @@ namespace Pchp.Core
             if (type == typeof(string)) return this.ToString();
             if (type == typeof(object)) return this.ToClass();
 
-            if (this.Object != null && type.GetTypeInfo().IsAssignableFrom(this.Object.GetType()))
+            if (this.Object != null && type.IsAssignableFrom(this.Object.GetType()))
             {
                 return this.Object;
             }
+
+            //if (type.IsNullable_T(out var nullable_t))
+            //{
+            //    throw new NotImplementedException();
+            //}
 
             //
             throw new InvalidCastException($"{this.TypeCode} -> {type.FullName}");
@@ -600,6 +606,15 @@ namespace Pchp.Core
         public static PhpValue Create(PhpArray value) => new PhpValue(TypeTable.ArrayTable, value);
 
         public static PhpValue Create(PhpAlias value) => new PhpValue(TypeTable.AliasTable, value);
+
+        /// <summary>
+        /// Creates <see cref="PhpValue"/> from <see cref="Nullable{T}"/>.
+        /// In case <see cref="Nullable{T}.HasValue"/> is <c>false</c>, a <see cref="PhpValue.False"/> is returned.
+        /// </summary>
+        /// <typeparam name="T">Nullable type argument.</typeparam>
+        /// <param name="value">Original value to convert from.</param>
+        /// <returns><see cref="PhpValue"/> containing value of given nullable, or <c>FALSE</c> if nullable has no value.</returns>
+        public static PhpValue Create<T>(T? value) where T : struct => value.HasValue ? FromClr(value.GetValueOrDefault()) : PhpValue.False;
 
         /// <summary>
         /// Creates value containing new <see cref="PhpAlias"/> pointing to <c>NULL</c> value.
