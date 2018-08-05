@@ -30,18 +30,18 @@ function foo(/*|mixed|*/$x) {
     echo /*|boolean|*/$y;
     return;
 
-    echo "unreachable";/*!PHP3012!*/
+    echo "unreachable";/*!PHP5012!*/
   }
 
   $z = array();
   if (is_null($y)) {
-    echo /*|array|*/$z;/*!PHP3012!*/
+    echo /*|array|*/$z;/*!PHP5012!*/
   }
 }
 ```
 
 As we can see, `$y` can be either of `boolean` or `integer` type. After `is_int($y)` is called, its type is split among the following branches.
-`PHP3012` is the code of the *Unreachable code detected* warning.
+`!PHP5012` is the code of the *Unreachable code detected* warning.
 It must be raised after `echo "unreachable"`, because it stands right after the return statement, and also in the block conditioned by `is_null($y)`, because `$y` apparently cannot be `null`.
 On that `echo` statement, it is shown how to use both annotations at once.
 Precise rules of how to use annotations follow:

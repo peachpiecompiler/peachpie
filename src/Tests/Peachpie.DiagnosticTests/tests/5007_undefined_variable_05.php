@@ -5,7 +5,7 @@ function bar($arg) {
   echo $foo;
 
   unset($foo);
-  echo $foo/*!PHP3007!*/;
+  echo $foo/*!PHP5007!*/;
 
   $foo = 24;
 
@@ -13,14 +13,14 @@ function bar($arg) {
     unset($foo);
   }
 
-  echo $foo/* non strict PHP3007 */;
+  echo $foo/* non strict PHP5007 */;
 
   $foo = 24;
   for ($i = 0; $i < 10; $i++) {
-    echo $foo/* non strict PHP3007 */;
+    echo $foo/* non strict PHP5007 */;
 
     unset($foo);
 
-    echo $foo/*!PHP3007!*/;
+    echo $foo/*!PHP5007!*/;
   }
 }

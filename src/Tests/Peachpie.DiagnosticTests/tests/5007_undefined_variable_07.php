@@ -10,8 +10,8 @@ function bar($foo) {
     echo $maybeDefined[42];
     echo $maybeDefined[1000];
   } else {
-    echo $maybeDefined;/* non strict PHP3007 */
+    echo $maybeDefined;/* non strict PHP5007 */
   }
 
-  echo $maybeDefined/* non strict PHP3007 */[42];
+  echo $maybeDefined/* non strict PHP5007 */[42];
 }

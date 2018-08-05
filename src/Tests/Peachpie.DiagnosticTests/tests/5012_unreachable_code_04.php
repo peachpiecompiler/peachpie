@@ -7,7 +7,7 @@ function unreachable_after_if($x) {
     return;
   }
 
-  echo "unreachable";/*!PHP3012!*/
+  echo "unreachable";/*!PHP5012!*/
 }
 
 function reachable_after_if($x) {

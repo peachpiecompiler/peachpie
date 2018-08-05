@@ -20,12 +20,12 @@ namespace Pchp.CodeAnalysis.Errors
         // 
         // Fatal errors
         //
-        FTL_InputFileNameTooLong = 1000,
+        FTL_InputFileNameTooLong = 3000,
 
         //
         // Errors
         //
-        ERR_BadCompilationOptionValue = 2000,
+        ERR_BadCompilationOptionValue = 4000,
         ERR_BadWin32Resource,
         ERR_BinaryFile,
         ERR_CantOpenFileWrite,
@@ -107,7 +107,7 @@ namespace Pchp.CodeAnalysis.Errors
         //
         // Warnings
         //
-        WRN_AnalyzerCannotBeCreated = 3000,
+        WRN_AnalyzerCannotBeCreated = 5000,
         WRN_NoAnalyzerInAssembly,
         WRN_NoConfigNotOnCommandLine,
         WRN_PdbLocalNameTooLong,
@@ -142,6 +142,6 @@ namespace Pchp.CodeAnalysis.Errors
         //
         // Visible information
         //
-        INF_UnableToLoadSomeTypesInAnalyzer = 4000,
+        INF_UnableToLoadSomeTypesInAnalyzer = 6000,
     }
 }

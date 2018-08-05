@@ -9,15 +9,15 @@ function never_maybe_defined($foo) {
     echo $maybeDefined;
   } else {
     echo "reachable";
-    echo $maybeDefined/* non strict PHP3007 */;    
+    echo $maybeDefined/* non strict !PHP5007 */;    
   }
 
-  echo $maybeDefined/* non strict PHP3007 */;
+  echo $maybeDefined/* non strict !PHP5007 */;
 
-  echo isset($maybeDefined) ? $maybeDefined : $maybeDefined/* non strict PHP3007 */;
+  echo isset($maybeDefined) ? $maybeDefined : $maybeDefined/* non strict !PHP5007 */;
 
   if (isset($maybeDefined) || isset($neverDefined)) {
-    echo $maybeDefined/* non strict PHP3007 */;
+    echo $maybeDefined/* non strict !PHP5007 */;
   }
 
   if (isset($maybeDefined) && isset($neverDefined)) {
@@ -25,7 +25,7 @@ function never_maybe_defined($foo) {
   }
 
   if (!isset($maybeDefined)) {
-    echo $maybeDefined/* non strict PHP3007 */;    
+    echo $maybeDefined/* non strict !PHP5007 */;    
   }
 }
 
@@ -35,7 +35,7 @@ function always_defined_integer() {
   if (isset(/*|integer|*/$alwaysDefined)) {
     echo /*|integer|*/$alwaysDefined;
   } else {
-    echo "unreachable";/*!PHP3012!*/
+    echo "unreachable";/*!PHP5012!*/
     echo /*|null|*/$alwaysDefined;
   }
 

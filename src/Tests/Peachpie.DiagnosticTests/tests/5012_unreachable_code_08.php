@@ -2,7 +2,7 @@
 
 function unreachable_null_comparison(bool $a, bool $b, bool $c, bool $d) {
   if (/*|boolean|*/$a === null) {
-    echo "unreachable";/*!PHP3012!*/
+    echo "unreachable";/*!PHP5012!*/
     echo /*|null|*/$a;
   } else {
     echo "reachable";
@@ -13,7 +13,7 @@ function unreachable_null_comparison(bool $a, bool $b, bool $c, bool $d) {
     echo "reachable";
     echo /*|boolean|*/$b;
   } else {
-    echo "unreachable";/*!PHP3012!*/
+    echo "unreachable";/*!PHP5012!*/
     echo /*|null|*/$b;
   }
 
@@ -39,12 +39,12 @@ function unreachable_null_comparison(bool $a, bool $b, bool $c, bool $d) {
     echo "reachable";
     echo /*|null|*/$null;
   } else {
-    echo "unreachable";/*!PHP3012!*/
+    echo "unreachable";/*!PHP5012!*/
     echo /*|null|*/$null;
   }
   
   if ($null !== null) {
-    echo "unreachable";/*!PHP3012!*/
+    echo "unreachable";/*!PHP5012!*/
     echo /*|null|*/$null;
   } else {
     echo "reachable";
@@ -55,12 +55,12 @@ function unreachable_null_comparison(bool $a, bool $b, bool $c, bool $d) {
     echo "reachable";
     echo /*|null|*/$null;
   } else {
-    echo "unreachable";/*!PHP3012!*/
+    echo "unreachable";/*!PHP5012!*/
     echo /*|null|*/$null;
   }
   
   if ($null != null) {
-    echo "unreachable";/*!PHP3012!*/
+    echo "unreachable";/*!PHP5012!*/
     echo /*|null|*/$null;
   } else {
     echo "reachable";

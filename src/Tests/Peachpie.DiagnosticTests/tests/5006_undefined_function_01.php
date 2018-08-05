@@ -6,4 +6,4 @@ function definedFunction($a, $b) {
 
 definedFunction(5, 4);
 
-undefinedFunction/*!PHP3006!*/(5, 4);
+undefinedFunction/*!PHP5006!*/(5, 4);

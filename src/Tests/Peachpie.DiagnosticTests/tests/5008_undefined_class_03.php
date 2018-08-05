@@ -7,5 +7,5 @@ try {
 }
 
 try {
-} catch (UndefinedException/*!PHP3008!*/ $exception) {
+} catch (UndefinedException/*!PHP5008!*/ $exception) {
 }
