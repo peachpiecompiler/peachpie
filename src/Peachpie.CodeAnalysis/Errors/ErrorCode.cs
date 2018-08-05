@@ -17,6 +17,10 @@ namespace Pchp.CodeAnalysis.Errors
     /// </remarks>
     internal enum ErrorCode
     {
+        // 0xxx: reserved
+        // 1xxx: reserved
+        // 2xxx: reserved
+
         // 
         // Fatal errors
         //
