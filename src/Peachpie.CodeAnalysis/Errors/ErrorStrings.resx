@@ -153,7 +153,7 @@
   <data name="WRN_AmbiguousDeclaration" xml:space="preserve">
     <value>The declaration of '{0}' is ambiguous resulting in multiple versions to be compiled. Fix this issue by ensuring every base type is declared just once unconditionally.</value>
   </data>
-  <data name="WRN_EvalDiscouraged" xml:space="preserve">
+  <data name="INF_EvalDiscouraged" xml:space="preserve">
     <value>Use of 'eval()' is discouraged. Construct allows execution of arbitrary code and is subject to performance and memory overhead.</value>
   </data>
   <data name="WRN_NoSourceFiles" xml:space="preserve">

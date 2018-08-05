@@ -35,7 +35,7 @@ function always_defined_integer() {
   if (isset(/*|integer|*/$alwaysDefined)) {
     echo /*|integer|*/$alwaysDefined;
   } else {
-    echo "unreachable";/*!PHP5012!*/
+    echo "unreachable";/*!PHP5011!*/
     echo /*|null|*/$alwaysDefined;
   }
 

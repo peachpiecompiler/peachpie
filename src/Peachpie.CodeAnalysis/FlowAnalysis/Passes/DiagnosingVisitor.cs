@@ -97,7 +97,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         public override void VisitEval(BoundEvalEx x)
         {
-            _diagnostics.Add(_routine, new TextSpan(x.PhpSyntax.Span.Start, 4)/*'eval'*/, ErrorCode.WRN_EvalDiscouraged);
+            _diagnostics.Add(_routine, new TextSpan(x.PhpSyntax.Span.Start, 4)/*'eval'*/, ErrorCode.INF_EvalDiscouraged);
 
             base.VisitEval(x);
         }

@@ -5,13 +5,13 @@ function unreachable_goto($x) {
 
   goto end;
 
-  goto start;/*!PHP5012!*/
+  goto start;/*!PHP5011!*/
 
   end:
 
   goto start;
 
-  echo "unreachable";/*!PHP5012!*/  
+  echo "unreachable";/*!PHP5011!*/  
 }
 
 // Analysis mustn't break in case of such loop in unreachable code
@@ -21,9 +21,9 @@ function infinite_goto($x) {
 
   start:
 
-  goto end;/*!PHP5012!*/
+  goto end;/*!PHP5011!*/
 
   end:
 
-  goto start;/*!PHP5012!*/
+  goto start;/*!PHP5011!*/
 }
