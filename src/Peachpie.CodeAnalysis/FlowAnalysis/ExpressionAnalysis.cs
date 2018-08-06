@@ -797,6 +797,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.Coalesce:   // Left ?? Right
                     return x.Left.TypeRefMask | x.Right.TypeRefMask;
 
+                case Operations.Spaceship:
+                    return TypeCtx.GetLongTypeMask(); // -1, 0, +1
+
                 default:
                     throw ExceptionUtilities.UnexpectedValue(x.Operation);
             }

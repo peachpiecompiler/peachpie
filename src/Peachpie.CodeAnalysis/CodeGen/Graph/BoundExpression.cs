@@ -171,8 +171,12 @@ namespace Pchp.CodeAnalysis.Semantics
                     returned_type = EmitCoalesce(cg);
                     break;
 
+                case Operations.Spaceship:
+                    returned_type = EmitSpaceship(cg);
+                    break;
+
                 default:
-                    throw ExceptionUtilities.Unreachable;
+                    throw cg.NotImplementedException(message: $"BinaryEx {this.Operation} is not implemented.", op: this);
             }
 
             //
@@ -766,6 +770,21 @@ namespace Pchp.CodeAnalysis.Semantics
 
             //
             return result_type;
+        }
+
+        /// <summary>Emits the spaceship `&lt;=&gt;` operation.</summary>
+        TypeSymbol EmitSpaceship(CodeGenerator cg)
+        {
+            // TODO: return strictly -1, 0, +1 (.NET compare operation returns number in range: < 0, 0, > 0
+            // TODO: optimize for specific type of operands (mostly string, long)
+
+            cg.EmitConvertToPhpValue(Left);
+            cg.EmitConvertToPhpValue(Right);
+
+            // Template: Comparison.Compare( <Left>, <Right> ) : i4
+
+            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_value_value)
+                .Expect(SpecialType.System_Int32);
         }
 
         /// <summary>
@@ -1555,7 +1574,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     throw cg.NotImplementedException($"Mul(int64, {ytype.Name})", right);
                 default:
 
-                    if (xtype== cg.CoreTypes.PhpAlias)
+                    if (xtype == cg.CoreTypes.PhpAlias)
                     {
                         // dereference:
                         xtype = cg.Emit_PhpAlias_GetValue();
