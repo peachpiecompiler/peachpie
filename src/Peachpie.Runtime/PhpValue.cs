@@ -301,7 +301,7 @@ namespace Pchp.Core
             return result;
         }
 
-        public static explicit operator PhpArray(PhpValue value) => value.AsArray();
+        public static explicit operator PhpArray(PhpValue value) => value.AsArray() ?? throw new InvalidCastException();
 
         /// <summary>
         /// Accesses the value as an array and gets item at given index.
