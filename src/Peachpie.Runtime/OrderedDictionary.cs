@@ -80,6 +80,10 @@ namespace Pchp.Core
             _ikey = key.GetHashCode();
         }
 
+        public static implicit operator IntStringKey(int value) => new IntStringKey(value);
+
+        public static implicit operator IntStringKey(string value) => new IntStringKey(value ?? throw new ArgumentNullException());
+
         internal static IntStringKey FromObject(object key)
         {
             Debug.Assert(key is string || key is int);

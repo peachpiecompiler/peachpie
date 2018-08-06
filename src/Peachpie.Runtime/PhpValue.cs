@@ -249,6 +249,8 @@ namespace Pchp.Core
         /// <returns>Quotient of <paramref name="left"/> and <paramref name="right"/>.</returns>
         public static PhpNumber operator /(PhpValue left, PhpValue right) => Operators.Div(ref left, ref right);
 
+        public static PhpNumber operator *(PhpValue left, PhpValue right) => PhpNumber.Multiply(left, right);
+
         public static PhpNumber operator /(long lx, PhpValue y)
         {
             PhpNumber ny;
