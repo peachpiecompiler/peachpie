@@ -215,6 +215,7 @@ namespace Pchp.Core
         public static implicit operator PhpValue(string value) => Create(value);
         public static implicit operator PhpValue(byte[] value) => Create(value);
         public static implicit operator PhpValue(PhpArray value) => Create(value);
+        public static implicit operator PhpValue(Delegate value) => FromClass(value);
 
         #endregion
 
