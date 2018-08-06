@@ -240,15 +240,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         public override void VisitInstanceFunctionCall(BoundInstanceFunctionCall call)
         {
+            // TODO: Enable the diagnostic when several problems are solved (such as __call())
+            //CheckUndefinedMethodCall(call, call.Instance?.ResultType, call.Name);
+            base.VisitInstanceFunctionCall(call);
+
             // check target type
             CheckMethodCallTargetInstance(call.Instance, call.Name.NameValue.Name.Value);
 
             // check deprecated
             CheckObsoleteSymbol(call.PhpSyntax, call.TargetMethod);
-
-            // TODO: Enable the diagnostic when several problems are solved (such as __call())
-            //CheckUndefinedMethodCall(call, call.Instance?.ResultType, call.Name);
-            base.VisitInstanceFunctionCall(call);
         }
 
         public override void VisitStaticFunctionCall(BoundStaticFunctionCall call)
@@ -256,6 +256,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             // TODO: Enable the diagnostic when the __callStatic() method is properly processed during analysis
             //CheckUndefinedMethodCall(call, call.TypeRef?.ResolvedType, call.Name);
             base.VisitStaticFunctionCall(call);
+
+            // check deprecated
+            CheckObsoleteSymbol(call.PhpSyntax, call.TargetMethod);
         }
 
         public override void VisitVariableRef(BoundVariableRef x)

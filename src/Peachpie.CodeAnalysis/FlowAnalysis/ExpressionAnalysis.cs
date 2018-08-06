@@ -798,7 +798,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     return x.Left.TypeRefMask | x.Right.TypeRefMask;
 
                 default:
-                    throw ExceptionUtilities.Unreachable;
+                    throw ExceptionUtilities.UnexpectedValue(x.Operation);
             }
         }
 
