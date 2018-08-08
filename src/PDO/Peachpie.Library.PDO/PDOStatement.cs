@@ -55,7 +55,7 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// Class Constructor Args for FETCH_CLASS fetching mode.
         /// </summary>
-        PhpArray FetchClassCtorArgs { get; set; } = null;
+        PhpValue[] FetchClassCtorArgs { get; set; } = null;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PDOStatement" /> class.
@@ -310,7 +310,7 @@ namespace Peachpie.Library.PDO
                 }
 
                 //Store the bounded variable reference in the dictionary
-                m_boundParams.Add(key, new PhpAlias(variable.Value));
+                m_boundParams.Add(key, variable);
 
                 param = m_cmd.Parameters[key];
 
@@ -325,7 +325,7 @@ namespace Peachpie.Library.PDO
                 int paramIndex = (int)parameter;
 
                 //Store the bounded variable.Value reference in the dictionary
-                m_boundParams.Add(paramIndex.ToString(), new PhpAlias(variable.Value));
+                m_boundParams.Add(paramIndex.ToString(), variable);
 
                 if (paramIndex < m_positionalPlaceholders.Count)
                 {
@@ -626,7 +626,7 @@ namespace Peachpie.Library.PDO
                         case DbType.Int32:
                             if (pair.Value.Value.IsInteger())
                             {
-                                param.Value = (int)pair.Value.Value;
+                                param.Value = pair.Value.Value.ToLong();
                             }
                             else
                             {
@@ -807,15 +807,7 @@ namespace Peachpie.Library.PDO
                             return PhpValue.False;
                         }
 
-                        dynamic obj = null;
-                        if(FetchClassCtorArgs == null)
-                        {
-                            obj = _ctx.Create(FetchClassName);
-                        } else
-                        {
-                            _ctx.Create(FetchClassName, FetchClassCtorArgs);
-                        }
-
+                        var obj = _ctx.Create(FetchClassName, FetchClassCtorArgs ?? Array.Empty<PhpValue>());
                         return PhpValue.FromClass(obj);
                     default:
                         throw new NotImplementedException();
@@ -859,6 +851,7 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
+        [return: CastToFalse]
         public PhpArray fetchAll(PDO.PDO_FETCH fetch_style = FETCH_USE_DEFAULT, PhpValue fetch_argument = default(PhpValue), PhpArray ctor_args = null)
         {
             if (m_dr == null)
@@ -904,12 +897,13 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />cp
-        public PhpValue fetchObject(string class_name = "stdClass", PhpArray ctor_args = null)
+        [return: CastToFalse]
+        public object fetchObject(string class_name = "stdClass", PhpArray ctor_args = null)
         {
             if (m_dr == null)
             {
                 m_pdo.HandleError(new PDOException("The data reader can not be null."));
-                return PhpValue.False;
+                return null;
             }
 
             if(class_name == "stdClass")
@@ -917,8 +911,8 @@ namespace Peachpie.Library.PDO
                 return this.ReadObj();
             } else
             {
-                dynamic obj = _ctx.Create(class_name, ctor_args);
-                return PhpValue.FromClass(obj);
+                object obj = _ctx.Create(class_name, ctor_args?.GetValues() ?? Array.Empty<PhpValue>());
+                return obj;
             }
         }
 
@@ -1012,19 +1006,23 @@ namespace Peachpie.Library.PDO
         {
             PDO_FETCH fetch = PDO_FETCH.FETCH_USE_DEFAULT;
 
-            PhpValue fetchMode = args[0];
-            if (fetchMode.IsInteger())
+            if (args.Length > 0)
             {
-                int value = (int)fetchMode.Long;
-                if (Enum.IsDefined(typeof(PDO_FETCH), value))
-                {
-                    fetch = (PDO_FETCH)value;
+                PhpValue fetchMode = args[0];
 
-                    this.m_fetchStyle = fetch;
-                }
-                else
+                if (fetchMode.IsInteger())
                 {
-                    m_pdo.HandleError(new PDOException("Given PDO_FETCH constant is not implemented."));
+                    int value = (int)fetchMode.Long;
+                    if (Enum.IsDefined(typeof(PDO_FETCH), value))
+                    {
+                        fetch = (PDO_FETCH)value;
+
+                        this.m_fetchStyle = fetch;
+                    }
+                    else
+                    {
+                        m_pdo.HandleError(new PDOException("Given PDO_FETCH constant is not implemented."));
+                    }
                 }
             }
 
@@ -1055,14 +1053,14 @@ namespace Peachpie.Library.PDO
 
             if (fetch == PDO_FETCH.FETCH_CLASS)
             {
-                if (args.Length > 2)
+                if (args.Length > 1)
                 {
                     className = args[1].ToStringOrNull();
                     this.FetchClassName = className;
 
-                    if (args.Length > 3)
+                    if (args.Length > 2)
                     {
-                        this.FetchClassCtorArgs = args[2].ArrayOrNull();
+                        this.FetchClassCtorArgs = args[2].AsArray()?.GetValues();
                     }
                 }
                 else

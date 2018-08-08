@@ -63,7 +63,7 @@ namespace Peachpie.Library.PDO
         {
             var connection = this.DbFactory.CreateConnection();
             connection.ConnectionString = this.BuildConnectionString(dsn, user, password, options);
-            connection.Open();
+                connection.Open();
             return connection;
         }
 
