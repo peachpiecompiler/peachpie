@@ -109,8 +109,7 @@ namespace Peachpie.Library.PDO
         /// <param name="class_name">Name of the created class.</param>
         /// <param name="ctor_args">Elements of this array are passed to the constructor.</param>
         /// <returns>Returns an instance of the required class with property names that correspond to the column names or FALSE on failure</returns>
-        [return: CastToFalse]
-        object fetchObject(string class_name = "stdClass", PhpArray ctor_args = null);
+        PhpValue fetchObject(string class_name = "stdClass", PhpArray ctor_args = null);
 
         /// <summary>
         /// Retrieve a statement attribute

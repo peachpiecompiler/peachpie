@@ -27,9 +27,6 @@ namespace Peachpie.Test
                     IsSubmission = false,
                     AdditionalReferences = new string[] {
                         typeof(Library.Graphics.PhpImage).Assembly.Location,
-                        typeof(Library.PDO.PDO).Assembly.Location,
-                        typeof(Library.PDO.PDODriver).Assembly.Location,
-                        typeof(Library.PDO.MySQL.PDOMySQLDriver).Assembly.Location,
                         typeof(Library.Network.CURLFunctions).Assembly.Location
                     },
                 }, File.ReadAllText(fullpath));
@@ -37,8 +34,6 @@ namespace Peachpie.Test
                 //
                 script.Evaluate(ctx, ctx.Globals, null);
             }
-
-            Console.ReadLine();
         }
     }
 }
