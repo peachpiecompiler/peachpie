@@ -103,7 +103,14 @@ namespace Peachpie.Library.PDO
             this.m_driver = PDOEngine.TryGetDriver(driver)
                 ?? throw new PDOException($"Driver '{driver}' not found"); // TODO: resources
 
-            this.m_con = this.m_driver.OpenConnection(connstring, username, password, options);
+            try
+            {
+                this.m_con = this.m_driver.OpenConnection(connstring, username, password, options);
+            } catch (Exception e)
+            {
+                throw new PDOException(e.Message);
+            }
+
             this.m_attributes[PDO_ATTR.ATTR_SERVER_VERSION] = (PhpValue)this.m_con.ServerVersion;
             this.m_attributes[PDO_ATTR.ATTR_DRIVER_NAME] = (PhpValue)this.m_driver.Name;
             this.m_attributes[PDO_ATTR.ATTR_CLIENT_VERSION] = (PhpValue)this.m_driver.ClientVersion;
