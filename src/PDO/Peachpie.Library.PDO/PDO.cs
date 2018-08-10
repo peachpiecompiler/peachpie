@@ -103,7 +103,14 @@ namespace Peachpie.Library.PDO
             this.m_driver = PDOEngine.TryGetDriver(driver)
                 ?? throw new PDOException($"Driver '{driver}' not found"); // TODO: resources
 
-            this.m_con = this.m_driver.OpenConnection(connstring, username, password, options);
+            try
+            {
+                this.m_con = this.m_driver.OpenConnection(connstring, username, password, options);
+            } catch (Exception e)
+            {
+                throw new PDOException(e.Message);
+            }
+
             this.m_attributes[PDO_ATTR.ATTR_SERVER_VERSION] = (PhpValue)this.m_con.ServerVersion;
             this.m_attributes[PDO_ATTR.ATTR_DRIVER_NAME] = (PhpValue)this.m_driver.Name;
             this.m_attributes[PDO_ATTR.ATTR_CLIENT_VERSION] = (PhpValue)this.m_driver.ClientVersion;
@@ -215,7 +222,7 @@ namespace Peachpie.Library.PDO
         {
             try
             {
-                return this.m_driver.PrepareStatement(this, statement, driver_options);
+                return this.m_driver.PrepareStatement(_ctx, this, statement, driver_options);
             }
             catch (System.Exception ex)
             {
@@ -228,7 +235,7 @@ namespace Peachpie.Library.PDO
         [return: CastToFalse]
         public PDOStatement query(string statement, params PhpValue[] args)
         {
-            PDOStatement stmt = new PDOStatement(this, statement, null);
+            PDOStatement stmt = new PDOStatement(_ctx, this, statement, null);
             if (args.Length > 0)
             {
                 // Set the fetch mode, logic inside PDOStatement
