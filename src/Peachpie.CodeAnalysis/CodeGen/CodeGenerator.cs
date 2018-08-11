@@ -137,7 +137,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
 
                 // forward edge:
-                IL.EmitBranch(ILOpCode.Br, block);  // TODO: avoid branch instruction if block will follow immediately
+                // note: if block will follow immediately, .br will be ignored
+                IL.EmitBranch(ILOpCode.Br, block);
                 this.Enqueue(block);
             }
 

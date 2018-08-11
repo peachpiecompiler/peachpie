@@ -111,6 +111,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 //(_catchBlocks.Length != 0) &&
                 (_finallyBlock != null));
 
+            Debug.Assert(_body.NextEdge is SimpleEdge);
+            var afterTryBlock = _body.NextEdge.NextBlock;
+
             cg.Builder.OpenLocalScope(ScopeType.TryCatchFinally);
 
             cg.Builder.OpenLocalScope(ScopeType.Try);
@@ -125,7 +128,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
             else
             {
+
                 cg.GenerateScope(_body, (_finallyBlock ?? NextBlock).Ordinal);
+
+                // !!! jump after the try/catch/finally scope
+                cg.Builder.EmitBranch(ILOpCode.Br, afterTryBlock);
             }
 
             //_tryNestingLevel--;
@@ -158,7 +165,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             if (!emitCatchesOnly)
             {
                 //
-                cg.Scope.ContinueWith(NextBlock);
+                cg.Scope.ContinueWith(afterTryBlock);
             }
         }
 
