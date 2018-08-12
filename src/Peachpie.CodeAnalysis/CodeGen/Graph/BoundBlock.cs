@@ -157,17 +157,21 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// </summary>
         private object _retlbl;
 
-        /// <summary>
-        /// Stores value from top of the evaluation stack to a temporary variable which will be returned from the exit block.
-        /// </summary>
-        internal void EmitTmpRet(CodeGenerator cg, Symbols.TypeSymbol stack)
+        internal object GetReturnLabel()
         {
-            // lazy initialize
             if (_retlbl == null)
             {
                 _retlbl = new NamedLabel("<return>");
             }
 
+            return _retlbl;
+        }
+
+        /// <summary>
+        /// Stores value from top of the evaluation stack to a temporary variable which will be returned from the exit block.
+        /// </summary>
+        internal void EmitTmpRet(CodeGenerator cg, TypeSymbol stack)
+        {
             if (_rettmp == null)
             {
                 var rtype = cg.Routine.ReturnType;
@@ -180,14 +184,16 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             // <rettmp> = <stack>;
             if (_rettmp != null)
             {
-                cg.EmitConvert(stack, 0, (Symbols.TypeSymbol)_rettmp.Type);
+                cg.EmitConvert(stack, 0, (TypeSymbol)_rettmp.Type);
                 cg.Builder.EmitLocalStore(_rettmp);
-                cg.Builder.EmitBranch(ILOpCode.Br, _retlbl);
             }
             else
             {
                 cg.EmitPop(stack);
             }
+
+            //
+            cg.Builder.EmitBranch(ILOpCode.Br, GetReturnLabel());
         }
 
         internal override void Emit(CodeGenerator cg)
