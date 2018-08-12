@@ -496,8 +496,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal void Generate(IGenerator element)
         {
-            if (element != null)
-                element.Generate(this);
+            element?.Generate(this);
         }
 
         /// <summary>
