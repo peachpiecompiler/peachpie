@@ -375,6 +375,140 @@ namespace Pchp.Library
 
         #endregion
 
+        #region Unsupported property getters and setters
+
+        public bool getArchiveComment(int flags = 0)
+        {
+            PhpException.FunctionNotSupported(nameof(getArchiveComment));
+            return false;
+        }
+
+        public bool getCommentIndex(int index, int flags = 0)
+        {
+            PhpException.FunctionNotSupported(nameof(getCommentIndex));
+            return false;
+        }
+
+        public bool getCommentName(string name, int flags = 0)
+        {
+            PhpException.FunctionNotSupported(nameof(getCommentName));
+            return false;
+        }
+
+        public bool getExternalAttributesIndex(int index, ref int opsys, ref int attr, int flags = 0)
+        {
+            PhpException.FunctionNotSupported(nameof(getExternalAttributesIndex));
+            return false;
+        }
+
+        public bool getExternalAttributesName(string name, ref int opsys, ref int attr, int flags = 0)
+        {
+            PhpException.FunctionNotSupported(nameof(getExternalAttributesName));
+            return false;
+        }
+
+        public bool setArchiveComment(string comment)
+        {
+            PhpException.FunctionNotSupported(nameof(setArchiveComment));
+            return false;
+        }
+
+        public bool setCommentIndex(int index, string comment)
+        {
+            PhpException.FunctionNotSupported(nameof(setCommentIndex));
+            return false;
+        }
+
+        public bool setCommentName(string name, string comment)
+        {
+            PhpException.FunctionNotSupported(nameof(setCommentName));
+            return false;
+        }
+
+        public bool setEncryptionIndex(int index, string method, string password = null)
+        {
+            PhpException.FunctionNotSupported(nameof(setEncryptionIndex));
+            return false;
+        }
+
+        public bool setEncryptionName(string name, string method, string password = null)
+        {
+            PhpException.FunctionNotSupported(nameof(setEncryptionName));
+            return false;
+        }
+
+        public bool setExternalAttributesIndex(int index, int opsys, int attr, int flags = 0)
+        {
+            PhpException.FunctionNotSupported(nameof(setExternalAttributesIndex));
+            return false;
+        }
+
+        public bool setExternalAttributesName(string name, int opsys, int attr, int flags = 0)
+        {
+            PhpException.FunctionNotSupported(nameof(setExternalAttributesName));
+            return false;
+        }
+
+        public bool setCompressionIndex(int index, int comp_method, int comp_flags = 0)
+        {
+            PhpException.FunctionNotSupported(nameof(setCompressionIndex));
+            return false;
+        }
+
+        public bool setCompressionName(string name, int comp_method, int comp_flags = 0)
+        {
+            PhpException.FunctionNotSupported(nameof(setCompressionName));
+            return false;
+        }
+
+        public bool setPassword(string password)
+        {
+            PhpException.FunctionNotSupported(nameof(setPassword));
+            return false;
+        }
+
+        #endregion
+
+        #region Unsupported operations
+
+        public bool unchangeAll()
+        {
+            PhpException.FunctionNotSupported(nameof(unchangeAll));
+            return false;
+        }
+
+        public bool unchangeArchive()
+        {
+            PhpException.FunctionNotSupported(nameof(unchangeArchive));
+            return false;
+        }
+
+        public bool unchangeIndex(int index)
+        {
+            PhpException.FunctionNotSupported(nameof(unchangeIndex));
+            return false;
+        }
+
+        public bool unchangeName(string name)
+        {
+            PhpException.FunctionNotSupported(nameof(unchangeName));
+            return false;
+        }
+
+        public bool renameName(string name, string newname)
+        {
+            PhpException.FunctionNotSupported(nameof(renameName));
+            return false;
+        }
+
+        public bool renameIndex(int index, string newname)
+        {
+            PhpException.FunctionNotSupported(nameof(renameIndex));
+            return false;
+        }
+
+        #endregion
+
         #region Helper methods
 
         private bool CheckInitialized()
