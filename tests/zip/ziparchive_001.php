@@ -42,6 +42,12 @@ function list_entries($filename) {
     $index = $zip->locateName($name);
     $stats_eq = ($stats === $zip->statName($name));
     echo $i ."|". $name ."|". $index ."|". $stats_eq ."\n";
+
+    echo $zip->getFromIndex($i) ."\n";
+    echo $zip->getFromName($name) ."\n";
+
+    $stream = $zip->getStream($name);
+    echo stream_get_contents($stream) ."\n\n";
   }
 
   $zip->close();

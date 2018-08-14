@@ -12,8 +12,14 @@ namespace Pchp.Library
 {
     [PhpType(PhpTypeAttribute.InheritName)]
     [PhpExtension("zip")]
-    public class ZipArchive //: Countable
+    public class ZipArchive : Countable
     {
+        private struct EntryLengths
+        {
+            public long Length;
+            public long CompressedLength;
+        }
+
         #region Constants
 
         public const int CREATE = 1;
@@ -165,6 +171,10 @@ namespace Pchp.Library
 
         private System.IO.Compression.ZipArchive _archive;
 
+        // Once an entry's stream has been opened (even though no data were written to it),
+        // its length cannot be obtained directly
+        private Dictionary<ZipArchiveEntry, EntryLengths> _openedEntryLengths = new Dictionary<ZipArchiveEntry, EntryLengths>();
+
         public int status => 0;
 
         public int statusSys => 0;
@@ -179,7 +189,7 @@ namespace Pchp.Library
 
         #region Archive information
 
-        public int count() => numFiles;
+        public long count() => numFiles;
 
         public string getStatusString()
         {
@@ -281,7 +291,7 @@ namespace Pchp.Library
             return true;
         }
 
-        public bool extractTo(string destination, PhpValue entries = default(PhpValue))
+        public bool extractTo(Context ctx, string destination, PhpValue entries = default(PhpValue))
         {
             if (!CheckInitialized())
             {
@@ -296,7 +306,7 @@ namespace Pchp.Library
 
             try
             {
-                _archive.ExtractToDirectory(destination);
+                _archive.ExtractToDirectory(PhpPath.AbsolutePath(ctx, destination));
                 return true;
             }
             catch (System.Exception e)
@@ -389,9 +399,10 @@ namespace Pchp.Library
                 return false;
             }
 
+            ZipArchiveEntry entry = null;
             try
             {
-                var entry = CreateEntryIfNotExists(localname);
+                entry = CreateEntryIfNotExists(localname);
 
                 using (var entryStream = entry.Open())
                 {
@@ -403,6 +414,7 @@ namespace Pchp.Library
             catch (System.Exception e)
             {
                 PhpException.Throw(PhpError.Warning, e.Message);
+                entry?.Delete();
                 return false;
             }
         }
@@ -537,8 +549,7 @@ namespace Pchp.Library
             try
             {
                 // TODO: Create a proper stream wrapper instead
-                // TODO: Fix filename
-                return new NativeStream(ctx, entry.Open(), null, StreamAccessOptions.Read, $"zip://{this.filename}#{name}", new StreamContext());
+                return new NativeStream(ctx, OpenEntryStream(entry), null, StreamAccessOptions.Read, $"zip://{this.filename}#{name}", new StreamContext());
             }
             catch (System.Exception e)
             {
@@ -734,7 +745,7 @@ namespace Pchp.Library
                     .FirstOrDefault(e => string.Equals(e.FullName, name, StringComparison.CurrentCultureIgnoreCase));
             }
 
-            if (entry == null || (entry.Length == 0 && (flags & FL_NODIR) != 0))
+            if (entry == null || ((flags & FL_NODIR) != 0) && GetEntryLengths(entry).Length == 0)
             {
                 return null;
             }
@@ -751,13 +762,14 @@ namespace Pchp.Library
                 return null;
             }
 
+            var lengths = GetEntryLengths(entry);
             var result = new PhpArray(6);
             result.Add("name", entry.FullName);
             result.Add("index", _archive.Entries.IndexOf(entry));
             // TODO: ["crc"]
-            result.Add("size", entry.Length);
+            result.Add("size", lengths.Length);
             result.Add("mtime", entry.LastWriteTime.ToUnixTimeSeconds());
-            result.Add("comp_size", entry.CompressedLength);
+            result.Add("comp_size", lengths.CompressedLength);
             result.Add("comp_method", GuessCompressionMethod(entry));
 
             return result;
@@ -766,7 +778,30 @@ namespace Pchp.Library
         private int GuessCompressionMethod(ZipArchiveEntry entry)
         {
             // Other methods than these two are rarely used
-            return (entry.CompressedLength == entry.Length) ? CM_STORE : CM_DEFLATE;
+            var lengths = GetEntryLengths(entry);
+            return (lengths.CompressedLength == lengths.Length) ? CM_STORE : CM_DEFLATE;
+        }
+
+        private EntryLengths GetEntryLengths(ZipArchiveEntry entry)
+        {
+            if (_openedEntryLengths.TryGetValue(entry, out var lengths))
+            {
+                return lengths;
+            }
+            else
+            {
+                return new EntryLengths() { Length = entry.Length, CompressedLength = entry.CompressedLength };
+            }
+        }
+
+        private Stream OpenEntryStream(ZipArchiveEntry entry)
+        {
+            if (!_openedEntryLengths.ContainsKey(entry))
+            {
+                _openedEntryLengths[entry] = new EntryLengths() { Length = entry.Length, CompressedLength = entry.CompressedLength };
+            }
+
+            return entry.Open();
         }
 
         private PhpString TryGetEntryContents(ZipArchiveEntry entry, int length)
@@ -778,12 +813,12 @@ namespace Pchp.Library
 
             if (length == 0)
             {
-                length = (int)entry.Length;
+                length = (int)GetEntryLengths(entry).Length;
             }
 
             try
             {
-                using (var stream = entry.Open())
+                using (var stream = OpenEntryStream(entry))
                 {
                     var buffer = new byte[length];
                     int read = stream.Read(buffer, 0, length);
