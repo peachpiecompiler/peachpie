@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Text;
 using Pchp.Core;
 using Pchp.Library.Spl;
@@ -176,7 +177,24 @@ namespace Pchp.Library
 
         #endregion
 
-        #region Opening and closing
+        #region Archive information
+
+        public int count() => numFiles;
+
+        public string getStatusString()
+        {
+            if (!CheckInitialized())
+            {
+                return null;
+            }
+
+            // According to the tests, this is shown all the time (if the archive is initialized)
+            return "No error";
+        }
+
+        #endregion
+
+        #region Archive manipulation
 
         public PhpValue open(Context ctx, string filename, int flags = 0)
         {
@@ -263,9 +281,34 @@ namespace Pchp.Library
             return true;
         }
 
+        public bool extractTo(string destination, PhpValue entries = default(PhpValue))
+        {
+            if (!CheckInitialized())
+            {
+                return false;
+            }
+
+            if (!Operators.IsEmpty(entries))
+            {
+                PhpException.ArgumentValueNotSupported(nameof(entries), entries);
+                return false;
+            }
+
+            try
+            {
+                _archive.ExtractToDirectory(destination);
+                return true;
+            }
+            catch (System.Exception e)
+            {
+                PhpException.Throw(PhpError.Warning, e.Message);
+                return false;
+            }
+        }
+
         #endregion
 
-        #region Adding entries
+        #region Entry adding and deleting
 
         public bool addEmptyDir(string dirname)
         {
@@ -299,9 +342,11 @@ namespace Pchp.Library
                 return false;
             }
 
+            ZipArchiveEntry entry = null;
             try
             {
-                var entry = CreateEntryIfNotExists(localname ?? Path.GetFileName(filename));
+                entry = CreateEntryIfNotExists(localname ?? Path.GetFileName(filename));
+                entry.LastWriteTime = File.GetLastWriteTime(PhpPath.AbsolutePath(ctx, filename));
 
                 using (var entryStream = entry.Open())
                 using (PhpStream handle = PhpStream.Open(ctx, filename, "r", StreamOpenOptions.Empty))
@@ -327,6 +372,7 @@ namespace Pchp.Library
             catch (System.Exception e)
             {
                 PhpException.Throw(PhpError.Warning, e.Message);
+                entry?.Delete();
                 return false;
             }
         }
@@ -371,6 +417,134 @@ namespace Pchp.Library
         {
             PhpException.FunctionNotSupported(nameof(addGlob));
             return false;
+        }
+
+        public bool deleteName(string name)
+        {
+            if (!CheckInitialized() || string.IsNullOrEmpty(name))
+            {
+                return false;
+            }
+
+            return TryDeleteEntry(GetEntryByName(name));
+        }
+
+        public bool deleteIndex(int index)
+        {
+            if (!CheckInitialized() || index < 0)
+            {
+                return false;
+            }
+
+            return TryDeleteEntry(GetEntryByIndex(index));
+        }
+
+        #endregion
+
+        #region Entry reading
+
+        [return: CastToFalse]
+        public int locateName(string name, int flags = 0)
+        {
+            if (!CheckInitialized())
+            {
+                return -1;
+            }
+
+            var entry = GetEntryByName(name, flags);
+            if (entry == null)
+            {
+                return -1;
+            }
+
+            return _archive.Entries.IndexOf(entry);
+        }
+
+        [return: CastToFalse]
+        public string getNameIndex(int index, int flags = 0)
+        {
+            CheckFlags(flags);
+            if (!CheckInitialized())
+            {
+                return null;
+            }
+
+            return GetEntryByIndex(index)?.FullName;
+        }
+
+        [return: CastToFalse]
+        public PhpArray statIndex(int index, int flags = 0)
+        {
+            CheckFlags(flags);
+            if (!CheckInitialized())
+            {
+                return null;
+            }
+
+            return TryGetEntryDetails(GetEntryByIndex(index));
+        }
+
+        [return: CastToFalse]
+        public PhpArray statName(string name, int flags = 0)
+        {
+            CheckFlags(flags, FL_NOCASE | FL_NODIR);
+            if (!CheckInitialized())
+            {
+                return null;
+            }
+
+            return TryGetEntryDetails(GetEntryByName(name, flags));
+        }
+
+        [return: CastToFalse]
+        public PhpString getFromIndex(int index, int length = 0, int flags = 0)
+        {
+            CheckFlags(flags);
+            if (!CheckInitialized())
+            {
+                return default(PhpString);
+            }
+
+            return TryGetEntryContents(GetEntryByIndex(index), length);
+        }
+
+        [return: CastToFalse]
+        public PhpString getFromName(string name, int length = 0, int flags = 0)
+        {
+            CheckFlags(flags, FL_NOCASE);
+            if (!CheckInitialized())
+            {
+                return default(PhpString);
+            }
+
+            return TryGetEntryContents(GetEntryByName(name, flags), length);
+        }
+
+        [return: CastToFalse]
+        public PhpStream getStream(Context ctx, string name)
+        {
+            if (!CheckInitialized())
+            {
+                return null;
+            }
+
+            var entry = GetEntryByName(name);
+            if (entry == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                // TODO: Create a proper stream wrapper instead
+                // TODO: Fix filename
+                return new NativeStream(ctx, entry.Open(), null, StreamAccessOptions.Read, $"zip://{this.filename}#{name}", new StreamContext());
+            }
+            catch (System.Exception e)
+            {
+                PhpException.Throw(PhpError.Warning, e.Message);
+                return null;
+            }
         }
 
         #endregion
@@ -511,6 +685,14 @@ namespace Pchp.Library
 
         #region Helper methods
 
+        private static void CheckFlags(int flags, int supported = 0)
+        {
+            if ((flags & ~supported) != 0)
+            {
+                PhpException.ArgumentValueNotSupported(nameof(flags), flags);
+            }
+        }
+
         private bool CheckInitialized()
         {
             if (_archive != null)
@@ -535,6 +717,109 @@ namespace Pchp.Library
             }
 
             return _archive.CreateEntry(entryName);
+        }
+
+        private ZipArchiveEntry GetEntryByIndex(int index) => (index >= 0 && index < this.numFiles) ? _archive.Entries[index] : null;
+
+        private ZipArchiveEntry GetEntryByName(string name, int flags = 0)
+        {
+            ZipArchiveEntry entry;
+            if ((flags & FL_NOCASE) == 0)
+            {
+                entry = _archive.GetEntry(name);
+            }
+            else
+            {
+                entry = _archive.Entries
+                    .FirstOrDefault(e => string.Equals(e.FullName, name, StringComparison.CurrentCultureIgnoreCase));
+            }
+
+            if (entry == null || (entry.Length == 0 && (flags & FL_NODIR) != 0))
+            {
+                return null;
+            }
+            else
+            {
+                return entry;
+            }
+        }
+
+        private PhpArray TryGetEntryDetails(ZipArchiveEntry entry)
+        {
+            if (entry == null)
+            {
+                return null;
+            }
+
+            var result = new PhpArray(6);
+            result.Add("name", entry.FullName);
+            result.Add("index", _archive.Entries.IndexOf(entry));
+            // TODO: ["crc"]
+            result.Add("size", entry.Length);
+            result.Add("mtime", entry.LastWriteTime.ToUnixTimeSeconds());
+            result.Add("comp_size", entry.CompressedLength);
+            result.Add("comp_method", GuessCompressionMethod(entry));
+
+            return result;
+        }
+
+        private int GuessCompressionMethod(ZipArchiveEntry entry)
+        {
+            // Other methods than these two are rarely used
+            return (entry.CompressedLength == entry.Length) ? CM_STORE : CM_DEFLATE;
+        }
+
+        private PhpString TryGetEntryContents(ZipArchiveEntry entry, int length)
+        {
+            if (entry == null)
+            {
+                return default(PhpString);
+            }
+
+            if (length == 0)
+            {
+                length = (int)entry.Length;
+            }
+
+            try
+            {
+                using (var stream = entry.Open())
+                {
+                    var buffer = new byte[length];
+                    int read = stream.Read(buffer, 0, length);
+
+                    if (read != length)
+                    {
+                        Array.Resize(ref buffer, read);
+                    }
+
+                    return new PhpString(buffer);
+                }
+            }
+            catch (System.Exception e)
+            {
+                PhpException.Throw(PhpError.Warning, e.Message);
+                return default(PhpString);
+            }
+        }
+
+        private bool TryDeleteEntry(ZipArchiveEntry entry)
+        {
+            if (entry == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                entry.Delete();
+                return true;
+            }
+            catch (IOException e)
+            {
+                PhpException.Throw(PhpError.Warning, e.Message);
+                return false;
+            }
         }
 
         #endregion

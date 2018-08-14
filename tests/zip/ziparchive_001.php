@@ -15,25 +15,56 @@ function test($filename) {
   // Fill the archive
   $zip->addFromString("testfilephp.txt", "#1 This is a test string added as testfilephp.txt.\n");
   $zip->addFromString("testfilephp2.txt", "#2 This is a test string added as testfilephp2.txt.\n");
-  $zip->addFile("ziparchive_001.txt","ipsum.txt");
+  $zip->addFile("ziparchive_001.txt", "ipsum.txt");
   echo "filename: ". $zip->filename ."\n";
   echo "numfiles: " . $zip->numFiles . "\n";
   //echo "status:" . $zip->status . "\n";
   $zip->close();
 
   // Open the archive again and list its contents
-  $zip_res = zip_open($filename);
-  while ($zip_entry = zip_read($zip_res)) {
-    $filesize = zip_entry_filesize($zip_entry);
-    echo zip_entry_name($zip_entry) .'|'. $filesize ."\n";
-    zip_entry_open($zip_res, $zip_entry, "r");
-    echo zip_entry_read($zip_entry, $filesize) ."\n";
-    zip_entry_close($zip_entry);
-  }
-  zip_close($zip_res);
+  list_entries($filename);
 
   // Clean up the created archive
   unlink($filename);
+}
+
+function list_entries($filename) {
+  $zip = new ZipArchive();
+  if ($zip->open($filename)!==TRUE) {
+    exit("cannot open <$filename>\n");
+  }
+
+  for ($i = 0; $i < $zip->numFiles; $i++) {
+    $stats = $zip->statIndex($i);
+    print_r(clear_stats($stats));
+
+    $name = $zip->getNameIndex($i);
+    $index = $zip->locateName($name);
+    $stats_eq = ($stats === $zip->statName($name));
+    echo $i ."|". $name ."|". $index ."|". $stats_eq ."\n";
+  }
+
+  $zip->close();
+}
+
+function clear_stats($stats) {
+  // Currently not supported
+  unset($stats['crc']);
+
+  // .NET ZipArchive always uses deflating, even if it's inefficient and no compression would be better
+  // (if not specified manually, but it is hard to guess beforehand)
+  if ($stats['comp_size'] >= $stats['size']) {
+    unset($stats['comp_size']);
+    unset($stats['comp_method']);
+  }
+
+  // Entry creation time is non-deterministic (PHP and .NET runs of the test can happen on the edge of a second),
+  // the only exception is the file inserted from the filesystem
+  if ($stats['name'] != "ipsum.txt") {
+    unset($stats['mtime']);
+  }
+
+  return $stats;
 }
 
 test("ziparchive_001.zip");
