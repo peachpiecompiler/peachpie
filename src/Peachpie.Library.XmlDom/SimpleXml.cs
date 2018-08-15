@@ -16,7 +16,7 @@ namespace Peachpie.Library.XmlDom
     /// <summary>
     /// Contains implementation of SimpleXML functions.
     /// </summary>
-    //[PhpExtension("simplexml")]
+    [PhpExtension("simplexml")]
     public static class SimpleXml
     {
         #region simplexml_load_file
@@ -135,7 +135,7 @@ namespace Peachpie.Library.XmlDom
             {
                 case XmlNodeType.Document:
                     {
-                        xml_node = xml_node.OwnerDocument.DocumentElement;
+                        xml_node = ((XmlDocument)xml_node).DocumentElement;
                         if (xml_node != null) goto case XmlNodeType.Element; else goto default;
                     }
 
@@ -159,7 +159,7 @@ namespace Peachpie.Library.XmlDom
     /// The one and only class comprising the SimpleXML extension.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
-    //[PhpExtension("simplexml")]
+    [PhpExtension("simplexml")]
     public partial class SimpleXMLElement :
         Traversable, ArrayAccess, Pchp.Library.Spl.Countable,
         IPhpConvertible, IPhpComparable, IPhpCloneable, IEnumerable<(PhpValue Key, PhpValue Value)>
