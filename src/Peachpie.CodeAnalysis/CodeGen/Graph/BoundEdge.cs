@@ -129,7 +129,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             else
             {
                 cg.GenerateScope(_body, (_finallyBlock ?? NextBlock).Ordinal);
-                cg.Builder.EmitBranch(ILOpCode.Br, NextBlock);
+
+                if (NextBlock?.FlowState != null)
+                {
+                    cg.Builder.EmitBranch(ILOpCode.Br, NextBlock);
+                }
             }
 
             //_tryNestingLevel--;
