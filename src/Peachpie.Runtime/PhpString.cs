@@ -1513,7 +1513,7 @@ namespace Pchp.Core
 
         public override string ToString() => _blob?.ToString(Encoding.UTF8);
 
-        public string ToString(Encoding encoding) => _blob.ToString(encoding);
+        public string ToString(Encoding encoding) => _blob?.ToString(encoding);
 
         public byte[] ToBytes(Context ctx) => ToBytes(ctx.StringEncoding);
 
