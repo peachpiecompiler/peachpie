@@ -220,6 +220,10 @@ namespace Peachpie.Library.Scripting
                 {
                     compilation = compilation.WithPhpOptions(compilation.Options.WithOptimizationLevel(OptimizationLevel.Debug).WithDebugPlusMode(true));
                 }
+                else
+                {
+                    compilation = compilation.WithPhpOptions(compilation.Options.WithOptimizationLevel(OptimizationLevel.Release));
+                }
 
                 diagnostics = compilation.GetDeclarationDiagnostics();
                 if (!HasErrors(diagnostics))
