@@ -131,6 +131,10 @@ namespace Peachpie.Library.XmlDom
 
         #region Methods
 
+        /// <summary>
+        /// Closes the input the XMLReader object is currently parsing.
+        /// </summary>
+        /// <returns>TRUE on success or FALSE on failure.</returns>
         public bool close()
         {
             if (_reader != null)
@@ -149,49 +153,98 @@ namespace Peachpie.Library.XmlDom
             return true;
         }
 
+        /// <summary>
+        /// Currently not supported.
+        /// </summary>
         public bool expand(DOMNode basenode = null)
         {
             PhpException.FunctionNotSupported(nameof(expand));
             return false;
         }
 
+        /// <summary>
+        /// Returns the value of a named attribute or NULL if the attribute does not exist or
+        /// not positioned on an element node.
+        /// </summary>
+        /// <param name="name">The name of the attribute.</param>
+        /// <returns>The value of the attribute, or NULL if no attribute with the given name is
+        /// found or not positioned on an element node.</returns>
         public string getAttribute(string name)
         {
             return (Active && _reader.NodeType == XmlNodeType.Element) ? _reader.GetAttribute(name) : null;
         }
 
+        /// <summary>
+        /// Returns the value of an attribute based on its position or an empty string if attribute
+        /// does not exist or not positioned on an element node.
+        /// </summary>
+        /// <param name="index">The position of the attribute.</param>
+        /// <returns>The value of the attribute, or NULL if no attribute exists at index or is not
+        /// positioned on the element.</returns>
         public string getAttributeNo(int index)
         {
             return (Active && _reader.NodeType == XmlNodeType.Element) ? _reader.GetAttribute(index) : null;
         }
 
+        /// <summary>
+        /// Returns the value of an attribute by name and namespace URI or an empty string if attribute
+        /// does not exist or not positioned on an element node.
+        /// </summary>
+        /// <param name="localName">The local name.</param>
+        /// <param name="namespaceURI">The namespace URI.</param>
+        /// <returns>The value of the attribute, or NULL if no attribute with the given localName and
+        /// namespaceURI is found or not positioned of element.</returns>
         public string getAttributeNs(string localName, string namespaceURI)
         {
             return (Active && _reader.NodeType == XmlNodeType.Element) ? _reader.GetAttribute(localName, namespaceURI) : null;
         }
 
+        /// <summary>
+        /// Indicates if specified property has been set.
+        /// </summary>
+        /// <param name="property">One of the parser option constants.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public bool getParserProperty(int property)
         {
             bool oldValue;
             return _parserProperties.TryGetValue(property, out oldValue) && oldValue;
         }
 
+        /// <summary>
+        /// Returns a boolean indicating if the document being parsed is currently valid.
+        /// </summary>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public bool isValid()
         {
             //TODO: This function is for schema validation.
             return _reader != null && _reader.ReadState != ReadState.Error;
         }
 
+        /// <summary>
+        /// Lookup in scope namespace for a given prefix.
+        /// </summary>
+        /// <param name="prefix">String containing the prefix.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public bool lookupNamespace(string prefix)
         {
             return Active && _reader.LookupNamespace(prefix) != null;
         }
 
+        /// <summary>
+        /// Positions cursor on the named attribute.
+        /// </summary>
+        /// <param name="name">The name of the attribute.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public bool moveToAttribute(string name)
         {
             return _reader.MoveToAttribute(name);
         }
 
+        /// <summary>
+        /// Positions cursor on attribute based on its position.
+        /// </summary>
+        /// <param name="index">The position of the attribute.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public bool moveToAttributeNo(int index)
         {
             if (!Active || index < 0 || index >= getAttributeCount())
@@ -211,26 +264,51 @@ namespace Peachpie.Library.XmlDom
             return j < index;
         }
 
+        /// <summary>
+        /// Positions cursor on the named attribute in specified namespace.
+        /// </summary>
+        /// <param name="localName">The local name.</param>
+        /// <param name="namespaceURI">The namespace URI.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public bool moveToAttributeNs(string localName, string namespaceURI)
         {
             return Active && _reader.MoveToAttribute(localName, namespaceURI);
         }
 
+        /// <summary>
+        /// Moves cursor to the parent Element of current Attribute.
+        /// </summary>
+        /// <returns>Returns TRUE if successful and FALSE if it fails or not positioned on Attribute
+        /// when this method is called.</returns>
         public bool moveToElement()
         {
             return Active && _reader.MoveToElement();
         }
 
+        /// <summary>
+        /// Moves cursor to the first Attribute.
+        /// </summary>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public bool moveToFirstAttribute()
         {
             return Active && _reader.MoveToFirstAttribute();
         }
 
+        /// <summary>
+        /// Moves cursor to the next Attribute if positioned on an Attribute or moves to first attribute
+        /// if positioned on an Element.
+        /// </summary>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public bool moveToNextAttribute()
         {
             return Active && _reader.MoveToNextAttribute();
         }
 
+        /// <summary>
+        /// Positions cursor on the next node skipping all subtrees.
+        /// </summary>
+        /// <param name="localname">The name of the next node to move to.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public bool next(string localname = null)
         {
             _reader.Skip();
@@ -247,6 +325,14 @@ namespace Peachpie.Library.XmlDom
             return _reader.LocalName == localname && !_reader.EOF;
         }
 
+        /// <summary>
+        /// Set the URI containing the XML document to be parsed.
+        /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
+        /// <param name="URI">URI pointing to the document.</param>
+        /// <param name="encoding">The document encoding or NULL.</param>
+        /// <param name="options">A bitmask of the LIBXML_* constants.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public bool open(Context ctx, string URI, string encoding = null, int options = 0)
         {
             if (string.IsNullOrWhiteSpace(URI))
@@ -262,6 +348,10 @@ namespace Peachpie.Library.XmlDom
             return createReader();
         }
 
+        /// <summary>
+        /// Moves cursor to the next node in the document.
+        /// </summary>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public bool read()
         {
             try
@@ -300,21 +390,40 @@ namespace Peachpie.Library.XmlDom
             }
         }
 
+        /// <summary>
+        /// Reads the contents of the current node, including child nodes and markup.
+        /// </summary>
+        /// <returns>Returns the contents of the current node as a string. Empty string on failure.</returns>
         public string readInnerXML()
         {
             return Active ? _reader.ReadInnerXml() : "";
         }
 
+        /// <summary>
+        /// Reads the contents of the current node, including the node itself.
+        /// </summary>
+        /// <returns>Returns the contents of current node, including itself, as a string. Empty string on failure.</returns>
         public string readOuterXML()
         {
             return Active ? _reader.ReadOuterXml() : "";
         }
 
+        /// <summary>
+        /// Reads the contents of the current node as a string.
+        /// </summary>
+        /// <returns>Returns the content of the current node as a string. Empty string on failure.</returns>
         public string readString()
         {
             return Active ? _reader.ReadString() : "";
         }
 
+        /// <summary>
+        /// Set parser options. The options must be set after <see cref="open(Context, string, string, int)"/> or
+        /// <see cref="xml(string, string, int)"/> are called and before the first <see cref="read"/> call.
+        /// </summary>
+        /// <param name="property">One of the parser option constants.</param>
+        /// <param name="newValue">If set to TRUE the option will be enabled otherwise will be disabled.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public bool setParserProperty(int property, bool newValue)
         {
             if (_reader == null || _reader.ReadState != ReadState.Initial)
@@ -333,24 +442,40 @@ namespace Peachpie.Library.XmlDom
             return true;
         }
 
+        /// <summary>
+        /// Currently not supported.
+        /// </summary>
         public bool setRelaxNGSchema(string filename)
         {
             PhpException.FunctionNotSupported(nameof(setRelaxNGSchema));
             return false;
         }
 
+        /// <summary>
+        /// Currently not supported.
+        /// </summary>
         public bool setRelaxNGSchemaSource(string source)
         {
             PhpException.FunctionNotSupported(nameof(setRelaxNGSchemaSource));
             return false;
         }
 
+        /// <summary>
+        /// Currently not supported.
+        /// </summary>
         public bool setSchema(string filename)
         {
             PhpException.FunctionNotSupported(nameof(setSchema));
             return false;
         }
 
+        /// <summary>
+        /// Set the data containing the XML to parse.
+        /// </summary>
+        /// <param name="source">String containing the XML to be parsed.</param>
+        /// <param name="encoding">The document encoding or NULL.</param>
+        /// <param name="options">A bitmask of the LIBXML_* constants.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public bool xml(string source, string encoding = null, int options = 0)
         {
             if (string.IsNullOrWhiteSpace(source))
