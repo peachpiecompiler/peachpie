@@ -183,7 +183,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         int Dequeue(T[] todoBlocks)
         {
             // Helper data structures to enable adding only one block per routine to a batch
-            var todoContexts = new HashSet<FlowContext>();
+            var todoContexts = new HashSet<TypeRefContext>();
             List<T> delayedBlocks = null;
 
             // Insert the blocks with the highest priority to the batch while having at most one block
@@ -191,9 +191,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             int n = 0;
             while (n < todoBlocks.Length && _queue.TryDequeue(out T block)) // TODO: TryDequeue() with a predicate so we won't have to maintain {delayedBlocks}
             {
-                var flowCtx = block.FlowState.FlowContext;
+                var typeCtx = block.FlowState.FlowContext.TypeRefContext;
 
-                if (todoContexts.Add(flowCtx))
+                if (todoContexts.Add(typeCtx))
                 {
                     todoBlocks[n++] = block;
                 }
