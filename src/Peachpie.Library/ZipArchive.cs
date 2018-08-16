@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 using Pchp.Library.Spl;
 using Pchp.Library.Streams;
 
@@ -254,7 +255,7 @@ namespace Pchp.Library
 
             try
             {
-                string fullPath = PhpPath.AbsolutePath(ctx, filename);
+                string fullPath = FileSystemUtils.AbsolutePath(ctx, filename);
 
                 FileMode mode;
                 if (File.Exists(fullPath))
@@ -352,7 +353,7 @@ namespace Pchp.Library
 
             try
             {
-                _archive.ExtractToDirectory(PhpPath.AbsolutePath(ctx, destination));
+                _archive.ExtractToDirectory(FileSystemUtils.AbsolutePath(ctx, destination));
                 return true;
             }
             catch (System.Exception e)
@@ -416,7 +417,7 @@ namespace Pchp.Library
             try
             {
                 entry = CreateEntryIfNotExists(localname ?? Path.GetFileName(filename));
-                entry.LastWriteTime = File.GetLastWriteTime(PhpPath.AbsolutePath(ctx, filename));
+                entry.LastWriteTime = File.GetLastWriteTime(FileSystemUtils.AbsolutePath(ctx, filename));
 
                 using (var entryStream = entry.Open())
                 using (PhpStream handle = PhpStream.Open(ctx, filename, "r", StreamOpenOptions.Empty))

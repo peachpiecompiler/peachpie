@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
@@ -79,7 +80,7 @@ namespace Pchp.Library
         {
             try
             {
-                string fullPath = PhpPath.AbsolutePath(ctx, filename);
+                string fullPath = FileSystemUtils.AbsolutePath(ctx, filename);
                 var fileStream = File.Open(fullPath, FileMode.Open);
                 var archive = new System.IO.Compression.ZipArchive(fileStream, ZipArchiveMode.Read);
                 return PhpValue.FromClass(new ZipArchiveResource(archive));
