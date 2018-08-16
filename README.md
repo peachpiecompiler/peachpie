@@ -18,8 +18,8 @@
 <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=BY2V98VY57K2E" target="_blank"><img src="https://img.shields.io/badge/$-donate-ff69b4.svg?maxAge=2592000&amp;style=flat"></a>
 </p>
 
-- [Getting Started](https://github.com/peachpiecompiler/peachpie/wiki/Getting-Started)  
-- [Documentation](https://github.com/peachpiecompiler/peachpie/wiki)
+- [Getting Started](https://docs.peachpie.io/get-started/)  
+- [Documentation](https://docs.peachpie.io/)
 
 [<img align="right" src="https://github.com/peachpiecompiler/peachpie/blob/master/docs/logos/dotnet-foundation-logo.png" width="100" />](https://www.dotnetfoundation.org/)
 We are now a member of the [.NET Foundation](https://www.dotnetfoundation.org/about)!
