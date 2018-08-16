@@ -12,14 +12,12 @@
 
 <p align="center">
 <a href="http://www.nuget.org/profiles/peachpie"><img src="https://img.shields.io/nuget/v/Peachpie.App.svg?style=flat"></a>
+<a href="https://docs.peachpie.io"><img src="https://img.shields.io/badge/docs-peachpie.io-green.svg"></a>  
 <a href="https://gitter.im/iolevel/peachpie"><img src="https://badges.gitter.im/iolevel/peachpie.svg"></a>
 <a href="http://www.peachpie.io"><img src="https://img.shields.io/badge/Web-peachpie.io-orange.svg"></a>
 <a href="https://twitter.com/pchpcompiler"><img src="https://img.shields.io/badge/Twitter-%40pchpcompiler-blue.svg"></a>
 <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=BY2V98VY57K2E" target="_blank"><img src="https://img.shields.io/badge/$-donate-ff69b4.svg?maxAge=2592000&amp;style=flat"></a>
 </p>
-
-- [Getting Started](https://docs.peachpie.io/get-started/)  
-- [Documentation](https://docs.peachpie.io/)
 
 [<img align="right" src="https://github.com/peachpiecompiler/peachpie/blob/master/docs/logos/dotnet-foundation-logo.png" width="100" />](https://www.dotnetfoundation.org/)
 We are now a member of the [.NET Foundation](https://www.dotnetfoundation.org/about)!
