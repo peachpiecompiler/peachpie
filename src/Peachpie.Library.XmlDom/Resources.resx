@@ -213,4 +213,7 @@
   <data name="SimpleXmlUnsupportedWriteConversion" xml:space="preserve">
     <value>It is not possible to assign complex types to nodes</value>
   </data>
+  <data name="XmlWritterNumberOfBytesUnsupported" xml:space="preserve">
+    <value>Obtaining the number of bytes written to the current type of stream is not supported.</value>
+  </data>
 </root>
