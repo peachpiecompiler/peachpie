@@ -117,7 +117,7 @@ namespace Peachpie.Library.PDO
         /// Necessary, because there can be only one data reader open for a single Db connection = single PDO instance.
         /// </summary>
         /// <returns>true on success, false otherwise</returns>
-        private bool StoreQueryResult()
+        public bool StoreQueryResult()
         {
             if(m_dr?.HasRows ?? false)
             {
@@ -635,6 +635,17 @@ namespace Peachpie.Library.PDO
         /// <inheritDoc />
         public bool execute(PhpArray input_parameters = null)
         {
+            if(m_pdo.HasExecutedQuery)
+            {
+                if(!m_pdo.StoreLastExecutedQuery())
+                {
+                    m_pdo.HandleError(new PDOException("Last executed PDOStatement result set could not be saved correctly."));
+                }
+            }
+
+            // Sets PDO executed flag
+            m_pdo.HasExecutedQuery = true;
+
             // Assign the bound variables from bindParam() function if any present
             if(HasParamsBound)
             {
