@@ -133,7 +133,6 @@ namespace Peachpie.Library.PDO
                 storedResultPosition = 0;
             } else
             {
-                //
                 //m_pdo.HandleError(new PDOException("There are no rows to store."));
                 return false;
             }
@@ -947,11 +946,12 @@ namespace Peachpie.Library.PDO
 
             PhpArray returnArray = new PhpArray();
 
-            var value = PhpValue.Null;
-
-            while (m_dr.HasRows && value != PhpValue.False)
+            while (m_dr.HasRows)
             {
-                value = fetch(fetch_style);
+                var value = fetch(fetch_style);
+
+                if (value == PhpValue.False)
+                    break;
 
                 returnArray.Add(value);
             }
