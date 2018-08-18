@@ -69,6 +69,14 @@ namespace Peachpie.Library.PDO
         /// <param name="driver_options">The driver options.</param>
         internal PDOStatement(Context ctx, PDO pdo, string statement, PhpArray driver_options)
         {
+            if (pdo.HasExecutedQuery)
+            {
+                if (!pdo.StoreLastExecutedQuery())
+                {
+                    pdo.HandleError(new PDOException("Last executed PDOStatement result set could not be saved correctly."));
+                }
+            }
+
             this.m_pdo = pdo;
             this._ctx = ctx;
             this.m_stmt = statement;
@@ -125,7 +133,8 @@ namespace Peachpie.Library.PDO
                 storedResultPosition = 0;
             } else
             {
-                m_pdo.HandleError(new PDOException("There are no rows to store."));
+                //
+                //m_pdo.HandleError(new PDOException("There are no rows to store."));
                 return false;
             }
 
@@ -635,14 +644,6 @@ namespace Peachpie.Library.PDO
         /// <inheritDoc />
         public bool execute(PhpArray input_parameters = null)
         {
-            if(m_pdo.HasExecutedQuery)
-            {
-                if(!m_pdo.StoreLastExecutedQuery())
-                {
-                    m_pdo.HandleError(new PDOException("Last executed PDOStatement result set could not be saved correctly."));
-                }
-            }
-
             // Sets PDO executed flag
             m_pdo.HasExecutedQuery = true;
 
