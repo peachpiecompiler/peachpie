@@ -947,9 +947,11 @@ namespace Peachpie.Library.PDO
 
             PhpArray returnArray = new PhpArray();
 
-            while(m_dr.HasRows)
+            var value = PhpValue.Null;
+
+            while (m_dr.HasRows && value != PhpValue.False)
             {
-                var value = fetch(fetch_style);
+                value = fetch(fetch_style);
 
                 returnArray.Add(value);
             }
