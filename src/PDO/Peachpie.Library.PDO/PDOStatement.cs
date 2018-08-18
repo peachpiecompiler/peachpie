@@ -40,6 +40,9 @@ namespace Peachpie.Library.PDO
         private Dictionary<string, PhpAlias> m_boundParams;      
         private PDO.PDO_FETCH m_fetchStyle = PDO.PDO_FETCH.FETCH_BOTH;
 
+        private PhpArray storedQueryResult = null;
+        private int storedResultPosition = 0;
+
         /// <summary>
         /// Property telling whether there are any command parameter variables bound with bindParam.
         /// </summary>
@@ -94,6 +97,40 @@ namespace Peachpie.Library.PDO
         }
 
         private static readonly Regex regName = new Regex(@"[\w_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+        [return: CastToFalse]
+        private PhpValue FetchFromStored()
+        {
+            if(storedQueryResult != null)
+            {
+                if(storedResultPosition < storedQueryResult.Count)
+                {
+                    return storedQueryResult[storedResultPosition++];
+                }
+                return PhpValue.Null;
+            }
+            return PhpValue.Null;
+        }
+
+        /// <summary>
+        /// Function for storing the whole dataset result of a query from the dataReader.
+        /// Necessary, because there can be only one data reader open for a single Db connection = single PDO instance.
+        /// </summary>
+        /// <returns>true on success, false otherwise</returns>
+        private bool StoreQueryResult()
+        {
+            if(m_dr?.HasRows ?? false)
+            {
+                storedQueryResult = fetchAll();
+                storedResultPosition = 0;
+            } else
+            {
+                m_pdo.HandleError(new PDOException("There are no rows to store."));
+                return false;
+            }
+
+            return true;
+        }
 
         /// <summary>
         /// Prepare the PDOStatement command.
@@ -540,6 +577,20 @@ namespace Peachpie.Library.PDO
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Closes the current data reader, so that the DbConnection can be reused.
+        /// Should store its state
+        /// </summary>
+        /// <returns></returns>
+        public bool CloseReader()
+        {
+            if (!this.m_dr?.IsClosed ?? false)
+            {
+                m_dr.Close();
+            }
+            return false;
+        }
+
         /// <inheritDoc />
         public bool closeCursor()
         {
@@ -741,82 +792,92 @@ namespace Peachpie.Library.PDO
         public PhpValue fetch(PDO.PDO_FETCH fetch_style = PDO.PDO_FETCH.FETCH_USE_DEFAULT ,int cursor_orientation = default(int), int cursor_offet = 0)
         {
             this.m_pdo.ClearError();
-            try
+
+            if (storedQueryResult != null)
             {
-                PDO.PDO_FETCH style = this.m_fetchStyle;
+                return FetchFromStored();
+            }
+            else
+            {
 
-                if ((int)fetch_style != -1 && Enum.IsDefined(typeof(PDO.PDO_FETCH), fetch_style))
+                try
                 {
-                    style = (PDO.PDO_FETCH)fetch_style;
-                }
-                PDO.PDO_FETCH_ORI ori = PDO.PDO_FETCH_ORI.FETCH_ORI_NEXT;
-                if (Enum.IsDefined(typeof(PDO.PDO_FETCH_ORI), cursor_orientation))
-                {
-                    ori = (PDO.PDO_FETCH_ORI)cursor_orientation;
-                }
+                    PDO.PDO_FETCH style = this.m_fetchStyle;
 
-                switch (ori)
-                {
-                    case PDO.PDO_FETCH_ORI.FETCH_ORI_NEXT:
-                        break;
-                    default:
-                        throw new NotSupportedException();
-                }
+                    if ((int)fetch_style != -1 && Enum.IsDefined(typeof(PDO.PDO_FETCH), fetch_style))
+                    {
+                        style = (PDO.PDO_FETCH)fetch_style;
+                    }
+                    PDO.PDO_FETCH_ORI ori = PDO.PDO_FETCH_ORI.FETCH_ORI_NEXT;
+                    if (Enum.IsDefined(typeof(PDO.PDO_FETCH_ORI), cursor_orientation))
+                    {
+                        ori = (PDO.PDO_FETCH_ORI)cursor_orientation;
+                    }
 
-                if (!this.m_dr.Read())
-                    return PhpValue.False;
+                    switch (ori)
+                    {
+                        case PDO.PDO_FETCH_ORI.FETCH_ORI_NEXT:
+                            break;
+                        default:
+                            throw new NotSupportedException();
+                    }
 
-                // Get the column schema, if possible, for the associative fetch
-                if(this.m_dr_names == null)
-                {
-                    this.m_dr_names = new string[m_dr.FieldCount];
+                    if (!this.m_dr.Read())
+                        return PhpValue.False;
 
-                    if (this.m_dr.CanGetColumnSchema()) {
-                        var columnSchema = this.m_dr.GetColumnSchema();
+                    // Get the column schema, if possible, for the associative fetch
+                    if (this.m_dr_names == null)
+                    {
+                        this.m_dr_names = new string[m_dr.FieldCount];
 
-                        for (int i = 0; i < m_dr.FieldCount; i++)
+                        if (this.m_dr.CanGetColumnSchema())
                         {
-                            this.m_dr_names[i] = columnSchema[i].ColumnName;
+                            var columnSchema = this.m_dr.GetColumnSchema();
+
+                            for (int i = 0; i < m_dr.FieldCount; i++)
+                            {
+                                this.m_dr_names[i] = columnSchema[i].ColumnName;
+                            }
                         }
                     }
-                }
 
-                switch (style)
+                    switch (style)
+                    {
+                        case PDO.PDO_FETCH.FETCH_OBJ:
+                            return this.ReadObj();
+                        case PDO.PDO_FETCH.FETCH_ASSOC:
+                            return PhpValue.Create(this.ReadArray(true, false));
+                        case PDO.PDO_FETCH.FETCH_BOTH:
+                        case PDO.PDO_FETCH.FETCH_USE_DEFAULT:
+                            return PhpValue.Create(this.ReadArray(true, true));
+                        case PDO.PDO_FETCH.FETCH_NUM:
+                            return PhpValue.Create(this.ReadArray(false, true));
+                        case PDO.PDO_FETCH.FETCH_COLUMN:
+                            if (FetchColNo != -1)
+                            {
+                                m_pdo.HandleError(new PDOException("The column number for FETCH_COLUMN mode is not set."));
+                                return PhpValue.False;
+                            }
+
+                            return this.ReadArray(false, true)[FetchColNo].GetValue();
+                        case PDO.PDO_FETCH.FETCH_CLASS:
+                            if (FetchClassName == null)
+                            {
+                                m_pdo.HandleError(new PDOException("The className for FETCH_CLASS mode is not set."));
+                                return PhpValue.False;
+                            }
+
+                            var obj = _ctx.Create(FetchClassName, FetchClassCtorArgs ?? Array.Empty<PhpValue>());
+                            return PhpValue.FromClass(obj);
+                        default:
+                            throw new NotImplementedException();
+                    }
+                }
+                catch (System.Exception ex)
                 {
-                    case PDO.PDO_FETCH.FETCH_OBJ:
-                        return this.ReadObj();
-                    case PDO.PDO_FETCH.FETCH_ASSOC:
-                        return PhpValue.Create(this.ReadArray(true, false));
-                    case PDO.PDO_FETCH.FETCH_BOTH:
-                    case PDO.PDO_FETCH.FETCH_USE_DEFAULT:
-                        return PhpValue.Create(this.ReadArray(true, true));
-                    case PDO.PDO_FETCH.FETCH_NUM:
-                        return PhpValue.Create(this.ReadArray(false, true));
-                    case PDO.PDO_FETCH.FETCH_COLUMN:
-                        if (FetchColNo != -1)
-                        {
-                            m_pdo.HandleError(new PDOException("The column number for FETCH_COLUMN mode is not set."));
-                            return PhpValue.False;
-                        }
-
-                        return this.ReadArray(false, true)[FetchColNo].GetValue();
-                    case PDO.PDO_FETCH.FETCH_CLASS:
-                        if(FetchClassName == null)
-                        {
-                            m_pdo.HandleError(new PDOException("The className for FETCH_CLASS mode is not set."));
-                            return PhpValue.False;
-                        }
-
-                        var obj = _ctx.Create(FetchClassName, FetchClassCtorArgs ?? Array.Empty<PhpValue>());
-                        return PhpValue.FromClass(obj);
-                    default:
-                        throw new NotImplementedException();
+                    this.m_pdo.HandleError(ex);
+                    return PhpValue.False;
                 }
-            }
-            catch (System.Exception ex)
-            {
-                this.m_pdo.HandleError(ex);
-                return PhpValue.False;
             }
         }
 
