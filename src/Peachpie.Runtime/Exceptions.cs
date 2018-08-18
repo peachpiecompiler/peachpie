@@ -11,7 +11,7 @@ namespace Pchp.Core
     /// Thrown by exit/die language constructs to cause immediate termination of a script being executed.
     /// </summary>
     [DebuggerDisplay("died(reason={_status,nq})")]
-    public class ScriptDiedException : Exception
+    public sealed class ScriptDiedException : Exception
     {
         /// <summary>
         /// The exist status.

@@ -1333,6 +1333,15 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         EmitConvertToIntStringKey(from, fromHint);
                     }
+                    else if (to.IsNullableType())
+                    {
+                        Debug.Assert(((NamedTypeSymbol)to).TypeArguments.Length == 1);
+                        var t = ((NamedTypeSymbol)to).TypeArguments[0];
+
+                        // Template: new Nullable<T>( (T)from )
+                        EmitConvert(from, fromHint, t);
+                        EmitCall(ILOpCode.Newobj, ((NamedTypeSymbol)to).InstanceConstructors[0]);
+                    }
                     else
                     {
                         break;  // NotImplementedException

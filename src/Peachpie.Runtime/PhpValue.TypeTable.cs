@@ -202,7 +202,7 @@ namespace Pchp.Core
             {
                 var arr = new PhpArray();
                 me = PhpValue.Create(arr);
-                return Operators.EnsureItemAlias(arr, index, quiet);
+                return arr.EnsureItemAlias(index, quiet);
             }
             public override PhpArray ToArray(ref PhpValue me) => PhpArray.NewEmpty();
             public override void Output(ref PhpValue me, Context ctx) { }
@@ -606,7 +606,7 @@ namespace Pchp.Core
             public override IPhpArray EnsureArray(ref PhpValue me) => me.Array;
             public override IPhpArray GetArrayAccess(ref PhpValue me) => me.Array;
             public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => me.Array.GetItemValue(index); // , quiet);
-            public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) => Operators.EnsureItemAlias(me.Array, index, quiet);
+            public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) => me.Array.EnsureItemAlias(index, quiet);
             public override PhpValue DeepCopy(ref PhpValue me) => new PhpValue(me.Array.DeepCopy());
             public override void PassValue(ref PhpValue me) => me = new PhpValue(me.Array.DeepCopy());
             public override PhpArray ToArray(ref PhpValue me) => me.Array;

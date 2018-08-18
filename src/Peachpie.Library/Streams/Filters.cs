@@ -41,9 +41,9 @@ namespace Pchp.Library.Streams
 
         public byte[] AsBytes(Encoding enc) => IsNull ? Core.Utilities.ArrayUtils.EmptyBytes : IsBinary ? GetBytes() : enc.GetBytes(GetText());
 
-        public override string ToString() => IsText ? GetText() : Encoding.UTF8.GetString(GetBytes());
+        public override string ToString() => IsNull ? string.Empty : IsText ? GetText() : Encoding.UTF8.GetString(GetBytes());
 
-        public PhpString ToPhpString() => IsText ? new PhpString(GetText()) : new PhpString(GetBytes());
+        public PhpString ToPhpString() => IsNull ? default(PhpString) : IsText ? new PhpString(GetText()) : new PhpString(GetBytes());
 
         /// <summary>
         /// Gets length of the string or byytes array.

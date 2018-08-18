@@ -316,9 +316,9 @@ namespace Pchp.CodeAnalysis.Errors {
         /// <summary>
         ///   Looks up a localized string similar to Use of &apos;eval()&apos; is discouraged. Construct allows execution of arbitrary code and is subject to performance and memory overhead..
         /// </summary>
-        internal static string WRN_EvalDiscouraged {
+        internal static string INF_EvalDiscouraged {
             get {
-                return ResourceManager.GetString("WRN_EvalDiscouraged", resourceCulture);
+                return ResourceManager.GetString("INF_EvalDiscouraged", resourceCulture);
             }
         }
         

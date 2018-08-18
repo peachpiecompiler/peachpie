@@ -1044,19 +1044,19 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static string substr(string str, int offset, int length = int.MaxValue)
         {
-            if (string.IsNullOrEmpty(str))
+            if (str == null)
             {
-                return null;
+                str = string.Empty;
             }
 
-            PhpMath.AbsolutizeRange(ref offset, ref length, str.Length);
-
-            // string is shorter than offset to start substring
-            if (offset == str.Length) return null;  // FALSE
-
-            if (length == 0) return String.Empty;
-
-            return str.Substring(offset, length);
+            if (PhpMath.AbsolutizeRange(ref offset, ref length, str.Length))
+            {
+                return str.Substring(offset, length);
+            }
+            else
+            {
+                return null; // FALSE
+            }
         }
 
         /// <summary>
@@ -1072,19 +1072,14 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpString substr(PhpString str, int offset, int length = int.MaxValue)
         {
-            if (str.IsEmpty)
+            if (PhpMath.AbsolutizeRange(ref offset, ref length, str.Length))
+            {
+                return str.Substring(offset, length);
+            }
+            else
             {
                 return default(PhpString); // FALSE
             }
-
-            PhpMath.AbsolutizeRange(ref offset, ref length, str.Length);
-
-            // string is shorter than offset to start substring
-            if (offset == str.Length) return default(PhpString); // FALSE
-
-            if (length == 0) return PhpString.Empty;
-
-            return str.Substring(offset, length);
         }
 
         /// <summary>

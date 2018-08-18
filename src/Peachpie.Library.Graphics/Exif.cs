@@ -101,14 +101,14 @@ namespace Peachpie.Library.Graphics
                 var encoding = System.Text.Encoding.ASCII;
                 var unicode = System.Text.Encoding.Unicode;
 
-                //foreach (var item in image.MetaData.Properties)
-                //{
+                // TODO: image.MetaData.Properties, image.MetaData.IccProfile, image.MetaData.***Resolution
 
-                //}
-
-                foreach (var item in image.MetaData.ExifProfile.Values)
+                if (image.MetaData.ExifProfile != null)
                 {
-                    array.Add(item.Tag.ToString(), ExifValueToPhpValue(item.Value));
+                    foreach (var item in image.MetaData.ExifProfile.Values)
+                    {
+                        array.Add(item.Tag.ToString(), ExifValueToPhpValue(item.Value));
+                    }
                 }
 
                 image.Dispose();

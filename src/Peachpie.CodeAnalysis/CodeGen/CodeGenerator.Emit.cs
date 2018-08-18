@@ -1631,10 +1631,18 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             // cast -1 or null to false (CastToFalse) 
             // and copy the value on stack if necessary
-            if (access.IsRead && method.CastToFalse)
+            if (access.IsRead)
             {
-                // casts to false and copy the value
-                stack = EmitCastToFalse(stack, access.IsReadValueCopy);
+                if (method.CastToFalse)
+                {
+                    // casts to false and copy the value
+                    stack = EmitCastToFalse(stack, access.IsReadValueCopy);
+                }
+                else if (stack.IsNullableType())
+                {
+                    // unpack Nullable<T>
+                    stack = EmitNullableCastToFalse(stack, access.IsReadValueCopy);
+                }
             }
             else if (access.IsReadValueCopy)
             {
@@ -1725,6 +1733,62 @@ namespace Pchp.CodeAnalysis.CodeGen
             EmitPop(stack);
             _il.EmitBoolConstant(false);
             EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Boolean);
+
+            //
+            _il.MarkLabel(lblend);
+
+            //
+            return CoreTypes.PhpValue;
+        }
+
+        /// <summary>
+        /// Converts <b>Nullable</b>  without a value to <c>FALSE</c>.
+        /// </summary>
+        /// <param name="stack">Type of Nullable&lt;T&gt; value on stack.</param>
+        /// <param name="deepcopy">Whether to deep copy returned non-FALSE value.</param>
+        /// <returns>New type of value on stack.</returns>
+        internal TypeSymbol EmitNullableCastToFalse(TypeSymbol stack, bool deepcopy)
+        {
+            Debug.Assert(stack.IsNullableType());
+
+            // Template:
+            // tmp = stack;
+            // tmp.HasValue ? tmp.Value : FALSE
+
+            var t = ((NamedTypeSymbol)stack).TypeArguments[0];
+
+            var lbltrue = new NamedLabel("has value");
+            var lblend = new NamedLabel("end");
+
+            var tmp = GetTemporaryLocal(stack, immediateReturn: true);
+            _il.EmitLocalStore(tmp);
+
+            // Template: tmp.HasValue ??
+            _il.EmitLocalAddress(tmp);
+            EmitCall(ILOpCode.Call, (MethodSymbol)stack.GetMembers("get_HasValue")[0])
+                .Expect(SpecialType.System_Boolean);
+
+            _il.EmitBranch(ILOpCode.Brtrue, lbltrue);
+
+            // Template: PhpValue.False
+            _il.EmitBoolConstant(false);
+            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Boolean);
+
+            _il.EmitBranch(ILOpCode.Br, lblend);
+
+            // Template: (PhpValue)tmp.Value
+            _il.MarkLabel(lbltrue);
+            _il.EmitLocalAddress(tmp);
+            EmitCall(ILOpCode.Call, (MethodSymbol)stack.GetMembers("GetValueOrDefault")[0])
+                .Expect(t);
+
+            if (deepcopy)
+            {
+                // DeepCopy(<stack>)
+                t = EmitDeepCopy(t, false);
+            }
+            // (PhpValue)<stack>
+            EmitConvertToPhpValue(t, 0);
 
             //
             _il.MarkLabel(lblend);

@@ -271,9 +271,14 @@ namespace Pchp.Core.Text
         /// <exception cref="ArgumentOutOfRangeException">The start index is less than zero.</exception>
         public static PhpString Substring(this PhpString str, int startIndex, int length)
         {
-            if (str.IsDefault || length <= 0)
+            if (str.IsDefault || length < 0)
             {
                 return default(PhpString); // FALSE
+            }
+
+            if (length == 0)
+            {
+                return new PhpString(string.Empty);
             }
 
             //
@@ -1319,7 +1324,7 @@ namespace Pchp.Core
 
         /// <summary>
         /// Content of the string, may be shared.
-        /// Cannot be <c>null</c>.
+        /// Can be <c>null</c>.
         /// </summary>
         Blob _blob; // TODO: allow union of "null|string|Blob"
 
@@ -1508,7 +1513,7 @@ namespace Pchp.Core
 
         public override string ToString() => _blob?.ToString(Encoding.UTF8);
 
-        public string ToString(Encoding encoding) => _blob.ToString(encoding);
+        public string ToString(Encoding encoding) => _blob?.ToString(encoding);
 
         public byte[] ToBytes(Context ctx) => ToBytes(ctx.StringEncoding);
 

@@ -313,12 +313,12 @@ namespace Pchp.CodeAnalysis.Symbols
         }
     }
 
-    class CoreExplicitCast : CoreMethod
+    class CoreCast : CoreMethod
     {
         readonly CoreType _castTo;
 
-        public CoreExplicitCast(CoreType declaringClass, CoreType castTo)
-            : base(declaringClass, WellKnownMemberNames.ExplicitConversionName, declaringClass)
+        public CoreCast(CoreType declaringClass, CoreType castTo, bool explicit_cast)
+            : base(declaringClass, explicit_cast ? WellKnownMemberNames.ExplicitConversionName : WellKnownMemberNames.ImplicitConversionName, declaringClass)
         {
             _castTo = castTo;
         }
@@ -407,11 +407,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 Long_ToString = ct.Long.Method("ToString");
                 ToChar_String = ct.Convert.Method("ToChar", ct.String);
                 ToBoolean_String = ct.Convert.Method("ToBoolean", ct.String);
-                ToBoolean_PhpValue = new CoreExplicitCast(ct.PhpValue, ct.Boolean);
+                ToBoolean_PhpValue = new CoreCast(ct.PhpValue, ct.Boolean, explicit_cast: false);
                 ToBoolean_Object = ct.Convert.Method("ToBoolean", ct.Object);
                 ToBoolean_IPhpConvertible = ct.Convert.Method("ToBoolean", ct.IPhpConvertible);
-                ToLong_PhpValue = new CoreExplicitCast(ct.PhpValue, ct.Long);
-                ToDouble_PhpValue = new CoreExplicitCast(ct.PhpValue, ct.Double);
+                ToLong_PhpValue = new CoreCast(ct.PhpValue, ct.Long, explicit_cast: true);
+                ToDouble_PhpValue = new CoreCast(ct.PhpValue, ct.Double, explicit_cast: true);
                 ToNumber_PhpValue = ct.Convert.Method("ToNumber", ct.PhpValue);
                 ToNumber_String = ct.Convert.Method("ToNumber", ct.String);
                 ToLong_String = ct.Convert.Method("StringToLongInteger", ct.String);

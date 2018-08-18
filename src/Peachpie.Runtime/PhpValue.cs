@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core.Dynamic;
 
 namespace Pchp.Core
 {
@@ -28,13 +29,13 @@ namespace Pchp.Core
         struct ValueField
         {
             [FieldOffset(0)]
+            public bool Bool; // NOTE: must be first field, having bool as the last field confuses .NET debugger and converts the netire struct to `0` or `1` // https://github.com/peachpiecompiler/peachpie/issues/249 // if still causes issues, remove this field and use Long only
+
+            [FieldOffset(0)]
             public long Long;
+
             [FieldOffset(0)]
             public double Double;
-            [FieldOffset(0)]
-            public int Int;
-            [FieldOffset(0)]
-            public bool Bool;
         }
 
         #endregion
@@ -207,12 +208,14 @@ namespace Pchp.Core
 
         #region Conversions
 
-        public static explicit operator PhpValue(int value) => Create(value);
-        public static explicit operator PhpValue(long value) => Create(value);
-        public static explicit operator PhpValue(double value) => Create(value);
-        public static explicit operator PhpValue(string value) => Create(value);
-        public static explicit operator PhpValue(PhpArray value) => Create(value);
-        public static explicit operator PhpValue(bool value) => Create(value);
+        public static implicit operator PhpValue(bool value) => Create(value);
+        public static implicit operator PhpValue(int value) => Create(value);
+        public static implicit operator PhpValue(long value) => Create(value);
+        public static implicit operator PhpValue(double value) => Create(value);
+        public static implicit operator PhpValue(string value) => Create(value);
+        public static implicit operator PhpValue(byte[] value) => Create(value);
+        public static implicit operator PhpValue(PhpArray value) => Create(value);
+        public static implicit operator PhpValue(Delegate value) => FromClass(value);
 
         #endregion
 
@@ -246,6 +249,8 @@ namespace Pchp.Core
         /// <returns>Quotient of <paramref name="left"/> and <paramref name="right"/>.</returns>
         public static PhpNumber operator /(PhpValue left, PhpValue right) => Operators.Div(ref left, ref right);
 
+        public static PhpNumber operator *(PhpValue left, PhpValue right) => PhpNumber.Multiply(left, right);
+
         public static PhpNumber operator /(long lx, PhpValue y)
         {
             PhpNumber ny;
@@ -272,7 +277,7 @@ namespace Pchp.Core
             return dx / ny;
         }
 
-        public static explicit operator bool(PhpValue value) => value.ToBoolean();
+        public static implicit operator bool(PhpValue value) => value.ToBoolean();
 
         public static explicit operator long(PhpValue value) => value.ToLong();
 
@@ -296,7 +301,7 @@ namespace Pchp.Core
             return result;
         }
 
-        public static explicit operator PhpArray(PhpValue value) => value.AsArray();
+        public static explicit operator PhpArray(PhpValue value) => value.ToArray();
 
         /// <summary>
         /// Accesses the value as an array and gets item at given index.
@@ -426,7 +431,7 @@ namespace Pchp.Core
             {
                 case PhpTypeCode.Boolean: return Boolean;
                 case PhpTypeCode.Double: return Double;
-                case PhpTypeCode.Int32: return _value.Int;
+                case PhpTypeCode.Int32: return (int)Long;
                 case PhpTypeCode.Long: return Long;
                 case PhpTypeCode.Object: return Object;
                 case PhpTypeCode.PhpArray: return Array;
@@ -459,10 +464,15 @@ namespace Pchp.Core
             if (type == typeof(string)) return this.ToString();
             if (type == typeof(object)) return this.ToClass();
 
-            if (this.Object != null && type.GetTypeInfo().IsAssignableFrom(this.Object.GetType()))
+            if (this.Object != null && type.IsAssignableFrom(this.Object.GetType()))
             {
                 return this.Object;
             }
+
+            //if (type.IsNullable_T(out var nullable_t))
+            //{
+            //    throw new NotImplementedException();
+            //}
 
             //
             throw new InvalidCastException($"{this.TypeCode} -> {type.FullName}");
@@ -599,6 +609,15 @@ namespace Pchp.Core
         public static PhpValue Create(PhpArray value) => new PhpValue(TypeTable.ArrayTable, value);
 
         public static PhpValue Create(PhpAlias value) => new PhpValue(TypeTable.AliasTable, value);
+
+        /// <summary>
+        /// Creates <see cref="PhpValue"/> from <see cref="Nullable{T}"/>.
+        /// In case <see cref="Nullable{T}.HasValue"/> is <c>false</c>, a <see cref="PhpValue.False"/> is returned.
+        /// </summary>
+        /// <typeparam name="T">Nullable type argument.</typeparam>
+        /// <param name="value">Original value to convert from.</param>
+        /// <returns><see cref="PhpValue"/> containing value of given nullable, or <c>FALSE</c> if nullable has no value.</returns>
+        public static PhpValue Create<T>(T? value) where T : struct => value.HasValue ? FromClr(value.GetValueOrDefault()) : PhpValue.False;
 
         /// <summary>
         /// Creates value containing new <see cref="PhpAlias"/> pointing to <c>NULL</c> value.

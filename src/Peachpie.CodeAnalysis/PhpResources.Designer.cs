@@ -93,14 +93,5 @@ namespace Pchp.CodeAnalysis {
                 return ResourceManager.GetString("IDS_ToolName", resourceCulture);
             }
         }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Runtime context..
-        /// </summary>
-        internal static string XmlDoc_ContextParamDescription {
-            get {
-                return ResourceManager.GetString("XmlDoc_ContextParamDescription", resourceCulture);
-            }
-        }
     }
 }

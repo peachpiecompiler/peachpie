@@ -290,11 +290,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public void FlowThroughReturn(TypeRefMask type)
         {
-            if (type.IsVoid)
-            {
-                type = this.TypeRefContext.GetTypeMask(TypeRefFactory.VoidTypeRef, false);  // NOTE: or remember the routine may return Void
-            }
-
             _flowCtx.ReturnType |= type;
         }
 

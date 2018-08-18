@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core.Resources;
 
 namespace Pchp.Core.Utilities
 {
@@ -180,6 +182,128 @@ namespace Pchp.Core.Utilities
         //{
         //    return GetLastModifiedTimeUtc(new FileInfo(path));
         //}
+
+        #region Scheme, Url, Absolute Path
+
+        /// <summary>
+        /// Wrapper-safe method of getting the schema portion from an URL.
+        /// </summary>
+        /// <param name="path">A <see cref="string"/> containing an URL or a local filesystem path.</param>
+        /// <returns>
+        /// The schema portion of the given <paramref name="path"/> or <c>"file"</c>
+        /// for a local filesystem path.
+        /// </returns>
+        /// <exception cref="ArgumentException">Invalid path.</exception>
+        public static string GetScheme(string/*!*/ path)
+        {
+            int colon_index = path.IndexOf(':');
+
+            // When there is not scheme present (or it's a local path) return "file".
+            if (colon_index == -1 || Path.IsPathRooted(path))
+                return "file";
+
+            // Otherwise assume that it's the string before first ':'.
+            return path.Substring(0, colon_index);
+        }
+
+        /// <summary>
+        /// Concatenates a scheme with the given absolute path if necessary.
+        /// </summary>
+        /// <param name="absolutePath">Absolute path.</param>
+        /// <returns>The given url or absolute path preceded by a <c>file://</c>.</returns>
+        /// <exception cref="ArgumentException">Invalid path.</exception>
+        public static string GetUrl(string/*!*/ absolutePath)
+        {
+            // Assert that the path is absolute
+            //Debug.Assert(
+            //    !string.IsNullOrEmpty(absolutePath) &&
+            //    (absolutePath.IndexOf(':') > 0 ||   // there is a protocol (http://) or path is rooted (c:\)
+            //        (Path.VolumeSeparatorChar != ':' && // or on linux, if there is no protocol, file path is rooted
+            //            (absolutePath[0] == Path.DirectorySeparatorChar || absolutePath[0] == Path.AltDirectorySeparatorChar)))
+            //    );
+
+            if (Path.IsPathRooted(absolutePath))
+                return String.Concat("file://", absolutePath);
+
+            // Otherwise assume that it's the string before first ':'.
+            return absolutePath;
+        }
+
+        /// <summary>
+        /// Returns the given filesystem url without the scheme.
+        /// </summary>
+        /// <param name="path">A path or url of a local filesystem file.</param>
+        /// <returns>The filesystem path or <b>null</b> if the <paramref name="path"/> is not a local file.</returns>
+        /// <exception cref="ArgumentException">Invalid path.</exception>
+        public static string GetFilename(string/*!*/ path)
+        {
+            if (path.IndexOf(':') == -1 || Path.IsPathRooted(path)) return path;
+            if (path.IndexOf("file://") == 0) return path.Substring("file://".Length);
+            return null;
+        }
+
+        /// <summary>
+        /// Check if the given path is a remote url.
+        /// </summary>
+        /// <param name="url">The path to test.</param>
+        /// <returns><c>true</c> if it's a fully qualified name of a remote resource.</returns>
+        /// <exception cref="ArgumentException">Invalid path.</exception>
+        public static bool IsRemoteFile(string/*!*/ url)
+        {
+            return GetScheme(url) != "file";
+        }
+
+        /// <summary>
+        /// Check if the given path is a path to a local file.
+        /// </summary>
+        /// <param name="url">The path to test.</param>
+        /// <returns><c>true</c> if it's not a fully qualified name of a remote resource.</returns>
+        /// <exception cref="ArgumentException">Invalid path.</exception>
+        public static bool IsLocalFile(string/*!*/ url)
+        {
+            return GetScheme(url) == "file";
+        }
+
+        /// <summary>
+        /// Merges the path with the current working directory
+        /// to get a canonicalized absolute pathname representing the same path
+        /// (local files only). If the provided <paramref name="path"/>
+        /// is absolute (rooted local path or an URL) it is returned unchanged.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="path">An absolute or relative path to a directory or an URL.</param>
+        /// <returns>Canonicalized absolute path in case of a local directory or the original 
+        /// <paramref name="path"/> in case of an URL.</returns>
+        public static string AbsolutePath(Context ctx, string path)
+        {
+            // Don't combine remote file paths with CWD.
+            try
+            {
+                if (IsRemoteFile(path))
+                    return path;
+
+                // Remove the file:// schema if any.
+                path = GetFilename(path);
+
+                // Combine the path and simplify it.
+                string combinedPath = Path.Combine(ctx.WorkingDirectory ?? string.Empty, path);
+
+                // Note: GetFullPath handles "C:" incorrectly
+                if (combinedPath[combinedPath.Length - 1] == ':')
+                {
+                    combinedPath += PathUtils.DirectorySeparator;
+                }
+
+                return Path.GetFullPath(combinedPath);
+            }
+            catch (System.Exception)
+            {
+                PhpException.Throw(PhpError.Notice, string.Format(ErrResources.invalid_path, StripPassword(path)));
+                return null;
+            }
+        }
+
+        #endregion
     }
 
     #endregion

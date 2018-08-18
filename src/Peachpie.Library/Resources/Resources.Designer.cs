@@ -538,6 +538,24 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to File &apos;{0}&apos; already exists.
+        /// </summary>
+        public static string file_exists {
+            get {
+                return ResourceManager.GetString("file_exists", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to File &apos;{0}&apos; doesn&apos;t exist.
+        /// </summary>
+        public static string file_not_exists {
+            get {
+                return ResourceManager.GetString("file_not_exists", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to First endpoint of range cannot be a character class.
         /// </summary>
         public static string first_endpoint_character_class {
@@ -1569,6 +1587,24 @@ namespace Pchp.Library.Resources {
         public static string zero_argument_invalid {
             get {
                 return ResourceManager.GetString("zero_argument_invalid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid or uninitialized Zip object.
+        /// </summary>
+        public static string zip_archive_uninitialized {
+            get {
+                return ResourceManager.GetString("zip_archive_uninitialized", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Zip archive entry &apos;{0}&apos; already exists.
+        /// </summary>
+        public static string zip_entry_exists {
+            get {
+                return ResourceManager.GetString("zip_entry_exists", resourceCulture);
             }
         }
     }

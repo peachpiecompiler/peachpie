@@ -123,14 +123,16 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                if (_type is CoreType)
+                if (_type is CoreType ctype)
                 {
-                    _type = ((CoreType)_type).Symbol;
+                    _type = ctype.Symbol;
                     Debug.Assert(_type != null, "ReferenceManager was not bound (probably)");
                 }
 
-                if (_type is TypeSymbol)
-                    return (TypeSymbol)_type;
+                if (_type is TypeSymbol t)
+                {
+                    return t;
+                }
 
                 throw new ArgumentException();
             }

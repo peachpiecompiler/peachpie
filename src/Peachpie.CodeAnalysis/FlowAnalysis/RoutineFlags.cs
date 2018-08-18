@@ -29,6 +29,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         UsesLateStatic = 64,
 
         /// <summary>
+        /// Indicates the routine contains function calls.
+        /// This can be used for analysis heuristics.
+        /// </summary>
+        HasUserFunctionCall = 128,
+
+        /// <summary>
         /// Whether the routine has to define local variables as an array instead of native local variables.
         /// </summary>
         RequiresLocalsArray = HasEval | HasInclude | HasIndirectVar | UsesLocals | IsGenerator,

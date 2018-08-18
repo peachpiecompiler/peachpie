@@ -61,7 +61,12 @@ namespace Pchp.Core
             // TODO: extension libraries
 
             //
-            return assemblyNames.Distinct(StringComparer.OrdinalIgnoreCase).Select(CompositionExtension.TryLoad).WhereNotNull();
+            return assemblyNames
+                .Distinct(StringComparer.OrdinalIgnoreCase) // remove duplicities just in case
+                .Select(CompositionExtension.TryLoad)       // try to load the assembly, otherwise gets null
+                .WhereNotNull()     // ignore assemblies that couldn;t be loaded
+                // TODO: should be done in compile time, the same behavior as evaluation of `extension_loaded` // .Select(Reflection.ExtensionsAppContext.ExtensionsTable.AddAssembly) // reflect every component in case it contains an extension
+                ;
         }
 
         // TODO: local (instance) services

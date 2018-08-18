@@ -31,7 +31,7 @@ namespace Peachpie.Library.PDO
         /// <param name="length">Length of the data type. To indicate that a parameter is an OUT parameter from a stored procedure, you must explicitly set the length.</param>
         /// <param name="driver_options"></param>
         /// <returns>Returns TRUE on success or FALSE on failure.</returns>
-        bool bindParam(PhpValue parameter, ref PhpValue variable, int data_type = PDO.PARAM_STR, int? length = null, PhpValue? driver_options = null);
+        bool bindParam(PhpValue parameter, PhpAlias variable, PDO.PARAM data_type = (PDO.PARAM)PDO.PARAM_STR, int length = -1, PhpValue driver_options = default(PhpValue));
 
         /// <summary>
         /// Binds a value to a parameter.
@@ -40,7 +40,7 @@ namespace Peachpie.Library.PDO
         /// <param name="value">The value to bind to the parameter.</param>
         /// <param name="data_type">Explicit data type for the parameter using the PDO::PARAM_* constants.</param>
         /// <returns>Returns TRUE on success or FALSE on failure</returns>
-        bool bindValue(PhpValue parameter, PhpValue value, int data_type = PDO.PARAM_STR);
+        bool bindValue(PhpValue parameter, PhpValue value, PDO.PARAM data_type = (PDO.PARAM)PDO.PARAM_STR);
 
         /// <summary>
         /// Closes the cursor, enabling the statement to be executed again.
@@ -85,7 +85,7 @@ namespace Peachpie.Library.PDO
         /// <param name="cursor_orientation">This value determines which row will be returned to the caller.</param>
         /// <param name="cursor_offet">Relative or absolute position move for the cursor.</param>
         /// <returns>The return value of this function on success depends on the fetch type. In all cases, FALSE is returned on failure.</returns>
-        PhpValue fetch(int? fetch_style = null, int cursor_orientation = PDO.FETCH_ORI_NEXT, int cursor_offet = 0);
+        PhpValue fetch(PDO.PDO_FETCH fetch_style = PDO.PDO_FETCH.FETCH_USE_DEFAULT, int cursor_orientation = PDO.FETCH_ORI_NEXT, int cursor_offet = 0);
 
         /// <summary>
         /// Controls the contents of the returned array as documented in PDOStatement::fetch()
@@ -94,7 +94,7 @@ namespace Peachpie.Library.PDO
         /// <param name="fetch_argument">This argument has a different meaning depending on the value of the fetch_style parameter.</param>
         /// <param name="ctor_args">Arguments of custom class constructor when the fetch_style parameter is PDO::FETCH_CLASS.</param>
         /// <returns>An array containing all of the remaining rows in the result set</returns>
-        PhpArray fetchAll(int? fetch_style = null, PhpValue? fetch_argument = null, PhpArray ctor_args = null);
+        PhpArray fetchAll(PDO.PDO_FETCH fetch_style = PDO.PDO_FETCH.FETCH_USE_DEFAULT, PhpValue fetch_argument = default(PhpValue), PhpArray ctor_args = null);
 
         /// <summary>
         /// Returns a single column from the next row of a result set.
@@ -109,7 +109,7 @@ namespace Peachpie.Library.PDO
         /// <param name="class_name">Name of the created class.</param>
         /// <param name="ctor_args">Elements of this array are passed to the constructor.</param>
         /// <returns>Returns an instance of the required class with property names that correspond to the column names or FALSE on failure</returns>
-        PhpValue fetchObject(string class_name = "stdClass", PhpArray ctor_args = null);
+        object fetchObject(string class_name = "stdClass", PhpArray ctor_args = null);
 
         /// <summary>
         /// Retrieve a statement attribute
@@ -147,11 +147,14 @@ namespace Peachpie.Library.PDO
 
         /// <summary>
         /// Set the default fetch mode for this statement
+        /// 
         /// </summary>
-        /// <param name="mode">The fetch mode must be one of the PDO::FETCH_* constants.</param>
-        /// <param name="param1">For FETCH_COLUMN : column number. For FETCH_CLASS : the class name. For FETCH_INTO, the object</param>
-        /// <param name="param2">For FETCH_CLASS : the constructor arguments.</param>
+        /// <param name="args">
+        /// args[0] The fetch mode must be one of the PDO::FETCH_* constants.
+        /// args[1] For FETCH_COLUMN : column number. For FETCH_CLASS : the class name. For FETCH_INTO, the object.
+        /// args[2] For FETCH_CLASS : the constructor arguments.
+        /// </param>
         /// <returns>Returns TRUE on success or FALSE on failure</returns>
-        bool setFetchMode(int mode, PhpValue param1, PhpValue param2);
+        bool setFetchMode(params PhpValue[] args);
     }
 }

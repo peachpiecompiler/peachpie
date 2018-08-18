@@ -1300,25 +1300,46 @@ namespace Peachpie.Library.Graphics
 
         #endregion
 
-        #region imagefilledellipse
+        #region imageellipse, imagefilledellipse
+
+        static IPath CreateEllipsePath(int cx, int cy, int w, int h) => new EllipsePolygon(cx - (w / 2), cy - (h / 2), w, h);
 
         /// <summary>
         /// Draw an ellipse
         /// </summary>
-        public static bool imagefilledellipse(PhpResource im, int cx, int cy, int w, int h, long col)
+        /// <remarks>
+        /// <see cref="imageellipse"/> ignores imagesetthickness().
+        /// </remarks>
+        public static bool imageellipse(PhpResource im, int cx, int cy, int w, int h, long col)
         {
-            PhpGdImageResource img = PhpGdImageResource.ValidImage(im);
+            var img = PhpGdImageResource.ValidImage(im);
             if (img == null)
                 return false;
 
+            img.Image.Mutate(o => o.Draw(GetAlphaColor(img, col), 1.0f, CreateEllipsePath(cx, cy, w, h)));
+
+            return true;
+        }
+
+        /// <summary>
+        /// Draw filled ellipse
+        /// </summary>
+        public static bool imagefilledellipse(PhpResource im, int cx, int cy, int w, int h, long col)
+        {
+            var img = PhpGdImageResource.ValidImage(im);
+            if (img == null)
+                return false;
+
+            var ellipse = CreateEllipsePath(cx, cy, w, h);
+
             if (img.tiled != null)
             {
-                img.Image.Mutate(o => o.Fill(img.tiled, new EllipsePolygon(cx - (w / 2), cy - (h / 2), w, h)));
+                img.Image.Mutate(o => o.Fill(img.tiled, ellipse));
             }
             else
             {
                 var brush = new SolidBrush<Rgba32>(GetAlphaColor(img, col));
-                img.Image.Mutate(o => o.Fill(brush, new EllipsePolygon(cx - (w / 2), cy - (h / 2), w, h)));
+                img.Image.Mutate(o => o.Fill(brush, ellipse));
             }
 
             return true;
@@ -1437,7 +1458,7 @@ namespace Peachpie.Library.Graphics
             var fontStyle = FontStyle.Regular;
             if (fontInd == 3 || fontInd >= 5)
             {
-                if(fontFamily.IsStyleAvailible(FontStyle.Bold))
+                if (fontFamily.IsStyleAvailible(FontStyle.Bold))
                 {
                     fontStyle = FontStyle.Bold;
                 }

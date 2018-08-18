@@ -490,8 +490,101 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static PhpString gzdecode(byte[] data, int length = 0)
         {
-            PhpException.FunctionNotSupported("gzdecode");
+            if (length < 0)
+            {
+                PhpException.Throw(PhpError.Warning, "length ({0}) must be greater or equal zero", length.ToString());
+                return default(PhpString);
+            }
+
+            if (data.Length == 0)
+            {
+                return default(PhpString);
+            }
+
+            if (data.Length < 10 || data[0] != GZIP_HEADER[0] || data[1] != GZIP_HEADER[1])
+            {
+                PhpException.Throw(PhpError.Warning, "incorrect gzip header");
+                return default(PhpString);
+            }
+
+            var zs = new ZStream();
+            zs.next_in = data;
+            zs.next_in_index = GZIP_HEADER_LENGTH;
+            zs.avail_in = data.Length - GZIP_HEADER_LENGTH;
+            zs.total_out = 0;
+
+            // negative number omits the zlib header (undocumented feature of zlib)
+            int status = zs.inflateInit(-MAX_WBITS);
+            if (status == zlibConst.Z_OK)
+            {
+
+                status = zlib_inflate_rounds(zs, length, out byte[] output);
+                if (status == zlibConst.Z_STREAM_END)
+                {
+                    zs.inflateEnd();
+                    return new PhpString(output);
+                }
+            }
+
+            PhpException.Throw(PhpError.Warning, zError(status) ?? zs.msg);
+            zs.inflateEnd();
+
             return default(PhpString);
+        }
+
+        private static int zlib_inflate_rounds(ZStream zs, int max, out byte[] output)
+        {
+            int status = zlibConst.Z_OK;
+            int round = 0;
+
+            output = null;
+            int bufferFree = 0;
+            int bufferSize = (max != 0 && max < zs.avail_in) ? max : zs.avail_in;
+            int bufferUsed = 0;
+
+            do
+            {
+                if (max != 0 && max <= bufferUsed)
+                {
+                    status = zlibConst.Z_MEM_ERROR;
+                }
+
+                try
+                {
+                    Array.Resize(ref output, bufferSize);
+                }
+                catch (OutOfMemoryException)
+                {
+                    status = zlibConst.Z_MEM_ERROR;
+                }
+
+                if (status != zlibConst.Z_MEM_ERROR)
+                {
+                    bufferFree = bufferSize - bufferUsed;
+                    zs.avail_out = bufferFree;
+                    zs.next_out = output;
+                    zs.next_out_index = bufferUsed;
+
+                    status = zs.inflate(zlibConst.Z_NO_FLUSH);
+
+                    bufferUsed += bufferFree - zs.avail_out;
+                    bufferFree = zs.avail_out;
+
+                    bufferSize += (bufferSize >> 3) + 1;
+                }
+            }
+            while ((status == zlibConst.Z_BUF_ERROR || (status == zlibConst.Z_OK && zs.avail_in != 0)) && ++round < 100);
+
+            if (status == zlibConst.Z_STREAM_END)
+            {
+                Array.Resize(ref output, bufferUsed);
+            }
+            else
+            {
+                status = (status == zlibConst.Z_OK) ? zlibConst.Z_DATA_ERROR : status;
+            }
+
+            return status;
         }
 
         /// <summary>
