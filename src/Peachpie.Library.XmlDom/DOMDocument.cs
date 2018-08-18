@@ -672,7 +672,7 @@ namespace Peachpie.Library.XmlDom
                             Encoding = Utils.GetNodeEncoding(ctx, XmlNode)
                         };
 
-                        using (XmlWriter writer = XmlWriter.Create(stream.RawStream, settings))
+                        using (var writer = System.Xml.XmlWriter.Create(stream.RawStream, settings))
                         {
                             XmlDocument.Save(writer);
                         }
@@ -748,7 +748,7 @@ namespace Peachpie.Library.XmlDom
             };
 
             // use a XML writer and set its Formatting property to Formatting.Indented
-            using (XmlWriter writer = XmlWriter.Create(outStream, settings))
+            using (var writer = System.Xml.XmlWriter.Create(outStream, settings))
             {
                 xml_node.WriteTo(writer);
             }

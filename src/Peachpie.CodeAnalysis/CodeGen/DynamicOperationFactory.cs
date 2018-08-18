@@ -2,6 +2,7 @@
 using Microsoft.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Symbols;
+using Pchp.CodeAnalysis.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -68,6 +69,9 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             public void Construct(NamedTypeSymbol functype, Action<CodeGenerator> binder_builder)
             {
+                CompilerLogSource.Log.Count("CallSite");
+
+                //
                 var callsitetype = _factory.CallSite_T.Construct(functype);
 
                 // TODO: check if it wasn't constructed already

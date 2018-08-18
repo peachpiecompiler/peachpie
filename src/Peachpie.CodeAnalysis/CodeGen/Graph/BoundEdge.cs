@@ -97,6 +97,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         internal override void Generate(CodeGenerator cg)
         {
             EmitTryStatement(cg);
+
+            //
+            cg.Scope.ContinueWith(NextBlock);
         }
 
         void EmitTryStatement(CodeGenerator cg, bool emitCatchesOnly = false)
@@ -126,6 +129,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             else
             {
                 cg.GenerateScope(_body, (_finallyBlock ?? NextBlock).Ordinal);
+
+                if (NextBlock?.FlowState != null)
+                {
+                    cg.Builder.EmitBranch(ILOpCode.Br, NextBlock);
+                }
             }
 
             //_tryNestingLevel--;
@@ -154,12 +162,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             // close the whole try statement scope
             cg.Builder.CloseLocalScope();
-
-            if (!emitCatchesOnly)
-            {
-                //
-                cg.Scope.ContinueWith(NextBlock);
-            }
         }
 
         void EmitScriptDiedBlock(CodeGenerator cg)
@@ -571,6 +573,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             Debug.Assert(NextBlock.NextEdge is ForeachMoveNextEdge);
             cg.GenerateScope(NextBlock, NextBlock.NextEdge.NextBlock.Ordinal);
+            cg.Builder.EmitBranch(ILOpCode.Br, NextBlock.NextEdge.NextBlock);
         }
     }
 

@@ -72,6 +72,27 @@ namespace Pchp.Core.Dynamic
                 p.GetCustomAttribute(typeof(ImportCallerStaticClassAttribute)) != null;
         }
 
+        /// <summary>
+        /// Gets value indicating the given type is of type <c>Nullable&lt;T&gt;</c>.
+        /// </summary>
+        /// <param name="type">Tested type.</param>
+        /// <param name="T">In case <paramref name="type"/> is nullable, this will be set to the generic argument of given nullable.</param>
+        /// <returns>Whether the type is nullable.</returns>
+        public static bool IsNullable_T(this Type type, out Type T)
+        {
+            Debug.Assert(type != null);
+            if (type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            {
+                T = type.GenericTypeArguments[0];
+                return true;
+            }
+            else
+            {
+                T = null;
+                return false;
+            }
+        }
+
         public static bool HasLateStaticParameter(MethodInfo m)
         {
             var ps = m.GetParameters();

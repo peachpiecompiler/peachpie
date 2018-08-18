@@ -38,7 +38,7 @@ namespace Peachpie.Library.XmlDom
 
         private delegate void LoadDelegate(IXPathNavigable stylesheet);
         private delegate XmlWriterSettings GetOutputSettingsDelegate();
-        private delegate void TransformToWriterDelegate(IXPathNavigable input, XsltArgumentList arguments, XmlWriter results);
+        private delegate void TransformToWriterDelegate(IXPathNavigable input, XsltArgumentList arguments, System.Xml.XmlWriter results);
 
         #endregion
 
@@ -250,7 +250,7 @@ namespace Peachpie.Library.XmlDom
                 settings.Encoding = new UTF8Encoding(false);
             }
 
-            using (XmlWriter writer = XmlWriter.Create(stream, settings))
+            using (var writer = System.Xml.XmlWriter.Create(stream, settings))
             {
                 // transform the document
                 try

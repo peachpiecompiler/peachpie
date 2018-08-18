@@ -14,6 +14,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// <remarks>Visitor does not implement infinite recursion prevention.</remarks>
     public class GraphVisitor : PhpOperationVisitor
     {
+        #region Properties
+
+        protected bool IsEdgeVisitingStopped { get; set; } = false;
+
+        #endregion
+
         #region ControlFlowGraph
 
         public virtual void VisitCFG(ControlFlowGraph x) => x.Start.Accept(this);
@@ -37,7 +43,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             VisitCFGBlockStatements(x);
 
-            if (x.NextEdge != null)
+            if (x.NextEdge != null && !IsEdgeVisitingStopped)
                 x.NextEdge.Visit(this);
         }
 

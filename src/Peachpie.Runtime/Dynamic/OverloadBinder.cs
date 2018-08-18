@@ -994,6 +994,27 @@ namespace Pchp.Core.Dynamic
                     new[] { x },
                     new[] { expr });
             }
+            else if (expr.Type.IsNullable_T(out var t)) // Nullable -> Value | False
+            {
+                // Template:
+                //   tmp = expr
+                //   tmp.HasValue ? tmp.GetValueOrDefault() : FALSE
+
+                var tmp = Expression.Variable(expr.Type);
+                var assign = Expression.Assign(tmp, expr);    // tmp = <expr>
+                var test = Expression.Property(assign, "HasValue");
+
+                expr = Expression.Condition(
+                    test,
+                    ifTrue: ConvertExpression.BindToValue(Expression.Call(tmp, expr.Type.GetMethod("GetValueOrDefault", Array.Empty<Type>()))),
+                    ifFalse: Expression.Property(null, Cache.Properties.PhpValue_False));
+
+                //
+                return Expression.Block(
+                    expr.Type,
+                    new[] { tmp },
+                    new[] { expr });
+            }
 
             return expr;
         }

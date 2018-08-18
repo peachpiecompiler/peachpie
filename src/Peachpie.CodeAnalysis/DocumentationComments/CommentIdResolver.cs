@@ -15,6 +15,7 @@ namespace Pchp.CodeAnalysis.DocumentationComments
         {
             if (symbol is MethodSymbol) return GetId((MethodSymbol)symbol);
             if (symbol is TypeSymbol) return GetId((TypeSymbol)symbol);
+            if (symbol is FieldSymbol) return GetId((FieldSymbol)symbol);
 
             return null;
         }
@@ -22,6 +23,8 @@ namespace Pchp.CodeAnalysis.DocumentationComments
         public static string GetId(TypeSymbol type) => "T:" + TypeId(type);
 
         public static string GetId(MethodSymbol routine) => "M:" + TypeId(routine.ContainingType) + "." + MethodSignatureId(routine);
+
+        public static string GetId(FieldSymbol field) => "F:" + TypeId(field.ContainingType) + "." + GetEscapedMetadataName(field.MetadataName);
 
         static string TypeId(TypeSymbol type)
         {

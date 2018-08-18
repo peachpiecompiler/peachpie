@@ -292,6 +292,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
         BoundStatement BindGlobalStmt(AST.SimpleVarUse varuse)
         {
+            if (varuse is AST.DirectVarUse dvar && dvar.VarName.IsAutoGlobal)
+            {
+                // do not bind superglobals
+                return new BoundEmptyStatement(dvar.Span.ToTextSpan());
+            }
+
             return new BoundGlobalVariableStatement(
                 new BoundVariableRef(BindVariableName(varuse))
                     .WithSyntax(varuse)
@@ -524,6 +530,14 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindFunctionCall(AST.FunctionCall x)
         {
+            //
+            if (Routine != null)
+            {
+                // TODO: ignore well-known library functions
+                Routine.Flags |= RoutineFlags.HasUserFunctionCall;
+            }
+
+            //
             var boundTarget = x.IsMemberOf != null ? BindExpression(x.IsMemberOf, BoundAccess.Read/*Object?*/) : null;
 
             if (x is AST.DirectFcnCall)

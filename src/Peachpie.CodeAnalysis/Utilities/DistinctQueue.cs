@@ -5,18 +5,33 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.CodeAnalysis.Semantics.Graph;
+using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Utilities
 {
     /// <summary>
-    /// Represents queue where items are enqueued just once and queue can be accessed in parralel.
+    /// Represents priority queue where items are enqueued just once and queue can be accessed in parallel.
     /// </summary>
     internal sealed class DistinctQueue<T>
     {
         readonly object _syncRoot = new object();
 
-        readonly HashSet<T> _set = new HashSet<T>();
-        readonly Queue<T> _queue = new Queue<T>();
+        /// <summary>
+        /// A set to mark already inserted objects.
+        /// </summary>
+        readonly HashSet<T> _set;
+
+        /// <summary>
+        /// A heap to enable fast insertion and minimum extraction.
+        /// </summary>
+        readonly PriorityQueue<T> _queue;
+
+        public DistinctQueue(IComparer<T> comparer)
+        {
+            _queue = new PriorityQueue<T>(comparer);
+            _set = new HashSet<T>();
+        }
 
         /// <summary>
         /// Count of items in the queue.
@@ -24,6 +39,19 @@ namespace Pchp.CodeAnalysis.Utilities
         public int Count
         {
             get { return _queue.Count; }
+        }
+
+        /// <summary>
+        /// Gets value indicating 
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public bool Contains(T value)
+        {
+            lock (_syncRoot)
+            {
+                return _set.Contains(value);
+            }
         }
 
         /// <summary>
@@ -37,7 +65,7 @@ namespace Pchp.CodeAnalysis.Utilities
             {
                 if (_set.Add(value))
                 {
-                    _queue.Enqueue(value);
+                    _queue.Push(value);
                     return true;
                 }
                 else
@@ -56,8 +84,12 @@ namespace Pchp.CodeAnalysis.Utilities
             {
                 if (_queue.Count != 0)
                 {
-                    value = _queue.Dequeue();
+                    value = _queue.Top;
+                    _queue.Pop();
+
+                    Debug.Assert(_set.Contains(value));
                     _set.Remove(value);
+
                     return true;
                 }
                 else

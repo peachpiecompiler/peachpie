@@ -69,7 +69,7 @@ namespace Pchp.Core.Dynamic
                 if (arg.Type == typeof(PhpValue)) return Expression.Call(arg, Cache.Operators.PhpValue_EnsureAlias);
                 return Expression.New(Cache.PhpAlias.ctor_PhpValue_int, BindToValue(arg), Expression.Constant(1));
             }
-            
+
             var target_type = target.GetTypeInfo();
 
             // enum
@@ -83,10 +83,21 @@ namespace Pchp.Core.Dynamic
             {
                 return BindAsReferenceType(arg, target);
             }
-
-            if (target == typeof(IntPtr))
+            else
             {
-                return Expression.New(typeof(IntPtr).GetCtor(Cache.Types.Long), BindToLong(arg));
+                // IntPtr
+                if (target == typeof(IntPtr))
+                {
+                    return Expression.New(typeof(IntPtr).GetCtor(Cache.Types.Long), BindToLong(arg));
+                }
+
+                // Nullable<T>
+                if (target.IsNullable_T(out var T))
+                {
+                    // new Nullable<T>( Bind(arg, T) )
+                    // TODO: if arg is NULL or FALSE, create `default(Nullable<T>)`
+                    return Expression.New(target.GetTypeInfo().DeclaredConstructors.Single(), Bind(arg, T, ctx));
+                }
             }
 
             //
@@ -458,9 +469,14 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(PhpAlias))
             {
                 //if (arg.Type.IsByRef && arg.Type == typeof(PhpValue))
-                    return Expression.Constant(ConversionCost.PassCostly);
+                return Expression.Constant(ConversionCost.PassCostly);
                 //else
                 //    return Expression.Constant(ConversionCost.Warning);
+            }
+
+            if (target.IsNullable_T(out var nullable_t))
+            {
+                return BindCost(arg, nullable_t);
             }
 
             if (t == typeof(PhpValue)) return BindCostFromValue(arg, target);

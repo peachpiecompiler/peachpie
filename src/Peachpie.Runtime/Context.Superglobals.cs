@@ -89,7 +89,7 @@ namespace Pchp.Core
                 //{
                 //    return;
                 //}
-                
+
                 //// adds items in the order specified by RegisteringOrder config option (overwrites existing):
                 //for (int i = 0; i < registering_order.Length; i++)
                 //{
@@ -195,7 +195,6 @@ namespace Pchp.Core
             globals[CommonPhpArrayKeys._SERVER] = PhpValue.Create(_superglobals.server);
             globals[CommonPhpArrayKeys._FILES] = PhpValue.Create(_superglobals.files);
             globals[CommonPhpArrayKeys._SESSION] = PhpValue.Create(_superglobals.session);
-            //globals[CommonPhpArrayKeys.Http_Raw_Post_Data] = HttpRawPostData;
 
             //// adds long arrays:
             //if (Configuration.Global.GlobalVariables.RegisterLongArrays)
@@ -206,6 +205,7 @@ namespace Pchp.Core
             //    globals.Add("HTTP_COOKIE_VARS", new PhpReference(((PhpArray)Cookie.Value).DeepCopy()));
             //    globals.Add("HTTP_SERVER_VARS", new PhpReference(((PhpArray)Server.Value).DeepCopy()));
             //    globals.Add("HTTP_POST_FILES", new PhpReference(((PhpArray)Files.Value).DeepCopy()));
+            //    globals[CommonPhpArrayKeys.HTTP_RAW_POST_DATA] = HttpRawPostData;
 
             //    // both session array references the same array:
             //    globals.Add("HTTP_SESSION_VARS", Session);
@@ -435,7 +435,17 @@ namespace Pchp.Core
         /// Gets value of <c>$HTTP_RAW_POST_DATA</c> variable.
         /// Note this variable has been removed in PHP 7.0 and should not be used.
         /// </summary>
-        public virtual string HttpRawPostData { get { return string.Empty; } set { throw new NotImplementedException(); } }
+        public virtual string HttpRawPostData
+        {
+            get
+            {
+                return this.Globals[CommonPhpArrayKeys.HTTP_RAW_POST_DATA].ToStringOrNull();
+            }
+            set
+            {
+                this.Globals[CommonPhpArrayKeys.HTTP_RAW_POST_DATA] = (PhpValue)value;
+            }
+        }
 
         #endregion
     }

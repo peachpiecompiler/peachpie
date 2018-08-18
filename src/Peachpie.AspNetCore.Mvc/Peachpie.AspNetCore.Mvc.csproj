@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\build\Targets\Settings.props" />
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <AssemblyName>Peachpie.AspNetCore.Mvc</AssemblyName>
+    <PackageId>Peachpie.AspNetCore.Mvc</PackageId>
+    <PackageTags>peachpie;web;mvc;razor</PackageTags>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Description>Allows integration of PeachPie compiled PHP code into ASP.NET Core MVC.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Peachpie.AspNetCore.Web\Peachpie.AspNetCore.Web.csproj" />
+    <ProjectReference Include="..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Html.Abstractions" Version="2.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.1.1" />
+	<PackageReference Include="Microsoft.AspNetCore.Mvc.ViewFeatures" Version="2.1.1" />
+  </ItemGroup>
+
+</Project>

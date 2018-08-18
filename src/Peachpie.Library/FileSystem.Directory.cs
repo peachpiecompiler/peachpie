@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Pchp.Core;
-using Pchp.Library;
+using Pchp.Core.Utilities;
 using Pchp.Library.Streams;
 
 
@@ -204,7 +204,7 @@ namespace Pchp.Library
         {
             if (directory != null)
             {
-                string newPath = PhpPath.AbsolutePath(ctx, directory);
+                string newPath = FileSystemUtils.AbsolutePath(ctx, directory);
                 if (System.IO.Directory.Exists(newPath))
                 {
                     // Note: open_basedir not applied here, URL will not pass through

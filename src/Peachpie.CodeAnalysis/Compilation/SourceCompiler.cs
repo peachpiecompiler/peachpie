@@ -2,12 +2,15 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.CodeGen;
+using Pchp.CodeAnalysis.CommandLine;
 using Pchp.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.FlowAnalysis;
+using Pchp.CodeAnalysis.FlowAnalysis.Passes;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Semantics.Model;
 using Pchp.CodeAnalysis.Symbols;
+using Pchp.CodeAnalysis.Utilities;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
@@ -151,7 +154,7 @@ namespace Pchp.CodeAnalysis
             // LowerBody(block)
 
             // analyse blocks
-            _worklist.DoAll(concurrent: false/*TODO: ConcurrentBuild*/);
+            _worklist.DoAll(concurrent: ConcurrentBuild);
         }
 
         void AnalyzeBlock(BoundBlock block) // TODO: driver
@@ -282,11 +285,15 @@ namespace Pchp.CodeAnalysis
             var diagnostics = new DiagnosticBag();
             var compiler = new SourceCompiler(compilation, null, true, diagnostics, CancellationToken.None);
 
+            CompilerLogSource.Log.StartPhase(CompilationPhase.Bind.ToString());
+
             // 1. Bind Syntax & Symbols to Operations (CFG)
             //   a. construct CFG, bind AST to Operation
             //   b. declare table of local variables
             compiler.WalkMethods(compiler.EnqueueRoutine, allowParallel: true);
             compiler.WalkTypes(compiler.EnqueueFieldsInitializer, allowParallel: true);
+
+            CompilerLogSource.Log.StartPhase(CompilationPhase.Analyse.ToString());
 
             // 2. Analyze Operations
             //   a. type analysis (converge type - mask), resolve symbols
@@ -296,6 +303,8 @@ namespace Pchp.CodeAnalysis
             compiler.DiagnoseMethods();
             compiler.DiagnoseTypes();
             compiler.DiagnoseFiles();
+
+            CompilerLogSource.Log.EndPhase();
 
             //
             return diagnostics.AsEnumerable();
@@ -324,6 +333,8 @@ namespace Pchp.CodeAnalysis
             //
             var compiler = new SourceCompiler(compilation, moduleBuilder, emittingPdb, diagnostics, cancellationToken);
 
+            CompilerLogSource.Log.StartPhase(CompilationPhase.Emit.ToString());
+
             // Emit method bodies
             //   a. declared routines
             //   b. synthesized symbols
@@ -333,6 +344,8 @@ namespace Pchp.CodeAnalysis
 
             // Entry Point (.exe)
             compiler.CompileEntryPoint();
+
+            CompilerLogSource.Log.EndPhase();
         }
     }
 }

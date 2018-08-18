@@ -17,6 +17,9 @@ namespace Pchp.Core
         /// <summary>The name of this variable type.</summary>
 		public const string PhpTypeName = "resource";
 
+        /// <summary>The resources' TypeName to be displayed after call to Dispose</summary>
+        static string DisposedTypeName => "Unknown";
+
         /// <summary>
         /// An invalid resource instance.
         /// </summary>
@@ -168,9 +171,6 @@ namespace Pchp.Core
 
         /// <summary>Static counter for unique PhpResource instance Id's.</summary>
         private static int ResourceIdCounter = 0;
-
-        /// <summary>The resources' TypeName to be displayed after call to Dispose</summary>
-        private static string DisposedTypeName = "Unknown";
 
         #region IPhpConvertible
 

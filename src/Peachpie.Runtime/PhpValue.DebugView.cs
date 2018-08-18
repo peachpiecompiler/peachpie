@@ -37,7 +37,7 @@ namespace Pchp.Core
                         case PhpTypeCode.Alias: return _value.Alias;
                         case PhpTypeCode.Boolean: return _value.Boolean;
                         case PhpTypeCode.Double: return _value.Double;
-                        case PhpTypeCode.Int32: return _value._value.Int;
+                        case PhpTypeCode.Int32: return (int)_value.Long;
                         case PhpTypeCode.Long: return _value.Long;
                         case PhpTypeCode.Object: return _value.Object;
                         case PhpTypeCode.PhpArray: return _value.Array;

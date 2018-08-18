@@ -189,8 +189,7 @@ namespace Pchp.Core
         /// in which case an integer value will be returned.</remarks>
         internal static PhpNumber Div(ref PhpValue x, ref PhpValue y)
         {
-            PhpNumber nx, ny;
-            var info = x.ToNumber(out nx) | y.ToNumber(out ny);
+            var info = x.ToNumber(out var nx) | y.ToNumber(out var ny);
 
             if ((info & Convert.NumberInfo.IsPhpArray) != 0)
             {
@@ -499,7 +498,7 @@ namespace Pchp.Core
             }
         }
 
-        public static object EnsureItemObject(IPhpArray array, PhpValue index)
+        public static object EnsureItemObject(this IPhpArray array, PhpValue index)
         {
             if (Convert.TryToIntStringKey(index, out IntStringKey key))
             {
@@ -511,7 +510,7 @@ namespace Pchp.Core
             }
         }
 
-        public static IPhpArray EnsureItemArray(IPhpArray array, PhpValue index)
+        public static IPhpArray EnsureItemArray(this IPhpArray array, PhpValue index)
         {
             if (Convert.TryToIntStringKey(index, out IntStringKey key))
             {
@@ -523,7 +522,7 @@ namespace Pchp.Core
             }
         }
 
-        public static PhpAlias EnsureItemAlias(IPhpArray array, PhpValue index, bool quiet)
+        public static PhpAlias EnsureItemAlias(this IPhpArray array, PhpValue index, bool quiet)
         {
             if (Convert.TryToIntStringKey(index, out IntStringKey key))
             {
@@ -1321,8 +1320,7 @@ namespace Pchp.Core
         {
             Debug.Assert(name != null, nameof(name));
 
-            PhpValue value;
-            if (ctx.TryGetConstant(name, out value, ref idx) == false)
+            if (ctx.TryGetConstant(name, out var value, ref idx) == false)
             {
                 // Warning: undefined constant
                 PhpException.Throw(PhpError.Notice, Resources.ErrResources.undefined_constant, name);
