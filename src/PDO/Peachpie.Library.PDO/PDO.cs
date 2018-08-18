@@ -35,6 +35,13 @@ namespace Peachpie.Library.PDO
         public DbConnection Connection { get { return this.m_con; } }
 
         /// <summary>
+        /// true is there has been already a PDOStatement executed for this PDO, false otherwise
+        /// </summary>
+        public bool HasExecutedQuery { get; set; } = false;
+
+        private PDOStatement lastExecutedStatement = null;
+
+        /// <summary>
         /// Empty constructor.
         /// </summary>
         [PhpFieldsOnlyCtor]
@@ -216,13 +223,34 @@ namespace Peachpie.Library.PDO
             return this.m_driver.GetLastInsertId(this, name);
         }
 
+        /// <summary>
+        /// Stores the last executed query's result inside of the Statement, so that another data reader can be opened.
+        /// </summary>
+        /// <returns>true on success, false otherwise</returns>
+        internal bool StoreLastExecutedQuery()
+        {
+            if(lastExecutedStatement != null)
+            {
+                var res = lastExecutedStatement.StoreQueryResult();
+                if(res)
+                {
+                    lastExecutedStatement.CloseReader();
+                }
+                return res;
+            }
+
+            return false;
+        }
+
         /// <inheritDoc />
         [return: CastToFalse]
         public PDOStatement prepare(string statement, PhpArray driver_options = null)
         {
             try
             {
-                return this.m_driver.PrepareStatement(_ctx, this, statement, driver_options);
+                PDOStatement newStatement = this.m_driver.PrepareStatement(_ctx, this, statement, driver_options);
+                lastExecutedStatement = newStatement;
+                return newStatement;
             }
             catch (System.Exception ex)
             {
@@ -236,6 +264,8 @@ namespace Peachpie.Library.PDO
         public PDOStatement query(string statement, params PhpValue[] args)
         {
             PDOStatement stmt = new PDOStatement(_ctx, this, statement, null);
+            lastExecutedStatement = stmt;
+
             if (args.Length > 0)
             {
                 // Set the fetch mode, logic inside PDOStatement
