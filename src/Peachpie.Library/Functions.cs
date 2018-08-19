@@ -44,7 +44,7 @@ namespace Pchp.Library
         /// <returns>The returned value.</returns>
         public static PhpValue call_user_func_array(Context ctx, IPhpCallable function, PhpArray args)
         {
-            return call_user_func(ctx, function, PhpArrayToArray(args));
+            return call_user_func(ctx, function, args.GetValues());
         }
 
         /// <summary>
@@ -67,24 +67,7 @@ namespace Pchp.Library
         /// </summary>
         public static PhpValue forward_static_call_array(Context ctx, [ImportCallerStaticClass]PhpTypeInfo @static, IPhpCallable function, PhpArray args)
         {
-            return forward_static_call(ctx, @static, function, PhpArrayToArray(args));
-        }
-
-        /// <summary>
-        /// Copies entries of given <see cref="PhpValue"/> into one dimensional array.
-        /// </summary>
-        static PhpValue[] PhpArrayToArray(PhpArray args)
-        {
-            if (args != null && args.Count != 0)
-            {
-                var args_array = new PhpValue[args.Count];
-                args.CopyValuesTo(args_array, 0);
-                return args_array;
-            }
-            else
-            {
-                return Core.Utilities.ArrayUtils.EmptyValues;
-            }
+            return forward_static_call(ctx, @static, function, args.GetValues());
         }
 
         #endregion
