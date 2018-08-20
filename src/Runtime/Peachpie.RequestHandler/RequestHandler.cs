@@ -10,7 +10,7 @@ namespace Peachpie.RequestHandler
 	/// Process a request and stores references to objects associated with it.
 	/// </summary>
 	[Serializable]
-    internal sealed class RequestHandler : IHttpHandler, IRequiresSessionState
+    public sealed class RequestHandler : IHttpHandler, IRequiresSessionState
     {
         /// <summary>
         /// Invoked by ASP.NET when a request comes from a client.
