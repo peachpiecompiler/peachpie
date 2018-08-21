@@ -438,6 +438,8 @@ namespace Pchp.Core
                 case PhpTypeCode.String: return String;
                 case PhpTypeCode.MutableString: return MutableString.ToString();
                 case PhpTypeCode.Alias: return Alias.Value.ToClr();
+                case PhpTypeCode.Undefined:
+                case PhpTypeCode.Null: return null;
                 default:
                     throw new ArgumentException();
             }
