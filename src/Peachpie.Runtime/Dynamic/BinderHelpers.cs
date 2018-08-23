@@ -505,6 +505,11 @@ namespace Pchp.Core.Dynamic
                     // Template: Operators.IsSet( value )
                     expr = Expression.Call(Cache.Operators.IsSet_PhpValue, expr);
                 }
+                else if (IsNullable_T(expr.Type, out var T))
+                {
+                    // Template: Nullable.HasValue
+                    expr = Expression.Property(expr, "HasValue");
+                }
                 else if (!expr.Type.GetTypeInfo().IsValueType)
                 {
                     // Template: value != null
