@@ -39,6 +39,16 @@ namespace Pchp.Core.Dynamic
                 return Bind(Expression.Field(arg, Cache.PhpAlias.Value), target, ctx);
             }
 
+            // from Nullable<T>
+            if (arg.Type.IsNullable_T(out var T))
+            {
+                // Template: arg.HasValue ? arg.Value : NULL
+                return Expression.Condition(
+                    test: Expression.Property(arg, "HasValue"),
+                    ifTrue: Bind(Expression.Call(arg, arg.Type.GetMethod("GetValueOrDefault", Array.Empty<Type>())), target, ctx),
+                    ifFalse: Bind(Expression.Field(null, Cache.Properties.PhpValue_Null), target, ctx));
+            }
+
             Debug.Assert(ctx != null, "!ctx");
 
             //
@@ -92,16 +102,69 @@ namespace Pchp.Core.Dynamic
                 }
 
                 // Nullable<T>
-                if (target.IsNullable_T(out var T))
+                if (target.IsNullable_T(out T))
                 {
-                    // new Nullable<T>( Bind(arg, T) )
-                    // TODO: if arg is NULL or FALSE, create `default(Nullable<T>)`
-                    return Expression.New(target.GetTypeInfo().DeclaredConstructors.Single(), Bind(arg, T, ctx));
+                    return BindToNullable(arg, target, T, ctx);
                 }
             }
 
             //
             throw new NotImplementedException(target.ToString());
+        }
+
+        static Expression BindToNullable(Expression arg, Type target, Type nullable_t, Expression ctx)
+        {
+            Debug.Assert(target.IsNullable_T(out var tmp_t) && nullable_t == tmp_t);
+
+            // Template: new Nullable<T>( (T)arg )
+            Expression new_nullable = null;
+
+            try
+            {
+                new_nullable = Expression.New(target.GetTypeInfo().DeclaredConstructors.Single(), Bind(arg, nullable_t, ctx));
+            }
+            catch (Exception x) when (x is NotImplementedException || x is NotSupportedException)
+            {
+                // conversion is not allowed
+                new_nullable = Expression.Block(
+                    Expression.Throw(Expression.Constant(x)),
+                    Expression.Default(target));
+            }
+
+            // HasValue: !NULL && !FALSE
+            Expression hasValueCheck = null;
+
+            if (nullable_t != typeof(bool))
+            {
+                if (arg.Type == typeof(bool))
+                {
+                    // arg === FALSE
+                    hasValueCheck = arg;
+                }
+                else if (arg.Type == typeof(PhpValue))
+                {
+                    // (bool)arg // implicit bool operator
+                    hasValueCheck = Expression.Convert(arg, typeof(bool));
+                }
+                else if (!arg.Type.IsValueType)
+                {
+                    // !NULL
+                    hasValueCheck = Expression.ReferenceNotEqual(arg, Expression.Constant(null, arg.Type));
+                }
+            }
+
+            // new Nullable<T>( Bind(arg, T) )
+            if (hasValueCheck != null)
+            {
+                return Expression.Condition(
+                    test: hasValueCheck,
+                    ifTrue: new_nullable,
+                    ifFalse: Expression.Default(target));
+            }
+            else
+            {
+                return new_nullable;
+            }
         }
 
         private static Expression BindToLong(Expression expr)
