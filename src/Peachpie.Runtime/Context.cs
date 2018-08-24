@@ -442,6 +442,26 @@ namespace Pchp.Core
             }
         }
 
+        /// <summary>
+        /// Handles program unhandled exception according to PHP's semantic.
+        /// If no user exception handler is defined, the function returns <c>false</c>.
+        /// </summary>
+        /// <param name="exception">Unhandled exception. Cannot be <c>null</c>.</param>
+        /// <returns>Value indicating the exception was handled.</returns>
+        public virtual bool OnUnhandledException(Exception exception)
+        {
+            if (Configuration.Core.UserExceptionHandler != null)
+            {
+                Configuration.Core.UserExceptionHandler.Invoke(this, PhpValue.FromClass(exception));
+
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         #endregion
 
         #region Resources // objects that need dispose

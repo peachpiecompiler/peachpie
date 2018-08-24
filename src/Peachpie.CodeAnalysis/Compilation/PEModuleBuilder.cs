@@ -54,6 +54,8 @@ namespace Pchp.CodeAnalysis.Emit
 
                     // create Context
                     var ctx_loc = il.LocalSlotManager.AllocateSlot(types.Context.Symbol, LocalSlotConstraints.None);
+                    var ex_loc = il.LocalSlotManager.AllocateSlot(types.Exception.Symbol, LocalSlotConstraints.None);
+                    var onUnhandledException_method = types.Context.Symbol.LookupMember<MethodSymbol>("OnUnhandledException");
 
                     if (_compilation.Options.OutputKind == OutputKind.ConsoleApplication)
                     {
@@ -85,7 +87,7 @@ namespace Pchp.CodeAnalysis.Emit
                     il.EmitLocalStore(ctx_loc);
 
                     // Template:
-                    // try { Main(...); } catch (ScriptDiedException) { } finally { ctx.Dispose; }
+                    // try { Main(...); } catch (ScriptDiedException) { } catch (Exception) { ... } finally { ctx.Dispose(); }
 
                     il.OpenLocalScope(ScopeType.TryCatchFinally);   // try { try ... } finally {}
                     il.OpenLocalScope(ScopeType.Try);
@@ -136,14 +138,41 @@ namespace Pchp.CodeAnalysis.Emit
                         il.CloseLocalScope();   // /Try
 
                         il.AdjustStack(1); // Account for exception on the stack.
-                        il.OpenLocalScope(ScopeType.Catch, Compilation.CoreTypes.ScriptDiedException.Symbol);
+                        il.OpenLocalScope(ScopeType.Catch, types.ScriptDiedException.Symbol);
                         {
                             // exitcode = <exception>.ProcessStatus(ctx)
                             il.EmitLocalLoad(ctx_loc);
-                            il.EmitCall(this, diagnostic, ILOpCode.Callvirt, Compilation.CoreTypes.ScriptDiedException.Symbol.LookupMember<MethodSymbol>("ProcessStatus"));
+                            il.EmitCall(this, diagnostic, ILOpCode.Callvirt, types.ScriptDiedException.Symbol.LookupMember<MethodSymbol>("ProcessStatus"));
                             il.EmitLocalStore(exitcode_loc);
                         }
                         il.CloseLocalScope();   // /Catch
+                        if (onUnhandledException_method != null) // only if runtime defines the method (backward compat.)
+                        {
+                            il.OpenLocalScope(ScopeType.Catch, types.Exception.Symbol);
+                            {
+                                // <ex_loc> = <stack>
+                                il.EmitLocalStore(ex_loc);
+
+                                // <ctx_loc>.OnUnhandledException( <ex_loc> ) : bool
+                                il.EmitLocalLoad(ctx_loc);
+                                il.EmitLocalLoad(ex_loc);
+                                il.EmitCall(this, diagnostic, ILOpCode.Callvirt, onUnhandledException_method)
+                                    .Expect(SpecialType.System_Boolean);
+
+                                // if ( !<bool> )
+                                // {
+                                var lbl_end = new object();
+                                il.EmitBranch(ILOpCode.Brtrue, lbl_end);
+
+                                // rethrow <ex_loc>;
+                                il.EmitLocalLoad(ex_loc);
+                                il.EmitThrow(true);
+
+                                // }
+                                il.MarkLabel(lbl_end);
+                            }
+                            il.CloseLocalScope();   // /Catch
+                        }
                         il.CloseLocalScope();   // /TryCatch
                     }
                     il.CloseLocalScope();   // /Try

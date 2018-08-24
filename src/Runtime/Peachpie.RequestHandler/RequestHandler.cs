@@ -37,6 +37,13 @@ namespace Peachpie.RequestHandler
                 // echo eventual status message
                 died.ProcessStatus(phpctx);
             }
+            catch (Exception exception)
+            {
+                if (!phpctx.OnUnhandledException(exception))
+                {
+                    throw;
+                }
+            }
             finally
             {
                 phpctx.Dispose();
