@@ -12,10 +12,12 @@
     <RootNamespace>Pchp.Library</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Resources\abbreviations.txt" />
     <None Remove="Resources\translit.def" />
     <None Remove="Resources\WindowsTZ.xml" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Resources\abbreviations.txt" />
     <EmbeddedResource Include="Resources\translit.def" />
     <EmbeddedResource Include="Resources\WindowsTZ.xml" />
   </ItemGroup>
