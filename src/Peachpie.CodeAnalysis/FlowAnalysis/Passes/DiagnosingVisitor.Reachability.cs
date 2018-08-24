@@ -12,7 +12,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
     internal partial class DiagnosingVisitor
     {
-        private int _visitedColor;
+        int _visitedColor;
+        BoundBlock _currentBlock;
 
         Queue<BoundBlock> _unreachables = new Queue<BoundBlock>();
 
@@ -26,6 +27,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             if (x.Tag != _visitedColor)
             {
                 x.Tag = _visitedColor;
+                _currentBlock = x;
                 base.VisitCFGBlockInternal(x);
             }
         }
