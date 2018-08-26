@@ -41,6 +41,12 @@ namespace Pchp.Core.Reflection
         public bool IsTrait => !IsInterface && _type.IsSealed && _type.GetCustomAttribute<PhpTraitAttribute>(false) != null;
 
         /// <summary>
+        /// Gets value indicating the type was declared within a PHP code.
+        /// </summary>
+        /// <remarks>This is determined based on a presence of <see cref="PhpTypeAttribute"/>.</remarks>
+        public bool IsPhpType => GetPhpTypeAttribute() != null;
+
+        /// <summary>
         /// Gets list of PHP extensions associated with the current type.
         /// </summary>
         public string[] Extensions => _type.GetCustomAttribute<PhpExtensionAttribute>(false)?.Extensions ?? Array.Empty<string>();
@@ -54,7 +60,7 @@ namespace Pchp.Core.Reflection
         /// Gets the relative path to the file where the type is declared.
         /// Gets <c>null</c> if the type is from core, eval etc.
         /// </summary>
-        public string RelativePath => _type.GetCustomAttribute<PhpTypeAttribute>(false)?.FileName;
+        public string RelativePath => GetPhpTypeAttribute()?.FileName;
 
         /// <summary>
         /// CLR type declaration.
@@ -228,17 +234,18 @@ namespace Pchp.Core.Reflection
             Debug.Assert(t != null);
             _type = t;
 
-            var attr = _type.GetCustomAttribute<PhpTypeAttribute>(false);
-            Name = ResolvePhpTypeName(_type, attr);
+            Name = ResolvePhpTypeName(_type, GetPhpTypeAttribute());
 
             // register type in extension tables
             ExtensionsAppContext.ExtensionsTable.AddType(this);
         }
 
         internal PhpTypeInfo(Type t)
-            :this(t.GetTypeInfo())
-        {   
+            : this(t.GetTypeInfo())
+        {
         }
+
+        PhpTypeAttribute GetPhpTypeAttribute() => _type.GetCustomAttribute<PhpTypeAttribute>(false);
 
         /// <summary>
         /// Resolves PHP-like type name.
@@ -268,7 +275,7 @@ namespace Pchp.Core.Reflection
             }
 
             Debug.Assert(ReflectionUtils.IsAllowedPhpName(name));
-            
+
             //
             return name;
         }
