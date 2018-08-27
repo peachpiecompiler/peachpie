@@ -832,6 +832,13 @@ namespace Pchp.Core.Dynamic
 
             // TODO: IDynamicMetaObject
 
+            // field cannot be found:
+            if (access.Isset())
+            {
+                // FALSE
+                return Expression.Constant(false);
+            }
+
             //
             return null;
         }
