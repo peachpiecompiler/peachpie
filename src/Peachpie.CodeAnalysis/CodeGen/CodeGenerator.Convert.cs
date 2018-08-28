@@ -219,10 +219,10 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public TypeSymbol EmitConvertToPhpValue(TypeSymbol from, TypeRefMask fromHint)
         {
-            // Nullable<T> -> HasValue ? T : FALSE
+            // Nullable<T> -> HasValue ? T : NULL
             if (from.IsNullableType())
             {
-                from = EmitNullableCastToFalse(from, false);
+                from = EmitNullableCastToNull(from, false);
             }
 
             // Already PhpValue?
