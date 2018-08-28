@@ -36,7 +36,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Copies a value type from the top of evaluation stack into a temporary variable and loads its address.
         /// </summary>
-        private void EmitStructAddr(TypeSymbol t)
+        internal void EmitStructAddr(TypeSymbol t)
         {
             Debug.Assert(t.IsStructType());
             var tmp = GetTemporaryLocal(t, true);
@@ -219,6 +219,19 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public TypeSymbol EmitConvertToPhpValue(TypeSymbol from, TypeRefMask fromHint)
         {
+            // Nullable<T> -> HasValue ? T : FALSE
+            if (from.IsNullableType())
+            {
+                from = EmitNullableCastToFalse(from, false);
+            }
+
+            // Already PhpValue?
+            if (from == CoreTypes.PhpValue)
+            {
+                return from;
+            }
+
+            // conversion
             return EmitConvertToPhpValue(from, fromHint, _il, _moduleBuilder, _diagnostics);
         }
 
@@ -289,6 +302,12 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.FromClass_Object)
                             .Expect(compilation.CoreTypes.PhpValue);
+                        break;
+                    }
+                    else if (from.IsNullableType())
+                    {
+                        
+
                         break;
                     }
                     else

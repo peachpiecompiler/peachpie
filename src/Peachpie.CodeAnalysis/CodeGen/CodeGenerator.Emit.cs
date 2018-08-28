@@ -1742,7 +1742,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
-        /// Converts <b>Nullable</b>  without a value to <c>FALSE</c>.
+        /// Converts <b>Nullable</b> without a value to <c>FALSE</c>.
         /// </summary>
         /// <param name="stack">Type of Nullable&lt;T&gt; value on stack.</param>
         /// <param name="deepcopy">Whether to deep copy returned non-FALSE value.</param>
@@ -1765,7 +1765,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // Template: tmp.HasValue ??
             _il.EmitLocalAddress(tmp);
-            EmitCall(ILOpCode.Call, (MethodSymbol)stack.GetMembers("get_HasValue")[0])
+            EmitCall(ILOpCode.Call, stack.LookupMember<PropertySymbol>("HasValue").GetMethod)
                 .Expect(SpecialType.System_Boolean);
 
             _il.EmitBranch(ILOpCode.Brtrue, lbltrue);
@@ -1779,7 +1779,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             // Template: (PhpValue)tmp.Value
             _il.MarkLabel(lbltrue);
             _il.EmitLocalAddress(tmp);
-            EmitCall(ILOpCode.Call, (MethodSymbol)stack.GetMembers("GetValueOrDefault")[0])
+            EmitCall(ILOpCode.Call, stack.LookupMember<MethodSymbol>("GetValueOrDefault", m => m.ParameterCount == 0))
                 .Expect(t);
 
             if (deepcopy)
