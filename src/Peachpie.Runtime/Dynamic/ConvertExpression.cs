@@ -146,11 +146,12 @@ namespace Pchp.Core.Dynamic
                     // (bool)arg // implicit bool operator
                     hasValueCheck = Expression.Convert(arg, typeof(bool));
                 }
-                else if (!arg.Type.IsValueType)
-                {
-                    // !NULL
-                    hasValueCheck = Expression.ReferenceNotEqual(arg, Expression.Constant(null, arg.Type));
-                }
+            }
+
+            if (!arg.Type.IsValueType)
+            {
+                // !NULL
+                hasValueCheck = Expression.ReferenceNotEqual(arg, Expression.Constant(null, arg.Type));
             }
 
             // new Nullable<T>( Bind(arg, T) )
