@@ -40,6 +40,14 @@ namespace Pchp.Library.Spl
         }
 
         /// <summary>
+        /// Return the integer object handle for given object.
+        /// </summary>
+        public static int spl_object_id(object obj)
+        {
+            return (obj ?? throw new ArgumentNullException(nameof(obj))).GetHashCode();
+        }
+
+        /// <summary>
         /// This function returns an array with the current available SPL classes.
         /// </summary>
         public static PhpArray spl_classes()
