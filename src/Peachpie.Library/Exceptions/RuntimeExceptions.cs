@@ -36,4 +36,64 @@ namespace Pchp.Library.Spl
             __construct(message, code, previous);
         }
     }
+
+    /// <summary>
+    /// Exception thrown if a value is not a valid key. This represents errors that cannot be detected at compile time.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class OutOfBoundsException : RuntimeException
+    {
+        [PhpFieldsOnlyCtor]
+        protected OutOfBoundsException() { }
+
+        public OutOfBoundsException(string message = "", long code = 0, Throwable previous = null)
+            : base(message, code, previous)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Exception thrown when adding an element to a full container.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class OverflowException : RuntimeException
+    {
+        [PhpFieldsOnlyCtor]
+        protected OverflowException() { }
+
+        public OverflowException(string message = "", long code = 0, Throwable previous = null)
+            : base(message, code, previous)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Exception thrown when performing an invalid operation on an empty container, such as removing an element.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class UnderflowException : RuntimeException
+    {
+        [PhpFieldsOnlyCtor]
+        protected UnderflowException() { }
+
+        public UnderflowException(string message = "", long code = 0, Throwable previous = null)
+            : base(message, code, previous)
+        {
+        }
+    }
+
+    /// <summary>
+    /// Exception thrown to indicate range errors during program execution.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class RangeException : RuntimeException
+    {
+        [PhpFieldsOnlyCtor]
+        protected RangeException() { }
+
+        public RangeException(string message = "", long code = 0, Throwable previous = null)
+            : base(message, code, previous)
+        {
+        }
+    }
 }
