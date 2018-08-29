@@ -457,6 +457,28 @@ namespace Pchp.Core.Reflection
                 yield return phptype;
             }
         }
+
+        /// <summary>
+        /// Gets a collection of the trait types implemented by the current type.
+        /// </summary>
+        public static IEnumerable<PhpTypeInfo> GetImplementedTraits(this PhpTypeInfo phptype)
+        {
+            if (ReferenceEquals(phptype, null))
+            {
+                throw new ArgumentNullException(nameof(phptype));
+            }
+
+            foreach (var f in phptype.Type.DeclaredFields)
+            {
+                // traits instance is stored in a fields:
+                // private readonly TraitType<phptype> <>trait_TraitType;
+
+                if (f.IsPrivate && f.IsInitOnly && f.Name.StartsWith("<>trait_") && f.FieldType.IsConstructedGenericType)
+                {
+                    yield return GetPhpTypeInfo(f.FieldType.GetGenericTypeDefinition());
+                }
+            }
+        }
     }
 
     /// <summary>

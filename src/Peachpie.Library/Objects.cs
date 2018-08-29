@@ -508,14 +508,10 @@ namespace Pchp.Library
             if (tinfo != null)
             {
                 result = new PhpArray();
-                //foreach (var trait in tinfo.Type.ImplementedTraits)
-                //{
-                //    if (!trait.IsHiddenType())
-                //    {
-                //        result.Add(trait.Name, trait.Name);
-                //    }
-                //}
-                throw new NotImplementedException();
+                foreach (var trait in tinfo.GetImplementedTraits())
+                {
+                    result.Add(trait.Name, trait.Name);
+                }
             }
 
             return result;
