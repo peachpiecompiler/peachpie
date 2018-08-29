@@ -1636,12 +1636,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                 if (method.CastToFalse)
                 {
                     // casts to false and copy the value
+                    //if (stack.IsNullableType())
+                    //{
+                    //    // unpack Nullable<T>
+                    //    stack = EmitNullableCastToFalse(stack, access.IsReadValueCopy);
+                    //} else
+
                     stack = EmitCastToFalse(stack, access.IsReadValueCopy);
-                }
-                else if (stack.IsNullableType())
-                {
-                    // unpack Nullable<T>
-                    stack = EmitNullableCastToFalse(stack, access.IsReadValueCopy);
                 }
             }
             else if (access.IsReadValueCopy)
@@ -1742,18 +1743,18 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
-        /// Converts <b>Nullable</b>  without a value to <c>FALSE</c>.
+        /// Converts <b>Nullable</b> without a value to <c>NULL</c>.
         /// </summary>
         /// <param name="stack">Type of Nullable&lt;T&gt; value on stack.</param>
         /// <param name="deepcopy">Whether to deep copy returned non-FALSE value.</param>
         /// <returns>New type of value on stack.</returns>
-        internal TypeSymbol EmitNullableCastToFalse(TypeSymbol stack, bool deepcopy)
+        internal TypeSymbol EmitNullableCastToNull(TypeSymbol stack, bool deepcopy)
         {
             Debug.Assert(stack.IsNullableType());
 
             // Template:
             // tmp = stack;
-            // tmp.HasValue ? tmp.Value : FALSE
+            // tmp.HasValue ? tmp.Value : NULL
 
             var t = ((NamedTypeSymbol)stack).TypeArguments[0];
 
@@ -1765,21 +1766,20 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // Template: tmp.HasValue ??
             _il.EmitLocalAddress(tmp);
-            EmitCall(ILOpCode.Call, (MethodSymbol)stack.GetMembers("get_HasValue")[0])
+            EmitCall(ILOpCode.Call, stack.LookupMember<PropertySymbol>("HasValue").GetMethod)
                 .Expect(SpecialType.System_Boolean);
 
             _il.EmitBranch(ILOpCode.Brtrue, lbltrue);
 
-            // Template: PhpValue.False
-            _il.EmitBoolConstant(false);
-            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Boolean);
+            // Template: PhpValue.Null
+            Emit_PhpValue_Null();
 
             _il.EmitBranch(ILOpCode.Br, lblend);
 
             // Template: (PhpValue)tmp.Value
             _il.MarkLabel(lbltrue);
             _il.EmitLocalAddress(tmp);
-            EmitCall(ILOpCode.Call, (MethodSymbol)stack.GetMembers("GetValueOrDefault")[0])
+            EmitCall(ILOpCode.Call, stack.LookupMember<MethodSymbol>("GetValueOrDefault", m => m.ParameterCount == 0))
                 .Expect(t);
 
             if (deepcopy)

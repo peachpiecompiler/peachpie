@@ -58,18 +58,40 @@ namespace Pchp.Library
             /// <summary>
             /// Stores user error handlers which has been rewritten by a new one.
             /// </summary>
-            public Stack<ErrorHandlerRecord> OldUserErrorHandlers = null;
+            Stack<ErrorHandlerRecord> _oldUserErrorHandlers = null;
 
             /// <summary>
             /// Stores user exception handlers which has been rewritten by a new one.
             /// </summary>
-            public Stack<ErrorHandlerRecord> OldUserExceptionHandlers = null;
+            Stack<ErrorHandlerRecord> _oldUserExceptionHandlers = null;
+
+            public void StoreExceptionHandler(ErrorHandlerRecord record)
+            {
+                if (_oldUserExceptionHandlers == null)
+                {
+                    _oldUserExceptionHandlers = new Stack<ErrorHandlerRecord>();
+                }
+
+                _oldUserExceptionHandlers.Push(record);
+            }
+
+            public ErrorHandlerRecord RestoreExceptionHandler()
+            {
+                if (_oldUserExceptionHandlers != null && _oldUserExceptionHandlers.Count != 0)
+                {
+                    return _oldUserExceptionHandlers.Pop();
+                }
+                else
+                {
+                    return null;
+                }
+            }
 
             /// <summary>
             /// Errors to be reported to user.
             /// Ignored when <see cref="Context.ErrorReportingDisabled"/> is <c>true</c>.
             /// </summary>
-            public PhpError ReportErrors = (PhpError)PhpErrorSets.All;
+            public PhpError ReportErrors { get; set; } = (PhpError)PhpErrorSets.All;
         }
 
         static ErrorContext GetErrorContext(Context ctx) => ctx.GetStatic<ErrorContext>();
@@ -115,7 +137,7 @@ namespace Pchp.Library
         /// Internal record in the error handler stack.
         /// </summary>
         [DebuggerDisplay("{ErrorHandler,nq}, {ErrorTypes}")]
-        class ErrorHandlerRecord
+        sealed class ErrorHandlerRecord
         {
             /// <summary>
             /// Error handler callback.
@@ -224,41 +246,37 @@ namespace Pchp.Library
         public static PhpValue set_exception_handler(Context ctx, IPhpCallable newHandler)
         {
             if (newHandler == null) return PhpValue.Null;
-            if (newHandler is PhpCallback && !((PhpCallback)newHandler).IsValid) return PhpValue.Null;
+            if (newHandler is PhpCallback callback && !callback.IsValid) return PhpValue.Null;
 
-            var errctx = GetErrorContext(ctx);
+            var config = ctx.Configuration.Core;
 
-            //PhpCallback old_handler = Configuration.Local.ErrorControl.UserExceptionHandler;
+            var old_handler = config.UserExceptionHandler;
+            config.UserExceptionHandler = newHandler;
 
-            //// previous handler was defined by user => store it into the stack:
-            //if (old_handler != null)
-            //{
-            //    if (OldUserExceptionHandlers == null)
-            //    {
-            //        OldUserExceptionHandlers = new Stack(5);
-            //        RequestContext.RequestEnd += new Action(ClearOldUserHandlers);
-            //    }
-            //    OldUserExceptionHandlers.Push(old_handler);
-            //}
+            // previous handler was defined by user => store it into the stack:
+            if (old_handler != null)
+            {
+                GetErrorContext(ctx).StoreExceptionHandler(new ErrorHandlerRecord(old_handler, (PhpError)PhpErrorSets.All));
 
-            //// sets the current handler:
-            //Configuration.Local.ErrorControl.UserExceptionHandler = newHandler;
-
-            //// returns the previous handler:
-            //return (old_handler != null) ? old_handler.ToPhpRepresentation() : null;
-            return PhpValue.Null;
+                // returns the previous handler:
+                return old_handler.ToPhpValue();
+            }
+            else
+            {
+                return PhpValue.Null;
+            }
         }
 
         /// <summary>
         /// Restores the previous user error handler if there was any.
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
+        /// <returns>This function always returns <c>TRUE</c>.</returns>
         public static bool restore_exception_handler(Context ctx)
         {
-            //if (OldUserExceptionHandlers != null && OldUserExceptionHandlers.Count > 0)
-            //    Configuration.Local.ErrorControl.UserExceptionHandler = (PhpCallback)OldUserExceptionHandlers.Pop();
-            //else
-            //    Configuration.Local.ErrorControl.UserExceptionHandler = null;
+            ctx.Configuration.Core.UserExceptionHandler = GetErrorContext(ctx)
+                .RestoreExceptionHandler()?
+                .ErrorHandler;
 
             return true;
         }

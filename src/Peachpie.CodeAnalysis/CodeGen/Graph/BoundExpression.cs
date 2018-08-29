@@ -4548,8 +4548,16 @@ namespace Pchp.CodeAnalysis.Semantics
                 cg.Builder.EmitNullConstant(); // .ldnull
                 cg.Builder.EmitOpCode(ILOpCode.Cgt_un); // .cgt.un
             }
+            else if (t.IsNullableType())
+            {
+                // Teplate: value.HasValue
+                cg.EmitStructAddr(t); // value -> ref value
+                cg.EmitCall(ILOpCode.Call, t.LookupMember<PropertySymbol>("HasValue").GetMethod)
+                    .Expect(SpecialType.System_Boolean);
+            }
             else
             {
+                // clean this up ...
                 // OPTIMIZATION: emitting VarReference sometimes checks for 'isset' already!
                 if (t.SpecialType == SpecialType.System_Boolean)
                 {

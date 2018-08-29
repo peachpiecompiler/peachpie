@@ -509,7 +509,34 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindConcatEx(AST.ConcatEx x) => BindConcatEx(x.Expressions);
 
-        protected BoundExpression BindConcatEx(AST.Expression[] args) => BindConcatEx(new List<BoundArgument>(BindArguments(args)));
+        protected BoundExpression BindConcatEx(AST.Expression[] args)
+        {
+            // Flatten and bind concat arguments using a stack (its bottom is the last argument)
+            var boundArgs = new List<BoundArgument>();
+            var exprStack = new Stack<AST.Expression>();
+
+            args.Reverse().ForEach(exprStack.Push);
+
+            while (exprStack.Count > 0)
+            {
+                var arg = exprStack.Pop();
+                if (arg is AST.ConcatEx concat)
+                {
+                    concat.Expressions.Reverse().ForEach(exprStack.Push);
+                }
+                else if (arg is AST.BinaryEx binEx && binEx.Operation == AST.Operations.Concat)
+                {
+                    exprStack.Push(binEx.RightExpr);
+                    exprStack.Push(binEx.LeftExpr);
+                }
+                else
+                {
+                    boundArgs.Add(BindArgument(arg));
+                }
+            }
+
+            return BindConcatEx(boundArgs);
+        }
 
         protected BoundExpression BindConcatEx(List<BoundArgument> boundargs)
         {

@@ -225,6 +225,13 @@ namespace Peachpie.AspNetCore.Web
             {
                 died.ProcessStatus(this);
             }
+            catch (Exception exception)
+            {
+                if (!OnUnhandledException(exception))
+                {
+                    throw;
+                }
+            }
         }
 
         void RequestTimeout(object state)

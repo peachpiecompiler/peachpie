@@ -215,6 +215,12 @@ namespace Pchp.Core
         public string docref_root = ""; // empty string by default
         public string docref_ext = "";  // empty string by default
 
+        /// <summary>
+        /// An exception handler for not handled program exceptions.
+        /// Can be <c>null</c> to not handle exceptions.
+        /// </summary>
+        public IPhpCallable UserExceptionHandler { get; set; } = null;
+
         #endregion
     }
 

@@ -242,11 +242,33 @@ namespace Pchp.Library.Reflection
         public PhpValue getStaticPropertyValue(string name) { throw new NotImplementedException(); }
         public PhpValue getStaticPropertyValue(string name, PhpAlias def_value) { throw new NotImplementedException(); }
         public PhpArray getTraitAliases() { throw new NotImplementedException(); }
-        public PhpArray getTraitNames() { throw new NotImplementedException(); }
+        public PhpArray getTraitNames()
+        {
+            var result = new PhpArray();
+
+            // get traits (in current class only, not the parent)
+            // { trait_name }
+
+            foreach (var t in _tinfo.GetImplementedTraits())
+            {
+                result.Add(t.Name);
+            }
+
+            return result;
+        }
         public PhpArray getTraits()
         {
-            // TODO: Retrieve from PhpTypeInfo when traits are supported
-            return PhpArray.NewEmpty();
+            var result = new PhpArray();
+
+            // get traits (in current class only, not the parent)
+            // { [trait_name] => ReflectionClass(trait) }
+
+            foreach (var t in _tinfo.GetImplementedTraits())
+            {
+                result.Add(t.Name, PhpValue.FromClass(new ReflectionClass(t)));
+            }
+
+            return result;
         }
         public bool hasConstant(string name) { throw new NotImplementedException(); }
         public bool hasMethod(string name) => _tinfo.RuntimeMethods[name] != null;

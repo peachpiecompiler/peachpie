@@ -64,4 +64,19 @@ namespace Pchp.Library.Spl
             __construct(message, code, previous);
         }
     }
+
+    /// <summary>
+    /// Exception thrown when an illegal index was requested. This represents errors that should be detected at compile time.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class OutOfRangeException : LogicException
+    {
+        [PhpFieldsOnlyCtor]
+        protected OutOfRangeException() { }
+
+        public OutOfRangeException(string message = "", long code = 0, Throwable previous = null)
+            : base(message, code, previous)
+        {
+        }
+    }
 }

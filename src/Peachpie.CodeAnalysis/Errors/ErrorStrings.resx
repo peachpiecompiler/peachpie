@@ -133,7 +133,7 @@
     <value>Call to a member function {0}() on {1}</value>
   </data>
   <data name="ERR_NotYetImplemented" xml:space="preserve">
-    <value>{0} is currently not supported by Peachpie.</value>
+    <value>{0} is currently not supported by PeachPie.</value>
   </data>
   <data name="ERR_PositionalArgAfterUnpacking" xml:space="preserve">
     <value>Cannot use positional argument after argument unpacking</value>

@@ -328,7 +328,7 @@ namespace Pchp.Core
 
         public static PhpCallback Create(PhpCallable callable) => new CallableCallback(callable);
 
-        public static PhpCallback Create(string function, RuntimeTypeHandle callerCtx)
+        public static PhpCallback Create(string function, RuntimeTypeHandle callerCtx = default(RuntimeTypeHandle))
         {
             if (function != null)
             {
@@ -341,9 +341,9 @@ namespace Pchp.Core
             return CreateInvalid();
         }
 
-        public static PhpCallback Create(PhpValue item1, PhpValue item2, RuntimeTypeHandle callerCtx) => new ArrayCallback(item1.GetValue(), item2.GetValue(), callerCtx);  // creates callback to an array, array entries must be dereferenced so they cannot be changed gainst
+        public static PhpCallback Create(PhpValue item1, PhpValue item2, RuntimeTypeHandle callerCtx = default(RuntimeTypeHandle)) => new ArrayCallback(item1.GetValue(), item2.GetValue(), callerCtx);  // creates callback to an array, array entries must be dereferenced so they cannot be changed gainst
 
-        public static PhpCallback Create(object targetInstance, string methodName, RuntimeTypeHandle callerCtx) => new ArrayCallback(PhpValue.FromClass(targetInstance), (PhpValue)methodName, callerCtx);
+        public static PhpCallback Create(object targetInstance, string methodName, RuntimeTypeHandle callerCtx = default(RuntimeTypeHandle)) => new ArrayCallback(PhpValue.FromClass(targetInstance), (PhpValue)methodName, callerCtx);
 
         public static PhpCallback CreateInvalid() => new InvalidCallback();
 
@@ -410,17 +410,17 @@ namespace Pchp.Core
         #endregion
     }
 
-    public static class PhpCallableExtension
+    internal static class PhpCallableExtension
     {
         /// <summary>
         /// Binds <see cref="PhpInvokable"/> to <see cref="PhpCallable"/> by fixing the target argument.
         /// </summary>
-        internal static PhpCallable Bind(this PhpInvokable invokable, object target) => (ctx, arguments) => invokable(ctx, target, arguments);
+        public static PhpCallable Bind(this PhpInvokable invokable, object target) => (ctx, arguments) => invokable(ctx, target, arguments);
 
         /// <summary>
         /// Binds <see cref="PhpInvokable"/> to <see cref="PhpCallable"/> while wrapping arguments to a single argument of type <see cref="PhpArray"/>.
         /// </summary>
-        internal static PhpCallable BindMagicCall(this PhpInvokable invokable, object target, string name)
+        public static PhpCallable BindMagicCall(this PhpInvokable invokable, object target, string name)
             => (ctx, arguments) => invokable(ctx, target, new[] { (PhpValue)name, (PhpValue)PhpArray.New(arguments) });
     }
 }

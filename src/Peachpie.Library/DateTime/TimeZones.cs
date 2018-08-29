@@ -58,16 +58,16 @@ namespace Pchp.Library.DateTime
             public readonly TimeZoneInfo Info;
 
             /// <summary>
-            /// An abbrevation, not supported.
+            /// Abbrevation. If more than one, separated with comma.
             /// </summary>
-            public readonly string Abbrevation;
+            public readonly string Abbreviation;
 
             /// <summary>
             /// Not listed item used only as an alias for another time zone.
             /// </summary>
             public readonly bool IsAlias;
 
-            internal TimeZoneInfoItem(string/*!*/phpName, TimeZoneInfo/*!*/info, string abbrevation, bool isAlias)
+            internal TimeZoneInfoItem(string/*!*/phpName, TimeZoneInfo/*!*/info, string abbreviation, bool isAlias)
             {
                 // TODO: alter the ID with php-like name
                 //if (!phpName.Equals(info.Id, StringComparison.OrdinalIgnoreCase))
@@ -78,7 +78,7 @@ namespace Pchp.Library.DateTime
                 //
                 this.PhpName = phpName;
                 this.Info = info;
-                this.Abbrevation = abbrevation;
+                this.Abbreviation = abbreviation;
                 this.IsAlias = isAlias;
             }
         }
@@ -105,14 +105,14 @@ namespace Pchp.Library.DateTime
             var sortedTZ = new SortedSet<TimeZoneInfoItem>(InitialTimeZones(), new TimeZoneInfoItem.Comparer());
 
             // add additional time zones:
-            sortedTZ.Add(new TimeZoneInfoItem("UTC", TimeZoneInfo.Utc, null, false));
-            sortedTZ.Add(new TimeZoneInfoItem("Etc/UTC", TimeZoneInfo.Utc, null, true));
-            sortedTZ.Add(new TimeZoneInfoItem("Etc/GMT-0", TimeZoneInfo.Utc, null, true));
-            sortedTZ.Add(new TimeZoneInfoItem("GMT", TimeZoneInfo.Utc, null, true));
-            sortedTZ.Add(new TimeZoneInfoItem("GMT0", TimeZoneInfo.Utc, null, true));
-            sortedTZ.Add(new TimeZoneInfoItem("UCT", TimeZoneInfo.Utc, null, true));
-            sortedTZ.Add(new TimeZoneInfoItem("Universal", TimeZoneInfo.Utc, null, true));
-            sortedTZ.Add(new TimeZoneInfoItem("Zulu", TimeZoneInfo.Utc, null, true));
+            sortedTZ.Add(new TimeZoneInfoItem("UTC", TimeZoneInfo.Utc, "utc", false));
+            sortedTZ.Add(new TimeZoneInfoItem("Etc/UTC", TimeZoneInfo.Utc, "utc", true));
+            sortedTZ.Add(new TimeZoneInfoItem("Etc/GMT-0", TimeZoneInfo.Utc, "gmt", true));
+            sortedTZ.Add(new TimeZoneInfoItem("GMT", TimeZoneInfo.Utc, "gmt", true));
+            sortedTZ.Add(new TimeZoneInfoItem("GMT0", TimeZoneInfo.Utc, "gmt", true));
+            sortedTZ.Add(new TimeZoneInfoItem("UCT", TimeZoneInfo.Utc, "utc", true));
+            sortedTZ.Add(new TimeZoneInfoItem("Universal", TimeZoneInfo.Utc, "utc", true));
+            sortedTZ.Add(new TimeZoneInfoItem("Zulu", TimeZoneInfo.Utc, "utc", true));
             //sortedTZ.Add(new TimeZoneInfoItem("MET", sortedTZ.First(t => t.PhpName == "Europe/Rome").Info, null, true));
             //sortedTZ.Add(new TimeZoneInfoItem("WET", sortedTZ.First(t => t.PhpName == "Europe/Berlin").Info, null, true));     
             //{ "PRC"              
@@ -160,6 +160,38 @@ namespace Pchp.Library.DateTime
                 return tz;
             };
 
+            // read abbreviations
+            var abbrs = new Dictionary<string, string>(512); // timezone_id => abbrs
+            using (var abbrsstream = new System.IO.StreamReader(typeof(PhpTimeZone).Assembly.GetManifestResourceStream("Pchp.Library.Resources.abbreviations.txt")))
+            {
+                string line;
+                while ((line = abbrsstream.ReadLine()) != null)
+                {
+                    if (string.IsNullOrEmpty(line) || line[0] == '#') continue;
+                    var idx = line.IndexOf(' ');
+                    if (idx > 0)
+                    {
+                        // abbrevation[space]timezone_id
+                        var abbr = line.Remove(idx); // abbrevation
+                        var tz = line.Substring(idx + 1); // timezone_id
+                        if (abbrs.TryGetValue(tz, out var oldabbr))
+                        {
+                            // more abbrs for a single tz
+                            if (oldabbr.IndexOf(abbr) >= 0) continue; // the list contains duplicities ..
+                            abbr = oldabbr + "," + abbr;
+                        }
+
+                        abbrs[tz] = abbr;
+                    }
+                }
+            }
+
+            string getabbr(string tz_id)
+            {
+                abbrs.TryGetValue(tz_id, out var result);
+                return result;
+            }
+
             // system timezones:
             var tzns = TimeZoneInfo.GetSystemTimeZones();
             if (tzns != null)
@@ -167,7 +199,7 @@ namespace Pchp.Library.DateTime
                 foreach (var x in tzns)
                 {
                     tzcache[x.Id] = x;
-                    yield return new TimeZoneInfoItem(x.Id, x, null, IsAlias(x.Id));
+                    yield return new TimeZoneInfoItem(x.Id, x, getabbr(x.Id), IsAlias(x.Id));
                 }
             }
 
@@ -196,7 +228,7 @@ namespace Pchp.Library.DateTime
                                             if (!tzcache.ContainsKey(phpTzName))
                                             {
                                                 tzcache[phpTzName] = windowsTZ; //  write back to cache
-                                                yield return new TimeZoneInfoItem(phpTzName, windowsTZ, null, IsAlias(phpTzName));
+                                                yield return new TimeZoneInfoItem(phpTzName, windowsTZ, getabbr(phpTzName), IsAlias(phpTzName));
                                             }
                                         }
                                     }
@@ -542,7 +574,7 @@ namespace Pchp.Library.DateTime
             //        return reg.GetValue("TzVersion", 0).ToString() + ".system";
             //}
             //catch { }
-            
+
 
             // no windows update installed
             return "0.system";
@@ -554,7 +586,35 @@ namespace Pchp.Library.DateTime
         /// </summary>
         public static PhpArray timezone_abbreviations_list()
         {
-            throw new NotImplementedException();
+            var timezones = PhpTimeZone.timezones;
+            var result = new PhpArray();
+
+            //
+            for (int i = 0; i < timezones.Length; i++)
+            {
+                var tz = timezones[i];
+                var abbrs = tz.Abbreviation;
+                if (abbrs != null)
+                {
+                    foreach (var abbr in abbrs.Split(new[] { ',' }))
+                    {
+                        if (!result.TryGetValue(abbr, out var tzs))
+                            tzs = new PhpArray();
+
+                        tzs.Array.Add(new PhpArray(3)
+                    {
+                        {"dst", tz.Info.SupportsDaylightSavingTime },
+                        {"offset", (long)tz.Info.BaseUtcOffset.TotalSeconds },
+                        {"timezone_id", tz.PhpName },
+                    });
+
+                        result[abbr] = tzs;
+                    }
+                }
+            }
+
+            //
+            return result;
         }
 
         #endregion
