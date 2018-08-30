@@ -59,13 +59,12 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                var locals = _locals;
-                if (locals == null)
+                if (_locals == null)
                 {
-                    _locals = locals = new LocalsTable(this);
+                    Interlocked.CompareExchange(ref _locals, new LocalsTable(this), null);
                 }
 
-                return locals;
+                return _locals;
             }
         }
 
@@ -194,7 +193,8 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (_srcParams == null)
                 {
-                    _srcParams = BuildSrcParams(this.SyntaxSignature, this.PHPDocBlock).ToArray();
+                    var srcParams = BuildSrcParams(this.SyntaxSignature, this.PHPDocBlock).ToArray();
+                    Interlocked.CompareExchange(ref _srcParams, srcParams, null);
                 }
 
                 return _srcParams;
@@ -242,12 +242,13 @@ namespace Pchp.CodeAnalysis.Symbols
                         }
 
                         // create implicit [... params]
-                        _implicitVarArg = new SynthesizedParameterSymbol( // IsImplicitlyDeclared, IsParams
+                        var implicitVarArg = new SynthesizedParameterSymbol( // IsImplicitlyDeclared, IsParams
                             this,
                             ArrayTypeSymbol.CreateSZArray(this.ContainingAssembly, this.DeclaringCompilation.CoreTypes.PhpValue),
                             0,
                             RefKind.None,
                             SpecialParameterSymbol.ParamsName, isParams: true);
+                        Interlocked.CompareExchange(ref _implicitVarArg, implicitVarArg, null);
                     }
                 }
 

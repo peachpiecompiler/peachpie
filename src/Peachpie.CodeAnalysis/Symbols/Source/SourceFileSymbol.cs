@@ -8,6 +8,7 @@ using Pchp.CodeAnalysis.Utilities;
 using Devsense.PHP.Syntax.Ast;
 using static Pchp.CodeAnalysis.AstUtils;
 using Devsense.PHP.Syntax;
+using System.Threading;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -181,10 +182,11 @@ namespace Pchp.CodeAnalysis.Symbols
             // [ScriptAttribute(RelativeFilePath)]  // TODO: LastWriteTime
             if (_lazyScriptAttribute == null)
             {
-                _lazyScriptAttribute = new SynthesizedAttributeData(
+                var lazyScriptAttribute = new SynthesizedAttributeData(
                     DeclaringCompilation.CoreMethods.Ctors.ScriptAttribute_string,
                     ImmutableArray.Create(new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, this.RelativeFilePath)),
                     ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                Interlocked.CompareExchange(ref _lazyScriptAttribute, lazyScriptAttribute, null);
             }
 
             //

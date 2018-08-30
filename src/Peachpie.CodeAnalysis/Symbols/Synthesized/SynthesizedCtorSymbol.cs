@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using System.Diagnostics;
 using Devsense.PHP.Syntax;
+using System.Threading;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -283,10 +284,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 // [PhpFieldsOnlyCtorAttribute]
                 if (_lazyPhpFieldsOnlyCtorAttribute == null)
                 {
-                    _lazyPhpFieldsOnlyCtorAttribute = new SynthesizedAttributeData(
+                    var lazyPhpFieldsOnlyCtorAttribute = new SynthesizedAttributeData(
                         DeclaringCompilation.CoreMethods.Ctors.PhpFieldsOnlyCtorAttribute,
                         ImmutableArray<TypedConstant>.Empty,
                         ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                    Interlocked.CompareExchange(ref _lazyPhpFieldsOnlyCtorAttribute, lazyPhpFieldsOnlyCtorAttribute, null);
                 }
 
                 attrs = attrs.Add(_lazyPhpFieldsOnlyCtorAttribute);

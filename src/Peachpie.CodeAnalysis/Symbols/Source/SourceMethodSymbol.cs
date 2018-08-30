@@ -11,6 +11,7 @@ using Pchp.CodeAnalysis.FlowAnalysis;
 using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Syntax;
 using Microsoft.Cci;
+using System.Threading;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -45,7 +46,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (_lazyOverridenMethod == null)
                 {
-                    _lazyOverridenMethod = this.ResolveOverride();
+                    Interlocked.CompareExchange(ref _lazyOverridenMethod, this.ResolveOverride(), null);
                 }
 
                 return _lazyOverridenMethod;

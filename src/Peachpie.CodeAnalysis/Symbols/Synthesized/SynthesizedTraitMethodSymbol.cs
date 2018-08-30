@@ -37,7 +37,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         ps.Add(SynthesizedParameterSymbol.Create(this, p));
                     }
 
-                    _parameters = ps.AsImmutableOrEmpty();
+                    ImmutableInterlocked.InterlockedInitialize(ref _parameters, ps.AsImmutableOrEmpty());
                 }
 
                 //
