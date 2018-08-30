@@ -94,7 +94,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal abstract SourceFileSymbol ContainingFile { get; }
 
-        protected List<ParameterSymbol> _implicitParameters;
+        protected ImmutableArray<ParameterSymbol> _implicitParameters;
         private SourceParameterSymbol[] _srcParams;
 
         /// <summary>Implicitly declared [params] parameter if the routine allows access to its arguments. This allows more arguments to be passed than declared.</summary>
@@ -167,19 +167,22 @@ namespace Pchp.CodeAnalysis.Symbols
             return BuildSrcParams(signature.FormalParams, phpdocOpt);
         }
 
-        internal virtual List<ParameterSymbol> ImplicitParameters
+        internal virtual ImmutableArray<ParameterSymbol> ImplicitParameters
         {
             get
             {
-                if (_implicitParameters == null)
+                if (_implicitParameters.IsDefault)
                 {
-                    _implicitParameters = BuildImplicitParams().ToList();
+                    ImmutableInterlocked.InterlockedInitialize(ref _implicitParameters, BuildImplicitParams().ToImmutableArray());
                 }
 
-                if (RequiresLateStaticBoundParam && !_implicitParameters.Any(SpecialParameterSymbol.IsLateStaticParameter))
+                var currentImplicitParameters = _implicitParameters;
+                if (RequiresLateStaticBoundParam && !currentImplicitParameters.Any(SpecialParameterSymbol.IsLateStaticParameter))
                 {
                     // PhpTypeInfo <static>
-                    _implicitParameters.Add(new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpTypeInfo, SpecialParameterSymbol.StaticTypeName, _implicitParameters.Count));
+                    var implicitParameters = currentImplicitParameters.Add(
+                        new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.PhpTypeInfo, SpecialParameterSymbol.StaticTypeName, currentImplicitParameters.Length));
+                    ImmutableInterlocked.InterlockedCompareExchange(ref _implicitParameters, implicitParameters, currentImplicitParameters);
                 }
 
                 //
@@ -255,7 +258,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (_implicitVarArg != null)
                 {
                     // implicit params replaces all the optional arguments!!
-                    int mandatory = ImplicitParameters.Count + this.SourceParameters.TakeWhile(p => p.Initializer == null).Count();
+                    int mandatory = ImplicitParameters.Length + this.SourceParameters.TakeWhile(p => p.Initializer == null).Count();
                     _implicitVarArg.UpdateOrdinal(mandatory);
                 }
 
@@ -301,7 +304,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 var srcparams = SourceParameters;
                 var implicitVarArgs = VarargsParam;
 
-                var result = new List<ParameterSymbol>(ImplicitParameters.Count + srcparams.Length);
+                var result = new List<ParameterSymbol>(ImplicitParameters.Length + srcparams.Length);
 
                 result.AddRange(ImplicitParameters);
 
@@ -337,7 +340,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
                 else
                 {
-                    return ImplicitParameters.Count + SourceParameters.Length;
+                    return ImplicitParameters.Length + SourceParameters.Length;
                 }
             }
         }

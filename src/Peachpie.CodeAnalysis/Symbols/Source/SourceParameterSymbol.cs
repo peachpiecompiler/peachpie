@@ -191,7 +191,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsParams => _syntax.IsVariadic;
 
-        public override int Ordinal => _relindex + _routine.ImplicitParameters.Count;
+        public override int Ordinal => _relindex + _routine.ImplicitParameters.Length;
 
         public override ImmutableArray<Location> Locations
         {

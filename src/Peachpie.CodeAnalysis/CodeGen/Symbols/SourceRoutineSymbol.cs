@@ -21,7 +21,7 @@ namespace Pchp.CodeAnalysis.Symbols
         internal virtual IPlace GetContextPlace(PEModuleBuilder module)
         {
             var ps = ImplicitParameters;
-            if (ps.Count != 0 && SpecialParameterSymbol.IsContextParameter(ps[0]))
+            if (ps.Length != 0 && SpecialParameterSymbol.IsContextParameter(ps[0]))
             {
                 return new ParamPlace(ps[0]);  // <ctx>
             }
