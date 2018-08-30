@@ -217,7 +217,7 @@ namespace Pchp.CodeAnalysis
             Debug.Assert(_moduleBuilder != null);
 
             // source routines
-            this.WalkMethods(this.EmitMethodBody, allowParallel: false); // TODO: in parallel
+            this.WalkMethods(this.EmitMethodBody, allowParallel: true);
         }
 
         internal void EmitSynthesized()
