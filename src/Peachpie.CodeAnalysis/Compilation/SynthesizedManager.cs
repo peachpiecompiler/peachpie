@@ -35,6 +35,15 @@ namespace Pchp.CodeAnalysis.Emit
             return _membersByType.GetOrAdd(type, (_) => new List<Symbol>());
         }
 
+        void AddMember(TypeSymbol type, Symbol member)
+        {
+            var members = EnsureList(type);
+            lock (members)
+            {
+                members.Add(member);
+            }
+        }
+
         /// <summary>
         /// Gets or initializes static constructor symbol.
         /// </summary>
@@ -113,7 +122,7 @@ namespace Pchp.CodeAnalysis.Emit
             Debug.Assert(nestedType.IsImplicitlyDeclared);
             Debug.Assert(container.ContainingType == null); // can't nest in nested type
 
-            EnsureList(container).Add(nestedType);
+            AddMember(container, nestedType);
         }
 
         /// <summary>
@@ -124,7 +133,7 @@ namespace Pchp.CodeAnalysis.Emit
             Contract.ThrowIfNull(method);
             Debug.Assert(method.IsImplicitlyDeclared);
 
-            EnsureList(container).Add(method);
+            AddMember(container, method);
         }
 
         /// <summary>
@@ -134,12 +143,16 @@ namespace Pchp.CodeAnalysis.Emit
         {
             Contract.ThrowIfNull(property);
 
-            EnsureList(container).Add(property);
+            AddMember(container, property);
         }
 
         /// <summary>
         /// Gets synthezised members contained in <paramref name="container"/>.
         /// </summary>
+        /// <remarks>
+        /// This method is not thread-safe, it is expected to be called after all
+        /// the synthesized members were added to <paramref name="container"/>.
+        /// </remarks>
         /// <typeparam name="T">Type of members to enumerate.</typeparam>
         /// <param name="container">Containing type.</param>
         /// <returns>Enumeration of synthesized type members.</returns>
