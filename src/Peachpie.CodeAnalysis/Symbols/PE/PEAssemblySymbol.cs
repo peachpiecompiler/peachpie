@@ -238,11 +238,11 @@ namespace Pchp.CodeAnalysis.Symbols
                             .Where(t => t.IsStatic && t.DeclaredAccessibility == Accessibility.Public && !t.IsPhpHidden(DeclaringCompilation)));
 
                         //
-                        _lazyExtensionContainers = containers.ToImmutable();
+                        ImmutableInterlocked.InterlockedInitialize(ref _lazyExtensionContainers, containers.ToImmutable());
                     }
                     else
                     {
-                        _lazyExtensionContainers = ImmutableArray<NamedTypeSymbol>.Empty;
+                        ImmutableInterlocked.InterlockedInitialize(ref _lazyExtensionContainers, ImmutableArray<NamedTypeSymbol>.Empty);
                     }
                 }
 

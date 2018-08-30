@@ -43,16 +43,18 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (_lazyContextField == null && !this.IsStatic && !this.IsInterface)
                 {
                     // resolve <ctx> field
-                    _lazyContextField = (this.BaseType as IPhpTypeSymbol)?.ContextStore;
+                    var lazyContextField = (this.BaseType as IPhpTypeSymbol)?.ContextStore;
 
                     //
-                    if (_lazyContextField == null)
+                    if (lazyContextField == null)
                     {
-                        _lazyContextField = new SynthesizedFieldSymbol(this, DeclaringCompilation.CoreTypes.Context.Symbol, SpecialParameterSymbol.ContextName,
+                        lazyContextField = new SynthesizedFieldSymbol(this, DeclaringCompilation.CoreTypes.Context.Symbol, SpecialParameterSymbol.ContextName,
                             accessibility: this.IsSealed ? Accessibility.Private : Accessibility.Protected,
                             isStatic: false,
                             isReadOnly: true);
                     }
+
+                    Interlocked.CompareExchange(ref _lazyContextField, lazyContextField, null);
                 }
 
                 return _lazyContextField;
@@ -72,13 +74,15 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     const string fldname = "<runtime_fields>";
 
-                    _lazyRuntimeFieldsField = (this.BaseType as IPhpTypeSymbol)?.RuntimeFieldsStore;
+                    var lazyRuntimeFieldsField = (this.BaseType as IPhpTypeSymbol)?.RuntimeFieldsStore;
 
                     //
-                    if (_lazyRuntimeFieldsField == null)
+                    if (lazyRuntimeFieldsField == null)
                     {
-                        _lazyRuntimeFieldsField = new SynthesizedFieldSymbol(this, DeclaringCompilation.CoreTypes.PhpArray.Symbol, fldname, Accessibility.Internal, false);
+                        lazyRuntimeFieldsField = new SynthesizedFieldSymbol(this, DeclaringCompilation.CoreTypes.PhpArray.Symbol, fldname, Accessibility.Internal, false);
                     }
+
+                    Interlocked.CompareExchange(ref _lazyRuntimeFieldsField, lazyRuntimeFieldsField, null);
                 }
 
                 return _lazyRuntimeFieldsField;
@@ -122,10 +126,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     if (_lazyTraitInstanceField == null)
                     {
-                        _lazyTraitInstanceField = new SynthesizedFieldSymbol(ContainingType, Symbol, "<>" + "trait_" + Symbol.Name,
+                        var lazyTraitInstanceField = new SynthesizedFieldSymbol(ContainingType, Symbol, "<>" + "trait_" + Symbol.Name,
                             accessibility: Accessibility.Private,
                             isStatic: false,
                             isReadOnly: true);
+                        Interlocked.CompareExchange(ref _lazyTraitInstanceField, lazyTraitInstanceField, null);
                     }
 
                     return _lazyTraitInstanceField;
@@ -265,7 +270,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         }
 
                         //
-                        _lazyMembersMap = map;
+                        Interlocked.CompareExchange(ref _lazyMembersMap, map, null);
                     }
 
                     return _lazyMembersMap;
@@ -280,7 +285,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (_lazyMembers.IsDefault)
                 {
-                    _lazyMembers = CreateMembers().AsImmutable();
+                    ImmutableInterlocked.InterlockedInitialize(ref _lazyMembers, CreateMembers().AsImmutable());
                 }
 
                 return _lazyMembers;
@@ -859,6 +864,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 //
                 _lazyMembers = members;
+                Interlocked.CompareExchange(ref _lazyMembers, members, null);
             }
 
             return _lazyMembers;
@@ -914,13 +920,12 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                var result = _lazyCtors;
-                if (result.IsDefault)
+                if (_lazyCtors.IsDefault)
                 {
-                    _lazyCtors = result = CreateInstanceConstructors().ToImmutableArray();
+                    ImmutableInterlocked.InterlockedInitialize(ref _lazyCtors, CreateInstanceConstructors().ToImmutableArray());
                 }
 
-                return result;
+                return _lazyCtors;
             }
         }
 

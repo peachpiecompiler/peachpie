@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Roslyn.Utilities;
 using System.Diagnostics;
+using System.Threading;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -58,7 +59,8 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (_valueField == null)
                 {
-                    _valueField = new SynthesizedFieldSymbol(this, _locType, "value", Accessibility.Public, false);
+                    var valueField = new SynthesizedFieldSymbol(this, _locType, "value", Accessibility.Public, false);
+                    Interlocked.CompareExchange(ref _valueField, valueField, null);
                 }
 
                 return _valueField;

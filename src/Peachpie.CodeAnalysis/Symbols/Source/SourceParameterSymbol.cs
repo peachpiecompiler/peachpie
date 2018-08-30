@@ -9,6 +9,7 @@ using System.Diagnostics;
 using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Syntax;
 using Pchp.CodeAnalysis.Semantics;
+using System.Threading;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -74,7 +75,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (_lazyType == null)
                 {
-                    _lazyType = ResolveType();
+                    Interlocked.CompareExchange(ref _lazyType, ResolveType(), null);
                 }
 
                 return _lazyType;
@@ -190,7 +191,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsParams => _syntax.IsVariadic;
 
-        public override int Ordinal => _relindex + _routine.ImplicitParameters.Count;
+        public override int Ordinal => _relindex + _routine.ImplicitParameters.Length;
 
         public override ImmutableArray<Location> Locations
         {

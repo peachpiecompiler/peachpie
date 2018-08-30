@@ -136,11 +136,12 @@ namespace Pchp.CodeAnalysis.Symbols
                     setter.SetParameters(new SynthesizedParameterSymbol(setter, type, 0, RefKind.None, "value"));
 
                     // TYPE NAME { get; set; }
-                    _fieldAccessorProperty =
+                    var fieldAccessorProperty =
                         new SynthesizedPropertySymbol(
                             this.ContainingType, this.Name, false,
                             type, this.DeclaredAccessibility,
                             getter: getter, setter: setter);
+                    Interlocked.CompareExchange(ref _fieldAccessorProperty, fieldAccessorProperty, null);
                 }
 
                 return _fieldAccessorProperty;

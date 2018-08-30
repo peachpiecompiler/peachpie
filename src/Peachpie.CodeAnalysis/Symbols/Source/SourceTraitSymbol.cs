@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis;
@@ -23,10 +24,11 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (_lazyRealThisField == null)
                 {
-                    _lazyRealThisField = new SynthesizedFieldSymbol(this, TSelfParameter, "<>" + SpecialParameterSymbol.ThisName,
+                    var lazyRealThisField = new SynthesizedFieldSymbol(this, TSelfParameter, "<>" + SpecialParameterSymbol.ThisName,
                         accessibility: Accessibility.Private,
                         isStatic: false,
                         isReadOnly: true);
+                    Interlocked.CompareExchange(ref _lazyRealThisField, lazyRealThisField, null);
                 }
 
                 return _lazyRealThisField;
@@ -100,10 +102,11 @@ namespace Pchp.CodeAnalysis.Symbols
             // [PhpTraitAttribute()]
             if (_lazyPhpTraitAttribute == null)
             {
-                _lazyPhpTraitAttribute = new SynthesizedAttributeData(
+                var lazyPhpTraitAttribute = new SynthesizedAttributeData(
                     DeclaringCompilation.CoreMethods.Ctors.PhpTraitAttribute,
                     ImmutableArray<TypedConstant>.Empty,
                     ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                Interlocked.CompareExchange(ref _lazyPhpTraitAttribute, lazyPhpTraitAttribute, null);
             }
 
             attrs = attrs.Add(_lazyPhpTraitAttribute);

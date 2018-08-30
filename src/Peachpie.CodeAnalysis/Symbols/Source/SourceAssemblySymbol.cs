@@ -100,7 +100,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override bool IsLinked => false;
 
-        public override AssemblyIdentity Identity => _lazyIdentity ?? (_lazyIdentity = ComputeIdentity());
+        public override AssemblyIdentity Identity
+        {
+            get
+            {
+                if (_lazyIdentity == null)
+                    Interlocked.CompareExchange(ref _lazyIdentity, ComputeIdentity(), null);
+
+                return _lazyIdentity;
+            }
+        }
 
         public override Version AssemblyVersionPattern => null; // TODO: Version attribute
 
