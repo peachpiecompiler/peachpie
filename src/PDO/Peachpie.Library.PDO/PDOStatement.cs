@@ -849,6 +849,12 @@ namespace Peachpie.Library.PDO
                             {
                                 this.m_dr_names[i] = columnSchema[i].ColumnName;
                             }
+                        } else
+                        {
+                            for (int i = 0; i < m_dr.FieldCount; i++)
+                            {
+                                this.m_dr_names[i] = this.m_dr.GetName(i);
+                            }
                         }
                     }
 
