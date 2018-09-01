@@ -118,7 +118,7 @@
       <EmitEntryPoint Condition=" '$(OutputType.ToLower())' == 'exe' ">true</EmitEntryPoint>
       
       <GenerateDocumentationFile Condition=" '$(GenerateDocumentationFile)' == '' and '$(DocumentationFile)' != '' ">true</GenerateDocumentationFile>
-      <DocumentationFile Condition=" '$(DocumentationFile)' == '' and '$(GenerateDocumentationFile)' == 'true' ">$(AssemblyName).xml</DocumentationFile>
+      <DocumentationFile Condition=" '$(DocumentationFile)' == '' and '$(GenerateDocumentationFile)' == 'true' ">$(IntermediateOutputPath)$(AssemblyName).xml</DocumentationFile>
     
     </PropertyGroup>
 

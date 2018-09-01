@@ -561,11 +561,13 @@ namespace Pchp.CodeAnalysis.CommandLine
                 if (documentationPath.Length == 0)
                 {
                     // default xmldoc file name
-                    documentationPath = compilationName + ".xml";
+                    documentationPath = PathUtilities.CombinePossiblyRelativeAndRelativePaths(outputDirectory, compilationName + ".xml");
                 }
-
-                // resolve path
-                documentationPath = PathUtilities.CombinePossiblyRelativeAndRelativePaths(outputDirectory, documentationPath);
+                else
+                {
+                    // resolve path
+                    documentationPath = PathUtilities.CombinePossiblyRelativeAndRelativePaths(baseDirectory, documentationPath);
+                }
             }
 
             // Dev11 searches for the key file in the current directory and assembly output directory.
