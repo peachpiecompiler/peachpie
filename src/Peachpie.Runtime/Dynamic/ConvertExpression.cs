@@ -438,6 +438,12 @@ namespace Pchp.Core.Dynamic
                 expr = Expression.Property(expr, Cache.Properties.PhpValue_Object); // PhpValue.Object
             }
 
+            // to System.Array:
+            if (target.IsArray)
+            {
+                // Template: expr.ToArray().GetValues()
+            }
+
             // just cast:
             return Expression.Convert(expr, target);
         }
