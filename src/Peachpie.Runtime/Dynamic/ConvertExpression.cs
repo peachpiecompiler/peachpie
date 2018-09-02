@@ -66,9 +66,9 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(object)) return BindAsObject(arg);
             //if (target == typeof(stdClass)) return BindAsStdClass(arg);
             if (target == typeof(PhpArray) ||
-                target == typeof(IPhpArray) ||
                 target == typeof(IPhpEnumerable) ||
                 target == typeof(PhpHashtable)) return BindToArray(arg);   // TODO: BindToXXXX(), cast object to IPhpEnumerable if Value.IsObject
+            if (target == typeof(IPhpArray)) return BindAsArrayAccess(arg);
             if (target == typeof(IntStringKey)) return BindIntStringKey(arg);
             if (target == typeof(IPhpCallable)) return BindAsCallable(arg);
             if (target == typeof(PhpString)) return BindToPhpString(arg, ctx);
@@ -449,6 +449,21 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(PhpArray)) return expr;
             if (source == typeof(PhpValue)) return Expression.Call(expr, Cache.Operators.PhpValue_ToArray);
             if (source == typeof(object) && expr is ConstantExpression c && c.Value == null) return Expression.Constant(null, typeof(PhpArray));
+
+            throw new NotImplementedException(source.FullName);
+        }
+
+        private static Expression BindAsArrayAccess(Expression expr)
+        {
+            var source = expr.Type;
+
+            if (source.IsSubclassOf(typeof(IPhpArray))) return expr;
+            if (source == typeof(PhpValue)) return Expression.Call(expr, Cache.Operators.PhpValue_GetArrayAccess);
+            if (source == typeof(object))
+            {
+                if (expr is ConstantExpression c && c.Value == null) return Expression.Constant(null, typeof(IPhpArray));
+                return Expression.Call(expr, Cache.Operators.Object_EnsureArray); // throws if object has no array access
+            }
 
             throw new NotImplementedException(source.FullName);
         }

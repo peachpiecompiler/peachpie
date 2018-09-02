@@ -47,6 +47,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpValue_EnsureObject = Types.PhpValue[0].GetMethod("EnsureObject", Types.Empty);
             public static MethodInfo PhpValue_EnsureArray = Types.PhpValue[0].GetMethod("EnsureArray", Types.Empty);
             public static MethodInfo PhpValue_EnsureAlias = Types.PhpValue[0].GetMethod("EnsureAlias", Types.Empty);
+            public static MethodInfo PhpValue_GetArrayAccess = Types.PhpValue[0].GetMethod("GetArrayAccess", Types.Empty);
             public static MethodInfo PhpValue_ToClass = Types.PhpValue[0].GetMethod("ToClass", Types.Empty);
             public static MethodInfo PhpValue_ToArray = Types.PhpValue[0].GetMethod("ToArray", Types.Empty);
             public static MethodInfo PhpValue_AsCallable_RuntimeTypeHandle = Types.PhpValue[0].GetMethod("AsCallable", typeof(RuntimeTypeHandle));

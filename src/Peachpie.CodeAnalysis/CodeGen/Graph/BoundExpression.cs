@@ -2476,10 +2476,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // RETURN TYPE:
             var return_type = this.Access.IsRead
-                    ? this.Access.IsReadRef
-                        ? cg.CoreTypes.PhpAlias.Symbol
-                        : (this.Access.TargetType ?? cg.CoreTypes.PhpValue.Symbol)
-                    : cg.CoreTypes.Void.Symbol;
+                    ? this.Access.IsReadRef ? cg.CoreTypes.PhpAlias.Symbol
+                    : this.Access.EnsureArray ? cg.CoreTypes.IPhpArray.Symbol
+                    : this.Access.EnsureObject ? cg.CoreTypes.Object.Symbol
+                    : (this.Access.TargetType ?? cg.CoreTypes.PhpValue.Symbol)
+                : cg.CoreTypes.Void.Symbol;
 
             // Target()
             var functype = cg.Factory.GetCallSiteDelegateType(
@@ -2519,15 +2520,18 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 Debug.Assert(_name.NameExpression != null);
 
-                // faster to emit PhpCallback.Invoke
+                // better to use PhpCallback.Invoke instead of call sites
 
-                // NameExpression.AsCallback().Invoke(Context, PhpValue[])
+                // Template: NameExpression.AsCallback().Invoke(Context, PhpValue[])
 
                 cg.EmitConvert(_name.NameExpression, cg.CoreTypes.IPhpCallable);    // (IPhpCallable)Name
                 cg.EmitLoadContext();       // Context
                 cg.Emit_ArgumentsIntoArray(_arguments, default(PhpSignatureMask)); // PhpValue[]
 
-                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreTypes.IPhpCallable.Symbol.LookupMember<MethodSymbol>("Invoke"));
+                return cg.EmitMethodAccess(
+                    stack: cg.EmitCall(ILOpCode.Callvirt, cg.CoreTypes.IPhpCallable.Symbol.LookupMember<MethodSymbol>("Invoke")),
+                    method: null,
+                    access: this.Access);
             }
         }
 
@@ -2582,11 +2586,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
             //
             return t;
-        }
-
-        internal override TypeSymbol EmitDynamicCall(CodeGenerator cg)
-        {
-            return base.EmitDynamicCall(cg);
         }
 
         internal override void BuildCallsiteCreate(CodeGenerator cg, TypeSymbol returntype)

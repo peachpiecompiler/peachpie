@@ -1624,7 +1624,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Emits necessary conversion and copying of value returned from a method call.
         /// </summary>
         /// <param name="stack">Result value type on stack.</param>
-        /// <param name="method">Called method.</param>
+        /// <param name="method">Called method. Can be <c>null</c> for indirect method calls.</param>
         /// <param name="access">Expression access.</param>
         /// <returns>New type on stack.</returns>
         internal TypeSymbol EmitMethodAccess(TypeSymbol stack, MethodSymbol method, BoundAccess access)
@@ -1633,7 +1633,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             // and copy the value on stack if necessary
             if (access.IsRead)
             {
-                if (method.CastToFalse)
+                if (method != null && method.CastToFalse)
                 {
                     // casts to false and copy the value
                     //if (stack.IsNullableType())
@@ -1642,24 +1642,70 @@ namespace Pchp.CodeAnalysis.CodeGen
                     //    stack = EmitNullableCastToFalse(stack, access.IsReadValueCopy);
                     //} else
 
-                    stack = EmitCastToFalse(stack, access.IsReadValueCopy);
+                    return EmitCastToFalse(stack, access.IsReadValueCopy);
                 }
-            }
-            else if (access.IsReadValueCopy)
-            {
-                // copy the value
-                if (stack == CoreTypes.PhpAlias)
+
+                if (access.EnsureArray)
                 {
-                    // dereference & deep copy
-                    // Template: <PhpAlias>.Value.DeepCopy()
-                    Emit_PhpAlias_GetValueAddr();
-                    stack = EmitCall(ILOpCode.Call, CoreMethods.PhpValue.DeepCopy);
+                    // GetArrayAccess
+
+                    if (stack == CoreTypes.PhpAlias)
+                    {
+                        // <stack>.Value.GetArrayAccess()
+                        Emit_PhpAlias_GetValueAddr();
+                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.GetArrayAccess);
+                    }
+                    if (stack == CoreTypes.PhpValue)
+                    {
+                        // <stack>.GetArrayAccess()
+                        EmitPhpValueAddr();
+                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.GetArrayAccess);
+                    }
+                    if (stack.IsReferenceType)
+                    {
+                        if (stack.ImplementsInterface(CoreTypes.IPhpArray))
+                        {
+                            // IPhpArray
+                            return stack;
+                        }
+
+                        // Operators.EnsureArray(<stack>)
+                        return EmitCall(ILOpCode.Call, CoreMethods.Operators.EnsureArray_Object);
+                    }
                 }
-                else
+                else if (access.EnsureObject)
                 {
-                    // deep copy
-                    // note: functions return refs only if their return type is PhpAlias, see above
-                    stack = EmitDeepCopy(stack);
+                    // AsObject
+
+                    if (stack == CoreTypes.PhpAlias)
+                    {
+                        // <stack>.Value.AsObject()
+                        Emit_PhpAlias_GetValueAddr();
+                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.AsObject);
+                    }
+                    if (stack == CoreTypes.PhpValue)
+                    {
+                        // <stack>.AsObject()
+                        EmitPhpValueAddr();
+                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.AsObject);
+                    }
+                }
+                else if (access.IsReadValueCopy)
+                {
+                    // copy the value
+                    if (stack == CoreTypes.PhpAlias)
+                    {
+                        // dereference & deep copy
+                        // Template: <PhpAlias>.Value.DeepCopy()
+                        Emit_PhpAlias_GetValueAddr();
+                        stack = EmitCall(ILOpCode.Call, CoreMethods.PhpValue.DeepCopy);
+                    }
+                    //else
+                    //{
+                    //    // deep copy
+                    //    // note: functions return refs only if their return type is PhpAlias, see above
+                    //    stack = EmitDeepCopy(stack);
+                    //}
                 }
             }
 

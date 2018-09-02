@@ -586,6 +586,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 EnsureObject = ct.PhpValue.Method("EnsureObject");
                 EnsureArray = ct.PhpValue.Method("EnsureArray");
                 EnsureAlias = ct.PhpValue.Method("EnsureAlias");
+                GetArrayAccess = ct.PhpValue.Method("GetArrayAccess");
 
                 Eq_PhpValue_PhpValue = ct.PhpValue.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpValue, ct.PhpValue);
                 Eq_PhpValue_String = ct.PhpValue.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpValue, ct.String);
@@ -624,7 +625,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                ToLong, ToDouble, ToBoolean, ToString_Context, ToClass, EnsureObject, EnsureArray, EnsureAlias, ToArray,
+                ToLong, ToDouble, ToBoolean, ToString_Context, ToClass, EnsureObject, EnsureArray, EnsureAlias, GetArrayAccess, ToArray,
                 AsObject,
                 DeepCopy, GetValue, PassValue,
                 Eq_PhpValue_PhpValue, Eq_PhpValue_String,

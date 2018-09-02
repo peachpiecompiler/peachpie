@@ -716,6 +716,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                     // LOAD <place> : ArrayAccess
                     return _place.EmitLoad(cg.Builder);
                 }
+                else if (type.IsReferenceType)
+                {
+                    // Operators.EnsureArray(<stack>)
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureArray_Object);
+                }
 
                 throw cg.NotImplementedException("EnsureArray(" + type.Name + ")");
             }
