@@ -7,6 +7,7 @@ using System.Reflection.Metadata;
 using System.Threading;
 using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.PooledObjects;
 
 namespace Pchp.CodeAnalysis.Symbols
 {

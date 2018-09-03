@@ -8,6 +8,7 @@ using Roslyn.Utilities;
 using Cci = Microsoft.Cci;
 using Pchp.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.PooledObjects;
 using System.Linq;
 
 namespace Pchp.CodeAnalysis.Symbols

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using Cci = Microsoft.Cci;
 using Pchp.CodeAnalysis.Symbols;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.PooledObjects;
 
 namespace Pchp.CodeAnalysis.Emit
 {

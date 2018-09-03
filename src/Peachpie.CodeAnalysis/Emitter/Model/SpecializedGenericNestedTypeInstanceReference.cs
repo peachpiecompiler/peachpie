@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.Emit;
+using Microsoft.CodeAnalysis.PooledObjects;
 using System.Diagnostics;
 using Cci = Microsoft.Cci;
 using Pchp.CodeAnalysis.Symbols;
