@@ -11,6 +11,7 @@ using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Devsense.PHP.Syntax;
 using System.Diagnostics;
+using System.Collections.Immutable;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -19,7 +20,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// <summary>
     /// Represents a variable within routine.
     /// </summary>
-    public abstract partial class BoundVariable : IOperation
+    public abstract partial class BoundVariable : BoundOperation
     {
         /// <summary>
         /// Variable kind.
@@ -36,8 +37,6 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         public virtual string Name => this.Symbol.Name;
 
-        public abstract OperationKind Kind { get; }
-
         public bool IsInvalid => false;
 
         public SyntaxNode Syntax => null;
@@ -46,17 +45,13 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             this.VariableKind = kind;
         }
-
-        public abstract void Accept(OperationVisitor visitor);
-
-        public abstract TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument);
     }
 
     #endregion
 
     #region BoundLocal
 
-    public partial class BoundLocal : BoundVariable, IVariable
+    public partial class BoundLocal : BoundVariable, IVariableDeclaratorOperation
     {
         private SourceLocalSymbol _symbol;
 
@@ -67,34 +62,38 @@ namespace Pchp.CodeAnalysis.Semantics
             _symbol = symbol;
         }
 
-        public virtual IExpression InitialValue => null;
+        IVariableInitializerOperation IVariableDeclaratorOperation.Initializer => null;
 
-        public ILocalSymbol Variable => _symbol;
+        ILocalSymbol IVariableDeclaratorOperation.Symbol => _symbol;
+
+        ImmutableArray<IOperation> IVariableDeclaratorOperation.IgnoredArguments => ImmutableArray<IOperation>.Empty;
 
         internal override Symbol Symbol => _symbol;
 
         public override OperationKind Kind => OperationKind.VariableDeclaration;
 
         public override void Accept(OperationVisitor visitor)
-            => visitor.VisitVariable(this);
+            => visitor.VisitVariableDeclarator(this);
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
-            => visitor.VisitVariable(this, argument);
+            => visitor.VisitVariableDeclarator(this, argument);
     }
 
     #endregion
 
     #region BoundIndirectLocal
 
-    public partial class BoundIndirectLocal : BoundVariable, IVariable
+    public partial class BoundIndirectLocal : BoundVariable, IVariableDeclaratorOperation
     {
         public override OperationKind Kind => OperationKind.VariableDeclaration;
 
         internal override Symbol Symbol => null;
 
-        IExpression IVariable.InitialValue => null;
+        IVariableInitializerOperation IVariableDeclaratorOperation.Initializer => null;
 
-        ILocalSymbol IVariable.Variable => (ILocalSymbol)Symbol;
+        ILocalSymbol IVariableDeclaratorOperation.Symbol => (ILocalSymbol)Symbol;
+
+        ImmutableArray<IOperation> IVariableDeclaratorOperation.IgnoredArguments => ImmutableArray<IOperation>.Empty;
 
         public override string Name => null;
 
@@ -108,17 +107,17 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         public override void Accept(OperationVisitor visitor)
-            => visitor.VisitVariable(this);
+            => visitor.VisitVariableDeclarator(this);
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
-            => visitor.VisitVariable(this, argument);
+            => visitor.VisitVariableDeclarator(this, argument);
     }
 
     #endregion
 
     #region BoundParameter
 
-    public partial class BoundParameter : BoundVariable, IParameterInitializer
+    public partial class BoundParameter : BoundVariable, IParameterInitializerOperation
     {
         private BoundExpression _initializer;
         private ParameterSymbol _symbol;
@@ -132,13 +131,15 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal ParameterSymbol Parameter => _symbol;
 
-        IParameterSymbol IParameterInitializer.Parameter => _symbol;
+        IParameterSymbol IParameterInitializerOperation.Parameter => _symbol;
 
-        public IExpression Value => _initializer;
+        ImmutableArray<ILocalSymbol> ISymbolInitializerOperation.Locals => ImmutableArray<ILocalSymbol>.Empty;
+
+        public IOperation Value => _initializer;
 
         internal override Symbol Symbol => _symbol;
 
-        public override OperationKind Kind => OperationKind.ParameterInitializerAtDeclaration;
+        public override OperationKind Kind => OperationKind.ParameterInitializer;
 
         public override void Accept(OperationVisitor visitor)
             => visitor.VisitParameterInitializer(this);
