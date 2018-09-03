@@ -1,4 +1,4 @@
-﻿using Microsoft.CodeAnalysis.Semantics;
+﻿using Microsoft.CodeAnalysis.Operations;
 using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;

@@ -1,4 +1,4 @@
-﻿using Microsoft.CodeAnalysis.Semantics;
+﻿using Microsoft.CodeAnalysis.Operations;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Ast = Devsense.PHP.Syntax.Ast;
 using System;

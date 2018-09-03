@@ -2,7 +2,7 @@
 using Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
-using Microsoft.CodeAnalysis.Semantics;
+using Microsoft.CodeAnalysis.Operations;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Symbols;
 using Peachpie.CodeAnalysis.Utilities;

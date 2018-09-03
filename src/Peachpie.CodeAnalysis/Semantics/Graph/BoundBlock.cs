@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using Devsense.PHP.Syntax;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Semantics;
+using Microsoft.CodeAnalysis.Operations;
 using Pchp.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph

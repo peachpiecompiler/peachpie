@@ -1,6 +1,6 @@
 ﻿using Devsense.PHP.Syntax;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Semantics;
+using Microsoft.CodeAnalysis.Operations;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.CommandLine;
 using Pchp.CodeAnalysis.Emit;

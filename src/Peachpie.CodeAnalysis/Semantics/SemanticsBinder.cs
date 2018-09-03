@@ -1,7 +1,7 @@
 ﻿using Devsense.PHP.Syntax;
 using Devsense.PHP.Text;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Semantics;
+using Microsoft.CodeAnalysis.Operations;
 using Pchp.CodeAnalysis.Symbols;
 using Roslyn.Utilities;
 using System;
