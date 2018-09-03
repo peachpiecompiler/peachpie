@@ -15,7 +15,7 @@ namespace Pchp.CodeAnalysis.Errors
     /// every time the parser throws an error, it must be registered in this class so that its details (such as format
     /// string) can be later retrieved.
     /// </summary>
-    internal class ParserMessageProvider : CommonMessageProvider, IObjectWritable, IObjectReadable
+    internal class ParserMessageProvider : CommonMessageProvider, IObjectWritable
     {
         private ConcurrentDictionary<int, ErrorInfo> _errorInfos = new ConcurrentDictionary<int, ErrorInfo>();
 
@@ -29,399 +29,131 @@ namespace Pchp.CodeAnalysis.Errors
 
         public override Type ErrorCodeType => typeof(int);
 
-        public override int ERR_BadCompilationOptionValue
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        bool IObjectWritable.ShouldReuseInSerialization => false;
 
-        public override int ERR_BadWin32Resource
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_BadCompilationOptionValue => throw new NotImplementedException();
 
-        public override int ERR_BinaryFile
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_BadWin32Resource => throw new NotImplementedException();
 
-        public override int ERR_CantOpenFileWrite
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_BinaryFile => throw new NotImplementedException();
 
-        public override int ERR_CantOpenWin32Icon
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_CantOpenFileWrite => throw new NotImplementedException();
 
-        public override int ERR_CantOpenWin32Manifest
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_CantOpenWin32Icon => throw new NotImplementedException();
 
-        public override int ERR_CantOpenWin32Resource
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_CantOpenWin32Manifest => throw new NotImplementedException();
 
-        public override int ERR_CantReadResource
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_CantOpenWin32Resource => throw new NotImplementedException();
 
-        public override int ERR_CantReadRulesetFile
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_CantReadResource => throw new NotImplementedException();
 
-        public override int ERR_CompileCancelled
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_CantReadRulesetFile => throw new NotImplementedException();
 
-        public override int ERR_EncReferenceToAddedMember
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_CompileCancelled => throw new NotImplementedException();
 
-        public override int ERR_ErrorBuildingWin32Resource
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_EncReferenceToAddedMember => throw new NotImplementedException();
 
-        public override int ERR_ErrorOpeningAssemblyFile
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_ErrorBuildingWin32Resource => throw new NotImplementedException();
 
-        public override int ERR_ErrorOpeningModuleFile
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_ErrorOpeningAssemblyFile => throw new NotImplementedException();
 
-        public override int ERR_ExpectedSingleScript
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_ErrorOpeningModuleFile => throw new NotImplementedException();
 
-        public override int ERR_FailedToCreateTempFile
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_ExpectedSingleScript => throw new NotImplementedException();
 
-        public override int ERR_FileNotFound
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_FailedToCreateTempFile => throw new NotImplementedException();
 
-        public override int ERR_InvalidAssemblyMetadata
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_FileNotFound => throw new NotImplementedException();
 
-        public override int ERR_InvalidDebugInformationFormat
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_InvalidAssemblyMetadata => throw new NotImplementedException();
 
-        public override int ERR_InvalidFileAlignment
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_InvalidDebugInformationFormat => throw new NotImplementedException();
 
-        public override int ERR_InvalidModuleMetadata
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_InvalidFileAlignment => throw new NotImplementedException();
 
-        public override int ERR_InvalidOutputName
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_InvalidModuleMetadata => throw new NotImplementedException();
 
-        public override int ERR_InvalidPathMap
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_InvalidOutputName => throw new NotImplementedException();
 
-        public override int ERR_InvalidSubsystemVersion
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_InvalidPathMap => throw new NotImplementedException();
 
-        public override int ERR_LinkedNetmoduleMetadataMustProvideFullPEImage
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_InvalidSubsystemVersion => throw new NotImplementedException();
 
-        public override int ERR_MetadataFileNotAssembly
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_LinkedNetmoduleMetadataMustProvideFullPEImage => throw new NotImplementedException();
 
-        public override int ERR_MetadataFileNotFound
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_MetadataFileNotAssembly => throw new NotImplementedException();
 
-        public override int ERR_MetadataFileNotModule
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_MetadataFileNotFound => throw new NotImplementedException();
 
-        public override int ERR_MetadataNameTooLong
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_MetadataFileNotModule => throw new NotImplementedException();
 
-        public override int ERR_MetadataReferencesNotSupported
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_MetadataNameTooLong => throw new NotImplementedException();
 
-        public override int ERR_NoSourceFile
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_MetadataReferencesNotSupported => throw new NotImplementedException();
 
-        public override int ERR_OpenResponseFile
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_NoSourceFile => throw new NotImplementedException();
 
-        public override int ERR_OutputWriteFailed
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_OpenResponseFile => throw new NotImplementedException();
 
-        public override int ERR_PdbWritingFailed
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_OutputWriteFailed => throw new NotImplementedException();
 
-        public override int ERR_PermissionSetAttributeFileReadError
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_PdbWritingFailed => throw new NotImplementedException();
 
-        public override int ERR_PublicKeyContainerFailure
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_PermissionSetAttributeFileReadError => throw new NotImplementedException();
 
-        public override int ERR_PublicKeyFileFailure
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_PublicKeyContainerFailure => throw new NotImplementedException();
 
-        public override int ERR_ResourceFileNameNotUnique
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_PublicKeyFileFailure => throw new NotImplementedException();
 
-        public override int ERR_ResourceInModule
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_ResourceFileNameNotUnique => throw new NotImplementedException();
 
-        public override int ERR_ResourceNotUnique
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_ResourceInModule => throw new NotImplementedException();
 
-        public override int ERR_TooManyUserStrings
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_ResourceNotUnique => throw new NotImplementedException();
 
-        public override int FTL_InputFileNameTooLong
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_TooManyUserStrings => throw new NotImplementedException();
 
-        public override int INF_UnableToLoadSomeTypesInAnalyzer
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_BadSourceCodeKind => throw new NotImplementedException();
 
-        public override int WRN_AnalyzerCannotBeCreated
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_BadDocumentationMode => throw new NotImplementedException();
 
-        public override int WRN_NoAnalyzerInAssembly
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_MutuallyExclusiveOptions => throw new NotImplementedException();
 
-        public override int WRN_NoConfigNotOnCommandLine
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_InvalidInstrumentationKind => throw new NotImplementedException();
 
-        public override int WRN_PdbLocalNameTooLong
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_InvalidHashAlgorithmName => throw new NotImplementedException();
 
-        public override int WRN_PdbUsingNameTooLong
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_OptionMustBeAbsolutePath => throw new NotImplementedException();
 
-        public override int WRN_UnableToLoadAnalyzer
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        public override int ERR_EncodinglessSyntaxTree => throw new NotImplementedException();
 
-        public override string ConvertSymbolToString(int errorCode, ISymbol symbol)
+        public override int ERR_PeWritingFailure => throw new NotImplementedException();
+
+        public override int ERR_ModuleEmitFailure => throw new NotImplementedException();
+
+        public override int ERR_EncUpdateFailedMissingAttribute => throw new NotImplementedException();
+
+        public override int ERR_InvalidDebugInfo => throw new NotImplementedException();
+
+        public override int ERR_BadAssemblyName => throw new NotImplementedException();
+
+        public override int FTL_InvalidInputFileName => throw new NotImplementedException();
+
+        public override int INF_UnableToLoadSomeTypesInAnalyzer => throw new NotImplementedException();
+
+        public override int WRN_AnalyzerCannotBeCreated => throw new NotImplementedException();
+
+        public override int WRN_NoAnalyzerInAssembly => throw new NotImplementedException();
+
+        public override int WRN_NoConfigNotOnCommandLine => throw new NotImplementedException();
+
+        public override int WRN_PdbLocalNameTooLong => throw new NotImplementedException();
+
+        public override int WRN_PdbUsingNameTooLong => throw new NotImplementedException();
+
+        public override int WRN_UnableToLoadAnalyzer => throw new NotImplementedException();
+
+        public override string GetErrorDisplayString(ISymbol symbol)
         {
             throw new NotImplementedException();
         }
@@ -437,6 +169,8 @@ namespace Pchp.CodeAnalysis.Errors
             var info = new DiagnosticInfo(this, isWarningAsError, code, args);
             return new DiagnosticWithInfo(info, location);
         }
+
+        public override Diagnostic CreateDiagnostic(DiagnosticInfo info) => new DiagnosticWithInfo(info, Location.None);
 
         public override string GetCategory(int code) => Diagnostic.CompilerDiagnosticCategory;
 
@@ -551,11 +285,6 @@ namespace Pchp.CodeAnalysis.Errors
                 default:
                     throw new ArgumentException(nameof(severity));
             }
-        }
-
-        Func<ObjectReader, object> IObjectReadable.GetReader()
-        {
-            throw new NotImplementedException();
         }
 
         void IObjectWritable.WriteTo(ObjectWriter writer)
