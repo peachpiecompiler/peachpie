@@ -255,6 +255,51 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             base.VisitAssign(x);
         }
 
+        protected override void VisitRoutineCall(BoundRoutineCall x)
+        {
+            if (x.TargetMethod.IsValidMethod() && !x.HasArgumentsUnpacking)
+            {
+                // check mandatory parameters are provided:
+                var ps = x.TargetMethod.Parameters;
+                var skippedps = 0; // number of implicit parameters provided by compiler
+                var expectsmin = 0;
+
+                for (int i = 0; i < ps.Length; i++)
+                {
+                    if (i == skippedps && ps[i].IsImplicitlyDeclared)
+                    {
+                        // implicitly provided arguments,
+                        // ignored
+                        skippedps++;
+                    }
+                    else
+                    {
+                        if (!ps[i].IsOptional && (i < ps.Length - 1 /*check for IsParams only for last parameter*/ || !ps[i].IsParams))
+                        {
+                            expectsmin = i - skippedps + 1;
+                        }
+                    }
+                }
+
+                var expectsmax = x.TargetMethod.HasParamsParameter()
+                    ? int.MaxValue
+                    : ps.Length - skippedps;
+
+                //
+                if (x.ArgumentsInSourceOrder.Length < expectsmin)
+                {
+                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_MissingArguments, x.TargetMethod.RoutineName, expectsmin, x.ArgumentsInSourceOrder.Length);
+                }
+                else if (x.ArgumentsInSourceOrder.Length > expectsmax)
+                {
+                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_TooManyArguments, x.TargetMethod.RoutineName, expectsmax, x.ArgumentsInSourceOrder.Length);
+                }
+            }
+
+            //
+            base.VisitRoutineCall(x);
+        }
+
         public override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
         {
             CheckUndefinedFunctionCall(x);
@@ -269,6 +314,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 }
             }
 
+            //
             base.VisitGlobalFunctionCall(x);
         }
 
@@ -276,23 +322,27 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         {
             // TODO: Enable the diagnostic when several problems are solved (such as __call())
             //CheckUndefinedMethodCall(call, call.Instance?.ResultType, call.Name);
-            base.VisitInstanceFunctionCall(call);
 
             // check target type
             CheckMethodCallTargetInstance(call.Instance, call.Name.NameValue.Name.Value);
 
             // check deprecated
             CheckObsoleteSymbol(call.PhpSyntax, call.TargetMethod);
+
+            //
+            base.VisitInstanceFunctionCall(call);
         }
 
         public override void VisitStaticFunctionCall(BoundStaticFunctionCall call)
         {
             // TODO: Enable the diagnostic when the __callStatic() method is properly processed during analysis
             //CheckUndefinedMethodCall(call, call.TypeRef?.ResolvedType, call.Name);
-            base.VisitStaticFunctionCall(call);
 
             // check deprecated
             CheckObsoleteSymbol(call.PhpSyntax, call.TargetMethod);
+
+            //
+            base.VisitStaticFunctionCall(call);
         }
 
         public override void VisitVariableRef(BoundVariableRef x)
@@ -342,7 +392,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 if (args.Length > 2)
                 {
                     // too many args
-                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_TooManyArguments);
+                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_TooManyArguments, "assert", 2, args.Length);
                 }
             }
             else
