@@ -617,15 +617,21 @@ namespace Pchp.Core.Dynamic
 
                 public override Expression BindParams(int fromarg, Type element_type)
                 {
-                    var values = new List<Expression>();
-                    for (int i = fromarg; i < _args.Length; i++)
+                    var count = _args.Length - fromarg;
+
+                    if (count <= 0)
                     {
-                        values.Add(ConvertExpression.Bind(_args[i], element_type, _ctx));
+                        // empty array:
+
+                        // return static singleton with empty array
+                        // Template: Array.Empty<element_type>()
+                        return Expression.Call(typeof(Array), "Empty", new[] { element_type });
                     }
 
-                    if (values.Count == 0)
+                    var values = new Expression[count];
+                    for (int i = 0; i < count; i++)
                     {
-                        // TODO: return static singleton with empty array
+                        values[i] = ConvertExpression.Bind(_args[fromarg + i], element_type, _ctx);
                     }
 
                     return Expression.NewArrayInit(element_type, values);
