@@ -248,6 +248,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         public SourceRoutineSymbol Routine => _routine;
 
         /// <summary>
+        /// For debug purposes.
+        /// Current routine being generated.
+        /// </summary>
+        internal MethodSymbol DebugRoutine { get; set; }
+
+        /// <summary>
         /// Type context of currently emitted expressions. Can be <c>null</c>.
         /// </summary>
         internal TypeRefContext TypeRefContext => this.Routine?.TypeRefContext;

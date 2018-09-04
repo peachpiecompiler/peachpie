@@ -70,7 +70,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                     // .callvirt
                     bool callvirt = ghost.ExplicitOverride != null && ghost.ExplicitOverride.ContainingType.IsInterface;  // implementing interface, otherwise we should be able to call specific method impl. non-virtually via ghost
 
-                    var cg = new CodeGenerator(il, module, diagnostic, module.Compilation.Options.OptimizationLevel, false, containingtype, ctxPlace, thisPlace);
+                    var cg = new CodeGenerator(il, module, diagnostic, module.Compilation.Options.OptimizationLevel, false, containingtype, ctxPlace, thisPlace)
+                    {
+                        DebugRoutine = ghost,
+                    };
 
                     // return (T){routine}(p0, ..., pN);
                     cg.EmitConvert(cg.EmitForwardCall(method, ghost, callvirt: callvirt), 0, ghost.ReturnType);

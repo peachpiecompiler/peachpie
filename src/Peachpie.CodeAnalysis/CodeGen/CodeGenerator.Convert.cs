@@ -487,7 +487,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         return;
                     }
 
-                    throw this.NotImplementedException($"(long){from.Name}");
+                    throw this.NotImplementedException($"(long){(from as NamedTypeSymbol)?.GetFullName() ?? from.Name}");
             }
         }
 
