@@ -529,6 +529,37 @@ namespace Pchp.Library
         /// <returns>Returns the filtered data, or <c>false</c> if the filter fails.</returns>
         public static PhpValue filter_var(Context ctx, PhpValue variable, int filter = FILTER_DEFAULT, PhpValue options = default(PhpValue))
         {
+            var @default = PhpValue.False; // a default value
+            PhpArray options_arr = null;
+            long flags = 0;
+
+            // process options
+
+            if (options.IsSet)
+            {
+                options_arr = options.AsArray();
+                if (options_arr != null)
+                {
+                    // [flags]
+                    if (options_arr.TryGetValue("flags", out var flagsval))
+                    {
+                        flagsval.IsLong(out flags);
+                    }
+
+                    // [default]
+                    if (options_arr.TryGetValue("default", out var defaultval))
+                    {
+                        @default = defaultval;
+                    }
+
+                    // ...
+                }
+                else
+                {
+                    options.IsLong(out flags);
+                }
+            }
+
             switch (filter)
             {
                 //
@@ -597,7 +628,7 @@ namespace Pchp.Library
                         }
 
                         //
-                        if (!options.IsDefault && options.IsLong(out var l) && (l & FILTER_NULL_ON_FAILURE) == FILTER_NULL_ON_FAILURE)
+                        if ((flags & FILTER_NULL_ON_FAILURE) == FILTER_NULL_ON_FAILURE)
                         {
                             // FALSE is for "0", "false", "off", "no", and "",
                             // NULL for all non-boolean values
@@ -622,14 +653,11 @@ namespace Pchp.Library
                     }
                 case (int)FilterValidate.REGEXP:
                     {
-                        PhpArray optarray;
-                        // options = options['options']['regexp']
-                        if (Operators.IsSet(options) &&
-                            (optarray = options.ArrayOrNull()) != null &&
-                            optarray.TryGetValue("options", out options) && (optarray = options.ArrayOrNull()) != null &&
-                            optarray.TryGetValue("regexp", out options))
+                        // options = options['regexp']
+                        if (options_arr != null &&
+                            options_arr.TryGetValue("regexp", out var regexpval))
                         {
-                            if (PCRE.preg_match(ctx, options.ToString(ctx), variable.ToString(ctx)) > 0)
+                            if (PCRE.preg_match(ctx, regexpval.ToString(ctx), variable.ToString(ctx)) > 0)
                             {
                                 return variable;
                             }
