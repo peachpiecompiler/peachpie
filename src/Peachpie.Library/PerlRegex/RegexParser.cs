@@ -427,6 +427,12 @@ namespace Pchp.Library.PerlRegex
                             {
                                 PopKeepOptions();
                             }
+                            else if (grouper.Type() == RegexNode.Ref)
+                            {
+                                PopKeepOptions();
+                                AddUnitNode(grouper);
+                                break;
+                            }
                             else
                             {
                                 PushGroup();
@@ -875,6 +881,24 @@ namespace Pchp.Library.PerlRegex
             if (CharsRight() >= 4 /*P<>)*/ && RightChar() == 'P' && RightChar(1) == '<') // (?P<name> // named group
             {
                 MoveRight();    // skip 'P' in (?P<name>, continue as it would be (?<name>
+            }
+            else if (CharsRight() >= 3 /*P=.*/ && RightChar() == 'P' && RightChar(1) == '=') // P=name) // backref
+            {
+                MoveRight(2);
+
+                string capname = ScanCapname();
+
+                if (CharsRight() > 0 && MoveRightGetChar() == ')')
+                {
+                    if (IsCaptureName(capname))
+                        return new RegexNode(RegexNode.Ref, _options, CaptureSlotFromName(capname));
+                    else
+                        throw MakeException(SR.Format(SR.UndefinedNameRef, capname));
+                }
+                else
+                {
+                    throw MakeException(SR.MalformedNameRef);
+                }
             }
 
             for (; ; )
