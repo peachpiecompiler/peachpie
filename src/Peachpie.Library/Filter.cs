@@ -606,7 +606,9 @@ namespace Pchp.Library
                             return (PhpValue)result;  // TODO: options: min_range, max_range
                         }
                         else
-                            return PhpValue.False;
+                        {
+                            return @default;
+                        }
                     }
                 case (int)FilterValidate.BOOLEAN:
                     {
