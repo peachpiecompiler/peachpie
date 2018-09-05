@@ -276,6 +276,12 @@ namespace Pchp.Library
             IPV4 = 1048576,
 
             /// <summary>
+            /// Adds ability to specifically validate hostnames
+            /// (they must start with an alphanumberic character and contain only alphanumerics or hyphens).
+            /// </summary>
+            HOSTNAME = 1048576, // yes the same as IPV4
+
+            /// <summary>
             /// Allow only IPv6 address in "validate_ip" filter.
             /// </summary>
             IPV6 = 2097152,
@@ -365,6 +371,12 @@ namespace Pchp.Library
         /// Require query in "validate_url" filter.
         /// </summary>
         public const int FILTER_FLAG_QUERY_REQUIRED = (int)FilterFlag.QUERY_REQUIRED;
+
+        /// <summary>
+        /// Adds ability to specifically validate hostnames
+        /// (they must start with an alphanumberic character and contain only alphanumerics or hyphens).
+        /// </summary>
+        public const int FILTER_FLAG_HOSTNAME = (int)FilterFlag.HOSTNAME;
 
         /// <summary>
         /// Allow only IPv4 address in "validate_ip" filter.
@@ -564,6 +576,49 @@ namespace Pchp.Library
                         }
                         else
                             return PhpValue.False;
+                    }
+                case (int)FilterValidate.BOOLEAN:
+                    {
+                        if (variable.IsBoolean(out var b))
+                        {
+                            return b;
+                        }
+
+                        var varstr = variable.ToString(ctx);
+
+                        // TRUE for "1", "true", "on" and "yes".
+
+                        if (varstr.EqualsOrdinalIgnoreCase("1") ||
+                            varstr.EqualsOrdinalIgnoreCase("true") ||
+                            varstr.EqualsOrdinalIgnoreCase("on") ||
+                            varstr.EqualsOrdinalIgnoreCase("yes"))
+                        {
+                            return PhpValue.True;
+                        }
+
+                        //
+                        if (!options.IsDefault && options.IsLong(out var l) && (l & FILTER_NULL_ON_FAILURE) == FILTER_NULL_ON_FAILURE)
+                        {
+                            // FALSE is for "0", "false", "off", "no", and "",
+                            // NULL for all non-boolean values
+
+                            if (varstr.Length == 0 ||
+                                varstr.EqualsOrdinalIgnoreCase("0") ||
+                                varstr.EqualsOrdinalIgnoreCase("false") ||
+                                varstr.EqualsOrdinalIgnoreCase("off"))
+                            {
+                                return PhpValue.False;
+                            }
+                            else
+                            {
+                                return PhpValue.Null;
+                            }
+                        }
+                        else
+                        {
+                            // FALSE otherwise
+                            return PhpValue.False;
+                        }
                     }
                 case (int)FilterValidate.REGEXP:
                     {
