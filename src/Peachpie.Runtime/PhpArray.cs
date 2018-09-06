@@ -678,13 +678,15 @@ namespace Pchp.Core
         public void SetItemValue(IntStringKey key, PhpValue value)
         {
             this.EnsureWritable();
-            table._add_or_update_preserve_ref(ref key, value);
-            this.KeyAdded(ref key);
+            if (table._add_or_update_preserve_ref(ref key, value))
+            {
+                this.KeyAdded(ref key);
+            }
         }
 
         public void SetItemValue(PhpValue index, PhpValue value)
         {
-            if (index.TryToIntStringKey(out IntStringKey key))
+            if (index.TryToIntStringKey(out var key))
             {
                 SetItemValue(key, value);
             }
@@ -697,8 +699,10 @@ namespace Pchp.Core
         public void SetItemAlias(IntStringKey key, PhpAlias alias)
         {
             this.EnsureWritable();
-            table._add_or_update(ref key, PhpValue.Create(alias));
-            this.KeyAdded(ref key);
+            if (table._add_or_update(ref key, PhpValue.Create(alias)))
+            {
+                this.KeyAdded(ref key);
+            }
         }
 
         public void SetItemAlias(PhpValue index, PhpAlias alias)
@@ -725,7 +729,7 @@ namespace Pchp.Core
 
         public void RemoveKey(PhpValue index)
         {
-            if (index.TryToIntStringKey(out IntStringKey key))
+            if (index.TryToIntStringKey(out var key))
             {
                 this.Remove(key);
             }

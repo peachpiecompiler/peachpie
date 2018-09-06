@@ -1040,13 +1040,7 @@ namespace Pchp.Core
 
         #region IDictionary<IntStringKey,PhpValue> Members
 
-        public void Add(IntStringKey key, PhpValue value)
-        {
-            this.EnsureWritable();
-
-            table.Add(key, value);
-            KeyAdded(ref key);
-        }
+        public void Add(IntStringKey key, PhpValue value) => this[key] = value;
 
         public bool ContainsKey(IntStringKey key)
         {
@@ -1062,7 +1056,15 @@ namespace Pchp.Core
             //}
 
             this.EnsureWritable();
-            return this.table._del_key_or_index(ref key, this.activeEnumerators);
+            if (this.table._del_key_or_index(ref key, this.activeEnumerators))
+            {
+                KeyRemoved(ref key);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         public bool TryGetValue(IntStringKey key, out PhpValue value)
@@ -1085,20 +1087,9 @@ namespace Pchp.Core
 
         #region ICollection<KeyValuePair<IntStringKey,object>> Members
 
-        public void Add(KeyValuePair<IntStringKey, PhpValue> item)
-        {
-            ThrowIfNotPhpArrayHelper();
+        public void Add(KeyValuePair<IntStringKey, PhpValue> item) => this[item.Key] = item.Value;
 
-            this.EnsureWritable();
-
-            table.Add(item.Key, item.Value);
-            KeyAdded(item.Key);
-        }
-
-        public bool Contains(KeyValuePair<IntStringKey, PhpValue> item)
-        {
-            return table.Contains(item);
-        }
+        public bool Contains(KeyValuePair<IntStringKey, PhpValue> item) => table.Contains(item);
 
         public void CopyTo(KeyValuePair<IntStringKey, PhpValue>[] array, int arrayIndex)
         {
@@ -1121,7 +1112,6 @@ namespace Pchp.Core
         /// <summary>
         /// Simple wrapper to allow call KeyAdded without ref.
         /// </summary>
-        /// <param name="key"></param>
         private void KeyAdded(IntStringKey key)
         {
             KeyAdded(ref key);
@@ -1130,8 +1120,7 @@ namespace Pchp.Core
         /// <summary>
         /// Called when new item is added into the collection. It just updates the <see cref="stringCount"/> or <see cref=" intCount"/> and <see cref="nextNewIndex"/>.
         /// </summary>
-        /// <param name="key"></param>
-		internal void KeyAdded(ref IntStringKey key)
+		protected void KeyAdded(ref IntStringKey key)
         {
             if (key.IsInteger)
                 KeyAdded(key.Integer);
@@ -1139,7 +1128,7 @@ namespace Pchp.Core
                 KeyAdded(key.String);
         }
 
-        internal void KeyAdded(int key)
+        private void KeyAdded(int key)
         {
             if (nextNewIndex < 0) RefreshMaxIntegerKeyInternal();
             if (key >= nextNewIndex) nextNewIndex = key + 1;
@@ -1149,6 +1138,24 @@ namespace Pchp.Core
         private void KeyAdded(string key)
         {
             ++stringCount;
+        }
+
+        void KeyRemoved(ref IntStringKey key)
+        {
+            if (key.IsInteger)
+                IntKeyRemoved();
+            else
+                StringKeyRemoved();
+        }
+
+        void IntKeyRemoved()
+        {
+            --intCount;
+        }
+
+        void StringKeyRemoved()
+        {
+            --stringCount;
         }
 
         #region Contains
@@ -1200,14 +1207,7 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="key">The key.</param>
         /// <param name="value">The value.</param>
-        /// <exception cref="ArgumentException">An element with the same key already exists in this instance.</exception>
-        public void Add(int key, PhpValue value)
-        {
-            this.EnsureWritable();
-
-            table.Add(new IntStringKey(key), value);
-            KeyAdded(key);
-        }
+        public void Add(int key, PhpValue value) => this[key] = value;
 
         /// <summary>
         /// Adds an entry into the table at its logical end. 
@@ -1215,14 +1215,7 @@ namespace Pchp.Core
         /// <param name="key">The key.</param>
         /// <param name="value">The value.</param>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is a null reference.</exception>
-        /// <exception cref="ArgumentException">An element with the same key already exists in this instance.</exception>
-        public void Add(string key, PhpValue value)
-        {
-            this.EnsureWritable();
-
-            table.Add(new IntStringKey(key), value);
-            KeyAdded(key);
-        }
+        public void Add(string key, PhpValue value) => this[key] = value;
 
         /// <summary>
         /// Adds range of values at the end of the hashtable.
@@ -1369,48 +1362,52 @@ namespace Pchp.Core
         /// <summary>
         /// Gets or sets a value associated with a key.
         /// </summary>
-        /// <param name="key">The <see cref="String"/> key.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="key"/> is a null reference.</exception>
+        /// <param name="skey">The <see cref="string"/> key.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="skey"/> is a <c>null</c> reference.</exception>
         /// <remarks>If the key doesn't exist in table the new entry is added.</remarks>
-        public PhpValue this[string key]
+        public PhpValue this[string skey]
         {
-            get
-            {
-                return table[new IntStringKey(key)];
-            }
+            get => table[new IntStringKey(skey)];
             set
             {
                 this.EnsureWritable();
 
-                table[new IntStringKey(key)] = value;
-                KeyAdded(key);
+                var key = new IntStringKey(skey);
+                if (table._add_or_update(ref key, value))
+                {
+                    KeyAdded(skey);
+                }
             }
         }
 
         /// <summary>
         /// Gets or sets a value associated with a key.
         /// </summary>
-        /// <param name="key">The <see cref="Int32"/> key.</param>
+        /// <param name="ikey">The <see cref="int"/> key.</param>
         /// <remarks>If the key doesn't exist in table the new entry is added.</remarks>
-        public PhpValue this[int key]
+        public PhpValue this[int ikey]
         {
             get
             {
-                return table[new IntStringKey(key)];
+                table.TryGetValue(ikey, out var value);
+                return value;
             }
             set
             {
                 this.EnsureWritable();
 
-                table[new IntStringKey(key)] = value;
-                KeyAdded(key);
+                var key = new IntStringKey(ikey);
+                if (table._add_or_update(ref key, value))
+                {
+                    KeyAdded(ikey);
+                }
             }
         }
 
         /// <summary>
         /// Gets or sets a value associated with a key.
         /// </summary>
-        /// <param name="key">The <see cref="Int32"/> key.</param>
+        /// <param name="key">The key.</param>
         /// <remarks>If the key doesn't exist in table the new entry is added.</remarks>
         public PhpValue this[IntStringKey key]
         {
@@ -1422,8 +1419,10 @@ namespace Pchp.Core
             {
                 this.EnsureWritable();
 
-                table._add_or_update(ref key, value);
-                KeyAdded(ref key);
+                if (table._add_or_update(ref key, value))
+                {
+                    KeyAdded(ref key);
+                }
             }
         }
 
