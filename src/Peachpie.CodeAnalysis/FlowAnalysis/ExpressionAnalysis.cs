@@ -486,9 +486,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             //
             x.Target.Access = x.Target.Access.WithRead();   // put read access back to the target
-            x.TypeRefMask = (x.IncrementKind == UnaryOperationKind.OperatorPrefixIncrement ||
-                             x.IncrementKind == UnaryOperationKind.OperatorPrefixDecrement)
-                            ? resulttype : sourcetype;
+            x.TypeRefMask = x.IsPostfix ? sourcetype : resulttype;
         }
 
         #endregion

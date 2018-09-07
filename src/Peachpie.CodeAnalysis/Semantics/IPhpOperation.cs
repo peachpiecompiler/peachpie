@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -25,7 +26,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// <summary>
     /// Abstract PHP expression semantic.
     /// </summary>
-    public interface IPhpExpression : IPhpOperation, IExpression
+    public interface IPhpExpression : IPhpOperation
     {
         /// <summary>
         /// Analysed type information.
@@ -45,7 +46,7 @@ namespace Pchp.CodeAnalysis.Semantics
         bool RequiresContext { get; }
     }
 
-    public interface IPhpStatement : IPhpOperation, IStatement
+    public interface IPhpStatement : IPhpOperation
     {
 
     }
