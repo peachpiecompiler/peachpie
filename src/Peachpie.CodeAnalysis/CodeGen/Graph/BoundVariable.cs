@@ -54,7 +54,7 @@ namespace Pchp.CodeAnalysis.Semantics
             var def = il.LocalSlotManager.DeclareLocal(
                     (Cci.ITypeReference)_symbol.Type, _symbol as ILocalSymbolInternal,
                     this.Name, SynthesizedLocalKind.UserDefined,
-                    LocalDebugId.None, 0, LocalSlotConstraints.None, false, default(ImmutableArray<TypedConstant>), false);
+                    LocalDebugId.None, 0, LocalSlotConstraints.None, ImmutableArray<bool>.Empty, ImmutableArray<string>.Empty, false);
 
             _place = new LocalPlace(def);
             il.AddLocalToScope(def);
@@ -421,7 +421,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 {
                     var loc = cg.Builder.LocalSlotManager.DeclareLocal(
                         clrtype, new SynthesizedLocalSymbol(srcparam.Routine, srcparam.Name, clrtype), srcparam.Name,
-                        SynthesizedLocalKind.UserDefined, LocalDebugId.None, 0, LocalSlotConstraints.None, false, default(ImmutableArray<TypedConstant>), false);
+                        SynthesizedLocalKind.UserDefined, LocalDebugId.None, 0, LocalSlotConstraints.None, ImmutableArray<bool>.Empty, ImmutableArray<string>.Empty, false);
                     _lazyplace = new LocalPlace(loc);
                     cg.Builder.AddLocalToScope(loc);
                 }

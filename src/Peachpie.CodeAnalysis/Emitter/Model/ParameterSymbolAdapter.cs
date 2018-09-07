@@ -8,6 +8,7 @@ using Cci = Microsoft.Cci;
 using System.Collections.Immutable;
 using Pchp.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Emit;
+using Microsoft.CodeAnalysis.CodeGen;
 using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 
@@ -18,6 +19,8 @@ namespace Pchp.CodeAnalysis.Symbols
         Cci.IParameterDefinition
     {
         ImmutableArray<Cci.ICustomModifier> Cci.IParameterTypeInformation.CustomModifiers => this.CustomModifiers.As<Cci.ICustomModifier>();
+
+        ImmutableArray<Cci.ICustomModifier> Cci.IParameterTypeInformation.RefCustomModifiers => this.RefCustomModifiers.As<Cci.ICustomModifier>();
 
         bool Cci.IParameterTypeInformation.IsByReference => this.RefKind != Microsoft.CodeAnalysis.RefKind.None;
 
@@ -33,13 +36,13 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets constant value to be stored in metadata Constant table.
         /// </summary>
-        Cci.IMetadataConstant Cci.IParameterDefinition.GetDefaultValue(EmitContext context)
+        MetadataConstant Cci.IParameterDefinition.GetDefaultValue(EmitContext context)
         {
             CheckDefinitionInvariant();
             return this.GetMetadataConstantValue(context);
         }
 
-        internal Cci.IMetadataConstant GetMetadataConstantValue(EmitContext context)
+        internal MetadataConstant GetMetadataConstantValue(EmitContext context)
         {
             if (!HasMetadataConstantValue)
             {

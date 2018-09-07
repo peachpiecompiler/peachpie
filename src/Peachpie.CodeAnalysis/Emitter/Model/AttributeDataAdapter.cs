@@ -28,7 +28,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return builder.ToImmutableAndFree();
         }
 
-        Cci.IMethodReference Cci.ICustomAttribute.Constructor(EmitContext context)
+        Cci.IMethodReference Cci.ICustomAttribute.Constructor(EmitContext context, bool reportDiagnostics)
         {
             PEModuleBuilder moduleBeingBuilt = (PEModuleBuilder)context.Module;
             return (Cci.IMethodReference)moduleBeingBuilt.Translate(this.AttributeConstructor, /*context.SyntaxNodeOpt, */context.Diagnostics, false);

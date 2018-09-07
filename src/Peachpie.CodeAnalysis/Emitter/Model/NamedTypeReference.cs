@@ -64,10 +64,7 @@ namespace Pchp.CodeAnalysis.Emit
             return null;
         }
 
-        Cci.PrimitiveTypeCode Cci.ITypeReference.TypeCode(EmitContext context)
-        {
-            return Cci.PrimitiveTypeCode.NotPrimitive;
-        }
+        Cci.PrimitiveTypeCode Cci.ITypeReference.TypeCode => Cci.PrimitiveTypeCode.NotPrimitive;
 
         TypeDefinitionHandle Cci.ITypeReference.TypeDef
         {

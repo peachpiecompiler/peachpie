@@ -33,10 +33,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return null;
         }
 
-        Cci.PrimitiveTypeCode Cci.ITypeReference.TypeCode(EmitContext context)
-        {
-            return Cci.PrimitiveTypeCode.NotPrimitive;
-        }
+        Cci.PrimitiveTypeCode Cci.ITypeReference.TypeCode => Cci.PrimitiveTypeCode.NotPrimitive;
 
         TypeDefinitionHandle Cci.ITypeReference.TypeDef
         {
@@ -219,7 +216,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        IEnumerable<Cci.ITypeReference> Cci.IGenericParameter.GetConstraints(EmitContext context)
+        IEnumerable<Cci.TypeReferenceWithAttributes> Cci.IGenericParameter.GetConstraints(EmitContext context)
         {
             var moduleBeingBuilt = (PEModuleBuilder)context.Module;
             var seenValueType = false;
@@ -234,16 +231,18 @@ namespace Pchp.CodeAnalysis.Symbols
                         seenValueType = true;
                         break;
                 }
-                yield return moduleBeingBuilt.Translate(type,
-                                                        syntaxNodeOpt: context.SyntaxNodeOpt,
-                                                        diagnostics: context.Diagnostics);
+                var typeRef = moduleBeingBuilt.Translate(type,
+                                                         syntaxNodeOpt: context.SyntaxNodeOpt,
+                                                         diagnostics: context.Diagnostics);
+                yield return new Cci.TypeReferenceWithAttributes(typeRef);
             }
             if (this.HasValueTypeConstraint && !seenValueType)
             {
                 // Add System.ValueType constraint to comply with Dev11 output
-                yield return moduleBeingBuilt.GetSpecialType(SpecialType.System_ValueType,
-                                                             syntaxNodeOpt: context.SyntaxNodeOpt,
-                                                             diagnostics: context.Diagnostics);
+                var typeRef = moduleBeingBuilt.GetSpecialType(SpecialType.System_ValueType,
+                                                              syntaxNodeOpt: context.SyntaxNodeOpt,
+                                                              diagnostics: context.Diagnostics);
+                yield return new Cci.TypeReferenceWithAttributes(typeRef);
             }
         }
 

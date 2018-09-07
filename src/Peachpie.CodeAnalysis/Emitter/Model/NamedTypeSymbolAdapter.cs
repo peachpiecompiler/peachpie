@@ -42,16 +42,19 @@ namespace Pchp.CodeAnalysis.Symbols
             return AsTypeDefinitionImpl(moduleBeingBuilt);
         }
 
-        Cci.PrimitiveTypeCode Cci.ITypeReference.TypeCode(EmitContext context)
+        Cci.PrimitiveTypeCode Cci.ITypeReference.TypeCode
         {
-            Debug.Assert(this.IsDefinitionOrDistinct());
-
-            if (this.IsDefinition)
+            get
             {
-                return this.PrimitiveTypeCode;
-            }
+                Debug.Assert(this.IsDefinitionOrDistinct());
 
-            return Cci.PrimitiveTypeCode.NotPrimitive;
+                if (this.IsDefinition)
+                {
+                    return this.PrimitiveTypeCode;
+                }
+
+                return Cci.PrimitiveTypeCode.NotPrimitive;
+            }
         }
 
         TypeDefinitionHandle Cci.ITypeReference.TypeDef
@@ -232,13 +235,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 : null;
         }
 
-        IEnumerable<Cci.IEventDefinition> Cci.ITypeDefinition.Events
+        IEnumerable<Cci.IEventDefinition> Cci.ITypeDefinition.GetEvents(EmitContext context)
         {
-            get
-            {
-                CheckDefinitionInvariant();
-                return GetEventsToEmit().Cast<Cci.IEventDefinition>();
-            }
+            CheckDefinitionInvariant();
+            return GetEventsToEmit().Cast<Cci.IEventDefinition>();
         }
 
         internal virtual IEnumerable<IEventSymbol> GetEventsToEmit()
@@ -359,7 +359,7 @@ namespace Pchp.CodeAnalysis.Symbols
             get { return (ushort)this.Arity; }
         }
 
-        IEnumerable<Cci.ITypeReference> Cci.ITypeDefinition.Interfaces(EmitContext context)
+        IEnumerable<Cci.TypeReferenceWithAttributes> Cci.ITypeDefinition.Interfaces(EmitContext context)
         {
             Debug.Assert(((Cci.ITypeReference)this).AsTypeDefinition(context) != null);
 
@@ -367,8 +367,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
             foreach (NamedTypeSymbol iiface in this.GetInterfacesToEmit())
             {
-                yield return moduleBeingBuilt.Translate(iiface, null, context.Diagnostics,
+                var typeRef = moduleBeingBuilt.Translate(iiface, null, context.Diagnostics,
                     fromImplements: true);
+                yield return new Cci.TypeReferenceWithAttributes(typeRef);
             }
 
             yield break;
@@ -842,13 +843,10 @@ namespace Pchp.CodeAnalysis.Symbols
             return builder.ToImmutableAndFree();
         }
 
-        Cci.INamedTypeReference Cci.IGenericTypeInstanceReference.GenericType
+        Cci.INamedTypeReference Cci.IGenericTypeInstanceReference.GetGenericType(EmitContext context)
         {
-            get
-            {
-                Debug.Assert(((Cci.ITypeReference)this).AsGenericTypeInstanceReference != null);
-                return GenericTypeImpl;
-            }
+            Debug.Assert(((Cci.ITypeReference)this).AsGenericTypeInstanceReference != null);
+            return GenericTypeImpl;
         }
 
         private Cci.INamedTypeReference GenericTypeImpl
@@ -859,16 +857,13 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        Cci.INestedTypeReference Cci.ISpecializedNestedTypeReference.UnspecializedVersion
+        Cci.INestedTypeReference Cci.ISpecializedNestedTypeReference.GetUnspecializedVersion(EmitContext context)
         {
-            get
-            {
-                Debug.Assert(((Cci.ITypeReference)this).AsSpecializedNestedTypeReference != null);
-                var result = GenericTypeImpl.AsNestedTypeReference;
+            Debug.Assert(((Cci.ITypeReference)this).AsSpecializedNestedTypeReference != null);
+            var result = GenericTypeImpl.AsNestedTypeReference;
 
-                Debug.Assert(result != null);
-                return result;
-            }
+            Debug.Assert(result != null);
+            return result;
         }
 
         public ImmutableArray<TypeSymbol> TypeArgumentsNoUseSiteDiagnostics => TypeArguments;

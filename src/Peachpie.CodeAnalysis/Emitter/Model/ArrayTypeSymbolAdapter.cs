@@ -3,6 +3,7 @@ using Pchp.CodeAnalysis.Emit;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
@@ -38,7 +39,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        IEnumerable<int> Cci.IArrayTypeReference.LowerBounds
+        ImmutableArray<int> Cci.IArrayTypeReference.LowerBounds
         {
             get
             {
@@ -46,7 +47,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 if (lowerBounds.IsDefault)
                 {
-                    return Enumerable.Repeat(0, Rank);
+                    return Enumerable.Repeat(0, Rank).ToImmutableArray();
                 }
                 else
                 {
@@ -55,34 +56,9 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        uint Cci.IArrayTypeReference.Rank
-        {
-            get
-            {
-                return (uint)this.Rank;
-            }
-        }
+        int Cci.IArrayTypeReference.Rank => Rank;
 
-        IEnumerable<ulong> Cci.IArrayTypeReference.Sizes
-        {
-            get
-            {
-                if (this.Sizes.IsEmpty)
-                {
-                    return SpecializedCollections.EmptyEnumerable<ulong>();
-                }
-
-                return GetSizes();
-            }
-        }
-
-        private IEnumerable<ulong> GetSizes()
-        {
-            foreach (var size in this.Sizes)
-            {
-                yield return (ulong)size;
-            }
-        }
+        ImmutableArray<int> Cci.IArrayTypeReference.Sizes => Sizes;
 
         void Cci.IReference.Dispatch(Cci.MetadataVisitor visitor)
         {
@@ -93,7 +69,7 @@ namespace Pchp.CodeAnalysis.Symbols
         bool Cci.ITypeReference.IsValueType => false;
 
         TypeDefinitionHandle Cci.ITypeReference.TypeDef => default(TypeDefinitionHandle);
-        Cci.PrimitiveTypeCode Cci.ITypeReference.TypeCode(EmitContext context) => Cci.PrimitiveTypeCode.NotPrimitive;
+        Cci.PrimitiveTypeCode Cci.ITypeReference.TypeCode => Cci.PrimitiveTypeCode.NotPrimitive;
 
         Cci.ITypeDefinition Cci.ITypeReference.GetResolvedType(EmitContext context) => null;
         Cci.IGenericMethodParameterReference Cci.ITypeReference.AsGenericMethodParameterReference => null;

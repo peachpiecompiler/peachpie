@@ -14,7 +14,6 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
-using BinaryKind = Microsoft.CodeAnalysis.Semantics.BinaryOperationKind;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -3390,10 +3389,8 @@ namespace Pchp.CodeAnalysis.Semantics
             return result_type;
         }
 
-        bool IsPostfix => this.IncrementKind == UnaryOperationKind.OperatorPostfixIncrement || this.IncrementKind == UnaryOperationKind.OperatorPostfixDecrement;
         bool IsPrefix => !IsPostfix;
-        bool IsIncrement => this.IncrementKind == UnaryOperationKind.OperatorPostfixIncrement || this.IncrementKind == UnaryOperationKind.OperatorPrefixIncrement;
-        bool IsDecrement => this.IncrementKind == UnaryOperationKind.OperatorPostfixDecrement || this.IncrementKind == UnaryOperationKind.OperatorPrefixDecrement;
+        bool IsDecrement => !this.IsIncrement;
     }
 
     partial class BoundConditionalEx
