@@ -470,22 +470,19 @@ namespace Pchp.Library
                     if (elementRecord.State == ElementState.Beginning && elementRecord.Attributes.Count != 0)
                         arrayRecord.Add("attributes", elementRecord.Attributes);
 
-                    values.Add(arrayRecord);
+                    var value_idx = values.Add(arrayRecord) - 1;
 
                     if (indices != null)
                     {
-                        PhpArray elementIndices;
+                        var elementIndices = indices[elementRecord.ElementName].AsArray();
 
-                        if (!indices.ContainsKey(elementRecord.ElementName))
+                        if (elementIndices == null)
                         {
-                            elementIndices = new PhpArray();
-                            indices.Add(elementRecord.ElementName, elementIndices);
+                            indices[elementRecord.ElementName] = elementIndices = new PhpArray();
                         }
-                        else
-                            elementIndices = (PhpArray)indices[elementRecord.ElementName];
 
                         // add the max index (last inserted value)
-                        elementIndices.Add(values.MaxIntegerKey);
+                        elementIndices.Add(value_idx);
                     }
                 }
 
