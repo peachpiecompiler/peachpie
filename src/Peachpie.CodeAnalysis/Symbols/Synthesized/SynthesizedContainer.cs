@@ -134,6 +134,8 @@ namespace Pchp.CodeAnalysis.Symbols
             get { return (object)Constructor == null; }
         }
 
+        public override bool IsSerializable => false;
+
         public override ImmutableArray<TypeSymbol> TypeArguments
         {
             get { return StaticCast<TypeSymbol>.From(TypeParameters); }

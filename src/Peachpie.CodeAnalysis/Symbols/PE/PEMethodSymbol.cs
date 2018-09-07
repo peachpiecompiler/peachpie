@@ -743,14 +743,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 @params = ImmutableArray<ParameterSymbol>.Empty;
             }
 
-            // workaround for CodeAnalysis 0.6.0 // remove after we use 0.9.0+
-            if (paramInfo[0].Type is ByRefReturnErrorTypeSymbol rtype)
-            {
-                // fix paramInfo
-                paramInfo[0].IsByRef = true;
-                paramInfo[0].Type = rtype.TheReturnType;
-            }
-
             //// Dynamify object type if necessary
             //paramInfo[0].Type = paramInfo[0].Type.AsDynamicIfNoPia(_containingType);
 

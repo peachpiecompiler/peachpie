@@ -20,6 +20,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public abstract TypeKind TypeKind { get; }
 
+        public virtual bool IsTupleType => false;
+
         INamedTypeSymbol ITypeSymbol.BaseType => BaseType;
 
         ImmutableArray<INamedTypeSymbol> ITypeSymbol.AllInterfaces => StaticCast<INamedTypeSymbol>.From(AllInterfaces);

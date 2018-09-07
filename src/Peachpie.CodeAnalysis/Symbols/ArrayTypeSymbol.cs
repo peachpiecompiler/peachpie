@@ -455,6 +455,12 @@ namespace Pchp.CodeAnalysis.Symbols
             return this.Equals(symbol as ArrayTypeSymbol);
         }
 
+        bool IArrayTypeSymbol.IsSZArray => IsSZArray;
+
+        ImmutableArray<int> IArrayTypeSymbol.LowerBounds => LowerBounds;
+
+        ImmutableArray<int> IArrayTypeSymbol.Sizes => Sizes;
+
         #endregion
 
         #region ISymbol Members

@@ -21,7 +21,7 @@ namespace Pchp.CodeAnalysis
     /// exposed by the compiler.
     /// </summary>
     [DebuggerDisplay("{GetDebuggerDisplay(), nq}")]
-    internal abstract partial class Symbol : ISymbol, IMessageSerializable
+    internal abstract partial class Symbol : ISymbol
     {
         /// <summary>
         /// Gets the name of this symbol. Symbols without a name return the empty string; null is

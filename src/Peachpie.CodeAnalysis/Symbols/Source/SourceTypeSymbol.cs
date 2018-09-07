@@ -1054,6 +1054,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsStatic => _syntax.MemberAttributes.IsStatic();
 
+        public override bool IsSerializable => false;
+
         public override ImmutableArray<Location> Locations => ImmutableArray.Create(CreateLocation(_syntax.Span));
 
         internal override bool ShouldAddWinRTMembers => false;

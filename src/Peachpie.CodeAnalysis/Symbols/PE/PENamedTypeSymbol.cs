@@ -1486,6 +1486,8 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public override bool IsSerializable => (_flags & TypeAttributes.Serializable) != 0;
+
         internal override bool IsMetadataSealed => (_flags & TypeAttributes.Sealed) != 0;
 
         internal TypeAttributes Flags => _flags;

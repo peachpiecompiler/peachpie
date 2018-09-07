@@ -18,7 +18,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal sealed class IndexedTypeParameterSymbol : TypeParameterSymbol
     {
-        private static TypeParameterSymbol[] s_parameterPool = SpecializedCollections.EmptyArray<TypeParameterSymbol>();
+        private static TypeParameterSymbol[] s_parameterPool = Array.Empty<TypeParameterSymbol>();
 
         private readonly int _index;
 

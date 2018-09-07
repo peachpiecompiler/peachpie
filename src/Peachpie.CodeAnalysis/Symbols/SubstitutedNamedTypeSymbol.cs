@@ -192,6 +192,8 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public sealed override bool IsSerializable => _originalDefinition.IsSerializable;
+
         public override NamedTypeSymbol BaseType
         {
             get

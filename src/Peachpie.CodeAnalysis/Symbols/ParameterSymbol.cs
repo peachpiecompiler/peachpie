@@ -12,6 +12,8 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         public virtual ImmutableArray<CustomModifier> CustomModifiers => ImmutableArray<CustomModifier>.Empty;
 
+        public virtual ImmutableArray<CustomModifier> RefCustomModifiers => ImmutableArray<CustomModifier>.Empty;
+
         public override SymbolKind Kind => SymbolKind.Parameter;
 
         public virtual bool IsOptional => false;

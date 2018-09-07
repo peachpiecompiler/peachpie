@@ -104,6 +104,8 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public abstract bool HasConstructorConstraint { get; }
 
+        public virtual bool HasUnmanagedTypeConstraint => false;
+
         /// <summary>
         /// The type parameter kind of this type parameter.
         /// </summary>
