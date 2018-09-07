@@ -107,6 +107,7 @@ namespace Pchp.CodeAnalysis
             IEnumerable<KeyValuePair<string, ReportDiagnostic>> specificDiagnosticOptions = null,
             bool concurrentBuild = true,
             bool deterministic = false,
+            DateTime currentLocalTime = default(DateTime),
             XmlReferenceResolver xmlReferenceResolver = null,
             SourceReferenceResolver sourceReferenceResolver = null,
             MetadataReferenceResolver metadataReferenceResolver = null,
@@ -115,7 +116,8 @@ namespace Pchp.CodeAnalysis
             bool publicSign = false,
             PhpDocTypes phpdocTypes = PhpDocTypes.None,
             ImmutableArray<Diagnostic> diagnostics = default(ImmutableArray<Diagnostic>),
-            PhpParseOptions parseOptions = null)
+            PhpParseOptions parseOptions = null,
+            bool referencesSupersedeLowerVersions = false)
             : this(outputKind, baseDirectory, sdkDirectory,
                    reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
                    versionString,
@@ -123,8 +125,8 @@ namespace Pchp.CodeAnalysis
                    cryptoKeyContainer, cryptoKeyFile, cryptoPublicKey, delaySign, platform,
                    generalDiagnosticOption, warningLevel,
                    specificDiagnosticOptions, concurrentBuild, deterministic,
-                   extendedCustomDebugInformation: true,
                    debugPlusMode: false,
+                   currentLocalTime: currentLocalTime,
                    xmlReferenceResolver: xmlReferenceResolver,
                    sourceReferenceResolver: sourceReferenceResolver,
                    metadataReferenceResolver: metadataReferenceResolver,
@@ -134,7 +136,8 @@ namespace Pchp.CodeAnalysis
                    publicSign: publicSign,
                    phpdocTypes: phpdocTypes,
                    diagnostics: diagnostics,
-                   parseOptions: parseOptions)
+                   parseOptions: parseOptions,
+                   referencesSupersedeLowerVersions: referencesSupersedeLowerVersions)
         {
         }
 
@@ -160,7 +163,7 @@ namespace Pchp.CodeAnalysis
             IEnumerable<KeyValuePair<string, ReportDiagnostic>> specificDiagnosticOptions,
             bool concurrentBuild,
             bool deterministic,
-            bool extendedCustomDebugInformation,
+            DateTime currentLocalTime,
             bool debugPlusMode,
             XmlReferenceResolver xmlReferenceResolver,
             SourceReferenceResolver sourceReferenceResolver,
@@ -171,13 +174,14 @@ namespace Pchp.CodeAnalysis
             bool publicSign,
             PhpDocTypes phpdocTypes,
             ImmutableArray<Diagnostic> diagnostics,
-            PhpParseOptions parseOptions)
+            PhpParseOptions parseOptions,
+            bool referencesSupersedeLowerVersions)
             : base(outputKind, reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
                    cryptoKeyContainer, cryptoKeyFile, cryptoPublicKey, delaySign, publicSign, optimizationLevel, checkOverflow,
                    platform, generalDiagnosticOption, warningLevel, specificDiagnosticOptions.ToImmutableDictionaryOrEmpty(),
-                   concurrentBuild, deterministic, extendedCustomDebugInformation, debugPlusMode, xmlReferenceResolver,
+                   concurrentBuild, deterministic, currentLocalTime, debugPlusMode, xmlReferenceResolver,
                    sourceReferenceResolver, metadataReferenceResolver, assemblyIdentityComparer,
-                   strongNameProvider, metadataImportOptions)
+                   strongNameProvider, metadataImportOptions, referencesSupersedeLowerVersions)
         {
             this.BaseDirectory = baseDirectory;
             this.SdkDirectory = sdkDirectory;
@@ -207,7 +211,7 @@ namespace Pchp.CodeAnalysis
             specificDiagnosticOptions: other.SpecificDiagnosticOptions,
             concurrentBuild: other.ConcurrentBuild,
             deterministic: other.Deterministic,
-            extendedCustomDebugInformation: other.ExtendedCustomDebugInformation,
+            currentLocalTime: other.CurrentLocalTime,
             debugPlusMode: other.DebugPlusMode,
             xmlReferenceResolver: other.XmlReferenceResolver,
             sourceReferenceResolver: other.SourceReferenceResolver,
@@ -219,9 +223,12 @@ namespace Pchp.CodeAnalysis
             publicSign: other.PublicSign,
             phpdocTypes: other.PhpDocTypes,
             diagnostics: other.Diagnostics,
-            parseOptions: other.ParseOptions)
+            parseOptions: other.ParseOptions,
+            referencesSupersedeLowerVersions: other.ReferencesSupersedeLowerVersions)
         {
         }
+
+        public override string Language => Constants.PhpLanguageName;
 
         internal override ImmutableArray<string> GetImports() => ImmutableArray<string>.Empty; // Usings;
 
@@ -235,7 +242,7 @@ namespace Pchp.CodeAnalysis
             return new PhpCompilationOptions(this) { OutputKind = kind };
         }
 
-        public PhpCompilationOptions WithModuleName(string moduleName)
+        public new PhpCompilationOptions WithModuleName(string moduleName)
         {
             if (moduleName == this.ModuleName)
             {
@@ -245,7 +252,7 @@ namespace Pchp.CodeAnalysis
             return new PhpCompilationOptions(this) { ModuleName = moduleName };
         }
 
-        public PhpCompilationOptions WithScriptClassName(string name)
+        public new PhpCompilationOptions WithScriptClassName(string name)
         {
             if (name == this.ScriptClassName)
             {
@@ -255,7 +262,7 @@ namespace Pchp.CodeAnalysis
             return new PhpCompilationOptions(this) { ScriptClassName = name };
         }
 
-        public PhpCompilationOptions WithMainTypeName(string name)
+        public new PhpCompilationOptions WithMainTypeName(string name)
         {
             if (name == this.MainTypeName)
             {
@@ -265,7 +272,7 @@ namespace Pchp.CodeAnalysis
             return new PhpCompilationOptions(this) { MainTypeName = name };
         }
 
-        public PhpCompilationOptions WithCryptoKeyContainer(string name)
+        public new PhpCompilationOptions WithCryptoKeyContainer(string name)
         {
             if (name == this.CryptoKeyContainer)
             {
@@ -275,7 +282,7 @@ namespace Pchp.CodeAnalysis
             return new PhpCompilationOptions(this) { CryptoKeyContainer = name };
         }
 
-        public PhpCompilationOptions WithCryptoKeyFile(string path)
+        public new PhpCompilationOptions WithCryptoKeyFile(string path)
         {
             if (path == this.CryptoKeyFile)
             {
@@ -285,7 +292,7 @@ namespace Pchp.CodeAnalysis
             return new PhpCompilationOptions(this) { CryptoKeyFile = path };
         }
 
-        public PhpCompilationOptions WithCryptoPublicKey(ImmutableArray<byte> value)
+        public new PhpCompilationOptions WithCryptoPublicKey(ImmutableArray<byte> value)
         {
             if (value.IsDefault)
             {
@@ -300,7 +307,7 @@ namespace Pchp.CodeAnalysis
             return new PhpCompilationOptions(this) { CryptoPublicKey = value };
         }
 
-        public PhpCompilationOptions WithDelaySign(bool? value)
+        public new PhpCompilationOptions WithDelaySign(bool? value)
         {
             if (value == this.DelaySign)
             {
@@ -320,7 +327,7 @@ namespace Pchp.CodeAnalysis
             return new PhpCompilationOptions(this) { OptimizationLevel = value };
         }
 
-        public PhpCompilationOptions WithOverflowChecks(bool enabled)
+        public new PhpCompilationOptions WithOverflowChecks(bool enabled)
         {
             if (enabled == this.CheckOverflow)
             {
@@ -409,7 +416,7 @@ namespace Pchp.CodeAnalysis
             return new PhpCompilationOptions(this) { WarningLevel = warningLevel };
         }
 
-        public PhpCompilationOptions WithConcurrentBuild(bool concurrentBuild)
+        public new PhpCompilationOptions WithConcurrentBuild(bool concurrentBuild)
         {
             if (concurrentBuild == this.ConcurrentBuild)
             {
@@ -429,16 +436,6 @@ namespace Pchp.CodeAnalysis
             return new PhpCompilationOptions(this) { Deterministic = deterministic };
         }
 
-        internal PhpCompilationOptions WithExtendedCustomDebugInformation(bool extendedCustomDebugInformation)
-        {
-            if (extendedCustomDebugInformation == this.ExtendedCustomDebugInformation)
-            {
-                return this;
-            }
-
-            return new PhpCompilationOptions(this) { ExtendedCustomDebugInformation_internal_protected_set = extendedCustomDebugInformation };
-        }
-
         public PhpCompilationOptions WithDebugPlusMode(bool debugPlusMode)
         {
             if (debugPlusMode == this.DebugPlusMode)
@@ -449,14 +446,14 @@ namespace Pchp.CodeAnalysis
             return new PhpCompilationOptions(this) { DebugPlusMode_internal_protected_set = debugPlusMode };
         }
 
-        internal PhpCompilationOptions WithMetadataImportOptions(MetadataImportOptions value)
+        public new PhpCompilationOptions WithMetadataImportOptions(MetadataImportOptions value)
         {
             if (value == this.MetadataImportOptions)
             {
                 return this;
             }
 
-            return new PhpCompilationOptions(this) { MetadataImportOptions_internal_protected_set = value };
+            return new PhpCompilationOptions(this) { MetadataImportOptions = value };
         }
 
         public new PhpCompilationOptions WithXmlReferenceResolver(XmlReferenceResolver resolver)
@@ -535,6 +532,36 @@ namespace Pchp.CodeAnalysis
 
         protected override CompilationOptions CommonWithStrongNameProvider(StrongNameProvider provider) =>
             WithStrongNameProvider(provider);
+
+        protected override CompilationOptions CommonWithConcurrentBuild(bool concurrent) =>
+            WithConcurrentBuild(concurrent);
+
+        protected override CompilationOptions CommonWithModuleName(string moduleName) =>
+            WithModuleName(moduleName);
+
+        protected override CompilationOptions CommonWithMainTypeName(string mainTypeName) =>
+            WithMainTypeName(mainTypeName);
+
+        protected override CompilationOptions CommonWithScriptClassName(string scriptClassName) =>
+            WithScriptClassName(scriptClassName);
+
+        protected override CompilationOptions CommonWithCryptoKeyContainer(string cryptoKeyContainer) =>
+            WithCryptoKeyContainer(cryptoKeyContainer);
+
+        protected override CompilationOptions CommonWithCryptoKeyFile(string cryptoKeyFile) =>
+            WithCryptoKeyFile(cryptoKeyFile);
+
+        protected override CompilationOptions CommonWithCryptoPublicKey(ImmutableArray<byte> cryptoPublicKey) =>
+            WithCryptoPublicKey(cryptoPublicKey);
+
+        protected override CompilationOptions CommonWithDelaySign(bool? delaySign) =>
+            WithDelaySign(delaySign);
+
+        protected override CompilationOptions CommonWithCheckOverflow(bool checkOverflow) =>
+            WithOverflowChecks(checkOverflow);
+
+        protected override CompilationOptions CommonWithMetadataImportOptions(MetadataImportOptions value) =>
+            WithMetadataImportOptions(value);
 
         [Obsolete]
         protected override CompilationOptions CommonWithFeatures(ImmutableArray<string> features)
