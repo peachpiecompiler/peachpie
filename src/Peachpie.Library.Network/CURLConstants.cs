@@ -636,7 +636,7 @@ namespace Peachpie.Library.Network
                     // always enabled
                     break;
 
-                case CURLINFO_HEADER_OUT: ch.StoreOutHeaders = value.ToBoolean(); break;
+                case CURLINFO_HEADER_OUT: ch.StoreRequestHeaders = value.ToBoolean(); break;
 
                 //
                 default:
@@ -698,6 +698,11 @@ namespace Peachpie.Library.Network
     {
         public static string StatusHeader(HttpWebResponse response) => $"HTTP/{response.ProtocolVersion.ToString(2)} {(int)response.StatusCode} {response.StatusDescription}";
         public const string HeaderSeparator = "\r\n";
+
+        public static string HeaderString(HttpWebRequest req)
+        {
+            return $"{req.Method} {req.RequestUri.PathAndQuery} HTTP/{req.ProtocolVersion.ToString(2)}\r\nHost: {req.Host}\r\n{req.Headers.ToString()}\r\n";
+        }
     }
 
     #region CurlErrors

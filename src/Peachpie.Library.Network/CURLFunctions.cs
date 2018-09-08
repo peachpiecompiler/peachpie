@@ -145,17 +145,24 @@ namespace Peachpie.Library.Network
                 {
                     case 0:
                         // array of all information
-                        return new PhpArray()
+                        var arr = new PhpArray()
                         {
                             { "url", r.ResponseUri?.AbsoluteUri },
                             { "content_type", r.ContentType },
-                            { "http_code", r.StatusCode },
+                            { "http_code", (long)r.StatusCode },
                             { "header_size", r.HeaderSize },
                             { "filetime", DateTimeUtils.UtcToUnixTimeStamp(r.LastModified) },
                             { "total_time", r.TotalTime.TotalSeconds },
                             { "download_content_length", r.ContentLength },
                             { "redirect_url", ch.FollowLocation && r.ResponseUri != null ? string.Empty : r.ResponseUri.AbsoluteUri }
                         };
+
+                        if (ch.RequestHeaders != null)
+                        {
+                            arr["request_header"] = ch.RequestHeaders;
+                        }
+
+                        return arr;
                     case CURLConstants.CURLINFO_EFFECTIVE_URL:
                         return r.ResponseUri?.AbsoluteUri;
                     case CURLConstants.CURLINFO_REDIRECT_URL:
@@ -176,6 +183,8 @@ namespace Peachpie.Library.Network
                         return ((ch.CookieFileSet && ch.Result != null) ? CreateCookieArray(ch.Result.Cookies) : PhpArray.Empty);
                     case CURLConstants.CURLINFO_HEADER_SIZE:
                         return r.HeaderSize;
+                    case CURLConstants.CURLINFO_HEADER_OUT:
+                        return r.RequestHeaders ?? PhpValue.False;
                     default:
                         PhpException.ArgumentValueNotSupported(nameof(opt), opt);
                         break;
@@ -227,7 +236,7 @@ namespace Peachpie.Library.Network
             {
                 using (var response = (HttpWebResponse)responseTask.Result)
                 {
-                    return new CURLResponse(ProcessResponse(ctx, ch, response), response);
+                    return new CURLResponse(ProcessResponse(ctx, ch, response), response, ch);
                 }
             }
             catch (AggregateException agEx)
@@ -239,7 +248,7 @@ namespace Peachpie.Library.Network
                     {
                         case WebExceptionStatus.ProtocolError:
                             // actually ok, 301, 500, etc .. process the response:
-                            return new CURLResponse(ProcessResponse(ctx, ch, (HttpWebResponse)webEx.Response), (HttpWebResponse)webEx.Response);
+                            return new CURLResponse(ProcessResponse(ctx, ch, (HttpWebResponse)webEx.Response), (HttpWebResponse)webEx.Response, ch);
 
                         case WebExceptionStatus.Timeout:
                             return CURLResponse.CreateError(CurlErrors.CURLE_OPERATION_TIMEDOUT, webEx);
@@ -312,9 +321,9 @@ namespace Peachpie.Library.Network
             }
 
             //
-            if (ch.StoreOutHeaders)
+            if (ch.StoreRequestHeaders)
             {
-                // TODO: ch.OutHeaders = HttpHeaders.HeaderString(req); // and restore it when constructing CURLResponse
+                ch.RequestHeaders = HttpHeaders.HeaderString(req); // and restore it when constructing CURLResponse
             }
 
             //
