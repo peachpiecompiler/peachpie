@@ -311,6 +311,13 @@ namespace Peachpie.Library.Network
                 // custom method, nothing to do
             }
 
+            //
+            if (ch.StoreOutHeaders)
+            {
+                // TODO: ch.OutHeaders = HttpHeaders.HeaderString(req); // and restore it when constructing CURLResponse
+            }
+
+            //
             return req.GetResponseAsync();
         }
 

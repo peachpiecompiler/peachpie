@@ -16,6 +16,22 @@ namespace Peachpie.Library.Network
     {
         #region Properties
 
+        /// <summary>
+        /// Various options whichs value is x^2 can be stored here as a flag.
+        /// </summary>
+        int _flags;
+
+        /// <summary><c>CURLINFO_HEADER_OUT</c> option.</summary>
+        public bool StoreOutHeaders
+        {
+            get => (_flags & CURLConstants.CURLINFO_HEADER_OUT) != 0;
+            set
+            {
+                if (value) _flags |= CURLConstants.CURLINFO_HEADER_OUT;
+                else _flags &= ~CURLConstants.CURLINFO_HEADER_OUT;
+            }
+        }
+
         public string Url { get; set; }
 
         public string DefaultSheme { get; set; } = "http";

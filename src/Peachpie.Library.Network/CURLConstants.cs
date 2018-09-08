@@ -636,6 +636,9 @@ namespace Peachpie.Library.Network
                     // always enabled
                     break;
 
+                case CURLINFO_HEADER_OUT: ch.StoreOutHeaders = value.ToBoolean(); break;
+
+                //
                 default:
                     PhpException.ArgumentValueNotSupported(nameof(option), TryGetOptionName(option));
                     return false;
