@@ -305,7 +305,6 @@ namespace Pchp.Library
             // dereferences result since the array doesn't do so:
             var result = array.RemoveLast().Value.GetValue();
 
-            array.RefreshMaxIntegerKey();
             array.RestartIntrinsicEnumerator();
 
             return result;
@@ -405,26 +404,16 @@ namespace Pchp.Library
                 throw new ArgumentNullException();
             }
 
-            var result = new PhpArray(array.Count);
-            var e = array.GetFastEnumerator();
+            PhpArray result;
+            
+            // clone the source array and revers entries order
+            result = array.DeepCopy();
+            result.Reverse();
 
-            if (preserveKeys)
+            if (!preserveKeys)
             {
-                // changes only the order of elements:
-                while (e.MoveNext())
-                {
-                    result.Prepend(e.CurrentKey, e.CurrentValue);
-                }
-            }
-            else
-            {
-                // changes the order of elements and reindexes integer keys:
-                int i = array.IntegerCount;
-                while (e.MoveNext())
-                {
-                    var key = e.CurrentKey;
-                    result.Prepend(key.IsString ? key : new IntStringKey(--i), e.CurrentValue);
-                }
+                // change the key of integer key from 0
+                array.ReindexIntegers(0);
             }
 
             // if called by PHP languge then all items in the result should be inplace deeply copied:

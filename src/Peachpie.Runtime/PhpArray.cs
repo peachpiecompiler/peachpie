@@ -175,10 +175,8 @@ namespace Pchp.Core
         /// Copy constructor. Creates <see cref="PhpArray"/> that shares internal data table with another <see cref="PhpArray"/>.
         /// </summary>
         /// <param name="array">Table to be shared.</param>
-        /// <param name="preserveMaxInt">True to copy the <see cref="PhpHashtable.MaxIntegerKey"/> from <paramref name="array"/>.
-        /// Otherwise the value will be recomputed when needed. See http://phalanger.codeplex.com/workitem/31484 for more details.</param>
-        public PhpArray(PhpArray/*!*/array, bool preserveMaxInt)
-            : base(array, preserveMaxInt)
+        public PhpArray(PhpArray/*!*/array)
+            : base(array)
         {
             // preserve intrinsic enumerator state
             _intrinsicEnumerator = array._intrinsicEnumerator?.WithTable(this); // copies state of intrinsic enumerator or null
@@ -282,7 +280,7 @@ namespace Pchp.Core
         /// <summary>
         /// Creates copy of this instance using shared underlaying hashtable.
         /// </summary>
-        public PhpArray DeepCopy() => new PhpArray(this, true);
+        public PhpArray DeepCopy() => new PhpArray(this);
 
         /// <summary>
         /// Makes clone of this array with deeply copied values.

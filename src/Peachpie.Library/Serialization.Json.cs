@@ -187,11 +187,36 @@ namespace Pchp.Library
                     Write(obj.ToString(System.Globalization.CultureInfo.InvariantCulture));
                 }
 
+                /// <summary>
+                /// Determines if the array is integer indexed in sequnece from 0 without "holes".
+                /// </summary>
+                /// <remarks>Determines if the array can be encoded as JSON array.</remarks>
+                static bool IsSequentialArray(PhpArray/*!*/array)
+                {
+                    if (array.Count != 0)
+                    {
+                        // TODO: once we implement packed arrays, just check if the array is packed without holes and return
+
+                        int next = 0;
+                        var enumerator = array.GetFastEnumerator();
+                        while (enumerator.MoveNext())
+                        {
+                            var key = enumerator.CurrentKey;
+                            if (key.IsString || key.Integer != next++)
+                            {
+                                return false;
+                            }
+                        }
+                    }
+
+                    return true;
+                }
+
                 public override void Accept(PhpArray array)
                 {
                     if (PushObject(array))
                     {
-                        if (HasForceObject || (array.StringCount != 0 || array.MaxIntegerKey + 1 != array.IntegerCount))
+                        if (HasForceObject || !IsSequentialArray(array))
                         {
                             // array are encoded as objects or there are keyed values that has to be encoded as object
                             WriteObject(JsonArrayProperties(array));
@@ -425,19 +450,23 @@ namespace Pchp.Library
                     // [
                     Write(Tokens.ArrayOpen);
 
-                    bool bFirst = true;
-
-                    var enumerator = array.GetFastEnumerator();
-                    while (enumerator.MoveNext())
+                    //
+                    if (array.Count != 0)
                     {
-                        // ,
-                        if (bFirst) bFirst = false;
-                        else Write(Tokens.ItemsSeparatorString);
+                        bool bFirst = true;
 
-                        Debug.Assert(enumerator.CurrentKey.IsInteger);
+                        var enumerator = array.GetFastEnumerator();
+                        while (enumerator.MoveNext())
+                        {
+                            // ,
+                            if (bFirst) bFirst = false;
+                            else Write(Tokens.ItemsSeparatorString);
 
-                        // value
-                        Accept(enumerator.CurrentValue);
+                            Debug.Assert(enumerator.CurrentKey.IsInteger);
+
+                            // value
+                            Accept(enumerator.CurrentValue);
+                        }
                     }
 
                     // ]

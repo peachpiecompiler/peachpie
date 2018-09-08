@@ -1700,34 +1700,34 @@ namespace Pchp.Core
             _debug_check_consistency();
         }
 
-        /// <summary>
-        /// Iterate through the array and find the max integer key.
-        /// </summary>
-        /// <returns>Max integer key or <c>-1</c> if no positive integer key is found.</returns>
-        public int _find_max_int_key()
-        {
-            var _entries = this.entries;
+        ///// <summary>
+        ///// Iterate through the array and find the max integer key.
+        ///// </summary>
+        ///// <returns>Max integer key or <c>-1</c> if no positive integer key is found.</returns>
+        //public int _find_max_int_key()
+        //{
+        //    var _entries = this.entries;
 
-            // TODO: check flags, whether it is a simple sorted array (0..N)
+        //    // TODO: check flags, whether it is a simple sorted array (0..N)
 
-            int max_key = -1;
-            // iterate backwards, find the max faster
-            int p = this.listTail;
-            while (p >= 0)
-            {
-                ref var pentry = ref _entries[p];
-                if (pentry._key.Integer > max_key && pentry._key.IsInteger)
-                {
-                    max_key = pentry._key.Integer;
-                }
+        //    int max_key = -1;
+        //    // iterate backwards, find the max faster
+        //    int p = this.listTail;
+        //    while (p >= 0)
+        //    {
+        //        ref var pentry = ref _entries[p];
+        //        if (pentry._key.Integer > max_key && pentry._key.IsInteger)
+        //        {
+        //            max_key = pentry._key.Integer;
+        //        }
 
-                //
-                p = pentry.listLast;
-            }
+        //        //
+        //        p = pentry.listLast;
+        //    }
 
-            //
-            return max_key;
-        }
+        //    //
+        //    return max_key;
+        //}
 
         /// <summary>
         /// Sort sequence of entries using merge sort. Only changes <see cref="Entry.listNext"/> fields, <see cref="Entry.listLast"/> are not modified at all.
