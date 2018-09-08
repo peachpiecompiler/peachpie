@@ -150,6 +150,7 @@ namespace Peachpie.Library.Network
                             { "url", r.ResponseUri?.AbsoluteUri },
                             { "content_type", r.ContentType },
                             { "http_code", r.StatusCode },
+                            { "header_size", r.HeaderSize },
                             { "filetime", DateTimeUtils.UtcToUnixTimeStamp(r.LastModified) },
                             { "total_time", r.TotalTime.TotalSeconds },
                             { "download_content_length", r.ContentLength },
@@ -173,6 +174,8 @@ namespace Peachpie.Library.Network
                         return r.Private.IsSet ? r.Private : PhpValue.False;
                     case CURLConstants.CURLINFO_COOKIELIST:
                         return ((ch.CookieFileSet && ch.Result != null) ? CreateCookieArray(ch.Result.Cookies) : PhpArray.Empty);
+                    case CURLConstants.CURLINFO_HEADER_SIZE:
+                        return r.HeaderSize;
                     default:
                         PhpException.ArgumentValueNotSupported(nameof(opt), opt);
                         break;
