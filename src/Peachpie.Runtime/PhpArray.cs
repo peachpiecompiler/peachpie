@@ -52,10 +52,9 @@ namespace Pchp.Core
         /// Gets value determining whether this instance has been visited during recursive pass of some structure containing <see cref="PhpArray"/>s.
         /// </summary>
         /// <remarks>
-        /// Must be set to <c>false</c> immediately after the pass.
+        /// Must be decreased immediately after the pass.
         /// </remarks>
-        public bool Visited { get { return _visited; } set { _visited = value; } }
-        bool _visited = false;
+        int _visited;
 
         #region Constructors
 
@@ -403,7 +402,7 @@ namespace Pchp.Core
             incomparable = false;
 
             // if both operands point to the same internal dictionary:
-            if (object.ReferenceEquals(x.table, y.table)) return 0;
+            if (ReferenceEquals(x.table, y.table)) return 0; // => x == y
 
             //
             PhpArray array_x, array_y;
@@ -413,12 +412,9 @@ namespace Pchp.Core
             int result = x.Count - y.Count;
             if (result != 0) return result;
 
-            // comparing with the same instance:
-            if (x == y) return 0;
-
             // marks arrays as visited (will be always restored to false value before return):
-            x.Visited = true;
-            y.Visited = true;
+            x._visited++;
+            y._visited++;
 
             // it will be more effective to implement OrderedHashtable.ToOrderedList method and use it here (in future version):
             sorted_x = x.DeepCopy();
@@ -452,7 +448,7 @@ namespace Pchp.Core
                         if ((array_y = child_y.ArrayOrNull()) != null)
                         {
                             // at least one child has not been visited yet => continue with recursion:
-                            if (!array_x.Visited || !array_y.Visited)
+                            if (array_x._visited == 0 || array_y._visited == 0)
                             {
                                 result = CompareArrays(array_x, array_y, comparer, out incomparable);
                             }
@@ -481,8 +477,8 @@ namespace Pchp.Core
             }
             finally
             {
-                x.Visited = false;
-                y.Visited = false;
+                x._visited--;
+                y._visited--;
             }
             return result;
         }
@@ -529,13 +525,10 @@ namespace Pchp.Core
             incomparable = false;
 
             // if both operands point to the same internal dictionary:
-            if (object.ReferenceEquals(x.table, y.table)) return true;
+            if (ReferenceEquals(x.table, y.table)) return true; // => x == y
 
             // if numbers of elements differs:
             if (x.Count != y.Count) return false;
-
-            // comparing with the same instance:
-            if (x == y) return true;
 
             var iter_x = x.GetFastEnumerator();
             var iter_y = y.GetFastEnumerator();
@@ -543,8 +536,8 @@ namespace Pchp.Core
             PhpArray array_x, array_y;
 
             // marks arrays as visited (will be always restored to false value before return):
-            x.Visited = true;
-            y.Visited = true;
+            x._visited++;
+            y._visited++;
 
             bool result = true;
 
@@ -571,7 +564,7 @@ namespace Pchp.Core
                         if ((array_y = child_y.ArrayOrNull()) != null)
                         {
                             // at least one child has not been visited yet => continue with recursion:
-                            if (!array_x.Visited || !array_y.Visited)
+                            if (array_x._visited == 0 || array_y._visited == 0)
                             {
                                 result = StrictCompareArrays(array_x, array_y, out incomparable);
                             }
@@ -596,8 +589,8 @@ namespace Pchp.Core
             }
             finally
             {
-                x.Visited = false;
-                y.Visited = false;
+                x._visited--;
+                y._visited--;
             }
             return result;
         }
