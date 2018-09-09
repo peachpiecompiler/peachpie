@@ -131,7 +131,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 if (loc.VariableKind == VariableKind.LocalTemporalVariable ||
                     loc.VariableKind == VariableKind.ThisParameter ||
                     loc is BoundSuperGlobalVariable || // VariableKind.GlobalVariable ?
-                    string.IsNullOrEmpty(loc.Name))
+                    string.IsNullOrEmpty(loc.Name) ||
+                    loc.Symbol as ILocalSymbolInternal == null)
                 {
                     continue;
                 }
