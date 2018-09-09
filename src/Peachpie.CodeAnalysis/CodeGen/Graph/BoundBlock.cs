@@ -94,7 +94,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
 
             // emit dummy locals showing indirect (unoptimized) locals in debugger's Watch and Locals window
-            if (cg.HasUnoptimizedLocals  && cg.EmitPdbSequencePoints  && cg.IsDebug && cg.CoreTypes.IndirectLocal.Symbol != null)
+            if (cg.HasUnoptimizedLocals && cg.EmitPdbSequencePoints && cg.IsDebug && cg.CoreTypes.IndirectLocal.Symbol != null)
             {
                 EmitIndirectLocalsDebugWatch(cg);
             }
@@ -129,7 +129,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             foreach (var loc in cg.Routine.LocalsTable.Variables)
             {
                 if (loc.VariableKind == VariableKind.LocalTemporalVariable ||
-                    loc.VariableKind == VariableKind.ThisParameter)
+                    loc.VariableKind == VariableKind.ThisParameter ||
+                    loc is BoundSuperGlobalVariable || // VariableKind.GlobalVariable ?
+                    string.IsNullOrEmpty(loc.Name))
                 {
                     continue;
                 }
