@@ -158,9 +158,9 @@ namespace Pchp.Core
         public PhpHashtable(Array values, int index, int length)
             : this(length)
         {
-            int end = index + length;
-            int max = values.Length;
-            if (end > max) end = max;
+            if (index < 0) throw new ArgumentOutOfRangeException();
+
+            int end = Math.Min(index + length, values.Length);
 
             for (int i = index; i < end; i++)
             {
