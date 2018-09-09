@@ -196,6 +196,7 @@ public class Generator : Iterator
     /// <summary>
     /// Moves the state machine to next element.
     /// </summary>
+    [DebuggerNonUserCode, DebuggerStepThrough]
     private void moveStateMachine()
     {
         if (!isInValidState) { return; }
@@ -209,6 +210,7 @@ public class Generator : Iterator
     /// <summary>
     /// Checks if the generator is moving beyond first yield, if so sets proper variable. Important for <see cref="rewind"/>.
     /// </summary>
+    [DebuggerNonUserCode, DebuggerStepThrough]
     private void checkIfMovingFromFirstYeild()
     {
         if (_runToFirstYield && !_runAfterFirstYield) { _runAfterFirstYield = true; }
@@ -217,6 +219,7 @@ public class Generator : Iterator
     /// <summary>
     /// Checks if generator already run to the first yield. Runs there if it didn't.
     /// </summary>
+    [DebuggerNonUserCode, DebuggerStepThrough]
     private void checkIfRunToFirstYieldIfNotRun()
     {
         if (!_runToFirstYield) { this.moveStateMachine(); }

@@ -9,6 +9,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Devsense.PHP.Text;
 using Pchp.CodeAnalysis.Symbols;
+using Cci = Microsoft.Cci;
+using System.Collections.Immutable;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
@@ -60,9 +62,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // TODO: emit parameters checks
             }
 
-            //
-            var locals = cg.Routine.LocalsTable;
-
             // in case of script, declare the script, functions and types
             if (cg.Routine is SourceGlobalMethodSymbol)
             {
@@ -70,10 +69,15 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 cg.EmitLoadContext();
                 cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.OnInclude_TScript.Symbol.Construct(cg.Routine.ContainingType));
             }
-            else
+
+            //
+
+            if (!cg.InitializedLocals)
             {
-                //If it has unoptimized locals and they're not initilized externally -> need to initialize them
-                if (cg.HasUnoptimizedLocals && !cg.InitializedLocals)
+                var locals = cg.Routine.LocalsTable;
+
+                // If it has unoptimized locals and they're not initilized externally -> need to initialize them
+                if (cg.HasUnoptimizedLocals)
                 {
                     // <locals> = new PhpArray(HINTCOUNT)
                     cg.LocalsPlaceOpt.EmitStorePrepare(cg.Builder);
@@ -81,15 +85,18 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                     cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray_int);
                     cg.LocalsPlaceOpt.EmitStore(cg.Builder);
                 }
-            }
 
-            if (!cg.InitializedLocals)
-            {
                 // variables/parameters initialization
                 foreach (var loc in locals.Variables)
                 {
                     loc.EmitInit(cg);
                 }
+            }
+
+            // emit dummy locals showing indirect (unoptimized) locals in debugger's Watch and Locals window
+            if (cg.HasUnoptimizedLocals  && cg.EmitPdbSequencePoints  && cg.IsDebug && cg.CoreTypes.IndirectLocal.Symbol != null)
+            {
+                EmitIndirectLocalsDebugWatch(cg);
             }
 
             // first brace sequence point
@@ -108,6 +115,47 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             //
             base.Emit(cg);
+        }
+
+        /// <summary>
+        /// For debugger purposes; emits dummy variable that shows value of indirect locals.
+        /// Using these dummy locals, user can see variables in Watch or Locals window even all the variables are stored indirectly in <see cref="CodeGenerator.LocalsPlaceOpt"/>.
+        /// </summary>
+        static void EmitIndirectLocalsDebugWatch(CodeGenerator cg)
+        {
+            Debug.Assert(cg.LocalsPlaceOpt != null);
+
+            // variables/parameters initialization
+            foreach (var loc in cg.Routine.LocalsTable.Variables)
+            {
+                if (loc.VariableKind == VariableKind.LocalTemporalVariable ||
+                    loc.VariableKind == VariableKind.ThisParameter)
+                {
+                    continue;
+                }
+
+                // Template: var {name} = new IndirectLocal(<locals>, name)
+
+                // declare variable
+                var def = cg.Builder.LocalSlotManager.DeclareLocal(
+                        cg.CoreTypes.IndirectLocal.Symbol, loc.Symbol as ILocalSymbolInternal,
+                        loc.Name, SynthesizedLocalKind.UserDefined,
+                        Microsoft.CodeAnalysis.CodeGen.LocalDebugId.None, 0, LocalSlotConstraints.None, false, default(ImmutableArray<TypedConstant>), false);
+
+                cg.Builder.AddLocalToScope(def);
+
+                var place = new LocalPlace(def);
+
+                place.EmitStorePrepare(cg.Builder);
+
+                // new IndirectLocal(locals : PhpArray, name : string)
+                cg.LocalsPlaceOpt.EmitLoad(cg.Builder).Expect(cg.CoreTypes.PhpArray);
+                cg.Builder.EmitStringConstant(loc.Name);
+                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.IndirectLocal_PhpArray_String);
+
+                // store
+                place.EmitStore(cg.Builder);
+            }
         }
 
         private static void EmitStateMachineMethodStart(CodeGenerator cg)

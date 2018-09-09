@@ -701,6 +701,7 @@ namespace Pchp.Core
         /// Instances of this class are iterated when <c>foreach</c> is used on object of a class
         /// that implements <see cref="Iterator"/> or <see cref="IteratorAggregate"/>.
         /// </remarks>
+        [DebuggerNonUserCode, DebuggerStepThrough]
         private sealed class PhpIteratorEnumerator : IPhpEnumerator
         {
             readonly Iterator _iterator;
