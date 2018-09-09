@@ -413,7 +413,7 @@ namespace Pchp.Library
             if (!preserveKeys)
             {
                 // change the key of integer key from 0
-                array.ReindexIntegers(0);
+                result.ReindexIntegers(0);
             }
 
             // if called by PHP languge then all items in the result should be inplace deeply copied:
