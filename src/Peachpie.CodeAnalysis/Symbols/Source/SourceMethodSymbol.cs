@@ -44,7 +44,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                if (_lazyOverridenMethod == null && IsVirtual)
+                if (_lazyOverridenMethod == null)
                 {
                     Interlocked.CompareExchange(ref _lazyOverridenMethod, this.ResolveOverride(), null);
                 }
@@ -291,7 +291,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     if (_syntax.Name.Name.IsConstructName)
                     {
-                        return false;
+                        return this.OverriddenMethod != null && this.SignaturesMatch((MethodSymbol)this.OverriddenMethod);
                     }
                 }
 

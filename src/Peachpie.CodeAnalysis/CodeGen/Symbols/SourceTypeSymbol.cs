@@ -355,7 +355,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     if (info.HasOverride)
                     {
-                        if (info.ImplementsInterface && info.Override != null)
+                        if (info.ImplementsInterface && info.Override != null && info.Override.IsVirtual)
                         {
                             // create explicit override only if the interface method is implemented with a class method that does not implement the interface
                             /*
