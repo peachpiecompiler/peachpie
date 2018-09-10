@@ -1633,6 +1633,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             // and copy the value on stack if necessary
             if (access.IsRead)
             {
+                bool deepcopy = access.IsReadValueCopy;
+
                 if (method != null && method.CastToFalse)
                 {
                     // casts to false and copy the value
@@ -1642,7 +1644,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                     //    stack = EmitNullableCastToFalse(stack, access.IsReadValueCopy);
                     //} else
 
-                    return EmitCastToFalse(stack, access.IsReadValueCopy);
+                    stack = EmitCastToFalse(stack, deepcopy);
+                    deepcopy = false;
                 }
 
                 if (access.EnsureArray)
@@ -1690,7 +1693,19 @@ namespace Pchp.CodeAnalysis.CodeGen
                         return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.AsObject);
                     }
                 }
-                else if (access.IsReadValueCopy)
+                else if (access.IsReadRef)
+                {
+                    deepcopy = false; // already false
+
+                    if (stack != CoreTypes.PhpAlias)
+                    {
+                        EmitConvertToPhpValue(stack, 0);
+                        stack = Emit_PhpValue_MakeAlias();
+                    }
+                }
+
+                //
+                if (deepcopy) // ~ IsReadValueCopy
                 {
                     // copy the value
                     if (stack == CoreTypes.PhpAlias)
