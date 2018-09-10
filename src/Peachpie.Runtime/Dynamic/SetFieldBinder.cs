@@ -25,7 +25,7 @@ namespace Pchp.Core.Dynamic
         {
             bool hasTargetInstance = (target.LimitType != typeof(TargetTypeParam));
 
-            var bound = new CallSiteContext()
+            var bound = new CallSiteContext(!hasTargetInstance)
             {
                 ClassContext = _classContext,
                 Name = _name,

@@ -69,12 +69,12 @@ namespace Pchp.Core.Dynamic
 
                     invocation = Expression.Block(new[] { args_var },
                             Expression.Assign(args_var, BinderHelpers.UnpackArgumentsToArray(methods, bound.Arguments)),
-                            OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, args_var, lateStaticType: bound.TargetType)
+                            OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, args_var, bound.IsStaticSyntax, lateStaticType: bound.TargetType)
                         );
                 }
                 else
                 {
-                    invocation = OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, bound.Arguments, lateStaticType: bound.TargetType);
+                    invocation = OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, methods, bound.Context, bound.Arguments, bound.IsStaticSyntax, lateStaticType: bound.TargetType);
                 }
             }
             else
@@ -102,7 +102,7 @@ namespace Pchp.Core.Dynamic
 
         protected override bool HasTarget => false;
 
-        protected override CallSiteContext CreateContext() => new CallSiteContext() { Name = _name };
+        protected override CallSiteContext CreateContext() => new CallSiteContext(false) { Name = _name };
 
         internal CallFunctionBinder(string name, string nameOpt, RuntimeTypeHandle returnType, int genericParams)
             : base(returnType, genericParams)
@@ -173,7 +173,7 @@ namespace Pchp.Core.Dynamic
         readonly string _name;
         readonly Type _classCtx;
 
-        protected override CallSiteContext CreateContext() => new CallSiteContext() { ClassContext = _classCtx, Name = _name };
+        protected override CallSiteContext CreateContext() => new CallSiteContext(false) { ClassContext = _classCtx, Name = _name };
 
         protected override bool HasTarget => true;
 
@@ -226,7 +226,7 @@ namespace Pchp.Core.Dynamic
                     name_expr,
                     BinderHelpers.NewPhpArray(bound.Arguments),
                 };
-                return OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, call.Methods, bound.Context, call_args);
+                return OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, call.Methods, bound.Context, call_args, false);
             }
 
             return base.BindMissingMethod(bound);
@@ -247,7 +247,7 @@ namespace Pchp.Core.Dynamic
         readonly string _name;
         readonly Type _classCtx;
 
-        protected override CallSiteContext CreateContext() => new CallSiteContext() { ClassContext = _classCtx, TargetType = _type, Name = _name };
+        protected override CallSiteContext CreateContext() => new CallSiteContext(true) { ClassContext = _classCtx, TargetType = _type, Name = _name };
 
         protected override bool HasTarget => true; // there is caller instance or null as a target
 
@@ -311,7 +311,7 @@ namespace Pchp.Core.Dynamic
                     name_expr,
                     BinderHelpers.NewPhpArray(bound.Arguments),
                 };
-                return OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, call.Methods, bound.Context, call_args, lateStaticType: bound.TargetType);
+                return OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, call.Methods, bound.Context, call_args, true, lateStaticType: bound.TargetType);
             }
 
             //
