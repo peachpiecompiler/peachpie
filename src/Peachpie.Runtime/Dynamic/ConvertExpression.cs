@@ -189,7 +189,7 @@ namespace Pchp.Core.Dynamic
             // TODO: following conversions may fail, we should report it failed and throw an error
             if (source == typeof(PhpValue)) return Expression.Call(expr, typeof(PhpValue).GetMethod("ToLong", Cache.Types.Empty));
 
-            throw new NotImplementedException(source.FullName);
+            throw new NotImplementedException($"{source.FullName} -> long");
         }
 
         private static Expression BindToDouble(Expression expr)
@@ -210,7 +210,7 @@ namespace Pchp.Core.Dynamic
             // TODO: following conversions may fail, we should report it failed and throw an error
             if (source == typeof(PhpValue)) return Expression.Call(expr, typeof(PhpValue).GetMethod("ToDouble", Cache.Types.Empty));
 
-            throw new NotImplementedException(source.FullName);
+            throw new NotImplementedException($"{source.FullName} -> double");
         }
 
         public static Expression BindToBool(Expression expr)
@@ -275,7 +275,7 @@ namespace Pchp.Core.Dynamic
 
             }
 
-            throw new NotImplementedException(source.FullName);
+            throw new NotImplementedException($"{source.FullName} -> string");
         }
 
         private static Expression BindToPhpString(Expression expr, Expression ctx)
@@ -574,6 +574,8 @@ namespace Pchp.Core.Dynamic
 
             // other types
             if (target.GetTypeInfo().IsAssignableFrom(t.GetTypeInfo())) return Expression.Constant(ConversionCost.Pass);
+            
+            // return Expression.Constant(ConversionCost.AttemptConvert);
 
             //
             throw new NotImplementedException($"costof({t} -> {target})");
@@ -630,15 +632,19 @@ namespace Pchp.Core.Dynamic
         static ConversionCost BindCostFromLong(Expression arg, Type target)
         {
             if (target == typeof(int) || target == typeof(long) || target == typeof(uint)) return (ConversionCost.Pass);
+            if (target == typeof(ulong)) return ConversionCost.ImplicitCast;
             if (target == typeof(PhpNumber)) return (ConversionCost.PassCostly);
             if (target == typeof(double) || target == typeof(float)) return (ConversionCost.ImplicitCast);
             if (target == typeof(bool)) return (ConversionCost.LoosingPrecision);
             if (target == typeof(PhpValue)) return (ConversionCost.PassCostly);
             if (target == typeof(string) || target == typeof(PhpString)) return (ConversionCost.ImplicitCast);
             if (target == typeof(PhpArray)) return (ConversionCost.Warning);
-            if (target == typeof(object)) return ConversionCost.PassCostly;    // TODO: Error when passing to a PHP function
+            if (target == typeof(object) || target == typeof(stdClass)) return ConversionCost.PassCostly;    // TODO: Error when passing to a PHP function
 
-            throw new NotImplementedException($"costof(long -> {target})");
+            // TODO: lookup for cast operator
+
+            //throw new NotImplementedException($"costof(long -> {target})");
+            return ConversionCost.NoConversion;
         }
 
         static Expression BindCostFromNumber(Expression arg, Type target)

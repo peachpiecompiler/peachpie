@@ -95,10 +95,16 @@ namespace Pchp.Core.Dynamic
 
         public static bool HasLateStaticParameter(MethodInfo m)
         {
-            var ps = m.GetParameters();
-            for (int i = 0; i < ps.Length; i++)
+            if (m != null)
             {
-                if (IsLateStaticParameter(ps[i])) return true;
+                var ps = m.GetParameters();
+                for (int i = 0; i < ps.Length; i++)
+                {
+                    if (IsLateStaticParameter(ps[i]))
+                    {
+                        return true;
+                    }
+                }
             }
 
             return false;
