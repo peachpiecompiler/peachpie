@@ -9,36 +9,34 @@ namespace Pchp.Core
     /// Dummy object that shows debug value of an indirect local variable.
     /// Used for debugger purposes to reveal indirect locals in Watch and Locals window.
     /// </summary>
-    [DebuggerDisplay("{DisplayString,nq}", Name = "{_name,nq}", Type = "{DebugTypeName,nq}")]
-    [DebuggerTypeProxy(typeof(IndirectLocal.DebugView))]
+    [DebuggerDisplay("{DisplayString,nq}", Name = "${_name,nq}", Type = "{DebugTypeName,nq}")]
     [DebuggerNonUserCode, DebuggerStepThrough]
     public struct IndirectLocal
     {
-        [DebuggerDisplay("{_value.DisplayString,nq}", Type = "{_value.DebugTypeName,nq}")]
-        sealed class DebugView
-        {
-            readonly IndirectLocal _local;
-
-            public DebugView(IndirectLocal local)
-            {
-                _local = local;
-            }
-
-            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public PhpValue DebugValue => _local.Value;
-        }
-
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         readonly OrderedDictionary _locals;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         readonly string _name;
 
-        ref PhpValue Value
+        //[DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        public PhpValue Value
         {
-            get => ref _locals._getref(_name);
-            //set => _locals[_name] = value;
+            get
+            {
+                var key = new IntStringKey(_name);
+                return _locals._get(ref key);
+            }
+            set
+            {
+                _locals[_name] = value;
+            }
         }
 
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         string DisplayString => Value.DisplayString;
 
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         string DebugTypeName => Value.DebugTypeName;
 
         public IndirectLocal(OrderedDictionary/*!*/locals, string/*!*/name)
