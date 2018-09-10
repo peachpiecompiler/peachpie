@@ -1007,13 +1007,8 @@ namespace Pchp.Core.Dynamic
             {
                 return Expression.New((ConstructorInfo)method, boundargs);
             }
-
-            if (instance != null)
-            {
-                instance = Expression.Convert(instance, method.DeclaringType);
-            }
-
-            if (instance != null && method.IsVirtual)   // NOTE: only needed for parent::foo(), static::foo() and self::foo() ?
+            
+            if (HasToBeCalledNonVirtually(instance, method))
             {
                 // Ugly hack here,
                 // we NEED to call the method nonvirtually, but LambdaCompiler emits .callvirt always and there is no way how to change it (except we can emit all the stuff by ourselfs).
@@ -1021,6 +1016,7 @@ namespace Pchp.Core.Dynamic
                 // LambdaCompiler generates .call to static DynamicMethod which calls our method via .call as well,
                 // after all the inlining, there should be no overhead.
 
+                instance = Expression.Convert(instance, method.DeclaringType);
                 method = WrapInstanceMethodToStatic((MethodInfo)method);
 
                 //
@@ -1031,8 +1027,64 @@ namespace Pchp.Core.Dynamic
                 instance = null;
             }
 
+            if (instance != null)
+            {
+                instance = Expression.Convert(instance, method.DeclaringType);
+            }
+
+            // NOTE: instead of "HasToBeCalledNonVirtually" magic above, it would be great to just use ".call" opcode always (as of now Linq cannot do that)
+
             //
             return Expression.Call(instance, (MethodInfo)method, boundargs);
+        }
+
+        /// <summary>
+        /// Determines whether we has to use ".call" opcode explicitly.
+        /// </summary>
+        static bool HasToBeCalledNonVirtually(Expression instance, MethodBase method)
+        {
+            if (instance == null || !method.IsVirtual)
+            {
+                // method is static or non-virtual
+                // .call is emitted by Linq implicitly:
+                return false;
+            }
+
+            if (method.IsAbstract)
+            {
+                // method is abstract,
+                // .callvirt is fine:
+                return false;
+            }
+
+            if (instance.Type == method.DeclaringType)
+            {
+                // corresponding DynamicMetaObject is restricted to {instance.Type},
+                // .callvirt method within this DynamicMetaObject refer to {method} and nothing else,
+                // .callvirt is safe:
+                return false;
+            }
+
+            for (var t = instance.Type; t != method.DeclaringType && t != null; t = t.BaseType)
+            {
+                var routine = t.GetPhpTypeInfo().RuntimeMethods[method.Name];
+                if (routine != null) // always true
+                {
+                    var possible_overrides = routine.Methods;
+                    for (int i = 0; i < possible_overrides.Length; i++)
+                    {
+                        var m = possible_overrides[i];
+                        if (m != method && m.IsVirtual && m.DeclaringType.IsSubclassOf(method.DeclaringType))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            // .callvirt is safe,
+            // we did not find anything that overrides {method} within current DynamicMetaObject
+            return false;
         }
 
         /// <summary>
