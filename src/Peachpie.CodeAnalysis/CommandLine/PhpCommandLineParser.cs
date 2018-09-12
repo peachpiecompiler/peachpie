@@ -130,7 +130,7 @@ namespace Pchp.CodeAnalysis.CommandLine
         {
             List<Diagnostic> diagnostics = new List<Diagnostic>();
             List<string> flattenedArgs = new List<string>();
-            List<string> scriptArgs = IsScriptRunner ? new List<string>() : null;
+            List<string> scriptArgs = IsScriptCommandLineParser ? new List<string>() : null;
             FlattenArgs(args, diagnostics, flattenedArgs, scriptArgs, baseDirectory);
 
             var sourceFiles = new List<CommandLineSourceFile>();
@@ -549,7 +549,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             GetCompilationAndModuleNames(diagnostics, outputKind, sourceFiles, sourceFiles.Count != 0, /*moduleAssemblyName*/null, ref outputFileName, ref moduleName, out compilationName);
 
             //
-            if (sourceFiles.Count == 0 && !IsScriptRunner && (outputKind.IsNetModule() || !resourcesOrModulesSpecified))
+            if (sourceFiles.Count == 0 && !IsScriptCommandLineParser && (outputKind.IsNetModule() || !resourcesOrModulesSpecified))
             {
                 // warning: no source files specified
                 diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.WRN_NoSourceFiles, Location.None));
@@ -648,7 +648,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             return new PhpCommandLineArguments()
             {
                 // TODO: parsed arguments
-                IsScriptRunner = IsScriptRunner,
+                IsScriptRunner = IsScriptCommandLineParser,
                 //InteractiveMode = interactiveMode || IsScriptRunner && sourceFiles.Count == 0,
                 BaseDirectory = baseDirectory,
                 //PathMap = pathMap,
@@ -679,7 +679,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 DisplayHelp = displayHelp,
                 ManifestResources = managedResources.AsImmutable(),
                 CompilationOptions = options,
-                ParseOptions = IsScriptRunner ? scriptParseOptions : parseOptions,
+                ParseOptions = IsScriptCommandLineParser ? scriptParseOptions : parseOptions,
                 EmitOptions = emitOptions,
                 //ScriptArguments = scriptArgs.AsImmutableOrEmpty(),
                 //TouchedFilesPath = touchedFilesPath,

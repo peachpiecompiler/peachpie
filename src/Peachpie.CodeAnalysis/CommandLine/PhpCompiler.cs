@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.VisualStudio.Shell.Interop;
 using System.Collections.Immutable;
 using System.IO;
 using Microsoft.CodeAnalysis.Text;
@@ -17,6 +16,7 @@ using Pchp.CodeAnalysis.Errors;
 using Devsense.PHP.Syntax.Ast;
 using System.Reflection;
 using Pchp.CodeAnalysis.Utilities;
+using Microsoft.CodeAnalysis.Collections;
 
 namespace Pchp.CodeAnalysis.CommandLine
 {
@@ -39,16 +39,19 @@ namespace Pchp.CodeAnalysis.CommandLine
         internal const string ResponseFileName = "php.rsp";
 
         private readonly DiagnosticFormatter _diagnosticFormatter = new DiagnosticFormatter();
+        private readonly string _tempDirectory;
 
         protected internal new PhpCommandLineArguments Arguments { get { return (PhpCommandLineArguments)base.Arguments; } }
 
-        public PhpCompiler(CommandLineParser parser, string responseFile, string[] args, string clientDirectory, string baseDirectory, string sdkDirectory, string additionalReferenceDirectories, IAnalyzerAssemblyLoader analyzerLoader)
-            : base(parser, responseFile, args, clientDirectory, baseDirectory, sdkDirectory, additionalReferenceDirectories, analyzerLoader)
+        public PhpCompiler(CommandLineParser parser, string responseFile, string[] args, BuildPaths buildPaths, string additionalReferenceDirectories, IAnalyzerAssemblyLoader analyzerLoader)
+            : base(parser, responseFile, args, buildPaths, additionalReferenceDirectories, analyzerLoader)
         {
-
+            _tempDirectory = buildPaths.TempDirectory;
         }
 
         public override DiagnosticFormatter DiagnosticFormatter => _diagnosticFormatter;
+
+        internal override Type Type => typeof(PhpCompiler);
 
         public override Compilation CreateCompilation(TextWriter consoleOutput, TouchedFileLogger touchedFilesLogger, ErrorLogger errorLogger)
         {
@@ -105,7 +108,8 @@ namespace Pchp.CodeAnalysis.CommandLine
             }
 
             var referenceResolver = GetCommandLineMetadataReferenceResolver(touchedFilesLogger);
-            var strongNameProvider = new LoggingStrongNameProvider(Arguments.KeyFileSearchPaths, touchedFilesLogger);
+            var loggingFileSystem = new LoggingStrongNameFileSystem(touchedFilesLogger);
+            var strongNameProvider = Arguments.GetStrongNameProvider(loggingFileSystem, _tempDirectory);
 
             var compilation = PhpCompilation.Create(
                 Arguments.CompilationName,
@@ -131,7 +135,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             ErrorLogger errorLogger)
         {
             var diagnosticInfos = new List<DiagnosticInfo>();
-            var content = ReadFileContent(file, diagnosticInfos);
+            var content = TryReadFileContent(file, diagnosticInfos);
 
             if (diagnosticInfos.Count != 0)
             {
@@ -166,22 +170,21 @@ namespace Pchp.CodeAnalysis.CommandLine
             consoleOutput.WriteLine(PhpResources.IDS_Logo, GetToolName(), GetAssemblyFileVersion());
         }
 
+        public override void PrintLangVersions(TextWriter consoleOutput)
+        {
+            consoleOutput.WriteLine(PhpResources.IDS_LangVersions);
+            foreach (var version in PhpSyntaxTree.SupportedLanguageVersions)
+            {
+                consoleOutput.WriteLine(version.ToString(2));
+            }
+            consoleOutput.WriteLine();
+        }
+
         internal new string GetAssemblyFileVersion() => typeof(PhpCompiler).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 
-        protected override void CompilerSpecificSqm(IVsSqmMulti sqm, uint sqmSession)
+        protected override ImmutableArray<DiagnosticAnalyzer> ResolveAnalyzersFromArguments(List<DiagnosticInfo> diagnostics, CommonMessageProvider messageProvider)
         {
-            // nothing, implement SQM if needed
-        }
-
-        protected override uint GetSqmAppID()
-        {
-            // nothing, implement SQM if needed
-            return 0;
-        }
-
-        protected override ImmutableArray<DiagnosticAnalyzer> ResolveAnalyzersFromArguments(List<DiagnosticInfo> diagnostics, CommonMessageProvider messageProvider, TouchedFileLogger touchedFiles)
-        {
-            return Arguments.ResolveAnalyzersFromArguments(Constants.PhpLanguageName, diagnostics, messageProvider, touchedFiles, AnalyzerLoader);
+            return Arguments.ResolveAnalyzersFromArguments(Constants.PhpLanguageName, diagnostics, messageProvider, AssemblyLoader);
         }
 
         protected override bool TryGetCompilerDiagnosticCode(string diagnosticId, out uint code)
@@ -197,6 +200,11 @@ namespace Pchp.CodeAnalysis.CommandLine
         internal override bool SuppressDefaultResponseFile(IEnumerable<string> args)
         {
             return args.Any(arg => new[] { "/noconfig", "-noconfig" }.Contains(arg.ToLowerInvariant()));
+        }
+
+        protected override void ResolveEmbeddedFilesFromExternalSourceDirectives(SyntaxTree tree, SourceReferenceResolver resolver, OrderedSet<string> embeddedFiles, DiagnosticBag diagnostics)
+        {
+            // We don't use any source mapping directives in PHP
         }
     }
 }

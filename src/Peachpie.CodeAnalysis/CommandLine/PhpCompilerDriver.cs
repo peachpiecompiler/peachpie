@@ -16,8 +16,9 @@ namespace Pchp.CodeAnalysis.CommandLine
             IAnalyzerAssemblyLoader analyzerLoader,
             TextWriter output)
         {
+            var buildPaths = new BuildPaths(clientDirectory, baseDirectory, sdkDirectory, null);
             return
-                new PhpCompiler(parser, responseFile, args, clientDirectory, baseDirectory, sdkDirectory, additionalReferenceDirectories, analyzerLoader)
+                new PhpCompiler(parser, responseFile, args, buildPaths, additionalReferenceDirectories, analyzerLoader)
                 .Run(output);
         }
 
