@@ -18,11 +18,10 @@ using Pchp.CodeAnalysis.Emitter;
 
 namespace Pchp.CodeAnalysis.Emit
 {
-    internal partial class PEModuleBuilder : CommonPEModuleBuilder, Cci.IModule, ITokenDeferral
+    internal abstract partial class PEModuleBuilder : CommonPEModuleBuilder, ITokenDeferral
     {
         private readonly SourceModuleSymbol _sourceModule;
         private readonly PhpCompilation _compilation;
-        private readonly OutputKind _outputKind;
         private readonly EmitOptions _emitOptions;
         private readonly Cci.ModulePropertiesForSerialization _serializationProperties;
 
@@ -38,21 +37,9 @@ namespace Pchp.CodeAnalysis.Emit
 
         protected readonly ConcurrentDictionary<Symbol, Cci.IModuleReference> AssemblyOrModuleSymbolToModuleRefMap = new ConcurrentDictionary<Symbol, Cci.IModuleReference>();
         readonly ConcurrentDictionary<Symbol, object> _genericInstanceMap = new ConcurrentDictionary<Symbol, object>();
-        readonly StringTokenMap _stringsInILMap = new StringTokenMap();
-        readonly ConcurrentDictionary<IMethodSymbol, Cci.IMethodBody> _methodBodyMap = new ConcurrentDictionary<IMethodSymbol, Cci.IMethodBody>(ReferenceEqualityComparer.Instance);
-        readonly TokenMap<Cci.IReference> _referencesInILMap = new TokenMap<Cci.IReference>();
         readonly Cci.RootModuleType _rootModuleType = new Cci.RootModuleType();
-        Cci.IMethodReference _peEntryPoint, _debugEntryPoint;
         PrivateImplementationDetails _privateImplementationDetails;
         HashSet<string> _namesOfTopLevelTypes;  // initialized with set of type names within first call to GetTopLevelTypes()
-
-        internal readonly IEnumerable<ResourceDescription> ManifestResources;
-
-        /// <summary>
-        /// Managed resources to be emitted with the module.
-        /// </summary>
-        /// <remarks>Add or remove items from the list to build resulting set of resource emitted in the assembly.</remarks>
-        internal readonly List<ResourceDescription> Resources = new List<ResourceDescription>();
 
         internal readonly CommonModuleCompilationState CompilationState;
 
@@ -76,15 +63,13 @@ namespace Pchp.CodeAnalysis.Emit
             IEnumerable<ResourceDescription> manifestResources,
             OutputKind outputKind,
             EmitOptions emitOptions)
+            : base(manifestResources, emitOptions, outputKind, serializationProperties, compilation)
         {
             Debug.Assert(sourceModule != null);
             Debug.Assert(serializationProperties != null);
 
             _compilation = compilation;
             _sourceModule = sourceModule;
-            _serializationProperties = serializationProperties;
-            this.ManifestResources = manifestResources;
-            _outputKind = outputKind;
             _emitOptions = emitOptions;
             this.CompilationState = new CommonModuleCompilationState();
             _debugDocuments = new ConcurrentDictionary<string, Cci.DebugSourceDocument>(compilation.IsCaseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
@@ -148,99 +133,101 @@ namespace Pchp.CodeAnalysis.Emit
             }
         }
 
-        internal virtual int CurrentGenerationOrdinal => 0; // used for EditAndContinue
+        public override int CurrentGenerationOrdinal => 0; // used for EditAndContinue
 
-        public Cci.IAssembly AsAssembly => this as Cci.IAssembly;
-
-        public IEnumerable<Cci.ICustomAttribute> AssemblyAttributes
+        public sealed override IEnumerable<Cci.ICustomAttribute> GetSourceAssemblyAttributes(bool isRefAssembly)
         {
-            get
+            // [Debuggable(DebuggableAttribute.DebuggingModes.Default | DebuggableAttribute.DebuggingModes.DisableOptimizations)]
+            if (_compilation.Options.DebugPlusMode)
             {
-                // [Debuggable(DebuggableAttribute.DebuggingModes.Default | DebuggableAttribute.DebuggingModes.DisableOptimizations)]
-                if (_compilation.Options.DebugPlusMode)
+                if (_debuggableAttribute == null)
                 {
-                    if (_debuggableAttribute == null)
-                    {
-                        var debuggableAttrCtor = (MethodSymbol)this.Compilation.GetWellKnownTypeMember(WellKnownMember.System_Diagnostics_DebuggableAttribute__ctorDebuggingModes);
-                        _debuggableAttribute = new SynthesizedAttributeData(debuggableAttrCtor,
-                            ImmutableArray.Create(new TypedConstant(Compilation.CoreTypes.Int32.Symbol, TypedConstantKind.Primitive, DebuggableAttribute.DebuggingModes.Default | DebuggableAttribute.DebuggingModes.DisableOptimizations)),
-                            ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
-                    }
-
-                    yield return _debuggableAttribute;
-                }
-                //if (targetfr == null)
-                //{
-                //    var TargetFrameworkType = (NamedTypeSymbol)this.Compilation.GetTypeByMetadataName("System.Runtime.Versioning.TargetFrameworkAttribute");
-
-                //    targetfr = new SynthesizedAttributeData(TargetFrameworkType.Constructors[0],
-                //        ImmutableArray.Create(new TypedConstant(Compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, ".NETPortable,Version=v4.5,Profile=Profile7")),
-                //        ImmutableArray.Create(new KeyValuePair<string, TypedConstant>("FrameworkDisplayName", new TypedConstant(Compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, ".NET Portable Subset"))));
-                //}
-
-                //yield return targetfr;
-
-                // [assembly: PhpExtension(new string[0])]
-                if (_phpextensionAttribute == null)
-                {
-                    var phpextensionAttributeCtor = this.Compilation.PhpCorLibrary.GetTypeByMetadataName(CoreTypes.PhpExtensionAttributeFullName).InstanceConstructors.First();
-                    _phpextensionAttribute = new SynthesizedAttributeData(phpextensionAttributeCtor,
-                        ImmutableArray.Create(new TypedConstant(Compilation.CreateArrayTypeSymbol(Compilation.CoreTypes.String.Symbol), ImmutableArray<TypedConstant>.Empty)),  // string[] { }
+                    var debuggableAttrCtor = (MethodSymbol)this.Compilation.GetWellKnownTypeMember(WellKnownMember.System_Diagnostics_DebuggableAttribute__ctorDebuggingModes);
+                    _debuggableAttribute = new SynthesizedAttributeData(debuggableAttrCtor,
+                        ImmutableArray.Create(new TypedConstant(Compilation.CoreTypes.Int32.Symbol, TypedConstantKind.Primitive, DebuggableAttribute.DebuggingModes.Default | DebuggableAttribute.DebuggingModes.DisableOptimizations)),
                         ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
                 }
-                yield return _phpextensionAttribute;
 
-                // [assembly: TargetPhpLanguage(LanguageVersion : "7.0", ShortOpenTag : false)]
-                if (_targetphpversionAttribute == null)
+                yield return _debuggableAttribute;
+            }
+            //if (targetfr == null)
+            //{
+            //    var TargetFrameworkType = (NamedTypeSymbol)this.Compilation.GetTypeByMetadataName("System.Runtime.Versioning.TargetFrameworkAttribute");
+
+            //    targetfr = new SynthesizedAttributeData(TargetFrameworkType.Constructors[0],
+            //        ImmutableArray.Create(new TypedConstant(Compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, ".NETPortable,Version=v4.5,Profile=Profile7")),
+            //        ImmutableArray.Create(new KeyValuePair<string, TypedConstant>("FrameworkDisplayName", new TypedConstant(Compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, ".NET Portable Subset"))));
+            //}
+
+            //yield return targetfr;
+
+            // [assembly: PhpExtension(new string[0])]
+            if (_phpextensionAttribute == null)
+            {
+                var phpextensionAttributeCtor = this.Compilation.PhpCorLibrary.GetTypeByMetadataName(CoreTypes.PhpExtensionAttributeFullName).InstanceConstructors.First();
+                _phpextensionAttribute = new SynthesizedAttributeData(phpextensionAttributeCtor,
+                    ImmutableArray.Create(new TypedConstant(Compilation.CreateArrayTypeSymbol(Compilation.CoreTypes.String.Symbol), ImmutableArray<TypedConstant>.Empty)),  // string[] { }
+                    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+            }
+            yield return _phpextensionAttribute;
+
+            // [assembly: TargetPhpLanguage(LanguageVersion : "7.0", ShortOpenTag : false)]
+            if (_targetphpversionAttribute == null)
+            {
+                var targetphpversionAttribute = this.Compilation.PhpCorLibrary.GetTypeByMetadataName(CoreTypes.TargetPhpLanguageAttributeFullName);
+                if (targetphpversionAttribute.IsErrorTypeOrNull() == false)
                 {
-                    var targetphpversionAttribute = this.Compilation.PhpCorLibrary.GetTypeByMetadataName(CoreTypes.TargetPhpLanguageAttributeFullName);
-                    if (targetphpversionAttribute.IsErrorTypeOrNull() == false)
+                    var parseOptions = this.Compilation.Options.ParseOptions ?? PhpParseOptions.Default;
+                    var targetphpversionAttributeCtor = this.Compilation.PhpCorLibrary.GetTypeByMetadataName(CoreTypes.TargetPhpLanguageAttributeFullName).InstanceConstructors.First();
+                    _targetphpversionAttribute = new SynthesizedAttributeData(targetphpversionAttributeCtor,
+                        ImmutableArray.Create(
+                            new TypedConstant(Compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, parseOptions.LanguageVersion?.ToString(2)),
+                            new TypedConstant(Compilation.CoreTypes.Boolean.Symbol, TypedConstantKind.Primitive, parseOptions.AllowShortOpenTags)),
+                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                }
+            }
+            if (_targetphpversionAttribute != null)
+            {
+                yield return _targetphpversionAttribute;
+            }
+
+            // [assembly: AssemblyInformationalVersion( FileVersion )]
+            if (Compilation.SourceAssembly.FileVersion != null)
+            {
+                if (_assemblyinformationalversionAttribute == null)
+                {
+                    var attr = (NamedTypeSymbol)this.Compilation.GetTypeByMetadataName("System.Reflection.AssemblyInformationalVersionAttribute");
+                    if (attr != null)
                     {
-                        var parseOptions = this.Compilation.Options.ParseOptions ?? PhpParseOptions.Default;
-                        var targetphpversionAttributeCtor = this.Compilation.PhpCorLibrary.GetTypeByMetadataName(CoreTypes.TargetPhpLanguageAttributeFullName).InstanceConstructors.First();
-                        _targetphpversionAttribute = new SynthesizedAttributeData(targetphpversionAttributeCtor,
-                            ImmutableArray.Create(
-                                new TypedConstant(Compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, parseOptions.LanguageVersion?.ToString(2)),
-                                new TypedConstant(Compilation.CoreTypes.Boolean.Symbol, TypedConstantKind.Primitive, parseOptions.AllowShortOpenTags)),
+                        _assemblyinformationalversionAttribute = new SynthesizedAttributeData(attr.InstanceConstructors[0],
+                            ImmutableArray.Create(new TypedConstant(Compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, Compilation.SourceAssembly.FileVersion)),
                             ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
                     }
                 }
-                if (_targetphpversionAttribute != null)
+
+                if (_assemblyinformationalversionAttribute != null)
                 {
-                    yield return _targetphpversionAttribute;
+                    yield return _assemblyinformationalversionAttribute;
                 }
-
-                // [assembly: AssemblyInformationalVersion( FileVersion )]
-                if (Compilation.SourceAssembly.FileVersion != null)
-                {
-                    if (_assemblyinformationalversionAttribute == null)
-                    {
-                        var attr = (NamedTypeSymbol)this.Compilation.GetTypeByMetadataName("System.Reflection.AssemblyInformationalVersionAttribute");
-                        if (attr != null)
-                        {
-                            _assemblyinformationalversionAttribute = new SynthesizedAttributeData(attr.InstanceConstructors[0],
-                                ImmutableArray.Create(new TypedConstant(Compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, Compilation.SourceAssembly.FileVersion)),
-                                ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
-                        }
-                    }
-
-                    if (_assemblyinformationalversionAttribute != null)
-                    {
-                        yield return _assemblyinformationalversionAttribute;
-                    }
-                }
-
-                //
-                yield break;
             }
+
+            //
+            yield break;
         }
 
-        public IEnumerable<Cci.SecurityAttribute> AssemblySecurityAttributes
+        public sealed override IEnumerable<Cci.SecurityAttribute> GetSourceAssemblySecurityAttributes()
         {
-            get
-            {
-                yield break; // throw new NotImplementedException();
-            }
+            yield break;
+        }
+
+        public sealed override IEnumerable<Cci.ICustomAttribute> GetSourceModuleAttributes()
+        {
+            return SourceModule.GetCustomAttributesToEmit(CompilationState).Cast<Cci.ICustomAttribute>();
+        }
+
+        internal sealed override Cci.ICustomAttribute SynthesizeAttribute(WellKnownMember attributeConstructor)
+        {
+            throw new NotImplementedException();
         }
 
         internal Cci.DebugSourceDocument GetOrAddDebugDocument(string path, string basePath, Func<string, Cci.DebugSourceDocument> factory)
@@ -285,7 +272,7 @@ namespace Pchp.CodeAnalysis.Emit
             }
         }
 
-        public string DefaultNamespace
+        public override string DefaultNamespace
         {
             get
             {
@@ -295,13 +282,9 @@ namespace Pchp.CodeAnalysis.Emit
             }
         }
 
-        public bool GenerateVisualBasicStylePdb => false;
+        public override bool GenerateVisualBasicStylePdb => false;
 
-        public int HintNumberOfMethodDefinitions => _methodBodyMap.Count;
-
-        public OutputKind Kind => _outputKind;
-
-        public IEnumerable<string> LinkedAssembliesDebugInfo
+        public override IEnumerable<string> LinkedAssembliesDebugInfo
         {
             get
             {
@@ -309,15 +292,7 @@ namespace Pchp.CodeAnalysis.Emit
             }
         }
 
-        public IEnumerable<Cci.ICustomAttribute> ModuleAttributes
-        {
-            get
-            {
-                yield break; // throw new NotImplementedException();
-            }
-        }
-
-        public string ModuleName => Name;
+        internal override string ModuleName => Name;
 
         public IEnumerable<Cci.IModuleReference> ModuleReferences
         {
@@ -329,53 +304,9 @@ namespace Pchp.CodeAnalysis.Emit
             }
         }
 
-        public virtual string Name => _sourceModule.Name;
-
-        Cci.IMethodReference Cci.IModule.PEEntryPoint => _peEntryPoint;
-        Cci.IMethodReference Cci.IModule.DebugEntryPoint => _debugEntryPoint;
-
-        internal void SetPEEntryPoint(IMethodSymbol method, DiagnosticBag diagnostics)
-        {
-            Debug.Assert(method == null || IsSourceDefinition((IMethodSymbol)method));
-            Debug.Assert(_outputKind.IsApplication());
-
-            _peEntryPoint = Translate(method, diagnostics, needDeclaration: true);
-        }
-
-        internal void SetDebugEntryPoint(IMethodSymbol method, DiagnosticBag diagnostics)
-        {
-            Debug.Assert(method == null || IsSourceDefinition((IMethodSymbol)method));
-
-            _debugEntryPoint = Translate(method, diagnostics, needDeclaration: true);
-        }
+        public override string Name => _sourceModule.Name;
 
         #region Method Body Map
-
-        internal Cci.IMethodBody GetMethodBody(IMethodSymbol methodSymbol)
-        {
-            Debug.Assert(object.ReferenceEquals(((IMethodSymbol)methodSymbol).ContainingModule, this.SourceModule));
-            Debug.Assert(((IMethodSymbol)methodSymbol).IsDefinition);
-            Debug.Assert(((IMethodSymbol)methodSymbol).PartialDefinitionPart == null); // Must be definition.
-
-            Cci.IMethodBody body;
-
-            if (_methodBodyMap.TryGetValue(methodSymbol, out body))
-            {
-                return body;
-            }
-
-            return null;
-        }
-
-        public void SetMethodBody(IMethodSymbol methodSymbol, Cci.IMethodBody body)
-        {
-            Debug.Assert(object.ReferenceEquals(((IMethodSymbol)methodSymbol).ContainingModule, this.SourceModule));
-            Debug.Assert(((IMethodSymbol)methodSymbol).IsDefinition);
-            Debug.Assert(((IMethodSymbol)methodSymbol).PartialDefinitionPart == null); // Must be definition.
-            Debug.Assert(body == null || (object)methodSymbol == body.MethodDefinition);
-
-            _methodBodyMap.Add(methodSymbol, body);
-        }
 
         /// <summary>
         /// Gets IL builder for lazy static constructor.
@@ -418,32 +349,6 @@ namespace Pchp.CodeAnalysis.Emit
 
         #endregion
 
-        public Cci.ModulePropertiesForSerialization Properties => _serializationProperties;
-
-        public IEnumerable<Cci.IWin32Resource> Win32Resources
-        {
-            get
-            {
-                return ImmutableArray<Cci.IWin32Resource>.Empty; // throw new NotImplementedException();
-            }
-            private set
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public Cci.ResourceSection Win32ResourceSection
-        {
-            get
-            {
-                return null; // throw new NotImplementedException();
-            }
-            private set
-            {
-                throw new NotImplementedException();
-            }
-        }
-
         internal override Compilation CommonCompilation => _compilation;
 
         internal PhpCompilation Compilation => _compilation;
@@ -464,55 +369,28 @@ namespace Pchp.CodeAnalysis.Emit
             }
         }
 
-        internal override EmitOptions EmitOptions => _emitOptions;
+        internal override IAssemblySymbol CommonCorLibrary => _compilation.CorLibrary;
+
+        internal EmitOptions EmitOptions => _emitOptions;
 
         public Cci.IDefinition AsDefinition(EmitContext context)
         {
             throw new NotImplementedException();
         }
 
-        public virtual void Dispatch(Cci.MetadataVisitor visitor)
-        {
-            visitor.Visit((Cci.IModule)this);
-        }
-
-        public ImmutableArray<Cci.AssemblyReferenceAlias> GetAssemblyReferenceAliases(EmitContext context)
-        {
-            return ImmutableArray<Cci.AssemblyReferenceAlias>.Empty;
-        }
-
-        public IEnumerable<Cci.IAssemblyReference> GetAssemblyReferences(EmitContext context)
-        {
-            // Only add Cor Library reference explicitly, PeWriter will add
-            // other references implicitly on as needed basis.
-            foreach (var aRef in GetCorLibraryReferencesToEmit(context))
-            {
-                yield return aRef;
-            }
-
-            if (_outputKind != OutputKind.NetModule)
-            {
-                // Explicitly add references from added modules
-                foreach (var aRef in GetAssemblyReferencesFromAddedModules(context.Diagnostics))
-                {
-                    yield return aRef;
-                }
-            }
-
-            yield break;
-        }
-
-        private IEnumerable<Cci.IAssemblyReference> GetCorLibraryReferencesToEmit(EmitContext context)
+        protected override Cci.IAssemblyReference GetCorLibraryReferenceToEmit(EmitContext context)
         {
             Debug.Assert(_compilation.CorLibrary != null);
-            Debug.Assert(_compilation.PhpCorLibrary != null);
 
-            yield return Translate(_compilation.CorLibrary, context.Diagnostics);
-            yield return Translate(_compilation.PhpCorLibrary, context.Diagnostics);
+            return Translate(_compilation.CorLibrary, context.Diagnostics);
         }
 
-        protected IEnumerable<Cci.IAssemblyReference> GetAssemblyReferencesFromAddedModules(DiagnosticBag diagnostics)
+        protected override IEnumerable<Cci.IAssemblyReference> GetAssemblyReferencesFromAddedModules(DiagnosticBag diagnostics)
         {
+            // Cannot be retrieved from GetCoreLibraryReferenceToEmit, because it can return only one reference
+            Debug.Assert(_compilation.PhpCorLibrary != null);
+            yield return Translate(_compilation.PhpCorLibrary, diagnostics);
+
             ImmutableArray<ModuleSymbol> modules = SourceModule.ContainingAssembly.Modules;
 
             for (int i = 1; i < modules.Length; i++)
@@ -529,32 +407,9 @@ namespace Pchp.CodeAnalysis.Emit
             throw new NotImplementedException();
         }
 
-        public Cci.IAssembly GetContainingAssembly(EmitContext context)
+        public override ImmutableArray<Cci.ExportedType> GetExportedTypes(DiagnosticBag diagnostics)
         {
-            return _outputKind.IsNetModule() ? null : (Cci.IAssembly)this;
-        }
-
-        public Cci.IAssemblyReference GetCorLibrary(EmitContext context) => Translate(_compilation.CorLibrary, DiagnosticBag.GetInstance());
-
-        public IEnumerable<Cci.ITypeReference> GetExportedTypes(EmitContext context)
-        {
-            return ImmutableArray<Cci.ITypeReference>.Empty; // throw new NotImplementedException();
-        }
-
-        public uint GetFakeStringTokenForIL(string value)
-        {
-            return _stringsInILMap.GetOrAddTokenFor(value);
-        }
-
-        public uint GetFakeSymbolTokenForIL(Cci.IReference symbol, SyntaxNode syntaxNode, DiagnosticBag diagnostics)
-        {
-            bool added;
-            uint token = _referencesInILMap.GetOrAddTokenFor(symbol, out added);
-            if (added)
-            {
-                ReferenceDependencyWalker.VisitReference(symbol, new EmitContext(this, syntaxNode, diagnostics));
-            }
-            return token;
+            return ImmutableArray<Cci.ExportedType>.Empty; // throw new NotImplementedException();
         }
 
         public Cci.IFieldReference GetFieldForData(ImmutableArray<byte> data, SyntaxNode syntaxNode, DiagnosticBag diagnostics)
@@ -562,7 +417,7 @@ namespace Pchp.CodeAnalysis.Emit
             throw new NotImplementedException();
         }
 
-        public ImmutableArray<Cci.UsedNamespaceOrType> GetImports()
+        public override ImmutableArray<Cci.UsedNamespaceOrType> GetImports()
         {
             return ImmutableArray<Cci.UsedNamespaceOrType>.Empty; // throw new NotImplementedException();
         }
@@ -572,54 +427,19 @@ namespace Pchp.CodeAnalysis.Emit
             throw new NotImplementedException();
         }
 
-        public Cci.ITypeReference GetPlatformType(Cci.PlatformType t, EmitContext context)
+        public override Cci.ITypeReference GetPlatformType(Cci.PlatformType t, EmitContext context)
         {
             throw new NotImplementedException();
         }
 
-        public Cci.IReference GetReferenceFromToken(uint token)
-        {
-            return _referencesInILMap.GetItem(token);
-        }
-
         IEnumerable<Cci.ManagedResource> _lazyManagedResources;
 
-        public IEnumerable<Cci.ManagedResource> GetResources(EmitContext context)
-        {
-            if (_lazyManagedResources == null)
-            {
-                var builder = ArrayBuilder<Cci.ManagedResource>.GetInstance();
-
-                foreach (ResourceDescription r in ManifestResources)
-                {
-                    builder.Add(r.ToManagedResource(this));
-                }
-
-                if (_outputKind != OutputKind.NetModule)
-                {
-                    // Explicitly add resources from added modules
-                    AddEmbeddedResourcesFromAddedModules(builder, context.Diagnostics);
-                }
-
-                _lazyManagedResources = builder.ToImmutableAndFree();
-            }
-
-            return _lazyManagedResources.Concat(this.Resources.Select(r => r.ToManagedResource(this)));
-        }
-
-        protected virtual void AddEmbeddedResourcesFromAddedModules(ArrayBuilder<Cci.ManagedResource> builder, DiagnosticBag diagnostics)
+        protected override void AddEmbeddedResourcesFromAddedModules(ArrayBuilder<Cci.ManagedResource> builder, DiagnosticBag diagnostics)
         {
             throw new NotSupportedException(); // override
         }
 
-        public string GetStringFromToken(uint token)
-        {
-            return _stringsInILMap.GetItem(token);
-        }
-
-        public IEnumerable<string> GetStrings() => _stringsInILMap.GetAllItems();
-
-        public MultiDictionary<Cci.DebugSourceDocument, Cci.DefinitionWithLocation> GetSymbolToLocationMap()
+        public override MultiDictionary<Cci.DebugSourceDocument, Cci.DefinitionWithLocation> GetSymbolToLocationMap()
         {
             var result = new MultiDictionary<Cci.DebugSourceDocument, Cci.DefinitionWithLocation>();
 
@@ -716,7 +536,7 @@ namespace Pchp.CodeAnalysis.Emit
             return result;
         }
 
-        public IEnumerable<Cci.INamespaceTypeDefinition> GetTopLevelTypes(EmitContext context)
+        public override IEnumerable<Cci.INamespaceTypeDefinition> GetTopLevelTypes(EmitContext context)
         {
             Cci.NoPiaReferenceIndexer noPiaIndexer = null;
 
@@ -736,7 +556,7 @@ namespace Pchp.CodeAnalysis.Emit
             VisitTopLevelType(noPiaIndexer, _rootModuleType);
             yield return _rootModuleType;
 
-            foreach (var type in this.GetAnonymousTypes())
+            foreach (var type in this.GetAnonymousTypes(context))
             {
                 AddTopLevelType(names, type);
                 VisitTopLevelType(noPiaIndexer, type);
@@ -942,6 +762,8 @@ namespace Pchp.CodeAnalysis.Emit
             get { return false; }   // TODO: true when GetSpecialType() will be implemented
         }
 
+        internal override IModuleSymbol CommonSourceModule => SourceModule;
+
         #endregion
 
         static void AddTopLevelType(HashSet<string> names, Cci.INamespaceTypeDefinition type)
@@ -954,7 +776,7 @@ namespace Pchp.CodeAnalysis.Emit
             noPiaIndexer?.Visit((Cci.ITypeDefinition)type);
         }
 
-        public bool IsPlatformType(Cci.ITypeReference typeRef, Cci.PlatformType platformType)
+        public override bool IsPlatformType(Cci.ITypeReference typeRef, Cci.PlatformType platformType)
         {
             var namedType = typeRef as PENamedTypeSymbol;
             if (namedType != null)
@@ -970,11 +792,6 @@ namespace Pchp.CodeAnalysis.Emit
             return false;
         }
 
-        public IEnumerable<Cci.IReference> ReferencesInIL(out int count)
-        {
-            return _referencesInILMap.GetAllItemsAndCount(out count);
-        }
-
         internal override void CompilationFinished()
         {
             this.CompilationState.Freeze();
@@ -985,7 +802,7 @@ namespace Pchp.CodeAnalysis.Emit
             throw new NotImplementedException();
         }
 
-        internal override ImmutableArray<Cci.INamespaceTypeDefinition> GetAnonymousTypes()
+        internal override ImmutableArray<Cci.INamespaceTypeDefinition> GetAnonymousTypes(EmitContext context)
         {
             return ImmutableArray<Cci.INamespaceTypeDefinition>.Empty; // throw new NotImplementedException();
         }
@@ -1442,11 +1259,6 @@ namespace Pchp.CodeAnalysis.Emit
         internal ImmutableArray<Cci.IParameterTypeInformation> Translate(ImmutableArray<ParameterSymbol> @params)
         {
             return @params.Cast<Cci.IParameterTypeInformation>().ToImmutableArray();
-        }
-
-        Cci.IAssemblyReference Cci.IModuleReference.GetContainingAssembly(EmitContext context)
-        {
-            throw new NotImplementedException();
         }
 
         private bool IsSourceDefinition(IMethodSymbol method)

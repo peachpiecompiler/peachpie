@@ -50,11 +50,6 @@ namespace Pchp.CodeAnalysis.Emit
             AssemblyOrModuleSymbolToModuleRefMap.Add(sourceAssembly, this);
         }
 
-        public override void Dispatch(Cci.MetadataVisitor visitor)
-        {
-            visitor.Visit((Cci.IAssemblyReference)this);
-        }
-
         public AssemblyContentType ContentType => _sourceAssembly.Identity.ContentType;
 
         public string Culture => _sourceAssembly.Identity.CultureName;
@@ -92,12 +87,14 @@ namespace Pchp.CodeAnalysis.Emit
 
         public Version AssemblyVersionPattern => _sourceAssembly.AssemblyVersionPattern;
 
+        public override ISourceAssemblySymbolInternal SourceAssemblyOpt => _sourceAssembly;
+
         /// <summary>
         /// A list of the files that constitute the assembly. These are not the source language files that may have been
         /// used to compile the assembly, but the files that contain constituent modules of a multi-module assembly as well
         /// as any external resources. It corresponds to the File table of the .NET assembly file format.
         /// </summary>
-        public IEnumerable<Cci.IFileReference> GetFiles(EmitContext context)
+        public override IEnumerable<Cci.IFileReference> GetFiles(EmitContext context)
         {
             if (_lazyFiles.IsDefault)
             {

@@ -14,7 +14,7 @@ using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    internal sealed class SourceAssemblySymbol : NonMissingAssemblySymbol
+    internal sealed class SourceAssemblySymbol : NonMissingAssemblySymbol, ISourceAssemblySymbolInternal
     {
         readonly string _simpleName;
         readonly PhpCompilation _compilation;
@@ -299,6 +299,22 @@ namespace Pchp.CodeAnalysis.Symbols
         string AssemblyCultureAttributeSetting => null;
 
         public AssemblyHashAlgorithm HashAlgorithm => AssemblyHashAlgorithm.Sha1;
+
+        #region ISourceAssemblySymbolInternal
+
+        AssemblyFlags ISourceAssemblySymbolInternal.AssemblyFlags => (AssemblyFlags)Flags;
+
+        string ISourceAssemblySymbolInternal.SignatureKey => SignatureKey;
+
+        AssemblyHashAlgorithm ISourceAssemblySymbolInternal.HashAlgorithm => HashAlgorithm;
+
+        Version ISourceAssemblySymbolInternal.AssemblyVersionPattern => AssemblyVersionPattern;
+
+        bool ISourceAssemblySymbolInternal.InternalsAreVisible => false;
+
+        Compilation ISourceAssemblySymbol.Compilation => _compilation;
+
+        #endregion
 
         AssemblyIdentity ComputeIdentity()
         {
