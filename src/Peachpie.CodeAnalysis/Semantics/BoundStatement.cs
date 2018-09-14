@@ -181,7 +181,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal Ast.TypeDecl TypeDecl => (Ast.TypeDecl)PhpSyntax;
 
-        internal Symbols.SourceTypeSymbol Type => _type;
+        internal Symbols.SourceTypeSymbol DeclaredType => _type;
         readonly Symbols.SourceTypeSymbol _type;
 
         internal BoundTypeDeclStatement(Symbols.SourceTypeSymbol type)

@@ -4340,7 +4340,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             var sourcefile = cg.ContainingFile;
 
-            switch (this.Type)
+            switch (this.ConstType)
             {
                 case PseudoConstUse.Types.File:
 
@@ -4394,14 +4394,14 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            switch (this.Type)
+            switch (this.ConstType)
             {
                 case PseudoClassConstUse.Types.Class:
                     this.TargetType.EmitClassName(cg);
                     return cg.CoreTypes.String;
 
                 default:
-                    throw ExceptionUtilities.UnexpectedValue(this.Type);
+                    throw ExceptionUtilities.UnexpectedValue(this.ConstType);
             }
         }
     }

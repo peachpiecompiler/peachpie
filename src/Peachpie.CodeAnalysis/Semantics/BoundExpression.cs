@@ -1443,11 +1443,11 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         public override OperationKind Kind => OperationKind.None;
 
-        public Ast.PseudoConstUse.Types Type { get; private set; }
+        public Ast.PseudoConstUse.Types ConstType { get; private set; }
 
         public BoundPseudoConst(Ast.PseudoConstUse.Types type)
         {
-            this.Type = type;
+            this.ConstType = type;
         }
 
         public override void Accept(OperationVisitor visitor)
@@ -1467,7 +1467,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public partial class BoundPseudoClassConst : BoundExpression
     {
-        public Ast.PseudoClassConstUse.Types Type { get; private set; }
+        public Ast.PseudoClassConstUse.Types ConstType { get; private set; }
 
         public override OperationKind Kind => OperationKind.None;
 
@@ -1476,7 +1476,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public BoundPseudoClassConst(BoundTypeRef targetType, Ast.PseudoClassConstUse.Types type)
         {
             this.TargetType = targetType;
-            this.Type = type;
+            this.ConstType = type;
         }
 
         public override void Accept(PhpOperationVisitor visitor) => visitor.VisitPseudoClassConstUse(this);

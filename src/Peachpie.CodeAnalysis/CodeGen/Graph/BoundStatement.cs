@@ -164,7 +164,7 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.EmitSequencePoint(this.TypeDecl.HeadingSpan);
 
             // <ctx>.DeclareType<T>()
-            cg.EmitDeclareType(this.Type);
+            cg.EmitDeclareType(this.DeclaredType);
         }
     }
 

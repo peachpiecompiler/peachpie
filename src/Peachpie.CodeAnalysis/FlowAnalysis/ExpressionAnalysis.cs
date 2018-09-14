@@ -1886,7 +1886,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             object value = null;
 
-            switch (x.Type)
+            switch (x.ConstType)
             {
                 case PseudoConstUse.Types.Line:
                     value = x.PhpSyntax.ContainingSourceUnit.GetLineFromPosition(x.PhpSyntax.Span.Start) + 1;
@@ -1902,14 +1902,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                             value = containingtype.QualifiedName.ToString();
 
-                            if (intrait && x.Type == PseudoConstUse.Types.Class)
+                            if (intrait && x.ConstType == PseudoConstUse.Types.Class)
                             {
                                 // __CLASS__ inside trait resolved in runtime
                                 x.TypeRefMask = TypeCtx.GetStringTypeMask();
                                 return;
                             }
 
-                            if (!intrait && x.Type == PseudoConstUse.Types.Trait)
+                            if (!intrait && x.ConstType == PseudoConstUse.Types.Trait)
                             {
                                 // __TRAIT__ inside class is empty string
                                 value = string.Empty;
@@ -1967,7 +1967,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     return;
 
                 default:
-                    throw ExceptionUtilities.UnexpectedValue(x.Type);
+                    throw ExceptionUtilities.UnexpectedValue(x.ConstType);
             }
 
             Debug.Assert(value != null);    // pseudoconstant has been set
@@ -1984,7 +1984,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitPseudoClassConstUse(x);
 
             //
-            if (x.Type == PseudoClassConstUse.Types.Class)
+            if (x.ConstType == PseudoClassConstUse.Types.Class)
             {
                 x.TypeRefMask = TypeCtx.GetStringTypeMask();
 
@@ -2006,7 +2006,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else
             {
-                throw ExceptionUtilities.UnexpectedValue(x.Type);
+                throw ExceptionUtilities.UnexpectedValue(x.ConstType);
             }
         }
 
