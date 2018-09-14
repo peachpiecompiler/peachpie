@@ -14,6 +14,9 @@ using Roslyn.Utilities;
 using System.Collections.Immutable;
 using System.Threading;
 using AST = Devsense.PHP.Syntax.Ast;
+using Microsoft.CodeAnalysis.Emit;
+using Microsoft.CodeAnalysis.Operations;
+using Pchp.CodeAnalysis.Errors;
 
 namespace Pchp.CodeAnalysis
 {
@@ -302,7 +305,7 @@ namespace Pchp.CodeAnalysis
 
         internal NamedTypeSymbol GetWellKnownType(WellKnownType type)
         {
-            Debug.Assert(type >= WellKnownType.First && type <= WellKnownType.Last);
+            Debug.Assert(type >= WellKnownType.First && type < WellKnownType.NextAvailable);
 
             int index = (int)type - (int)WellKnownType.First;
             if (_lazyWellKnownTypes == null || (object)_lazyWellKnownTypes[index] == null)
@@ -375,6 +378,11 @@ namespace Pchp.CodeAnalysis
         protected override INamedTypeSymbol CommonGetSpecialType(SpecialType specialType)
         {
             return this.CorLibrary.GetSpecialType(specialType);
+        }
+
+        internal override ISymbol CommonGetSpecialTypeMember(SpecialMember specialMember)
+        {
+            return this.CorLibrary.GetDeclaredSpecialTypeMember(specialMember);
         }
 
         /// <summary>
@@ -583,6 +591,16 @@ namespace Pchp.CodeAnalysis
         {
             Debug.Assert(routine != null);
             return this.GetTypeFromTypeRef(routine.TypeRefContext, typeMask);
+        }
+
+        public override CommonConversion ClassifyCommonConversion(ITypeSymbol source, ITypeSymbol destination)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal override IConvertibleConversion ClassifyConvertibleConversion(IOperation source, ITypeSymbol destination, out Optional<object> constantValue)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -798,6 +816,11 @@ namespace Pchp.CodeAnalysis
                 return parameter.RefKind != RefKind.None;
             }
 
+            protected override bool IsByRefMethod(MethodSymbol method)
+            {
+                return method.RefKind != RefKind.None;
+            }
+
             protected override bool IsGenericMethodTypeParam(TypeSymbol type, int paramPosition)
             {
                 if (type.Kind != SymbolKind.TypeParameter)
@@ -855,7 +878,7 @@ namespace Pchp.CodeAnalysis
             protected override bool MatchTypeToTypeId(TypeSymbol type, int typeId)
             {
                 WellKnownType wellKnownId = (WellKnownType)typeId;
-                if (wellKnownId >= WellKnownType.First && wellKnownId <= WellKnownType.Last)
+                if (wellKnownId >= WellKnownType.First && wellKnownId < WellKnownType.NextAvailable)
                 {
                     return (type == _compilation.GetWellKnownType(wellKnownId));
                 }
