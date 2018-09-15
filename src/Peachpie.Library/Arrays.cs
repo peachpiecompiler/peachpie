@@ -405,7 +405,7 @@ namespace Pchp.Library
             }
 
             PhpArray result;
-            
+
             // clone the source array and revers entries order
             result = array.DeepCopy();
             result.Reverse();
@@ -878,6 +878,44 @@ namespace Pchp.Library
             // the result is inplace deeply copied on return to PHP code:
             //result.InplaceCopyOnReturn = true;
             return result;
+        }
+
+        #endregion
+
+        #region array_key_first, array_key_last 
+
+        /// <summary>
+        /// Get the first key of the given array without affecting the internal array pointer.
+        /// </summary>
+        /// <returns>Returns the first key of array if the array is not empty. Otherwise <c>NULL</c>.</returns>
+        public static PhpValue array_key_first(PhpArray array)
+        {
+            var enumerator = array.GetFastEnumerator();
+            if (enumerator.MoveNext())
+            {
+                return PhpValue.Create(enumerator.CurrentKey);
+            }
+            else
+            {
+                return PhpValue.Null;
+            }
+        }
+
+        /// <summary>
+        /// Get the last key of the given array without affecting the internal array pointer.
+        /// </summary>
+        /// <returns>Returns the first key of array if the array is not empty. Otherwise <c>NULL</c>.</returns>
+        public static PhpValue array_key_last(PhpArray array)
+        {
+            var enumerator = array.GetFastEnumerator();
+            if (enumerator.MovePrevious())
+            {
+                return PhpValue.Create(enumerator.CurrentKey);
+            }
+            else
+            {
+                return PhpValue.Null;
+            }
         }
 
         #endregion
