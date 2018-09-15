@@ -45,6 +45,10 @@ namespace Pchp.Library
                 {
                     return CommonSerialize(ctx, variable, caller);
                 }
+                catch (Spl.Exception)
+                {
+                    throw;
+                }
                 catch (Exception e)
                 {
                     PhpException.Throw(PhpError.Notice, LibResources.serialization_failed, e.Message);
@@ -68,6 +72,10 @@ namespace Pchp.Library
                 try
                 {
                     return CommonDeserialize(ctx, stream, caller);
+                }
+                catch (Spl.Exception)
+                {
+                    throw;
                 }
                 catch (Exception e)
                 {
