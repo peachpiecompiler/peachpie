@@ -581,9 +581,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 {
                     //Debug.Assert(currentCall.IsMemberOf is AST.FunctionCalll);
 
-                    if (currentCall is AST.FunctionCall)
+                    if (currentCall.IsMemberOf is AST.FunctionCall)
                     {
-                        callStack.Push((AST.FunctionCall)currentCall.IsMemberOf);
+                        callStack.Push(currentCall.IsMemberOf as AST.FunctionCall);
                     } else
                     {
                         currentBoundTarget = BindExpression(currentCall.IsMemberOf);
@@ -596,7 +596,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         // func(...)
                         // $x->func(...)
 
-                        var fname = ((AST.DirectFcnCall)currentCall).FullName;
+                        var fname = (currentCall as AST.DirectFcnCall).FullName;
 
                         if (currentBoundTarget == null)
                         {
@@ -622,7 +622,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         // $func(...)
                         // $x->$func(...)
 
-                        var nameExpr = BindExpression(((AST.IndirectFcnCall)currentCall).NameExpr);
+                        var nameExpr = BindExpression((currentCall as AST.IndirectFcnCall).NameExpr);
                         if (currentBoundTarget == null)
                         {
                             currentBoundTarget = new BoundGlobalFunctionCall(nameExpr, BindArguments(currentCall.CallSignature.Parameters));
@@ -639,9 +639,9 @@ namespace Pchp.CodeAnalysis.Semantics
                         Debug.Assert(currentBoundTarget == null);
 
                         var boundname = (staticMtdCall is AST.DirectStMtdCall)
-                            ? new BoundRoutineName(new QualifiedName(((AST.DirectStMtdCall)staticMtdCall).MethodName))
-                            : new BoundRoutineName(new BoundUnaryEx(BindExpression(((AST.IndirectStMtdCall)staticMtdCall).MethodNameExpression), AST.Operations.StringCast));
-
+                            ? new BoundRoutineName(new QualifiedName((staticMtdCall as AST.DirectStMtdCall).MethodName))
+                            : new BoundRoutineName(new BoundUnaryEx(BindExpression(((staticMtdCall as AST.IndirectStMtdCall)).MethodNameExpression), AST.Operations.StringCast));
+                        
                         currentBoundTarget = new BoundStaticFunctionCall(BindTypeRef(staticMtdCall.TargetType, objectTypeInfoSemantic: true, isClassName: true), boundname, BindArguments(currentCall.CallSignature.Parameters));
                     }
                 }
