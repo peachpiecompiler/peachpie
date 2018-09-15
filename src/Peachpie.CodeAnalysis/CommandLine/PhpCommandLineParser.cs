@@ -137,6 +137,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             var metadataReferences = new List<CommandLineReference>();
             var analyzers = new List<CommandLineAnalyzerReference>();
             var additionalFiles = new List<CommandLineSourceFile>();
+            var embeddedFiles = new List<CommandLineSourceFile>();
             var managedResources = new List<ResourceDescription>();
             var defines = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             string outputDirectory = baseDirectory;
@@ -146,6 +147,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             string runtimeMetadataVersion = null; // will be read from cor library if not specified in cmd
             string compilationName = null;
             string versionString = null;
+            bool embedAllSourceFiles = false;
             bool optimize = false;
             bool concurrentBuild = true;
             var diagnosticOptions = new Dictionary<string, ReportDiagnostic>();
@@ -541,6 +543,16 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                         continue;
 
+                    case "embed":
+                        if (string.IsNullOrEmpty(value))
+                        {
+                            embedAllSourceFiles = true;
+                            continue;
+                        }
+
+                        embeddedFiles.AddRange(ParseSeparatedFileArgument(value, baseDirectory, diagnostics));
+                        continue;
+
                     default:
                         break;
                 }
@@ -580,6 +592,16 @@ namespace Pchp.CodeAnalysis.CommandLine
             if (publicSign && !string.IsNullOrWhiteSpace(keyFileSetting))
             {
                 keyFileSetting = ParseGenericPathToFile(keyFileSetting, diagnostics, baseDirectory);
+            }
+
+            if (embedAllSourceFiles)
+            {
+                embeddedFiles.AddRange(sourceFiles);
+            }
+
+            if (embeddedFiles.Count > 0 && !emitPdb)
+            {
+                diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_PdbWritingFailed /* TODO .ERR_CannotEmbedWithoutPdb*/, Location.None));
             }
 
             var parseOptions = new PhpParseOptions
@@ -688,6 +710,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 //PreferredUILang = preferredUILang,
                 //SqmSessionGuid = sqmSessionGuid,
                 //ReportAnalyzer = reportAnalyzer
+                EmbeddedFiles = embeddedFiles.AsImmutable(),
             };
         }
 
