@@ -1120,12 +1120,12 @@ namespace Pchp.CodeAnalysis
 
         internal override void ReportUnusedImports(SyntaxTree filterTree, DiagnosticBag diagnostics, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
         }
 
         internal override void CompleteTrees(SyntaxTree filterTree)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
         }
 
         internal override bool IsUnreferencedAssemblyIdentityDiagnosticCode(int code)

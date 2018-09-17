@@ -75,7 +75,18 @@ namespace Pchp.CodeAnalysis {
                 return ResourceManager.GetString("IDS_Help", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Looks up a localized string similar to Language versions:.
+        /// </summary>
+        internal static string IDS_LangVersions
+        {
+            get
+            {
+                return ResourceManager.GetString("IDS_LangVersions", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to {0} version {1}.
         /// </summary>

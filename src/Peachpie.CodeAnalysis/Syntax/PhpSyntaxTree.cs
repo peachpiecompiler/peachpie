@@ -121,6 +121,11 @@ namespace Pchp.CodeAnalysis
             PhpParseOptions scriptParseOptions,
             string fname)
         {
+            if (fname == null)
+            {
+                throw new ArgumentNullException(nameof(fname));
+            }
+
             // TODO: new parser implementation based on Roslyn
 
             // TODO: file.IsScript ? scriptParseOptions : parseOptions

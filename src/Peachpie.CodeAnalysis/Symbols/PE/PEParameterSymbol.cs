@@ -133,7 +133,7 @@ namespace Pchp.CodeAnalysis.Symbols
             ParamInfo<TypeSymbol> parameter,
             out bool isBad)
         {
-            return Create(moduleSymbol, containingSymbol, ordinal, parameter.IsByRef, parameter.CountOfCustomModifiersPrecedingByRef, parameter.Type, parameter.Handle, parameter.CustomModifiers, out isBad);
+            return Create(moduleSymbol, containingSymbol, ordinal, parameter.IsByRef, parameter.Type, parameter.Handle, parameter.CustomModifiers, out isBad);
         }
 
         /// <summary>
@@ -155,7 +155,7 @@ namespace Pchp.CodeAnalysis.Symbols
             ParamInfo<TypeSymbol> parameter,
             out bool isBad)
         {
-            return Create(moduleSymbol, containingSymbol, ordinal, parameter.IsByRef, parameter.CountOfCustomModifiersPrecedingByRef, parameter.Type, handle, parameter.CustomModifiers, out isBad);
+            return Create(moduleSymbol, containingSymbol, ordinal, parameter.IsByRef, parameter.Type, handle, parameter.CustomModifiers, out isBad);
         }
 
         private PEParameterSymbol(
@@ -165,7 +165,6 @@ namespace Pchp.CodeAnalysis.Symbols
             bool isByRef,
             TypeSymbol type,
             ParameterHandle handle,
-            int countOfCustomModifiers,
             out bool isBad)
         {
             Debug.Assert((object)moduleSymbol != null);
@@ -239,7 +238,6 @@ namespace Pchp.CodeAnalysis.Symbols
             Symbol containingSymbol,
             int ordinal,
             bool isByRef,
-            ushort countOfCustomModifiersPrecedingByRef,
             TypeSymbol type,
             ParameterHandle handle,
             ImmutableArray<ModifierInfo<TypeSymbol>> customModifiers,
@@ -247,34 +245,30 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             if (customModifiers.IsDefaultOrEmpty)
             {
-                return new PEParameterSymbol(moduleSymbol, containingSymbol, ordinal, isByRef, type, handle, 0, out isBad);
+                return new PEParameterSymbol(moduleSymbol, containingSymbol, ordinal, isByRef, type, handle, out isBad);
             }
 
-            return new PEParameterSymbolWithCustomModifiers(moduleSymbol, containingSymbol, ordinal, isByRef, countOfCustomModifiersPrecedingByRef, type, handle, customModifiers, out isBad);
+            return new PEParameterSymbolWithCustomModifiers(moduleSymbol, containingSymbol, ordinal, isByRef, type, handle, customModifiers, out isBad);
         }
 
         private sealed class PEParameterSymbolWithCustomModifiers : PEParameterSymbol
         {
             private readonly ImmutableArray<CustomModifier> _customModifiers;
-            private readonly ushort _countOfCustomModifiersPrecedingByRef;
 
             public PEParameterSymbolWithCustomModifiers(
                 PEModuleSymbol moduleSymbol,
                 Symbol containingSymbol,
                 int ordinal,
                 bool isByRef,
-                ushort countOfCustomModifiersPrecedingByRef,
                 TypeSymbol type,
                 ParameterHandle handle,
                 ImmutableArray<ModifierInfo<TypeSymbol>> customModifiers,
                 out bool isBad) :
-                    base(moduleSymbol, containingSymbol, ordinal, isByRef, type, handle, customModifiers.Length, out isBad)
+                    base(moduleSymbol, containingSymbol, ordinal, isByRef, type, handle, out isBad)
             {
                 _customModifiers = CSharpCustomModifier.Convert(customModifiers);
-                _countOfCustomModifiersPrecedingByRef = countOfCustomModifiersPrecedingByRef;
 
-                Debug.Assert(_countOfCustomModifiersPrecedingByRef == 0 || isByRef);
-                Debug.Assert(_countOfCustomModifiersPrecedingByRef <= _customModifiers.Length);
+                // TODO: RefCustomModifiers
             }
 
             public override ImmutableArray<CustomModifier> CustomModifiers
@@ -284,14 +278,6 @@ namespace Pchp.CodeAnalysis.Symbols
                     return _customModifiers;
                 }
             }
-
-            //internal override ushort CountOfCustomModifiersPrecedingByRef
-            //{
-            //    get
-            //    {
-            //        return _countOfCustomModifiersPrecedingByRef;
-            //    }
-            //}
         }
 
         public override RefKind RefKind
