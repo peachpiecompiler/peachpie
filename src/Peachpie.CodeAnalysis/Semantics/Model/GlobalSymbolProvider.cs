@@ -203,6 +203,11 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         public IPhpScriptTypeSymbol ResolveFile(string path)
         {
+            if (string.IsNullOrEmpty(path))
+            {
+                return null;
+            }
+
             // normalize path
             path = FileUtilities.NormalizeRelativePath(path, null, _compilation.Options.BaseDirectory);
 
