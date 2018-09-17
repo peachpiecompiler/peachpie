@@ -277,6 +277,7 @@ namespace Peachpie.Library.Scripting
 
         #region Context.IScript
 
+        [DebuggerNonUserCode, DebuggerStepThrough]
         public PhpValue Evaluate(Context ctx, PhpArray locals, object @this, RuntimeTypeHandle self)
         {
             return _entryPoint(ctx, locals, @this, self);
