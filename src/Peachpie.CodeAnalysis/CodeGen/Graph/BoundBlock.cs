@@ -137,27 +137,28 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                     continue;
                 }
 
-                // Template: var {name} = new IndirectLocal(<locals>, name)
+                if (loc.BindPlace(cg.Builder, BoundAccess.ReadAndWrite, 0) is BoundIndirectVariablePlace srcplace)
+                {
+                    // Template: var {name} = new IndirectLocal(<locals>, name)
 
-                // declare variable
-                var def = cg.Builder.LocalSlotManager.DeclareLocal(
-                        cg.CoreTypes.IndirectLocal.Symbol, loc.Symbol as ILocalSymbolInternal,
-                        loc.Name, SynthesizedLocalKind.UserDefined,
-                        Microsoft.CodeAnalysis.CodeGen.LocalDebugId.None, 0, LocalSlotConstraints.None, false, default(ImmutableArray<TypedConstant>), false);
+                    // declare variable
+                    var def = cg.Builder.LocalSlotManager.DeclareLocal(
+                            cg.CoreTypes.IndirectLocal.Symbol, loc.Symbol as ILocalSymbolInternal,
+                            loc.Name, SynthesizedLocalKind.UserDefined,
+                            Microsoft.CodeAnalysis.CodeGen.LocalDebugId.None, 0, LocalSlotConstraints.None, false, default(ImmutableArray<TypedConstant>), false);
 
-                cg.Builder.AddLocalToScope(def);
+                    cg.Builder.AddLocalToScope(def);
 
-                var place = new LocalPlace(def);
+                    var place = new LocalPlace(def);
 
-                place.EmitStorePrepare(cg.Builder);
+                    place.EmitStorePrepare(cg.Builder);
 
-                // new IndirectLocal(locals : PhpArray, name : string)
-                cg.LocalsPlaceOpt.EmitLoad(cg.Builder).Expect(cg.CoreTypes.PhpArray);
-                cg.Builder.EmitStringConstant(loc.Name);
-                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.IndirectLocal_PhpArray_String);
+                    // new IndirectLocal(locals : PhpArray, name : IntStringKey)
+                    srcplace.LoadIndirectLocal(cg);
 
-                // store
-                place.EmitStore(cg.Builder);
+                    // store
+                    place.EmitStore(cg.Builder);
+                }
             }
         }
 

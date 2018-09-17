@@ -1211,20 +1211,15 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         #endregion
-    }
 
-    internal class BoundGlobalPlace : BoundIndirectVariablePlace
-    {
-        public BoundGlobalPlace(BoundExpression nameExpr, BoundAccess access)
-            : base(nameExpr, access)
+        /// <summary>
+        /// Template: new IndirectLocal( LOCALS, NAME )
+        /// </summary>
+        public TypeSymbol LoadIndirectLocal(CodeGenerator cg)
         {
-        }
-
-        protected override TypeSymbol LoadVariablesArray(CodeGenerator cg)
-        {
-            // $GLOBALS
-            cg.EmitLoadContext();
-            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Context.Globals.Getter);   // <ctx>.Globals
+            LoadVariablesArray(cg);
+            cg.EmitIntStringKey(_nameExpr);
+            return cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.IndirectLocal_PhpArray_IntStringKey);
         }
     }
 
