@@ -900,6 +900,21 @@ namespace Pchp.Library.PerlRegex
                     throw MakeException(SR.MalformedNameRef);
                 }
             }
+            else if (CharsRight() >= 1 && char.IsNumber(RightChar()))
+            {
+                var pindex = ScanDecimal();
+
+                if (!IsCaptureSlot(pindex))
+                    pindex = -1;
+
+                if (CharsRight() == 0 || MoveRightGetChar() != ')')
+                {
+                    goto BreakRecognize;
+                }
+
+                //return new RegexNode(RegexNode., _options, pindex);
+                throw new NotSupportedException($"recurses the {pindex} subpattern");
+            }
 
             for (; ; )
             {
