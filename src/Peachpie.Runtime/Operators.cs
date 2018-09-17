@@ -262,6 +262,11 @@ namespace Pchp.Core
         public static IPhpArray EnsureArray(ref IPhpArray arr) => arr ?? (arr = new PhpArray());
 
         /// <summary>
+        /// Ensures given ref to <see cref="PhpValue"/> as <see cref="PhpAlias"/>.
+        /// </summary>
+        public static PhpAlias EnsureAlias(ref PhpValue valueref) => valueref.EnsureAlias();
+
+        /// <summary>
         /// Implementation of PHP <c>isset</c> operator.
         /// </summary>
         /// <remarks>Value (eventualy dereferenced value) is not <c>NULL</c>.</remarks>

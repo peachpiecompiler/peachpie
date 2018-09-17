@@ -34,7 +34,7 @@ namespace Pchp.Core.Dynamic
             }
 
             // dereference
-            if (arg.Type == typeof(PhpAlias))
+            if (arg.Type == Cache.Types.PhpAlias[0])
             {
                 return Bind(Expression.Field(arg, Cache.PhpAlias.Value), target, ctx);
             }
@@ -47,6 +47,19 @@ namespace Pchp.Core.Dynamic
                     test: Expression.Property(arg, "HasValue"),
                     ifTrue: Bind(Expression.Call(arg, arg.Type.GetMethod("GetValueOrDefault", Array.Empty<Type>())), target, ctx),
                     ifFalse: Bind(Expression.Field(null, Cache.Properties.PhpValue_Null), target, ctx));
+            }
+
+            // from IndirectLocal
+            if (arg.Type == Cache.Types.IndirectLocal)
+            {
+                if (target == Cache.Types.PhpAlias[0])
+                {
+                    // Template: arg.EnsureAlias()
+                    return Expression.Call(arg, Cache.IndirectLocal.EnsureAlias);
+                }
+
+                // Template: arg.Value
+                return Bind(Expression.Property(arg, Cache.IndirectLocal.Value), target, ctx);
             }
 
             Debug.Assert(ctx != null, "!ctx");
@@ -367,7 +380,7 @@ namespace Pchp.Core.Dynamic
 
             if (source.GetTypeInfo().IsValueType)
             {
-                if (source == typeof(void)) return VoidAsConstant(expr, PhpValue.Void, Cache.Types.PhpValue[0]);
+                if (source == typeof(void)) return VoidAsConstant(expr, PhpValue.Void, Cache.Types.PhpValue);
 
                 throw new NotImplementedException(source.FullName);
             }
@@ -543,7 +556,12 @@ namespace Pchp.Core.Dynamic
 
             if (t == typeof(PhpAlias))
             {
-                return BindCost(Expression.Field(arg, Cache.PhpAlias.Value), target);
+                return BindCost(Expression.Field(arg, Cache.PhpAlias.Value), target); // PhpValue -> target
+            }
+
+            if (t == Cache.Types.IndirectLocal)
+            {
+                return BindCost(Expression.Property(arg, Cache.IndirectLocal.Value), target); // PhpValue -> target
             }
 
             if (target == typeof(PhpValue))
@@ -574,7 +592,7 @@ namespace Pchp.Core.Dynamic
 
             // other types
             if (target.GetTypeInfo().IsAssignableFrom(t.GetTypeInfo())) return Expression.Constant(ConversionCost.Pass);
-            
+
             // return Expression.Constant(ConversionCost.AttemptConvert);
 
             //

@@ -661,9 +661,9 @@ namespace Pchp.Core.Dynamic
 
             if (type.RuntimeFieldsHolder != null)   // we don't handle magic methods without the runtime fields
             {
-                var runtimeflds = Expression.Field(target, type.RuntimeFieldsHolder);       // Template: target->__runtime_fields
-                var fieldkey = Expression.Constant(new IntStringKey(field));                // Template: IntStringKey(field)
-                var resultvar = Expression.Variable(Cache.Types.PhpValue[0], "result");     // Template: PhpValue result;
+                var runtimeflds = Expression.Field(target, type.RuntimeFieldsHolder);   // Template: target->__runtime_fields
+                var fieldkey = Expression.Constant(new IntStringKey(field));            // Template: IntStringKey(field)
+                var resultvar = Expression.Variable(Cache.Types.PhpValue, "result");    // Template: PhpValue result;
 
                 // Template: runtimeflds != null && runtimeflds.TryGetValue(field, out result)
                 var trygetfield = Expression.AndAlso(Expression.ReferenceNotEqual(runtimeflds, Expression.Constant(null)), Expression.Call(runtimeflds, Cache.Operators.PhpArray_TryGetValue, fieldkey, resultvar));
@@ -867,7 +867,7 @@ namespace Pchp.Core.Dynamic
         static Expression InvokeHandler(Expression ctx, Expression target, string field, Expression getter, AccessMask access, Expression @default = null, Type resultType = null)
         {
             // default
-            resultType = resultType ?? Cache.Types.PhpValue[0];
+            resultType = resultType ?? Cache.Types.PhpValue;
             @default = @default ?? Expression.Field(null, Cache.Properties.PhpValue_Null);   // TODO: ERR field not found
             @default = ConvertExpression.Bind(@default, resultType, ctx);
 
