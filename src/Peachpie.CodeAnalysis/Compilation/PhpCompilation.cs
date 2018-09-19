@@ -167,13 +167,15 @@ namespace Pchp.CodeAnalysis
 
         IEnumerable<IObserver<object>> CreateObservers()
         {
-            return _options.Loggers.Select(logger =>
+            foreach (var logger in _options.Loggers)
             {
                 var ci = logger.IndexOf(',');
                 if (ci > 0)
                 {
                     var tname = logger.Remove(ci).Trim();
                     var assname = logger.Substring(ci + 1).Trim();
+
+                    IObserver<object> obj = null;
 
                     try
                     {
@@ -183,19 +185,24 @@ namespace Pchp.CodeAnalysis
                             var t = ass.GetType(tname, throwOnError: false);
                             if (t != null)
                             {
-                                return Activator.CreateInstance(t, typeof(PhpCompilation).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion, _options.ModuleName) as IObserver<object>;
+                                obj = Activator.CreateInstance(t, typeof(PhpCompilation).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion, _options.ModuleName) as IObserver<object>;
                             }
                         }
                     }
                     catch
                     {
                     }
-                }
 
-                return null;
-            })
-            .WhereNotNull()
-            .ToArray();
+                    if (obj != null)
+                    {
+                        yield return obj;
+                    }
+                }
+            }
+
+#if TRACE
+            yield return new CompilationTracker.TraceObserver();
+#endif
         }
 
         /// <summary>

@@ -40,6 +40,29 @@ namespace Pchp.CodeAnalysis.Utilities
             }
         }
 
+        public sealed class TraceObserver : IObserver<object>
+        {
+            public void OnCompleted()
+            {
+            }
+
+            public void OnError(Exception error)
+            {
+            }
+
+            public void OnNext(object value)
+            {
+                if (value is string str)
+                {
+                    Trace.WriteLine(str);
+                }
+                else if (value is Tuple<string, double> data)
+                {
+                    Trace.WriteLine($"{data.Item1}: {data.Item2} s");
+                }
+            }
+        }
+
         static void OnCompleted(IObserver<object> o)
         {
             try { o.OnCompleted(); }
