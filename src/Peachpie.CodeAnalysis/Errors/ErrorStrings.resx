@@ -290,4 +290,7 @@
   <data name="FTL_InvalidInputFileName" xml:space="preserve">
     <value>File name '{0}' is empty, contains invalid characters, has a drive specification without an absolute path, or is too long</value>
   </data>
+  <data name="ERR_CannotEmbedWithoutPdb" xml:space="preserve">
+    <value>/embed switch is only supported when emitting Portable PDB (/debug:portable or /debug:embedded).</value>
+  </data>
 </root>

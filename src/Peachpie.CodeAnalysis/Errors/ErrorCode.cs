@@ -131,6 +131,8 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_InvalidDebugInfo,
         /// <summary>Invalid assembly name: {0}</summary>
         ERR_BadAssemblyName,
+        /// <summary>/embed switch is only supported when emitting Portable PDB (/debug:portable or /debug:embedded).</summary>
+        ERR_CannotEmbedWithoutPdb,
 
         //
         // Warnings

@@ -601,7 +601,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
             if (embeddedFiles.Count > 0 && !emitPdb)
             {
-                diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_PdbWritingFailed /* TODO .ERR_CannotEmbedWithoutPdb*/, Location.None));
+                diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.ERR_CannotEmbedWithoutPdb, Location.None));
             }
 
             var parseOptions = new PhpParseOptions
