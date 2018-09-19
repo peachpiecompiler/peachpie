@@ -162,40 +162,43 @@ namespace Pchp.CodeAnalysis
                 ? referenceManager
                 : new ReferenceManager(MakeSourceAssemblySimpleName(), options.AssemblyIdentityComparer, referenceManager?.ObservedMetadata, options.SdkDirectory);
 
-            _observers = CreateObservers();
+            _observers = CreateObservers().ToArray();
         }
 
         IEnumerable<IObserver<object>> CreateObservers()
         {
-            foreach (var logger in _options.Loggers)
+            if (!_options.Loggers.IsDefaultOrEmpty)
             {
-                var ci = logger.IndexOf(',');
-                if (ci > 0)
+                foreach (var logger in _options.Loggers)
                 {
-                    var tname = logger.Remove(ci).Trim();
-                    var assname = logger.Substring(ci + 1).Trim();
-
-                    IObserver<object> obj = null;
-
-                    try
+                    var ci = logger.IndexOf(',');
+                    if (ci > 0)
                     {
-                        var ass = System.Reflection.Assembly.Load(assname);
-                        if (ass != null)
+                        var tname = logger.Remove(ci).Trim();
+                        var assname = logger.Substring(ci + 1).Trim();
+
+                        IObserver<object> obj = null;
+
+                        try
                         {
-                            var t = ass.GetType(tname, throwOnError: false);
-                            if (t != null)
+                            var ass = System.Reflection.Assembly.Load(assname);
+                            if (ass != null)
                             {
-                                obj = Activator.CreateInstance(t, typeof(PhpCompilation).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion, _options.ModuleName) as IObserver<object>;
+                                var t = ass.GetType(tname, throwOnError: false);
+                                if (t != null)
+                                {
+                                    obj = Activator.CreateInstance(t, typeof(PhpCompilation).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion, _options.ModuleName) as IObserver<object>;
+                                }
                             }
                         }
-                    }
-                    catch
-                    {
-                    }
+                        catch
+                        {
+                        }
 
-                    if (obj != null)
-                    {
-                        yield return obj;
+                        if (obj != null)
+                        {
+                            yield return obj;
+                        }
                     }
                 }
             }
