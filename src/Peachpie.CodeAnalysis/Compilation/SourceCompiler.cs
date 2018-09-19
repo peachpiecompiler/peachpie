@@ -320,32 +320,37 @@ namespace Pchp.CodeAnalysis
         {
             Debug.Assert(moduleBuilder != null);
 
-            // ensure flow analysis and collect diagnostics
-            var declarationDiagnostics = compilation.GetDeclarationDiagnostics(cancellationToken);
-            diagnostics.AddRange(declarationDiagnostics);
+            compilation.TrackMetric("sourceFilesCount", compilation.SourceSymbolCollection.FilesCount);
 
-            // cancel the operation if there are errors
-            if (hasDeclarationErrors |= declarationDiagnostics.HasAnyErrors() || cancellationToken.IsCancellationRequested)
+            using (compilation.StartMetric("diagnostics"))
             {
-                return;
+                // ensure flow analysis and collect diagnostics
+                var declarationDiagnostics = compilation.GetDeclarationDiagnostics(cancellationToken);
+                diagnostics.AddRange(declarationDiagnostics);
+
+                // cancel the operation if there are errors
+                if (hasDeclarationErrors |= declarationDiagnostics.HasAnyErrors() || cancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
             }
 
             //
             var compiler = new SourceCompiler(compilation, moduleBuilder, emittingPdb, diagnostics, cancellationToken);
 
-            CompilerLogSource.Log.StartPhase(CompilationPhase.Emit.ToString());
+            using (compilation.StartMetric("emit"))
+            {
+                // Emit method bodies
+                //   a. declared routines
+                //   b. synthesized symbols
+                compiler.EmitMethodBodies();
+                compiler.EmitSynthesized();
+                compiler.CompileReflectionEnumerators();
 
-            // Emit method bodies
-            //   a. declared routines
-            //   b. synthesized symbols
-            compiler.EmitMethodBodies();
-            compiler.EmitSynthesized();
-            compiler.CompileReflectionEnumerators();
+                // Entry Point (.exe)
+                compiler.CompileEntryPoint();
 
-            // Entry Point (.exe)
-            compiler.CompileEntryPoint();
-
-            CompilerLogSource.Log.EndPhase();
+            }
         }
     }
 }

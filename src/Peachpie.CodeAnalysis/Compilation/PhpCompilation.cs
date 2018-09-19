@@ -850,27 +850,35 @@ namespace Pchp.CodeAnalysis
             // Use a temporary bag so we don't have to refilter pre-existing diagnostics.
             DiagnosticBag methodBodyDiagnosticBag = DiagnosticBag.GetInstance();
 
-            SourceCompiler.CompileSources(
-                this,
-                moduleBeingBuilt,
-                emittingPdb,
-                hasDeclarationErrors,
-                methodBodyDiagnosticBag,
-                cancellationToken);
-
-            SetupWin32Resources(moduleBeingBuilt, win32Resources, methodBodyDiagnosticBag);
-
-            ReportManifestResourceDuplicates(
-                moduleBeingBuilt.ManifestResources,
-                SourceAssembly.Modules.Skip(1).Select((m) => m.Name),   //all modules except the first one
-                AddedModulesResourceNames(methodBodyDiagnosticBag),
-                methodBodyDiagnosticBag);
-
-            bool hasMethodBodyErrorOrWarningAsError = !FilterAndAppendAndFreeDiagnostics(diagnostics, ref methodBodyDiagnosticBag);
-
-            if (hasDeclarationErrors || hasMethodBodyErrorOrWarningAsError)
+            try
             {
-                return false;
+                SourceCompiler.CompileSources(
+                    this,
+                    moduleBeingBuilt,
+                    emittingPdb,
+                    hasDeclarationErrors,
+                    methodBodyDiagnosticBag,
+                    cancellationToken);
+
+                SetupWin32Resources(moduleBeingBuilt, win32Resources, methodBodyDiagnosticBag);
+
+                ReportManifestResourceDuplicates(
+                    moduleBeingBuilt.ManifestResources,
+                    SourceAssembly.Modules.Skip(1).Select((m) => m.Name),   //all modules except the first one
+                    AddedModulesResourceNames(methodBodyDiagnosticBag),
+                    methodBodyDiagnosticBag);
+
+                bool hasMethodBodyErrorOrWarningAsError = !FilterAndAppendAndFreeDiagnostics(diagnostics, ref methodBodyDiagnosticBag);
+
+                if (hasDeclarationErrors || hasMethodBodyErrorOrWarningAsError)
+                {
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                this.TrackException(ex);
+                throw;
             }
 
             cancellationToken.ThrowIfCancellationRequested();

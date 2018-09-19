@@ -9,6 +9,37 @@ namespace Pchp.CodeAnalysis.Utilities
 {
     internal static class CompilationTracker
     {
+        /// <summary>
+        /// Helper value to remember the start time of time span metric.
+        /// </summary>
+        public struct TimeSpanMetric : IDisposable
+        {
+            readonly PhpCompilation _compilation;
+            public string Name;
+            public DateTime Start;
+
+            public TimeSpanMetric(PhpCompilation compilation, string name)
+            {
+                _compilation = compilation;
+                Name = name;
+                Start = DateTime.UtcNow;
+            }
+
+            /// <summary>
+            /// Gets value indicating the object is not initialized.
+            /// </summary>
+            public bool IsDefault => Name == null || Start == default;
+
+            void IDisposable.Dispose()
+            {
+                if (!IsDefault)
+                {
+                    _compilation.TrackMetric(Name, (DateTime.UtcNow - Start).TotalSeconds);
+                    this = default;
+                }
+            }
+        }
+
         static void OnCompleted(IObserver<object> o)
         {
             try { o.OnCompleted(); }
@@ -37,6 +68,11 @@ namespace Pchp.CodeAnalysis.Utilities
         public static void TrackEvent(this PhpCompilation c, string name)
         {
             c.Observers.ForEach(o => o.OnNext(name));
+        }
+
+        public static TimeSpanMetric StartMetric(this PhpCompilation c, string name)
+        {
+            return new TimeSpanMetric(c, name);
         }
     }
 
