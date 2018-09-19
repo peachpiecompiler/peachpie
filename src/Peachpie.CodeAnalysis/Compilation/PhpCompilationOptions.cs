@@ -77,6 +77,11 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public string VersionString { get; private set; }
 
+        /// <summary>
+        /// List of qualified assembly names refering to IObserver&lt;object&gt; class.
+        /// </summary>
+        public ImmutableArray<string> Loggers { get; internal set; }
+
         ///// <summary>
         ///// Flags applied to the top-level binder created for each syntax tree in the compilation 
         ///// as well as for the binder of global imports.
@@ -220,6 +225,7 @@ namespace Pchp.CodeAnalysis
             diagnostics: other.Diagnostics,
             parseOptions: other.ParseOptions)
         {
+            Loggers = other.Loggers;
         }
 
         internal override ImmutableArray<string> GetImports() => ImmutableArray<string>.Empty; // Usings;
@@ -669,7 +675,7 @@ namespace Pchp.CodeAnalysis
                 reportAction = ReportDiagnostic.Default;
             }
 
-            return  diagnostic.WithReportDiagnostic(reportAction);
+            return diagnostic.WithReportDiagnostic(reportAction);
         }
     }
 }

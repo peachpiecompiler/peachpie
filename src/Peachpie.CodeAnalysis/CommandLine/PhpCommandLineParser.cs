@@ -167,6 +167,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             List<string> keyFileSearchPaths = new List<string>();
             if (sdkDirectoryOpt != null) referencePaths.Add(sdkDirectoryOpt);
             if (!string.IsNullOrEmpty(additionalReferenceDirectories)) referencePaths.AddRange(additionalReferenceDirectories.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
+            var loggers = new List<string>();
 
             foreach (string arg in flattenedArgs)
             {
@@ -541,6 +542,13 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                         continue;
 
+                    case "logger":
+                        if (!string.IsNullOrEmpty(value))
+                        {
+                            loggers.Add(value);
+                        }
+                        continue;
+
                     default:
                         break;
                 }
@@ -627,7 +635,10 @@ namespace Pchp.CodeAnalysis.CommandLine
                 //specificDiagnosticOptions: diagnosticOptions,
                 //reportSuppressedDiagnostics: reportSuppressedDiagnostics,
                 publicSign: publicSign
-            );
+            )
+            {
+                Loggers = loggers.AsImmutableOrEmpty(),
+            };
 
             if (debugPlus)
             {

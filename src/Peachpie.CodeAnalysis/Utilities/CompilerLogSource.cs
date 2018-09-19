@@ -7,6 +7,39 @@ using System.Text;
 
 namespace Pchp.CodeAnalysis.Utilities
 {
+    internal static class CompilationTracker
+    {
+        static void OnCompleted(IObserver<object> o)
+        {
+            try { o.OnCompleted(); }
+            catch
+            { }
+        }
+
+        public static void TrackOnCompleted(this PhpCompilation c)
+        {
+            c.Observers.ForEach(OnCompleted);
+        }
+
+        public static void TrackException(this PhpCompilation c, Exception ex)
+        {
+            if (ex != null)
+            {
+                c.Observers.ForEach(o => o.OnError(ex));
+            }
+        }
+
+        public static void TrackMetric(this PhpCompilation c, string name, double value)
+        {
+            c.Observers.ForEach(o => o.OnNext(Tuple.Create(name, value)));
+        }
+
+        public static void TrackEvent(this PhpCompilation c, string name)
+        {
+            c.Observers.ForEach(o => o.OnNext(name));
+        }
+    }
+
     /// <summary>
     /// Event source for compiler tracing.
     /// </summary>

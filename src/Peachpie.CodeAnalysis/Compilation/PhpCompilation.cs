@@ -21,6 +21,7 @@ using System.Collections.Concurrent;
 using Devsense.PHP.Syntax;
 using Pchp.CodeAnalysis.DocumentationComments;
 using Pchp.CodeAnalysis.Utilities;
+using System.Reflection;
 
 namespace Pchp.CodeAnalysis
 {
@@ -29,6 +30,9 @@ namespace Pchp.CodeAnalysis
         readonly SourceSymbolCollection _tables;
         MethodSymbol _lazyMainMethod;
         readonly PhpCompilationOptions _options;
+
+        internal IEnumerable<IObserver<object>> Observers => _observers;
+        readonly IEnumerable<IObserver<object>> _observers;
 
         Task<IEnumerable<Diagnostic>> _lazyAnalysisTask;
 
@@ -157,6 +161,41 @@ namespace Pchp.CodeAnalysis
             _referenceManager = (reuseReferenceManager && referenceManager != null)
                 ? referenceManager
                 : new ReferenceManager(MakeSourceAssemblySimpleName(), options.AssemblyIdentityComparer, referenceManager?.ObservedMetadata, options.SdkDirectory);
+
+            _observers = CreateObservers();
+        }
+
+        IEnumerable<IObserver<object>> CreateObservers()
+        {
+            return _options.Loggers.Select(logger =>
+            {
+                var ci = logger.IndexOf(',');
+                if (ci > 0)
+                {
+                    var tname = logger.Remove(ci).Trim();
+                    var assname = logger.Substring(ci + 1).Trim();
+
+                    try
+                    {
+                        var ass = System.Reflection.Assembly.Load(assname);
+                        if (ass != null)
+                        {
+                            var t = ass.GetType(tname, throwOnError: false);
+                            if (t != null)
+                            {
+                                return Activator.CreateInstance(t, typeof(PhpCompilation).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion, _options.ModuleName) as IObserver<object>;
+                            }
+                        }
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                return null;
+            })
+            .WhereNotNull()
+            .ToArray();
         }
 
         /// <summary>
@@ -857,6 +896,7 @@ namespace Pchp.CodeAnalysis
             //    return false;
             //}
 
+            //
             return true;
         }
 
