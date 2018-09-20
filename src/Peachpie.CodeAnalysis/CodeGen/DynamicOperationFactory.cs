@@ -69,7 +69,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             public void Construct(NamedTypeSymbol functype, Action<CodeGenerator> binder_builder)
             {
-                CompilerLogSource.Log.Count("CallSite");
+                //CompilerLogSource.Log.Count("CallSite");
 
                 //
                 var callsitetype = _factory.CallSite_T.Construct(functype);

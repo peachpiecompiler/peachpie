@@ -21,17 +21,6 @@ using Pchp.CodeAnalysis.Utilities;
 namespace Pchp.CodeAnalysis.CommandLine
 {
     /// <summary>
-    /// Main phases of the compilation.
-    /// </summary>
-    internal enum CompilationPhase
-    {
-        Parse,
-        Bind,
-        Analyse,
-        Emit
-    }
-
-    /// <summary>
     /// Implementation of <c>pchp.exe</c>.
     /// </summary>
     internal class PhpCompiler : CommonCompiler
@@ -52,37 +41,39 @@ namespace Pchp.CodeAnalysis.CommandLine
 
         public override Compilation CreateCompilation(TextWriter consoleOutput, TouchedFileLogger touchedFilesLogger, ErrorLogger errorLogger)
         {
-            CompilerLogSource.Log.StartPhase(CompilationPhase.Parse.ToString());
-
-            var parseOptions = Arguments.ParseOptions;
-
-            // We compute script parse options once so we don't have to do it repeatedly in
-            // case there are many script files.
-            var scriptParseOptions = parseOptions.WithKind(SourceCodeKind.Script);
-
             bool hadErrors = false;
-
             var sourceFiles = Arguments.SourceFiles;
             var trees = new PhpSyntaxTree[sourceFiles.Length];
 
-            if (Arguments.CompilationOptions.ConcurrentBuild)
+            using (Arguments.CompilationOptions.Observers.StartMetric("parse"))
             {
-                Parallel.For(0, sourceFiles.Length, new Action<int>(i =>
-                {
-                    //NOTE: order of trees is important!!
-                    trees[i] = ParseFile(consoleOutput, parseOptions, scriptParseOptions, ref hadErrors, sourceFiles[i], errorLogger);
-                }));
-            }
-            else
-            {
-                for (int i = 0; i < sourceFiles.Length; i++)
-                {
-                    //NOTE: order of trees is important!!
-                    trees[i] = ParseFile(consoleOutput, parseOptions, scriptParseOptions, ref hadErrors, sourceFiles[i], errorLogger);
-                }
-            }
+                // PARSE
 
-            CompilerLogSource.Log.EndPhase();
+                var parseOptions = Arguments.ParseOptions;
+
+                // We compute script parse options once so we don't have to do it repeatedly in
+                // case there are many script files.
+                var scriptParseOptions = parseOptions.WithKind(SourceCodeKind.Script);
+
+                if (Arguments.CompilationOptions.ConcurrentBuild)
+                {
+                    Parallel.For(0, sourceFiles.Length, new Action<int>(i =>
+                    {
+                        //NOTE: order of trees is important!!
+                        trees[i] = ParseFile(consoleOutput, parseOptions, scriptParseOptions, ref hadErrors, sourceFiles[i], errorLogger);
+                    }));
+                }
+                else
+                {
+                    for (int i = 0; i < sourceFiles.Length; i++)
+                    {
+                        //NOTE: order of trees is important!!
+                        trees[i] = ParseFile(consoleOutput, parseOptions, scriptParseOptions, ref hadErrors, sourceFiles[i], errorLogger);
+                    }
+                }
+
+                // END PARSE
+            }
 
             // If errors had been reported in ParseFile, while trying to read files, then we should simply exit.
             if (hadErrors)
@@ -166,7 +157,9 @@ namespace Pchp.CodeAnalysis.CommandLine
             consoleOutput.WriteLine(PhpResources.IDS_Logo, GetToolName(), GetAssemblyFileVersion());
         }
 
-        internal new string GetAssemblyFileVersion() => typeof(PhpCompiler).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+        internal static string GetVersion() => typeof(PhpCompiler).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+
+        internal new string GetAssemblyFileVersion() => GetVersion();
 
         protected override void CompilerSpecificSqm(IVsSqmMulti sqm, uint sqmSession)
         {

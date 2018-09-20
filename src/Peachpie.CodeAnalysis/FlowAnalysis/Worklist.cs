@@ -130,8 +130,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 list[i](block);
             }
-
-            CompilerLogSource.Log.Count("BoundBlockProcessings");
+            
+            //CompilerLogSource.Log.Count("BoundBlockProcessings");
         }
 
         /// <summary>

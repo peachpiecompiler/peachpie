@@ -285,26 +285,26 @@ namespace Pchp.CodeAnalysis
             var diagnostics = new DiagnosticBag();
             var compiler = new SourceCompiler(compilation, null, true, diagnostics, CancellationToken.None);
 
-            CompilerLogSource.Log.StartPhase(CompilationPhase.Bind.ToString());
+            using (compilation.StartMetric("bind"))
+            {
+                // 1. Bind Syntax & Symbols to Operations (CFG)
+                //   a. construct CFG, bind AST to Operation
+                //   b. declare table of local variables
+                compiler.WalkMethods(compiler.EnqueueRoutine, allowParallel: true);
+                compiler.WalkTypes(compiler.EnqueueFieldsInitializer, allowParallel: true);
+            }
 
-            // 1. Bind Syntax & Symbols to Operations (CFG)
-            //   a. construct CFG, bind AST to Operation
-            //   b. declare table of local variables
-            compiler.WalkMethods(compiler.EnqueueRoutine, allowParallel: true);
-            compiler.WalkTypes(compiler.EnqueueFieldsInitializer, allowParallel: true);
-
-            CompilerLogSource.Log.StartPhase(CompilationPhase.Analyse.ToString());
-
-            // 2. Analyze Operations
-            //   a. type analysis (converge type - mask), resolve symbols
-            //   b. lower semantics, update bound tree, repeat
-            //   c. collect diagnostics
-            compiler.AnalyzeMethods();
-            compiler.DiagnoseMethods();
-            compiler.DiagnoseTypes();
-            compiler.DiagnoseFiles();
-
-            CompilerLogSource.Log.EndPhase();
+            using (compilation.StartMetric("analysis"))
+            {
+                // 2. Analyze Operations
+                //   a. type analysis (converge type - mask), resolve symbols
+                //   b. lower semantics, update bound tree, repeat
+                //   c. collect diagnostics
+                compiler.AnalyzeMethods();
+                compiler.DiagnoseMethods();
+                compiler.DiagnoseTypes();
+                compiler.DiagnoseFiles();
+            }
 
             //
             return diagnostics.AsEnumerable();

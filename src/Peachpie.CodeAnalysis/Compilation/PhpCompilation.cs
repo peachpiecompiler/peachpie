@@ -31,8 +31,7 @@ namespace Pchp.CodeAnalysis
         MethodSymbol _lazyMainMethod;
         readonly PhpCompilationOptions _options;
 
-        internal IEnumerable<IObserver<object>> Observers => _observers;
-        readonly IEnumerable<IObserver<object>> _observers;
+        internal IEnumerable<IObserver<object>> Observers => _options.Observers;
 
         Task<IEnumerable<Diagnostic>> _lazyAnalysisTask;
 
@@ -161,51 +160,6 @@ namespace Pchp.CodeAnalysis
             _referenceManager = (reuseReferenceManager && referenceManager != null)
                 ? referenceManager
                 : new ReferenceManager(MakeSourceAssemblySimpleName(), options.AssemblyIdentityComparer, referenceManager?.ObservedMetadata, options.SdkDirectory);
-
-            _observers = CreateObservers().ToArray();
-        }
-
-        IEnumerable<IObserver<object>> CreateObservers()
-        {
-            if (!_options.Loggers.IsDefaultOrEmpty)
-            {
-                foreach (var logger in _options.Loggers)
-                {
-                    var ci = logger.IndexOf(',');
-                    if (ci > 0)
-                    {
-                        var tname = logger.Remove(ci).Trim();
-                        var assname = logger.Substring(ci + 1).Trim();
-
-                        IObserver<object> obj = null;
-
-                        try
-                        {
-                            var ass = System.Reflection.Assembly.Load(assname);
-                            if (ass != null)
-                            {
-                                var t = ass.GetType(tname, throwOnError: false);
-                                if (t != null)
-                                {
-                                    obj = Activator.CreateInstance(t, typeof(PhpCompilation).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion, _options.ModuleName) as IObserver<object>;
-                                }
-                            }
-                        }
-                        catch
-                        {
-                        }
-
-                        if (obj != null)
-                        {
-                            yield return obj;
-                        }
-                    }
-                }
-            }
-
-#if TRACE
-            yield return new CompilationTracker.TraceObserver();
-#endif
         }
 
         /// <summary>

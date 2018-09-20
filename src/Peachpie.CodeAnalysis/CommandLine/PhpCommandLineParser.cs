@@ -543,7 +543,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                         continue;
 
                     case "logger":
-                        if (!string.IsNullOrEmpty(value))
+                        if (value != null)
                         {
                             loggers.Add(value);
                         }
@@ -577,6 +577,13 @@ namespace Pchp.CodeAnalysis.CommandLine
                     documentationPath = PathUtilities.CombinePossiblyRelativeAndRelativePaths(baseDirectory, documentationPath);
                 }
             }
+
+            // Observers
+            var observers = loggers.Select(name => CreateObserver(name, moduleName)).WhereNotNull();
+
+#if TRACE
+            observers = observers.Concat(new Utilities.CompilationTrackerExtension.TraceObserver());
+#endif
 
             // Dev11 searches for the key file in the current directory and assembly output directory.
             // We always look to base directory and then examine the search paths.
@@ -637,7 +644,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 publicSign: publicSign
             )
             {
-                Loggers = loggers.AsImmutableOrEmpty(),
+                Observers = observers.AsImmutableOrEmpty(),
             };
 
             if (debugPlus)
@@ -914,6 +921,34 @@ namespace Pchp.CodeAnalysis.CommandLine
                 return new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             };
             return new ResourceDescription(resourceName, fileName, dataProvider, isPublic, embedded, checkArgs: false);
+        }
+
+        static IObserver<object> CreateObserver(string name, string moduleName)
+        {
+            var ci = name.IndexOf(',');
+            if (ci > 0)
+            {
+                var tname = name.Remove(ci).Trim();
+                var assname = name.Substring(ci + 1).Trim();
+
+                try
+                {
+                    var ass = System.Reflection.Assembly.Load(assname);
+                    if (ass != null)
+                    {
+                        var t = ass.GetType(tname, throwOnError: false);
+                        if (t != null)
+                        {
+                            return Activator.CreateInstance(t, PhpCompiler.GetVersion(), moduleName) as IObserver<object>;
+                        }
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            return null;
         }
     }
 }
