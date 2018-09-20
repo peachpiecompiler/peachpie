@@ -25,12 +25,6 @@ namespace Pchp.CodeAnalysis.Symbols
             return ArrayTypeSymbol.CreateMDArray(moduleSymbol.ContainingAssembly, elementType, rank, sizes, lowerBounds, CSharpCustomModifier.Convert(customModifiers));
         }
 
-        internal override TypeSymbol GetByRefReturnTypeSymbol(PEModuleSymbol moduleSymbol, TypeSymbol referencedType, ushort countOfCustomModifiersPrecedingByRef)
-        {
-            // this method will be removed after we use CodeAnalysis 0.9.0
-            return new ByRefReturnErrorTypeSymbol(referencedType);
-        }
-
         internal override TypeSymbol GetSpecialType(PEModuleSymbol moduleSymbol, SpecialType specialType)
         {
             return moduleSymbol.ContainingAssembly.GetSpecialType(specialType);
@@ -61,9 +55,21 @@ namespace Pchp.CodeAnalysis.Symbols
             return type.PrimitiveTypeCode;            
         }
 
-        internal override bool IsVolatileModifierType(PEModuleSymbol moduleSymbol, TypeSymbol type)
+        internal override bool IsAcceptedVolatileModifierType(PEModuleSymbol moduleSymbol, TypeSymbol type)
         {
             return type.SpecialType == SpecialType.System_Runtime_CompilerServices_IsVolatile;
+        }
+
+        internal override bool IsAcceptedInAttributeModifierType(TypeSymbol type)
+        {
+            // ref-readonly parameters and return types are not supported
+            return false;
+        }
+
+        internal override bool IsAcceptedUnmanagedTypeModifierType(TypeSymbol type)
+        {
+            // Unmanaged generic type constraints are not supported
+            return false;
         }
 
         internal override TypeSymbol GetSZArrayTypeSymbol(PEModuleSymbol moduleSymbol, TypeSymbol elementType, ImmutableArray<ModifierInfo<TypeSymbol>> customModifiers)

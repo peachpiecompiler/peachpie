@@ -60,6 +60,7 @@ namespace ScriptsTest
             {
                 // mimic the execution in the given folder
                 ctx.WorkingDirectory = Path.GetDirectoryName(path);
+                ctx.RootPath = ctx.WorkingDirectory;
 
                 // redirect text output
                 ctx.Output = new StreamWriter(outputStream, Encoding.UTF8) { AutoFlush = true };

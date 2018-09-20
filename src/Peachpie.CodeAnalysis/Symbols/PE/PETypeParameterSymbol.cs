@@ -7,6 +7,7 @@ using System.Reflection.Metadata;
 using System.Threading;
 using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.PooledObjects;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -149,20 +150,20 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             var moduleSymbol = containingType.ContainingPEModule;
-
-            EntityHandle[] constraints;
+            var metadataReader = moduleSymbol.Module.MetadataReader;
+            GenericParameterConstraintHandleCollection constraints;
 
             try
             {
-                constraints = moduleSymbol.Module.GetGenericParamConstraintsOrThrow(_handle);
+                constraints = metadataReader.GetGenericParameter(_handle).GetConstraints();
             }
             catch (BadImageFormatException)
             {
-                constraints = null;
-                //Interlocked.CompareExchange(ref _lazyBoundsErrorInfo, new CSDiagnosticInfo(ErrorCode.ERR_BindToBogus, this), CSDiagnosticInfo.EmptyErrorInfo);
+                constraints = default(GenericParameterConstraintHandleCollection);
+                //Interlocked.CompareExchange(ref _lazyConstraintsUseSiteErrorInfo, new CSDiagnosticInfo(ErrorCode.ERR_BindToBogus, this), CSDiagnosticInfo.EmptyErrorInfo);
             }
 
-            if (constraints != null && constraints.Length > 0)
+            if (constraints.Count > 0)
             {
                 var symbolsBuilder = ArrayBuilder<TypeSymbol>.GetInstance();
                 MetadataDecoder tokenDecoder;
@@ -176,9 +177,10 @@ namespace Pchp.CodeAnalysis.Symbols
                     tokenDecoder = new MetadataDecoder(moduleSymbol, containingType);
                 }
 
-                foreach (var constraint in constraints)
+                foreach (var constraintHandle in constraints)
                 {
-                    TypeSymbol typeSymbol = tokenDecoder.GetTypeOfToken(constraint);
+                    var constraint = metadataReader.GetGenericParameterConstraint(constraintHandle);
+                    var typeSymbol = tokenDecoder.DecodeGenericParameterConstraint(constraint.Type, out _);
 
                     // Drop 'System.Object' constraint type.
                     if (typeSymbol.SpecialType == Microsoft.CodeAnalysis.SpecialType.System_Object)

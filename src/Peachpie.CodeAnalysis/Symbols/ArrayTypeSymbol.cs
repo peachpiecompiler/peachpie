@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.PooledObjects;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
@@ -453,6 +454,12 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             return this.Equals(symbol as ArrayTypeSymbol);
         }
+
+        bool IArrayTypeSymbol.IsSZArray => IsSZArray;
+
+        ImmutableArray<int> IArrayTypeSymbol.LowerBounds => LowerBounds;
+
+        ImmutableArray<int> IArrayTypeSymbol.Sizes => Sizes;
 
         #endregion
 

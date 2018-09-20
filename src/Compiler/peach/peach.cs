@@ -17,9 +17,11 @@ namespace Pchp.CodeAnalysis.CommandLine
                  PhpCommandLineParser.Default,
                  Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ResponseFileName),
                  CreateArgs(args),
-                 AppDomain.CurrentDomain.BaseDirectory,
-                 System.IO.Directory.GetCurrentDirectory(),
-                 System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(),
+                 new BuildPaths(
+                     clientDir: AppDomain.CurrentDomain.BaseDirectory,
+                     workingDir: System.IO.Directory.GetCurrentDirectory(),
+                     sdkDir: System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(),
+                     tempDir: null),
                  ReferenceDirectories,
                  analyzerLoader)
         {

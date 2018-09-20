@@ -2,7 +2,7 @@
 using Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
-using Microsoft.CodeAnalysis.Semantics;
+using Microsoft.CodeAnalysis.Operations;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Symbols;
 using Peachpie.CodeAnalysis.Utilities;
@@ -14,7 +14,6 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
-using BinaryKind = Microsoft.CodeAnalysis.Semantics.BinaryOperationKind;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -3389,10 +3388,8 @@ namespace Pchp.CodeAnalysis.Semantics
             return result_type;
         }
 
-        bool IsPostfix => this.IncrementKind == UnaryOperationKind.OperatorPostfixIncrement || this.IncrementKind == UnaryOperationKind.OperatorPostfixDecrement;
         bool IsPrefix => !IsPostfix;
-        bool IsIncrement => this.IncrementKind == UnaryOperationKind.OperatorPostfixIncrement || this.IncrementKind == UnaryOperationKind.OperatorPrefixIncrement;
-        bool IsDecrement => this.IncrementKind == UnaryOperationKind.OperatorPostfixDecrement || this.IncrementKind == UnaryOperationKind.OperatorPrefixDecrement;
+        bool IsDecrement => !this.IsIncrement;
     }
 
     partial class BoundConditionalEx
@@ -4342,7 +4339,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             var sourcefile = cg.ContainingFile;
 
-            switch (this.Type)
+            switch (this.ConstType)
             {
                 case PseudoConstUse.Types.File:
 
@@ -4396,14 +4393,14 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            switch (this.Type)
+            switch (this.ConstType)
             {
                 case PseudoClassConstUse.Types.Class:
                     this.TargetType.EmitClassName(cg);
                     return cg.CoreTypes.String;
 
                 default:
-                    throw ExceptionUtilities.UnexpectedValue(this.Type);
+                    throw ExceptionUtilities.UnexpectedValue(this.ConstType);
             }
         }
     }

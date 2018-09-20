@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.PooledObjects;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
@@ -1484,6 +1485,8 @@ namespace Pchp.CodeAnalysis.Symbols
                     (_flags & TypeAttributes.Abstract) == 0;
             }
         }
+
+        public override bool IsSerializable => (_flags & TypeAttributes.Serializable) != 0;
 
         internal override bool IsMetadataSealed => (_flags & TypeAttributes.Sealed) != 0;
 

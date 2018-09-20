@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
+using Microsoft.CodeAnalysis.Debugging;
 using Microsoft.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.Semantics;
@@ -93,7 +94,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             ILBuilder il = new ILBuilder(moduleBuilder, localSlotManager, optimizations);
             try
             {
-                Cci.AsyncMethodBodyDebugInfo asyncDebugInfo = null;
+                StateMachineMoveNextBodyDebugInfo stateMachineMoveNextDebugInfo = null;
 
                 builder(il);
 
@@ -121,7 +122,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 //}
 
                 // Only compiler-generated MoveNext methods have iterator scopes.  See if this is one.
-                var stateMachineHoistedLocalScopes = default(ImmutableArray<Cci.StateMachineHoistedLocalScope>);
+                var stateMachineHoistedLocalScopes = default(ImmutableArray<StateMachineHoistedLocalScope>);
                 //if (isStateMachineMoveNextMethod)
                 //{
                 //    stateMachineHoistedLocalScopes = builder.GetHoistedLocalScopes();
@@ -154,7 +155,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                     stateMachineHoistedLocalScopes,
                     stateMachineHoistedLocalSlots,
                     stateMachineAwaiterSlots,
-                    asyncDebugInfo);
+                    stateMachineMoveNextDebugInfo,
+                    null);  // dynamicAnalysisDataOpt
             }
             finally
             {
@@ -199,7 +201,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 //}
 
                 // Only compiler-generated MoveNext methods have iterator scopes.  See if this is one.
-                var stateMachineHoistedLocalScopes = default(ImmutableArray<Cci.StateMachineHoistedLocalScope>);
+                var stateMachineHoistedLocalScopes = default(ImmutableArray<StateMachineHoistedLocalScope>);
                 //if (isStateMachineMoveNextMethod)
                 //{
                 //    stateMachineHoistedLocalScopes = builder.GetHoistedLocalScopes();
@@ -232,7 +234,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                     stateMachineHoistedLocalScopes,
                     stateMachineHoistedLocalSlots,
                     stateMachineAwaiterSlots,
-                    null);
+                    null,   // stateMachineMoveNextDebugInfoOpt
+                    null);  // dynamicAnalysisDataOpt
             }
             finally
             {

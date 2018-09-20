@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.PooledObjects;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -132,6 +133,8 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get { return (object)Constructor == null; }
         }
+
+        public override bool IsSerializable => false;
 
         public override ImmutableArray<TypeSymbol> TypeArguments
         {

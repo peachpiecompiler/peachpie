@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.PooledObjects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -312,13 +313,13 @@ namespace Pchp.CodeAnalysis
             PhpCompilationOptions options = null)
         {
             Debug.Assert(options != null);
-            CheckAssemblyName(assemblyName);
 
             var compilation = new PhpCompilation(
                 assemblyName,
                 options,
                 ValidateReferences<CompilationReference>(references),
                 false);
+            compilation.CheckAssemblyName(compilation.DeclarationDiagnostics);
 
             //
             compilation.SourceSymbolCollection.AddSyntaxTreeRange(syntaxTrees);
@@ -331,7 +332,7 @@ namespace Pchp.CodeAnalysis
 
         internal override CommonMessageProvider MessageProvider => Errors.MessageProvider.Instance;
 
-        internal override IDictionary<Roslyn.Utilities.ValueTuple<string, string>, MetadataReference> ReferenceDirectiveMap
+        internal override IDictionary<ValueTuple<string, string>, MetadataReference> ReferenceDirectiveMap
         {
             get
             {
@@ -364,9 +365,29 @@ namespace Pchp.CodeAnalysis
             throw new NotImplementedException();
         }
 
-        public override INamedTypeSymbol CreateErrorTypeSymbol(INamespaceOrTypeSymbol container, string name, int arity)
+        public override bool ContainsSymbolsWithName(string name, SymbolFilter filter = SymbolFilter.TypeAndMember, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override INamedTypeSymbol CommonCreateErrorTypeSymbol(INamespaceOrTypeSymbol container, string name, int arity)
         {
             return new MissingMetadataTypeSymbol(name, arity, false);
+        }
+
+        protected override INamespaceSymbol CommonCreateErrorNamespaceSymbol(INamespaceSymbol container, string name)
+        {
+            return new MissingNamespaceSymbol((NamespaceSymbol)container, name);
+        }
+
+        protected override INamedTypeSymbol CommonCreateTupleTypeSymbol(ImmutableArray<ITypeSymbol> elementTypes, ImmutableArray<string> elementNames, ImmutableArray<Location> elementLocations)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override INamedTypeSymbol CommonCreateTupleTypeSymbol(INamedTypeSymbol underlyingType, ImmutableArray<string> elementNames, ImmutableArray<Location> elementLocations)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -409,6 +430,13 @@ namespace Pchp.CodeAnalysis
         }
 
         internal ImmutableArray<Diagnostic> GetDiagnostics(CompilationStage stage, bool includeEarlierStages, CancellationToken cancellationToken)
+        {
+            var diagnostics = DiagnosticBag.GetInstance();
+            GetDiagnostics(stage, includeEarlierStages, diagnostics, cancellationToken);
+            return diagnostics.ToReadOnlyAndFree();
+        }
+
+        internal override void GetDiagnostics(CompilationStage stage, bool includeEarlierStages, DiagnosticBag diagnostics, CancellationToken cancellationToken)
         {
             var builder = DiagnosticBag.GetInstance();
 
@@ -480,9 +508,7 @@ namespace Pchp.CodeAnalysis
 
             // Before returning diagnostics, we filter warnings
             // to honor the compiler options (e.g., /nowarn, /warnaserror and /warn) and the pragmas.
-            var result = DiagnosticBag.GetInstance();
-            FilterAndAppendAndFreeDiagnostics(result, ref builder);
-            return result.ToReadOnlyAndFree<Diagnostic>();
+            FilterAndAppendAndFreeDiagnostics(diagnostics, ref builder);
         }
 
         public override IEnumerable<ISymbol> GetSymbolsWithName(Func<string, bool> predicate, SymbolFilter filter = SymbolFilter.TypeAndMember, CancellationToken cancellationToken = default(CancellationToken))
@@ -499,6 +525,11 @@ namespace Pchp.CodeAnalysis
 
             //return new SymbolSearcher(this).GetSymbolsWithName(predicate, filter, cancellationToken);
 
+            throw new NotImplementedException();
+        }
+
+        public override IEnumerable<ISymbol> GetSymbolsWithName(string name, SymbolFilter filter = SymbolFilter.TypeAndMember, CancellationToken cancellationToken = default(CancellationToken))
+        {
             throw new NotImplementedException();
         }
 
@@ -562,6 +593,11 @@ namespace Pchp.CodeAnalysis
         protected override IPointerTypeSymbol CommonCreatePointerTypeSymbol(ITypeSymbol elementType)
         {
             return new PointerTypeSymbol((TypeSymbol)elementType);
+        }
+
+        protected override INamedTypeSymbol CommonCreateAnonymousTypeSymbol(ImmutableArray<ITypeSymbol> memberTypes, ImmutableArray<string> memberNames, ImmutableArray<Location> memberLocations, ImmutableArray<bool> memberIsReadOnly)
+        {
+            throw new NotImplementedException();
         }
 
         protected override ISymbol CommonGetAssemblyOrModuleSymbol(MetadataReference reference)
@@ -647,6 +683,8 @@ namespace Pchp.CodeAnalysis
         protected override IEnumerable<SyntaxTree> CommonSyntaxTrees => SyntaxTrees;
 
         public new IEnumerable<PhpSyntaxTree> SyntaxTrees => this.SourceSymbolCollection.SyntaxTrees;
+
+        internal override Guid DebugSourceDocumentLanguageId => Constants.CorSymLanguageTypePeachpie;
 
         protected override bool CommonContainsSyntaxTree(SyntaxTree syntaxTree)
         {
@@ -781,6 +819,17 @@ namespace Pchp.CodeAnalysis
             return loc1.SourceSpan.Start - loc2.SourceSpan.Start;
         }
 
+        internal override int CompareSourceLocations(SyntaxReference loc1, SyntaxReference loc2)
+        {
+            var comparison = CompareSyntaxTreeOrdering(loc1.SyntaxTree, loc2.SyntaxTree);
+            if (comparison != 0)
+            {
+                return comparison;
+            }
+
+            return loc1.Span.Start - loc2.Span.Start;
+        }
+
         /// <summary>
         /// Ensures semantic binding and flow analysis.
         /// </summary>
@@ -795,7 +844,7 @@ namespace Pchp.CodeAnalysis
             return await _lazyAnalysisTask;
         }
 
-        internal override bool CompileImpl(CommonPEModuleBuilder moduleBuilder, Stream win32Resources, Stream xmlDocStream, bool emittingPdb, DiagnosticBag diagnostics, Predicate<ISymbol> filterOpt, CancellationToken cancellationToken)
+        internal override bool CompileMethods(CommonPEModuleBuilder moduleBuilder, bool emittingPdb, bool emitMetadataOnly, bool emitTestCoverageData, DiagnosticBag diagnostics, Predicate<ISymbol> filterOpt, CancellationToken cancellationToken)
         {
             // The diagnostics should include syntax and declaration errors. We insert these before calling Emitter.Emit, so that the emitter
             // does not attempt to emit if there are declaration errors (but we do insert all errors from method body binding...)
@@ -803,7 +852,7 @@ namespace Pchp.CodeAnalysis
 
             var moduleBeingBuilt = (PEModuleBuilder)moduleBuilder;
 
-            if (moduleBeingBuilt.EmitOptions.EmitMetadataOnly)
+            if (emitMetadataOnly)
             {
                 throw new NotImplementedException();
             }
@@ -824,6 +873,31 @@ namespace Pchp.CodeAnalysis
                     methodBodyDiagnosticBag,
                     cancellationToken);
 
+                bool hasMethodBodyErrorOrWarningAsError = !FilterAndAppendAndFreeDiagnostics(diagnostics, ref methodBodyDiagnosticBag);
+
+                if (hasDeclarationErrors || hasMethodBodyErrorOrWarningAsError)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                this.TrackException(ex);
+                throw;
+            }
+        }
+
+        internal override bool GenerateResourcesAndDocumentationComments(CommonPEModuleBuilder moduleBuilder, Stream xmlDocStream, Stream win32Resources, string outputNameOverride, DiagnosticBag diagnostics, CancellationToken cancellationToken)
+        {
+            // Use a temporary bag so we don't have to refilter pre-existing diagnostics.
+            DiagnosticBag methodBodyDiagnosticBag = DiagnosticBag.GetInstance();
+
+            var moduleBeingBuilt = (PEModuleBuilder)moduleBuilder;
+
+            try
+            {
                 SetupWin32Resources(moduleBeingBuilt, win32Resources, methodBodyDiagnosticBag);
 
                 ReportManifestResourceDuplicates(
@@ -832,9 +906,7 @@ namespace Pchp.CodeAnalysis
                     AddedModulesResourceNames(methodBodyDiagnosticBag),
                     methodBodyDiagnosticBag);
 
-                bool hasMethodBodyErrorOrWarningAsError = !FilterAndAppendAndFreeDiagnostics(diagnostics, ref methodBodyDiagnosticBag);
-
-                if (hasDeclarationErrors || hasMethodBodyErrorOrWarningAsError)
+                if (!FilterAndAppendAndFreeDiagnostics(diagnostics, ref methodBodyDiagnosticBag))
                 {
                     return false;
                 }
@@ -858,17 +930,6 @@ namespace Pchp.CodeAnalysis
                 return false;
             }
 
-            //// Use a temporary bag so we don't have to refilter pre-existing diagnostics.
-            //DiagnosticBag importDiagnostics = DiagnosticBag.GetInstance();
-            //this.ReportUnusedImports(importDiagnostics, cancellationToken);
-
-            //if (!FilterAndAppendAndFreeDiagnostics(diagnostics, ref importDiagnostics))
-            //{
-            //    Debug.Assert(false, "Should never produce an error");
-            //    return false;
-            //}
-
-            //
             return true;
         }
 
@@ -949,7 +1010,7 @@ namespace Pchp.CodeAnalysis
             }
         }
 
-        internal override CommonPEModuleBuilder CreateModuleBuilder(EmitOptions emitOptions, IMethodSymbol debugEntryPoint, IEnumerable<ResourceDescription> manifestResources, CompilationTestData testData, DiagnosticBag diagnostics, CancellationToken cancellationToken)
+        internal override CommonPEModuleBuilder CreateModuleBuilder(EmitOptions emitOptions, IMethodSymbol debugEntryPoint, Stream sourceLinkStream, IEnumerable<EmbeddedText> embeddedTexts, IEnumerable<ResourceDescription> manifestResources, CompilationTestData testData, DiagnosticBag diagnostics, CancellationToken cancellationToken)
         {
             Debug.Assert(!IsSubmission || HasCodeToEmit());
 
@@ -993,6 +1054,13 @@ namespace Pchp.CodeAnalysis
                 moduleBeingBuilt.SetDebugEntryPoint(debugEntryPoint, diagnostics);
             }
 
+            moduleBeingBuilt.SourceLinkStreamOpt = sourceLinkStream;
+
+            if (embeddedTexts != null)
+            {
+                moduleBeingBuilt.EmbeddedTexts = embeddedTexts;
+            }
+
             // testData is only passed when running tests.
             if (testData != null)
             {
@@ -1007,19 +1075,6 @@ namespace Pchp.CodeAnalysis
         internal override EmitDifferenceResult EmitDifference(EmitBaseline baseline, IEnumerable<SemanticEdit> edits, Func<ISymbol, bool> isAddedSymbol, Stream metadataStream, Stream ilStream, Stream pdbStream, ICollection<MethodDefinitionHandle> updatedMethodHandles, CompilationTestData testData, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Filter out warnings based on the compiler options (/nowarn, /warn and /warnaserror) and the pragma warning directives.
-        /// 'incoming' is freed.
-        /// </summary>
-        /// <returns>True when there is no error or warning treated as an error.</returns>
-        internal override bool FilterAndAppendAndFreeDiagnostics(DiagnosticBag accumulator, ref DiagnosticBag incoming)
-        {
-            bool result = FilterAndAppendDiagnostics(accumulator, incoming.AsEnumerableWithoutResolution());
-            incoming.Free();
-            incoming = null;
-            return result;
         }
 
         /// <summary>
@@ -1075,6 +1130,27 @@ namespace Pchp.CodeAnalysis
         internal override Compilation WithEventQueue(AsyncQueue<CompilationEvent> eventQueue)
         {
             throw new NotImplementedException();
+        }
+
+        internal override void AddDebugSourceDocumentsForChecksumDirectives(DebugDocumentsBuilder documentsBuilder, SyntaxTree tree, DiagnosticBag diagnostics)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal override void ReportUnusedImports(SyntaxTree filterTree, DiagnosticBag diagnostics, CancellationToken cancellationToken)
+        {
+            //throw new NotImplementedException();
+        }
+
+        internal override void CompleteTrees(SyntaxTree filterTree)
+        {
+            //throw new NotImplementedException();
+        }
+
+        internal override bool IsUnreferencedAssemblyIdentityDiagnosticCode(int code)
+        {
+            // TODO: Compare with the appropriate error code when it's supported
+            return false;
         }
     }
 }

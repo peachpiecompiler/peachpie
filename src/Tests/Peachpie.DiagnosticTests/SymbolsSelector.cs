@@ -1,7 +1,7 @@
 ﻿using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Text;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Semantics;
+using Microsoft.CodeAnalysis.Operations;
 using Pchp.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
@@ -90,8 +90,8 @@ namespace Peachpie.DiagnosticTests
             {
                 // may throw NotImplementedException
                 symbolOpt = (ISymbol)
-                    (x.Variable as IVariable)?.Variable ??
-                    (x.Variable as IParameterInitializer)?.Parameter;
+                    (x.Variable as IVariableDeclaratorOperation)?.Symbol ??
+                    (x.Variable as IParameterInitializerOperation)?.Parameter;
             }
             catch (NotImplementedException)
             {
@@ -126,7 +126,7 @@ namespace Peachpie.DiagnosticTests
 
         protected override void VisitRoutineCall(BoundRoutineCall x)
         {
-            var invocation = (IInvocationExpression)x;
+            var invocation = (IInvocationOperation)x;
             if (invocation.TargetMethod != null)
             {
                 if (!invocation.TargetMethod.IsImplicitlyDeclared || invocation.TargetMethod is IErrorMethodSymbol)
@@ -177,7 +177,7 @@ namespace Peachpie.DiagnosticTests
 
             if (span.IsValid)
             {
-                _result.Add(new SymbolStat(_tctx, span, x, ((IFieldReferenceExpression)x).Member));
+                _result.Add(new SymbolStat(_tctx, span, x, ((IFieldReferenceOperation)x).Member));
             }
 
             //

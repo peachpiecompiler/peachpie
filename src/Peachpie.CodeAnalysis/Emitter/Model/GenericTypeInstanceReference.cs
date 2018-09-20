@@ -5,6 +5,7 @@ using System.Diagnostics;
 using Cci = Microsoft.Cci;
 using Pchp.CodeAnalysis.Symbols;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.PooledObjects;
 
 namespace Pchp.CodeAnalysis.Emit
 {
@@ -39,13 +40,10 @@ namespace Pchp.CodeAnalysis.Emit
             return builder.ToImmutableAndFree();
         }
 
-        Cci.INamedTypeReference Cci.IGenericTypeInstanceReference.GenericType
+        Cci.INamedTypeReference Cci.IGenericTypeInstanceReference.GetGenericType(EmitContext context)
         {
-            get
-            {
-                System.Diagnostics.Debug.Assert(UnderlyingNamedType.OriginalDefinition.IsDefinition);
-                return UnderlyingNamedType.OriginalDefinition;
-            }
+            System.Diagnostics.Debug.Assert(UnderlyingNamedType.OriginalDefinition.IsDefinition);
+            return UnderlyingNamedType.OriginalDefinition;
         }
     }
 }

@@ -136,6 +136,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsStatic => false;
 
+        public override bool IsSerializable => false;
+
         public override string Name => _locName + "<>`" + _routine.Name.Replace('.', '\\');
 
         public override TypeKind TypeKind => TypeKind.Class;

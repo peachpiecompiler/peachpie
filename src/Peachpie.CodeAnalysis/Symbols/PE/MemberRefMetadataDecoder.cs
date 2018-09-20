@@ -241,10 +241,12 @@ namespace Pchp.CodeAnalysis.Symbols.PE
 
         private static bool ParametersMatch(ParameterSymbol candidateParam, TypeMap candidateMethodTypeMap, ref ParamInfo<TypeSymbol> targetParam)
         {
+            Debug.Assert(candidateMethodTypeMap != null);
+
             // This could be combined into a single return statement with a more complicated expression, but that would
             // be harder to debug.
 
-            if ((candidateParam.RefKind != RefKind.None) != targetParam.IsByRef || candidateParam.CountOfCustomModifiersPrecedingByRef != targetParam.CountOfCustomModifiersPrecedingByRef)
+            if ((candidateParam.RefKind != RefKind.None) != targetParam.IsByRef)
             {
                 return false;
             }
@@ -256,7 +258,8 @@ namespace Pchp.CodeAnalysis.Symbols.PE
                 return false;
             }
 
-            if (!CustomModifiersMatch(substituted.CustomModifiers, targetParam.CustomModifiers))
+            if (!CustomModifiersMatch(substituted.CustomModifiers, targetParam.CustomModifiers) ||
+                !CustomModifiersMatch(candidateMethodTypeMap.SubstituteCustomModifiers(candidateParam.RefCustomModifiers), targetParam.RefCustomModifiers))
             {
                 return false;
             }

@@ -171,6 +171,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         ImmutableArray<ITypeParameterSymbol> IMethodSymbol.TypeParameters => StaticCast<ITypeParameterSymbol>.From(this.TypeParameters);
 
+        bool IMethodSymbol.ReturnsByRef => false;
+
+        bool IMethodSymbol.ReturnsByRefReadonly => false;
+
+        ImmutableArray<CustomModifier> IMethodSymbol.RefCustomModifiers => ImmutableArray<CustomModifier>.Empty;
+
         IMethodSymbol IMethodSymbol.Construct(params ITypeSymbol[] typeArguments) => Construct(typeArguments);
 
         public MethodSymbol Construct(params ITypeSymbol[] typeArguments)

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.CodeAnalysis.Semantics;
+using Microsoft.CodeAnalysis.Operations;
 using System.Diagnostics;
 using Pchp.CodeAnalysis.Semantics;
 using Devsense.PHP.Text;

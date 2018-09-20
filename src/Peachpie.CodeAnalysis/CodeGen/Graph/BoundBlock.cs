@@ -145,7 +145,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                     var def = cg.Builder.LocalSlotManager.DeclareLocal(
                             cg.CoreTypes.IndirectLocal.Symbol, loc.Symbol as ILocalSymbolInternal,
                             loc.Name, SynthesizedLocalKind.UserDefined,
-                            Microsoft.CodeAnalysis.CodeGen.LocalDebugId.None, 0, LocalSlotConstraints.None, false, default(ImmutableArray<TypedConstant>), false);
+                            Microsoft.CodeAnalysis.CodeGen.LocalDebugId.None, 0, LocalSlotConstraints.None, ImmutableArray<bool>.Empty, ImmutableArray<string>.Empty, false);
 
                     cg.Builder.AddLocalToScope(def);
 

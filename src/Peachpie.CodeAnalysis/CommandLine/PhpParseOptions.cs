@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.PooledObjects;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
@@ -155,6 +156,8 @@ namespace Pchp.CodeAnalysis
             }
         }
 
+        public override string Language => Constants.PhpLanguageName;
+
         //internal bool IsFeatureEnabled(Syntax.LanguageFeatures feature)
         //{
         //    return true;
@@ -184,6 +187,11 @@ namespace Pchp.CodeAnalysis
         {
             return
                 Hash.Combine(base.GetHashCodeHelper(), 0);
+        }
+
+        internal override void ValidateOptions(ArrayBuilder<Diagnostic> builder)
+        {
+            // The options are already validated in the setters, throwing exceptions if incorrect
         }
     }
 }

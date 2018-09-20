@@ -90,6 +90,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsStatic => true;
 
+        public override bool IsSerializable => false;
+
         public override string Name => WellKnownPchpNames.DefaultScriptClassName;
 
         public override string NamespaceName => string.Empty;

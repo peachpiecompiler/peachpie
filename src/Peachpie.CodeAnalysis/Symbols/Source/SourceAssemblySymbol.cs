@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.PooledObjects;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,7 +14,7 @@ using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    internal sealed class SourceAssemblySymbol : NonMissingAssemblySymbol
+    internal sealed class SourceAssemblySymbol : NonMissingAssemblySymbol, ISourceAssemblySymbolInternal
     {
         readonly string _simpleName;
         readonly PhpCompilation _compilation;
@@ -70,7 +71,7 @@ namespace Pchp.CodeAnalysis.Symbols
             if (!compilation.Options.CryptoPublicKey.IsEmpty)
             {
                 // Private key is not necessary for assembly identity, only when emitting.  For this reason, the private key can remain null.
-                _lazyStrongNameKeys = StrongNameKeys.Create(compilation.Options.CryptoPublicKey, Errors.MessageProvider.Instance);
+                _lazyStrongNameKeys = StrongNameKeys.Create(compilation.Options.CryptoPublicKey, null, Errors.MessageProvider.Instance);
             }
         }
 
@@ -298,6 +299,22 @@ namespace Pchp.CodeAnalysis.Symbols
         string AssemblyCultureAttributeSetting => null;
 
         public AssemblyHashAlgorithm HashAlgorithm => AssemblyHashAlgorithm.Sha1;
+
+        #region ISourceAssemblySymbolInternal
+
+        AssemblyFlags ISourceAssemblySymbolInternal.AssemblyFlags => (AssemblyFlags)Flags;
+
+        string ISourceAssemblySymbolInternal.SignatureKey => SignatureKey;
+
+        AssemblyHashAlgorithm ISourceAssemblySymbolInternal.HashAlgorithm => HashAlgorithm;
+
+        Version ISourceAssemblySymbolInternal.AssemblyVersionPattern => AssemblyVersionPattern;
+
+        bool ISourceAssemblySymbolInternal.InternalsAreVisible => false;
+
+        Compilation ISourceAssemblySymbol.Compilation => _compilation;
+
+        #endregion
 
         AssemblyIdentity ComputeIdentity()
         {

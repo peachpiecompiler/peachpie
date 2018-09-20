@@ -17,13 +17,10 @@ namespace Pchp.CodeAnalysis.Emit
         {
         }
 
-        Cci.INestedTypeReference Cci.ISpecializedNestedTypeReference.UnspecializedVersion
+        Cci.INestedTypeReference Cci.ISpecializedNestedTypeReference.GetUnspecializedVersion(EmitContext context)
         {
-            get
-            {
-                System.Diagnostics.Debug.Assert(UnderlyingNamedType.OriginalDefinition.IsDefinition);
-                return this.UnderlyingNamedType.OriginalDefinition;
-            }
+            System.Diagnostics.Debug.Assert(UnderlyingNamedType.OriginalDefinition.IsDefinition);
+            return this.UnderlyingNamedType.OriginalDefinition;
         }
 
         public override void Dispatch(Cci.MetadataVisitor visitor)

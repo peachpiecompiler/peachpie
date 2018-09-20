@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeGen;
 using Microsoft.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.Emit;
 using System;
@@ -15,37 +16,34 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         #region IPropertyDefinition Members
 
-        IEnumerable<Cci.IMethodReference> Cci.IPropertyDefinition.Accessors
+        IEnumerable<Cci.IMethodReference> Cci.IPropertyDefinition.GetAccessors(EmitContext context)
         {
-            get
+            CheckDefinitionInvariant();
+
+            var getMethod = this.GetMethod;
+            if ((object)getMethod != null)
             {
-                CheckDefinitionInvariant();
-
-                var getMethod = this.GetMethod;
-                if ((object)getMethod != null)
-                {
-                    yield return getMethod;
-                }
-
-                var setMethod = this.SetMethod;
-                if ((object)setMethod != null)
-                {
-                    yield return setMethod;
-                }
-
-                //SourcePropertySymbol sourceProperty = this as SourcePropertySymbol;
-                //if ((object)sourceProperty != null)
-                //{
-                //    SynthesizedSealedPropertyAccessor synthesizedAccessor = sourceProperty.SynthesizedSealedAccessorOpt;
-                //    if ((object)synthesizedAccessor != null)
-                //    {
-                //        yield return synthesizedAccessor;
-                //    }
-                //}
+                yield return getMethod;
             }
+
+            var setMethod = this.SetMethod;
+            if ((object)setMethod != null)
+            {
+                yield return setMethod;
+            }
+
+            //SourcePropertySymbol sourceProperty = this as SourcePropertySymbol;
+            //if ((object)sourceProperty != null)
+            //{
+            //    SynthesizedSealedPropertyAccessor synthesizedAccessor = sourceProperty.SynthesizedSealedAccessorOpt;
+            //    if ((object)synthesizedAccessor != null)
+            //    {
+            //        yield return synthesizedAccessor;
+            //    }
+            //}
         }
 
-        Cci.IMetadataConstant Cci.IPropertyDefinition.DefaultValue
+        MetadataConstant Cci.IPropertyDefinition.DefaultValue
         {
             get
             {
@@ -182,6 +180,8 @@ namespace Pchp.CodeAnalysis.Symbols
                                                       syntaxNodeOpt: context.SyntaxNodeOpt,
                                                       diagnostics: context.Diagnostics);
         }
+
+        ImmutableArray<Cci.ICustomModifier> Cci.ISignature.RefCustomModifiers => ImmutableArray<Cci.ICustomModifier>.Empty;
 
         #endregion
 

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using Microsoft.CodeAnalysis.Emit;
 using Cci = Microsoft.Cci;
 using Pchp.CodeAnalysis.Symbols;
+using Microsoft.CodeAnalysis;
 
 namespace Pchp.CodeAnalysis.Emit
 {
@@ -121,5 +122,7 @@ namespace Pchp.CodeAnalysis.Emit
                 return null;
             }
         }
+
+        ImmutableArray<Cci.ICustomModifier> Cci.ISignature.RefCustomModifiers => ImmutableArray<Cci.ICustomModifier>.Empty;
     }
 }

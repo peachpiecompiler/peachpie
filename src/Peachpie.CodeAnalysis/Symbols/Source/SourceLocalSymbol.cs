@@ -137,6 +137,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public SynthesizedLocalKind SynthesizedKind => SynthesizedLocalKind.UserDefined;
 
+        public virtual bool IsRef => false;
+
+        public virtual RefKind RefKind => RefKind.None;
+
+        public virtual bool IsFixed => false;
+
         #endregion
     }
 

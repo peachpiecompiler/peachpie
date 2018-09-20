@@ -1,7 +1,7 @@
 ﻿using Devsense.PHP.Syntax;
 using Devsense.PHP.Text;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Semantics;
+using Microsoft.CodeAnalysis.Operations;
 using Pchp.CodeAnalysis.Symbols;
 using Roslyn.Utilities;
 using System;
@@ -676,15 +676,8 @@ namespace Pchp.CodeAnalysis.Semantics
             // bind variable reference
             var varref = (BoundReferenceExpression)BindExpression(expr.Variable, BoundAccess.ReadAndWrite);
 
-            // resolve kind
-            UnaryOperationKind kind;
-            if (expr.Inc)
-                kind = (expr.Post) ? UnaryOperationKind.OperatorPostfixIncrement : UnaryOperationKind.OperatorPrefixIncrement;
-            else
-                kind = (expr.Post) ? UnaryOperationKind.OperatorPostfixDecrement : UnaryOperationKind.OperatorPrefixDecrement;
-
             //
-            return new BoundIncDecEx(varref, kind);
+            return new BoundIncDecEx(varref, expr.Inc, expr.Post);
         }
 
         protected BoundExpression BindShellEx(AST.ShellEx expr)

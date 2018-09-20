@@ -289,6 +289,12 @@ namespace Pchp.CodeAnalysis.Symbols
             return false;
         }
 
+        public virtual bool ReturnsByRef => false;
+
+        public virtual bool ReturnsByRefReadonly => false;
+
+        public virtual RefKind RefKind => RefKind.None;
+
         internal virtual PropertySymbol AsMember(NamedTypeSymbol newOwner)
         {
             Debug.Assert(this.IsDefinition);
@@ -357,6 +363,8 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get { return this.TypeCustomModifiers; }
         }
+
+        ImmutableArray<CustomModifier> IPropertySymbol.RefCustomModifiers => ImmutableArray<CustomModifier>.Empty;
 
         #endregion
 

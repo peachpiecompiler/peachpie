@@ -45,6 +45,16 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public ImmutableArray<LangElement> YieldNodes { get; private set; }
 
+        public static ImmutableArray<Version> SupportedLanguageVersions { get; } = new Version[]
+        {
+            new Version(5, 4),
+            new Version(5, 5),
+            new Version(5, 6),
+            new Version(7, 0),
+            new Version(7, 1),
+            new Version(7, 2),
+        }.ToImmutableArray();
+
         private PhpSyntaxTree(SourceUnit source)
         {
             Contract.ThrowIfNull(source);
@@ -111,6 +121,11 @@ namespace Pchp.CodeAnalysis
             PhpParseOptions scriptParseOptions,
             string fname)
         {
+            if (fname == null)
+            {
+                throw new ArgumentNullException(nameof(fname));
+            }
+
             // TODO: new parser implementation based on Roslyn
 
             // TODO: file.IsScript ? scriptParseOptions : parseOptions

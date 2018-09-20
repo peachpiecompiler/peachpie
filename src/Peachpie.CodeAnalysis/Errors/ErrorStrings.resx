@@ -251,4 +251,46 @@
   <data name="WRN_AssigningSameVariable" xml:space="preserve">
     <value>Assignment made to same variable; did you mean to assign something else?</value>
   </data>
+  <data name="ERR_BadAssemblyName" xml:space="preserve">
+    <value>Invalid assembly name: {0}</value>
+  </data>
+  <data name="ERR_BadDocumentationMode" xml:space="preserve">
+    <value>Provided documentation mode is unsupported or invalid: '{0}'.</value>
+  </data>
+  <data name="ERR_BadSourceCodeKind" xml:space="preserve">
+    <value>Provided source code kind is unsupported or invalid: '{0}'</value>
+  </data>
+  <data name="ERR_EncodinglessSyntaxTree" xml:space="preserve">
+    <value>Cannot emit debug information for a source text without encoding.</value>
+  </data>
+  <data name="ERR_EncUpdateFailedMissingAttribute" xml:space="preserve">
+    <value>Cannot update '{0}'; attribute '{1}' is missing.</value>
+  </data>
+  <data name="ERR_InvalidDebugInfo" xml:space="preserve">
+    <value>Unable to read debug information of method '{0}' (token 0x{1:X8}) from assembly '{2}'</value>
+  </data>
+  <data name="ERR_InvalidHashAlgorithmName" xml:space="preserve">
+    <value>Invalid hash algorithm name: '{0}'</value>
+  </data>
+  <data name="ERR_InvalidInstrumentationKind" xml:space="preserve">
+    <value>Invalid instrumentation kind: {0}</value>
+  </data>
+  <data name="ERR_ModuleEmitFailure" xml:space="preserve">
+    <value>Failed to emit module '{0}'.</value>
+  </data>
+  <data name="ERR_MutuallyExclusiveOptions" xml:space="preserve">
+    <value>Compilation options '{0}' and '{1}' can't both be specified at the same time.</value>
+  </data>
+  <data name="ERR_OptionMustBeAbsolutePath" xml:space="preserve">
+    <value>Option '{0}' must be an absolute path.</value>
+  </data>
+  <data name="ERR_PeWritingFailure" xml:space="preserve">
+    <value>An error occurred while writing the output file: {0}.</value>
+  </data>
+  <data name="FTL_InvalidInputFileName" xml:space="preserve">
+    <value>File name '{0}' is empty, contains invalid characters, has a drive specification without an absolute path, or is too long</value>
+  </data>
+  <data name="ERR_CannotEmbedWithoutPdb" xml:space="preserve">
+    <value>/embed switch is only supported when emitting Portable PDB (/debug:portable or /debug:embedded).</value>
+  </data>
 </root>

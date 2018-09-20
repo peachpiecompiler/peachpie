@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.Emit;
+using Microsoft.CodeAnalysis.PooledObjects;
 using System.Diagnostics;
 using Cci = Microsoft.Cci;
 using Pchp.CodeAnalysis.Symbols;
@@ -40,13 +41,10 @@ namespace Pchp.CodeAnalysis.Emit
             return builder.ToImmutableAndFree();
         }
 
-        Cci.INamedTypeReference Cci.IGenericTypeInstanceReference.GenericType
+        Cci.INamedTypeReference Cci.IGenericTypeInstanceReference.GetGenericType(EmitContext context)
         {
-            get
-            {
-                System.Diagnostics.Debug.Assert(UnderlyingNamedType.OriginalDefinition.IsDefinition);
-                return this.UnderlyingNamedType.OriginalDefinition;
-            }
+            System.Diagnostics.Debug.Assert(UnderlyingNamedType.OriginalDefinition.IsDefinition);
+            return this.UnderlyingNamedType.OriginalDefinition;
         }
 
         public override Cci.IGenericTypeInstanceReference AsGenericTypeInstanceReference

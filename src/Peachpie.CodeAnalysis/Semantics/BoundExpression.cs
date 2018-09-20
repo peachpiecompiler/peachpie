@@ -1,4 +1,4 @@
-﻿using Microsoft.CodeAnalysis.Semantics;
+﻿using Microsoft.CodeAnalysis.Operations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -246,7 +246,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundExpression
 
-    public abstract partial class BoundExpression : IPhpExpression
+    public abstract partial class BoundExpression : BoundOperation, IPhpExpression
     {
         public TypeRefMask TypeRefMask { get; set; } = default(TypeRefMask);
 
@@ -254,19 +254,15 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual bool IsInvalid => false;
 
-        public abstract OperationKind Kind { get; }
-
-        ITypeSymbol IExpression.ResultType => ResultType;
-
         /// <summary>
         /// The expression result type.
         /// Can be <c>null</c> until emit.
         /// </summary>
         internal TypeSymbol ResultType { get; set; }
 
-        public SyntaxNode Syntax => null;
-
         public Ast.LangElement PhpSyntax { get; set; }
+
+        public sealed override ITypeSymbol Type => ResultType;
 
         /// <summary>
         /// Whether the expression needs current <c>Pchp.Core.Context</c> to be evaluated.
@@ -280,11 +276,9 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Resolved value of the expression.
         /// </summary>
-        public virtual Optional<object> ConstantValue { get; set; }
+        public Optional<object> ConstantValue { get; set; }
 
-        public abstract void Accept(OperationVisitor visitor);
-
-        public abstract TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument);
+        protected sealed override Optional<object> ConstantValueHlp => ConstantValue;
 
         public abstract void Accept(PhpOperationVisitor visitor);
     }
@@ -293,11 +287,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundFunctionCall, BoundArgument, BoundEcho, BoundConcatEx, BoundNewEx
 
-    public partial class BoundArgument : IArgument
+    public partial class BoundArgument : BoundOperation, IArgumentOperation
     {
         public ArgumentKind ArgumentKind { get; private set; }
 
-        public IExpression InConversion => null;
+        public CommonConversion InConversion => default(CommonConversion);
 
         public bool IsInvalid => false;
 
@@ -306,24 +300,28 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         public bool IsUnpacking => this.ArgumentKind == ArgumentKind.ParamArray;
 
-        public OperationKind Kind => OperationKind.Argument;
+        public override OperationKind Kind => OperationKind.Argument;
 
-        public IExpression OutConversion => null;
+        public CommonConversion OutConversion => default(CommonConversion);
 
         public IParameterSymbol Parameter { get; set; }
 
         public SyntaxNode Syntax => null;
 
-        IExpression IArgument.Value => Value;
+        IOperation IArgumentOperation.Value => Value;
 
         public BoundExpression Value { get; set; }
+
+        public override ITypeSymbol Type => Value.ResultType;
+
+        protected override Optional<object> ConstantValueHlp => Value.ConstantValue;
 
         /// <summary>
         /// Creates the argument.
         /// </summary>
         public static BoundArgument Create(BoundExpression value)
         {
-            return new BoundArgument(value, ArgumentKind.Positional);
+            return new BoundArgument(value, ArgumentKind.Explicit);
         }
 
         /// <summary>
@@ -336,7 +334,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundArgument(value, ArgumentKind.ParamArray);
         }
 
-        private BoundArgument(BoundExpression value, ArgumentKind kind = ArgumentKind.Positional)
+        private BoundArgument(BoundExpression value, ArgumentKind kind = ArgumentKind.Explicit)
         {
             Contract.ThrowIfNull(value);
             Debug.Assert(value.Access.IsRead);  // we do not support OUT parameters in PHP I guess, just aliasing ~ IsReadRef
@@ -345,30 +343,27 @@ namespace Pchp.CodeAnalysis.Semantics
             this.ArgumentKind = kind;
         }
 
-        public void Accept(OperationVisitor visitor)
+        public override void Accept(OperationVisitor visitor)
             => visitor.VisitArgument(this);
 
-        public TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitArgument(this, argument);
 
         public void Accept(PhpOperationVisitor visitor) => visitor.VisitArgument(this);
-
     }
 
     /// <summary>
     /// Represents a function call.
     /// </summary>
-    public abstract partial class BoundRoutineCall : BoundExpression, IInvocationExpression
+    public abstract partial class BoundRoutineCall : BoundExpression, IInvocationOperation
     {
         protected ImmutableArray<BoundArgument> _arguments;
 
-        ImmutableArray<IArgument> IInvocationExpression.ArgumentsInParameterOrder => StaticCast<IArgument>.From(_arguments);
-
-        ImmutableArray<IArgument> IInvocationExpression.ArgumentsInSourceOrder => StaticCast<IArgument>.From(_arguments);
+        ImmutableArray<IArgumentOperation> IInvocationOperation.Arguments => StaticCast<IArgumentOperation>.From(_arguments);
 
         public ImmutableArray<BoundArgument> ArgumentsInSourceOrder => _arguments;
 
-        public IArgument ArgumentMatchingParameter(IParameterSymbol parameter)
+        public IArgumentOperation ArgumentMatchingParameter(IParameterSymbol parameter)
         {
             foreach (var arg in _arguments)
             {
@@ -379,9 +374,9 @@ namespace Pchp.CodeAnalysis.Semantics
             return null;
         }
 
-        IExpression IInvocationExpression.Instance => Instance;
+        IOperation IInvocationOperation.Instance => Instance;
 
-        IMethodSymbol IInvocationExpression.TargetMethod => TargetMethod;
+        IMethodSymbol IInvocationOperation.TargetMethod => TargetMethod;
 
         /// <summary>
         /// <c>this</c> argument to be supplied to the method.
@@ -395,7 +390,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual bool IsVirtual => false;
 
-        public override OperationKind Kind => OperationKind.InvocationExpression;
+        public override OperationKind Kind => OperationKind.Invocation;
 
         /// <summary>
         /// Gets value indicating the arguments has to be unpacked in runtime before passed to the function.
@@ -418,10 +413,10 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         public override void Accept(OperationVisitor visitor)
-            => visitor.VisitInvocationExpression(this);
+            => visitor.VisitInvocation(this);
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
-            => visitor.VisitInvocationExpression(this, argument);
+            => visitor.VisitInvocation(this, argument);
     }
 
     /// <summary>
@@ -688,7 +683,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// <summary>
     /// Anonymous function expression.
     /// </summary>
-    public partial class BoundLambda : BoundExpression, ILambdaExpression
+    public partial class BoundLambda : BoundExpression, IAnonymousFunctionOperation
     {
         /// <summary>
         /// Declared use variables.
@@ -696,7 +691,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public ImmutableArray<BoundArgument> UseVars => _usevars;
         ImmutableArray<BoundArgument> _usevars;
 
-        public IBlockStatement Body => (BoundLambdaMethod != null) ? BoundLambdaMethod.ControlFlowGraph.Start : null;
+        public IBlockOperation Body => (BoundLambdaMethod != null) ? BoundLambdaMethod.ControlFlowGraph.Start : null;
 
         public IMethodSymbol Signature => BoundLambdaMethod;
 
@@ -706,18 +701,20 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         internal SourceLambdaSymbol BoundLambdaMethod { get; set; }
 
+        IMethodSymbol IAnonymousFunctionOperation.Symbol => BoundLambdaMethod;
+
         public BoundLambda(ImmutableArray<BoundArgument> usevars)
         {
             _usevars = usevars;
         }
 
-        public override OperationKind Kind => OperationKind.LambdaExpression;
+        public override OperationKind Kind => OperationKind.AnonymousFunction;
 
         public override void Accept(PhpOperationVisitor visitor) => visitor.VisitLambda(this);
 
-        public override void Accept(OperationVisitor visitor) => visitor.VisitLambdaExpression(this);
+        public override void Accept(OperationVisitor visitor) => visitor.VisitAnonymousFunction(this);
 
-        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument) => visitor.VisitLambdaExpression(this, argument);
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument) => visitor.VisitAnonymousFunction(this, argument);
     }
 
     #endregion
@@ -747,11 +744,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundLiteral
 
-    public partial class BoundLiteral : BoundExpression, ILiteralExpression
+    public partial class BoundLiteral : BoundExpression, ILiteralOperation
     {
         public string Spelling => this.ConstantValue.Value?.ToString() ?? "NULL";
 
-        public override OperationKind Kind => OperationKind.LiteralExpression;
+        public override OperationKind Kind => OperationKind.Literal;
 
         public override bool RequiresContext => false;
 
@@ -761,10 +758,10 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         public override void Accept(OperationVisitor visitor)
-            => visitor.VisitLiteralExpression(this);
+            => visitor.VisitLiteral(this);
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
-            => visitor.VisitLiteralExpression(this, argument);
+            => visitor.VisitLiteral(this, argument);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
@@ -775,32 +772,41 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundBinaryEx
 
-    public sealed partial class BoundBinaryEx : BoundExpression, IBinaryOperatorExpression
+    public sealed partial class BoundBinaryEx : BoundExpression, IBinaryOperation
     {
-        public BinaryOperationKind BinaryOperationKind { get { throw new NotSupportedException(); } }
+        public BinaryOperatorKind OperatorKind { get { throw new NotSupportedException(); } }
 
-        public override OperationKind Kind => OperationKind.BinaryOperatorExpression;
+        public override OperationKind Kind => OperationKind.BinaryOperator;
 
         public override bool RequiresContext => Left.RequiresContext || Right.RequiresContext;
 
         public Ast.Operations Operation { get; private set; }
 
-        public BoundExpression Left { get; private set; }
-        public BoundExpression Right { get; private set; }
-
-        IExpression IBinaryOperatorExpression.Left => Left;
-
         public IMethodSymbol Operator { get; set; }
 
-        IExpression IBinaryOperatorExpression.Right => Right;
+        IMethodSymbol IBinaryOperation.OperatorMethod => Operator;
+
+        public BoundExpression Left { get; private set; }
+
+        public BoundExpression Right { get; private set; }
+
+        IOperation IBinaryOperation.LeftOperand => Left;
+
+        IOperation IBinaryOperation.RightOperand => Right;
+
+        bool IBinaryOperation.IsLifted => false;
+
+        bool IBinaryOperation.IsChecked => false;
+
+        bool IBinaryOperation.IsCompareText => false;
 
         public bool UsesOperatorMethod => this.Operator != null;
 
         public override void Accept(OperationVisitor visitor)
-            => visitor.VisitBinaryOperatorExpression(this);
+            => visitor.VisitBinaryOperator(this);
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
-            => visitor.VisitBinaryOperatorExpression(this, argument);
+            => visitor.VisitBinaryOperator(this, argument);
 
         internal BoundBinaryEx(BoundExpression left, BoundExpression right, Ast.Operations op)
         {
@@ -818,23 +824,27 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundUnaryEx
 
-    public partial class BoundUnaryEx : BoundExpression, IUnaryOperatorExpression
+    public partial class BoundUnaryEx : BoundExpression, IUnaryOperation
     {
         public Ast.Operations Operation { get; private set; }
 
         public BoundExpression Operand { get; set; }
 
-        public override OperationKind Kind => OperationKind.UnaryOperatorExpression;
+        public override OperationKind Kind => OperationKind.UnaryOperator;
 
         public override bool RequiresContext => Operation == Ast.Operations.StringCast || Operation == Ast.Operations.Print || Operand.RequiresContext;
 
-        IExpression IUnaryOperatorExpression.Operand => Operand;
+        IOperation IUnaryOperation.Operand => Operand;
 
-        public IMethodSymbol Operator => null;
+        public IMethodSymbol OperatorMethod => null;
 
-        public bool UsesOperatorMethod => Operator != null;
+        bool IUnaryOperation.IsLifted => false;
 
-        public UnaryOperationKind UnaryOperationKind { get { throw new NotSupportedException(); } }
+        bool IUnaryOperation.IsChecked => false;
+
+        public bool UsesOperatorMethod => OperatorMethod != null;
+
+        public UnaryOperatorKind OperatorKind { get { throw new NotSupportedException(); } }
 
         public BoundUnaryEx(BoundExpression operand, Ast.Operations op)
         {
@@ -844,10 +854,10 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         public override void Accept(OperationVisitor visitor)
-            => visitor.VisitUnaryOperatorExpression(this);
+            => visitor.VisitUnaryOperator(this);
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
-            => visitor.VisitUnaryOperatorExpression(this, argument);
+            => visitor.VisitUnaryOperator(this, argument);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
@@ -858,29 +868,35 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundIncDecEx
 
-    public partial class BoundIncDecEx : BoundCompoundAssignEx, IIncrementExpression
+    public partial class BoundIncDecEx : BoundCompoundAssignEx, IIncrementOrDecrementOperation
     {
-        public UnaryOperationKind IncrementKind { get; private set; }
+        public override OperationKind Kind => IsIncrement ? OperationKind.Increment : OperationKind.Decrement;
 
-        public override OperationKind Kind => OperationKind.IncrementExpression;
+        public bool IsIncrement { get; }
 
-        public BoundIncDecEx(BoundReferenceExpression target, UnaryOperationKind kind)
+        public bool IsPostfix { get; }
+
+        IMethodSymbol IIncrementOrDecrementOperation.OperatorMethod => null;
+
+        IOperation IIncrementOrDecrementOperation.Target => Target;
+
+
+        bool IIncrementOrDecrementOperation.IsLifted => false;
+
+        bool IIncrementOrDecrementOperation.IsChecked => false;
+
+        public BoundIncDecEx(BoundReferenceExpression target, bool isIncrement, bool isPostfix)
             : base(target, new BoundLiteral(1L).WithAccess(BoundAccess.Read), Ast.Operations.IncDec)
         {
-            Debug.Assert(
-                kind == UnaryOperationKind.OperatorPostfixDecrement ||
-                kind == UnaryOperationKind.OperatorPostfixIncrement ||
-                kind == UnaryOperationKind.OperatorPrefixDecrement ||
-                kind == UnaryOperationKind.OperatorPrefixIncrement);
-
-            this.IncrementKind = kind;
+            this.IsIncrement = isIncrement;
+            this.IsPostfix = isPostfix;
         }
 
         public override void Accept(OperationVisitor visitor)
-            => visitor.VisitIncrementExpression(this);
+            => visitor.VisitIncrementOrDecrement(this);
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
-            => visitor.VisitIncrementExpression(this, argument);
+            => visitor.VisitIncrementOrDecrement(this, argument);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
@@ -891,17 +907,18 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundConditionalEx
 
-    public partial class BoundConditionalEx : BoundExpression, IConditionalChoiceExpression
+    public partial class BoundConditionalEx : BoundExpression, IConditionalOperation
     {
-        IExpression IConditionalChoiceExpression.Condition => Condition;
-        IExpression IConditionalChoiceExpression.IfFalse => IfFalse;
-        IExpression IConditionalChoiceExpression.IfTrue => IfTrue;
+        IOperation IConditionalOperation.Condition => Condition;
+        IOperation IConditionalOperation.WhenFalse => IfFalse;
+        IOperation IConditionalOperation.WhenTrue => IfTrue;
+        bool IConditionalOperation.IsRef => false;
 
         public BoundExpression Condition { get; private set; }
         public BoundExpression IfFalse { get; private set; }
         public BoundExpression IfTrue { get; private set; }
 
-        public override OperationKind Kind => OperationKind.ConditionalChoiceExpression;
+        public override OperationKind Kind => OperationKind.Conditional;
 
         public override bool RequiresContext => Condition.RequiresContext || IfTrue.RequiresContext || IfFalse.RequiresContext;
 
@@ -917,10 +934,10 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         public override void Accept(OperationVisitor visitor)
-            => visitor.VisitConditionalChoiceExpression(this);
+            => visitor.VisitConditional(this);
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
-        => visitor.VisitConditionalChoiceExpression(this, argument);
+        => visitor.VisitConditional(this, argument);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
@@ -931,17 +948,19 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundAssignEx, BoundCompoundAssignEx
 
-    public partial class BoundAssignEx : BoundExpression, IAssignmentExpression
+    public partial class BoundAssignEx : BoundExpression, ISimpleAssignmentOperation
     {
         #region IAssignmentExpression
 
-        IReferenceExpression IAssignmentExpression.Target => Target;
+        IOperation IAssignmentOperation.Target => Target;
 
-        IExpression IAssignmentExpression.Value => Value;
+        IOperation IAssignmentOperation.Value => Value;
+
+        bool ISimpleAssignmentOperation.IsRef => false;
 
         #endregion
 
-        public override OperationKind Kind => OperationKind.AssignmentExpression;
+        public override OperationKind Kind => OperationKind.SimpleAssignment;
 
         public BoundReferenceExpression Target { get; set; }
 
@@ -954,27 +973,35 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         public override void Accept(OperationVisitor visitor)
-            => visitor.VisitAssignmentExpression(this);
+            => visitor.VisitSimpleAssignment(this);
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
-            => visitor.VisitAssignmentExpression(this, argument);
+            => visitor.VisitSimpleAssignment(this, argument);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
         public override void Accept(PhpOperationVisitor visitor) => visitor.VisitAssign(this);
     }
 
-    public partial class BoundCompoundAssignEx : BoundAssignEx, ICompoundAssignmentExpression
+    public partial class BoundCompoundAssignEx : BoundAssignEx, ICompoundAssignmentOperation
     {
-        public BinaryOperationKind BinaryKind { get { throw new NotSupportedException(); } }
+        public BinaryOperatorKind OperatorKind { get { throw new NotSupportedException(); } }
 
-        public override OperationKind Kind => OperationKind.CompoundAssignmentExpression;
+        public override OperationKind Kind => OperationKind.CompoundAssignment;
 
-        public IMethodSymbol Operator { get; set; }
+        public IMethodSymbol OperatorMethod { get; set; }
 
-        public bool UsesOperatorMethod => this.Operator != null;
+        public bool UsesOperatorMethod => this.OperatorMethod != null;
 
         public Ast.Operations Operation { get; private set; }
+
+        bool ICompoundAssignmentOperation.IsLifted => false;
+
+        bool ICompoundAssignmentOperation.IsChecked => false;
+
+        CommonConversion ICompoundAssignmentOperation.InConversion => throw new NotSupportedException();
+
+        CommonConversion ICompoundAssignmentOperation.OutConversion => throw new NotSupportedException();
 
         public BoundCompoundAssignEx(BoundReferenceExpression target, BoundExpression value, Ast.Operations op)
             : base(target, value)
@@ -983,10 +1010,10 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         public override void Accept(OperationVisitor visitor)
-            => visitor.VisitCompoundAssignmentExpression(this);
+            => visitor.VisitCompoundAssignment(this);
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
-            => visitor.VisitCompoundAssignmentExpression(this, argument);
+            => visitor.VisitCompoundAssignment(this, argument);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
@@ -997,7 +1024,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundReferenceExpression
 
-    public abstract partial class BoundReferenceExpression : BoundExpression, IReferenceExpression
+    public abstract partial class BoundReferenceExpression : BoundExpression
     {
         /// <summary>
         /// Gets or sets value indicating the variable is used while it was not initialized in all code paths.
@@ -1047,7 +1074,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// <summary>
     /// A variable reference that can be read or written to.
     /// </summary>
-    public partial class BoundVariableRef : BoundReferenceExpression, ILocalReferenceExpression
+    public partial class BoundVariableRef : BoundReferenceExpression, ILocalReferenceOperation
     {
         readonly BoundVariableName _name;
 
@@ -1061,7 +1088,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         public BoundVariable Variable { get; set; }
 
-        public override OperationKind Kind => OperationKind.LocalReferenceExpression;
+        public override OperationKind Kind => OperationKind.LocalReference;
 
         /// <summary>
         /// The type of variable before it gets accessed by this expression.
@@ -1071,13 +1098,15 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Local in case of the variable is resolved local variable.
         /// </summary>
-        ILocalSymbol ILocalReferenceExpression.Local => this.Variable?.Symbol as ILocalSymbol;
+        ILocalSymbol ILocalReferenceOperation.Local => this.Variable?.Symbol as ILocalSymbol;
+
+        bool ILocalReferenceOperation.IsDeclaration => throw new NotSupportedException();
 
         public override void Accept(OperationVisitor visitor)
-            => visitor.VisitLocalReferenceExpression(this);
+            => visitor.VisitLocalReference(this);
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
-            => visitor.VisitLocalReferenceExpression(this, argument);
+            => visitor.VisitLocalReference(this, argument);
 
         public BoundVariableRef(BoundVariableName name)
         {
@@ -1151,13 +1180,15 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundFieldRef
 
-    public partial class BoundFieldRef : BoundReferenceExpression, IFieldReferenceExpression
+    public partial class BoundFieldRef : BoundReferenceExpression, IFieldReferenceOperation
     {
-        ISymbol IMemberReferenceExpression.Member => FieldSymbolOpt;
+        ISymbol IMemberReferenceOperation.Member => FieldSymbolOpt;
 
-        IFieldSymbol IFieldReferenceExpression.Field => FieldSymbolOpt;
+        IFieldSymbol IFieldReferenceOperation.Field => FieldSymbolOpt;
 
-        IExpression IMemberReferenceExpression.Instance => Instance;
+        IOperation IMemberReferenceOperation.Instance => Instance;
+
+        bool IFieldReferenceOperation.IsDeclaration => throw new NotSupportedException();
 
         enum FieldType
         {
@@ -1185,7 +1216,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundVariableName FieldName => _fieldName;
 
-        public override OperationKind Kind => OperationKind.FieldReferenceExpression;
+        public override OperationKind Kind => OperationKind.FieldReference;
 
         private BoundFieldRef()
         {
@@ -1197,10 +1228,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
 
         public override void Accept(OperationVisitor visitor)
-            => visitor.VisitFieldReferenceExpression(this);
+            => visitor.VisitFieldReference(this);
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
-            => visitor.VisitFieldReferenceExpression(this, argument);
+            => visitor.VisitFieldReference(this, argument);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
@@ -1211,15 +1242,15 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundArrayEx
 
-    public partial class BoundArrayEx : BoundExpression, IArrayCreationExpression
+    public partial class BoundArrayEx : BoundExpression, IArrayCreationOperation
     {
-        public class BoundArrayInitializer : BoundExpression, IArrayInitializer
+        public class BoundArrayInitializer : BoundExpression, IArrayInitializerOperation
         {
             readonly BoundArrayEx _array;
 
             public override OperationKind Kind => OperationKind.ArrayInitializer;
 
-            ImmutableArray<IExpression> IArrayInitializer.ElementValues => _array._items.Select(x => x.Value).Cast<IExpression>().AsImmutable();
+            ImmutableArray<IOperation> IArrayInitializerOperation.ElementValues => _array._items.Select(x => x.Value).Cast<IOperation>().AsImmutable();
 
             public BoundArrayInitializer(BoundArrayEx array)
             {
@@ -1238,22 +1269,13 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        public override OperationKind Kind => OperationKind.ArrayCreationExpression;
+        public override OperationKind Kind => OperationKind.ArrayCreation;
 
         public override bool RequiresContext => _items.Any(x => (x.Key != null && x.Key.RequiresContext) || x.Value.RequiresContext);
 
-        ITypeSymbol IArrayCreationExpression.ElementType
-        {
-            get
-            {
-                // TODO: PhpValue
-                throw new NotImplementedException();
-            }
-        }
+        ImmutableArray<IOperation> IArrayCreationOperation.DimensionSizes => ImmutableArray.Create<IOperation>(new BoundLiteral(_items.Length));
 
-        ImmutableArray<IExpression> IArrayCreationExpression.DimensionSizes => ImmutableArray.Create<IExpression>(new BoundLiteral(_items.Length));
-
-        IArrayInitializer IArrayCreationExpression.Initializer => new BoundArrayInitializer(this);
+        IArrayInitializerOperation IArrayCreationOperation.Initializer => new BoundArrayInitializer(this);
 
         /// <summary>
         /// Array items.
@@ -1267,10 +1289,10 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         public override void Accept(OperationVisitor visitor)
-            => visitor.VisitArrayCreationExpression(this);
+            => visitor.VisitArrayCreation(this);
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
-            => visitor.VisitArrayCreationExpression(this, argument);
+            => visitor.VisitArrayCreation(this, argument);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
@@ -1284,7 +1306,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// <summary>
     /// Array item access.
     /// </summary>
-    public partial class BoundArrayItemEx : BoundReferenceExpression, IArrayElementReferenceExpression
+    public partial class BoundArrayItemEx : BoundReferenceExpression, IArrayElementReferenceOperation
     {
         public BoundExpression Array
         {
@@ -1300,12 +1322,12 @@ namespace Pchp.CodeAnalysis.Semantics
         }
         BoundExpression _index;
 
-        public override OperationKind Kind => OperationKind.ArrayElementReferenceExpression;
+        public override OperationKind Kind => OperationKind.ArrayElementReference;
 
-        IExpression IArrayElementReferenceExpression.ArrayReference => _array;
+        IOperation IArrayElementReferenceOperation.ArrayReference => _array;
 
-        ImmutableArray<IExpression> IArrayElementReferenceExpression.Indices
-            => (_index != null) ? ImmutableArray.Create((IExpression)_index) : ImmutableArray<IExpression>.Empty;
+        ImmutableArray<IOperation> IArrayElementReferenceOperation.Indices
+            => (_index != null) ? ImmutableArray.Create((IOperation)_index) : ImmutableArray<IOperation>.Empty;
 
         public BoundArrayItemEx(BoundExpression array, BoundExpression index)
         {
@@ -1316,10 +1338,10 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         public override void Accept(OperationVisitor visitor)
-            => visitor.VisitArrayElementReferenceExpression(this);
+            => visitor.VisitArrayElementReference(this);
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
-            => visitor.VisitArrayElementReferenceExpression(this, argument);
+            => visitor.VisitArrayElementReference(this, argument);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
@@ -1330,13 +1352,15 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundInstanceOfEx
 
-    public partial class BoundInstanceOfEx : BoundExpression, IIsExpression
+    public partial class BoundInstanceOfEx : BoundExpression, IIsTypeOperation
     {
         #region IIsExpression
 
-        IExpression IIsExpression.Operand => Operand;
+        IOperation IIsTypeOperation.ValueOperand => Operand;
 
-        ITypeSymbol IIsExpression.IsType => AsType?.ResolvedType;
+        ITypeSymbol IIsTypeOperation.TypeOperand => AsType?.ResolvedType;
+
+        bool IIsTypeOperation.IsNegated => false;
 
         #endregion
 
@@ -1358,13 +1382,13 @@ namespace Pchp.CodeAnalysis.Semantics
             this.AsType = tref;
         }
 
-        public override OperationKind Kind => OperationKind.IsExpression;
+        public override OperationKind Kind => OperationKind.IsType;
 
         public override void Accept(OperationVisitor visitor)
-            => visitor.VisitIsExpression(this);
+            => visitor.VisitIsType(this);
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
-            => visitor.VisitIsExpression(this, argument);
+            => visitor.VisitIsType(this, argument);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
@@ -1419,11 +1443,11 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         public override OperationKind Kind => OperationKind.None;
 
-        public Ast.PseudoConstUse.Types Type { get; private set; }
+        public Ast.PseudoConstUse.Types ConstType { get; private set; }
 
         public BoundPseudoConst(Ast.PseudoConstUse.Types type)
         {
-            this.Type = type;
+            this.ConstType = type;
         }
 
         public override void Accept(OperationVisitor visitor)
@@ -1443,7 +1467,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public partial class BoundPseudoClassConst : BoundExpression
     {
-        public Ast.PseudoClassConstUse.Types Type { get; private set; }
+        public Ast.PseudoClassConstUse.Types ConstType { get; private set; }
 
         public override OperationKind Kind => OperationKind.None;
 
@@ -1452,7 +1476,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public BoundPseudoClassConst(BoundTypeRef targetType, Ast.PseudoClassConstUse.Types type)
         {
             this.TargetType = targetType;
-            this.Type = type;
+            this.ConstType = type;
         }
 
         public override void Accept(PhpOperationVisitor visitor) => visitor.VisitPseudoClassConstUse(this);
@@ -1525,7 +1549,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// </summary>
     public partial class BoundYieldEx : BoundExpression
     {
-        public override OperationKind Kind => OperationKind.FieldReferenceExpression;
+        public override OperationKind Kind => OperationKind.FieldReference;
 
         public override void Accept(PhpOperationVisitor visitor)
             => visitor.VisitYieldEx(this);
@@ -1543,7 +1567,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// </summary>
     public partial class BoundYieldFromEx : BoundExpression
     {
-        public override OperationKind Kind => OperationKind.FieldReferenceExpression;
+        public override OperationKind Kind => OperationKind.FieldReference;
 
         public BoundExpression Operand { get; private set; }
 

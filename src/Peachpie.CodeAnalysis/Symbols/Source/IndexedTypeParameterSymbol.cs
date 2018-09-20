@@ -4,6 +4,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis.Text;
 using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.PooledObjects;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -17,7 +18,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal sealed class IndexedTypeParameterSymbol : TypeParameterSymbol
     {
-        private static TypeParameterSymbol[] s_parameterPool = SpecializedCollections.EmptyArray<TypeParameterSymbol>();
+        private static TypeParameterSymbol[] s_parameterPool = Array.Empty<TypeParameterSymbol>();
 
         private readonly int _index;
 

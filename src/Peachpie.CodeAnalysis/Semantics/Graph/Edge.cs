@@ -1,4 +1,4 @@
-﻿using Microsoft.CodeAnalysis.Semantics;
+﻿using Microsoft.CodeAnalysis.Operations;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;

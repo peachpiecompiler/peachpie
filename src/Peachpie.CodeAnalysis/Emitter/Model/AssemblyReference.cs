@@ -39,43 +39,11 @@ namespace Pchp.CodeAnalysis.Emitter
             visitor.Visit(this);
         }
 
-        string Cci.IAssemblyReference.Culture
-        {
-            get
-            {
-                return MetadataIdentity.CultureName;
-            }
-        }
+        AssemblyIdentity Cci.IAssemblyReference.Identity => MetadataIdentity;
 
-        bool Cci.IAssemblyReference.IsRetargetable
-        {
-            get
-            {
-                return MetadataIdentity.IsRetargetable;
-            }
-        }
-
-        AssemblyContentType Cci.IAssemblyReference.ContentType
-        {
-            get
-            {
-                return MetadataIdentity.ContentType;
-            }
-        }
-
-        ImmutableArray<byte> Cci.IAssemblyReference.PublicKeyToken
-        {
-            get { return MetadataIdentity.PublicKeyToken; }
-        }
-
-        Version Cci.IAssemblyReference.Version
+        Version Cci.IAssemblyReference.AssemblyVersionPattern
         {
             get { return MetadataIdentity.Version; }
-        }
-
-        string Cci.IAssemblyReference.GetDisplayName()
-        {
-            return MetadataIdentity.GetDisplayName();
         }
 
         string Cci.INamedEntity.Name

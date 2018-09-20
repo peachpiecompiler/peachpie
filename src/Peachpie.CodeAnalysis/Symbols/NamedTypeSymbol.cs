@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.PooledObjects;
 using Cci = Microsoft.Cci;
 
 namespace Pchp.CodeAnalysis.Symbols
@@ -17,6 +18,8 @@ namespace Pchp.CodeAnalysis.Symbols
     internal abstract partial class NamedTypeSymbol : TypeSymbol, INamedTypeSymbol
     {
         public abstract int Arity { get; }
+
+        public abstract bool IsSerializable { get; }
 
         /// <summary>
         /// Should the name returned by Name property be mangled with [`arity] suffix in order to get metadata name.
@@ -113,6 +116,10 @@ namespace Pchp.CodeAnalysis.Symbols
         /// kinds of types.
         /// </summary>
         public virtual NamedTypeSymbol EnumUnderlyingType => null;
+
+        public virtual NamedTypeSymbol TupleUnderlyingType => null;
+
+        public virtual ImmutableArray<IFieldSymbol> TupleElements => default(ImmutableArray<IFieldSymbol>);
 
         /// <summary>
         /// True if this type or some containing type has type parameters.
@@ -490,6 +497,10 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         IMethodSymbol INamedTypeSymbol.DelegateInvokeMethod => DelegateInvokeMethod;
+
+        bool INamedTypeSymbol.IsComImport => false;
+
+        INamedTypeSymbol INamedTypeSymbol.TupleUnderlyingType => TupleUnderlyingType;
 
         #endregion
 

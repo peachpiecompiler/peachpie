@@ -167,6 +167,12 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
+        /// If this field represents a tuple element, returns a corresponding default element
+        ///  field. Otherwise returns null.
+        /// </summary>
+        public virtual IFieldSymbol CorrespondingTupleField => null;
+
+        /// <summary>
         /// Returns false because field can't be abstract.
         /// </summary>
         public sealed override bool IsAbstract

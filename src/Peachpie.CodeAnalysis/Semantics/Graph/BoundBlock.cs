@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using Devsense.PHP.Syntax;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Semantics;
+using Microsoft.CodeAnalysis.Operations;
 using Pchp.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
@@ -13,7 +13,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Represents control flow block.
     /// </summary>
     [DebuggerDisplay("{DebugDisplay}")]
-    public partial class BoundBlock : BoundStatement, IBlockStatement
+    public partial class BoundBlock : BoundStatement, IBlockOperation
     {
         /// <summary>
         /// Internal name of the block.
@@ -122,23 +122,21 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         #region IBlockStatement
 
-        ImmutableArray<IStatement> IBlockStatement.Statements => _statements.Cast<IStatement>().AsImmutable();
+        ImmutableArray<IOperation> IBlockOperation.Operations => _statements.Cast<IOperation>().AsImmutable();
 
-        ImmutableArray<ILocalSymbol> IBlockStatement.Locals => Locals;
+        ImmutableArray<ILocalSymbol> IBlockOperation.Locals => Locals;
         protected virtual ImmutableArray<ILocalSymbol> Locals => ImmutableArray<ILocalSymbol>.Empty;
 
-        public override OperationKind Kind => OperationKind.BlockStatement;
-
-        bool IOperation.IsInvalid => false;
+        public override OperationKind Kind => OperationKind.Block;
 
         SyntaxNode IOperation.Syntax => null;
 
         public override void Accept(PhpOperationVisitor visitor) => visitor.VisitBlockStatement(this);
 
-        public override void Accept(OperationVisitor visitor) => visitor.VisitBlockStatement(this);
+        public override void Accept(OperationVisitor visitor) => visitor.VisitBlock(this);
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
-            => visitor.VisitBlockStatement(this, argument);
+            => visitor.VisitBlock(this, argument);
 
         #endregion
     }

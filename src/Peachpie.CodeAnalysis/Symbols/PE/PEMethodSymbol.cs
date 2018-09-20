@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.PooledObjects;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
@@ -740,14 +741,6 @@ namespace Pchp.CodeAnalysis.Symbols
             else
             {
                 @params = ImmutableArray<ParameterSymbol>.Empty;
-            }
-
-            // workaround for CodeAnalysis 0.6.0 // remove after we use 0.9.0+
-            if (paramInfo[0].Type is ByRefReturnErrorTypeSymbol rtype)
-            {
-                // fix paramInfo
-                paramInfo[0].IsByRef = true;
-                paramInfo[0].Type = rtype.TheReturnType;
             }
 
             //// Dynamify object type if necessary

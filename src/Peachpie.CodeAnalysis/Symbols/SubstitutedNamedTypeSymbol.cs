@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Roslyn.Utilities;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.PooledObjects;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -190,6 +191,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 return _originalDefinition.IsImplicitlyDeclared;
             }
         }
+
+        public sealed override bool IsSerializable => _originalDefinition.IsSerializable;
 
         public override NamedTypeSymbol BaseType
         {

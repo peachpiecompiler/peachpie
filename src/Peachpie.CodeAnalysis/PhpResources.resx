@@ -191,6 +191,9 @@
 /define:&lt;name&gt;=&lt;value&gt;      Defines compile-time constant. (Short form: /d)
 /version:&lt;value&gt;            Specifies the assembly version string. (Short form: /v)</value>
   </data>
+  <data name="IDS_LangVersions" xml:space="preserve">
+    <value>Language versions:</value>
+  </data>
   <data name="IDS_Logo" xml:space="preserve">
     <value>{0} version {1}</value>
   </data>

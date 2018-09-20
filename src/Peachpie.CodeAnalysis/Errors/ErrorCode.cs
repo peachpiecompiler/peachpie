@@ -24,7 +24,7 @@ namespace Pchp.CodeAnalysis.Errors
         // 
         // Fatal errors
         //
-        FTL_InputFileNameTooLong = 3000,
+        FTL_InvalidInputFileName = 3000,
 
         //
         // Errors
@@ -107,6 +107,32 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_SwitchNeedsValue,
         /// <summary>'{0}' not in the 'loop' or 'switch' context</summary>
         ERR_NeedsLoopOrSwitch,
+        /// <summary>Provided source code kind is unsupported or invalid: '{0}'</summary>
+        ERR_BadSourceCodeKind,
+        /// <summary>Provided documentation mode is unsupported or invalid: '{0}'.</summary>
+        ERR_BadDocumentationMode,
+        /// <summary>Compilation options '{0}' and '{1}' can't both be specified at the same time.</summary>
+        ERR_MutuallyExclusiveOptions,
+        /// <summary>Invalid instrumentation kind: {0}</summary>
+        ERR_InvalidInstrumentationKind,
+        /// <summary>Invalid hash algorithm name: '{0}'</summary>
+        ERR_InvalidHashAlgorithmName,
+        /// <summary>Option '{0}' must be an absolute path.</summary>
+        ERR_OptionMustBeAbsolutePath,
+        /// <summary>Cannot emit debug information for a source text without encoding.</summary>
+        ERR_EncodinglessSyntaxTree,
+        /// <summary>An error occurred while writing the output file: {0}.</summary>
+        ERR_PeWritingFailure,
+        /// <summary>Failed to emit module '{0}'.</summary>
+        ERR_ModuleEmitFailure,
+        /// <summary>Cannot update '{0}'; attribute '{1}' is missing.</summary>
+        ERR_EncUpdateFailedMissingAttribute,
+        /// <summary>Unable to read debug information of method '{0}' (token 0x{1:X8}) from assembly '{2}'</summary>
+        ERR_InvalidDebugInfo,
+        /// <summary>Invalid assembly name: {0}</summary>
+        ERR_BadAssemblyName,
+        /// <summary>/embed switch is only supported when emitting Portable PDB (/debug:portable or /debug:embedded).</summary>
+        ERR_CannotEmbedWithoutPdb,
 
         //
         // Warnings

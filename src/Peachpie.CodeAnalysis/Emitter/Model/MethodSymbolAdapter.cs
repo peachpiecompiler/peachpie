@@ -567,12 +567,9 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        IEnumerable<Cci.ICustomAttribute> Cci.IMethodDefinition.ReturnValueAttributes
+        IEnumerable<Cci.ICustomAttribute> Cci.IMethodDefinition.GetReturnValueAttributes(EmitContext context)
         {
-            get
-            {
-                return GetReturnValueCustomAttributesToEmit().Cast<Cci.ICustomAttribute>();
-            }
+            return GetReturnValueCustomAttributesToEmit().Cast<Cci.ICustomAttribute>();
         }
 
         private IEnumerable<AttributeData> GetReturnValueCustomAttributesToEmit()
@@ -649,5 +646,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return (Cci.INamespace)ContainingNamespace;
             }
         }
+
+        ImmutableArray<Cci.ICustomModifier> Cci.ISignature.RefCustomModifiers => ImmutableArray<Cci.ICustomModifier>.Empty;
     }
 }

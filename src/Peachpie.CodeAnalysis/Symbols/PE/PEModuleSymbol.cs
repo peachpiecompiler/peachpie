@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.PooledObjects;
 using System.Collections.Concurrent;
 using System.Reflection.Metadata;
 using System.Diagnostics;
@@ -447,8 +448,22 @@ namespace Pchp.CodeAnalysis.Symbols
             try
             {
                 string matchedName;
-                AssemblyReferenceHandle assemblyRef = Module.GetAssemblyForForwardedType(fullName.FullName, ignoreCase: false, matchedName: out matchedName);
-                return assemblyRef.IsNil ? null : this.ReferencedAssemblySymbols[Module.GetAssemblyReferenceIndexOrThrow(assemblyRef)];
+                (int firstIndex, int secondIndex) = Module.GetAssemblyRefsForForwardedType(fullName.FullName, ignoreCase: false, matchedName: out matchedName);
+                
+                if (firstIndex < 0)
+                {
+                    return null;
+                }
+
+                var firstSymbol = this.ReferencedAssemblySymbols[firstIndex];
+
+                if (secondIndex >= 0)
+                {
+                    // TODO: If necessary, return both symbols and report an error in PEAssemblySymbol as C# does
+                    throw new NotImplementedException();
+                }
+
+                return firstSymbol;
             }
             catch (BadImageFormatException)
             {

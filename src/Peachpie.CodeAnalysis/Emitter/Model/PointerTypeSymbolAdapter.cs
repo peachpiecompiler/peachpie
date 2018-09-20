@@ -98,9 +98,6 @@ namespace Pchp.CodeAnalysis.Symbols
             return null;
         }
 
-        Cci.PrimitiveTypeCode Cci.ITypeReference.TypeCode(EmitContext context)
-        {
-            return Cci.PrimitiveTypeCode.Pointer;
-        }
+        Cci.PrimitiveTypeCode Cci.ITypeReference.TypeCode => Cci.PrimitiveTypeCode.Pointer;
     }
 }

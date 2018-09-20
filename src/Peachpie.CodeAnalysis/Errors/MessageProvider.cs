@@ -12,7 +12,7 @@ namespace Pchp.CodeAnalysis.Errors
     /// <summary>
     /// A <see cref="CommonMessageProvider"/> implementation for compilation errors stored in <see cref="ErrorCode"/>.
     /// </summary>
-    internal class MessageProvider : CommonMessageProvider, IObjectWritable, IObjectReadable
+    internal class MessageProvider : CommonMessageProvider, IObjectWritable
     {
         public static readonly MessageProvider Instance = new MessageProvider();
 
@@ -28,6 +28,8 @@ namespace Pchp.CodeAnalysis.Errors
         {
             get { return typeof(ErrorCode); }
         }
+
+        bool IObjectWritable.ShouldReuseInSerialization => false;
 
         public override int ERR_BadCompilationOptionValue => (int)ErrorCode.ERR_BadCompilationOptionValue;
 
@@ -111,7 +113,31 @@ namespace Pchp.CodeAnalysis.Errors
 
         public override int ERR_TooManyUserStrings => (int)ErrorCode.ERR_TooManyUserStrings;
 
-        public override int FTL_InputFileNameTooLong => (int)ErrorCode.FTL_InputFileNameTooLong;
+        public override int ERR_BadSourceCodeKind => (int)ErrorCode.ERR_BadSourceCodeKind;
+
+        public override int ERR_BadDocumentationMode => (int)ErrorCode.ERR_BadDocumentationMode;
+
+        public override int ERR_MutuallyExclusiveOptions => (int)ErrorCode.ERR_MutuallyExclusiveOptions;
+
+        public override int ERR_InvalidInstrumentationKind => (int)ErrorCode.ERR_InvalidInstrumentationKind;
+
+        public override int ERR_InvalidHashAlgorithmName => (int)ErrorCode.ERR_InvalidHashAlgorithmName;
+
+        public override int ERR_OptionMustBeAbsolutePath => (int)ErrorCode.ERR_OptionMustBeAbsolutePath;
+
+        public override int ERR_EncodinglessSyntaxTree => (int)ErrorCode.ERR_EncodinglessSyntaxTree;
+
+        public override int ERR_PeWritingFailure => (int)ErrorCode.ERR_PeWritingFailure;
+
+        public override int ERR_ModuleEmitFailure => (int)ErrorCode.ERR_ModuleEmitFailure;
+
+        public override int ERR_EncUpdateFailedMissingAttribute => (int)ErrorCode.ERR_EncUpdateFailedMissingAttribute;
+
+        public override int ERR_InvalidDebugInfo => (int)ErrorCode.ERR_InvalidDebugInfo;
+
+        public override int ERR_BadAssemblyName => (int)ErrorCode.ERR_BadAssemblyName;
+
+        public override int FTL_InvalidInputFileName => (int)ErrorCode.FTL_InvalidInputFileName;
 
         public override int INF_UnableToLoadSomeTypesInAnalyzer => (int)ErrorCode.INF_UnableToLoadSomeTypesInAnalyzer;
 
@@ -127,7 +153,7 @@ namespace Pchp.CodeAnalysis.Errors
 
         public override int WRN_UnableToLoadAnalyzer => (int)ErrorCode.WRN_UnableToLoadAnalyzer;
 
-        public override string ConvertSymbolToString(int errorCode, ISymbol symbol)
+        public override string GetErrorDisplayString(ISymbol symbol)
         {
             // show extra info for assembly if possible such as version, public key token etc.
             if (symbol.Kind == SymbolKind.Assembly || symbol.Kind == SymbolKind.Namespace)
@@ -146,7 +172,9 @@ namespace Pchp.CodeAnalysis.Errors
 
         public Diagnostic CreateDiagnostic(ErrorCode code, Location location, params object[] args) =>
             CreateDiagnostic((int)code, location, args);
-        
+
+        public override Diagnostic CreateDiagnostic(DiagnosticInfo info) => new DiagnosticWithInfo(info, Location.None);
+
         public override string GetCategory(int code)
         {
             //throw new NotImplementedException();
@@ -247,11 +275,6 @@ namespace Pchp.CodeAnalysis.Errors
         }
 
         public override void ReportParameterNotValidForType(DiagnosticBag diagnostics, SyntaxNode attributeSyntax, int namedArgumentIndex)
-        {
-            throw new NotImplementedException();
-        }
-
-        Func<ObjectReader, object> IObjectReadable.GetReader()
         {
             throw new NotImplementedException();
         }
