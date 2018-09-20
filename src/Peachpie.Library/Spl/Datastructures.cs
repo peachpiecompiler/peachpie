@@ -119,23 +119,27 @@ namespace Pchp.Library.Spl
                 return new SplFixedArray();
             }
 
-            SplFixedArray result;
+            var result = new SplFixedArray(array.Count);
 
             using (var enumerator = array.GetFastEnumerator())
             {
                 if (save_indexes)
                 {
-                    result = new SplFixedArray(array.MaxIntegerKey + 1);
                     while (enumerator.MoveNext())
                     {
                         var key = enumerator.CurrentKey;
                         if (key.IsString) throw new ArgumentException();
+
+                        if (key.Integer >= result.SizeInternal())
+                        {
+                            result.ReallocArray(key.Integer);
+                        }
+
                         result._array[key.Integer] = enumerator.CurrentValue.DeepCopy();
                     }
                 }
                 else
-                {
-                    result = new SplFixedArray(array.Count);
+                {   
                     int i = 0;
                     while (enumerator.MoveNext())
                     {

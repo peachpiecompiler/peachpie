@@ -285,26 +285,26 @@ namespace Pchp.CodeAnalysis
             var diagnostics = new DiagnosticBag();
             var compiler = new SourceCompiler(compilation, null, true, diagnostics, CancellationToken.None);
 
-            CompilerLogSource.Log.StartPhase(CompilationPhase.Bind.ToString());
+            using (compilation.StartMetric("bind"))
+            {
+                // 1. Bind Syntax & Symbols to Operations (CFG)
+                //   a. construct CFG, bind AST to Operation
+                //   b. declare table of local variables
+                compiler.WalkMethods(compiler.EnqueueRoutine, allowParallel: true);
+                compiler.WalkTypes(compiler.EnqueueFieldsInitializer, allowParallel: true);
+            }
 
-            // 1. Bind Syntax & Symbols to Operations (CFG)
-            //   a. construct CFG, bind AST to Operation
-            //   b. declare table of local variables
-            compiler.WalkMethods(compiler.EnqueueRoutine, allowParallel: true);
-            compiler.WalkTypes(compiler.EnqueueFieldsInitializer, allowParallel: true);
-
-            CompilerLogSource.Log.StartPhase(CompilationPhase.Analyse.ToString());
-
-            // 2. Analyze Operations
-            //   a. type analysis (converge type - mask), resolve symbols
-            //   b. lower semantics, update bound tree, repeat
-            //   c. collect diagnostics
-            compiler.AnalyzeMethods();
-            compiler.DiagnoseMethods();
-            compiler.DiagnoseTypes();
-            compiler.DiagnoseFiles();
-
-            CompilerLogSource.Log.EndPhase();
+            using (compilation.StartMetric("analysis"))
+            {
+                // 2. Analyze Operations
+                //   a. type analysis (converge type - mask), resolve symbols
+                //   b. lower semantics, update bound tree, repeat
+                //   c. collect diagnostics
+                compiler.AnalyzeMethods();
+                compiler.DiagnoseMethods();
+                compiler.DiagnoseTypes();
+                compiler.DiagnoseFiles();
+            }
 
             //
             return diagnostics.AsEnumerable();
@@ -320,32 +320,37 @@ namespace Pchp.CodeAnalysis
         {
             Debug.Assert(moduleBuilder != null);
 
-            // ensure flow analysis and collect diagnostics
-            var declarationDiagnostics = compilation.GetDeclarationDiagnostics(cancellationToken);
-            diagnostics.AddRange(declarationDiagnostics);
+            compilation.TrackMetric("sourceFilesCount", compilation.SourceSymbolCollection.FilesCount);
 
-            // cancel the operation if there are errors
-            if (hasDeclarationErrors |= declarationDiagnostics.HasAnyErrors() || cancellationToken.IsCancellationRequested)
+            using (compilation.StartMetric("diagnostics"))
             {
-                return;
+                // ensure flow analysis and collect diagnostics
+                var declarationDiagnostics = compilation.GetDeclarationDiagnostics(cancellationToken);
+                diagnostics.AddRange(declarationDiagnostics);
+
+                // cancel the operation if there are errors
+                if (hasDeclarationErrors |= declarationDiagnostics.HasAnyErrors() || cancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
             }
 
             //
             var compiler = new SourceCompiler(compilation, moduleBuilder, emittingPdb, diagnostics, cancellationToken);
 
-            CompilerLogSource.Log.StartPhase(CompilationPhase.Emit.ToString());
+            using (compilation.StartMetric("emit"))
+            {
+                // Emit method bodies
+                //   a. declared routines
+                //   b. synthesized symbols
+                compiler.EmitMethodBodies();
+                compiler.EmitSynthesized();
+                compiler.CompileReflectionEnumerators();
 
-            // Emit method bodies
-            //   a. declared routines
-            //   b. synthesized symbols
-            compiler.EmitMethodBodies();
-            compiler.EmitSynthesized();
-            compiler.CompileReflectionEnumerators();
+                // Entry Point (.exe)
+                compiler.CompileEntryPoint();
 
-            // Entry Point (.exe)
-            compiler.CompileEntryPoint();
-
-            CompilerLogSource.Log.EndPhase();
+            }
         }
     }
 }

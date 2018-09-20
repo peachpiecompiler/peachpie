@@ -116,7 +116,10 @@
       <TempOutputDir>%(IntermediateAssembly.RelativeDir)</TempOutputDir>
       <EmitEntryPoint>false</EmitEntryPoint>
       <EmitEntryPoint Condition=" '$(OutputType.ToLower())' == 'exe' ">true</EmitEntryPoint>
-      <DocumentationFile Condition=" '$(DocumentationFile)'=='' and '$(GenerateDocumentation)'=='true' ">%(IntermediateAssembly.Filename).xml</DocumentationFile>
+      
+      <GenerateDocumentationFile Condition=" '$(GenerateDocumentationFile)' == '' and '$(DocumentationFile)' != '' ">true</GenerateDocumentationFile>
+      <DocumentationFile Condition=" '$(DocumentationFile)' == '' and '$(GenerateDocumentationFile)' == 'true' ">$(IntermediateOutputPath)$(AssemblyName).xml</DocumentationFile>
+    
     </PropertyGroup>
 
     <!-- If compiling for full .NET, MSBuild is expected to run on it (e.g. in Visual Studio) so that it can obtain the runtime directory -->
@@ -137,15 +140,15 @@
       <RspLine Include="--langversion:$(LangVersion)" Condition=" '$(LangVersion)' != '' " />
       <RspLine Include="--phpdoctypes:$(PhpDocTypes)" Condition=" '$(PhpDocTypes)' != '' " />
       <RspLine Include="--shortopentag+" Condition=" '$(ShortOpenTag)' == 'true' " />
-      <RspLine Include="--xmldoc:$(DocumentationFile)" Condition=" '$(GenerateDocumentation)' == 'true'" />
+      <RspLine Include="--xmldoc:$(DocumentationFile)" Condition=" '$(GenerateDocumentationFile)' == 'true' and '$(DocumentationFile)' != '' " />
       <RspLine Include="--nowarn:$(NoWarn.Replace('\n', ';'))" Condition=" '$(NoWarn)' != '' " />
       <RspLine Include="--debug-type:$(DebugType)" />
-      
+
       <RspLine Include="--keyfile:$(AssemblyOriginatorKeyFile)" Condition=" '$(SignAssembly)' == 'true' and '$(AssemblyOriginatorKeyFile)' != ''" />
       <RspLine Include="--publicsign+" Condition=" '$(SignAssembly)' == 'true' and '$(PublicSign)' == 'true'" />
       <RspLine Include="--publicsign-" Condition=" '$(SignAssembly)' == 'true' and '$(PublicSign)' == 'false'" />
       <RspLine Include="--version:$(Version)" Condition=" '$(Version)' != '' " />
-      
+
       <RspLine Include="--emit-entry-point:$(EmitEntryPoint)" />
       <RspLine Include="--main:$(StartupObject)" Condition=" '$(StartupObject)' != '' " />
       <RspLine Include="--pdb:$(PdbFile)" Condition=" '$(PdbFile)' != '' " />
@@ -158,7 +161,7 @@
 
     <WriteLinesToFile File="$(TempOutputDir)compile-php-args.rsp" Lines="@(RspLine)" Overwrite="true" />
     <Exec Command="dotnet compile-php @$(TempOutputDir)compile-php-args.rsp" />
-    
+
     <Copy SourceFiles="$(TempOutputDir)$(DocumentationFile)" DestinationFolder="$(OutputPath)" Condition=" '$(GenerateDocumentation)'=='true' " />
   </Target>
 
@@ -181,5 +184,10 @@
   <PropertyGroup Condition="'$(PackProjectInputFile)' == ''">
     <PackProjectInputFile>$(MSBuildProjectFullPath)</PackProjectInputFile>
   </PropertyGroup>
+
+  <!-- Add a project capability so that the project properties in the IDE can show the option to generate an XML documentation file without specifying the filename -->
+  <ItemGroup>
+    <ProjectCapability Include="GenerateDocumentationFile" />
+  </ItemGroup>
 
 </Project>

@@ -95,10 +95,16 @@ namespace Pchp.Core.Dynamic
 
         public static bool HasLateStaticParameter(MethodInfo m)
         {
-            var ps = m.GetParameters();
-            for (int i = 0; i < ps.Length; i++)
+            if (m != null)
             {
-                if (IsLateStaticParameter(ps[i])) return true;
+                var ps = m.GetParameters();
+                for (int i = 0; i < ps.Length; i++)
+                {
+                    if (IsLateStaticParameter(ps[i]))
+                    {
+                        return true;
+                    }
+                }
             }
 
             return false;
@@ -614,11 +620,11 @@ namespace Pchp.Core.Dynamic
                     {
                         case TypeMethods.MagicMethods.__set:
                             // __set(name, value)
-                            return OverloadBinder.BindOverloadCall(typeof(void), target, methods, ctx, new Expression[] { Expression.Constant(field), rvalue });
+                            return OverloadBinder.BindOverloadCall(typeof(void), target, methods, ctx, new Expression[] { Expression.Constant(field), rvalue }, false);
 
                         default:
                             // __get(name), __unset(name), __isset(name)
-                            return OverloadBinder.BindOverloadCall(methods[0].ReturnType, target, methods, ctx, new Expression[] { Expression.Constant(field) });
+                            return OverloadBinder.BindOverloadCall(methods[0].ReturnType, target, methods, ctx, new Expression[] { Expression.Constant(field) }, false);
                     }
                 }
                 else
@@ -655,9 +661,9 @@ namespace Pchp.Core.Dynamic
 
             if (type.RuntimeFieldsHolder != null)   // we don't handle magic methods without the runtime fields
             {
-                var runtimeflds = Expression.Field(target, type.RuntimeFieldsHolder);       // Template: target->__runtime_fields
-                var fieldkey = Expression.Constant(new IntStringKey(field));                // Template: IntStringKey(field)
-                var resultvar = Expression.Variable(Cache.Types.PhpValue[0], "result");     // Template: PhpValue result;
+                var runtimeflds = Expression.Field(target, type.RuntimeFieldsHolder);   // Template: target->__runtime_fields
+                var fieldkey = Expression.Constant(new IntStringKey(field));            // Template: IntStringKey(field)
+                var resultvar = Expression.Variable(Cache.Types.PhpValue, "result");    // Template: PhpValue result;
 
                 // Template: runtimeflds != null && runtimeflds.TryGetValue(field, out result)
                 var trygetfield = Expression.AndAlso(Expression.ReferenceNotEqual(runtimeflds, Expression.Constant(null)), Expression.Call(runtimeflds, Cache.Operators.PhpArray_TryGetValue, fieldkey, resultvar));
@@ -861,7 +867,7 @@ namespace Pchp.Core.Dynamic
         static Expression InvokeHandler(Expression ctx, Expression target, string field, Expression getter, AccessMask access, Expression @default = null, Type resultType = null)
         {
             // default
-            resultType = resultType ?? Cache.Types.PhpValue[0];
+            resultType = resultType ?? Cache.Types.PhpValue;
             @default = @default ?? Expression.Field(null, Cache.Properties.PhpValue_Null);   // TODO: ERR field not found
             @default = ConvertExpression.Bind(@default, resultType, ctx);
 
@@ -913,7 +919,7 @@ namespace Pchp.Core.Dynamic
             }
         }
 
-        public static Expression BindToCall(Expression instance, MethodBase method, Expression ctx, OverloadBinder.ArgumentsBinder args, PhpTypeInfo lateStaticType)
+        public static Expression BindToCall(Expression instance, MethodBase method, Expression ctx, OverloadBinder.ArgumentsBinder args, bool isStaticCallSyntax, PhpTypeInfo lateStaticType)
         {
             Debug.Assert(method is MethodInfo || method is ConstructorInfo);
 
@@ -1001,13 +1007,8 @@ namespace Pchp.Core.Dynamic
             {
                 return Expression.New((ConstructorInfo)method, boundargs);
             }
-
-            if (instance != null)
-            {
-                instance = Expression.Convert(instance, method.DeclaringType);
-            }
-
-            if (instance != null && method.IsVirtual)   // NOTE: only needed for parent::foo(), static::foo() and self::foo() ?
+            
+            if (HasToBeCalledNonVirtually(instance, method, isStaticCallSyntax))
             {
                 // Ugly hack here,
                 // we NEED to call the method nonvirtually, but LambdaCompiler emits .callvirt always and there is no way how to change it (except we can emit all the stuff by ourselfs).
@@ -1015,6 +1016,7 @@ namespace Pchp.Core.Dynamic
                 // LambdaCompiler generates .call to static DynamicMethod which calls our method via .call as well,
                 // after all the inlining, there should be no overhead.
 
+                instance = Expression.Convert(instance, method.DeclaringType);
                 method = WrapInstanceMethodToStatic((MethodInfo)method);
 
                 //
@@ -1025,8 +1027,73 @@ namespace Pchp.Core.Dynamic
                 instance = null;
             }
 
+            if (instance != null && !method.DeclaringType.IsAssignableFrom(instance.Type))
+            {
+                instance = Expression.Convert(instance, method.DeclaringType);
+            }
+
+            // NOTE: instead of "HasToBeCalledNonVirtually" magic above, it would be great to just use ".call" opcode always (as of now Linq cannot do that)
+
             //
             return Expression.Call(instance, (MethodInfo)method, boundargs);
+        }
+
+        /// <summary>
+        /// Determines whether we has to use ".call" opcode explicitly.
+        /// </summary>
+        static bool HasToBeCalledNonVirtually(Expression instance, MethodBase method, bool isStaticCallSyntax)
+        {
+            if (instance == null || !method.IsVirtual)
+            {
+                // method is static or non-virtual
+                // .call is emitted by Linq implicitly:
+                return false;
+            }
+
+            if (method.IsAbstract)
+            {
+                // method is abstract,
+                // .callvirt is fine:
+                return false;
+            }
+
+            if (method.DeclaringType.IsSealed || method.IsFinal)
+            {
+                return false;
+            }
+
+            if (isStaticCallSyntax)
+            {
+                //if (instance.Type == method.DeclaringType)
+                //{
+                //    // corresponding DynamicMetaObject is restricted to {instance.Type} (which is the callsite's runtime type),
+                //    // .callvirt method within this DynamicMetaObject refer to {method} and nothing else,
+                //    // .callvirt is safe:
+                //    return false;
+                //}
+
+                //for (var t = instance.Type; t != method.DeclaringType && t != null; t = t.BaseType)
+                //{
+                //    var routine = t.GetPhpTypeInfo().RuntimeMethods[method.Name];
+                //    if (routine != null) // always true
+                //    {
+                //        var possible_overrides = routine.Methods;
+                //        for (int i = 0; i < possible_overrides.Length; i++)
+                //        {
+                //            var m = possible_overrides[i];
+                //            if (m != method && m.IsVirtual && m.DeclaringType.IsSubclassOf(method.DeclaringType))
+                //            {
+                //                return true;
+                //            }
+                //        }
+                //    }
+                //}
+                return true;
+            }
+
+            // .callvirt is safe,
+            // we did not find anything that overrides {method} within current DynamicMetaObject
+            return false;
         }
 
         /// <summary>
@@ -1076,7 +1143,7 @@ namespace Pchp.Core.Dynamic
             var ps = new ParameterExpression[] { Expression.Parameter(typeof(Context), "ctx"), Expression.Parameter(typeof(PhpValue[]), "argv") };
 
             // invoke targets
-            var invocation = OverloadBinder.BindOverloadCall(typeof(PhpValue), null, targets, ps[0], ps[1]);
+            var invocation = OverloadBinder.BindOverloadCall(typeof(PhpValue), null, targets, ps[0], ps[1], true);
             Debug.Assert(invocation.Type == typeof(PhpValue));
 
             // compile & create delegate
@@ -1093,7 +1160,7 @@ namespace Pchp.Core.Dynamic
                 Expression.Parameter(typeof(PhpValue[]), "argv") };
 
             // invoke targets
-            var invocation = OverloadBinder.BindOverloadCall(typeof(PhpValue), ps[1], methods, ps[0], ps[2], lateStaticType);
+            var invocation = OverloadBinder.BindOverloadCall(typeof(PhpValue), ps[1], methods, ps[0], ps[2], true, lateStaticType);
             Debug.Assert(invocation.Type == typeof(PhpValue));
 
             // compile & create delegate
@@ -1112,7 +1179,7 @@ namespace Pchp.Core.Dynamic
             if (ctors.Length != 0)
             {
                 // invoke targets
-                var invocation = OverloadBinder.BindOverloadCall(type, null, ctors, ps[0], ps[1]);
+                var invocation = OverloadBinder.BindOverloadCall(type, null, ctors, ps[0], ps[1], isStaticCallSyntax: false);
                 Debug.Assert(invocation.Type == type);
 
                 // compile & create delegate

@@ -187,11 +187,36 @@ namespace Pchp.Library
                     Write(obj.ToString(System.Globalization.CultureInfo.InvariantCulture));
                 }
 
+                /// <summary>
+                /// Determines if the array is integer indexed in sequnece from 0 without "holes".
+                /// </summary>
+                /// <remarks>Determines if the array can be encoded as JSON array.</remarks>
+                static bool IsSequentialArray(PhpArray/*!*/array)
+                {
+                    if (array.Count != 0)
+                    {
+                        // TODO: once we implement packed arrays, just check if the array is packed without holes and return
+
+                        int next = 0;
+                        var enumerator = array.GetFastEnumerator();
+                        while (enumerator.MoveNext())
+                        {
+                            var key = enumerator.CurrentKey;
+                            if (key.IsString || key.Integer != next++)
+                            {
+                                return false;
+                            }
+                        }
+                    }
+
+                    return true;
+                }
+
                 public override void Accept(PhpArray array)
                 {
                     if (PushObject(array))
                     {
-                        if (HasForceObject || (array.StringCount != 0 || array.MaxIntegerKey + 1 != array.IntegerCount))
+                        if (HasForceObject || !IsSequentialArray(array))
                         {
                             // array are encoded as objects or there are keyed values that has to be encoded as object
                             WriteObject(JsonArrayProperties(array));
@@ -425,19 +450,23 @@ namespace Pchp.Library
                     // [
                     Write(Tokens.ArrayOpen);
 
-                    bool bFirst = true;
-
-                    var enumerator = array.GetFastEnumerator();
-                    while (enumerator.MoveNext())
+                    //
+                    if (array.Count != 0)
                     {
-                        // ,
-                        if (bFirst) bFirst = false;
-                        else Write(Tokens.ItemsSeparatorString);
+                        bool bFirst = true;
 
-                        Debug.Assert(enumerator.CurrentKey.IsInteger);
+                        var enumerator = array.GetFastEnumerator();
+                        while (enumerator.MoveNext())
+                        {
+                            // ,
+                            if (bFirst) bFirst = false;
+                            else Write(Tokens.ItemsSeparatorString);
 
-                        // value
-                        Accept(enumerator.CurrentValue);
+                            Debug.Assert(enumerator.CurrentKey.IsInteger);
+
+                            // value
+                            Accept(enumerator.CurrentValue);
+                        }
                     }
 
                     // ]
@@ -500,8 +529,17 @@ namespace Pchp.Library
 
                 if (!parser.Parse())
                 {
-                    jsonerror.LastError = JsonSerialization.JSON_ERROR_SYNTAX;
-                    return PhpValue.Null;
+                    var errorcode = JsonSerialization.JSON_ERROR_SYNTAX;
+
+                    if ((options.Options & JsonDecodeOptions.JSON_THROW_ON_ERROR) == 0)
+                    {
+                        jsonerror.LastError = errorcode;
+                        return PhpValue.Null;
+                    }
+                    else
+                    {
+                        throw new JsonException(code: errorcode);
+                    }
                 }
 
                 //
@@ -528,7 +566,7 @@ namespace Pchp.Library
             /// </summary>
             public class DecodeOptions
             {
-                public bool BigIntAsString = false;
+                public JsonDecodeOptions Options = JsonDecodeOptions.Default;
 
                 /// <summary>
                 /// When TRUE, returned object s will be converted into associative array s. 
@@ -539,6 +577,8 @@ namespace Pchp.Library
                 /// User specified recursion depth. 
                 /// </summary>
                 public int Depth = 512;
+
+                public bool BigIntAsString => (Options & JsonDecodeOptions.JSON_BIGINT_AS_STRING) != 0;
             }
 
             readonly DecodeOptions _decodeOptions;
@@ -587,6 +627,11 @@ namespace Pchp.Library
         /// 
         /// </summary>
         public const int JSON_ERROR_UTF8 = 5;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public const int JSON_THROW_ON_ERROR = 1 << 22;
 
         /// <summary>
         /// Options given to json_encode function.
@@ -643,6 +688,8 @@ namespace Pchp.Library
             /// Encode multibyte Unicode characters literally (default is to escape as \uXXXX).
             /// </summary>
             JSON_UNESCAPED_UNICODE = 256,
+
+            JSON_THROW_ON_ERROR = JsonSerialization.JSON_THROW_ON_ERROR,
         }
 
         public const int JSON_HEX_TAG = (int)JsonEncodeOptions.JSON_HEX_TAG;
@@ -667,6 +714,8 @@ namespace Pchp.Library
             /// Big integers represent as strings rather than floats.
             /// </summary>
             JSON_BIGINT_AS_STRING = 1,
+
+            JSON_THROW_ON_ERROR = JsonSerialization.JSON_THROW_ON_ERROR,
         }
 
         public const int JSON_BIGINT_AS_STRING = (int)JsonDecodeOptions.JSON_BIGINT_AS_STRING;
@@ -677,7 +726,7 @@ namespace Pchp.Library
 
         public static PhpString json_encode(Context ctx, PhpValue value, JsonEncodeOptions options = JsonEncodeOptions.Default)
         {
-            return new PhpSerialization.JsonSerializer(encodeOptions: options).Serialize(ctx, value, default(RuntimeTypeHandle));
+            return new PhpSerialization.JsonSerializer(encodeOptions: options).Serialize(ctx, value, default);
         }
 
         /// <summary>
@@ -697,10 +746,10 @@ namespace Pchp.Library
             {
                 Assoc = assoc,
                 Depth = depth,
-                BigIntAsString = (options & JsonDecodeOptions.JSON_BIGINT_AS_STRING) != 0
+                Options = options,
             };
 
-            return new PhpSerialization.JsonSerializer(decodeOptions: decodeoptions).Deserialize(ctx, json, default(RuntimeTypeHandle));
+            return new PhpSerialization.JsonSerializer(decodeOptions: decodeoptions).Deserialize(ctx, json, default);
         }
 
         public static int json_last_error(Context ctx) => PhpSerialization.GetLastJsonError(ctx);
@@ -724,12 +773,30 @@ namespace Pchp.Library
 
         #endregion
     }
+
+    /// <summary>
+    /// Exception thrown by <see cref="json_encode"/> and <see cref="json_decode"/> in case of an error,
+    /// if <see cref="JSON_THROW_ON_ERROR"/> flag is specified.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpExtension("json")]
+    public class JsonException : Spl.Exception
+    {
+        [PhpFieldsOnlyCtor]
+        protected JsonException() { }
+
+        public JsonException(string message = "", long code = 0, Spl.Throwable previous = null)
+            : base(message, code, previous)
+        {
+        }
+    }
 }
 
 /// <summary>
 /// Objects implementing JsonSerializable can customize their JSON representation when encoded with <see cref="Pchp.Library.JsonSerialization.json_encode"/>.
 /// </summary>
 [PhpType(PhpTypeAttribute.InheritName)]
+[PhpExtension("json")]
 public interface JsonSerializable
 {
     /// <summary>

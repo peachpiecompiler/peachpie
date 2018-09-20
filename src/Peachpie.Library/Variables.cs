@@ -930,6 +930,14 @@ namespace Pchp.Library
                     return;
                 }
 
+                if (obj is Delegate @delegate)
+                {
+                    // Delegate ({METHOD})
+                    _output.Append($"Delegate ({(@delegate.Method != null ? @delegate.Method.Name : PhpVariable.TypeNameNull)})");
+
+                    return;
+                }
+
                 // typename Object
                 _output.Append(obj.GetPhpTypeInfo().Name);
                 _output.Append(" ");
@@ -1205,7 +1213,15 @@ namespace Pchp.Library
                 {
                     // resource(ID) of type (TYPE)
                     _output.Append($"resource({res.Id}) of type ({res.TypeName})");
-                    
+
+                    return;
+                }
+
+                if (obj is Delegate @delegate)
+                {
+                    // delegate(TYPE) with method ({METHOD})
+                    _output.Append($"delegate({obj.GetPhpTypeInfo().Name}) with method ({(@delegate.Method != null ? @delegate.Method.Name : PhpVariable.TypeNameNull)})");
+
                     return;
                 }
 
@@ -1216,7 +1232,7 @@ namespace Pchp.Library
                     // Template: object(NAME)#ID (COUNT) {
                     _output.Append($"object({obj.GetPhpTypeInfo().Name})#{unchecked((uint)obj.GetHashCode())} ({flds.Count}) {{");
                     _indent++;
-                    
+
                     // object members
                     foreach (var fld in flds)
                     {

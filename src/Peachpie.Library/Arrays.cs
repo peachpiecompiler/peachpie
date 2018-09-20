@@ -305,7 +305,6 @@ namespace Pchp.Library
             // dereferences result since the array doesn't do so:
             var result = array.RemoveLast().Value.GetValue();
 
-            array.RefreshMaxIntegerKey();
             array.RestartIntrinsicEnumerator();
 
             return result;
@@ -405,26 +404,16 @@ namespace Pchp.Library
                 throw new ArgumentNullException();
             }
 
-            var result = new PhpArray(array.Count);
-            var e = array.GetFastEnumerator();
+            PhpArray result;
 
-            if (preserveKeys)
+            // clone the source array and revers entries order
+            result = array.DeepCopy();
+            result.Reverse();
+
+            if (!preserveKeys)
             {
-                // changes only the order of elements:
-                while (e.MoveNext())
-                {
-                    result.Prepend(e.CurrentKey, e.CurrentValue);
-                }
-            }
-            else
-            {
-                // changes the order of elements and reindexes integer keys:
-                int i = array.IntegerCount;
-                while (e.MoveNext())
-                {
-                    var key = e.CurrentKey;
-                    result.Prepend(key.IsString ? key : new IntStringKey(--i), e.CurrentValue);
-                }
+                // change the key of integer key from 0
+                result.ReindexIntegers(0);
             }
 
             // if called by PHP languge then all items in the result should be inplace deeply copied:
@@ -889,6 +878,44 @@ namespace Pchp.Library
             // the result is inplace deeply copied on return to PHP code:
             //result.InplaceCopyOnReturn = true;
             return result;
+        }
+
+        #endregion
+
+        #region array_key_first, array_key_last 
+
+        /// <summary>
+        /// Get the first key of the given array without affecting the internal array pointer.
+        /// </summary>
+        /// <returns>Returns the first key of array if the array is not empty. Otherwise <c>NULL</c>.</returns>
+        public static PhpValue array_key_first(PhpArray array)
+        {
+            var enumerator = array.GetFastEnumerator();
+            if (enumerator.MoveNext())
+            {
+                return PhpValue.Create(enumerator.CurrentKey);
+            }
+            else
+            {
+                return PhpValue.Null;
+            }
+        }
+
+        /// <summary>
+        /// Get the last key of the given array without affecting the internal array pointer.
+        /// </summary>
+        /// <returns>Returns the first key of array if the array is not empty. Otherwise <c>NULL</c>.</returns>
+        public static PhpValue array_key_last(PhpArray array)
+        {
+            var enumerator = array.GetFastEnumerator();
+            if (enumerator.MovePrevious())
+            {
+                return PhpValue.Create(enumerator.CurrentKey);
+            }
+            else
+            {
+                return PhpValue.Null;
+            }
         }
 
         #endregion

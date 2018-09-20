@@ -187,11 +187,10 @@ namespace Pchp.CodeAnalysis.Semantics.Model
         {
             foreach (AssemblySymbol ass in _compilation.ProbingAssemblies)
             {
-                var peass = ass as PEAssemblySymbol;
-                if (peass != null) // && !peass.IsPchpCorLibrary && !peass.IsExtensionLibrary)
+                if (ass is PEAssemblySymbol peass) // && !peass.IsPchpCorLibrary && !peass.IsExtensionLibrary)
                 {
                     var candidate = ass.GetTypeByMetadataName(clrName);
-                    if (candidate != null && !candidate.IsErrorType())
+                    if (candidate.IsValidType())
                     {
                         return candidate;
                     }
@@ -203,6 +202,11 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         public IPhpScriptTypeSymbol ResolveFile(string path)
         {
+            if (string.IsNullOrEmpty(path))
+            {
+                return null;
+            }
+
             // normalize path
             path = FileUtilities.NormalizeRelativePath(path, null, _compilation.Options.BaseDirectory);
 

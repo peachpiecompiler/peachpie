@@ -586,6 +586,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 EnsureObject = ct.PhpValue.Method("EnsureObject");
                 EnsureArray = ct.PhpValue.Method("EnsureArray");
                 EnsureAlias = ct.PhpValue.Method("EnsureAlias");
+                GetArrayAccess = ct.PhpValue.Method("GetArrayAccess");
 
                 Eq_PhpValue_PhpValue = ct.PhpValue.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpValue, ct.PhpValue);
                 Eq_PhpValue_String = ct.PhpValue.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpValue, ct.String);
@@ -624,7 +625,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                ToLong, ToDouble, ToBoolean, ToString_Context, ToClass, EnsureObject, EnsureArray, EnsureAlias, ToArray,
+                ToLong, ToDouble, ToBoolean, ToString_Context, ToClass, EnsureObject, EnsureArray, EnsureAlias, GetArrayAccess, ToArray,
                 AsObject,
                 DeepCopy, GetValue, PassValue,
                 Eq_PhpValue_PhpValue, Eq_PhpValue_String,
@@ -983,6 +984,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 ScriptDiedException = ct.ScriptDiedException.Ctor();
                 ScriptDiedException_Long = ct.ScriptDiedException.Ctor(ct.Long);
                 ScriptDiedException_PhpValue = ct.ScriptDiedException.Ctor(ct.PhpValue);
+
+                IndirectLocal_PhpArray_IntStringKey = ct.IndirectLocal.Ctor(ct.PhpArray, ct.IntStringKey);
             }
 
             public readonly CoreConstructor
@@ -992,7 +995,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 Blob,
                 IntStringKey_int, IntStringKey_string,
                 ScriptAttribute_string, PhpTraitAttribute, PhpTypeAttribute_string_string, PhpFieldsOnlyCtorAttribute, NotNullAttribute,
-                ScriptDiedException, ScriptDiedException_Long, ScriptDiedException_PhpValue;
+                ScriptDiedException, ScriptDiedException_Long, ScriptDiedException_PhpValue,
+                IndirectLocal_PhpArray_IntStringKey;
         }
 
         public struct ContextHolder

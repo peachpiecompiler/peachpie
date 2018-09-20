@@ -83,6 +83,9 @@ namespace Pchp.Core.Reflection
             return !tinfo.IsValueType && t != typeof(PhpArray) && t != typeof(string) && t != typeof(IPhpCallable);
         }
 
+        /// <summary>
+        /// Types that we do not expose in reflection.
+        /// </summary>
         readonly static HashSet<Type> s_hiddenTypes = new HashSet<Type>()
         {
             typeof(object),
@@ -90,6 +93,7 @@ namespace Pchp.Core.Reflection
             typeof(PhpResource),
             typeof(System.Exception),
             typeof(System.Dynamic.IDynamicMetaObjectProvider),
+            typeof(IPhpArray),
             typeof(IPhpConvertible),
             typeof(IPhpComparable),
         };

@@ -278,7 +278,27 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsSealed => _syntax.Modifiers.IsSealed() && IsVirtual;
 
-        public override bool IsVirtual => !IsStatic;    // every method in PHP is virtual except static methods
+        public override bool IsVirtual
+        {
+            get
+            {
+                if (IsStatic)
+                {
+                    return false;
+                }
+
+                if (!IsAbstract)
+                {
+                    if (_syntax.Name.Name.IsConstructName)
+                    {
+                        return this.OverriddenMethod != null && this.SignaturesMatch((MethodSymbol)this.OverriddenMethod);
+                    }
+                }
+
+                // in general, every method in PHP is virtual
+                return true;
+            }
+        }
 
         public override ImmutableArray<Location> Locations
         {

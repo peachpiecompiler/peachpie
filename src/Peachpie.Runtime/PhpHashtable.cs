@@ -32,35 +32,9 @@ namespace Pchp.Core
         internal OrderedDictionary/*!*/ table;
 
         /// <summary>
-        /// Max integer key in the array.
-        /// Returns <c>-1</c> if there are no integer keys.
-        /// </summary>
-        public int MaxIntegerKey
-        {
-            get
-            {
-                if (nextNewIndex < 0)
-                    RefreshMaxIntegerKeyInternal();
-
-                return nextNewIndex - 1;
-            }
-        }
-        /// <summary>
         /// Index for next new element when key is not specified.
         /// </summary>
         private int nextNewIndex = 0;
-
-        /// <summary>
-		/// Retrieves the number of items with integer keys in this instance.
-		/// </summary>
-		public int IntegerCount { get { return intCount; } }
-        private int intCount = 0;
-
-        /// <summary>
-        /// Retrieves the number of items with string keys in this instance.
-        /// </summary>
-        public int StringCount { get { return stringCount; } }
-        private int stringCount = 0;
 
         #region active enumerators
 
@@ -184,9 +158,9 @@ namespace Pchp.Core
         public PhpHashtable(Array values, int index, int length)
             : this(length)
         {
-            int end = index + length;
-            int max = values.Length;
-            if (end > max) end = max;
+            if (index < 0) throw new ArgumentOutOfRangeException();
+
+            int end = Math.Min(index + length, values.Length);
 
             for (int i = index; i < end; i++)
             {
@@ -224,14 +198,10 @@ namespace Pchp.Core
         /// Creates PhpHashtable that shares internal <see cref="table"/> with another array.
         /// </summary>
         /// <param name="array">The table to be shared.</param>
-        /// <param name="preserveMaxInt">True to copy the <see cref="PhpHashtable.MaxIntegerKey"/> from <paramref name="array"/>.
-        /// Otherwise the value will be recomputed when needed.</param>
-        public PhpHashtable(PhpHashtable/*!*/array, bool preserveMaxInt)
+        public PhpHashtable(PhpHashtable/*!*/array)
         {
             this.table = array.table.Share();
-            this.nextNewIndex = preserveMaxInt ? (array.nextNewIndex) : (-1); // TODO: (preserveMaxInt || array.table.DOES_NOT_HAVE_ANY_DELETIONS)
-            this.intCount = array.IntegerCount;
-            this.stringCount = array.StringCount;
+            this.nextNewIndex = array.nextNewIndex;
         }
 
         #endregion
@@ -991,7 +961,6 @@ namespace Pchp.Core
             {
                 this.EnsureWritable();
 
-                if (nextNewIndex < 0) RefreshMaxIntegerKeyInternal();
                 AddToEnd(value);
                 return this.nextNewIndex;
             }
@@ -1040,13 +1009,7 @@ namespace Pchp.Core
 
         #region IDictionary<IntStringKey,PhpValue> Members
 
-        public void Add(IntStringKey key, PhpValue value)
-        {
-            this.EnsureWritable();
-
-            table.Add(key, value);
-            KeyAdded(ref key);
-        }
+        public void Add(IntStringKey key, PhpValue value) => this[key] = value;
 
         public bool ContainsKey(IntStringKey key)
         {
@@ -1085,20 +1048,9 @@ namespace Pchp.Core
 
         #region ICollection<KeyValuePair<IntStringKey,object>> Members
 
-        public void Add(KeyValuePair<IntStringKey, PhpValue> item)
-        {
-            ThrowIfNotPhpArrayHelper();
+        public void Add(KeyValuePair<IntStringKey, PhpValue> item) => this[item.Key] = item.Value;
 
-            this.EnsureWritable();
-
-            table.Add(item.Key, item.Value);
-            KeyAdded(item.Key);
-        }
-
-        public bool Contains(KeyValuePair<IntStringKey, PhpValue> item)
-        {
-            return table.Contains(item);
-        }
+        public bool Contains(KeyValuePair<IntStringKey, PhpValue> item) => table.Contains(item);
 
         public void CopyTo(KeyValuePair<IntStringKey, PhpValue>[] array, int arrayIndex)
         {
@@ -1121,34 +1073,20 @@ namespace Pchp.Core
         /// <summary>
         /// Simple wrapper to allow call KeyAdded without ref.
         /// </summary>
-        /// <param name="key"></param>
         private void KeyAdded(IntStringKey key)
         {
             KeyAdded(ref key);
         }
 
-        /// <summary>
-        /// Called when new item is added into the collection. It just updates the <see cref="stringCount"/> or <see cref=" intCount"/> and <see cref="nextNewIndex"/>.
-        /// </summary>
-        /// <param name="key"></param>
-		internal void KeyAdded(ref IntStringKey key)
+        protected void KeyAdded(ref IntStringKey key)
         {
             if (key.IsInteger)
                 KeyAdded(key.Integer);
-            else
-                KeyAdded(key.String);
         }
 
-        internal void KeyAdded(int key)
+        private void KeyAdded(int key)
         {
-            if (nextNewIndex < 0) RefreshMaxIntegerKeyInternal();
             if (key >= nextNewIndex) nextNewIndex = key + 1;
-            ++intCount;
-        }
-
-        private void KeyAdded(string key)
-        {
-            ++stringCount;
         }
 
         #region Contains
@@ -1192,7 +1130,6 @@ namespace Pchp.Core
 
             var key = new IntStringKey(nextNewIndex++);
             table._add_last(ref key, value);
-            ++intCount;
         }
 
         /// <summary>
@@ -1200,14 +1137,7 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="key">The key.</param>
         /// <param name="value">The value.</param>
-        /// <exception cref="ArgumentException">An element with the same key already exists in this instance.</exception>
-        public void Add(int key, PhpValue value)
-        {
-            this.EnsureWritable();
-
-            table.Add(new IntStringKey(key), value);
-            KeyAdded(key);
-        }
+        public void Add(int key, PhpValue value) => this[key] = value;
 
         /// <summary>
         /// Adds an entry into the table at its logical end. 
@@ -1215,14 +1145,7 @@ namespace Pchp.Core
         /// <param name="key">The key.</param>
         /// <param name="value">The value.</param>
         /// <exception cref="ArgumentNullException"><paramref name="key"/> is a null reference.</exception>
-        /// <exception cref="ArgumentException">An element with the same key already exists in this instance.</exception>
-        public void Add(string key, PhpValue value)
-        {
-            this.EnsureWritable();
-
-            table.Add(new IntStringKey(key), value);
-            KeyAdded(key);
-        }
+        public void Add(string key, PhpValue value) => this[key] = value;
 
         /// <summary>
         /// Adds range of values at the end of the hashtable.
@@ -1347,8 +1270,18 @@ namespace Pchp.Core
         /// <exception cref="InvalidOperationException">The table is empty.</exception>
         public KeyValuePair<IntStringKey, PhpValue> RemoveLast()
         {
+            // array_pop
+
             this.EnsureWritable();
-            return table._remove_last(this.activeEnumerators);
+            var p = table._remove_last(this.activeEnumerators);
+
+            // array_pop decreases next free index if appropriate:
+            if (p.Key.IsInteger && p.Key.Integer >= nextNewIndex - 1)
+            {
+                --nextNewIndex;
+            }
+
+            return p;
         }
 
         /// <summary>
@@ -1369,48 +1302,52 @@ namespace Pchp.Core
         /// <summary>
         /// Gets or sets a value associated with a key.
         /// </summary>
-        /// <param name="key">The <see cref="String"/> key.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="key"/> is a null reference.</exception>
+        /// <param name="skey">The <see cref="string"/> key.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="skey"/> is a <c>null</c> reference.</exception>
         /// <remarks>If the key doesn't exist in table the new entry is added.</remarks>
-        public PhpValue this[string key]
+        public PhpValue this[string skey]
         {
-            get
-            {
-                return table[new IntStringKey(key)];
-            }
+            get => table[new IntStringKey(skey)];
             set
             {
                 this.EnsureWritable();
 
-                table[new IntStringKey(key)] = value;
-                KeyAdded(key);
+                var key = new IntStringKey(skey);
+                if (table._add_or_update(ref key, value))
+                {
+                    KeyAdded(skey);
+                }
             }
         }
 
         /// <summary>
         /// Gets or sets a value associated with a key.
         /// </summary>
-        /// <param name="key">The <see cref="Int32"/> key.</param>
+        /// <param name="ikey">The <see cref="int"/> key.</param>
         /// <remarks>If the key doesn't exist in table the new entry is added.</remarks>
-        public PhpValue this[int key]
+        public PhpValue this[int ikey]
         {
             get
             {
-                return table[new IntStringKey(key)];
+                table.TryGetValue(ikey, out var value);
+                return value;
             }
             set
             {
                 this.EnsureWritable();
 
-                table[new IntStringKey(key)] = value;
-                KeyAdded(key);
+                var key = new IntStringKey(ikey);
+                if (table._add_or_update(ref key, value))
+                {
+                    KeyAdded(ikey);
+                }
             }
         }
 
         /// <summary>
         /// Gets or sets a value associated with a key.
         /// </summary>
-        /// <param name="key">The <see cref="Int32"/> key.</param>
+        /// <param name="key">The key.</param>
         /// <remarks>If the key doesn't exist in table the new entry is added.</remarks>
         public PhpValue this[IntStringKey key]
         {
@@ -1422,8 +1359,10 @@ namespace Pchp.Core
             {
                 this.EnsureWritable();
 
-                table._add_or_update(ref key, value);
-                KeyAdded(ref key);
+                if (table._add_or_update(ref key, value))
+                {
+                    KeyAdded(ref key);
+                }
             }
         }
 
@@ -1449,7 +1388,7 @@ namespace Pchp.Core
         /// <returns>A copy of the hashtable.</returns>
         public virtual object Clone()
         {
-            var clone = new PhpHashtable(this, true);
+            var clone = new PhpHashtable(this);
             clone.EnsureWritable();
             return clone;
         }
@@ -1689,23 +1628,7 @@ namespace Pchp.Core
 
         #endregion
 
-        #region RefreshMaxIntegerKey, ReindexAll, ReindexIntegers, ReindexAndReplace
-
-        /// <summary>
-        /// Ensure the internal maximal key value will be updated.
-        /// </summary>
-        public void RefreshMaxIntegerKey()
-        {
-            this.nextNewIndex = -1;
-        }
-
-        /// <summary>
-        /// Recalculates <see cref="nextNewIndex"/> value.
-        /// </summary>
-        private void RefreshMaxIntegerKeyInternal()
-        {
-            this.nextNewIndex = (this.intCount == 0) ? 0 : this.table._find_max_int_key() + 1;
-        }
+        #region ReindexAll, ReindexIntegers, ReindexAndReplace
 
         /// <summary>
 		/// Sets all keys to increasing integers according to their respective order in the list.
@@ -1742,20 +1665,23 @@ namespace Pchp.Core
             // updates the list:
             int i = startIndex;
 
-            using (var enumerator = this.table.GetFastEnumerator())
-                while (enumerator.MoveNext())
+            var enumerator = this.table.GetFastEnumerator();
+            while (enumerator.MoveNext())
+            {
+                if (enumerator.CurrentKey.IsInteger)
                 {
-                    if (enumerator.CurrentKey.IsInteger)
-                    {
-                        enumerator.ModifyCurrentEntryKey(new IntStringKey(i++));
-                    }
+                    enumerator.ModifyCurrentEntryKey(new IntStringKey(i++));
                 }
+            }
 
             //
             this.nextNewIndex = i;
 
             //
-            this.table._rehash();
+            if (i > startIndex)
+            {
+                this.table._rehash();
+            }
         }
 
         /// <summary>

@@ -18,16 +18,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Library", "Library", "{30D6
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Runtime", "src\Peachpie.Runtime\Peachpie.Runtime.csproj", "{262137A5-BB53-4B82-B7B8-E44A9898AE33}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.NETCore.Web", "src\Peachpie.NETCore.Web\Peachpie.NETCore.Web.csproj", "{039A63A4-9A86-477A-B1C6-1C7172B90F81}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.App", "src\Peachpie.App\Peachpie.App.csproj", "{20059EE9-94A7-4DD6-9715-1865F4349EB4}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Library", "src\Peachpie.Library\Peachpie.Library.csproj", "{6B01EDAF-56BD-4302-98FD-EDD81FA2617E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Compiler.Tools", "src\Peachpie.Compiler.Tools\Peachpie.Compiler.Tools.csproj", "{F679A98B-01EE-4A7F-8D56-F0DED48450AF}"
-	ProjectSection(ProjectDependencies) = postProject
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81} = {039A63A4-9A86-477A-B1C6-1C7172B90F81}
-	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.CodeAnalysis", "src\Peachpie.CodeAnalysis\Peachpie.CodeAnalysis.csproj", "{2B2B4180-5093-4A29-BE59-4D672648988D}"
 EndProject
@@ -115,26 +110,6 @@ Global
 		{262137A5-BB53-4B82-B7B8-E44A9898AE33}.Release|x64.Build.0 = Release|Any CPU
 		{262137A5-BB53-4B82-B7B8-E44A9898AE33}.Release|x86.ActiveCfg = Release|Any CPU
 		{262137A5-BB53-4B82-B7B8-E44A9898AE33}.Release|x86.Build.0 = Release|Any CPU
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Debug|ARM.Build.0 = Debug|Any CPU
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Debug|x64.Build.0 = Debug|Any CPU
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Debug|x86.Build.0 = Debug|Any CPU
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Release|Any CPU.Build.0 = Release|Any CPU
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Release|ARM.ActiveCfg = Release|Any CPU
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Release|ARM.Build.0 = Release|Any CPU
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Release|x64.ActiveCfg = Release|Any CPU
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Release|x64.Build.0 = Release|Any CPU
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Release|x86.ActiveCfg = Release|Any CPU
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81}.Release|x86.Build.0 = Release|Any CPU
 		{20059EE9-94A7-4DD6-9715-1865F4349EB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{20059EE9-94A7-4DD6-9715-1865F4349EB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{20059EE9-94A7-4DD6-9715-1865F4349EB4}.Debug|ARM.ActiveCfg = Debug|Any CPU
@@ -659,7 +634,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{039A63A4-9A86-477A-B1C6-1C7172B90F81} = {82A72490-8B53-4A22-BB14-B0C4D6C83D67}
 		{6B01EDAF-56BD-4302-98FD-EDD81FA2617E} = {30D6D91F-A671-4E73-A571-5614500FDE0B}
 		{F679A98B-01EE-4A7F-8D56-F0DED48450AF} = {0E870B29-09DB-43B4-A1DE-B0754EBED941}
 		{2B2B4180-5093-4A29-BE59-4D672648988D} = {0E870B29-09DB-43B4-A1DE-B0754EBED941}

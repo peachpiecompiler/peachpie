@@ -258,7 +258,7 @@ namespace Pchp.Library
             throw new NotImplementedException();
         }
 
-        public static PhpValue preg_replace_callback_array(Context ctx, PhpArray patterns_and_callbacks , PhpValue subject, long limit = -1)
+        public static PhpValue preg_replace_callback_array(Context ctx, PhpArray patterns_and_callbacks, PhpValue subject, long limit = -1)
         {
             long count;
             return preg_replace_callback_array(ctx, patterns_and_callbacks, subject, limit, out count);
@@ -330,15 +330,19 @@ namespace Pchp.Library
             }
             else
             {
-                var arr = new PhpArray(subject_array, false);
-                var enumerator = arr.GetFastEnumerator();
+                var arr = new PhpArray(subject_array.Count);
+
+                var enumerator = subject_array.GetFastEnumerator();
                 while (enumerator.MoveNext())
                 {
                     var newvalue = evaluator == null
                         ? regex.Replace(enumerator.CurrentValue.ToStringOrThrow(ctx), replacement, limit, ref count)
                         : regex.Replace(enumerator.CurrentValue.ToStringOrThrow(ctx), evaluator, limit, ref count);
 
-                    enumerator.CurrentValue = PhpValue.Create(newvalue);
+                    // TODO: trick on how to quickly update values od enumerated array without hashing:
+                    // enumerator.CurrentValue = PhpValue.Create(newvalue);
+
+                    arr[enumerator.CurrentKey] = newvalue;
                 }
 
                 return PhpValue.Create(arr);

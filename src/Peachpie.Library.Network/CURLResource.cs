@@ -16,6 +16,22 @@ namespace Peachpie.Library.Network
     {
         #region Properties
 
+        /// <summary>
+        /// Various options whichs value is x^2 can be stored here as a flag.
+        /// </summary>
+        int _flags;
+
+        /// <summary><c>CURLINFO_HEADER_OUT</c> option.</summary>
+        public bool StoreRequestHeaders
+        {
+            get => (_flags & CURLConstants.CURLINFO_HEADER_OUT) != 0;
+            set
+            {
+                if (value) _flags |= CURLConstants.CURLINFO_HEADER_OUT;
+                else _flags &= ~CURLConstants.CURLINFO_HEADER_OUT;
+            }
+        }
+
         public string Url { get; set; }
 
         public string DefaultSheme { get; set; } = "http";
@@ -109,6 +125,12 @@ namespace Peachpie.Library.Network
         #endregion
 
         internal DateTime StartTime { get; set; }
+
+        /// <summary>
+        /// Optional.
+        /// Request headers sent including the leading line (GET / HTTP) and trailing newline (\n\n).
+        /// </summary>
+        internal string RequestHeaders { get; set; }
 
         /// <summary>
         /// Ongoing request handled by the framework. Must be set to null after being processed.
@@ -247,6 +269,8 @@ namespace Peachpie.Library.Network
 
         public WebHeaderCollection Headers { get; }
 
+        public string RequestHeaders { get; }
+
         public CookieCollection Cookies { get; }
 
         public TimeSpan TotalTime { get; set; }
@@ -260,7 +284,7 @@ namespace Peachpie.Library.Network
 
         public static CURLResponse CreateError(CurlErrors errcode, Exception ex = null) => new CURLResponse(PhpValue.False) { ErrorCode = errcode, ErrorMessage = ex?.Message };
 
-        public CURLResponse(PhpValue execvalue, HttpWebResponse response = null)
+        public CURLResponse(PhpValue execvalue, HttpWebResponse response = null, CURLResource ch = null)
         {
             this.ExecValue = execvalue;
 
@@ -270,6 +294,11 @@ namespace Peachpie.Library.Network
                 this.StatusCode = response.StatusCode;
                 this.Headers = response.Headers;
                 this.Cookies = response.Cookies;
+            }
+
+            if (ch != null)
+            {
+                this.RequestHeaders = ch.RequestHeaders;
             }
         }
     }

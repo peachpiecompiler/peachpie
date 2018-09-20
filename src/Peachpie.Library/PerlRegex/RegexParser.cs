@@ -427,6 +427,12 @@ namespace Pchp.Library.PerlRegex
                             {
                                 PopKeepOptions();
                             }
+                            else if (grouper.Type() == RegexNode.Ref)
+                            {
+                                PopKeepOptions();
+                                AddUnitNode(grouper);
+                                break;
+                            }
                             else
                             {
                                 PushGroup();
@@ -876,6 +882,39 @@ namespace Pchp.Library.PerlRegex
             {
                 MoveRight();    // skip 'P' in (?P<name>, continue as it would be (?<name>
             }
+            else if (CharsRight() >= 3 /*P=.*/ && RightChar() == 'P' && RightChar(1) == '=') // P=name) // backref
+            {
+                MoveRight(2);
+
+                string capname = ScanCapname();
+
+                if (CharsRight() > 0 && MoveRightGetChar() == ')')
+                {
+                    if (IsCaptureName(capname, out var slot))
+                        return new RegexNode(RegexNode.Ref, _options, slot);
+                    else
+                        throw MakeException(SR.Format(SR.UndefinedNameRef, capname));
+                }
+                else
+                {
+                    throw MakeException(SR.MalformedNameRef);
+                }
+            }
+            else if (CharsRight() >= 1 && char.IsNumber(RightChar()))
+            {
+                var pindex = ScanDecimal();
+
+                if (!IsCaptureSlot(pindex))
+                    pindex = -1;
+
+                if (CharsRight() == 0 || MoveRightGetChar() != ')')
+                {
+                    goto BreakRecognize;
+                }
+
+                //return new RegexNode(RegexNode., _options, pindex);
+                throw new NotSupportedException($"recurses the {pindex} subpattern");
+            }
 
             for (; ; )
             {
@@ -955,9 +994,7 @@ namespace Pchp.Library.PerlRegex
                                 else if (RegexCharClass.IsWordChar(ch))
                                 {
                                     string capname = ScanCapname();
-
-                                    if (IsCaptureName(capname))
-                                        capnum = CaptureSlotFromName(capname);
+                                    IsCaptureName(capname, out capnum);
 
                                     // check if we have bogus character after the name
                                     if (CharsRight() > 0 && !(RightChar() == close || RightChar() == '-'))
@@ -975,7 +1012,7 @@ namespace Pchp.Library.PerlRegex
 
                                 // grab part after - if any
 
-                                if ((capnum != -1 || proceed == true) && CharsRight() > 0 && RightChar() == '-')
+                                if ((capnum >= 0 || proceed == true) && CharsRight() > 0 && RightChar() == '-')
                                 {
                                     MoveRight();
                                     ch = RightChar();
@@ -995,9 +1032,7 @@ namespace Pchp.Library.PerlRegex
                                     {
                                         string uncapname = ScanCapname();
 
-                                        if (IsCaptureName(uncapname))
-                                            uncapnum = CaptureSlotFromName(uncapname);
-                                        else
+                                        if (!IsCaptureName(uncapname, out uncapnum))
                                             throw MakeException(SR.Format(SR.UndefinedNameRef, uncapname));
 
                                         // check if we have bogus character after the name
@@ -1048,8 +1083,8 @@ namespace Pchp.Library.PerlRegex
                             {
                                 string capname = ScanCapname();
 
-                                if (IsCaptureName(capname) && CharsRight() > 0 && MoveRightGetChar() == ')')
-                                    return new RegexNode(RegexNode.Testref, _options, CaptureSlotFromName(capname));
+                                if (IsCaptureName(capname, out var slot) && CharsRight() > 0 && MoveRightGetChar() == ')')
+                                    return new RegexNode(RegexNode.Testref, _options, slot);
                             }
                         }
                         // not a backref
@@ -1330,8 +1365,8 @@ namespace Pchp.Library.PerlRegex
 
                 if (CharsRight() > 0 && MoveRightGetChar() == close)
                 {
-                    if (IsCaptureName(capname))
-                        return new RegexNode(RegexNode.Ref, _options, CaptureSlotFromName(capname));
+                    if (IsCaptureName(capname, out var slot))
+                        return new RegexNode(RegexNode.Ref, _options, slot);
                     else
                         throw MakeException(SR.Format(SR.UndefinedNameRef, capname));
                 }
@@ -1447,8 +1482,8 @@ namespace Pchp.Library.PerlRegex
 
                 if (CharsRight() > 0 && MoveRightGetChar() == '}')
                 {
-                    if (IsCaptureName(capname))
-                        return new RegexNode(RegexNode.Ref, _options, CaptureSlotFromName(capname));
+                    if (IsCaptureName(capname, out var slot))
+                        return new RegexNode(RegexNode.Ref, _options, slot);
                 }
             }
             else if (!angled)
@@ -2181,14 +2216,6 @@ namespace Pchp.Library.PerlRegex
         }
 
         /*
-         * Looks up the slot number for a given name
-         */
-        internal int CaptureSlotFromName(string capname)
-        {
-            return (int)_capnames[capname];
-        }
-
-        /*
          * True if the capture slot was noted
          */
         internal bool IsCaptureSlot(int i)
@@ -2202,12 +2229,17 @@ namespace Pchp.Library.PerlRegex
         /*
          * Looks up the slot number for a given name
          */
-        internal bool IsCaptureName(string capname)
+        internal bool IsCaptureName(string capname, out int slot)
         {
-            if (_capnames == null)
+            if (_capnames != null && _capnames.TryGetValue(capname, out slot))
+            {
+                return true;
+            }
+            else
+            {
+                slot = -1;
                 return false;
-
-            return _capnames.ContainsKey(capname);
+            }
         }
 
         /*

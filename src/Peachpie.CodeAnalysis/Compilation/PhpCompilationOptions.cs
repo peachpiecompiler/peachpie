@@ -78,6 +78,11 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public string VersionString { get; private set; }
 
+        /// <summary>
+        /// List of observer instances.
+        /// </summary>
+        public ImmutableArray<IObserver<object>> Observers { get; internal set; }
+
         ///// <summary>
         ///// Flags applied to the top-level binder created for each syntax tree in the compilation 
         ///// as well as for the binder of global imports.
@@ -226,6 +231,7 @@ namespace Pchp.CodeAnalysis
             parseOptions: other.ParseOptions,
             referencesSupersedeLowerVersions: other.ReferencesSupersedeLowerVersions)
         {
+            Observers = other.Observers;
         }
 
         public override string Language => Constants.PhpLanguageName;
@@ -697,7 +703,7 @@ namespace Pchp.CodeAnalysis
                 reportAction = ReportDiagnostic.Default;
             }
 
-            return  diagnostic.WithReportDiagnostic(reportAction);
+            return diagnostic.WithReportDiagnostic(reportAction);
         }
     }
 }

@@ -16,6 +16,11 @@ namespace Pchp.Core.Dynamic
     /// </summary>
     internal class CallSiteContext
     {
+        public CallSiteContext(bool isStaticSyntax)
+        {
+            IsStaticSyntax = isStaticSyntax;
+        }
+
         public CallSiteContext ProcessArgs(DynamicMetaObject target, DynamicMetaObject[] args, bool hasTargetInstance)
         {
             if (hasTargetInstance)
@@ -104,6 +109,8 @@ namespace Pchp.Core.Dynamic
         {
             this.Restrictions = this.Restrictions.Merge(restriction);
         }
+
+        public bool IsStaticSyntax { get; }
 
         /// <summary>
         /// Resolved actual arguments.

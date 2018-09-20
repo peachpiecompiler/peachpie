@@ -15,6 +15,7 @@ using Cci = Microsoft.Cci;
 using Microsoft.CodeAnalysis.Emit.NoPia;
 using Pchp.CodeAnalysis.Symbols;
 using Pchp.CodeAnalysis.Emitter;
+using Pchp.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Emit
 {
@@ -795,6 +796,7 @@ namespace Pchp.CodeAnalysis.Emit
         internal override void CompilationFinished()
         {
             this.CompilationState.Freeze();
+            this.Compilation.TrackOnCompleted();
         }
 
         internal override Cci.ITypeReference EncTranslateType(ITypeSymbol type, DiagnosticBag diagnostics)

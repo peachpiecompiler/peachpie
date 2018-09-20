@@ -23,7 +23,7 @@ namespace Peachpie.NETCore.Compiler.Tools
             string libs = Environment.GetEnvironmentVariable("LIB") + @";C:\Windows\Microsoft.NET\assembly\GAC_MSIL";
 
             // compile
-            return PhpCompilerDriver.Run(PhpCommandLineParser.Default, null, new[] { "@" + rspfile }, null, System.IO.Directory.GetCurrentDirectory(), sdkdir, libs, new SimpleAnalyzerAssemblyLoader(), Console.Out);
+            return PhpCompilerDriver.Run(PhpCommandLineParser.Default, null, new[] { "--logger:Peachpie.Compiler.Diagnostics.Observer, Peachpie.Compiler.Diagnostics", "@" + rspfile }, null, System.IO.Directory.GetCurrentDirectory(), sdkdir, libs, new SimpleAnalyzerAssemblyLoader(), Console.Out);
         }
 
         #region ProcessArguments

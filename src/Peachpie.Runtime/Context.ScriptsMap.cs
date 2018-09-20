@@ -40,6 +40,7 @@ namespace Pchp.Core
         /// Script descriptor.
         /// </summary>
         [DebuggerDisplay("{Index}: {Path,nq}")]
+        [DebuggerNonUserCode]
         public struct ScriptInfo : IScript
         {
             /// <summary>
@@ -88,6 +89,7 @@ namespace Pchp.Core
             /// <summary>
             /// Runs the script.
             /// </summary>
+            [DebuggerNonUserCode, DebuggerStepThrough]
             public PhpValue Evaluate(Context ctx, PhpArray locals, object @this, RuntimeTypeHandle self = default(RuntimeTypeHandle))
             {
                 if (!IsValid) throw new InvalidOperationException();

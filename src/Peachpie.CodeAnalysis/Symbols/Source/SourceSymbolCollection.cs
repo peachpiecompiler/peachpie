@@ -235,6 +235,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public IEnumerable<SourceFileSymbol> GetFiles() => _files.Values;
 
+        public int FilesCount => _files.Count;
+
         /// <summary>
         /// Gets function symbol, may return <see cref="ErrorMethodSymbol"/> in case of ambiguity or a missing function.
         /// </summary>

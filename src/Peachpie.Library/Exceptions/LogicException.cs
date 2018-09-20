@@ -6,6 +6,22 @@ using Pchp.Core;
 namespace Pchp.Library.Spl
 {
     /// <summary>
+    /// Exception that represents error in the program logic.
+    /// This kind of exception should lead directly to a fix in your code.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName)]
+    public class LogicException : Spl.Exception
+    {
+        [PhpFieldsOnlyCtor]
+        protected LogicException() { }
+
+        public LogicException(string message = "", long code = 0, Throwable previous = null)
+            : base(message, code, previous)
+        {
+        }
+    }
+
+    /// <summary>
     /// Exception thrown if a callback refers to an undefined function or if some arguments are missing.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]

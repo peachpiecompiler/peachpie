@@ -25,7 +25,7 @@ namespace Pchp.Library.Spl
         }
 
         public Exception(string message = "", long code = 0, Throwable previous = null)
-            :base(message, innerException: previous as System.Exception)
+            : base(message, innerException: previous as System.Exception)
         {
             _stacktrace = new PhpStackTrace();
 
@@ -68,38 +68,6 @@ namespace Pchp.Library.Spl
     }
 
     /// <summary>
-    /// Exception thrown if an error which can only be found on runtime occurs.
-    /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
-    public class RuntimeException : Spl.Exception
-    {
-        [PhpFieldsOnlyCtor]
-        protected RuntimeException() { }
-
-        public RuntimeException(string message = "", long code = 0, Throwable previous = null)
-            : base(message, code, previous)
-
-        {
-        }
-    }
-
-    /// <summary>
-    /// Exception that represents error in the program logic.
-    /// This kind of exception should lead directly to a fix in your code.
-    /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
-    public class LogicException : Spl.Exception
-    {
-        [PhpFieldsOnlyCtor]
-        protected LogicException() { }
-
-        public LogicException(string message = "", long code = 0, Throwable previous = null)
-            : base(message, code, previous)
-        {
-        }
-    }
-
-    /// <summary>
     /// An Error Exception.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
@@ -128,5 +96,20 @@ namespace Pchp.Library.Spl
         }
 
         public long getSeverity() => severity;
+    }
+
+    /// <summary>
+    /// The PharException class provides a phar-specific exception class.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName)]
+    public class PharException : Spl.Exception
+    {
+        [PhpFieldsOnlyCtor]
+        protected PharException() { }
+
+        public PharException(string message = "", long code = 0, Throwable previous = null)
+            : base(message, code, previous)
+        {
+        }
     }
 }

@@ -15,7 +15,7 @@ namespace Pchp.Core
         /// <summary>
         /// Debug textual representation of the value.
         /// </summary>
-        public string DisplayString => IsSet ? _type.DisplayString(ref this) : "Undefined";
+        public string DisplayString => IsDefault ? "undefined" : _type.DisplayString(ref this);
 
         /// <summary>
         /// Gets php type name of the value.

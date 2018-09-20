@@ -152,7 +152,7 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_UnreachableCode,
         WRN_NotYetImplementedIgnored,
         WRN_NoSourceFiles,
-        /// <summary>Too many arguments provided</summary>
+        /// <summary>{0}() expects {1} parameter(s), {2} given</summary>
         WRN_TooManyArguments,
         /// <summary>{0}() expects at least {1} parameter(s), {2} given</summary>
         WRN_MissingArguments,

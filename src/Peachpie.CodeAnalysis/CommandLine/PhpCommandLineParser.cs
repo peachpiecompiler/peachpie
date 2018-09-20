@@ -169,6 +169,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             List<string> keyFileSearchPaths = new List<string>();
             if (sdkDirectoryOpt != null) referencePaths.Add(sdkDirectoryOpt);
             if (!string.IsNullOrEmpty(additionalReferenceDirectories)) referencePaths.AddRange(additionalReferenceDirectories.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries));
+            var loggers = new List<string>();
 
             foreach (string arg in flattenedArgs)
             {
@@ -543,6 +544,13 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                         continue;
 
+                    case "logger":
+                        if (value != null)
+                        {
+                            loggers.Add(value);
+                        }
+                        continue;
+
                     case "embed":
                         if (string.IsNullOrEmpty(value))
                         {
@@ -573,12 +581,21 @@ namespace Pchp.CodeAnalysis.CommandLine
                 if (documentationPath.Length == 0)
                 {
                     // default xmldoc file name
-                    documentationPath = compilationName + ".xml";
+                    documentationPath = PathUtilities.CombinePossiblyRelativeAndRelativePaths(outputDirectory, compilationName + ".xml");
                 }
-
-                // resolve path
-                documentationPath = PathUtilities.CombinePossiblyRelativeAndRelativePaths(outputDirectory, documentationPath);
+                else
+                {
+                    // resolve path
+                    documentationPath = PathUtilities.CombinePossiblyRelativeAndRelativePaths(baseDirectory, documentationPath);
+                }
             }
+
+            // Observers
+            var observers = loggers.Select(name => CreateObserver(name, moduleName)).WhereNotNull();
+
+#if TRACE
+            observers = observers.Concat(new Utilities.CompilationTrackerExtension.TraceObserver());
+#endif
 
             // Dev11 searches for the key file in the current directory and assembly output directory.
             // We always look to base directory and then examine the search paths.
@@ -647,7 +664,10 @@ namespace Pchp.CodeAnalysis.CommandLine
                 //specificDiagnosticOptions: diagnosticOptions,
                 //reportSuppressedDiagnostics: reportSuppressedDiagnostics,
                 publicSign: publicSign
-            );
+            )
+            {
+                Observers = observers.AsImmutableOrEmpty(),
+            };
 
             if (debugPlus)
             {
@@ -924,6 +944,34 @@ namespace Pchp.CodeAnalysis.CommandLine
                 return new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             };
             return new ResourceDescription(resourceName, fileName, dataProvider, isPublic, embedded, checkArgs: false);
+        }
+
+        static IObserver<object> CreateObserver(string name, string moduleName)
+        {
+            var ci = name.IndexOf(',');
+            if (ci > 0)
+            {
+                var tname = name.Remove(ci).Trim();
+                var assname = name.Substring(ci + 1).Trim();
+
+                try
+                {
+                    var ass = System.Reflection.Assembly.Load(assname);
+                    if (ass != null)
+                    {
+                        var t = ass.GetType(tname, throwOnError: false);
+                        if (t != null)
+                        {
+                            return Activator.CreateInstance(t, PhpCompiler.GetVersion(), moduleName) as IObserver<object>;
+                        }
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            return null;
         }
     }
 }

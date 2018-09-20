@@ -12,6 +12,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     /// <summary>
     /// Represents a direct type reference.
     /// </summary>
+    [DebuggerDisplay("ClassTypeRef ({QualifiedName,nq})")]
     internal class ClassTypeRef : ITypeRef, IEquatable<ClassTypeRef>
     {
         private readonly QualifiedName _qname;
@@ -53,7 +54,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public virtual INamedTypeSymbol GetTypeSymbol(PhpCompilation compilation)
         {
             var resolved = (NamedTypeSymbol)compilation.GlobalSemantics.ResolveType(QualifiedName);
-            return (resolved != null && !resolved.IsErrorType()) ? resolved : compilation.CoreTypes.Object.Symbol;
+
+            return resolved.IsValidType()
+                ? resolved
+                : compilation.CoreTypes.Object.Symbol;
         }
 
         public virtual ITypeRef/*!*/Transfer(TypeRefContext/*!*/source, TypeRefContext/*!*/target) { return this; }   // there is nothing depending on the context
@@ -92,9 +96,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     /// <summary>
     /// Represents a type reference with generic arguments.
     /// </summary>
+    [DebuggerDisplay("GenericClassTypeRef ({DebugDisplay,nq})")]
     internal class GenericClassTypeRef : ClassTypeRef, IEquatable<GenericClassTypeRef>
     {
         readonly ImmutableArray<ITypeRef> _typeArguments;
+
+        string DebugDisplay => $"{QualifiedName}<{string.Join(",", _typeArguments.SelectAsArray(t => t.QualifiedName.ToString()))}>";
 
         public GenericClassTypeRef(QualifiedName qname, ImmutableArray<ITypeRef> typeArguments)
             : base(qname)
@@ -105,9 +112,24 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override ImmutableArray<ITypeRef> TypeArguments => _typeArguments;
 
+        public int Arity => _typeArguments.Length;
+
         public override INamedTypeSymbol GetTypeSymbol(PhpCompilation compilation)
         {
-            throw new NotImplementedException();
+            var resolved = (NamedTypeSymbol)compilation.GetTypeByMetadataName(MetadataHelpers.ComposeAritySuffixedMetadataName(QualifiedName.ClrName(), Arity));
+
+            if (resolved.IsValidType())
+            {
+                // TODO: check _typeArguments are bound (no ErrorSymbol)
+
+                var boundTypeArgs = _typeArguments.SelectAsArray(tref => (TypeSymbol)tref.GetTypeSymbol(compilation));
+
+                return resolved.Construct(boundTypeArgs);
+            }
+            else
+            {
+                return compilation.CoreTypes.Object.Symbol;
+            }
         }
 
         public override bool Equals(ClassTypeRef other)
@@ -134,6 +156,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     /// <summary>
     /// Represents an array type.
     /// </summary>
+    [DebuggerDisplay("ArrayTypeRef ({_elementType})")]
     internal sealed class ArrayTypeRef : ITypeRef, IEquatable<ArrayTypeRef>
     {
         // TODO: manage keys, handle duplicities (HashSet?), fast merging
@@ -232,6 +255,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     /// <summary>
     /// Represents a PHP primitive type.
     /// </summary>
+    [DebuggerDisplay("PrimitiveTypeRef ({_code})")]
     internal sealed class PrimitiveTypeRef : ITypeRef, IEquatable<PrimitiveTypeRef>
     {
         private readonly PhpTypeCode _code;
@@ -344,6 +368,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     /// <summary>
     /// Represents a lambda function with known return type and parameters optionally.
     /// </summary>
+    [DebuggerDisplay("LambdaTypeRef ({_returnType})")]
     internal sealed class LambdaTypeRef : ITypeRef, IEquatable<LambdaTypeRef>
     {
         private readonly TypeRefMask _returnType;

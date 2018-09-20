@@ -128,7 +128,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Context, Operators, Convert, Comparison, StrictComparison, PhpException,
             ScriptAttribute, PhpTraitAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, NotNullAttribute, PhpMemberVisibilityAttribute,
             ScriptDiedException,
-            IStaticInit, RoutineInfo,
+            IStaticInit, RoutineInfo, IndirectLocal,
             BinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
             Dynamic_NameParam_T, Dynamic_TargetTypeParam, Dynamic_CallerTypeParam, Dynamic_UnpackingParam_T,
             PhpTypeInfoExtension, PhpTypeInfo, CommonPhpArrayKeys,
@@ -184,6 +184,7 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpMemberVisibilityAttribute = Create(PhpMemberVisibilityAttributeName);
             IStaticInit = Create("IStaticInit");
             RoutineInfo = Create("Reflection.RoutineInfo");
+            IndirectLocal = Create("IndirectLocal");
             stdClass = CreateFromFullName("stdClass");
             ArrayAccess = CreateFromFullName("ArrayAccess");
             Closure = CreateFromFullName("Closure");

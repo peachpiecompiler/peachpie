@@ -71,7 +71,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Debug.Assert(statements != null);
             _statements = statements;
 
-            CompilerLogSource.Log.Count("TotalBoundBlocks");
+            //CompilerLogSource.Log.Count("TotalBoundBlocks");
         }
 
         /// <summary>

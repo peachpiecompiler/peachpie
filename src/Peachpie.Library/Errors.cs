@@ -55,10 +55,10 @@ namespace Pchp.Library
         /// </summary>
         class ErrorContext
         {
-            /// <summary>
-            /// Stores user error handlers which has been rewritten by a new one.
-            /// </summary>
-            Stack<ErrorHandlerRecord> _oldUserErrorHandlers = null;
+            ///// <summary>
+            ///// Stores user error handlers which has been rewritten by a new one.
+            ///// </summary>
+            //Stack<ErrorHandlerRecord> _oldUserErrorHandlers = null;
 
             /// <summary>
             /// Stores user exception handlers which has been rewritten by a new one.

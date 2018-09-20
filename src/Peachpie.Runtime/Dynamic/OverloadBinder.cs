@@ -617,15 +617,21 @@ namespace Pchp.Core.Dynamic
 
                 public override Expression BindParams(int fromarg, Type element_type)
                 {
-                    var values = new List<Expression>();
-                    for (int i = fromarg; i < _args.Length; i++)
+                    var count = _args.Length - fromarg;
+
+                    if (count <= 0)
                     {
-                        values.Add(ConvertExpression.Bind(_args[i], element_type, _ctx));
+                        // empty array:
+
+                        // return static singleton with empty array
+                        // Template: Array.Empty<element_type>()
+                        return Expression.Call(typeof(Array), "Empty", new[] { element_type });
                     }
 
-                    if (values.Count == 0)
+                    var values = new Expression[count];
+                    for (int i = 0; i < count; i++)
                     {
-                        // TODO: return static singleton with empty array
+                        values[i] = ConvertExpression.Bind(_args[fromarg + i], element_type, _ctx);
                     }
 
                     return Expression.NewArrayInit(element_type, values);
@@ -735,25 +741,25 @@ namespace Pchp.Core.Dynamic
             return CombineCosts(expr_costs);
         }
 
-        public static Expression BindOverloadCall(Type treturn, Expression target, MethodBase[] methods, Expression ctx, Expression argsarray, PhpTypeInfo lateStaticType = null)
+        public static Expression BindOverloadCall(Type treturn, Expression target, MethodBase[] methods, Expression ctx, Expression argsarray, bool isStaticCallSyntax, PhpTypeInfo lateStaticType = null)
         {
             Expression result = null;
 
             while (result == null)
             {
-                result = BindOverloadCall(treturn, target, ref methods, ctx, new ArgumentsBinder.ArgsArrayBinder(ctx, argsarray), lateStaticType);
+                result = BindOverloadCall(treturn, target, ref methods, ctx, new ArgumentsBinder.ArgsArrayBinder(ctx, argsarray), isStaticCallSyntax, lateStaticType);
             }
 
             return result;
         }
 
-        public static Expression BindOverloadCall(Type treturn, Expression target, MethodBase[] methods, Expression ctx, Expression[] args, PhpTypeInfo lateStaticType = null)
+        public static Expression BindOverloadCall(Type treturn, Expression target, MethodBase[] methods, Expression ctx, Expression[] args, bool isStaticCallSyntax, PhpTypeInfo lateStaticType = null)
         {
             Expression result = null;
 
             while (result == null)
             {
-                result = BindOverloadCall(treturn, target, ref methods, ctx, new ArgumentsBinder.ArgsBinder(ctx, args), lateStaticType);
+                result = BindOverloadCall(treturn, target, ref methods, ctx, new ArgumentsBinder.ArgsBinder(ctx, args), isStaticCallSyntax, lateStaticType);
             }
 
             return result;
@@ -797,9 +803,10 @@ namespace Pchp.Core.Dynamic
         /// <param name="methods">List of methods to resolve overload.</param>
         /// <param name="ctx">Expression of current runtime context.</param>
         /// <param name="args">Provides arguments.</param>
+        /// <param name="isStaticCallSyntax">Whether the call is in form of a static method call (TYPE::METHOD()).</param>
         /// <param name="lateStaticType">Optional type used to statically invoke the method (late static type).</param>
         /// <returns>Expression representing overload call with resolution or <c>null</c> in case binding should be restarted with updated array of <paramref name="methods"/>.</returns>
-        static Expression BindOverloadCall(Type treturn, Expression target, ref MethodBase[] methods, Expression ctx, ArgumentsBinder args, PhpTypeInfo lateStaticType = null)
+        static Expression BindOverloadCall(Type treturn, Expression target, ref MethodBase[] methods, Expression ctx, ArgumentsBinder args, bool isStaticCallSyntax, PhpTypeInfo lateStaticType = null)
         {
             if (methods == null || args == null)
                 throw new ArgumentNullException();
@@ -832,7 +839,7 @@ namespace Pchp.Core.Dynamic
             if (methods.Length == 1)
             {
                 // just this piece of code is enough:
-                invoke = ConvertExpression.Bind(BindCastToFalse(BinderHelpers.BindToCall(target, methods[0], ctx, args, lateStaticType), DoCastToFalse(methods[0], treturn)), treturn, ctx);
+                invoke = ConvertExpression.Bind(BindCastToFalse(BinderHelpers.BindToCall(target, methods[0], ctx, args, isStaticCallSyntax, lateStaticType), DoCastToFalse(methods[0], treturn)), treturn, ctx);
             }
             else
             {
@@ -929,7 +936,7 @@ namespace Pchp.Core.Dynamic
                     // (best == costI) mI(...) : ...
 
                     var m = list[i].Method;
-                    var mcall = ConvertExpression.Bind(BindCastToFalse(BinderHelpers.BindToCall(target, m, ctx, args, lateStaticType), DoCastToFalse(m, treturn)), treturn, ctx);
+                    var mcall = ConvertExpression.Bind(BindCastToFalse(BinderHelpers.BindToCall(target, m, ctx, args, isStaticCallSyntax, lateStaticType), DoCastToFalse(m, treturn)), treturn, ctx);
                     invoke = Expression.Condition(Expression.Equal(expr_best, list[i].CostExpr), mcall, invoke);
                 }
             }

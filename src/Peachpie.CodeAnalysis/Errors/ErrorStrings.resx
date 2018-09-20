@@ -193,7 +193,7 @@
     <value>{0}() expects at least {1} parameter(s), {2} given</value>
   </data>
   <data name="WRN_TooManyArguments" xml:space="preserve">
-    <value>Too many arguments provided</value>
+    <value>{0}() expects {1} parameter(s), {2} given</value>
   </data>
   <data name="ERR_CannotExtendFrom" xml:space="preserve">
     <value>Class {0} cannot extend from {1} {2}</value>

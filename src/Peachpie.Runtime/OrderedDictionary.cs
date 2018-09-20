@@ -1135,8 +1135,9 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="key">Key of the item to be added or upudated.</param>
         /// <param name="value">Value of the item.</param>
+        /// <returns>Value indicating whether new key was added.</returns>
         /// <remarks>If <paramref name="key"/> is not contained in the table yet, newly added entry is added at the end.</remarks>
-        public void _add_or_update(ref IntStringKey key, PhpValue value/*, bool add*/)
+        public bool _add_or_update(ref IntStringKey key, PhpValue value/*, bool add*/)
         {
             //ulong h;// = key.Integer
 
@@ -1152,11 +1153,8 @@ namespace Pchp.Core
 
                 if (pentry.KeyEquals(ref key))
                 {
-                    //if (add)
-                    //    return;// false;
-
                     pentry._value = value;
-                    return;// true;
+                    return false;
                 }
 
                 //
@@ -1165,6 +1163,7 @@ namespace Pchp.Core
 
             // not found, _add_last:
             _add_last(ref key, value);
+            return true;
         }
 
         /// <summary>
@@ -1173,7 +1172,8 @@ namespace Pchp.Core
         /// 
         /// Otherwise new item is added at the end of the array.
         /// </summary>
-        public void _add_or_update_preserve_ref(ref IntStringKey key, PhpValue value)
+        /// <returns>Value indicating whether new key was added.</returns>
+        public bool _add_or_update_preserve_ref(ref IntStringKey key, PhpValue value)
         {
             Debug.Assert(!value.IsAlias);
 
@@ -1188,7 +1188,7 @@ namespace Pchp.Core
                 if (pentry.KeyEquals(ref key))
                 {
                     Operators.SetValue(ref pentry._value, value);
-                    return;// true;
+                    return false;
                 }
                 //
                 p = pentry.next;
@@ -1196,6 +1196,7 @@ namespace Pchp.Core
 
             // not found, _add_last:
             _add_last(ref key, value);
+            return true;
         }
 
         //private void _add_no_check(int intKey, object value)
@@ -1699,34 +1700,34 @@ namespace Pchp.Core
             _debug_check_consistency();
         }
 
-        /// <summary>
-        /// Iterate through the array and find the max integer key.
-        /// </summary>
-        /// <returns>Max integer key or <c>-1</c> if no positive integer key is found.</returns>
-        public int _find_max_int_key()
-        {
-            var _entries = this.entries;
+        ///// <summary>
+        ///// Iterate through the array and find the max integer key.
+        ///// </summary>
+        ///// <returns>Max integer key or <c>-1</c> if no positive integer key is found.</returns>
+        //public int _find_max_int_key()
+        //{
+        //    var _entries = this.entries;
 
-            // TODO: check flags, whether it is a simple sorted array (0..N)
+        //    // TODO: check flags, whether it is a simple sorted array (0..N)
 
-            int max_key = -1;
-            // iterate backwards, find the max faster
-            int p = this.listTail;
-            while (p >= 0)
-            {
-                ref var pentry = ref _entries[p];
-                if (pentry._key.Integer > max_key && pentry._key.IsInteger)
-                {
-                    max_key = pentry._key.Integer;
-                }
+        //    int max_key = -1;
+        //    // iterate backwards, find the max faster
+        //    int p = this.listTail;
+        //    while (p >= 0)
+        //    {
+        //        ref var pentry = ref _entries[p];
+        //        if (pentry._key.Integer > max_key && pentry._key.IsInteger)
+        //        {
+        //            max_key = pentry._key.Integer;
+        //        }
 
-                //
-                p = pentry.listLast;
-            }
+        //        //
+        //        p = pentry.listLast;
+        //    }
 
-            //
-            return max_key;
-        }
+        //    //
+        //    return max_key;
+        //}
 
         /// <summary>
         /// Sort sequence of entries using merge sort. Only changes <see cref="Entry.listNext"/> fields, <see cref="Entry.listLast"/> are not modified at all.

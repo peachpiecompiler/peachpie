@@ -121,8 +121,8 @@ namespace Pchp.CodeAnalysis
 
                     if (t.IsNullableType())
                     {
-                        // <T> | FALSE
-                        return CreateMask(ctx, ((NamedTypeSymbol)t).TypeArguments[0]) | ctx.GetBooleanTypeMask();
+                        // <T> | NULL
+                        return CreateMask(ctx, ((NamedTypeSymbol)t).TypeArguments[0]) | ctx.GetNullTypeMask();
                     }
 
                     break;

@@ -19,13 +19,13 @@ namespace Peachpie.CodeAnalysis.Utilities
         /// </summary>
         public static Exception NotImplementedException(this CodeGenerator cg, string message = null, IPhpOperation op = null)
         {
-            return NotImplementedException(cg.Builder, message, op: op, routine: cg.Routine);
+            return NotImplementedException(cg.Builder, message, op: op, routine: cg.Routine, debugroutine: cg.DebugRoutine);
         }
 
         /// <summary>
         /// Gets <see cref="System.NotImplementedException"/> with aproximate location of the error.
         /// </summary>
-        public static Exception NotImplementedException(ILBuilder il, string message = null, IPhpOperation op = null, SourceRoutineSymbol routine = null)
+        public static Exception NotImplementedException(ILBuilder il, string message = null, IPhpOperation op = null, SourceRoutineSymbol routine = null, MethodSymbol debugroutine = null)
         {
             string location = null;
 
@@ -47,6 +47,15 @@ namespace Peachpie.CodeAnalysis.Utilities
             else if (routine != null)
             {
                 location = $"{routine.ContainingFile.SyntaxTree.FilePath} in '{routine.RoutineName}'";
+            }
+            else if (debugroutine != null)
+            {
+                location = $"{debugroutine.ContainingType.GetFullName()}::{debugroutine.RoutineName}";
+
+                if (debugroutine.ContainingType is SourceTypeSymbol srctype)
+                {
+                    location = $"{srctype.ContainingFile.SyntaxTree.FilePath} in {location}";
+                }
             }
             else
             {

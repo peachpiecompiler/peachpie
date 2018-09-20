@@ -71,12 +71,19 @@ namespace Pchp.Core.Reflection
                     continue;
                 }
 
+                var overrides = m.ToList();
+
+                // ignore methods in base classes that has been "overriden" in current class
+                // in PHP we do override even if signature does not match (e.g. __construct)
+                SelectVisibleOverrides(overrides);
+
+                //
                 if (_methods == null)
                 {
                     _methods = new Dictionary<string, PhpMethodInfo>(StringComparer.OrdinalIgnoreCase);
                 }
 
-                var info = PhpMethodInfo.Create(_methods.Count + 1, m.Key, m.ToArray(), type);
+                var info = PhpMethodInfo.Create(_methods.Count + 1, m.Key, overrides.ToArray(), type);
 
                 _methods[info.Name] = info;
 
@@ -110,6 +117,38 @@ namespace Pchp.Core.Reflection
 
         static readonly Func<MethodInfo, bool> s_notPhpHidden = m => m.GetCustomAttribute<PhpHiddenAttribute>() == null;
 
+        static void SelectVisibleOverrides(List<MethodInfo> overrides)
+        {
+            if (overrides.Count > 1)
+            {
+                Type topPhpType = null;
+
+                for (int i = 0; i < overrides.Count; i++)
+                {
+                    var t = overrides[i].DeclaringType;
+                    if (t.GetPhpTypeInfo().IsPhpType)
+                    {
+                        if (topPhpType == null || t.IsSubclassOf(topPhpType))
+                        {
+                            topPhpType = t;
+                        }
+                    }
+                }
+
+                if (topPhpType != null) // deal with PHP-like overriding
+                {
+                    for (int i = overrides.Count - 1; i >= 0; i--)
+                    {
+                        var declaringType = overrides[i].DeclaringType;
+                        if (declaringType != topPhpType && declaringType.GetPhpTypeInfo().IsPhpType)
+                        {
+                            overrides.RemoveAt(i);
+                        }
+                    }
+                }
+            }
+        }
+
         #endregion
 
         #region IEnumerable<RoutineInfo>
@@ -124,7 +163,7 @@ namespace Pchp.Core.Reflection
         IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<RoutineInfo>)this).GetEnumerator();
 
         #endregion
-        
+
         /// <summary>
         /// Gets routine by its name.
         /// Returns <c>null</c> in case method does not exist.

@@ -69,7 +69,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             public void Construct(NamedTypeSymbol functype, Action<CodeGenerator> binder_builder)
             {
-                CompilerLogSource.Log.Count("CallSite");
+                //CompilerLogSource.Log.Count("CallSite");
 
                 //
                 var callsitetype = _factory.CallSite_T.Construct(functype);
@@ -203,26 +203,33 @@ namespace Pchp.CodeAnalysis.CodeGen
                         // try read the value by ref,
                         // we might need the value ref in the callsite:
 
-                        var place = varref.Place(_cg.Builder);
-                        if (place != null && place.HasAddress && place.TypeOpt == _cg.CoreTypes.PhpValue)
+                        var bound = varref.BindPlace(_cg);
+                        if (bound is BoundIndirectVariablePlace iplace)
                         {
-                            place.EmitLoadAddress(_cg.Builder);
-
-                            t = place.TypeOpt;
-                            byref = true;
+                            t = iplace.LoadIndirectLocal(_cg); // IndirectLocal wrapper
                         }
                         else
                         {
-                            var bound = varref.BindPlace(_cg);
-                            bound.EmitLoadPrepare(_cg);
-                            if ((bound.TypeOpt == null || bound.TypeOpt == _cg.CoreTypes.PhpValue) && // makes sense only if type is PhpValue (or unknown)
-                                (t = bound.EmitLoadAddress(_cg)) != null) // try to load address
+                            var place = varref.Place(_cg.Builder);
+                            if (place != null && place.HasAddress && place.TypeOpt == _cg.CoreTypes.PhpValue)
                             {
+                                place.EmitLoadAddress(_cg.Builder);
+
+                                t = place.TypeOpt;
                                 byref = true;
                             }
                             else
-                            {
-                                t = bound.EmitLoad(_cg); // just load by value if address cannot be loaded
+                            {                                
+                                bound.EmitLoadPrepare(_cg);
+                                if ((bound.TypeOpt == null || bound.TypeOpt == _cg.CoreTypes.PhpValue) && // makes sense only if type is PhpValue (or unknown)
+                                    (t = bound.EmitLoadAddress(_cg)) != null) // try to load address
+                                {
+                                    byref = true;
+                                }
+                                else
+                                {
+                                    t = bound.EmitLoad(_cg); // just load by value if address cannot be loaded
+                                }
                             }
                         }
                     }

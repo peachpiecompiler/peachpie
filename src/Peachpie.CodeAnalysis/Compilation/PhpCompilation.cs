@@ -22,6 +22,7 @@ using System.Collections.Concurrent;
 using Devsense.PHP.Syntax;
 using Pchp.CodeAnalysis.DocumentationComments;
 using Pchp.CodeAnalysis.Utilities;
+using System.Reflection;
 
 namespace Pchp.CodeAnalysis
 {
@@ -30,6 +31,8 @@ namespace Pchp.CodeAnalysis
         readonly SourceSymbolCollection _tables;
         MethodSymbol _lazyMainMethod;
         readonly PhpCompilationOptions _options;
+
+        internal ImmutableArray<IObserver<object>> Observers => _options.Observers;
 
         Task<IEnumerable<Diagnostic>> _lazyAnalysisTask;
 
@@ -860,22 +863,30 @@ namespace Pchp.CodeAnalysis
             // Use a temporary bag so we don't have to refilter pre-existing diagnostics.
             DiagnosticBag methodBodyDiagnosticBag = DiagnosticBag.GetInstance();
 
-            SourceCompiler.CompileSources(
-                this,
-                moduleBeingBuilt,
-                emittingPdb,
-                hasDeclarationErrors,
-                methodBodyDiagnosticBag,
-                cancellationToken);
-
-            bool hasMethodBodyErrorOrWarningAsError = !FilterAndAppendAndFreeDiagnostics(diagnostics, ref methodBodyDiagnosticBag);
-
-            if (hasDeclarationErrors || hasMethodBodyErrorOrWarningAsError)
+            try
             {
-                return false;
-            }
+                SourceCompiler.CompileSources(
+                    this,
+                    moduleBeingBuilt,
+                    emittingPdb,
+                    hasDeclarationErrors,
+                    methodBodyDiagnosticBag,
+                    cancellationToken);
 
-            return true;
+                bool hasMethodBodyErrorOrWarningAsError = !FilterAndAppendAndFreeDiagnostics(diagnostics, ref methodBodyDiagnosticBag);
+
+                if (hasDeclarationErrors || hasMethodBodyErrorOrWarningAsError)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                this.TrackException(ex);
+                throw;
+            }
         }
 
         internal override bool GenerateResourcesAndDocumentationComments(CommonPEModuleBuilder moduleBuilder, Stream xmlDocStream, Stream win32Resources, string outputNameOverride, DiagnosticBag diagnostics, CancellationToken cancellationToken)
@@ -885,17 +896,25 @@ namespace Pchp.CodeAnalysis
 
             var moduleBeingBuilt = (PEModuleBuilder)moduleBuilder;
 
-            SetupWin32Resources(moduleBeingBuilt, win32Resources, methodBodyDiagnosticBag);
-
-            ReportManifestResourceDuplicates(
-                moduleBeingBuilt.ManifestResources,
-                SourceAssembly.Modules.Skip(1).Select((m) => m.Name),   //all modules except the first one
-                AddedModulesResourceNames(methodBodyDiagnosticBag),
-                methodBodyDiagnosticBag);
-
-            if (!FilterAndAppendAndFreeDiagnostics(diagnostics, ref methodBodyDiagnosticBag))
+            try
             {
-                return false;
+                SetupWin32Resources(moduleBeingBuilt, win32Resources, methodBodyDiagnosticBag);
+
+                ReportManifestResourceDuplicates(
+                    moduleBeingBuilt.ManifestResources,
+                    SourceAssembly.Modules.Skip(1).Select((m) => m.Name),   //all modules except the first one
+                    AddedModulesResourceNames(methodBodyDiagnosticBag),
+                    methodBodyDiagnosticBag);
+
+                if (!FilterAndAppendAndFreeDiagnostics(diagnostics, ref methodBodyDiagnosticBag))
+                {
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                this.TrackException(ex);
+                throw;
             }
 
             cancellationToken.ThrowIfCancellationRequested();

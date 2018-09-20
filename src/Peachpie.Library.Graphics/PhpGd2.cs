@@ -1282,8 +1282,15 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         public static PhpArray imagecolorsforindex(PhpResource im, long col)
         {
-            PhpException.FunctionNotSupported("imagecolorsforindex");
-            return null;
+            var rgba = FromRGBA(col);
+
+            return new PhpArray(4)
+            {
+                { "red", rgba.R },
+                { "green", rgba.G },
+                { "blue", rgba.B },
+                { "alpha", rgba.A },
+            };
         }
 
         #endregion
