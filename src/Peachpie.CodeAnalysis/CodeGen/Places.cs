@@ -389,67 +389,67 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
     }
 
-    /// <summary>
-    /// Represents access to <c>IndirectLocal.Value</c>.
-    /// </summary>
-    internal sealed class IndirectLocalPlace : IPlace
-    {
-        /// <summary>
-        /// Refers to variable of type <c>IndirectLocal</c>.
-        /// </summary>
-        readonly IPlace _localPlace;
+    ///// <summary>
+    ///// Represents access to <c>IndirectLocal.Value</c>.
+    ///// </summary>
+    //internal sealed class IndirectLocalPlace : IPlace
+    //{
+    //    /// <summary>
+    //    /// Refers to variable of type <c>IndirectLocal</c>.
+    //    /// </summary>
+    //    readonly IPlace _localPlace;
 
-        readonly Emit.PEModuleBuilder _module;
+    //    readonly Emit.PEModuleBuilder _module;
 
-        public IndirectLocalPlace(IPlace localPlace, Emit.PEModuleBuilder module)
-        {
-            Debug.Assert(localPlace != null);
-            Debug.Assert(localPlace.TypeOpt != null);
-            Debug.Assert(localPlace.TypeOpt.Name == "IndirectLocal");
-            Debug.Assert(localPlace.HasAddress);
+    //    public IndirectLocalPlace(IPlace localPlace, Emit.PEModuleBuilder module)
+    //    {
+    //        Debug.Assert(localPlace != null);
+    //        Debug.Assert(localPlace.TypeOpt != null);
+    //        Debug.Assert(localPlace.TypeOpt.Name == "IndirectLocal");
+    //        Debug.Assert(localPlace.HasAddress);
 
-            _localPlace = localPlace;
-            _module = module;
-        }
+    //        _localPlace = localPlace;
+    //        _module = module;
+    //    }
 
-        public TypeSymbol TypeOpt => ValueProperty.Type; // PhpValue
+    //    public TypeSymbol TypeOpt => ValueProperty.Type; // PhpValue
 
-        public bool HasAddress => true;
+    //    public bool HasAddress => true;
 
-        PropertySymbol/*!*/ValueProperty => _localPlace.TypeOpt.LookupMember<PropertySymbol>("Value");
+    //    PropertySymbol/*!*/ValueProperty => _localPlace.TypeOpt.LookupMember<PropertySymbol>("Value");
 
-        PropertySymbol/*!*/ValueRefProperty => _localPlace.TypeOpt.LookupMember<PropertySymbol>("ValueRef");
+    //    PropertySymbol/*!*/ValueRefProperty => _localPlace.TypeOpt.LookupMember<PropertySymbol>("ValueRef");
 
-        public TypeSymbol EmitLoad(ILBuilder il)
-        {
-            // CALL {place}.get_Value
+    //    public TypeSymbol EmitLoad(ILBuilder il)
+    //    {
+    //        // CALL {place}.get_Value
 
-            _localPlace.EmitLoadAddress(il);    // ref IndirectLocal
-            return il.EmitCall(_module, DiagnosticBag.GetInstance(), ILOpCode.Call, ValueProperty.GetMethod); // .get_Value()
-        }
+    //        _localPlace.EmitLoadAddress(il);    // ref IndirectLocal
+    //        return il.EmitCall(_module, DiagnosticBag.GetInstance(), ILOpCode.Call, ValueProperty.GetMethod); // .get_Value()
+    //    }
 
-        public void EmitLoadAddress(ILBuilder il)
-        {
-            // CALL {place}.get_ValueRef
+    //    public void EmitLoadAddress(ILBuilder il)
+    //    {
+    //        // CALL {place}.get_ValueRef
 
-            _localPlace.EmitLoadAddress(il);    // ref IndirectLocal
-            il.EmitCall(_module, DiagnosticBag.GetInstance(), ILOpCode.Call, ValueRefProperty.GetMethod); // .get_ValueRef()
-        }
+    //        _localPlace.EmitLoadAddress(il);    // ref IndirectLocal
+    //        il.EmitCall(_module, DiagnosticBag.GetInstance(), ILOpCode.Call, ValueRefProperty.GetMethod); // .get_ValueRef()
+    //    }
 
-        public void EmitStorePrepare(ILBuilder il)
-        {
-            // LOAD ADDR {place}
+    //    public void EmitStorePrepare(ILBuilder il)
+    //    {
+    //        // LOAD ADDR {place}
 
-            _localPlace.EmitLoadAddress(il);    // ref IndirectLocal
-        }
+    //        _localPlace.EmitLoadAddress(il);    // ref IndirectLocal
+    //    }
 
-        public void EmitStore(ILBuilder il)
-        {
-            // CALL .set_Value()
+    //    public void EmitStore(ILBuilder il)
+    //    {
+    //        // CALL .set_Value()
 
-            il.EmitCall(_module, DiagnosticBag.GetInstance(), ILOpCode.Call, ValueProperty.SetMethod); // .set_Value()
-        }
-    }
+    //        il.EmitCall(_module, DiagnosticBag.GetInstance(), ILOpCode.Call, ValueProperty.SetMethod); // .set_Value()
+    //    }
+    //}
 
     #endregion
 
