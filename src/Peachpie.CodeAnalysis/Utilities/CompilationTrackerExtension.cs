@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
@@ -14,25 +15,20 @@ namespace Pchp.CodeAnalysis.Utilities
         /// </summary>
         public struct TimeSpanMetric : IDisposable
         {
-            readonly IEnumerable<IObserver<object>> _observers;
+            readonly ImmutableArray<IObserver<object>> _observers;
             public string Name;
             public DateTime Start;
 
-            public TimeSpanMetric(IEnumerable<IObserver<object>> observers, string name)
+            public TimeSpanMetric(ImmutableArray<IObserver<object>> observers, string name)
             {
                 _observers = observers;
                 Name = name;
                 Start = DateTime.UtcNow;
             }
 
-            /// <summary>
-            /// Gets value indicating the object is not initialized.
-            /// </summary>
-            public bool IsDefault => Name == null || Start == default;
-
             void IDisposable.Dispose()
             {
-                if (!IsDefault)
+                if (!_observers.IsDefaultOrEmpty)
                 {
                     _observers.TrackMetric(Name, (DateTime.UtcNow - Start).TotalSeconds);
                     this = default;
@@ -73,20 +69,26 @@ namespace Pchp.CodeAnalysis.Utilities
 
         public static void TrackOnCompleted(this PhpCompilation c)
         {
-            c.Observers.ForEach(OnCompleted);
+            if (!c.Observers.IsDefaultOrEmpty)
+            {
+                c.Observers.ForEach(OnCompleted);
+            }
         }
 
         public static void TrackException(this PhpCompilation c, Exception ex)
         {
-            if (ex != null)
+            if (ex != null && !c.Observers.IsDefaultOrEmpty)
             {
                 c.Observers.ForEach(o => o.OnError(ex));
             }
         }
 
-        static void TrackMetric(this IEnumerable<IObserver<object>> observers, string name, double value)
+        static void TrackMetric(this ImmutableArray<IObserver<object>> observers, string name, double value)
         {
-            observers.ForEach(o => o.OnNext(Tuple.Create(name, value)));
+            if (!observers.IsDefaultOrEmpty)
+            {
+                observers.ForEach(o => o.OnNext(Tuple.Create(name, value)));
+            }
         }
 
         public static void TrackMetric(this PhpCompilation c, string name, double value)
@@ -104,7 +106,7 @@ namespace Pchp.CodeAnalysis.Utilities
             return StartMetric(c.Observers, name);
         }
 
-        public static TimeSpanMetric StartMetric(this IEnumerable<IObserver<object>> observers, string name)
+        public static TimeSpanMetric StartMetric(this ImmutableArray<IObserver<object>> observers, string name)
         {
             return new TimeSpanMetric(observers, name);
         }
