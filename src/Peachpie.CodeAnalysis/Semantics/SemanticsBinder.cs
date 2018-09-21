@@ -579,7 +579,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 {
                     if (!targetStack.IsEmpty() || currentExpr.IsMemberOf == null)
                     {
-                        targetStack.Push(BindFunctionCall(currentExpr as AST.FunctionCall, targetStack.Pop()).WithAccess(BoundAccess.Read));
+                        var boundTarget = targetStack.IsEmpty() ? null : targetStack.Pop();
+
+                        targetStack.Push(BindFunctionCall(currentExpr as AST.FunctionCall, boundTarget).WithAccess(BoundAccess.Read));
                     }
                     else
                     {
@@ -589,7 +591,6 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
                 else
                 {
-
                     targetStack.Push(BindExpression(currentExpr, BoundAccess.Read));
                 }
             }
