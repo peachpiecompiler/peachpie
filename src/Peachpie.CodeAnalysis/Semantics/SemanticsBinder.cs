@@ -571,9 +571,6 @@ namespace Pchp.CodeAnalysis.Semantics
             var targetStack = new Stack<BoundExpression>();
             callStack.Push(functionCall);
 
-            // used both, during unwinding the stack to hold intermediate call results, as well as to hold the final result to return
-            BoundExpression currentBoundTarget = null;
-
             while (!callStack.IsEmpty())
             {
                 var currentExpr = callStack.Pop();
@@ -582,7 +579,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 {
                     if (!targetStack.IsEmpty() || currentExpr.IsMemberOf == null)
                     {
-                        targetStack.Push(BindFunctionCall(currentExpr as AST.FunctionCall, targetStack.Pop()));
+                        targetStack.Push(BindFunctionCall(currentExpr as AST.FunctionCall, targetStack.Pop()).WithAccess(BoundAccess.Read));
                     }
                     else
                     {
@@ -592,10 +589,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
                 else
                 {
-                    //if (functionCall.IsMemberOf is AST.VarLikeConstructUse)
-                    //  Debug.Assert((functionCall.IsMemberOf as AST.VarLikeConstructUse).IsMemberOf == null);
 
-                    targetStack.Push(BindExpression(currentExpr));
+                    targetStack.Push(BindExpression(currentExpr, BoundAccess.Read));
                 }
             }
             if (!targetStack.IsEmpty())
