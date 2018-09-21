@@ -600,6 +600,8 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             if (!targetStack.IsEmpty())
             {
+                Debug.Assert(targetStack.Count == 1);
+
                 return targetStack.Pop();
             }
             else
