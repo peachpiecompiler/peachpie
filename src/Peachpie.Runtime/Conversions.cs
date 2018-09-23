@@ -147,6 +147,37 @@ namespace Pchp.Core
             return str[0];
         }
 
+        /// <summary>
+		/// Converts string to a single character.
+		/// </summary>
+		/// <returns>The first character of the string.</returns>
+		/// <exception cref="PhpException"><paramref name="value"/> doesn't consist of a single character. (Warning)</exception>
+		public static char ToChar(PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Alias:
+                    return ToChar(value.Alias.Value);
+
+                case PhpTypeCode.String:
+                    return ToChar(value.String);
+
+                case PhpTypeCode.MutableString:
+                    if (value.MutableStringBlob.Length == 0) goto default;
+                    return value.MutableStringBlob[0].AsChar();
+
+                case PhpTypeCode.Double:
+                    return (char)value.Double;
+
+                case PhpTypeCode.Long:
+                    return (char)value.Long;
+
+                default:
+                    PhpException.Throw(PhpError.Warning, Resources.ErrResources.string_should_be_single_character);
+                    return default; // '\0'
+            }
+        }
+
         #endregion
 
         #region ToBoolean

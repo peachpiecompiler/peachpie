@@ -66,12 +66,14 @@ namespace Pchp.Core.Dynamic
 
             //
             if (target == typeof(long)) return BindToLong(arg);
-            if (target == typeof(int) ||
-                target == typeof(uint) ||
+            if (target == typeof(int) || target == typeof(uint) ||
+                target == typeof(short) || target == typeof(ushort) ||
+                target == typeof(byte) || target == typeof(sbyte) ||
                 target == typeof(ulong)) return Expression.Convert(BindToLong(arg), target);
             if (target == typeof(double)) return BindToDouble(arg);
-            if (target == typeof(float)) return Expression.Convert(BindToDouble(arg), target);  // (float)double
+            if (target == typeof(float) || target == typeof(decimal)) return Expression.Convert(BindToDouble(arg), target);  // (float)double
             if (target == typeof(string)) return BindToString(arg, ctx);
+            if (target == typeof(char)) return BindToChar(arg, ctx);
             if (target == typeof(bool)) return BindToBool(arg);
             if (target == typeof(PhpNumber)) return BindToNumber(arg);
             if (target == typeof(PhpValue)) return BindToValue(arg);
@@ -112,6 +114,13 @@ namespace Pchp.Core.Dynamic
                 if (target == typeof(IntPtr))
                 {
                     return Expression.New(typeof(IntPtr).GetCtor(Cache.Types.Long), BindToLong(arg));
+                }
+
+                // DateTime
+                if (target == typeof(DateTime))
+                {
+                    // TODO: DateTime from long or string
+                    return BindAsReferenceType(arg, target); // (DateTime)value.Object // TODO: review once we support value types properly
                 }
 
                 // Nullable<T>
@@ -289,6 +298,36 @@ namespace Pchp.Core.Dynamic
             }
 
             throw new NotImplementedException($"{source.FullName} -> string");
+        }
+
+        private static Expression BindToChar(Expression expr, Expression ctx)
+        {
+            var source = expr.Type;
+
+            if (source == typeof(int) ||
+                source == typeof(uint) ||
+                source == typeof(long) ||
+                source == typeof(char) ||
+                source == typeof(float) ||
+                source == typeof(byte) ||
+                source == typeof(double))
+            {
+                return Expression.Convert(expr, typeof(char));
+            }
+            else if (source == typeof(string))
+            {
+                return Expression.Call(new Func<string, char>(Convert.ToChar).Method, expr);
+            }
+            else if (source == typeof(PhpString) || source == typeof(PhpValue) || source == typeof(PhpNumber))
+            {
+                // Template: Convert.ToChar( (PhpValue){expr} )
+                return Expression.Call(new Func<PhpValue, char>(Convert.ToChar).Method, BindToValue(expr));
+            }
+            else
+            {
+                // default(char)
+                return Expression.Constant(default(char), typeof(char));
+            }
         }
 
         private static Expression BindToPhpString(Expression expr, Expression ctx)
@@ -771,7 +810,19 @@ namespace Pchp.Core.Dynamic
             }
         }
 
+        public static ConversionCost ToSByte(PhpValue value) => ToInt64(value);
+
+        public static ConversionCost ToByte(PhpValue value) => ToInt64(value);
+
+        public static ConversionCost ToInt16(PhpValue value) => ToInt64(value);
+
+        public static ConversionCost ToUInt16(PhpValue value) => ToInt64(value);
+
         public static ConversionCost ToInt32(PhpValue value) => ToInt64(value);
+
+        public static ConversionCost ToUInt32(PhpValue value) => ToInt64(value);
+
+        public static ConversionCost ToUInt64(PhpValue value) => ToInt64(value);
 
         public static ConversionCost ToInt64(PhpValue value)
         {
@@ -822,6 +873,42 @@ namespace Pchp.Core.Dynamic
             }
         }
 
+        public static ConversionCost ToChar(PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Int32:
+                case PhpTypeCode.Long:
+                    return ConversionCost.ImplicitCast;
+
+                case PhpTypeCode.MutableString:
+                    return value.MutableStringBlob.Length == 1
+                        ? ConversionCost.Pass
+                        : value.MutableStringBlob.Length == 0
+                            ? ConversionCost.DefaultValue
+                            : ConversionCost.LoosingPrecision;
+
+                case PhpTypeCode.String:
+                    return value.String.Length == 1
+                        ? ConversionCost.Pass
+                        : value.String.Length == 0
+                            ? ConversionCost.DefaultValue
+                            : ConversionCost.LoosingPrecision;
+
+                case PhpTypeCode.Boolean:
+                case PhpTypeCode.Double:
+                case PhpTypeCode.Object:
+                case PhpTypeCode.PhpArray:
+                    return ConversionCost.Warning;
+
+                case PhpTypeCode.Alias:
+                    return ToChar(value.Alias.Value);
+
+                default:
+                    return ConversionCost.NoConversion;
+            }
+        }
+
         public static ConversionCost ToPhpString(PhpValue value)
         {
             switch (value.TypeCode)
@@ -846,6 +933,10 @@ namespace Pchp.Core.Dynamic
                     return ConversionCost.NoConversion;
             }
         }
+
+        public static ConversionCost ToSingle(PhpValue value) => ToDouble(value);
+
+        public static ConversionCost ToDecimal(PhpValue value) => ToDouble(value);
 
         public static ConversionCost ToDouble(PhpValue value)
         {
@@ -915,12 +1006,14 @@ namespace Pchp.Core.Dynamic
             }
         }
 
-        public static ConversionCost ToClass<T>(PhpValue value) where T : class
+        public static ConversionCost ToDateTime(PhpValue value) => ToClass<DateTime>(value);    // TODO: DateTime from long or string
+
+        public static ConversionCost ToClass<T>(PhpValue value)
         {
             switch (value.TypeCode)
             {
                 case PhpTypeCode.Null:
-                    return ConversionCost.ImplicitCast;
+                    return ConversionCost.DefaultValue;
 
                 case PhpTypeCode.Object:
                     if (value.Object is T)
