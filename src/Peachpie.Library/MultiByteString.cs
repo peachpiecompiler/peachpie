@@ -28,6 +28,9 @@ namespace Pchp.Library
 
             public string ExtensionName => MultiByteString.ExtensionName;
 
+            /// <summary><see cref="mb_detect_order"/></summary>
+            public List<Encoding> DetectOrder { get; set; } = new List<Encoding>(2) { Encoding.ASCII, Encoding.UTF8 };
+
             /// <summary>
             /// Gets or sets a value of a legacy configuration option.
             /// </summary>
@@ -1009,12 +1012,51 @@ namespace Pchp.Library
         /// <summary>
         /// Sets the automatic character encoding detection order to encoding_list. 
         /// </summary>
-        /// <param name="encoding_list"></param>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="encoding_list">Optional. An array or comma separated list of character encoding.</param>
         /// <returns></returns>
-        public static string mb_detect_order(object encoding_list = null)
+        /// <remarks>
+        /// Supported: UTF-8, UTF-7, ASCII, EUC-JP,SJIS, eucJP-win, SJIS-win, JIS, ISO-2022-JP
+        /// For ISO-8859-*, mbstring always detects as ISO-8859-*.
+        /// For UTF-16, UTF-32, UCS2 and UCS4, encoding detection will fail always.
+        /// </remarks>
+        public static PhpValue mb_detect_order(Context ctx, PhpValue encoding_list = default)
         {
-            // TODO: Implement
-            throw new NotImplementedException();
+            if (Operators.IsSet(encoding_list))
+            {
+                IEnumerable<string> enc_names;
+
+                var newlist = new List<Encoding>(4);
+                var arrlist = encoding_list.AsArray();
+
+                if (arrlist != null)
+                {
+                    enc_names = arrlist.Values.Select(x => x.ToString(ctx));
+                }
+                else
+                {
+                    var strlist = encoding_list.ToString(ctx);
+                    enc_names = strlist.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                }
+
+                foreach (var n in enc_names)
+                {
+                    var enc = GetEncoding(n.Trim());
+                    if (enc == null)
+                    {
+                        return PhpValue.False;
+                    }
+
+                    newlist.Add(enc);
+                }
+
+                GetConfig(ctx).DetectOrder = newlist;
+                return PhpValue.True;
+            }
+            else
+            {
+                return new PhpArray(GetConfig(ctx).DetectOrder.Select(enc => enc.WebName));
+            }
         }
 
         /// <summary>
