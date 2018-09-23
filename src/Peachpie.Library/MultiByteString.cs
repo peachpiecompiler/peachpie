@@ -296,7 +296,7 @@ namespace Pchp.Library
         /// <summary>
         /// Get a MIME charset string for a specific encoding.
         /// </summary>
-        /// <param name="encoding_name">The encoding being checked. Its WebName or PHP/Phalanger name.</param>
+        /// <param name="encoding_name">The encoding being checked. Its BodyName or PHP/Phalanger name.</param>
         /// <returns>The MIME charset string for given character encoding.</returns>
         public static string mb_preferred_mime_name(string encoding_name)
         {
@@ -309,8 +309,7 @@ namespace Pchp.Library
                 return null;
             }
 
-            //return encoding.BodyName;   // it seems to return right MIME
-            return enc.WebName;
+            return enc.BodyName;// it seems to return right MIME
         }
 
         #endregion
