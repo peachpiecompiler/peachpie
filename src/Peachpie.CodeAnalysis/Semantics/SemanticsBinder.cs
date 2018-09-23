@@ -555,9 +555,47 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundConcatEx(boundargs.AsImmutable());
         }
 
-        protected BoundExpression BindFunctionCall(AST.FunctionCall x)
+        /// <summary>
+        /// Optimization:
+        /// Binds chain of <see cref="AST.VarLikeConstructUse.IsMemberOf"/> expressions using own stack
+        /// in order to avoid <see cref="StackOverflowException"/> for really long expression chains.
+        /// </summary>
+        BoundExpression BindIsMemberOfChain(AST.Expression expr, BoundAccess access)
         {
-            //
+            Debug.Assert(access.IsRead);
+
+            if (expr is AST.FunctionCall varlike && varlike.IsMemberOf != null) // stack only needed if there are more expressions in the chain
+            {
+                // push chain onto the stack
+                var stack = new Stack<AST.FunctionCall>(4);
+                var tail = varlike.IsMemberOf;
+
+                for (var x = varlike; x != null; x = tail as AST.FunctionCall)
+                {
+                    stack.Push(x);
+                    tail = x.IsMemberOf;
+                }
+
+                // bind entries on the stack
+                var bound = tail != null ? BindExpression(tail, access) : null;
+                while (stack.Count != 0)
+                {
+                    var fnc = stack.Pop();
+                    bound = BindFunctionCall(fnc, bound).WithAccess(access).WithSyntax(fnc);
+                }
+
+                Debug.Assert(bound != null);
+
+                //
+                return bound;
+            }
+
+            // optimization: no stack needed, just bind
+            return expr != null ? BindExpression(expr, access) : null;
+        }
+
+        protected BoundExpression BindFunctionCall(AST.FunctionCall x, BoundExpression boundTarget = null)
+        {
             if (Routine != null)
             {
                 // TODO: ignore well-known library functions
@@ -565,7 +603,10 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             //
-            var boundTarget = x.IsMemberOf != null ? BindExpression(x.IsMemberOf, BoundAccess.Read/*Object?*/) : null;
+            if (boundTarget == null)
+            {
+                boundTarget = BindIsMemberOfChain(x.IsMemberOf, BoundAccess.Read/*Object?*/);
+            }
 
             if (x is AST.DirectFcnCall)
             {
