@@ -24,7 +24,7 @@ namespace Pchp.CodeAnalysis.Emit
         private readonly SourceModuleSymbol _sourceModule;
         private readonly PhpCompilation _compilation;
         private readonly EmitOptions _emitOptions;
-        private readonly Cci.ModulePropertiesForSerialization _serializationProperties;
+        //private readonly Cci.ModulePropertiesForSerialization _serializationProperties;
 
         SynthesizedScriptTypeSymbol _lazyScriptType;
 
@@ -433,7 +433,7 @@ namespace Pchp.CodeAnalysis.Emit
             throw new NotImplementedException();
         }
 
-        IEnumerable<Cci.ManagedResource> _lazyManagedResources;
+        //IEnumerable<Cci.ManagedResource> _lazyManagedResources;
 
         protected override void AddEmbeddedResourcesFromAddedModules(ArrayBuilder<Cci.ManagedResource> builder, DiagnosticBag diagnostics)
         {

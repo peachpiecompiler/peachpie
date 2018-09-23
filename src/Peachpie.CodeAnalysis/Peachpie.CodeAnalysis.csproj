@@ -5,7 +5,6 @@
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <NoWarn>$(NoWarn);1591</NoWarn>
     <AssemblyName>Peachpie.CodeAnalysis</AssemblyName>
-    <AssemblyOriginatorKeyFile>../../build/StrongKeys/core.snk</AssemblyOriginatorKeyFile>
     <PackageId>Peachpie.CodeAnalysis</PackageId>
     <PackageTags>php;peachpie;dotnet;compiler</PackageTags>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
