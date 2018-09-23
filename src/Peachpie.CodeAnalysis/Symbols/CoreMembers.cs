@@ -9,61 +9,50 @@ using System.Threading.Tasks;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    #region CoreMethod, CoreConstructor, CoreOperator
+    #region CoreMember<T>
 
     /// <summary>
-    /// Descriptor of a well-known method.
+    /// Helper object caching a well-known symbol.
     /// </summary>
-    [DebuggerDisplay("CoreMethod {DebuggerDisplay,nq}")]
-    class CoreMethod
+    /// <typeparam name="T">Type of the symbol.</typeparam>
+    [DebuggerDisplay("{DebuggerDisplay,nq}"), DebuggerNonUserCode]
+    abstract class CoreMember<T> where T : Symbol
     {
-        #region Fields
-
-        /// <summary>
-        /// Lazily associated symbol.
-        /// </summary>
-        MethodSymbol _lazySymbol;
-
-        /// <summary>
-        /// Parametyer types.
-        /// </summary>
-        readonly CoreType[] _ptypes;
+        string DebuggerDisplay => $"{GetType().Name} '{DeclaringClass.FullName}.{MemberName}'";
 
         /// <summary>
         /// Declaring class. Cannot be <c>null</c>.
         /// </summary>
-        public readonly CoreType DeclaringClass;
+        public CoreType DeclaringClass { get; }
 
         /// <summary>
-        /// The method name.
+        /// Member name.
         /// </summary>
-        public readonly string MethodName;
+        public string MemberName { get; }
 
-        #endregion
+        T _lazySymbol = null;
 
-        public CoreMethod(CoreType declaringClass, string methodName, params CoreType[] ptypes)
+        protected CoreMember(CoreType declaringClass, string memberName)
         {
-            Contract.ThrowIfNull(declaringClass);
-            Contract.ThrowIfNull(methodName);
-
-            this.DeclaringClass = declaringClass;
-            this.MethodName = methodName;
-
-            _ptypes = ptypes;
+            this.DeclaringClass = declaringClass ?? throw new ArgumentNullException(nameof(declaringClass));
+            this.MemberName = memberName ?? throw new ArgumentNullException(nameof(memberName));
         }
 
-        /// <summary>
-        /// Gets associated symbol.
-        /// </summary>
-        public MethodSymbol Symbol
+        /// <summary>Implicit cast to the symbol.</summary>
+        public static implicit operator T(CoreMember<T> m) => m.Symbol;
+
+        public T Symbol
         {
             get
             {
                 var symbol = _lazySymbol;
                 if (symbol == null)
                 {
-                    symbol = ResolveSymbol();
-                    Contract.ThrowIfNull(symbol, "Method {0} is not declared in runtime.", MethodName);
+                    var type = DeclaringClass.Symbol;
+                    Contract.ThrowIfNull(type, "Predefined type '{0}' is not defined or imported", DeclaringClass.FullName);
+
+                    symbol = ResolveSymbol(type);
+                    Contract.ThrowIfNull(symbol, "{0} {1} is not defined.", typeof(T).Name, MemberName);
 
                     Interlocked.CompareExchange(ref _lazySymbol, symbol, null);
                 }
@@ -71,26 +60,31 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        string DebuggerDisplay => DeclaringClass.FullName + "." + MethodName;
+        protected abstract T ResolveSymbol(NamedTypeSymbol/*!*/declaringType);
+    }
 
+    /// <summary>
+    /// Descriptor of a well-known method.
+    /// </summary>
+    class CoreMethod : CoreMember<MethodSymbol>
+    {
         /// <summary>
-        /// Implicit cast to method symbol.
+        /// Parametyer types.
         /// </summary>
-        public static implicit operator MethodSymbol(CoreMethod m) => m.Symbol;
+        readonly CoreType[] _ptypes;
 
-        #region ResolveSymbol
+        public CoreMethod(CoreType declaringClass, string methodName, params CoreType[] ptypes)
+            : base(declaringClass, methodName)
+        {
+            _ptypes = ptypes;
+        }
 
         /// <summary>
         /// Resolves <see cref="MethodSymbol"/> of this descriptor.
         /// </summary>
-        protected virtual MethodSymbol ResolveSymbol()
+        protected override MethodSymbol ResolveSymbol(NamedTypeSymbol/*!*/declaringType)
         {
-            var type = this.DeclaringClass.Symbol;
-            if (type == null)
-                throw new InvalidOperationException();
-
-            var methods = type.GetMembers(MethodName);
-            return methods.OfType<MethodSymbol>().First(MatchesSignature);
+            return declaringType.GetMembers(MemberName).OfType<MethodSymbol>().First(MatchesSignature);
         }
 
         protected bool MatchesSignature(MethodSymbol m)
@@ -105,185 +99,59 @@ namespace Pchp.CodeAnalysis.Symbols
 
             return true;
         }
-
-        #endregion
     }
 
-    class CoreField
+    sealed class CoreField : CoreMember<FieldSymbol>
     {
-        #region Fields
-
-        /// <summary>
-        /// Lazily associated symbol.
-        /// </summary>
-        FieldSymbol _lazySymbol;
-
-        /// <summary>
-        /// Declaring class. Cannot be <c>null</c>.
-        /// </summary>
-        public readonly CoreType DeclaringClass;
-
-        /// <summary>
-        /// The field name.
-        /// </summary>
-        public readonly string FieldName;
-
-        #endregion
-
         public CoreField(CoreType declaringClass, string fldName)
+            : base(declaringClass, fldName)
         {
-            Contract.ThrowIfNull(declaringClass);
-            Contract.ThrowIfNull(fldName);
-
-            this.DeclaringClass = declaringClass;
-            this.FieldName = fldName;
         }
 
-        /// <summary>
-        /// Gets associated symbol.
-        /// </summary>
-        public FieldSymbol Symbol
+        protected override FieldSymbol ResolveSymbol(NamedTypeSymbol declaringType)
         {
-            get
-            {
-                var symbol = _lazySymbol;
-                if (symbol == null)
-                {
-                    symbol = ResolveSymbol();
-                    Contract.ThrowIfNull(symbol, "Field {0} is not declared in runtime.", FieldName);
-
-                    Interlocked.CompareExchange(ref _lazySymbol, symbol, null);
-                }
-                return symbol;
-            }
+            return declaringType.GetMembers(MemberName).OfType<FieldSymbol>().FirstOrDefault();
         }
-
-        string DebuggerDisplay => DeclaringClass.FullName + "." + FieldName;
-
-        /// <summary>
-        /// Implicit cast to field symbol.
-        /// </summary>
-        public static implicit operator FieldSymbol(CoreField m) => m.Symbol;
-
-        #region ResolveSymbol
-
-        /// <summary>
-        /// Resolves <see cref="FieldSymbol"/> of this descriptor.
-        /// </summary>
-        protected virtual FieldSymbol ResolveSymbol()
-        {
-            var type = this.DeclaringClass.Symbol;
-            Contract.ThrowIfNull(type, "Type {0} is not declared", DeclaringClass.FullName);
-
-            var fields = type.GetMembers(FieldName);
-            return fields.OfType<FieldSymbol>().FirstOrDefault();
-        }
-
-        #endregion
     }
 
-    class CoreProperty
+    sealed class CoreProperty : CoreMember<PropertySymbol>
     {
-        #region Fields
-
-        /// <summary>
-        /// Lazily associated symbol.
-        /// </summary>
-        PropertySymbol _lazySymbol;
-
-        /// <summary>
-        /// Declaring class. Cannot be <c>null</c>.
-        /// </summary>
-        public readonly CoreType DeclaringClass;
-
-        /// <summary>
-        /// The field name.
-        /// </summary>
-        public readonly string PropertyName;
-
-        #endregion
-
         public CoreProperty(CoreType declaringClass, string propertyName)
+            : base(declaringClass, propertyName)
         {
-            Contract.ThrowIfNull(declaringClass);
-            Contract.ThrowIfNull(propertyName);
-
-            this.DeclaringClass = declaringClass;
-            this.PropertyName = propertyName;
-        }
-
-        /// <summary>
-        /// Gets associated symbol.
-        /// </summary>
-        public PropertySymbol Symbol
-        {
-            get
-            {
-                var symbol = _lazySymbol;
-                if (symbol == null)
-                {
-                    symbol = ResolveSymbol();
-                    Contract.ThrowIfNull(symbol, "Property {0} is not declared in runtime.", PropertyName);
-
-                    Interlocked.CompareExchange(ref _lazySymbol, symbol, null);
-                }
-                return symbol;
-            }
         }
 
         public MethodSymbol Getter => Symbol.GetMethod;
 
         public MethodSymbol Setter => Symbol.SetMethod;
 
-        string DebuggerDisplay => DeclaringClass.FullName + "." + PropertyName;
-
-        /// <summary>
-        /// Implicit cast to field symbol.
-        /// </summary>
-        public static implicit operator PropertySymbol(CoreProperty m) => m.Symbol;
-
-        #region ResolveSymbol
-
-        /// <summary>
-        /// Resolves <see cref="FieldSymbol"/> of this descriptor.
-        /// </summary>
-        protected virtual PropertySymbol ResolveSymbol()
+        protected override PropertySymbol ResolveSymbol(NamedTypeSymbol declaringType)
         {
-            var type = this.DeclaringClass.Symbol;
-            Contract.ThrowIfNull(type, "Type {0} is not declared", DeclaringClass.FullName);
-
-            var fields = type.GetMembers(PropertyName);
-            return fields.OfType<PropertySymbol>().FirstOrDefault();
+            return declaringType.GetMembers(MemberName).OfType<PropertySymbol>().FirstOrDefault();
         }
-
-        #endregion
     }
 
     /// <summary>
     /// Descriptor of a well-known constructor.
     /// </summary>
-    class CoreConstructor : CoreMethod
+    sealed class CoreConstructor : CoreMethod
     {
         public CoreConstructor(CoreType declaringClass, params CoreType[] ptypes)
-            : base(declaringClass, ".ctor", ptypes)
+            : base(declaringClass, WellKnownMemberNames.InstanceConstructorName, ptypes)
         {
 
         }
 
-        protected override MethodSymbol ResolveSymbol()
+        protected override MethodSymbol ResolveSymbol(NamedTypeSymbol declaringType)
         {
-            var type = this.DeclaringClass.Symbol;
-            Contract.ThrowIfNull(type, "Type {0} is not declared", DeclaringClass.FullName);
-
-            var methods = type.InstanceConstructors;
-            return methods.FirstOrDefault(MatchesSignature);
+            return declaringType.InstanceConstructors.FirstOrDefault(MatchesSignature);
         }
     }
 
     /// <summary>
     /// Descriptor of a well-known operator method.
     /// </summary>
-    class CoreOperator : CoreMethod
+    sealed class CoreOperator : CoreMethod
     {
         /// <summary>
         /// Creates the descriptor.
@@ -297,19 +165,19 @@ namespace Pchp.CodeAnalysis.Symbols
             Debug.Assert(name.StartsWith("op_"));
         }
 
-        protected override MethodSymbol ResolveSymbol()
+        protected override MethodSymbol ResolveSymbol(NamedTypeSymbol declaringType)
         {
-            var type = this.DeclaringClass.Symbol;
-            Contract.ThrowIfNull(type, "Type {0} is not declared", DeclaringClass.FullName);
-
-            var methods = type.GetMembers(this.MethodName);
-            return methods.OfType<MethodSymbol>()
+            return declaringType.GetMembers(MemberName)
+                .OfType<MethodSymbol>()
                 .Where(m => m.HasSpecialName)
                 .FirstOrDefault(MatchesSignature);
         }
     }
 
-    class CoreCast : CoreMethod
+    /// <summary>
+    /// Descriptor of a well-known cast operator method.
+    /// </summary>
+    sealed class CoreCast : CoreMethod
     {
         readonly CoreType _castTo;
 
@@ -319,14 +187,11 @@ namespace Pchp.CodeAnalysis.Symbols
             _castTo = castTo;
         }
 
-        protected override MethodSymbol ResolveSymbol()
+        protected override MethodSymbol ResolveSymbol(NamedTypeSymbol declaringType)
         {
-            var type = this.DeclaringClass.Symbol;
-            Contract.ThrowIfNull(type, "Type {0} is not declared", DeclaringClass.FullName);
-
-            var methods = type.GetMembers(this.MethodName);
-            return methods.OfType<MethodSymbol>()
-                .Where(m => m.HasSpecialName && m.IsStatic && m.ParameterCount == 1 && m.Parameters[0].Type == type && m.ReturnType == _castTo)
+            return declaringType.GetMembers(MemberName)
+                .OfType<MethodSymbol>()
+                .Where(m => m.HasSpecialName && m.IsStatic && m.ParameterCount == 1 && m.Parameters[0].Type == declaringType && m.ReturnType == _castTo)
                 .FirstOrDefault();
         }
     }

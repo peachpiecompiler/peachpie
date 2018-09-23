@@ -9,7 +9,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// Descriptor of a well-known type.
     /// </summary>
-    [DebuggerDisplay("CoreType {FullName,nq}")]
+    [DebuggerDisplay("CoreType {FullName}")]
     sealed class CoreType : IEquatable<CoreType>, IEquatable<TypeSymbol>
     {
         internal CoreMethod Method(string name, params CoreType[] ptypes) => new CoreMethod(this, name, ptypes);

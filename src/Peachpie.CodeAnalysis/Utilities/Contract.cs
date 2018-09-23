@@ -26,13 +26,30 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         /// <typeparam name="T">Value type. Must be a reference type.</typeparam>
         /// <param name="value">Argument value.</param>
-        /// <param name="messageFormat">Message in case <paramref name="value"/> is <c>null</c>.</param>
-        /// <param name="arg0">Parameter to the <paramref name="messageFormat"/> string.</param>
-        public static void ThrowIfNull<T>(T value, string messageFormat, object arg0 = null) where T : class
+        /// <param name="message">Error message.</param>
+        public static void ThrowIfNull<T>(T value, string message) where T : class
         {
             if (ReferenceEquals(value, null))
             {
-                ThrowArgumentNull<T>(messageFormat, arg0 == null ? Array.Empty<object>() : new[] { arg0 });
+                ThrowArgumentNull<T>(message);
+            }
+        }
+
+        /// <summary>Throws <see cref="ArgumentNullException"/> if given value is <c>null</c>.</summary>
+        public static void ThrowIfNull<T>(T value, string message, string arg0) where T : class
+        {
+            if (ReferenceEquals(value, null))
+            {
+                ThrowArgumentNull<T>(message, arg0);
+            }
+        }
+
+        /// <summary>Throws <see cref="ArgumentNullException"/> if given value is <c>null</c>.</summary>
+        public static void ThrowIfNull<T>(T value, string message, string arg0, string arg1) where T : class
+        {
+            if (ReferenceEquals(value, null))
+            {
+                ThrowArgumentNull<T>(message, arg0, arg1);
             }
         }
 
