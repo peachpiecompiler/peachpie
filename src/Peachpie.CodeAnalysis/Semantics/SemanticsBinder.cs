@@ -555,74 +555,117 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundConcatEx(boundargs.AsImmutable());
         }
 
-        protected BoundExpression BindFunctionCall(AST.FunctionCall x)
+        protected BoundExpression BindFunctionCall(AST.FunctionCall functionCall) => functionCall.IsMemberOf == null ? BindFunctionCall(functionCall, null) : BindCallStack(functionCall);
+
+        protected BoundExpression BindCallStack(AST.FunctionCall functionCall)
         {
             //
-            if (Routine != null)
+             if (Routine != null)
             {
                 // TODO: ignore well-known library functions
                 Routine.Flags |= RoutineFlags.HasUserFunctionCall;
             }
 
-            //
-            var boundTarget = x.IsMemberOf != null ? BindExpression(x.IsMemberOf, BoundAccess.Read/*Object?*/) : null;
+            //create the call stack and push last call on
+            var callStack = new Stack<AST.VarLikeConstructUse>();
+            var targetStack = new Stack<BoundExpression>();
+            callStack.Push(functionCall);
 
-            if (x is AST.DirectFcnCall)
+            while (!callStack.IsEmpty())
+            {
+                var currentExpr = callStack.Pop();
+
+                if (currentExpr is AST.FunctionCall)
+                {
+                    if (!targetStack.IsEmpty() || currentExpr.IsMemberOf == null)
+                    {
+                        var boundTarget = targetStack.IsEmpty() ? null : targetStack.Pop();
+
+                        targetStack.Push(BindFunctionCall(currentExpr as AST.FunctionCall, boundTarget).WithAccess(BoundAccess.Read));
+                    }
+                    else
+                    {
+                        callStack.Push(currentExpr as AST.VarLikeConstructUse);
+                        callStack.Push(currentExpr.IsMemberOf as AST.VarLikeConstructUse);
+                    }
+                }
+                else
+                {
+                    targetStack.Push(BindExpression(currentExpr, BoundAccess.Read));
+                }
+            }
+            if (!targetStack.IsEmpty())
+            {
+                Debug.Assert(targetStack.Count == 1);
+
+                return targetStack.Pop();
+            }
+            else
+            {
+                //
+                throw new NotImplementedException(functionCall.GetType().FullName);
+            }
+        }
+
+        protected BoundExpression BindFunctionCall(AST.FunctionCall functionCall, BoundExpression currentBoundTarget)
+        {
+            if (functionCall is AST.DirectFcnCall)
             {
                 // func(...)
                 // $x->func(...)
 
-                var fname = ((AST.DirectFcnCall)x).FullName;
+                var fname = (functionCall as AST.DirectFcnCall).FullName;
 
-                if (boundTarget == null)
+                if (currentBoundTarget == null)
                 {
                     if (fname.IsAssertFunctionName())
                     {
                         // Template: assert(...)
-                        return BindAssertExpression(BindArguments(x.CallSignature.Parameters));
+                        return BindAssertExpression(BindArguments(functionCall.CallSignature.Parameters));
                     }
                     else
                     {
-                        return new BoundGlobalFunctionCall(fname.Name, fname.FallbackName, BindArguments(x.CallSignature.Parameters));
+                        return new BoundGlobalFunctionCall(fname.Name, fname.FallbackName, BindArguments(functionCall.CallSignature.Parameters));
                     }
                 }
                 else
                 {
                     Debug.Assert(fname.FallbackName.HasValue == false);
                     Debug.Assert(fname.Name.QualifiedName.IsSimpleName);
-                    return new BoundInstanceFunctionCall(boundTarget, fname.Name, BindArguments(x.CallSignature.Parameters));
+                    return new BoundInstanceFunctionCall(currentBoundTarget, fname.Name, BindArguments(functionCall.CallSignature.Parameters));
                 }
             }
-            else if (x is AST.IndirectFcnCall)
+            else if (functionCall is AST.IndirectFcnCall)
             {
                 // $func(...)
                 // $x->$func(...)
 
-                var nameExpr = BindExpression(((AST.IndirectFcnCall)x).NameExpr);
-                if (boundTarget == null)
+                var nameExpr = BindExpression((functionCall as AST.IndirectFcnCall).NameExpr);
+                if (currentBoundTarget == null)
                 {
-                    return new BoundGlobalFunctionCall(nameExpr, BindArguments(x.CallSignature.Parameters));
+                    return new BoundGlobalFunctionCall(nameExpr, BindArguments(functionCall.CallSignature.Parameters));
                 }
                 else
                 {
-                    return new BoundInstanceFunctionCall(boundTarget, new BoundUnaryEx(nameExpr, AST.Operations.StringCast), BindArguments(x.CallSignature.Parameters));
+                    return new BoundInstanceFunctionCall(currentBoundTarget, new BoundUnaryEx(nameExpr, AST.Operations.StringCast), BindArguments(functionCall.CallSignature.Parameters));
                 }
             }
-            else if (x is AST.StaticMtdCall staticMtdCall)
+            else if (functionCall is AST.StaticMtdCall staticMtdCall)
             {
                 // X::foo(...)
 
-                Debug.Assert(boundTarget == null);
+                Debug.Assert(currentBoundTarget == null);
 
                 var boundname = (staticMtdCall is AST.DirectStMtdCall)
-                    ? new BoundRoutineName(new QualifiedName(((AST.DirectStMtdCall)staticMtdCall).MethodName))
-                    : new BoundRoutineName(new BoundUnaryEx(BindExpression(((AST.IndirectStMtdCall)staticMtdCall).MethodNameExpression), AST.Operations.StringCast));
+                    ? new BoundRoutineName(new QualifiedName((staticMtdCall as AST.DirectStMtdCall).MethodName))
+                    : new BoundRoutineName(new BoundUnaryEx(BindExpression(((staticMtdCall as AST.IndirectStMtdCall)).MethodNameExpression), AST.Operations.StringCast));
 
-                return new BoundStaticFunctionCall(BindTypeRef(staticMtdCall.TargetType, objectTypeInfoSemantic: true, isClassName: true), boundname, BindArguments(x.CallSignature.Parameters));
+                return new BoundStaticFunctionCall(BindTypeRef(staticMtdCall.TargetType, objectTypeInfoSemantic: true, isClassName: true), boundname, BindArguments(functionCall.CallSignature.Parameters));
             }
 
+
             //
-            throw new NotImplementedException(x.GetType().FullName);
+            throw new NotImplementedException(functionCall.GetType().FullName);
         }
 
         BoundExpression BindAssertExpression(ImmutableArray<BoundArgument> boundArguments)
