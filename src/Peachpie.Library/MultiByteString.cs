@@ -1024,39 +1024,55 @@ namespace Pchp.Library
         {
             if (Operators.IsSet(encoding_list))
             {
-                IEnumerable<string> enc_names;
+                var newlist = ResolveEncodingList(ctx, encoding_list);
 
-                var newlist = new List<Encoding>(4);
-                var arrlist = encoding_list.AsArray();
-
-                if (arrlist != null)
+                if (newlist != null)
                 {
-                    enc_names = arrlist.Values.Select(x => x.ToString(ctx));
+                    GetConfig(ctx).DetectOrder = newlist;
+                    return PhpValue.True;
                 }
                 else
                 {
-                    var strlist = encoding_list.ToString(ctx);
-                    enc_names = strlist.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                    return PhpValue.False;
                 }
-
-                foreach (var n in enc_names)
-                {
-                    var enc = GetEncoding(n.Trim());
-                    if (enc == null)
-                    {
-                        return PhpValue.False;
-                    }
-
-                    newlist.Add(enc);
-                }
-
-                GetConfig(ctx).DetectOrder = newlist;
-                return PhpValue.True;
             }
             else
             {
                 return new PhpArray(GetConfig(ctx).DetectOrder.Select(enc => enc.WebName));
             }
+        }
+
+        static List<Encoding> ResolveEncodingList(Context ctx, PhpValue encoding_list, bool ignoreInvalid = false)
+        {
+            IEnumerable<string> enc_names;
+
+            var newlist = new List<Encoding>(4);
+            var arrlist = encoding_list.AsArray();
+
+            if (arrlist != null)
+            {
+                enc_names = arrlist.Values.Select(x => x.ToString(ctx));
+            }
+            else
+            {
+                var strlist = encoding_list.ToString(ctx);
+                enc_names = strlist.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            }
+
+            foreach (var n in enc_names)
+            {
+                var enc = GetEncoding(n.Trim());
+                if (enc == null)
+                {
+                    if (ignoreInvalid) continue;
+
+                    return null;
+                }
+
+                newlist.Add(enc);
+            }
+
+            return newlist;
         }
 
         /// <summary>
@@ -1070,11 +1086,38 @@ namespace Pchp.Library
         /// </param>
         /// <param name="strict">strict specifies whether to use the strict encoding detection or not. Default is FALSE.</param>
         /// <returns>The detected character encoding or FALSE if the encoding cannot be detected from the given string.</returns>
-        public static object mb_detect_encoding(Context ctx, string str, PhpArray encoding_list = null, bool strict = false)
+        [return: CastToFalse]
+        public static string mb_detect_encoding(Context ctx, PhpString str, PhpValue encoding_list = default, bool strict = false)
         {
-            // TODO: Implement
-            // NOTE: See DetectByteOrderMarkAsync() function here for possible solution: https://github.com/AngleSharp/AngleSharp/blob/master/src/AngleSharp/TextSource.cs
-            throw new NotImplementedException();
+            if (str.ContainsBinaryData)
+            {
+                var encodings = Operators.IsSet(encoding_list)
+                    ? ResolveEncodingList(ctx, encoding_list, ignoreInvalid: true)
+                    : GetConfig(ctx).DetectOrder;
+
+                var bytes = str.ToBytes(ctx);
+
+                foreach (var enc in encodings)
+                {
+                    // NOTE: See DetectByteOrderMarkAsync() function here for possible solution: https://github.com/AngleSharp/AngleSharp/blob/master/src/AngleSharp/TextSource.cs
+
+                    try
+                    {
+                        enc.GetString(bytes);
+                        return enc.WebName;
+                    }
+                    catch
+                    {
+                        // nope
+                    }
+                }
+
+                return null; // FALSE
+            }
+            else
+            {
+                return ctx.StringEncoding.WebName; // NOTE: we should return something from encoding_order
+            }
         }
 
         /// <summary>
