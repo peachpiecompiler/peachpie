@@ -63,7 +63,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (symbol == null)
                 {
                     symbol = ResolveSymbol();
-                    Contract.ThrowIfNull(symbol);
+                    Contract.ThrowIfNull(symbol, "Method {0} is not declared in runtime.", MethodName);
 
                     Interlocked.CompareExchange(ref _lazySymbol, symbol, null);
                 }
@@ -150,7 +150,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (symbol == null)
                 {
                     symbol = ResolveSymbol();
-                    Contract.ThrowIfNull(symbol);
+                    Contract.ThrowIfNull(symbol, "Field {0} is not declared in runtime.", FieldName);
 
                     Interlocked.CompareExchange(ref _lazySymbol, symbol, null);
                 }
@@ -173,11 +173,10 @@ namespace Pchp.CodeAnalysis.Symbols
         protected virtual FieldSymbol ResolveSymbol()
         {
             var type = this.DeclaringClass.Symbol;
-            if (type == null)
-                throw new InvalidOperationException();
+            Contract.ThrowIfNull(type, "Type {0} is not declared", DeclaringClass.FullName);
 
             var fields = type.GetMembers(FieldName);
-            return fields.OfType<FieldSymbol>().First();
+            return fields.OfType<FieldSymbol>().FirstOrDefault();
         }
 
         #endregion
@@ -224,7 +223,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (symbol == null)
                 {
                     symbol = ResolveSymbol();
-                    Contract.ThrowIfNull(symbol);
+                    Contract.ThrowIfNull(symbol, "Property {0} is not declared in runtime.", PropertyName);
 
                     Interlocked.CompareExchange(ref _lazySymbol, symbol, null);
                 }
@@ -251,11 +250,10 @@ namespace Pchp.CodeAnalysis.Symbols
         protected virtual PropertySymbol ResolveSymbol()
         {
             var type = this.DeclaringClass.Symbol;
-            if (type == null)
-                throw new InvalidOperationException();
+            Contract.ThrowIfNull(type, "Type {0} is not declared", DeclaringClass.FullName);
 
             var fields = type.GetMembers(PropertyName);
-            return fields.OfType<PropertySymbol>().First();
+            return fields.OfType<PropertySymbol>().FirstOrDefault();
         }
 
         #endregion
@@ -275,11 +273,10 @@ namespace Pchp.CodeAnalysis.Symbols
         protected override MethodSymbol ResolveSymbol()
         {
             var type = this.DeclaringClass.Symbol;
-            if (type == null)
-                throw new InvalidOperationException();
+            Contract.ThrowIfNull(type, "Type {0} is not declared", DeclaringClass.FullName);
 
             var methods = type.InstanceConstructors;
-            return methods.First(MatchesSignature);
+            return methods.FirstOrDefault(MatchesSignature);
         }
     }
 
@@ -303,13 +300,12 @@ namespace Pchp.CodeAnalysis.Symbols
         protected override MethodSymbol ResolveSymbol()
         {
             var type = this.DeclaringClass.Symbol;
-            if (type == null)
-                throw new InvalidOperationException();
+            Contract.ThrowIfNull(type, "Type {0} is not declared", DeclaringClass.FullName);
 
             var methods = type.GetMembers(this.MethodName);
             return methods.OfType<MethodSymbol>()
                 .Where(m => m.HasSpecialName)
-                .First(MatchesSignature);
+                .FirstOrDefault(MatchesSignature);
         }
     }
 
@@ -326,13 +322,12 @@ namespace Pchp.CodeAnalysis.Symbols
         protected override MethodSymbol ResolveSymbol()
         {
             var type = this.DeclaringClass.Symbol;
-            if (type == null)
-                throw new InvalidOperationException();
+            Contract.ThrowIfNull(type, "Type {0} is not declared", DeclaringClass.FullName);
 
             var methods = type.GetMembers(this.MethodName);
             return methods.OfType<MethodSymbol>()
                 .Where(m => m.HasSpecialName && m.IsStatic && m.ParameterCount == 1 && m.Parameters[0].Type == type && m.ReturnType == _castTo)
-                .First();
+                .FirstOrDefault();
         }
     }
 
@@ -645,33 +640,17 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             public PhpAliasHolder(CoreTypes ct)
             {
-                _value = null;
+                Value = ct.PhpAlias.Field("Value");
 
                 EnsureObject = ct.PhpAlias.Method("EnsureObject");
                 EnsureArray = ct.PhpAlias.Method("EnsureArray");
             }
 
+            public readonly CoreField
+                Value;
+
             public readonly CoreMethod
                 EnsureObject, EnsureArray;
-
-            /// <summary>
-            /// Lazily gets <c>PhpAlias.Value</c> field.
-            /// </summary>
-            public FieldSymbol Value
-            {
-                get
-                {
-                    if (_value == null)
-                    {
-                        Debug.Assert(EnsureObject.DeclaringClass.Symbol != null);
-                        _value = (EnsureObject.DeclaringClass.Symbol)
-                            .GetMembers("Value").OfType<FieldSymbol>().First();
-                        Debug.Assert(_value != null);
-                    }
-                    return _value;
-                }
-            }
-            FieldSymbol _value;
         }
 
         public struct PhpNumberHolder
