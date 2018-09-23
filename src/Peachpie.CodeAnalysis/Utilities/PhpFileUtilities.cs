@@ -39,5 +39,10 @@ namespace Pchp.CodeAnalysis.Utilities
                 string.Join(string.Empty, Enumerable.Repeat(".." + PathUtilities.DirectorySeparatorStr, levelups)) +
                 path.Substring(basedir.Length + 1);
         }
+
+        /// <summary>
+        /// Gets value indicating whether the file should be treated as a PHAR file archive.
+        /// </summary>
+        public static bool IsPharFile(this string path) => path != null && path.EndsWith(".phar", StringComparison.OrdinalIgnoreCase);
     }
 }
