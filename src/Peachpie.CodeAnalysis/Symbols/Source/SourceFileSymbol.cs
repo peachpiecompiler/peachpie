@@ -179,11 +179,11 @@ namespace Pchp.CodeAnalysis.Symbols
             // [ScriptAttribute(RelativeFilePath)]  // TODO: LastWriteTime
             if (_lazyScriptAttribute == null)
             {
-                var lazyScriptAttribute = new SynthesizedAttributeData(
+                var scriptAttribute = new SynthesizedAttributeData(
                     DeclaringCompilation.CoreMethods.Ctors.ScriptAttribute_string,
                     ImmutableArray.Create(new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, this.RelativeFilePath)),
                     ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
-                Interlocked.CompareExchange(ref _lazyScriptAttribute, lazyScriptAttribute, null);
+                Interlocked.CompareExchange(ref _lazyScriptAttribute, scriptAttribute, null);
             }
 
             //
@@ -283,6 +283,8 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     sealed class SourcePharFileSymbol : SourceFileSymbol
     {
+        SynthesizedAttributeData _lazyPharAttribute;
+
         public SourcePharFileSymbol(PhpCompilation compilation, PhpSyntaxTree syntaxTree)
             : base(compilation, syntaxTree)
         {
@@ -295,11 +297,35 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
+                return $"<{PharName}>{DirectoryRelativePath}";
+            }
+        }
+
+        public string PharName
+        {
+            get
+            {
                 var path = SyntaxTree.Source.FilePath;
                 var slash = path.IndexOf('/');
                 var pharname = (slash < 0) ? path : path.Remove(slash);
-                return $"<{pharname}>{DirectoryRelativePath}";
+
+                return pharname;
             }
+        }
+
+        public override ImmutableArray<AttributeData> GetAttributes()
+        {
+            // [PharAttribute(PharName)]
+            if (_lazyPharAttribute == null)
+            {
+                var pharAttribute = new SynthesizedAttributeData(
+                    DeclaringCompilation.CoreMethods.Ctors.PharAttribute_string,
+                    ImmutableArray.Create(new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, PharName)),
+                    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                Interlocked.CompareExchange(ref _lazyPharAttribute, pharAttribute, null);
+            }
+
+            return base.GetAttributes().Concat(_lazyPharAttribute);
         }
     }
 }

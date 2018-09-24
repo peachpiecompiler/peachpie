@@ -26,6 +26,23 @@ namespace Pchp.Core
     }
 
     /// <summary>
+    /// Annotates a script class from a phar archive.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class)]
+    public sealed class PharAttribute : Attribute
+    {
+        /// <summary>
+        /// PHAR file name.
+        /// </summary>
+        public string PharFile { get; private set; }
+
+        public PharAttribute(string pharFile)
+        {
+            this.PharFile = pharFile;
+        }
+    }
+
+    /// <summary>
     /// Assembly attribute indicating the assembly represents an extension.
     /// When this attribute is used on an assembly, declared types and methods are not visible to compiler as they are,
     /// instead, only public static members are visible as global declarations.

@@ -103,6 +103,11 @@ namespace Pchp.CodeAnalysis.Symbols
         public const string PhpScriptAttributeFullName = "Pchp.Core.ScriptAttribute";
 
         /// <summary>
+        /// Name of attribute class representing a PHAR archive script type.
+        /// </summary>
+        public const string PharAttributeFullName = "Pchp.Core.PharAttribute";
+
+        /// <summary>
         /// Name of attribute class representing target PHP language specification.
         /// </summary>
         public const string TargetPhpLanguageAttributeFullName = "Pchp.Core.TargetPhpLanguageAttribute";
@@ -129,7 +134,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public readonly CoreType
             Context, Operators, Convert, Comparison, StrictComparison, PhpException,
-            ScriptAttribute, PhpTraitAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, NotNullAttribute, PhpMemberVisibilityAttribute,
+            ScriptAttribute, PhpTraitAttribute, PharAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, NotNullAttribute, PhpMemberVisibilityAttribute,
             ScriptDiedException,
             IStaticInit, RoutineInfo, IndirectLocal,
             BinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
@@ -180,6 +185,7 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpException = Create("PhpException");
             ScriptAttribute = Create("ScriptAttribute");
             PhpTraitAttribute = Create(PhpTraitAttributeName);
+            PharAttribute = Create("PharAttribute");
             PhpTypeAttribute = Create("PhpTypeAttribute");
             PhpHiddenAttribute = Create("PhpHiddenAttribute");
             PhpFieldsOnlyCtorAttribute = Create(PhpFieldsOnlyCtorAttributeName);
