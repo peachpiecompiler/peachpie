@@ -146,7 +146,15 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // 1. specified type hint
-            var result = DeclaringCompilation.GetTypeFromTypeRef(_syntax.TypeHint);
+            var typeHint = _syntax.TypeHint;
+            if (typeHint is ReservedTypeRef rtref)
+            {
+                // workaround for https://github.com/peachpiecompiler/peachpie/issues/281
+                // remove once it gets updated in parser
+                if (rtref.Type == ReservedTypeRef.ReservedType.self) return _routine.ContainingType; // self
+            }
+            // TODO: typeHint is TranslatedTypeRef -> ReservedTypeRef: return self and parent TypeSymbol directly
+            var result = DeclaringCompilation.GetTypeFromTypeRef(typeHint);
 
             // 2. optionally type specified in PHPDoc
             if (result == null && _ptagOpt != null && _ptagOpt.TypeNamesArray.Length != 0
