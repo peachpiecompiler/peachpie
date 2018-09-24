@@ -151,7 +151,7 @@ namespace Pchp.CodeAnalysis.Symbols
             Debug.Assert(tree.Root != null);
 
             // create file symbol (~ php script containing type)
-            var fsymbol = new SourceFileSymbol(_compilation, tree);
+            var fsymbol = SourceFileSymbol.Create(_compilation, tree);
             if (FirstScript == null) FirstScript = fsymbol;
 
             // collect type declarations

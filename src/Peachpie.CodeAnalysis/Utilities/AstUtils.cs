@@ -95,6 +95,36 @@ namespace Pchp.CodeAnalysis
         }
 
         /// <summary>
+        /// Determines whether to treat given PHAR entry as a PHP source file (whether to compile it).
+        /// </summary>
+        public static bool IsCompileEntry(this Devsense.PHP.Phar.Entry entry)
+        {
+            // TODO: what entries will be compiled?
+            if (!entry.IsFile)
+            {
+                return false;
+            }
+
+            if (entry.Name.EndsWith(".php"))
+            {
+                return true;
+            }
+
+            var ext = System.IO.Path.GetExtension(entry.Name);
+            if (string.IsNullOrEmpty(ext) && entry.Code.StartsWith("<?php"))
+            {
+                return true;
+            }
+
+            if (ext == ".php5" || ext == ".inc" || ext == ".module")
+            {
+                return entry.Code.IndexOf("<?php") >= 0;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Returns the offset of the location specified by (zero-based) line and character from the start of the file.
         /// In the case of invalid line, -1 is returned.
         /// </summary>

@@ -118,10 +118,9 @@ namespace Pchp.CodeAnalysis.CommandLine
                 {
                     var treesList = new List<PhpSyntaxTree>(trees);
 
-                    for (int i = pharFiles.Count - 1; i >= 0; i--) // enlist phars from the end (index)
+                    // enlist phars from the end (index)
+                    foreach (var f in pharFiles.OrderByDescending(x => x.index))
                     {
-                        var f = pharFiles[i];
-
                         treesList[f.index] = f.phar.SyntaxTree; // phar stub, may be null
                         treesList.InsertRange(f.index + 1, f.phar.Trees);
 
@@ -186,19 +185,21 @@ namespace Pchp.CodeAnalysis.CommandLine
             {
                 // phar file archive
 
-                var prefix = $"phar://{Path.GetFileName(file.Path)}/";
+                var prefix = Path.GetFileName(file.Path); // TODO: relative to root
                 var phar = Devsense.PHP.Phar.PharFile.OpenPharFile(file.Path); // TODO: report exception
 
-                var stub = phar.StubCode != null ? PhpSyntaxTree.ParseCode(phar.StubCode, parseOptions, scriptParseOptions, prefix) : null;
-                var trees = new List<PhpSyntaxTree>();
+                var stub = PhpSyntaxTree.ParseCode(phar.StubCode ?? string.Empty, parseOptions, scriptParseOptions, prefix);
+                stub.IsPharEntry = true;
 
                 // TODO: ConcurrentBuild -> Parallel
                 
+                var trees = new List<PhpSyntaxTree>();
                 foreach (var entry in phar.Manifest.Entries.Values)
                 {
-                    if (entry.IsFile && entry.Name.EndsWith(".php")) // TODO: what entries will be compiled?
+                    if (entry.IsCompileEntry())
                     {
-                        var tree = PhpSyntaxTree.ParseCode(entry.Code, parseOptions, scriptParseOptions, prefix + entry.Name);
+                        var tree = PhpSyntaxTree.ParseCode(entry.Code, parseOptions, scriptParseOptions, prefix + "/" + entry.Name);
+                        tree.IsPharEntry = true;
                         trees.Add(tree);
                     }
                 }

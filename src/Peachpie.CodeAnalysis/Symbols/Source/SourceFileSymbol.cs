@@ -22,12 +22,14 @@ namespace Pchp.CodeAnalysis.Symbols
     ///         static PhpValue [Main](){ ... }
     ///     }
     /// }</remarks>
-    sealed partial class SourceFileSymbol : NamedTypeSymbol, ILambdaContainerSymbol, IPhpScriptTypeSymbol
+    partial class SourceFileSymbol : NamedTypeSymbol, ILambdaContainerSymbol, IPhpScriptTypeSymbol
     {
         readonly PhpCompilation _compilation;
         readonly PhpSyntaxTree _syntaxTree;
 
         readonly SourceGlobalMethodSymbol _mainMethod;
+        readonly List<SourceTypeSymbol> _containedTypes = new List<SourceTypeSymbol>();
+        readonly List<Symbol> _lazyMembers = new List<Symbol>();
 
         BaseAttributeData _lazyScriptAttribute;
 
@@ -39,19 +41,20 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// List of types declared within the file.
         /// </summary>
-        public List<SourceTypeSymbol> ContainedTypes
-        {
-            get { return _containedTypes; }
-        }
-
-        readonly List<Symbol> _lazyMembers = new List<Symbol>();
-        readonly List<SourceTypeSymbol> _containedTypes = new List<SourceTypeSymbol>();
+        public List<SourceTypeSymbol> ContainedTypes => _containedTypes;
 
         public PhpSyntaxTree SyntaxTree => _syntaxTree;
 
         public SourceModuleSymbol SourceModule => _compilation.SourceModule;
 
-        public SourceFileSymbol(PhpCompilation compilation, PhpSyntaxTree syntaxTree)
+        public static SourceFileSymbol Create(PhpCompilation compilation, PhpSyntaxTree syntaxTree)
+        {
+            return syntaxTree.IsPharEntry
+                ? new SourcePharFileSymbol(compilation, syntaxTree)
+                : new SourceFileSymbol(compilation, syntaxTree);
+        }
+
+        protected SourceFileSymbol(PhpCompilation compilation, PhpSyntaxTree syntaxTree)
         {
             Contract.ThrowIfNull(compilation);
             Contract.ThrowIfNull(syntaxTree);
@@ -150,7 +153,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public string RelativeFilePath =>
+        public virtual string RelativeFilePath =>
             PhpFileUtilities.GetRelativePath(
                 PhpFileUtilities.NormalizeSlashes(_syntaxTree.Source.FilePath),
                 PhpFileUtilities.NormalizeSlashes(_compilation.Options.BaseDirectory));
@@ -158,7 +161,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets relative path excluding the file name and trailing slashes.
         /// </summary>
-        internal string DirectoryRelativePath
+        internal virtual string DirectoryRelativePath
         {
             get
             {
@@ -169,13 +172,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override string Name => PathUtilities.GetFileName(_syntaxTree.Source.FilePath, true).Replace('.', '_');
 
-        public override string NamespaceName
-        {
-            get
-            {
-                return WellKnownPchpNames.ScriptsRootNamespace + DirectoryRelativePath;
-            }
-        }
+        public override string NamespaceName => WellKnownPchpNames.ScriptsRootNamespace + DirectoryRelativePath;
 
         public override ImmutableArray<AttributeData> GetAttributes()
         {
@@ -279,5 +276,30 @@ namespace Pchp.CodeAnalysis.Symbols
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit() => GetMembers().OfType<FieldSymbol>();
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit() => ImmutableArray<NamedTypeSymbol>.Empty;
+    }
+
+    /// <summary>
+    /// <see cref="SourceFileSymbol"/> representing a PHAR entry.
+    /// </summary>
+    sealed class SourcePharFileSymbol : SourceFileSymbol
+    {
+        public SourcePharFileSymbol(PhpCompilation compilation, PhpSyntaxTree syntaxTree)
+            : base(compilation, syntaxTree)
+        {
+        }
+
+        public override string RelativeFilePath => PhpFileUtilities.NormalizeSlashes(SyntaxTree.Source.FilePath); // FilePath is already relative in PHAR
+
+        // <pharfilename.phar>/path
+        public override string NamespaceName
+        {
+            get
+            {
+                var path = SyntaxTree.Source.FilePath;
+                var slash = path.IndexOf('/');
+                var pharname = (slash < 0) ? path : path.Remove(slash);
+                return $"<{pharname}>{DirectoryRelativePath}";
+            }
+        }
     }
 }

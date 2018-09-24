@@ -45,6 +45,9 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public ImmutableArray<LangElement> YieldNodes { get; private set; }
 
+        /// <summary>Gets or set value indicating the node is a PHAR's file entry.</summary>
+        public bool IsPharEntry { get; set; }
+
         public static ImmutableArray<Version> SupportedLanguageVersions { get; } = new Version[]
         {
             new Version(5, 4),
