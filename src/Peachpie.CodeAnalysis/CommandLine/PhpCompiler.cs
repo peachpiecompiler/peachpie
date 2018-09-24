@@ -42,17 +42,52 @@ namespace Pchp.CodeAnalysis.CommandLine
 
         internal override Type Type => typeof(PhpCompiler);
 
+        /// <summary>
+        /// Result of the <see cref="ParseFile"/> operation.
+        /// </summary>
+        struct ParsedSource
+        {
+            /// <summary>
+            /// Resulting syntax tree of source file
+            /// or a syntax tree of PHAR file stub.
+            /// </summary>
+            public PhpSyntaxTree SyntaxTree;
+
+            /// <summary>PHAR manifest in case the source file is a PHAR file.</summary>
+            public Devsense.PHP.Phar.Manifest Manifest;
+
+            /// <summary>PHAR syntax trees in case the source file is a PHAR file.</summary>
+            public IEnumerable<PhpSyntaxTree> Trees;
+        }
+
         public override Compilation CreateCompilation(TextWriter consoleOutput, TouchedFileLogger touchedFilesLogger, ErrorLogger errorLogger)
         {
             bool hadErrors = false;
             var sourceFiles = Arguments.SourceFiles;
-            var trees = new PhpSyntaxTree[sourceFiles.Length];
+
+            IEnumerable<PhpSyntaxTree> sourceTrees;
 
             using (Arguments.CompilationOptions.Observers.StartMetric("parse"))
             {
                 // PARSE
 
                 var parseOptions = Arguments.ParseOptions;
+
+                // NOTE: order of trees is important!!
+                var trees = new PhpSyntaxTree[sourceFiles.Length];
+                var pharFiles = new List<(int index, ParsedSource phar)>();
+
+                void ProcessParsedSource(int index, ParsedSource parsed)
+                {
+                    if (parsed.Manifest == null)
+                    {
+                        trees[index] = parsed.SyntaxTree;
+                    }
+                    else
+                    {
+                        pharFiles.Add((index, parsed));
+                    }
+                }
 
                 // We compute script parse options once so we don't have to do it repeatedly in
                 // case there are many script files.
@@ -62,17 +97,38 @@ namespace Pchp.CodeAnalysis.CommandLine
                 {
                     Parallel.For(0, sourceFiles.Length, new Action<int>(i =>
                     {
-                        //NOTE: order of trees is important!!
-                        trees[i] = ParseFile(consoleOutput, parseOptions, scriptParseOptions, ref hadErrors, sourceFiles[i], errorLogger);
+                        ProcessParsedSource(i, ParseFile(consoleOutput, parseOptions, scriptParseOptions, ref hadErrors, sourceFiles[i], errorLogger));
                     }));
                 }
                 else
                 {
                     for (int i = 0; i < sourceFiles.Length; i++)
                     {
-                        //NOTE: order of trees is important!!
-                        trees[i] = ParseFile(consoleOutput, parseOptions, scriptParseOptions, ref hadErrors, sourceFiles[i], errorLogger);
+                        ProcessParsedSource(i, ParseFile(consoleOutput, parseOptions, scriptParseOptions, ref hadErrors, sourceFiles[i], errorLogger));
                     }
+                }
+
+                // flattern trees and pharFiles
+
+                if (pharFiles == null || pharFiles.Count == 0)
+                {
+                    sourceTrees = trees;
+                }
+                else
+                {
+                    var treesList = new List<PhpSyntaxTree>(trees);
+
+                    for (int i = pharFiles.Count - 1; i >= 0; i--) // enlist phars from the end (index)
+                    {
+                        var f = pharFiles[i];
+
+                        treesList[f.index] = f.phar.SyntaxTree; // phar stub, may be null
+                        treesList.InsertRange(f.index + 1, f.phar.Trees);
+
+                        // TODO: add content files
+                    }
+
+                    sourceTrees = treesList;
                 }
 
                 // END PARSE
@@ -98,13 +154,14 @@ namespace Pchp.CodeAnalysis.CommandLine
                 return null;
             }
 
+            //
             var referenceResolver = GetCommandLineMetadataReferenceResolver(touchedFilesLogger);
             var loggingFileSystem = new LoggingStrongNameFileSystem(touchedFilesLogger);
             var strongNameProvider = Arguments.GetStrongNameProvider(loggingFileSystem, _tempDirectory);
 
             var compilation = PhpCompilation.Create(
                 Arguments.CompilationName,
-                trees.WhereNotNull(),
+                sourceTrees.WhereNotNull(),
                 resolvedReferences,
                 Arguments.CompilationOptions.
                     WithMetadataReferenceResolver(referenceResolver).
@@ -117,7 +174,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             return compilation;
         }
 
-        private PhpSyntaxTree ParseFile(
+        private ParsedSource ParseFile(
             TextWriter consoleOutput,
             PhpParseOptions parseOptions,
             PhpParseOptions scriptParseOptions,
@@ -125,29 +182,59 @@ namespace Pchp.CodeAnalysis.CommandLine
             CommandLineSourceFile file,
             ErrorLogger errorLogger)
         {
-            var diagnosticInfos = new List<DiagnosticInfo>();
-            var content = TryReadFileContent(file, diagnosticInfos);
-
-            if (diagnosticInfos.Count != 0)
+            if (file.Path.IsPharFile())
             {
-                ReportErrors(diagnosticInfos, consoleOutput, errorLogger);
-                hadErrors = true;
+                // phar file archive
+
+                var prefix = $"phar://{Path.GetFileName(file.Path)}/";
+                var phar = Devsense.PHP.Phar.PharFile.OpenPharFile(file.Path); // TODO: report exception
+
+                var stub = phar.StubCode != null ? PhpSyntaxTree.ParseCode(phar.StubCode, parseOptions, scriptParseOptions, prefix) : null;
+                var trees = new List<PhpSyntaxTree>();
+
+                // TODO: ConcurrentBuild -> Parallel
+                
+                foreach (var entry in phar.Manifest.Entries.Values)
+                {
+                    if (entry.IsFile && entry.Name.EndsWith(".php")) // TODO: what entries will be compiled?
+                    {
+                        var tree = PhpSyntaxTree.ParseCode(entry.Code, parseOptions, scriptParseOptions, prefix + entry.Name);
+                        trees.Add(tree);
+                    }
+                }
+
+                // TODO: report errors if any
+
+                return new ParsedSource { SyntaxTree = stub, Manifest = phar.Manifest, Trees = trees };
             }
-
-            PhpSyntaxTree result = null;
-
-            if (content != null)
+            else
             {
-                result = PhpSyntaxTree.ParseCode(content.ToString(), parseOptions, scriptParseOptions, file.Path);
-            }
+                // single source file
 
-            if (result != null && result.Diagnostics.HasAnyErrors())
-            {
-                ReportErrors(result.Diagnostics, consoleOutput, errorLogger);
-                hadErrors = true;
-            }
+                var diagnosticInfos = new List<DiagnosticInfo>();
+                var content = TryReadFileContent(file, diagnosticInfos);
 
-            return result;
+                if (diagnosticInfos.Count != 0)
+                {
+                    ReportErrors(diagnosticInfos, consoleOutput, errorLogger);
+                    hadErrors = true;
+                }
+
+                PhpSyntaxTree result = null;
+
+                if (content != null)
+                {
+                    result = PhpSyntaxTree.ParseCode(content.ToString(), parseOptions, scriptParseOptions, file.Path);
+                }
+
+                if (result != null && result.Diagnostics.HasAnyErrors())
+                {
+                    ReportErrors(result.Diagnostics, consoleOutput, errorLogger);
+                    hadErrors = true;
+                }
+
+                return new ParsedSource { SyntaxTree = result };
+            }
         }
 
         public override void PrintHelp(TextWriter consoleOutput)
