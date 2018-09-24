@@ -1922,6 +1922,59 @@ namespace Pchp.Library
 
         #endregion
 
+        #region array_column
+
+        /// <summary>
+        /// Return the values from a single column in the input array.
+        /// </summary>
+        /// <param name="input">A multi-dimensional array or an array of objects from which to pull a column of values from.</param>
+        /// <param name="column_key">The column of values to return.
+        /// This value may be an integer key of the column you wish to retrieve, or it may be a string key name
+        /// for an associative array or property name.
+        /// It may also be NULL to return complete arrays or objects (this is useful together with index_key to reindex the array).</param>
+        /// <param name="index_key">The column to use as the index/keys for the returned array.
+        /// This value may be the integer key of the column, or it may be the string key name.</param>
+        /// <returns>Returns an array of values representing a single column from the input array.</returns>
+        public static PhpArray array_column(PhpArray input, PhpValue column_key, PhpValue index_key = default)
+        {
+            if (input == null) throw new ArgumentException();
+
+            var result = new PhpArray(input.Count);
+
+            var key = Operators.IsSet(column_key)
+                ? column_key.ToIntStringKey()
+                : default(IntStringKey?);
+
+            var ikey = Operators.IsSet(index_key)
+                ? index_key.ToIntStringKey()
+                : default(IntStringKey?);
+
+            var enumerator = input.GetFastEnumerator();
+            while (enumerator.MoveNext())
+            {
+                var columnn = (key.HasValue
+                        ? enumerator.CurrentValue[key.Value] // TODO: Object's property
+                        : enumerator.CurrentValue)
+                    .DeepCopy();
+
+                if (ikey.HasValue)
+                {
+                    var targetkey = enumerator.CurrentValue[ikey.Value].ToIntStringKey();
+                    result[targetkey] = columnn;
+                }
+                else
+                {
+                    result.Add(columnn);
+                }
+            }
+
+            //
+
+            return result;
+        }
+
+        #endregion
+
         #region array_merge, array_merge_recursive
 
         /// <summary>
