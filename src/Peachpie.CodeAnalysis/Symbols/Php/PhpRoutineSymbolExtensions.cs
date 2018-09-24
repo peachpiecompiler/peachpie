@@ -59,7 +59,7 @@ namespace Pchp.CodeAnalysis.Symbols
             // : return type
             if (routine.SyntaxReturnType != null)
             {
-                return compilation.GetTypeFromTypeRef(routine.SyntaxReturnType);
+                return compilation.GetTypeFromTypeRef(routine.SyntaxReturnType, routine.ContainingType as SourceTypeSymbol);
             }
 
             // for non virtual methods:

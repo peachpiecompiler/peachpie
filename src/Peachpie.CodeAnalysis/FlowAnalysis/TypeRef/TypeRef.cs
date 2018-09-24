@@ -53,6 +53,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public virtual INamedTypeSymbol GetTypeSymbol(PhpCompilation compilation)
         {
+            // TODO: see LocalSymbolProvider instead of GlobalSemantics, gets better results for ambiguities
+
             var resolved = (NamedTypeSymbol)compilation.GlobalSemantics.ResolveType(QualifiedName);
 
             return resolved.IsValidType()

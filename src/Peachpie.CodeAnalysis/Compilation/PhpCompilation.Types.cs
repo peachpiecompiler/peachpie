@@ -173,8 +173,10 @@ namespace Pchp.CodeAnalysis
         /// Binds <see cref="AST.TypeRef"/> to a type symbol.
         /// </summary>
         /// <param name="tref">Type reference.</param>
+        /// <param name="selfHint">Optional.
+        /// Current type scope for better <paramref name="tref"/> resolution since <paramref name="tref"/> might be ambiguous</param>
         /// <returns>Resolved symbol.</returns>
-        internal TypeSymbol GetTypeFromTypeRef(AST.TypeRef tref)
+        internal TypeSymbol GetTypeFromTypeRef(AST.TypeRef tref, SourceTypeSymbol selfHint = null)
         {
             if (tref != null)
             {
@@ -194,9 +196,15 @@ namespace Pchp.CodeAnalysis
                         default: throw new ArgumentException();
                     }
                 }
-                else if (tref is AST.INamedTypeRef)
+                else if (tref is AST.INamedTypeRef namedtref)
                 {
-                    var t = (NamedTypeSymbol)GlobalSemantics.ResolveType(((AST.INamedTypeRef)tref).ClassName);
+                    if (selfHint != null)
+                    {
+                        if (namedtref.ClassName == selfHint.FullName) return selfHint;
+                        if (selfHint.BaseType is IPhpTypeSymbol phpt && namedtref.ClassName == phpt.FullName) return selfHint.BaseType;
+                    }
+
+                    var t = (NamedTypeSymbol)GlobalSemantics.ResolveType(namedtref.ClassName);
                     return t.IsErrorTypeOrNull()
                         ? CoreTypes.Object.Symbol   // TODO: merge candidates if any
                         : t;
@@ -208,12 +216,12 @@ namespace Pchp.CodeAnalysis
                     TypeSymbol result = null;
                     foreach (var x in ((AST.MultipleTypeRef)tref).MultipleTypes)
                     {
-                        var resolved = GetTypeFromTypeRef(x);
+                        var resolved = GetTypeFromTypeRef(x, selfHint);
                         result = (result != null) ? Merge(result, resolved) : resolved;
                     }
                     return result;
                 }
-                else if (tref is AST.NullableTypeRef) return MergeNull(GetTypeFromTypeRef(((AST.NullableTypeRef)tref).TargetType)); // ?((AST.NullableTypeRef)tref).TargetType
+                else if (tref is AST.NullableTypeRef) return MergeNull(GetTypeFromTypeRef(((AST.NullableTypeRef)tref).TargetType, selfHint)); // ?((AST.NullableTypeRef)tref).TargetType
                 else if (tref is AST.GenericTypeRef) throw new NotImplementedException(); //((AST.GenericTypeRef)tref).TargetType
                 else if (tref is AST.IndirectTypeRef) throw new NotImplementedException();
             }

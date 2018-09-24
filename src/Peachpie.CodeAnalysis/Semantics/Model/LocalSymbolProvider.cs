@@ -65,6 +65,11 @@ namespace Pchp.CodeAnalysis.Semantics
                 // name == scope
                 type = ContainingType;
             }
+            else if (ContainingType != null && ContainingType.BaseType is IPhpTypeSymbol basephpt && basephpt.FullName == name)
+            {
+                // name == scope.base
+                type = ContainingType.BaseType;
+            }
             else
             {
                 type = (NamedTypeSymbol)_model.ResolveType(name);

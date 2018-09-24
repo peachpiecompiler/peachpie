@@ -154,7 +154,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (rtref.Type == ReservedTypeRef.ReservedType.self) return _routine.ContainingType; // self
             }
             // TODO: typeHint is TranslatedTypeRef -> ReservedTypeRef: return self and parent TypeSymbol directly
-            var result = DeclaringCompilation.GetTypeFromTypeRef(typeHint);
+            var result = DeclaringCompilation.GetTypeFromTypeRef(typeHint, (SourceTypeSymbol)_routine.ContainingType);
 
             // 2. optionally type specified in PHPDoc
             if (result == null && _ptagOpt != null && _ptagOpt.TypeNamesArray.Length != 0
