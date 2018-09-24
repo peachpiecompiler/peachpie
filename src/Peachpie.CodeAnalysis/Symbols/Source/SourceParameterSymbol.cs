@@ -153,7 +153,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 // remove once it gets updated in parser
                 if (rtref.Type == ReservedTypeRef.ReservedType.self) return _routine.ContainingType; // self
             }
-            // TODO: typeHint is TranslatedTypeRef -> ReservedTypeRef: return self and parent TypeSymbol directly
             var result = DeclaringCompilation.GetTypeFromTypeRef(typeHint, (SourceTypeSymbol)_routine.ContainingType);
 
             // 2. optionally type specified in PHPDoc
