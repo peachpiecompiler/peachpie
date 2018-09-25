@@ -786,7 +786,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     var boundIndex = (x.Index != null) ? BindExpression(x.Index, BoundAccess.Read) : null;
                     var boundValue = (x is AST.RefItem refItem)
                         ? BindExpression(refItem.RefToGet, islist ? BoundAccess.None.WithWriteRef(0) : BoundAccess.ReadValueCopy)
-                        : BindExpression(((AST.ValueItem)x).ValueExpr, islist ? BoundAccess.Write : BoundAccess.ReadRef);
+                        : BindExpression(((AST.ValueItem)x).ValueExpr, islist ? BoundAccess.Write : BoundAccess.Read);
 
                     yield return new KeyValuePair<BoundExpression, BoundExpression>(boundIndex, boundValue);
                 }
