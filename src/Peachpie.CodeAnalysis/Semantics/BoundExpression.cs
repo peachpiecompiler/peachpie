@@ -1158,11 +1158,13 @@ namespace Pchp.CodeAnalysis.Semantics
         public KeyValuePair<BoundExpression, BoundReferenceExpression>[] Items => _items;
         readonly KeyValuePair<BoundExpression, BoundReferenceExpression>[] _items;
 
-        public BoundListEx(KeyValuePair<BoundExpression, BoundReferenceExpression>[] items)
+        public BoundListEx(IEnumerable<KeyValuePair<BoundExpression, BoundExpression>> items)
         {
             Debug.Assert(items != null);
-            Debug.Assert(items.Length != 0);
-            _items = items;
+
+            _items = items
+                .Select(pair => new KeyValuePair<BoundExpression, BoundReferenceExpression>(pair.Key, (BoundReferenceExpression)pair.Value))
+                .ToArray();
         }
 
         public override void Accept(OperationVisitor visitor)

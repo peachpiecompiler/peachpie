@@ -746,17 +746,14 @@ namespace Pchp.CodeAnalysis.Semantics
                     // _diagnostics. ...
                 }
 
-                return new BoundArrayEx(BindArrayItems(x.Items, BoundAccess.ReadValueCopy))
+                return new BoundArrayEx(BindArrayItems(x.Items))
                     .WithAccess(access);
             }
             else if (x.Operation == AST.Operations.List)
             {
                 Debug.Assert(access.IsWrite);
 
-                var items = BindArrayItems(x.Items, BoundAccess.Write)
-                    .Select(pair => new KeyValuePair<BoundExpression, BoundReferenceExpression>(pair.Key, (BoundReferenceExpression)pair.Value));
-
-                return new BoundListEx(items.ToArray())
+                return new BoundListEx(BindArrayItems(x.Items, islist: true))
                     .WithAccess(BoundAccess.Write);
             }
             else
@@ -765,7 +762,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        protected IEnumerable<KeyValuePair<BoundExpression, BoundExpression>> BindArrayItems(AST.Item[] items, BoundAccess valueaccess)
+        protected IEnumerable<KeyValuePair<BoundExpression, BoundExpression>> BindArrayItems(AST.Item[] items, bool islist = false)
         {
             // trim trailing empty items
             int count = items.Length;
@@ -780,7 +777,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (x == null)
                 {
                     // list() may contain empty items
-                    yield return new KeyValuePair<BoundExpression, BoundExpression>();
+                    yield return default;
                 }
                 else
                 {
@@ -788,8 +785,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
                     var boundIndex = (x.Index != null) ? BindExpression(x.Index, BoundAccess.Read) : null;
                     var boundValue = (x is AST.RefItem refItem)
-                        ? BindExpression(refItem.RefToGet, BoundAccess.ReadRef)
-                        : BindExpression(((AST.ValueItem)x).ValueExpr, valueaccess);
+                        ? BindExpression(refItem.RefToGet, islist ? BoundAccess.None.WithWriteRef(0) : BoundAccess.ReadValueCopy)
+                        : BindExpression(((AST.ValueItem)x).ValueExpr, islist ? BoundAccess.Write : BoundAccess.ReadRef);
 
                     yield return new KeyValuePair<BoundExpression, BoundExpression>(boundIndex, boundValue);
                 }
