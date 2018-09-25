@@ -306,7 +306,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else if (from.IsNullableType())
                     {
-                        
+
 
                         break;
                     }
@@ -412,6 +412,12 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     return;
             }
+        }
+
+        public void EmitConvertToUint(TypeSymbol from, TypeRefMask fromHint)
+        {
+            EmitConvertToLong(from, 0);
+            _il.EmitOpCode(ILOpCode.Conv_u4);   // Int64 -> Uint32
         }
 
         public void EmitConvertToLong(TypeSymbol from, TypeRefMask fromHint)
@@ -1277,6 +1283,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return;
                 case SpecialType.System_Int32:
                     EmitConvertToInt(from, fromHint);
+                    return;
+                case SpecialType.System_UInt32:
+                    EmitConvertToUint(from, fromHint);
                     return;
                 case SpecialType.System_Int64:
                     EmitConvertToLong(from, fromHint);
