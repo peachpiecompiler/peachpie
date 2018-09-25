@@ -1021,7 +1021,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // TOOD: x.ConstantValue // in case we know and the operand is a local variable (we can ignore the expression and emit result immediatelly)
 
-            if (branch == ConditionBranch.ToTrue && x.Operand is BoundVariableRef)
+            if (x.Operand is BoundLiteral)
+            {
+                x.ConstantValue = ConstantValueExtensions.AsOptional(false);
+            }
+            else if (branch == ConditionBranch.ToTrue && x.Operand is BoundVariableRef)
             {
                 var vref = (BoundVariableRef)x.Operand;
                 if (vref.Name.IsDirect)
