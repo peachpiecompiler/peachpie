@@ -196,14 +196,39 @@ namespace Pchp.Core.Utilities
         /// <exception cref="ArgumentException">Invalid path.</exception>
         public static string GetScheme(string/*!*/ path)
         {
-            int colon_index = path.IndexOf(':');
-
+            if (TryGetScheme(path, out var schemespan) && !Path.IsPathRooted(path))
+            {
+                return schemespan.ToString();
+            }
+            
             // When there is not scheme present (or it's a local path) return "file".
-            if (colon_index == -1 || Path.IsPathRooted(path))
-                return "file";
+            return "file";
+        }
 
-            // Otherwise assume that it's the string before first ':'.
-            return path.Substring(0, colon_index);
+        /// <summary>
+        /// Wrapper-safe method of getting the schema portion from an URL.
+        /// </summary>
+        /// <param name="value">A <see cref="string"/> containing an URL or a local filesystem path.</param>
+        /// <param name="scheme">Resulting scheme if any.</param>
+        /// <returns>Whether given value contains the scheme.</returns>
+        public static bool TryGetScheme(string value, out ReadOnlySpan<char> scheme)
+        {
+            Debug.Assert(value != null);
+
+            if (value.Length > 3)
+            {
+                var colon_index = value.IndexOf(':', 1, Math.Min(value.Length - 1, 6)); // examine no more than 6 characters
+                if (colon_index > 0 && colon_index < value.Length - 3 && value[colon_index + 1] == '/' && value[colon_index + 2] == '/') // "://"
+                {
+                    scheme = value.AsSpan(0, colon_index);
+                    return true;
+                }
+            }
+            
+            //
+
+            scheme = default;
+            return false;
         }
 
         /// <summary>

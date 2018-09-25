@@ -282,7 +282,7 @@ namespace Pchp.Core
                 // check arguments
                 Debug.Assert(root_path != null);
 
-                ScriptInfo script = default(ScriptInfo);
+                ScriptInfo script = default; // invalid
 
                 if (string.IsNullOrEmpty(path))
                 {
@@ -300,6 +300,11 @@ namespace Pchp.Core
                         // TODO: script may be not loaded yet but exists physically, check it exists and compile
                     }
 
+                    return script;
+                }
+                else if (FileSystemUtils.TryGetScheme(path, out var schemespan))
+                {
+                    // TODO: SCHEME://SOMETHING
                     return script;
                 }
 
@@ -336,7 +341,6 @@ namespace Pchp.Core
                 if (script_dir != null)
                 {
                     script = ResolveInclude(Path.Combine(root_path, script_dir, path), root_path, null, null, null);
-                    if (script.IsValid) return script;
                 }
 
                 //
