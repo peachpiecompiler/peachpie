@@ -336,10 +336,14 @@ namespace Pchp.Core
         {
             if (function != null)
             {
-                var idx = function.IndexOf(':', 1, function.Length - 2); // if found, at least one character must follow
-                return (idx < 0 || function[idx + 1] != ':')             // not found or it is not "::"
-                    ? (PhpCallback)new FunctionCallback(function)
-                    : new MethodCallback(function.Remove(idx), function.Substring(idx + 2), callerCtx);
+                int idx;
+
+                return 
+                    (function.Length <= 3 ||
+                    (idx = function.IndexOf(':', 1, function.Length - 2)) < 0 || 
+                    (function[idx + 1] != ':'))
+                        ? (PhpCallback)new FunctionCallback(function)   // "::" not found in a valid position
+                        : new MethodCallback(function.Remove(idx), function.Substring(idx + 2), callerCtx);
             }
 
             return CreateInvalid();
