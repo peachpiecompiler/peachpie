@@ -1,4 +1,5 @@
 ﻿using Pchp.Core.Reflection;
+using Pchp.Core.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -157,6 +158,9 @@ namespace Pchp.Core
                         return routine.PhpInvokable.BindMagicCall(null, _method);
                     }
                 }
+
+                Debug.WriteLine($"Method '{_class}::{_method}' is not defined!");
+                // TODO: ctx.Error.CallToUndefinedMethod(_function)
 
                 return null;
             }
@@ -332,8 +336,8 @@ namespace Pchp.Core
         {
             if (function != null)
             {
-                var idx = function.IndexOf("::", StringComparison.Ordinal);
-                return (idx < 0)
+                var idx = function.IndexOf(':', 1, function.Length - 2); // if found, at least one character must follow
+                return (idx < 0 || function[idx + 1] != ':')             // not found or it is not "::"
                     ? (PhpCallback)new FunctionCallback(function)
                     : new MethodCallback(function.Remove(idx), function.Substring(idx + 2), callerCtx);
             }

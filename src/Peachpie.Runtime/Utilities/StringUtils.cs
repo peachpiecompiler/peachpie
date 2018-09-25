@@ -60,5 +60,21 @@ namespace Pchp.Core.Utilities
         {
             return (str != null && str.Length != 0) ? str[str.Length - 1] : '\0';
         }
+
+        /// <summary>
+        /// Most efficient way of searching for index of a substring ordinally.
+        /// </summary>
+        /// <param name="source">The string to search. </param>
+        /// <param name="value">The string to locate within <paramref name="source" />. </param>
+        /// <param name="startIndex">The zero-based starting index of the search. </param>
+        /// <param name="count">The number of elements in the section to search. </param>
+        /// <returns>
+        /// The zero-based index of the first occurrence of <paramref name="value" /> within the section of <paramref name="source" />
+        /// that starts at<paramref name= "startIndex" /> and
+        /// contains the number of elements specified by<paramref name="count" />, if found; otherwise, -1.</returns>
+        public static int IndexOfOrdinal(this string source, string value, int startIndex, int count)
+        {
+            return System.Globalization.CultureInfo.InvariantCulture.CompareInfo.IndexOf(source, value, startIndex, count, System.Globalization.CompareOptions.Ordinal);
+        }
     }
 }
