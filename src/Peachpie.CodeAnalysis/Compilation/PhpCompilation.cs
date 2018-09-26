@@ -860,6 +860,12 @@ namespace Pchp.CodeAnalysis
             // Perform initial bind of method bodies in spite of earlier errors. This is the same
             // behavior as when calling GetDiagnostics()
 
+            if (emittingPdb &&
+                !CreateDebugDocuments(moduleBeingBuilt.DebugDocumentsBuilder, moduleBeingBuilt.EmbeddedTexts, diagnostics))
+            {
+                return false;
+            }
+
             // Use a temporary bag so we don't have to refilter pre-existing diagnostics.
             DiagnosticBag methodBodyDiagnosticBag = DiagnosticBag.GetInstance();
 
@@ -1058,7 +1064,7 @@ namespace Pchp.CodeAnalysis
 
             if (embeddedTexts != null)
             {
-                moduleBeingBuilt.EmbeddedTexts = embeddedTexts;
+                moduleBeingBuilt.EmbeddedTexts = embeddedTexts; // .Concat(AdditionalEmbeddedTexts());
             }
 
             // testData is only passed when running tests.
@@ -1070,6 +1076,16 @@ namespace Pchp.CodeAnalysis
             }
 
             return moduleBeingBuilt;
+        }
+
+        IEnumerable<EmbeddedText> AdditionalEmbeddedTexts()
+        {
+            return this.SourceSymbolCollection
+                .GetFiles()
+                .Select(f => f.SyntaxTree)
+                .Where(tree => tree.IsPharEntry)
+                .Select(tree => EmbeddedText.FromSource(tree.FilePath, tree.GetText()))
+                .ToList();
         }
 
         internal override EmitDifferenceResult EmitDifference(EmitBaseline baseline, IEnumerable<SemanticEdit> edits, Func<ISymbol, bool> isAddedSymbol, Stream metadataStream, Stream ilStream, Stream pdbStream, ICollection<MethodDefinitionHandle> updatedMethodHandles, CompilationTestData testData, CancellationToken cancellationToken)
@@ -1134,7 +1150,7 @@ namespace Pchp.CodeAnalysis
 
         internal override void AddDebugSourceDocumentsForChecksumDirectives(DebugDocumentsBuilder documentsBuilder, SyntaxTree tree, DiagnosticBag diagnostics)
         {
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
         }
 
         internal override void ReportUnusedImports(SyntaxTree filterTree, DiagnosticBag diagnostics, CancellationToken cancellationToken)

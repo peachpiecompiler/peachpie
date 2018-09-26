@@ -15,24 +15,22 @@ namespace Pchp.Library.Phar
         {
             public Context.ScriptInfo ResolveScript(Context ctx, string cd, string path)
             {
-                // Template: include "phar://{PATH}"
+                // Template: include "phar://{path}"
 
                 var sep = path.IndexOfAny(PathUtils.DirectorySeparatorChars);
-                if (sep < 0)
+                if (sep >= 0)
                 {
-                    // invalid
-                    return default;
+                    var pharFile = PharExtensions.AliasToPharFile(ctx, path.Remove(sep));
+                    if (pharFile != null)
+                    {
+                        Debug.Assert(pharFile.EndsWith(PharExtensions.PharExtension, CurrentPlatform.PathStringComparison));
+                        var pharPath = PharExtensions.PharEntryRelativePath(pharFile, path.Substring(sep + 1));
+                        return Context.TryGetDeclaredScript(pharPath);
+                    }
                 }
 
-                var pharFile = PharExtensions.AliasToPharFile(ctx, path.Remove(sep));
-                if (pharFile != null)
-                {
-                    Debug.Assert(pharFile.EndsWith(PharExtensions.PharExtension, CurrentPlatform.PathStringComparison));
-                    var pharPath = PharExtensions.PharEntryRelativePath(pharFile, path.Substring(sep + 1));
-                    return Context.TryGetDeclaredScript(pharPath);
-                }
-
-                throw new NotImplementedException();
+                // invalid
+                return default;
             }
         }
 

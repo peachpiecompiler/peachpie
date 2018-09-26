@@ -359,7 +359,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             _routine = routine as SourceRoutineSymbol;
             _containingFile = GetContainingFile(routine);
 
-            if (_containingFile != null)
+            if (EmitPdbSequencePoints && _containingFile != null)
             {
                 il.SetInitialDebugDocument(_containingFile.SyntaxTree);
             }

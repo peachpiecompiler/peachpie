@@ -18,7 +18,7 @@ namespace Pchp.CodeAnalysis
     /// </summary>
     public class PhpSyntaxTree : SyntaxTree
     {
-        readonly SourceUnit _source;
+        readonly CodeSourceUnit _source;
 
         /// <summary>
         /// Gets constructed lambda nodes.
@@ -63,7 +63,7 @@ namespace Pchp.CodeAnalysis
             new Version(7, 2),
         }.ToImmutableArray();
 
-        private PhpSyntaxTree(SourceUnit source)
+        private PhpSyntaxTree(CodeSourceUnit source)
         {
             Contract.ThrowIfNull(source);
 
@@ -256,7 +256,7 @@ namespace Pchp.CodeAnalysis
 
         public override SourceText GetText(CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new NotImplementedException();
+            return SourceText.From(_source.Code, Encoding.UTF8, SourceHashAlgorithm.Sha1);
         }
 
         public override bool HasHiddenRegions()
@@ -271,7 +271,8 @@ namespace Pchp.CodeAnalysis
 
         public override bool TryGetText(out SourceText text)
         {
-            throw new NotImplementedException();
+            text = default;
+            return false;
         }
 
         public override SyntaxTree WithChangedText(SourceText newText)

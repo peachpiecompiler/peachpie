@@ -134,6 +134,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
                     .SelectMany(ass => ass.PrimaryModule.GlobalNamespace.GetTypeMembers())
                     .OfType<IPhpScriptTypeSymbol>()
                     .Where(t => t.RelativeFilePath != null)
+                    // TODO: ignore Phar entries (having [PharAttribute])
                     .ToArray());
         }
 
