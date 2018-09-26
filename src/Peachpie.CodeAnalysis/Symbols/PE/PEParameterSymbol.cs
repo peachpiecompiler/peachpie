@@ -646,6 +646,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 return
                     SpecialParameterSymbol.IsContextParameter(this) ||
+                    SpecialParameterSymbol.IsQueryValueParameter(this) ||
                     SpecialParameterSymbol.IsLocalsParameter(this) ||
                     SpecialParameterSymbol.IsCallerArgsParameter(this) ||
                     SpecialParameterSymbol.IsCallerClassParameter(this) ||

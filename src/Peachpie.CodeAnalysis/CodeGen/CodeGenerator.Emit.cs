@@ -1213,6 +1213,30 @@ namespace Pchp.CodeAnalysis.CodeGen
                 Debug.Assert(p.Type == CoreTypes.Context);
                 return EmitLoadContext();
             }
+            // QueryValue<T>
+            else if (
+                SpecialParameterSymbol.IsQueryValueParameter(p, out var ctor) &&
+                Enum.TryParse<SpecialParameterSymbol.QueryValueTypes>(ctor.ContainingType.MetadataName, out var container))
+            {
+                Debug.Assert(ctor != null);
+                
+                switch (container)
+                {
+                    case SpecialParameterSymbol.QueryValueTypes.CallerScript:
+                        // Template: op_Implicit( RuntimeTypeHandle )
+                        Debug.Assert(ctor.ParameterCount == 1 && ctor.Parameters[0].Type == CoreTypes.RuntimeTypeHandle);
+                        Debug.Assert(ContainingFile != null);
+
+                        EmitLoadToken(ContainingFile, null);    // RuntimeTypeHandle
+                        EmitCall(ILOpCode.Call, ctor);          // op_Implicit
+                        break;
+                }
+
+                // Template: QueryValue<T>.op_Implicit( {STACK} )
+                var op = ((NamedTypeSymbol)p.Type).LookupMember<MethodSymbol>(WellKnownMemberNames.ImplicitConversionName);
+                Debug.Assert(op.ParameterCount == 1);
+                return EmitCall(ILOpCode.Call, op);
+            }
             // <locals>
             else if (SpecialParameterSymbol.IsLocalsParameter(p))
             {

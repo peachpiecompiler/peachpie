@@ -119,7 +119,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsImplicitlyDeclared
         {
-            get { return SpecialParameterSymbol.IsContextParameter(this) || SpecialParameterSymbol.IsLateStaticParameter(this) || SpecialParameterSymbol.IsSelfParameter(this) || this.IsParams || base.IsImplicitlyDeclared; }
+            get
+            {
+                return
+                    SpecialParameterSymbol.IsContextParameter(this) ||
+                    SpecialParameterSymbol.IsQueryValueParameter(this) ||
+                    SpecialParameterSymbol.IsLateStaticParameter(this) ||
+                    SpecialParameterSymbol.IsSelfParameter(this) ||
+                    this.IsParams ||
+                    base.IsImplicitlyDeclared;
+            }
         }
 
         internal override ConstantValue ExplicitDefaultConstantValue => _explicitDefaultConstantValue;

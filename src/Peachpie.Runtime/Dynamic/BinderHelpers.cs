@@ -26,7 +26,8 @@ namespace Pchp.Core.Dynamic
         public static bool IsImplicitParameter(this ParameterInfo p)
         {
             return
-                p.IsContextParameter() || p.IsLateStaticParameter() ||
+                p.IsContextParameter() || p.IsQueryValueParameter() ||
+                p.IsLateStaticParameter() ||
                 p.IsImportLocalsParameter() || p.IsImportCallerArgsParameter() || p.IsImportCallerClassParameter() || p.IsImportCallerStaticClassParameter();
 
             // TODO: classCtx, <this>
@@ -37,6 +38,13 @@ namespace Pchp.Core.Dynamic
             return p.Position == 0
                 && p.ParameterType == typeof(Context)
                 && (p.Name == "ctx" || p.Name == "<ctx>" || p.Name == "context" || p.Name == ".ctx");
+        }
+
+        public static bool IsQueryValueParameter(this ParameterInfo p)
+        {
+            return
+                p.ParameterType.IsGenericType && 
+                p.ParameterType.GetGenericTypeDefinition() == typeof(QueryValue<>);
         }
 
         public static bool IsLateStaticParameter(this ParameterInfo p)

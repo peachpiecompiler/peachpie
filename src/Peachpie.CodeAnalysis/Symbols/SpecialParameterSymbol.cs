@@ -72,11 +72,41 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
+        /// Name of type arguments for <c>QueryValue&lt;T&gt;</c> special parameter.
+        /// </summary>
+        public enum QueryValueTypes
+        {
+            CallerScript,
+        }
+
+        /// <summary>
         /// Determines whether given parameter is treated as a special Context parameter
         /// which is always first and of type <c>Pchp.Core.Context</c>.
         /// </summary>
         public static bool IsContextParameter(ParameterSymbol p)
             => p != null && p.Ordinal == 0 && p.Type != null && p.Type.MetadataName == "Context"; // TODO: && namespace == Pchp.Core.
+
+        /// <summary>
+        /// Determines whether given parameter is treated as a special implicitly provided, by the compiler or the runtime.
+        /// </summary>
+        public static bool IsQueryValueParameter(ParameterSymbol p) => IsQueryValueParameter(p, out var _);
+
+        /// <summary>
+        /// Determines whether given parameter is treated as a special implicitly provided, by the compiler or the runtime.
+        /// </summary>
+        public static bool IsQueryValueParameter(ParameterSymbol p, out MethodSymbol containerCtor)
+        {
+            if (p != null && p.Type is NamedTypeSymbol named && named.Arity == 1 && named.MetadataName == "QueryValue") // TODO: && namespace == Pchp.Core.
+            {
+                var container = (NamedTypeSymbol)named.TypeArguments[0];
+                containerCtor = container.LookupMember<MethodSymbol>(WellKnownMemberNames.ImplicitConversionName) ?? container.InstanceConstructors.Single();
+                return true;
+            }
+
+            //
+            containerCtor = null;
+            return false;
+        }
 
         /// <summary>
         /// Determines whether given parameter is a special lately static bound parameter.
