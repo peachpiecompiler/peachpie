@@ -277,7 +277,7 @@ namespace Pchp.Core.Reflection
                         return null;
                     }
 
-                    if (tinfo.GetCustomAttribute<ScriptAttribute>() != null)
+                    if (tinfo.GetCustomAttribute<ScriptAttribute>(inherit: false) != null)
                     {
                         // global function
                         return null;

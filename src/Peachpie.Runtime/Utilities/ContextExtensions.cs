@@ -17,7 +17,7 @@ namespace Pchp.Core.Utilities
         /// </summary>
         public static string GetRuntimeInformationalVersion()
         {
-            return typeof(Context).GetTypeInfo().Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+            return typeof(Context).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
         }
 
         /// <summary>

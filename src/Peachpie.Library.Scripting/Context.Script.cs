@@ -70,7 +70,7 @@ namespace Peachpie.Library.Scripting
         private Script(AssemblyName assemblyName, MemoryStream peStream, MemoryStream pdbStream, PhpCompilationFactory builder, IEnumerable<Script> previousSubmissions)
         {
             _assemblyName = assemblyName;
-            
+
             //
             peStream.Position = 0;
             if (pdbStream != null)
@@ -89,9 +89,11 @@ namespace Peachpie.Library.Scripting
 
             foreach (var t in ass.GetTypes())
             {
-                var attr = t.GetTypeInfo().GetCustomAttribute<ScriptAttribute>(false);
-                if (attr != null)
+                var attrs = t.GetCustomAttributes(typeof(ScriptAttribute), inherit: false) as Attribute[]; // faster
+                if (attrs != null && attrs.Length != 0)
                 {
+                    var attr = (ScriptAttribute)attrs[0];
+
                     _script = t;
                     _entryPoint = new Context.ScriptInfo(-1, attr.Path, t.GetTypeInfo()).Evaluate;
                     break;
