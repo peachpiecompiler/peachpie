@@ -482,6 +482,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Void = ct.PhpValue.Field("Void");
                 Null = ct.PhpValue.Field("Null");
+                True = ct.PhpValue.Field("True");
+                False = ct.PhpValue.Field("False");
             }
 
             public readonly CoreMethod
@@ -494,7 +496,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 FromClr_Object, FromClass_Object;
 
             public readonly CoreField
-                Void, Null;
+                Void, Null, True, False;
 
             public readonly CoreProperty
                 IsEmpty, Object;

@@ -640,6 +640,26 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// Emits load of PhpValue representing true.
+        /// </summary>
+        public TypeSymbol Emit_PhpValue_True()
+        {
+            _il.EmitOpCode(ILOpCode.Ldsfld);
+            EmitSymbolToken(CoreMethods.PhpValue.True, null);
+            return CoreTypes.PhpValue;
+        }
+
+        /// <summary>
+        /// Emits load of PhpValue representing false.
+        /// </summary>
+        public TypeSymbol Emit_PhpValue_False()
+        {
+            _il.EmitOpCode(ILOpCode.Ldsfld);
+            EmitSymbolToken(CoreMethods.PhpValue.False, null);
+            return CoreTypes.PhpValue;
+        }
+
+        /// <summary>
         /// Creates new empty <c>PhpArray</c> where modifications are not expected.
         /// </summary>
         public TypeSymbol Emit_PhpArray_NewEmpty()
@@ -1793,8 +1813,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             // POP, PhpValue.False
             _il.MarkLabel(lblfalse);
             EmitPop(stack);
-            _il.EmitBoolConstant(false);
-            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Boolean);
+            Emit_PhpValue_False();
 
             //
             _il.MarkLabel(lblend);
@@ -2878,18 +2897,29 @@ namespace Pchp.CodeAnalysis.CodeGen
                     Builder.EmitStringConstant(str);
                     return CoreTypes.String;
                 }
-                else if (value is bool)
+                else if (value is bool b)
                 {
                     if (targetOpt != null)
                     {
                         switch (targetOpt.SpecialType)
                         {
+                            case SpecialType.System_Boolean:
+                                break;
                             case SpecialType.System_String:
-                                _il.EmitStringConstant((bool)value ? "1" : "");
+                                _il.EmitStringConstant(b ? "1" : "");
                                 return targetOpt;
+                            default:
+                                if (targetOpt == CoreTypes.PhpValue)
+                                {
+                                    if (b) Emit_PhpValue_True();    // LOAD PhpValue.True
+                                    else Emit_PhpValue_False();     // LOAD PhpValue.False
+                                    return targetOpt;
+                                }
+                                break;
                         }
                     }
 
+                    // template: LOAD bool
                     Builder.EmitBoolConstant((bool)value);
                     return CoreTypes.Boolean;
                 }
@@ -2998,8 +3028,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                                 if (typectx.IsBoolean(typemask))
                                 {
-                                    _il.EmitBoolConstant(false);
-                                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Boolean);
+                                    Emit_PhpValue_False();
                                     break;
                                 }
                                 else if (typectx.IsLong(typemask))

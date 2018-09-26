@@ -523,12 +523,12 @@ namespace Pchp.Core
         /// <summary>
         /// PhpValue representing <c>false</c>.
         /// </summary>
-        public static PhpValue False => PhpValue.Create(false);
+        public static readonly PhpValue False = new PhpValue(false);
 
         /// <summary>
         /// PhpValue representing <c>true</c>.
         /// </summary>
-        public static PhpValue True => PhpValue.Create(true);
+        public static readonly PhpValue True = new PhpValue(true);
 
         private PhpValue(long value) : this()
         {
@@ -598,7 +598,7 @@ namespace Pchp.Core
 
         public static PhpValue Create(int value) => new PhpValue(value);
 
-        public static PhpValue Create(bool value) => new PhpValue(value);
+        public static PhpValue Create(bool value) => value ? True : False;
 
         public static PhpValue Create(string value) => new PhpValue(TypeTable.StringTable, value);
 
