@@ -328,40 +328,52 @@ namespace Pchp.Core
         /// <returns>Inclusion result value.</returns>
         public PhpValue Include(string cd, string path, PhpArray locals, object @this = null, RuntimeTypeHandle self = default(RuntimeTypeHandle), bool once = false, bool throwOnError = false)
         {
+            if (FileSystemUtils.TryGetScheme(path, out var schemespan))
+            {
+                // SCHEME://SOMETHING
+                return HandleIncludeWithScheme();
+            }
+
             var script = ScriptsMap.ResolveInclude(path, RootPath, IncludePaths, WorkingDirectory, cd);
             if (script.IsValid)
             {
-                if (once && _scripts.IsIncluded(script.Index))
-                {
-                    return PhpValue.Create(true);
-                }
-                else
-                {
-                    return script.Evaluate(this, locals, @this, self);
-                }
+                return (once && _scripts.IsIncluded(script.Index))
+                    ? PhpValue.True
+                    : script.Evaluate(this, locals, @this, self);
             }
             else
             {
-                if (TryIncludeFileContent(path))    // include non-compiled file (we do not allow dynamic compilation yet)
-                {
-                    return PhpValue.Null;
-                }
-                else
-                {
-                    var cause = string.Format(Resources.ErrResources.script_not_found, path);
-
-                    PhpException.Throw(
-                        throwOnError ? PhpError.Error : PhpError.Notice,
-                        Resources.ErrResources.script_inclusion_failed, path, cause, string.Join(";", IncludePaths), cd);
-
-                    if (throwOnError)
-                    {
-                        throw new ArgumentException(cause);
-                    }
-
-                    return PhpValue.False;
-                }
+                return HandleMissingScript(cd, path, throwOnError);
             }
+        }
+
+        PhpValue HandleMissingScript(string cd, string path, bool throwOnError)
+        {
+            if (TryIncludeFileContent(path))    // include non-compiled file (we do not allow dynamic compilation yet)
+            {
+                return PhpValue.Null;
+            }
+            else
+            {
+                var cause = string.Format(Resources.ErrResources.script_not_found, path);
+
+                PhpException.Throw(
+                    throwOnError ? PhpError.Error : PhpError.Notice,
+                    Resources.ErrResources.script_inclusion_failed, path, cause, string.Join(";", IncludePaths), cd);
+
+                if (throwOnError)
+                {
+                    throw new ArgumentException(cause);
+                }
+
+                return PhpValue.False;
+            }
+        }
+
+        PhpValue HandleIncludeWithScheme()
+        {
+            // TODO: SCHEME://SOMETHING
+            throw new NotImplementedException();
         }
 
         /// <summary>

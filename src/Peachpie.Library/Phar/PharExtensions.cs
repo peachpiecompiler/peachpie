@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -15,6 +16,7 @@ namespace Pchp.Library.Phar
     /// </summary>
     internal static class PharExtensions
     {
+        [DebuggerDisplay("{PharFile,nq} ({Scripts.Length} scripts)")]
         sealed class CachedPhar
         {
             /// <summary>

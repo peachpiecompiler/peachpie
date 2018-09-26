@@ -304,11 +304,6 @@ namespace Pchp.Core
 
                     return script;
                 }
-                else if (FileSystemUtils.TryGetScheme(path, out var schemespan))
-                {
-                    // TODO: SCHEME://SOMETHING
-                    return script;
-                }
 
                 // 1. ".." or "." are always relative to working_dir -> resolved
                 if (path[0] == '.' && path.Length >= 2)

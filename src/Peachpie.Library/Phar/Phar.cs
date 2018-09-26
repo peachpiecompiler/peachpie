@@ -67,15 +67,14 @@ namespace Pchp.Library.Phar
         /// <returns>Always <c>true</c>.</returns>
         public static bool mapPhar(Context ctx, QueryValue<CallerScript> self, string alias, int dataoffset = 0)
         {
-            Debugger.Break();
-
-            var pharfile = PharExtensions.GetPharFile(self.Value.ScriptType);
-            if (pharfile == null)
+            if (PharExtensions.MapPhar(ctx, self.Value.ScriptType, alias))
+            {
+                return true;
+            }
+            else
             {
                 throw new PharException();
             }
-
-            return PharExtensions.MapPhar(ctx, self.Value.ScriptType, alias);
         }
 
         public static string running(bool retphar = true)
