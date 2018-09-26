@@ -114,6 +114,12 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
                     else
                     {
+                        if (rtype.IsReferenceType && Returned.ConstantValue.IsNull())
+                        {
+                            // Template: return NULL;
+                            t = rtype; // no conversion
+                        }
+
                         // return by value
                         if (this.Returned.TypeRefMask.IsRef)
                         {

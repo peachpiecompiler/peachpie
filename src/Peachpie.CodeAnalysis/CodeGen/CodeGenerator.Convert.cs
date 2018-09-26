@@ -822,7 +822,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 return this.EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToArray);
             }
             else if (   // TODO: helper method for builtin types
-                from.SpecialType != SpecialType.None ||
+                (from.SpecialType != SpecialType.None && from.SpecialType != SpecialType.System_Object) ||
                 from.IsOfType(CoreTypes.PhpResource) || from == CoreTypes.PhpNumber || from == CoreTypes.PhpString)
             {
                 // Template: new PhpArray(1){ VALUE }
