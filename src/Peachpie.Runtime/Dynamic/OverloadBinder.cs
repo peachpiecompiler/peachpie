@@ -993,7 +993,7 @@ namespace Pchp.Core.Dynamic
                 expr = Expression.Condition(
                     test,
                     ConvertExpression.BindToValue(x),
-                    Expression.Property(null, Cache.Properties.PhpValue_False));
+                    Expression.Field(null, Cache.Properties.PhpValue_False));
 
                 //
                 return Expression.Block(

@@ -81,8 +81,8 @@ namespace Pchp.Core.Dynamic
             public static readonly PropertyInfo PhpValue_Object = Types.PhpValue.GetTypeInfo().GetDeclaredProperty("Object");
             public static readonly FieldInfo PhpValue_Void = Types.PhpValue.GetTypeInfo().GetDeclaredField("Void");
             public static readonly FieldInfo PhpValue_Null = Types.PhpValue.GetTypeInfo().GetDeclaredField("Null");
-            public static readonly PropertyInfo PhpValue_False = Types.PhpValue.GetTypeInfo().GetDeclaredProperty("False");
-            public static readonly PropertyInfo PhpValue_True = Types.PhpValue.GetTypeInfo().GetDeclaredProperty("True");
+            public static readonly FieldInfo PhpValue_False = Types.PhpValue.GetTypeInfo().GetDeclaredField("False");
+            public static readonly FieldInfo PhpValue_True = Types.PhpValue.GetTypeInfo().GetDeclaredField("True");
             public static readonly FieldInfo PhpNumber_Default = Types.PhpNumber[0].GetTypeInfo().GetDeclaredField("Default");
         }
 
