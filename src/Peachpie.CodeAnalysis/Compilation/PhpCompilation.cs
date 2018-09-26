@@ -74,6 +74,8 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         internal SourceSymbolCollection SourceSymbolCollection => _tables;
 
+        private IEnumerable<ResourceDescription> SynthesizedResources = null;
+
         /// <summary>
         /// The AssemblySymbol that represents the assembly being created.
         /// </summary>
@@ -310,6 +312,7 @@ namespace Pchp.CodeAnalysis
             string assemblyName,
             IEnumerable<PhpSyntaxTree> syntaxTrees = null,
             IEnumerable<MetadataReference> references = null,
+            IEnumerable<ResourceDescription> resources = null,
             PhpCompilationOptions options = null)
         {
             Debug.Assert(options != null);
@@ -319,9 +322,11 @@ namespace Pchp.CodeAnalysis
                 options,
                 ValidateReferences<CompilationReference>(references),
                 false);
+
+            compilation.SynthesizedResources = resources;
+
             compilation.CheckAssemblyName(compilation.DeclarationDiagnostics);
 
-            //
             compilation.SourceSymbolCollection.AddSyntaxTreeRange(syntaxTrees);
 
             //
@@ -857,17 +862,21 @@ namespace Pchp.CodeAnalysis
                 throw new NotImplementedException();
             }
 
-            // Perform initial bind of method bodies in spite of earlier errors. This is the same
-            // behavior as when calling GetDiagnostics()
-
-            if (emittingPdb &&
-                !CreateDebugDocuments(moduleBeingBuilt.DebugDocumentsBuilder, moduleBeingBuilt.EmbeddedTexts, diagnostics))
+            if (emittingPdb)
             {
-                return false;
+                moduleBeingBuilt.EmbeddedTexts = moduleBeingBuilt.EmbeddedTexts.Concat(CollectAdditionalEmbeddedTexts());
+
+                if (!CreateDebugDocuments(moduleBeingBuilt.DebugDocumentsBuilder, moduleBeingBuilt.EmbeddedTexts, diagnostics))
+                {
+                    return false;
+                }
             }
 
             // Use a temporary bag so we don't have to refilter pre-existing diagnostics.
             DiagnosticBag methodBodyDiagnosticBag = DiagnosticBag.GetInstance();
+
+            // Perform initial bind of method bodies in spite of earlier errors. This is the same
+            // behavior as when calling GetDiagnostics()
 
             try
             {
@@ -893,6 +902,21 @@ namespace Pchp.CodeAnalysis
                 this.TrackException(ex);
                 throw;
             }
+        }
+
+        IEnumerable<EmbeddedText> CollectAdditionalEmbeddedTexts()
+        {
+            return this.SourceSymbolCollection
+                .GetFiles()
+                .Select(f => f.SyntaxTree)
+                .Where(tree => tree.IsPharEntry ||  tree.FilePath.IsPharFile())
+                .Select(tree => EmbeddedText.FromSource(tree.FilePath, tree.GetText()))
+                .ToList();
+        }
+
+        IEnumerable<ResourceDescription> CollectAdditionalManifestResources()
+        {
+            yield break;
         }
 
         internal override bool GenerateResourcesAndDocumentationComments(CommonPEModuleBuilder moduleBuilder, Stream xmlDocStream, Stream win32Resources, string outputNameOverride, DiagnosticBag diagnostics, CancellationToken cancellationToken)
@@ -1034,6 +1058,11 @@ namespace Pchp.CodeAnalysis
                 manifestResources = SpecializedCollections.EmptyEnumerable<ResourceDescription>();
             }
 
+            if (SynthesizedResources != null)
+            {
+                manifestResources = manifestResources.Concat(SynthesizedResources);
+            }
+
             PEModuleBuilder moduleBeingBuilt;
             if (_options.OutputKind.IsNetModule())
             {
@@ -1064,7 +1093,7 @@ namespace Pchp.CodeAnalysis
 
             if (embeddedTexts != null)
             {
-                moduleBeingBuilt.EmbeddedTexts = embeddedTexts; // .Concat(AdditionalEmbeddedTexts());
+                moduleBeingBuilt.EmbeddedTexts = embeddedTexts;
             }
 
             // testData is only passed when running tests.
@@ -1076,16 +1105,6 @@ namespace Pchp.CodeAnalysis
             }
 
             return moduleBeingBuilt;
-        }
-
-        IEnumerable<EmbeddedText> AdditionalEmbeddedTexts()
-        {
-            return this.SourceSymbolCollection
-                .GetFiles()
-                .Select(f => f.SyntaxTree)
-                .Where(tree => tree.IsPharEntry)
-                .Select(tree => EmbeddedText.FromSource(tree.FilePath, tree.GetText()))
-                .ToList();
         }
 
         internal override EmitDifferenceResult EmitDifference(EmitBaseline baseline, IEnumerable<SemanticEdit> edits, Func<ISymbol, bool> isAddedSymbol, Stream metadataStream, Stream ilStream, Stream pdbStream, ICollection<MethodDefinitionHandle> updatedMethodHandles, CompilationTestData testData, CancellationToken cancellationToken)

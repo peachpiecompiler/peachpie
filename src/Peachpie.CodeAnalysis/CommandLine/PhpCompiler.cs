@@ -58,6 +58,9 @@ namespace Pchp.CodeAnalysis.CommandLine
 
             /// <summary>PHAR syntax trees in case the source file is a PHAR file.</summary>
             public IEnumerable<PhpSyntaxTree> Trees;
+
+            /// <summary>Additional resources.</summary>
+            public IEnumerable<ResourceDescription> Resources;
         }
 
         public override Compilation CreateCompilation(TextWriter consoleOutput, TouchedFileLogger touchedFilesLogger, ErrorLogger errorLogger)
@@ -66,6 +69,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             var sourceFiles = Arguments.SourceFiles;
 
             IEnumerable<PhpSyntaxTree> sourceTrees;
+            var resources = Enumerable.Empty<ResourceDescription>();
 
             using (Arguments.CompilationOptions.Observers.StartMetric("parse"))
             {
@@ -124,7 +128,11 @@ namespace Pchp.CodeAnalysis.CommandLine
                         treesList[f.index] = f.phar.SyntaxTree; // phar stub, may be null
                         treesList.InsertRange(f.index + 1, f.phar.Trees);
 
-                        // TODO: add content files
+                        // add content files
+                        if (f.phar.Resources != null)
+                        {
+                            resources = resources.Concat(f.phar.Resources);
+                        }
                     }
 
                     sourceTrees = treesList;
@@ -162,7 +170,8 @@ namespace Pchp.CodeAnalysis.CommandLine
                 Arguments.CompilationName,
                 sourceTrees.WhereNotNull(),
                 resolvedReferences,
-                Arguments.CompilationOptions.
+                resources: resources,
+                options: Arguments.CompilationOptions.
                     WithMetadataReferenceResolver(referenceResolver).
                     WithAssemblyIdentityComparer(assemblyIdentityComparer).
                     WithStrongNameProvider(strongNameProvider).
@@ -194,6 +203,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                 var prefix = Path.GetFileName(file.Path); // TODO: relative to root
                 var trees = new List<PhpSyntaxTree>();
+                var content = new List<ResourceDescription>();
                 foreach (var entry in phar.Manifest.Entries.Values)
                 {
                     if (entry.IsCompileEntry())
@@ -202,11 +212,28 @@ namespace Pchp.CodeAnalysis.CommandLine
                         tree.PharFile = file.Path;
                         trees.Add(tree);
                     }
+                    else
+                    {
+                        content.Add(new ResourceDescription(
+                            "phar://" + prefix + "/" + entry.Name.Replace('\\', '/'),
+                            () =>
+                            {
+                                // TODO: not always UTF8
+                                var stream = new MemoryStream(entry.Code.Length);
+                                using (var writer = new StreamWriter(stream, Encoding.UTF8, 1024, leaveOpen: true))
+                                {
+                                    writer.Write(entry.Code);
+                                }
+                                stream.Position = 0;
+                                return stream;
+                            },
+                            isPublic: true));
+                    }
                 }
 
                 // TODO: report errors if any
 
-                return new ParsedSource { SyntaxTree = stub, Manifest = phar.Manifest, Trees = trees };
+                return new ParsedSource { SyntaxTree = stub, Manifest = phar.Manifest, Trees = trees, Resources = content, };
             }
             else
             {
