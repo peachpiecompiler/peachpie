@@ -37,7 +37,7 @@ namespace Pchp.Core
             /// <summary>
             /// Registers inclusion handler for paths prefixed with given scheme.
             /// </summary>
-            public void RegisterSchemeWrapper(string scheme, IIncludeResolver resolver)
+            public void RegisterSchemeIncluder(string scheme, IIncludeResolver resolver)
             {
                 Debug.Assert(!string.IsNullOrEmpty(scheme));
 
@@ -47,7 +47,7 @@ namespace Pchp.Core
             /// <summary>
             /// Resolves wrapper for given scheme.
             /// </summary>
-            public bool TryResolveSchemeWrapper(string scheme, out IIncludeResolver resolver)
+            public bool TryResolveSchemeIncluder(string scheme, out IIncludeResolver resolver)
             {
                 return _resolvers.TryGetValue(scheme, out resolver);
             }

@@ -153,6 +153,17 @@ namespace Pchp.Library.Phar
         }
 
         /// <summary>
+        /// Resolves Phar Alias to a PharFile (relative .phar file path).
+        /// </summary>
+        /// <returns>Relative .phar file path or <c>null</c>.</returns>
+        public static string AliasToPharFile(Context ctx, string alias)
+        {
+            return ctx.GetStatic<PharContext>().PharMap.TryGetValue(alias, out var phar)
+                ? phar.PharFile
+                : null;
+        }
+
+        /// <summary>
         /// Enumerates all compiled scripts that represent a PHAR entry.
         /// </summary>
         static IEnumerable<Type> EnumeratePharScripts(Assembly assembly, string pharFileName)

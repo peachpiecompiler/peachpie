@@ -15,6 +15,8 @@ namespace Pchp.Library
         public const char DirectorySeparator = '\\';
         public const char AltDirectorySeparator = '/';
 
+        public static readonly char[] DirectorySeparatorChars = new[] { DirectorySeparator, AltDirectorySeparator };
+
         public static bool IsDirectorySeparator(this char ch) => ch == DirectorySeparator || ch == AltDirectorySeparator;
     }
 

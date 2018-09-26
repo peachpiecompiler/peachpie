@@ -379,7 +379,7 @@ namespace Pchp.Core
         ScriptInfo HandleIncludeWithScheme(ReadOnlySpan<char> scheme, string cd, string path)
         {
             // SCHEME://PATH
-            if (IncludeProvider.Instance.TryResolveSchemeWrapper(scheme.ToString(), out var resolver))
+            if (IncludeProvider.Instance.TryResolveSchemeIncluder(scheme.ToString(), out var resolver))
             {
                 return resolver.ResolveScript(this, cd, path);
             }
