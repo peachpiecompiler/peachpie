@@ -188,10 +188,10 @@ namespace Pchp.CodeAnalysis.CommandLine
                 var phar = Devsense.PHP.Phar.PharFile.OpenPharFile(file.Path); // TODO: report exception
 
                 // treat the stub as a regular source code:
-                var stub = PhpSyntaxTree.ParseCode(phar.StubCode ?? string.Empty, parseOptions, scriptParseOptions, file.Path);
-                
+                var stub = PhpSyntaxTree.ParseCode(GetPharStub(phar), parseOptions, scriptParseOptions, file.Path);
+
                 // TODO: ConcurrentBuild -> Parallel
-                
+
                 var prefix = Path.GetFileName(file.Path); // TODO: relative to root
                 var trees = new List<PhpSyntaxTree>();
                 foreach (var entry in phar.Manifest.Entries.Values)
@@ -236,6 +236,41 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                 return new ParsedSource { SyntaxTree = result };
             }
+        }
+
+        static string GetPharStub(Devsense.PHP.Phar.PharFile phar)
+        {
+            var stub = phar.StubCode;
+
+            if (string.IsNullOrEmpty(stub))
+            {
+                return string.Empty;
+            }
+
+            // ignore first line starting with #
+            if (stub[0] == '#')
+            {
+                // ignore this the first line
+                for (int i = 1; i < stub.Length; i++)
+                {
+                    var nl = TextUtils.LengthOfLineBreak(stub, i);
+                    if (nl != 0)
+                    {
+                        stub = stub.Substring(i + nl);
+                        break;
+                    }
+                }
+            }
+
+            // ignore __HALT_COMPILER and following
+            var halt = stub.LastIndexOf("__HALT_COMPILER", StringComparison.Ordinal);
+            if (halt >= 0)
+            {
+                stub = stub.Remove(halt);
+            }
+
+            //
+            return stub;
         }
 
         public override void PrintHelp(TextWriter consoleOutput)

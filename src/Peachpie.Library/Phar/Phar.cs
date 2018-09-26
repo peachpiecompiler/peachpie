@@ -84,6 +84,17 @@ namespace Pchp.Library.Phar
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Return the API version of the phar file format that will be used when creating phars. The Phar extension supports reading API version 1.0.0 or newer.
+        /// API version 1.1.0 is required for SHA-256 and SHA-512 hash,
+        /// and API version 1.1.1 is required to store empty directories.
+        /// </summary>
+        /// <returns></returns>
+        public static string apiVersion() => "1.0.0";
+
+        /// <summary>
+        /// Returns whether phar extension supports writing and creating phars.
+        /// </summary>
         public static bool canWrite() => false;
 
         public static bool loadPhar(string filename, string alias = default) => throw new NotSupportedException();
