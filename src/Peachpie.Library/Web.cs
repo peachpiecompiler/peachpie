@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Net;
+using Pchp.Core.QueryValue;
 
 namespace Pchp.Library
 {
@@ -271,7 +272,8 @@ namespace Pchp.Library
         /// <param name="result">The array to store the variable found in <paramref name="str"/> to.</param>
         public static void parse_str(string str, out PhpArray result)
         {
-            parse_str(result = new PhpArray(), str);
+            result = new PhpArray();
+            parse_str((LocalVariables)result, str);
         }
 
         /// <summary>
@@ -280,13 +282,11 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="locals">Array of local variables passed from runtime, will be filled with parsed variables. Must not be <c>null</c>.</param>
         /// <param name="str">The string to parse.</param>
-        public static void parse_str([ImportLocals]PhpArray locals, string str)
+        public static void parse_str(QueryValue<LocalVariables> locals, string str)
         {
-            Debug.Assert(locals != null);
-
             if (!string.IsNullOrEmpty(str))
             {
-                UriUtils.ParseQuery(str, locals.AddVariable);
+                UriUtils.ParseQuery(str, locals.Value.Locals.AddVariable);
             }
         }
 

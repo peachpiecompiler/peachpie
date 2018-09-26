@@ -1214,9 +1214,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 return EmitLoadContext();
             }
             // QueryValue<T>
-            else if (
-                SpecialParameterSymbol.IsQueryValueParameter(p, out var ctor) &&
-                Enum.TryParse<SpecialParameterSymbol.QueryValueTypes>(ctor.ContainingType.MetadataName, out var container))
+            else if (SpecialParameterSymbol.IsQueryValueParameter(p, out var ctor, out var container))
             {
                 Debug.Assert(ctor != null);
                 
@@ -1230,30 +1228,25 @@ namespace Pchp.CodeAnalysis.CodeGen
                         EmitLoadToken(ContainingFile, null);    // RuntimeTypeHandle
                         EmitCall(ILOpCode.Call, ctor);          // op_Implicit
                         break;
+
+                    case SpecialParameterSymbol.QueryValueTypes.CallerArgs:
+                        Emit_ArgsArray(CoreTypes.PhpValue);     // PhpValue[]
+                        EmitCall(ILOpCode.Call, ctor);          // op_Implicit
+                        break;
+
+                    case SpecialParameterSymbol.QueryValueTypes.LocalVariables:
+                        if (!HasUnoptimizedLocals) throw new InvalidOperationException();
+                        // op_Implicit( PhpArray )
+                        LocalsPlaceOpt.EmitLoad(Builder)
+                            .Expect(CoreTypes.PhpArray);    // PhpArray
+                        EmitCall(ILOpCode.Call, ctor);      // op_Implicit
+                        break;
                 }
 
                 // Template: QueryValue<T>.op_Implicit( {STACK} )
                 var op = ((NamedTypeSymbol)p.Type).LookupMember<MethodSymbol>(WellKnownMemberNames.ImplicitConversionName);
                 Debug.Assert(op.ParameterCount == 1);
                 return EmitCall(ILOpCode.Call, op);
-            }
-            // <locals>
-            else if (SpecialParameterSymbol.IsLocalsParameter(p))
-            {
-                Debug.Assert(p.Type == CoreTypes.PhpArray);
-                if (!this.HasUnoptimizedLocals)
-                {
-                    throw new InvalidOperationException();
-                }
-
-                return LocalsPlaceOpt.EmitLoad(Builder)
-                    .Expect(CoreTypes.PhpArray);
-            }
-            // arguments
-            else if (SpecialParameterSymbol.IsCallerArgsParameter(p))
-            {
-                // ((NamedTypeSymbol)p.Type).TypeParameters // TODO: IList<T>
-                return Emit_ArgsArray(CoreTypes.PhpValue); // TODO: T
             }
             // class context
             else if (SpecialParameterSymbol.IsCallerClassParameter(p) || SpecialParameterSymbol.IsSelfParameter(p))

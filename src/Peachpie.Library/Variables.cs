@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core.Reflection;
+using Pchp.Core.QueryValue;
 
 namespace Pchp.Library
 {
@@ -578,7 +579,7 @@ namespace Pchp.Library
         /// <summary>
         /// Creates array containing variables and their values.
         /// </summary>
-        /// <param name="locals">The table of defined variables.</param>
+        /// <param name="localsData">The table of defined variables.</param>
         /// <param name="names">Names of the variables - each chan be either 
         /// <see cref="string"/> or <see cref="PhpArray"/>. Names are retrived recursively from an array.</param>
         /// <returns>The <see cref="PhpArray"/> which keys are names of variables and values are deep copies of 
@@ -587,7 +588,7 @@ namespace Pchp.Library
         /// Items in <paramref name="names"/> which are neither of type <see cref="string"/> nor <see cref="PhpArray"/> 
         /// are ignored.</remarks>
         /// <exception cref="PhpException"><paramref name="names"/> is a <B>null</B> reference.</exception>
-        public static PhpArray compact([ImportLocals]PhpArray locals, params PhpValue[] names)
+        public static PhpArray compact(QueryValue<LocalVariables> localsData, params PhpValue[] names)
         {
             if (names == null)
             {
@@ -596,7 +597,8 @@ namespace Pchp.Library
                 throw new ArgumentNullException(nameof(names));
             }
 
-            PhpArray result = new PhpArray(names.Length);
+            var result = new PhpArray(names.Length);
+            var locals = localsData.Value.Locals;
 
             for (int i = 0; i < names.Length; i++)
             {
@@ -641,15 +643,15 @@ namespace Pchp.Library
         /// Import variables into the current variables table from an array.
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
-        /// <param name="locals">The table of defined variables.</param>
+        /// <param name="localsData">The table of defined variables.</param>
         /// <param name="vars">The <see cref="PhpArray"/> containing names of variables and values to be assigned to them.</param>
         /// <param name="type">The type of the extraction.</param>
         /// <param name="prefix">The prefix (can be a <B>null</B> reference) of variables names.</param>
         /// <returns>The number of variables actually affected by the extraction.</returns>
         /// <exception cref="PhpException"><paramref name="type"/> is invalid.</exception>
         /// <exception cref="PhpException"><paramref name="vars"/> is a <B>null</B> reference.</exception>
-        /// <exception cref="InvalidCastException">Some key of <paramref name="locals"/> is not type of <see cref="string"/>.</exception>
-        public static int extract(Context ctx, [ImportLocals]PhpArray locals, PhpArray vars, ExtractType type = ExtractType.Overwrite, string prefix = null)
+        /// <exception cref="InvalidCastException">Some key of <paramref name="localsData"/> is not type of <see cref="string"/>.</exception>
+        public static int extract(Context ctx, QueryValue<LocalVariables> localsData, PhpArray vars, ExtractType type = ExtractType.Overwrite, string prefix = null)
         {
             if (vars == null)
             {
@@ -662,6 +664,8 @@ namespace Pchp.Library
             {
                 return 0;
             }
+
+            var locals = localsData.Value.Locals;
 
             // unfortunately, type contains flags are combined with enumeration: 
             bool refs = (type & ExtractType.Refs) != 0;
@@ -774,7 +778,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="locals">The table of defined variables.</param>
         /// <returns></returns>
-        public static PhpArray get_defined_vars([ImportLocals]PhpArray locals) => locals.DeepCopy();
+        public static PhpArray get_defined_vars(QueryValue<LocalVariables> locals) => locals.Value.Locals.DeepCopy();
 
         #endregion
 

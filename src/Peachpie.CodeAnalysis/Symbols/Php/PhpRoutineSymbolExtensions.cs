@@ -260,13 +260,17 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (p.IsImplicitlyDeclared)
                 {
-                    if (SpecialParameterSymbol.IsLocalsParameter(p))
+                    if (SpecialParameterSymbol.IsQueryValueParameter(p, out var ctor, out var container))
                     {
-                        f |= RoutineFlags.UsesLocals;
-                    }
-                    else if (SpecialParameterSymbol.IsCallerArgsParameter(p))
-                    {
-                        f |= RoutineFlags.UsesArgs;
+                        switch (container)
+                        {
+                            case SpecialParameterSymbol.QueryValueTypes.CallerArgs:
+                                f |= RoutineFlags.UsesArgs;
+                                break;
+                            case SpecialParameterSymbol.QueryValueTypes.LocalVariables:
+                                f |= RoutineFlags.UsesLocals;
+                                break;
+                        }
                     }
                     else if (SpecialParameterSymbol.IsCallerStaticClassParameter(p))
                     {
@@ -275,6 +279,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
                 else
                 {
+                    // implicit parameters are at begining only
                     break;
                 }
             }

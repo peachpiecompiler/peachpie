@@ -7,7 +7,7 @@ namespace Pchp.Core
 {
     /// <summary>
     /// Well-known type used by library function's parameters.
-    /// Instructs the compiler and runtime that the parameter is implicitly declared (its value is provided by the compiler and runtime).
+    /// Instructs the compiler and runtime that the parameter is implicitly declared (its value is provided by the compiler and/or runtime).
     /// </summary>
     /// <typeparam name="T">The type of value to be obtained.</typeparam>
     public struct QueryValue<T>
@@ -17,13 +17,10 @@ namespace Pchp.Core
         /// </summary>
         public T Value;
 
-        /// <summary>Initializes the instance.</summary>
-        private QueryValue(T value) => this.Value = value;
-
         /// <summary>
         /// Implicit construction operator.
         /// </summary>
-        public static implicit operator QueryValue<T>(T value) => new QueryValue<T>(value);
+        public static implicit operator QueryValue<T>(T value) => new QueryValue<T> { Value = value };
     }
 }
 
@@ -44,18 +41,26 @@ namespace Pchp.Core.QueryValue
         /// </summary>
         public Type ScriptType => Type.GetTypeFromHandle(ScriptTypeHandle);
 
-        /// <summary>Initializes the instance.</summary>
-        private CallerScript(RuntimeTypeHandle scriptType) => this.ScriptTypeHandle = scriptType;
+        /// <summary>
+        /// Implicit construction operator.
+        /// </summary>
+        public static implicit operator CallerScript(RuntimeTypeHandle value) => new CallerScript { ScriptTypeHandle = value };
+    }
+
+    /// <summary>
+    /// Denotates a function parameter that will be filled with array of callers' parameters.
+    /// </summary>
+    /// <remarks>
+    /// The parameter is used to access calers' arguments.</remarks>
+    public struct CallerArgs
+    {
+        public PhpValue[] Arguments;
 
         /// <summary>
         /// Implicit construction operator.
         /// </summary>
-        public static implicit operator CallerScript(RuntimeTypeHandle value) => new CallerScript(value);
+        public static implicit operator CallerArgs(PhpValue[] value) => new CallerArgs { Arguments = value };
     }
-
-    //
-    // FOLLOWING IS NOT IN USE YET:
-    //
 
     /// <summary>
     /// Contains a reference to the array of local PHP variables.
@@ -66,17 +71,16 @@ namespace Pchp.Core.QueryValue
     public struct LocalVariables
     {
         public PhpArray Locals;
+
+        /// <summary>
+        /// Implicit construction operator.
+        /// </summary>
+        public static implicit operator LocalVariables(PhpArray value) => new LocalVariables { Locals = value };
     }
 
-    /// <summary>
-    /// Denotates a function parameter that will be filled with array of callers' parameters.
-    /// </summary>
-    /// <remarks>
-    /// The parameter is used to access calers' arguments.</remarks>
-    public struct CallerArgs
-    {
-        public PhpArray Arguments;
-    }
+    //
+    // FOLLOWING IS NOT IN USE YET:
+    //
 
     /// <summary>
     /// Contains current class.

@@ -76,7 +76,11 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public enum QueryValueTypes
         {
+            None = 0,
+
             CallerScript,
+            CallerArgs,
+            LocalVariables,
         }
 
         /// <summary>
@@ -89,22 +93,23 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Determines whether given parameter is treated as a special implicitly provided, by the compiler or the runtime.
         /// </summary>
-        public static bool IsQueryValueParameter(ParameterSymbol p) => IsQueryValueParameter(p, out var _);
+        public static bool IsQueryValueParameter(IParameterSymbol p) => IsQueryValueParameter(p, out var _, out var _);
 
         /// <summary>
         /// Determines whether given parameter is treated as a special implicitly provided, by the compiler or the runtime.
         /// </summary>
-        public static bool IsQueryValueParameter(ParameterSymbol p, out MethodSymbol containerCtor)
+        public static bool IsQueryValueParameter(IParameterSymbol p, out MethodSymbol containerCtor, out QueryValueTypes valueEnum)
         {
             if (p != null && p.Type is NamedTypeSymbol named && named.Arity == 1 && named.MetadataName == "QueryValue") // TODO: && namespace == Pchp.Core.
             {
                 var container = (NamedTypeSymbol)named.TypeArguments[0];
                 containerCtor = container.LookupMember<MethodSymbol>(WellKnownMemberNames.ImplicitConversionName) ?? container.InstanceConstructors.Single();
-                return true;
+                return Enum.TryParse<SpecialParameterSymbol.QueryValueTypes>(container.MetadataName, out valueEnum);
             }
 
             //
             containerCtor = null;
+            valueEnum = default;
             return false;
         }
 
@@ -121,12 +126,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public static bool IsSelfParameter(ParameterSymbol p)
             => p != null && p.Type != null && p.Type.MetadataName == "RuntimeTypeHandle" && !(p is SourceParameterSymbol) && p.Name == SelfName;
-
-        public static bool IsLocalsParameter(IParameterSymbol p)
-            => p != null && p.Type != null && p.Type.MetadataName == "PhpArray" && p.GetAttributes().Any(attr => attr.AttributeClass.MetadataName == "ImportLocalsAttribute");
-
-        public static bool IsCallerArgsParameter(IParameterSymbol p)
-            => p != null && p.Type != null && p.Type.IsSZArray() && p.GetAttributes().Any(attr => attr.AttributeClass.MetadataName == "ImportCallerArgsAttribute");
 
         public static bool IsCallerClassParameter(IParameterSymbol p)
             => p != null && p.Type != null &&

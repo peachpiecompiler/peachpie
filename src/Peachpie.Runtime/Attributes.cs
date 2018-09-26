@@ -185,33 +185,6 @@ namespace Pchp.Core
     }
 
     /// <summary>
-    /// Denotates a function parameter of type <see cref="PhpArray"/>
-    /// that will be referenced to the array of local PHP variables.
-    /// </summary>
-    /// <remarks>
-    /// The parameter is used to let the function to read or modify caller routine local variables.
-    /// The parameter must be of type <see cref="PhpArray"/>.
-    /// The parameter must be before regular parameters.</remarks>
-    [AttributeUsage(AttributeTargets.Parameter)]
-    public sealed class ImportLocalsAttribute : Attribute
-    {
-
-    }
-
-    /// <summary>
-    /// Denotates a function parameter that will be filled with array of callers' parameters.
-    /// </summary>
-    /// <remarks>
-    /// The parameter is used to access calers' arguments.
-    /// The parameter must be of type <c>array</c>.
-    /// The parameter must be before regular parameters.</remarks>
-    [AttributeUsage(AttributeTargets.Parameter)]
-    public sealed class ImportCallerArgsAttribute : Attribute
-    {
-
-    }
-
-    /// <summary>
     /// Denotates a function parameter that will be loaded with current class.
     /// The parameter must be of type <see cref="RuntimeTypeHandle"/>, <see cref="PhpTypeInfo"/> or <see cref="string"/>.
     /// </summary>

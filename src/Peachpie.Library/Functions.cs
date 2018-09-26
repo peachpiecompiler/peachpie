@@ -1,4 +1,5 @@
 ﻿using Pchp.Core;
+using Pchp.Core.QueryValue;
 using Pchp.Core.Reflection;
 using Pchp.Library.Resources;
 using System;
@@ -77,13 +78,13 @@ namespace Pchp.Library
         /// <summary>
 		/// Retrieves the number of arguments passed to the current user-function.
 		/// </summary>
-		public static int func_num_args([ImportCallerArgs]PhpValue[] args) => args.Length;
+		public static int func_num_args(QueryValue<CallerArgs> argsData) => argsData.Value.Arguments.Length;
 
         /// <summary>
         /// Retrieves an argument passed to the current user-function.
         /// </summary>
         /// <remarks><seealso cref="PhpStack.GetArgument"/></remarks>
-        public static PhpValue func_get_arg([ImportCallerArgs]PhpValue[] args, int index)
+        public static PhpValue func_get_arg(QueryValue<CallerArgs> argsData, int index)
         {
             // checks correctness of the argument:
             if (index < 0)
@@ -92,6 +93,7 @@ namespace Pchp.Library
                 return PhpValue.False;
             }
 
+            var args = argsData.Value.Arguments;
             if (args == null || index >= args.Length)
             {
                 PhpException.Throw(PhpError.Warning, LibResources.GetString("argument_not_passed_to_function", index));
@@ -107,10 +109,11 @@ namespace Pchp.Library
         /// </summary>
         /// <remarks><seealso cref="PhpStack.GetArguments"/>
         /// Also throws warning if called from global scope.</remarks>
-        public static PhpArray func_get_args([ImportCallerArgs]PhpValue[] args)
+        public static PhpArray func_get_args(QueryValue<CallerArgs> argsData)
         {
             // TODO: when called from global code, return FALSE
 
+            var args = argsData.Value.Arguments;
             var result = new PhpArray(args.Length);
 
             for (int i = 0; i < args.Length; i++)

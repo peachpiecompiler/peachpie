@@ -10,6 +10,7 @@ using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.CodeAnalysis.Semantics;
+using Pchp.Core.QueryValue;
 
 namespace Pchp.Core.Dynamic
 {
@@ -28,7 +29,7 @@ namespace Pchp.Core.Dynamic
             return
                 p.IsContextParameter() || p.IsQueryValueParameter() ||
                 p.IsLateStaticParameter() ||
-                p.IsImportLocalsParameter() || p.IsImportCallerArgsParameter() || p.IsImportCallerClassParameter() || p.IsImportCallerStaticClassParameter();
+                p.IsImportCallerClassParameter() || p.IsImportCallerStaticClassParameter();
 
             // TODO: classCtx, <this>
         }
@@ -50,20 +51,6 @@ namespace Pchp.Core.Dynamic
         public static bool IsLateStaticParameter(this ParameterInfo p)
         {
             return p.ParameterType == typeof(PhpTypeInfo) && p.Name == "<static>";
-        }
-
-        public static bool IsImportLocalsParameter(this ParameterInfo p)
-        {
-            return
-                p.ParameterType == typeof(PhpArray) &&
-                p.GetCustomAttribute(typeof(ImportLocalsAttribute)) != null;
-        }
-
-        public static bool IsImportCallerArgsParameter(this ParameterInfo p)
-        {
-            return
-                p.ParameterType == typeof(PhpValue).MakeArrayType() &&
-                p.GetCustomAttribute(typeof(ImportCallerArgsAttribute)) != null;
         }
 
         public static bool IsImportCallerClassParameter(this ParameterInfo p)
@@ -945,6 +932,24 @@ namespace Pchp.Core.Dynamic
                     {
                         boundargs[i] = ctx;
                     }
+                    else if (p.IsQueryValueParameter())
+                    {
+                        if (p.ParameterType == typeof(QueryValue<CallerScript>))
+                        {
+                            // we don't have this info
+                            throw new NotSupportedException();
+                        }
+                        else if (p.ParameterType == typeof(QueryValue<CallerArgs>))
+                        {
+                            // we don't have this info
+                            throw new NotImplementedException();    // TODO: empty array & report warning
+                        }
+                        else if (p.ParameterType == typeof(QueryValue<LocalVariables>))
+                        {
+                            // no way we can implement this
+                            throw new NotImplementedException();    // TODO: empty array & report warning
+                        }
+                    }
                     else if (p.IsLateStaticParameter())
                     {
                         if (lateStaticType != null)
@@ -958,16 +963,6 @@ namespace Pchp.Core.Dynamic
                         {
                             throw new InvalidOperationException("static context not available.");
                         }
-                    }
-                    else if (p.IsImportLocalsParameter())
-                    {
-                        // no way we can implement this
-                        throw new NotImplementedException();    // TODO: empty array & report warning
-                    }
-                    else if (p.IsImportCallerArgsParameter())
-                    {
-                        // we don't have this info
-                        throw new NotImplementedException();    // TODO: empty array & report warning
                     }
                     else if (p.IsImportCallerClassParameter())
                     {
