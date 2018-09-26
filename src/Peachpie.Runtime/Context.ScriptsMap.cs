@@ -74,7 +74,7 @@ namespace Pchp.Core
             /// </summary>
             readonly MainDelegate MainMethod;
 
-            static MainDelegate CreateMain(Type script)
+            public static MainDelegate CreateMain(Type script)
             {
                 var mainmethod =
                     script.GetMethod(Reflection.ReflectionUtils.GlobalCodeMethodName + "`0") ?? // generated wrapper that always returns PhpValue
