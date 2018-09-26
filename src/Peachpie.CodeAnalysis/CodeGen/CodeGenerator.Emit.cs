@@ -368,11 +368,18 @@ namespace Pchp.CodeAnalysis.CodeGen
                     var tref = this.TypeRefContext.GetTypes(tmask)[0];
                     if (tref.IsObject)
                     {
-                        HashSet<DiagnosticInfo> useSiteDiagnostic = null;
-                        var t = _routine.DeclaringCompilation.SourceAssembly.GetTypeByMetadataName(tref.QualifiedName.ClrName(), true, false);
-                        if (t != null && !t.IsErrorType() && (stack.IsTypeParameter() || t.IsDerivedFrom(stack, false, ref useSiteDiagnostic))) // TODO: or interface
+                        // naive IL beutifier,
+                        // that casts a reference type to its actual type that we determined in type analysis
+
+                        var t = (NamedTypeSymbol)_routine.DeclaringCompilation.GlobalSemantics.ResolveType(tref.QualifiedName);
+                        if (t == stack)
                         {
-                            if (t.SpecialType != SpecialType.System_Object)
+                            return stack;
+                        }
+
+                        if (t.IsValidType())
+                        {
+                            if (stack.IsTypeParameter() || t.IsOfType(stack))
                             {
                                 EmitCastClass(t);
                                 return t;
@@ -381,11 +388,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         else
                         {
                             // TODO: class aliasing
-                            //Debug.Assert(t != null);
-                            if (t == null)
-                            {
-                                Debug.WriteLine($"'{tref.QualifiedName}' is unknown!");
-                            }
+                            Debug.WriteLine($"'{tref.QualifiedName}' is {(t is AmbiguousErrorTypeSymbol ? "ambiguous" : "unknown")}!");
                         }
                     }
                 }
@@ -1217,7 +1220,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             else if (SpecialParameterSymbol.IsQueryValueParameter(p, out var ctor, out var container))
             {
                 Debug.Assert(ctor != null);
-                
+
                 switch (container)
                 {
                     case SpecialParameterSymbol.QueryValueTypes.CallerScript:

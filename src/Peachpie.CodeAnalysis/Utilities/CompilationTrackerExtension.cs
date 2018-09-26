@@ -55,7 +55,7 @@ namespace Pchp.CodeAnalysis.Utilities
                 }
                 else if (value is Tuple<string, double> data)
                 {
-                    Trace.WriteLine($"{data.Item1}: {data.Item2}s");
+                    Trace.WriteLine($"{data.Item1}: {data.Item2}");
                 }
             }
         }
