@@ -185,21 +185,21 @@ namespace Pchp.CodeAnalysis.CommandLine
             {
                 // phar file archive
 
-                var prefix = Path.GetFileName(file.Path); // TODO: relative to root
                 var phar = Devsense.PHP.Phar.PharFile.OpenPharFile(file.Path); // TODO: report exception
 
-                var stub = PhpSyntaxTree.ParseCode(phar.StubCode ?? string.Empty, parseOptions, scriptParseOptions, prefix);
-                stub.IsPharEntry = true;
-
+                // treat the stub as a regular source code:
+                var stub = PhpSyntaxTree.ParseCode(phar.StubCode ?? string.Empty, parseOptions, scriptParseOptions, file.Path);
+                
                 // TODO: ConcurrentBuild -> Parallel
                 
+                var prefix = Path.GetFileName(file.Path); // TODO: relative to root
                 var trees = new List<PhpSyntaxTree>();
                 foreach (var entry in phar.Manifest.Entries.Values)
                 {
                     if (entry.IsCompileEntry())
                     {
-                        var tree = PhpSyntaxTree.ParseCode(entry.Code, parseOptions, scriptParseOptions, prefix + "/" + entry.Name);
-                        tree.IsPharEntry = true;
+                        var tree = PhpSyntaxTree.ParseCode(entry.Code, parseOptions, scriptParseOptions, entry.Name);
+                        tree.PharFile = file.Path;
                         trees.Add(tree);
                     }
                 }

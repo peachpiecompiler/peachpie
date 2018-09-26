@@ -50,7 +50,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public static SourceFileSymbol Create(PhpCompilation compilation, PhpSyntaxTree syntaxTree)
         {
             return syntaxTree.IsPharEntry
-                ? new SourcePharFileSymbol(compilation, syntaxTree)
+                ? new SourcePharEntrySymbol(compilation, syntaxTree)
                 : new SourceFileSymbol(compilation, syntaxTree);
         }
 
@@ -281,11 +281,11 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// <see cref="SourceFileSymbol"/> representing a PHAR entry.
     /// </summary>
-    sealed class SourcePharFileSymbol : SourceFileSymbol
+    sealed class SourcePharEntrySymbol : SourceFileSymbol
     {
         SynthesizedAttributeData _lazyPharAttribute;
 
-        public SourcePharFileSymbol(PhpCompilation compilation, PhpSyntaxTree syntaxTree)
+        public SourcePharEntrySymbol(PhpCompilation compilation, PhpSyntaxTree syntaxTree)
             : base(compilation, syntaxTree)
         {
         }
@@ -293,29 +293,13 @@ namespace Pchp.CodeAnalysis.Symbols
         public override string RelativeFilePath => PhpFileUtilities.NormalizeSlashes(SyntaxTree.Source.FilePath); // FilePath is already relative in PHAR
 
         // <pharfilename.phar>/path
-        public override string NamespaceName
-        {
-            get
-            {
-                return $"<{PharName}>{DirectoryRelativePath}";
-            }
-        }
+        public override string NamespaceName => $"<{PharName}>{DirectoryRelativePath}";
 
-        public string PharName
-        {
-            get
-            {
-                var path = SyntaxTree.Source.FilePath;
-                var slash = path.IndexOf('/');
-                var pharname = (slash < 0) ? path : path.Remove(slash);
-
-                return pharname;
-            }
-        }
+        public string PharName => PathUtilities.GetFileName(SyntaxTree.PharFile);
 
         public override ImmutableArray<AttributeData> GetAttributes()
         {
-            // [PharAttribute(PharName)]
+            // [PharAttribute(PharFile)]
             if (_lazyPharAttribute == null)
             {
                 var pharAttribute = new SynthesizedAttributeData(

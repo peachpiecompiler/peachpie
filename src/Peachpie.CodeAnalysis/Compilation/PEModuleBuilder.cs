@@ -335,6 +335,12 @@ namespace Pchp.CodeAnalysis.Emit
                     var files = this.Compilation.GlobalSemantics.ExportedScripts;
                     foreach (var f in files)
                     {
+                        if (f is SourcePharEntrySymbol)
+                        {
+                            // PHAR entries are reflected by runtime lazily
+                            continue;
+                        }
+
                         // callback.Invoke(f.Name, f)
                         il.EmitLoadArgumentOpcode(0);
                         il.EmitStringConstant(f.RelativeFilePath);

@@ -45,8 +45,13 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public ImmutableArray<LangElement> YieldNodes { get; private set; }
 
-        /// <summary>Gets or set value indicating the node is a PHAR's file entry.</summary>
-        public bool IsPharEntry { get; set; }
+        /// <summary>In case of Phar entry, gets or set the PHAR file path.</summary>
+        public string PharFile { get; set; }
+
+        /// <summary>
+        /// Gets value indicating the file is a PHAR entry.
+        /// </summary>
+        public bool IsPharEntry => PharFile != null;
 
         public static ImmutableArray<Version> SupportedLanguageVersions { get; } = new Version[]
         {
