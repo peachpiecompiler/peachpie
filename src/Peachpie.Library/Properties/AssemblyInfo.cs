@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Pchp.Library.Phar;
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
@@ -21,3 +22,4 @@ using System.Runtime.InteropServices;
 // annotates this library as a php extension,
 // all its public static methods with compatible signatures will be seen as global functions to php scope
 [assembly: Pchp.Core.PhpExtension("standard", "Core", "session", "ctype", "tokenizer", "date", "pcre", "ereg", "json", "hash", "SPL", "filter")]
+[assembly: Pchp.Core.PhpExtension(PharExtension.ExtensionName, Registrator = typeof(PharExtension))]

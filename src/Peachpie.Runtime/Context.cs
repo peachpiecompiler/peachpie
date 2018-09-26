@@ -120,7 +120,7 @@ namespace Pchp.Core
                 .Invoke(null, new object[] { new Action<PhpTypeInfo>(TypesTable.DeclareAppType) });
 
             tscript.GetMethod("BuiltinConstants")
-                .Invoke(null, new object[] { new AppConstantsComposition() } );
+                .Invoke(null, new object[] { new AppConstantsComposition() });
 
             tscript.GetMethod("EnumerateScripts")
                 .Invoke(null, new object[] { new Action<string, RuntimeTypeHandle>(ScriptsMap.DeclareScript) });
@@ -328,13 +328,19 @@ namespace Pchp.Core
         /// <returns>Inclusion result value.</returns>
         public PhpValue Include(string cd, string path, PhpArray locals, object @this = null, RuntimeTypeHandle self = default(RuntimeTypeHandle), bool once = false, bool throwOnError = false)
         {
+            ScriptInfo script;
+
             if (FileSystemUtils.TryGetScheme(path, out var schemespan))
             {
                 // SCHEME://SOMETHING
-                return HandleIncludeWithScheme();
+                script = HandleIncludeWithScheme(schemespan, cd, path.Substring(schemespan.Length + 3));
+            }
+            else
+            {
+                // regular inclusion resolution
+                script = ScriptsMap.ResolveInclude(path, RootPath, IncludePaths, WorkingDirectory, cd);
             }
 
-            var script = ScriptsMap.ResolveInclude(path, RootPath, IncludePaths, WorkingDirectory, cd);
             if (script.IsValid)
             {
                 return (once && _scripts.IsIncluded(script.Index))
@@ -370,10 +376,17 @@ namespace Pchp.Core
             }
         }
 
-        PhpValue HandleIncludeWithScheme()
+        ScriptInfo HandleIncludeWithScheme(ReadOnlySpan<char> scheme, string cd, string path)
         {
-            // TODO: SCHEME://SOMETHING
-            throw new NotImplementedException();
+            // SCHEME://PATH
+            if (IncludeProvider.Instance.TryResolveSchemeWrapper(scheme.ToString(), out var resolver))
+            {
+                return resolver.ResolveScript(this, cd, path);
+            }
+
+            //
+
+            return default;
         }
 
         /// <summary>

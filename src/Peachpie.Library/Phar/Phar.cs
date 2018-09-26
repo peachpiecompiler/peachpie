@@ -12,6 +12,7 @@ namespace Pchp.Library.Phar
     /// A high-level interface to accessing and creating phar archives.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpExtension(PharExtension.ExtensionName)]
     public sealed class Phar : /*RecursiveDirectoryIterator,*/ Countable, ArrayAccess
     {
         #region .ctor

@@ -503,7 +503,7 @@ namespace Pchp.Library.Streams
         /// </summary>
         public static Dictionary<string, StreamWrapper> SystemStreamWrappers { get { return systemStreamWrappers; } }
 
-        private static readonly Dictionary<string, StreamWrapper> systemStreamWrappers = new Dictionary<string, StreamWrapper>(5);  // TODO: thread safe
+        private static readonly Dictionary<string, StreamWrapper> systemStreamWrappers = new Dictionary<string, StreamWrapper>(5, StringComparer.Ordinal);  // TODO: thread safe
 
         #endregion
 
