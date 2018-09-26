@@ -20,6 +20,11 @@ namespace Pchp.Library.Phar
         sealed class CachedPhar
         {
             /// <summary>
+            /// Containing assembly.
+            /// </summary>
+            public Assembly Assembly { get; }
+
+            /// <summary>
             /// Relative Phar file name.
             /// </summary>
             public string PharFile { get; }
@@ -31,6 +36,7 @@ namespace Pchp.Library.Phar
 
             public CachedPhar(Type stubScriptType)
             {
+                Assembly = stubScriptType.Assembly;
                 PharFile = GetPharFile(stubScriptType);
 
                 lock (typeof(CachedPhar)) // Context.DeclareScript will be lock-less
@@ -161,6 +167,20 @@ namespace Pchp.Library.Phar
             return ctx.GetStatic<PharContext>().PharMap.TryGetValue(alias, out var phar)
                 ? phar.PharFile
                 : null;
+        }
+
+        /// <summary>
+        /// Gets phar content file stream.
+        /// </summary>
+        public static Stream GetResourceStream(string pharFile, string entryName)
+        {
+            if (_cachedPhars != null && _cachedPhars.TryGetValue(pharFile, out var phar))
+            {
+                var resourceName = "phar://" + pharFile + "/" + entryName.Replace('\\', '/');
+                return phar.Assembly.GetManifestResourceStream(resourceName);
+            }
+
+            return null;
         }
 
         /// <summary>

@@ -220,7 +220,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                             {
                                 // TODO: not always UTF8
                                 var stream = new MemoryStream(entry.Code.Length);
-                                using (var writer = new StreamWriter(stream, Encoding.UTF8, 1024, leaveOpen: true))
+                                using (var writer = new StreamWriter(stream, new UTF8Encoding(false), 1024, leaveOpen: true))
                                 {
                                     writer.Write(entry.Code);
                                 }
