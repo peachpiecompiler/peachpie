@@ -44,7 +44,7 @@ namespace Pchp.Library.Reflection
             else
             {
                 // [Script(Path = ...)]
-                var scrt = t.GetCustomAttribute<ScriptAttribute>();
+                var scrt = Core.Reflection.ReflectionUtils.GetScriptAttribute(t);
                 if (scrt != null)
                 {
                     path = scrt.Path;
@@ -75,7 +75,7 @@ namespace Pchp.Library.Reflection
                 else if (owner.IsStatic) // global function (?)
                 {
                     // [Script(Path = ...)] => global function declared inside script
-                    var scrt = container.GetCustomAttribute<ScriptAttribute>();
+                    var scrt = Core.Reflection.ReflectionUtils.GetScriptAttribute(container);
                     if (scrt != null)
                     {
                         // function

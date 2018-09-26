@@ -89,11 +89,9 @@ namespace Peachpie.Library.Scripting
 
             foreach (var t in ass.GetTypes())
             {
-                var attrs = t.GetCustomAttributes(typeof(ScriptAttribute), inherit: false) as Attribute[]; // faster
-                if (attrs != null && attrs.Length != 0)
+                var attr = Pchp.Core.Reflection.ReflectionUtils.GetScriptAttribute(t);
+                if (attr != null)
                 {
-                    var attr = (ScriptAttribute)attrs[0];
-
                     _script = t;
                     _entryPoint = new Context.ScriptInfo(-1, attr.Path, t.GetTypeInfo()).Evaluate;
                     break;

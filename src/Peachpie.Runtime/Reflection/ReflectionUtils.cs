@@ -114,5 +114,17 @@ namespace Pchp.Core.Reflection
         /// Such parameters are passed by runtime automatically and not read from given arguments.
         /// </summary>
         public static int ImplicitParametersCount(ParameterInfo[] ps) => ps.TakeWhile(IsImplicitParameter).Count();
+
+        /// <summary>
+        /// Gets <see cref="ScriptAttribute"/> of given script type (the type that represents a compiled script file).
+        /// </summary>
+        /// <returns>The attribute or <c>null</c>.</returns>
+        public static ScriptAttribute GetScriptAttribute(Type scriptType)
+        {
+            var attrs = scriptType.GetCustomAttributes(typeof(ScriptAttribute), inherit: false) as Attribute[]; // faster
+            return attrs != null && attrs.Length != 0
+                ? (ScriptAttribute)attrs[0]
+                : null;
+        }
     }
 }

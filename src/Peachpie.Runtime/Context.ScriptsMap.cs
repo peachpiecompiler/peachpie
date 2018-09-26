@@ -260,11 +260,11 @@ namespace Pchp.Core
 
             static int GetScriptIndex(Type script)
             {
-                var attrs = script.GetCustomAttributes(typeof(ScriptAttribute), inherit: false) as Attribute[]; // fast GetCustomAttributes()
-                Debug.Assert(attrs != null && attrs.Length != 0);
+                var attr = Reflection.ReflectionUtils.GetScriptAttribute(script);
+                Debug.Assert(attr != null);
 
-                string path = (attrs != null && attrs.Length != 0)
-                    ? ((ScriptAttribute)attrs[0]).Path
+                string path = (attr != null)
+                    ? attr.Path
                     : $"?{_scriptsMap.Count}"; // note: should not happen, see assertion above
 
                 return DeclareScript(path, script);

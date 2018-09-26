@@ -65,7 +65,7 @@ namespace Pchp.Library.Reflection
             var methods = _routine.Methods;
             if (methods.Length == 1 && methods[0].IsStatic)
             {
-                var scriptattr = methods[0].DeclaringType.GetTypeInfo().GetCustomAttribute<ScriptAttribute>(false);
+                var scriptattr = Core.Reflection.ReflectionUtils.GetScriptAttribute(methods[0].DeclaringType);
                 if (scriptattr != null)
                 {
                     return System.IO.Path.Combine(ctx.RootPath, scriptattr.Path);
