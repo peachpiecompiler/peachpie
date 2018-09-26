@@ -89,9 +89,8 @@ namespace Pchp.Library.Phar
         /// </summary>
         public static string PharEntryRelativePath(Type pharEntryScriptType)
         {
-            var pharattr = GetPharAttribute(pharEntryScriptType) ?? throw new ArgumentException();
             var scriptattr = ReflectionUtils.GetScriptAttribute(pharEntryScriptType) ?? throw new ArgumentException();
-            return PharEntryRelativePath(pharattr.PharFile, scriptattr.Path);
+            return scriptattr.Path;
         }
 
         /// <summary>
@@ -100,7 +99,7 @@ namespace Pchp.Library.Phar
         /// </summary>
         public static string PharEntryRelativePath(string pharFile, string pharEntryPath)
         {
-            return CurrentPlatform.NormalizeSlashes(pharFile + "/" + pharEntryPath);
+            return CurrentPlatform.NormalizeSlashes(pharFile + CurrentPlatform.DirectorySeparator.ToString() + pharEntryPath);
         }
 
         /// <summary>
@@ -147,7 +146,7 @@ namespace Pchp.Library.Phar
             {
                 if (alias != null)
                 {
-                    ctx.GetStatic<PharContext>().PharMap[alias] = phar;
+                    ctx.GetStatic<PharContext>().PharMap.Add(alias, phar);
                 }
 
                 return true;

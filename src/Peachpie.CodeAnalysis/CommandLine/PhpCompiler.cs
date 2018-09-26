@@ -209,7 +209,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                     if (entry.IsCompileEntry())
                     {
                         var tree = PhpSyntaxTree.ParseCode(entry.Code, parseOptions, scriptParseOptions, entry.Name);
-                        tree.PharFile = file.Path;
+                        tree.PharStubFile = stub;
                         trees.Add(tree);
                     }
                     else

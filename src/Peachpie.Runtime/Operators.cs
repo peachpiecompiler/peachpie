@@ -1503,5 +1503,15 @@ namespace Pchp.Core
         }
 
         #endregion
+
+        #region Paths
+
+        /// <summary>
+        /// Normalizes path's slashes for the current platform.
+        /// </summary>
+        public static string NormalizePath(string value) => Utilities.CurrentPlatform.NormalizeSlashes(value);
+
+        #endregion
+
     }
 }

@@ -20,6 +20,8 @@ namespace Pchp.CodeAnalysis
     {
         readonly CodeSourceUnit _source;
 
+        SourceText _lazyText;
+
         /// <summary>
         /// Gets constructed lambda nodes.
         /// </summary>
@@ -45,13 +47,13 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public ImmutableArray<LangElement> YieldNodes { get; private set; }
 
-        /// <summary>In case of Phar entry, gets or set the PHAR file path.</summary>
-        public string PharFile { get; set; }
+        /// <summary>In case of Phar entry, gets or set the PHAR stub.</summary>
+        public PhpSyntaxTree PharStubFile { get; set; }
 
         /// <summary>
         /// Gets value indicating the file is a PHAR entry.
         /// </summary>
-        public bool IsPharEntry => PharFile != null;
+        public bool IsPharEntry => PharStubFile != null;
 
         public static ImmutableArray<Version> SupportedLanguageVersions { get; } = new Version[]
         {
@@ -256,7 +258,12 @@ namespace Pchp.CodeAnalysis
 
         public override SourceText GetText(CancellationToken cancellationToken = default(CancellationToken))
         {
-            return SourceText.From(_source.Code, Encoding.UTF8, SourceHashAlgorithm.Sha1);
+            if (_lazyText == null)
+            {
+                _lazyText = SourceText.From(_source.Code, Encoding.UTF8);
+            }
+
+            return _lazyText;
         }
 
         public override bool HasHiddenRegions()

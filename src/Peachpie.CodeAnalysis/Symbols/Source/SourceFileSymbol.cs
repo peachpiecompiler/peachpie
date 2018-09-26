@@ -9,6 +9,7 @@ using Devsense.PHP.Syntax.Ast;
 using static Pchp.CodeAnalysis.AstUtils;
 using Devsense.PHP.Syntax;
 using System.Threading;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -153,10 +154,14 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        public virtual string RelativeFilePath =>
-            PhpFileUtilities.GetRelativePath(
-                PhpFileUtilities.NormalizeSlashes(_syntaxTree.Source.FilePath),
+        protected string CreateRelativeFilePath(string fullPath)
+        {
+            return PhpFileUtilities.GetRelativePath(
+                PhpFileUtilities.NormalizeSlashes(fullPath),
                 PhpFileUtilities.NormalizeSlashes(_compilation.Options.BaseDirectory));
+        }
+
+        public virtual string RelativeFilePath => CreateRelativeFilePath(_syntaxTree.Source.FilePath);
 
         /// <summary>
         /// Gets relative path excluding the file name and trailing slashes.
@@ -288,14 +293,23 @@ namespace Pchp.CodeAnalysis.Symbols
         public SourcePharEntrySymbol(PhpCompilation compilation, PhpSyntaxTree syntaxTree)
             : base(compilation, syntaxTree)
         {
+            Debug.Assert(syntaxTree.PharStubFile != null);
         }
 
-        public override string RelativeFilePath => PhpFileUtilities.NormalizeSlashes(SyntaxTree.Source.FilePath); // FilePath is already relative in PHAR
+        public override string RelativeFilePath
+        {
+            get
+            {
+                // FilePath is already relative in PHAR entry
+
+                return PhpFileUtilities.NormalizeSlashes(PharName + "/" + PhpFileUtilities.NormalizeSlashes(SyntaxTree.Source.FilePath));
+            }
+        }
 
         // <pharfilename.phar>/path
-        public override string NamespaceName => $"<{PharName}>{DirectoryRelativePath}";
+        public override string NamespaceName => "<Phar>" + DirectoryRelativePath;
 
-        public string PharName => PathUtilities.GetFileName(SyntaxTree.PharFile);
+        public string PharName => CreateRelativeFilePath(SyntaxTree.PharStubFile.FilePath);
 
         public override ImmutableArray<AttributeData> GetAttributes()
         {

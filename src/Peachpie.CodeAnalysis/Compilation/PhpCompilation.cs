@@ -864,9 +864,10 @@ namespace Pchp.CodeAnalysis
 
             if (emittingPdb)
             {
-                moduleBeingBuilt.EmbeddedTexts = moduleBeingBuilt.EmbeddedTexts.Concat(CollectAdditionalEmbeddedTexts());
-
-                if (!CreateDebugDocuments(moduleBeingBuilt.DebugDocumentsBuilder, moduleBeingBuilt.EmbeddedTexts, diagnostics))
+                if (!CreateDebugDocuments(
+                    moduleBeingBuilt.DebugDocumentsBuilder,
+                    moduleBeingBuilt.EmbeddedTexts.Concat(CollectAdditionalEmbeddedTexts()),
+                    diagnostics))
                 {
                     return false;
                 }

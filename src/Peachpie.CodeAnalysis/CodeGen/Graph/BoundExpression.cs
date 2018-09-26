@@ -4348,8 +4348,8 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Context.RootPath.Getter);
 
                     cg.Builder.EmitStringConstant("/" + sourcefile.RelativeFilePath);
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.NormalizePath_string);  // normalize slashes
 
-                    // TODO: normalize slashes
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Concat_String_String)
                         .Expect(SpecialType.System_String);
 
@@ -4363,8 +4363,8 @@ namespace Pchp.CodeAnalysis.Semantics
                     if (relative_dir.Length != 0)
                     {
                         cg.Builder.EmitStringConstant("/" + relative_dir);
+                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.NormalizePath_string);  // normalize slashes
 
-                        // TODO: normalize slashes
                         cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Concat_String_String);
                     }
 
