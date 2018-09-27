@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis;
 using Pchp.Core;
 
@@ -230,7 +231,17 @@ namespace Peachpie.Library.Scripting
                 {
                     var peStream = new MemoryStream();
                     var pdbStream = options.EmitDebugInformation ? new MemoryStream() : null;
-                    var result = compilation.Emit(peStream, pdbStream);
+
+                    var emitOptions = new EmitOptions(
+                        debugInformationFormat: options.EmitDebugInformation ? DebugInformationFormat.PortablePdb : default
+                        );
+
+                    var result = compilation.Emit(peStream,
+                        pdbStream: pdbStream,
+                        options: emitOptions,
+                        embeddedTexts: new[] { EmbeddedText.FromSource(tree.FilePath, tree.GetText()) }
+                        );
+
                     if (result.Success)
                     {
                         return new Script(name, peStream, pdbStream, builder, previousSubmissions);
