@@ -427,5 +427,7 @@ namespace Pchp.Core
         public static bool Ceq(PhpValue x, bool by) => x.IsBoolean(out bool bx) && bx == by;
 
         public static bool Ceq(PhpValue x, PhpValue y) => x.StrictEquals(y);
+
+        public static bool CeqNull(PhpValue x) => x.IsNull || (x.Object is PhpAlias alias && CeqNull(alias.Value));
     }
 }
