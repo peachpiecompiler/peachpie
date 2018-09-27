@@ -368,6 +368,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 StrictCeq_double_PhpNumber = ct.StrictComparison.Method("Ceq", ct.Double, ct.PhpNumber);
                 StrictCeq_PhpValue_PhpValue = ct.StrictComparison.Method("Ceq", ct.PhpValue, ct.PhpValue);
                 StrictCeq_PhpValue_bool = ct.StrictComparison.Method("Ceq", ct.PhpValue, ct.Boolean);
+                StrictCeqNull_PhpValue = ct.StrictComparison.Method("CeqNull", ct.PhpValue);
 
                 Div_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.DivisionOperatorName, ct.PhpValue, ct.PhpValue);
                 Div_long_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.DivisionOperatorName, ct.Long, ct.PhpValue);
@@ -428,7 +429,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 CompareNull_value,
 
                 StrictCeq_bool_PhpValue, StrictCeq_long_PhpValue, StrictCeq_long_PhpNumber, StrictCeq_double_PhpValue, StrictCeq_double_PhpNumber, StrictCeq_PhpValue_PhpValue,
-                StrictCeq_PhpValue_bool,
+                StrictCeq_PhpValue_bool, StrictCeqNull_PhpValue,
 
                 Div_PhpValue_PhpValue, Div_long_PhpValue, Div_double_PhpValue,
                 BitwiseAnd_PhpValue_PhpValue, BitwiseOr_PhpValue_PhpValue, BitwiseXor_PhpValue_PhpValue, BitwiseNot_PhpValue;

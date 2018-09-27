@@ -1269,16 +1269,26 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 default:
 
-                    //// === NULL
-                    //if (right.ConstantValue.IsNull())
-                    //{
-                    // TODO 
-                    //}
+                    // === NULL
+                    if (right.ConstantValue.IsNull())
+                    {
+                        if (xtype.IsReferenceType && xtype != cg.CoreTypes.PhpAlias)
+                        {
+                            // Template: <STACK> == null
+                            cg.Builder.EmitNullConstant();
+                            cg.Builder.EmitOpCode(ILOpCode.Ceq);
+                            return cg.CoreTypes.Boolean;
+                        }
+
+                        // StrictCeqNull( <VALUE> )
+                        xtype = cg.EmitConvertToPhpValue(xtype, 0);
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.StrictCeqNull_PhpValue)
+                            .Expect(SpecialType.System_Boolean);
+                    }
 
                     // TODO: PhpArray, Object === ...
 
                     xtype = cg.EmitConvertToPhpValue(xtype, 0);
-
                     ytype = cg.Emit(right);
 
                     if (ytype.SpecialType == SpecialType.System_Boolean)

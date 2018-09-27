@@ -84,7 +84,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets value indicating whether the value is an alias containing another value.
         /// </summary>
-        public bool IsAlias => (TypeCode == PhpTypeCode.Alias);
+        public bool IsAlias => _obj is PhpAlias;
 
         /// <summary>
         /// Gets value indicating the value represents an object.
