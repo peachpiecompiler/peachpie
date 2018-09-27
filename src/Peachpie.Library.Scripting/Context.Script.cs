@@ -223,8 +223,8 @@ namespace Peachpie.Library.Scripting
                 if (options.EmitDebugInformation)
                 {
                     compilation = compilation.WithPhpOptions(compilation.Options.WithOptimizationLevel(OptimizationLevel.Debug).WithDebugPlusMode(true));
-                    emitOptions = emitOptions.WithDebugInformationFormat(DebugInformationFormat.PortablePdb);
-                    embeddedTexts = new[] { EmbeddedText.FromSource(tree.FilePath, tree.GetText()) };
+                    //emitOptions = emitOptions.WithDebugInformationFormat(DebugInformationFormat.PortablePdb);
+                    //embeddedTexts = new[] { EmbeddedText.FromSource(tree.FilePath, tree.GetText()) };
                 }
                 else
                 {
