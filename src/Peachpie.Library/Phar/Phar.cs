@@ -66,7 +66,7 @@ namespace Pchp.Library.Phar
         /// <param name="alias">The alias that can be used in phar:// URLs to refer to this archive, rather than its full path.</param>
         /// <param name="dataoffset">Unused.</param>
         /// <returns>Always <c>true</c>.</returns>
-        public static bool mapPhar(Context ctx, QueryValue<CallerScript> self, string alias, int dataoffset = 0)
+        public static bool mapPhar(Context ctx, QueryValue<CallerScript> self, string alias = default, int dataoffset = 0)
         {
             if (PharExtensions.MapPhar(ctx, self.Value.ScriptType, alias))
             {
