@@ -302,7 +302,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 // FilePath is already relative in PHAR entry
 
-                return PhpFileUtilities.NormalizeSlashes(PharName + "/" + PhpFileUtilities.NormalizeSlashes(SyntaxTree.Source.FilePath));
+                return PhpFileUtilities.NormalizeSlashes(SyntaxTree.Source.FilePath);
             }
         }
 

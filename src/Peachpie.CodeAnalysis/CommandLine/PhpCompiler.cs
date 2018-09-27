@@ -193,7 +193,6 @@ namespace Pchp.CodeAnalysis.CommandLine
             if (file.Path.IsPharFile())
             {
                 // phar file archive
-
                 var phar = Devsense.PHP.Phar.PharFile.OpenPharFile(file.Path); // TODO: report exception
 
                 // treat the stub as a regular source code:
@@ -201,14 +200,14 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                 // TODO: ConcurrentBuild -> Parallel
 
-                var prefix = Path.GetFileName(file.Path); // TODO: relative to root
+                var prefix = PhpFileUtilities.GetRelativePath(file.Path, Arguments.BaseDirectory);
                 var trees = new List<PhpSyntaxTree>();
                 var content = new List<ResourceDescription>();
                 foreach (var entry in phar.Manifest.Entries.Values)
                 {
                     if (entry.IsCompileEntry())
                     {
-                        var tree = PhpSyntaxTree.ParseCode(entry.Code, parseOptions, scriptParseOptions, entry.Name);
+                        var tree = PhpSyntaxTree.ParseCode(entry.Code, parseOptions, scriptParseOptions, prefix + "/" + entry.Name);
                         tree.PharStubFile = stub;
                         trees.Add(tree);
                     }

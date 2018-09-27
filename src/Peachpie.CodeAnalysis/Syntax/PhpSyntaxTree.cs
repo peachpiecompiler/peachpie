@@ -72,6 +72,8 @@ namespace Pchp.CodeAnalysis
             _source = source;
         }
 
+        internal override bool SupportsLocations => true;
+
         static LanguageFeatures DefaultLanguageVersion(ref Version languageVersion)
         {
             languageVersion = new Version(7, 2);
@@ -188,7 +190,7 @@ namespace Pchp.CodeAnalysis
             }
         }
 
-        public override int Length => _source.LineBreaks.TextLength;
+        public override int Length => _source.Code.Length;
 
         protected override ParseOptions OptionsCore
         {
