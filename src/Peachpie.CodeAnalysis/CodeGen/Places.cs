@@ -1703,8 +1703,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                         default:
                             if (Access.TargetType == cg.CoreTypes.PhpArray)
                             {
-                                EmitOpCode_LoadAddress(cg); // &PhpValue.ToArray()
-                                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToArray);
+                                EmitOpCode_LoadAddress(cg); // &PhpValue.GetArray()
+                                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.GetArray);
                             }
                             break;
                     }

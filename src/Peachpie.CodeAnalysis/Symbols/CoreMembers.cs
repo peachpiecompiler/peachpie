@@ -461,6 +461,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 PassValue = ct.PhpValue.Method("PassValue");
                 ToArray = ct.PhpValue.Method("ToArray");
                 AsObject = ct.PhpValue.Method("AsObject");
+                GetArray = ct.PhpValue.Method("GetArray");
 
                 get_Long = ct.PhpValue.Method("get_Long");   // TODO: special name, property
                 get_Double = ct.PhpValue.Method("get_Double");   // TODO: special name, property
@@ -492,7 +493,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToClass, EnsureObject, EnsureArray, EnsureAlias, GetArrayAccess, ToArray,
                 AsObject,
-                DeepCopy, GetValue, PassValue,
+                DeepCopy, GetValue, PassValue, GetArray,
                 Eq_PhpValue_PhpValue, Eq_PhpValue_String,
                 get_Long, get_Double, get_Boolean, get_String, get_Array,
                 Create_Boolean, Create_Long, Create_Int, Create_Double, Create_String, Create_PhpString, Create_PhpNumber, Create_PhpAlias, Create_PhpArray, Create_IntStringKey,
@@ -678,10 +679,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToStringOrThrow_Context = t.Method("ToStringOrThrow", ct.Context);
                 ToNumber = t.Method("ToNumber");
                 ToClass = t.Method("ToClass");
+                ToArray = t.Method("ToArray");
             }
 
             public readonly CoreMethod
-                ToLong, ToDouble, ToBoolean, ToString_Context, ToStringOrThrow_Context, ToNumber, ToClass;
+                ToLong, ToDouble, ToBoolean, ToString_Context, ToStringOrThrow_Context, ToNumber, ToClass, ToArray;
         }
 
         public struct PhpStringHolder

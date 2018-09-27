@@ -358,9 +358,28 @@ namespace Pchp.Core
         public object AsObject() => _type.AsObject(ref this);
 
         /// <summary>
-        /// Converts value to an array.
+        /// Converts value to <see cref="PhpArray"/>.
+        /// 
+        /// Value is converted according to PHP semantic:
+        /// - array is returned as it is.
+        /// - null is converted to an empty array.
+        /// - scalars are converted to a new array containing a single item.
+        /// - object is converted to a new array containing the object's properties.
+        /// 
+        /// This method cannot return a <c>null</c> reference.
         /// </summary>
-        public PhpArray ToArray() => _type.ToArray(ref this);
+        public PhpArray/*!*/ToArray() => _type.ToArray(ref this);
+
+        /// <summary>
+        /// Passes the value as strictly typed <c>array</c>.
+        /// 
+        /// Gets the underlaying <see cref="PhpArray"/> or throws an exception.
+        /// The <c>NULL</c> is returned as it is.        /// 
+        /// Anything else than <c>NULL</c> or <see cref="PhpArray"/> causes an exception.
+        /// </summary>
+        /// <returns><see cref="PhpArray"/> instance or a<c>null</c> reference.</returns>
+        /// <exception cref="InvalidCastException">Value is neither <see cref="PhpArray"/> or <c>null</c>.</exception>
+        public PhpArray GetArray() => _type.GetArray(ref this);
 
         /// <summary>
         /// Gets callable wrapper for the object dynamic invocation.

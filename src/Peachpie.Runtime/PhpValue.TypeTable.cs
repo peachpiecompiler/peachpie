@@ -122,6 +122,11 @@ namespace Pchp.Core
             public abstract PhpArray ToArray(ref PhpValue me);
 
             /// <summary>
+            /// Gets <see cref="PhpArray"/> or throws an exception.
+            /// </summary>
+            public virtual PhpArray GetArray(ref PhpValue me) => throw new InvalidCastException();
+
+            /// <summary>
             /// Gets underlaying class instance or <c>null</c>.
             /// </summary>
             public virtual object AsObject(ref PhpValue me) => null;
@@ -205,6 +210,7 @@ namespace Pchp.Core
                 return arr.EnsureItemAlias(index, quiet);
             }
             public override PhpArray ToArray(ref PhpValue me) => PhpArray.NewEmpty();
+            public override PhpArray GetArray(ref PhpValue me) => null;
             public override void Output(ref PhpValue me, Context ctx) { }
             public override string DisplayString(ref PhpValue me) => PhpVariable.TypeNameNull;
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.AcceptNull();
@@ -570,6 +576,16 @@ namespace Pchp.Core
                 return new PhpAlias(PhpValue.Null);
             }
             public override PhpArray ToArray(ref PhpValue me) => Convert.ClassToArray(me.Object);
+            public override PhpArray GetArray(ref PhpValue me)
+            {
+                // TODO: review
+                //if (me.Object is IPhpConvertible conv)
+                //{
+                //    return conv.ToArray();
+                //}
+
+                return base.GetArray(ref me);
+            }
             public override object AsObject(ref PhpValue me) => me.Object;
             public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx)
             {
@@ -610,6 +626,7 @@ namespace Pchp.Core
             public override PhpValue DeepCopy(ref PhpValue me) => new PhpValue(me.Array.DeepCopy());
             public override void PassValue(ref PhpValue me) => me = new PhpValue(me.Array.DeepCopy());
             public override PhpArray ToArray(ref PhpValue me) => me.Array;
+            public override PhpArray GetArray(ref PhpValue me) => me.Array;
             public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx)
             {
                 if (me.Array.Count == 2)
@@ -661,6 +678,7 @@ namespace Pchp.Core
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) => me.Alias.Value.EnsureItemAlias(index, quiet);
             public override void PassValue(ref PhpValue me) => me = me.Alias.Value.DeepCopy();
             public override PhpArray ToArray(ref PhpValue me) => me.Alias.Value.ToArray();
+            public override PhpArray GetArray(ref PhpValue me) => me.Alias.Value.GetArray();
             public override object AsObject(ref PhpValue me) => me.Alias.Value.AsObject();
             public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx) => me.Alias.Value.AsCallable(callerCtx);
             public override string DisplayString(ref PhpValue me) => "&" + me.Alias.Value.DisplayString;

@@ -119,11 +119,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (oftype.IsClassType())
                 {
                     HashSet<DiagnosticInfo> set = null;
-                    if (t.IsDerivedFrom(oftype, true, ref set))
-                        return true;
+                    return t.IsDerivedFrom(oftype, true, ref set);
                 }
-
-                if (oftype.IsInterfaceType())
+                else if (oftype.IsInterfaceType())
                 {
                     return t.ImplementsInterface(oftype);
                 }
@@ -630,8 +628,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     case TypeKind.Pointer:
                         throw new NotImplementedException();
-                        //current = ((PointerTypeSymbol)current).PointedAtType;
-                        //continue;
+                    //current = ((PointerTypeSymbol)current).PointedAtType;
+                    //continue;
 
                     default:
                         throw ExceptionUtilities.UnexpectedValue(current.TypeKind);
@@ -1026,6 +1024,11 @@ namespace Pchp.CodeAnalysis.Symbols
         //        }
         //    }
         //}
+
+        /// <summary>
+        /// Gets value indicating the type is <see cref="System.Void"/>.
+        /// </summary>
+        internal static bool IsVoid(this TypeSymbol type) => type.SpecialType == SpecialType.System_Void;
 
         //internal static bool IsVoidPointer(this TypeSymbol type)
         //{

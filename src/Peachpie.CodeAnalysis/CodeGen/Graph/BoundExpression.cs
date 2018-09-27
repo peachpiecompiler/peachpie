@@ -1993,9 +1993,9 @@ namespace Pchp.CodeAnalysis.Semantics
                     throw new NotImplementedException();
 
                 case Operations.ArrayCast:
-                    //Template: "(array)x"
-                    cg.EmitConvert(this.Operand, cg.CoreTypes.PhpArray);    // TODO: EmitArrayCast()
-                    returned_type = cg.CoreTypes.PhpArray;
+                    // Template: "(array)x"
+                    // Conversion of anything to array:
+                    returned_type = cg.EmitCastToArray(this.Operand);
                     break;
 
                 case Operations.UnsetCast:

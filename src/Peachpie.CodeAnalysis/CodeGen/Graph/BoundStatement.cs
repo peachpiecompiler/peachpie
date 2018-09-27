@@ -81,16 +81,11 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             var rtype = cg.Routine.ReturnType;
-            var rvoid = rtype.SpecialType == SpecialType.System_Void;
 
             //
             if (this.Returned == null)
             {
-                if (rvoid)
-                {
-                    // <void>
-                }
-                else
+                if (!rtype.IsVoid())
                 {
                     // <default>
                     cg.EmitLoadDefault(rtype, cg.Routine.ResultTypeMask);
@@ -98,38 +93,15 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                var t = cg.Emit(this.Returned);
+                cg.EmitConvert(this.Returned, rtype);
 
-                if (rvoid)
+                // check for null, if return type is not nullable
+                if (cg.IsDebug && cg.Routine.SyntaxReturnType != null && !cg.Routine.SyntaxReturnType.IsNullable())
                 {
-                    // <expr>;
-                    cg.EmitPop(t);
-                }
-                else
-                {
-                    if (cg.Routine.SyntaxSignature.AliasReturn)
-                    {
-                        Debug.Assert(this.Returned.Access.IsReadRef);
-                        Debug.Assert(rtype == cg.CoreTypes.PhpAlias);
-                    }
-                    else
-                    {
-                        if (rtype.IsReferenceType && Returned.ConstantValue.IsNull())
-                        {
-                            // Template: return NULL;
-                            t = rtype; // no conversion
-                        }
-
-                        // return by value
-                        if (this.Returned.TypeRefMask.IsRef)
-                        {
-                            // dereference
-                            t = cg.EmitDereference(t);
-                        }
-                    }
-
-                    // return (T)<expr>;
-                    cg.EmitConvert(t, this.Returned.TypeRefMask, rtype);
+                    //// Template: Debug.Assert( <STACK> != null )
+                    //cg.Builder.EmitOpCode(ILOpCode.Dup);
+                    //cg.EmitNotNull(rtype, this.Returned.TypeRefMask);
+                    //cg.EmitDebugAssert();
                 }
             }
 

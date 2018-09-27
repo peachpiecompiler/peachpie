@@ -306,9 +306,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else if (from.IsNullableType())
                     {
-
-
-                        break;
+                        // Template: CodeGenerator.EmitNullableCastToNull(from, false);
+                        throw new NotImplementedException();
                     }
                     else
                     {
@@ -808,6 +807,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         /// <summary>
         /// Emits conversion to <c>PhpArray</c>.
+        /// Anyting else than <c>NULL</c> and <c>array</c> causes an exception of type <see cref="InvalidCastException"/> in runtime.
         /// </summary>
         public TypeSymbol EmitConvertToPhpArray(TypeSymbol from, TypeRefMask fromHint)
         {
@@ -815,25 +815,69 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 return from;
             }
-            else if (from == CoreTypes.PhpAlias)
+
+            if (from == CoreTypes.PhpAlias)
+            {
+                // Template: <PhpAlias>.Value.GetArray()
+                this.Emit_PhpAlias_GetValueAddr();
+                return this.EmitCall(ILOpCode.Call, CoreMethods.PhpValue.GetArray);
+            }
+            
+            if ((from.SpecialType != SpecialType.None && from.SpecialType != SpecialType.System_Object) ||
+                (from.IsValueType && from != CoreTypes.PhpValue) ||
+                from.IsOfType(CoreTypes.PhpResource))
+            {
+                // EXCEPTION:
+                // TODO: diagnostics
+                return EmitCastClass(from, CoreTypes.PhpArray);
+            }
+            else if (from.IsReferenceType)
+            {
+                // Template: (PhpArray)<STACK>
+                return EmitCastClass(from, CoreTypes.PhpArray);
+            }
+            else
+            {
+                // Template: ((PhpValue)<from>).GetArray()
+                EmitConvert(from, 0, CoreTypes.PhpValue);
+                EmitPhpValueAddr();
+                return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.GetArray);
+            }
+        }
+
+        /// <summary>
+        /// Converts anything to PHP array.
+        /// Does not result in a <c>null</c> reference.
+        /// </summary>
+        /// <returns>Type symbol of <c>PhpArray</c>.</returns>
+        public TypeSymbol EmitCastToArray(BoundExpression expr)
+        {
+            var from = Emit(expr);
+
+            if (from.IsOfType(CoreTypes.PhpArray))
+            {
+                return from;
+            }
+
+            if (from == CoreTypes.PhpAlias)
             {
                 // Template: <PhpAlias>.Value.ToArray()
                 this.Emit_PhpAlias_GetValueAddr();
                 return this.EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToArray);
             }
-            else if (   // TODO: helper method for builtin types
-                (from.SpecialType != SpecialType.None && from.SpecialType != SpecialType.System_Object) ||
-                from.IsOfType(CoreTypes.PhpResource) || from == CoreTypes.PhpNumber || from == CoreTypes.PhpString)
+
+            if (from.IsReferenceType && from.IsOfType(CoreTypes.IPhpConvertible))
             {
-                // Template: new PhpArray(1){ VALUE }
-                EmitConvertToPhpValue(from, fromHint);
-                return EmitCall(ILOpCode.Call, CoreMethods.PhpArray.New_PhpValue);
+                // Template: <STACK>.ToArray()
+                // TODO: handle null if value can be null // null ? EmptyArray : <STACK>.ToArray()
+                return EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpConvertible.ToArray);
             }
             else
             {
                 // Template: ToArray((PhpValue)<from>)
-                EmitConvert(from, 0, CoreTypes.PhpValue);
-                return EmitCall(ILOpCode.Call, CoreMethods.Operators.ToArray_PhpValue);
+                EmitConvertToPhpValue(from, expr.TypeRefMask);
+                EmitPhpValueAddr();
+                return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToArray);
             }
         }
 
@@ -963,7 +1007,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(from);
             Contract.ThrowIfNull(to);
-            Debug.Assert(to.IsReferenceType);   // TODO: structs other than primitive types
+            Debug.Assert(to.IsReferenceType);
             Debug.Assert(to != CoreTypes.PhpAlias);
             Debug.Assert(!to.IsErrorType(), "Trying to convert to an ErrorType");
 
@@ -1007,7 +1051,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     .Expect(SpecialType.System_Object);
             }
 
-            if (from == to)
+            if (from.IsOfType(to))
             {
                 return;
             }
@@ -1028,31 +1072,34 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return;
 
                 default:
-                    if (from == CoreTypes.PhpValue)
+
+                    Debug.Assert(from != CoreTypes.PhpAlias);
+
+                    if (from.IsValueType)
                     {
-                        if (IsClassOnly(fromHint))
+                        if (from == CoreTypes.PhpValue)
                         {
-                            // <value>.Object
-                            EmitPhpValueAddr();
-                            from = EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Object.Getter)
-                                .Expect(SpecialType.System_Object);
+                            if (IsClassOnly(fromHint))
+                            {
+                                // <STACK>.Object
+                                EmitPhpValueAddr();
+                                from = EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Object.Getter)
+                                    .Expect(SpecialType.System_Object);
+                            }
+                            else
+                            {
+                                // Convert.AsObject( <STACK> )
+                                from = EmitCall(ILOpCode.Call, CoreMethods.Operators.AsObject_PhpValue)
+                                    .Expect(SpecialType.System_Object);
+                            }
                         }
                         else
                         {
-                            // Convert.ToClass( value )
-                            from = EmitCall(ILOpCode.Call, CoreMethods.Operators.AsObject_PhpValue)
-                                .Expect(SpecialType.System_Object);
+                            // null
+                            EmitPop(from);
+                            _il.EmitNullConstant();
+                            return;
                         }
-                    }
-                    else if (
-                        from.IsOfType(CoreTypes.PhpArray) ||
-                        from == CoreTypes.PhpString ||
-                        from.IsValueType)
-                    {
-                        // null
-                        EmitPop(from);
-                        _il.EmitNullConstant();
-                        return;
                     }
 
                     //
@@ -1069,11 +1116,16 @@ namespace Pchp.CodeAnalysis.CodeGen
             Debug.Assert(to != null);
 
             // pop effectively
-            if (to.SpecialType == SpecialType.System_Void)
+            if (to.IsVoid())
             {
-                // POP <expr>
                 expr.Access = BoundAccess.None;
-                EmitPop(Emit(expr));
+
+                if (!expr.IsConstant() && !IsDebug)
+                {
+                    // POP LOAD <expr>
+                    EmitPop(Emit(expr));
+                }
+
                 return;
             }
 

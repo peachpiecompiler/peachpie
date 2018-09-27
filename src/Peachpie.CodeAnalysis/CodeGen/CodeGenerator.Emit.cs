@@ -2280,14 +2280,14 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         internal TypeSymbol EmitCastClass(TypeSymbol from, TypeSymbol to)
         {
-            if (!from.IsEqualToOrDerivedFrom(to))
+            if (from.IsOfType(to))
             {
-                EmitCastClass(to);
-                return to;
+                return from;
             }
             else
             {
-                return from;
+                EmitCastClass(to);
+                return to;
             }
         }
 
