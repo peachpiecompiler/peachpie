@@ -217,9 +217,14 @@ namespace Peachpie.Library.Scripting
                     .AddSyntaxTrees(tree)
                     .AddReferences(metadatareferences);
 
+                var emitOptions = new EmitOptions();
+                var embeddedTexts = default(IEnumerable<EmbeddedText>);
+
                 if (options.EmitDebugInformation)
                 {
                     compilation = compilation.WithPhpOptions(compilation.Options.WithOptimizationLevel(OptimizationLevel.Debug).WithDebugPlusMode(true));
+                    emitOptions = emitOptions.WithDebugInformationFormat(DebugInformationFormat.PortablePdb);
+                    embeddedTexts = new[] { EmbeddedText.FromSource(tree.FilePath, tree.GetText()) };
                 }
                 else
                 {
@@ -232,14 +237,10 @@ namespace Peachpie.Library.Scripting
                     var peStream = new MemoryStream();
                     var pdbStream = options.EmitDebugInformation ? new MemoryStream() : null;
 
-                    var emitOptions = new EmitOptions(
-                        debugInformationFormat: options.EmitDebugInformation ? DebugInformationFormat.PortablePdb : default
-                        );
-
                     var result = compilation.Emit(peStream,
                         pdbStream: pdbStream,
                         options: emitOptions,
-                        embeddedTexts: new[] { EmbeddedText.FromSource(tree.FilePath, tree.GetText()) }
+                        embeddedTexts: embeddedTexts
                         );
 
                     if (result.Success)
