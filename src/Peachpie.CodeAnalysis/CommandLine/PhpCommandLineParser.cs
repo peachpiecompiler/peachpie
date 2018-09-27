@@ -200,6 +200,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                         continue;
 
                     case "debug":
+                    case "debug-type":
                         emitPdb = true;
 
                         // unused, parsed for backward compat only

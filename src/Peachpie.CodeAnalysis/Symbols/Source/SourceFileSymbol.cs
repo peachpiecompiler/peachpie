@@ -306,7 +306,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        // <pharfilename.phar>/path
+        // <Phar>pharentrypath
         public override string NamespaceName => "<Phar>" + DirectoryRelativePath;
 
         public string PharName => CreateRelativeFilePath(SyntaxTree.PharStubFile.FilePath);

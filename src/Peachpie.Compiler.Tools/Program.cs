@@ -79,10 +79,6 @@ namespace Peachpie.NETCore.Compiler.Tools
                                 newargs.Insert(0, "/o" + ((value == "true") ? "+" : "-"));
                                 break;
 
-                            case "debug-type": // --debug-type:portable => /debug:portable
-                                newargs.Insert(0, "/debug:" + value);
-                                break;
-
                             case "define": // DEBUG => /debug+ /debug:portable (portable PDB)
                                 if (value == "debug")
                                 {

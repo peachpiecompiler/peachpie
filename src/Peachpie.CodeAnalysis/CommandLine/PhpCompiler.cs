@@ -200,21 +200,23 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                 // TODO: ConcurrentBuild -> Parallel
 
-                var prefix = PhpFileUtilities.GetRelativePath(file.Path, Arguments.BaseDirectory);
+                var prefix = PhpFileUtilities.NormalizeSlashes(PhpFileUtilities.GetRelativePath(file.Path, Arguments.BaseDirectory));
                 var trees = new List<PhpSyntaxTree>();
                 var content = new List<ResourceDescription>();
                 foreach (var entry in phar.Manifest.Entries.Values)
                 {
+                    var entryName = PhpFileUtilities.NormalizeSlashes(entry.Name);
+
                     if (entry.IsCompileEntry())
                     {
-                        var tree = PhpSyntaxTree.ParseCode(entry.Code, parseOptions, scriptParseOptions, prefix + "/" + entry.Name);
+                        var tree = PhpSyntaxTree.ParseCode(entry.Code, parseOptions, scriptParseOptions, prefix + "/" + entryName);
                         tree.PharStubFile = stub;
                         trees.Add(tree);
                     }
                     else
                     {
                         content.Add(new ResourceDescription(
-                            "phar://" + prefix + "/" + entry.Name.Replace('\\', '/'),
+                            "phar://" + prefix + "/" + entryName,
                             () =>
                             {
                                 // TODO: not always UTF8
