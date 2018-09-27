@@ -45,18 +45,17 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                var symbol = _lazySymbol;
-                if (symbol == null)
+                if (_lazySymbol == null)
                 {
                     var type = DeclaringClass.Symbol;
                     Contract.ThrowIfNull(type, "Predefined type '{0}' is not defined or imported", DeclaringClass.FullName);
 
-                    symbol = ResolveSymbol(type);
+                    var symbol = ResolveSymbol(type);
                     Contract.ThrowIfNull(symbol, "{0} {1} is not defined.", typeof(T).Name, MemberName);
 
                     Interlocked.CompareExchange(ref _lazySymbol, symbol, null);
                 }
-                return symbol;
+                return _lazySymbol;
             }
         }
 
