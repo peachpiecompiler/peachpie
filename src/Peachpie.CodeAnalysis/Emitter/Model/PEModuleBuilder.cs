@@ -266,7 +266,7 @@ namespace Pchp.CodeAnalysis.Emit
             {
                 if (_lazyScriptType == null)
                 {
-                    _lazyScriptType = new SynthesizedScriptTypeSymbol(_compilation);
+                    Interlocked.CompareExchange(ref _lazyScriptType, new SynthesizedScriptTypeSymbol(_compilation), null);
                 }
 
                 return _lazyScriptType;
