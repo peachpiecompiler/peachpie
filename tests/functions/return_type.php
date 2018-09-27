@@ -23,6 +23,8 @@ function f(int $x) : ?array
     }
 }
 
+$arr = null;
+
 print_r( f(0) );
 print_r( f(1) );
 print_r( f(2) );
