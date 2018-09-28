@@ -82,8 +82,8 @@ namespace Pchp.Core.Dynamic
             //if (target == typeof(stdClass)) return BindAsStdClass(arg);
             if (target == typeof(PhpArray) ||
                 target == typeof(IPhpEnumerable) ||
-                target == typeof(PhpHashtable)) return BindToArray(arg, target);   // TODO: BindToXXXX(), cast object to IPhpEnumerable if Value.IsObject
-            if (target == typeof(IPhpArray)) return BindAsArrayAccess(arg);
+                target == typeof(IPhpArray) ||
+                target == typeof(PhpHashtable)) return BindAsArray(arg, target);
             if (target == typeof(IntStringKey)) return BindIntStringKey(arg);
             if (target == typeof(IPhpCallable)) return BindAsCallable(arg);
             if (target == typeof(PhpString)) return BindToPhpString(arg, ctx);
@@ -500,28 +500,13 @@ namespace Pchp.Core.Dynamic
             return Expression.Convert(expr, target);
         }
 
-        private static Expression BindToArray(Expression expr, Type target)
+        private static Expression BindAsArray(Expression expr, Type target)
         {
             var source = expr.Type;
 
             if (source == typeof(PhpArray) || source.IsSubclassOf(target)) return expr;
             if (source == typeof(PhpValue)) return Expression.Call(expr, Cache.Operators.PhpValue_GetArray); // TODO: (Value.Object as target) ?? Value.GetArray();
             if (expr is ConstantExpression c && c.Value == null) return Expression.Constant(null, typeof(PhpArray));
-
-            throw new NotImplementedException(source.FullName);
-        }
-
-        private static Expression BindAsArrayAccess(Expression expr)
-        {
-            var source = expr.Type;
-
-            if (source.IsSubclassOf(typeof(IPhpArray))) return expr;
-            if (source == typeof(PhpValue)) return Expression.Call(expr, Cache.Operators.PhpValue_GetArrayAccess);
-            if (source == typeof(object))
-            {
-                if (expr is ConstantExpression c && c.Value == null) return Expression.Constant(null, typeof(IPhpArray));
-                return Expression.Call(expr, Cache.Operators.Object_EnsureArray); // throws if object has no array access
-            }
 
             throw new NotImplementedException(source.FullName);
         }
