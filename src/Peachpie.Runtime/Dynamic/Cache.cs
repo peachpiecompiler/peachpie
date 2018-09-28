@@ -53,6 +53,8 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpValue_GetArrayAccess = Types.PhpValue.GetMethod("GetArrayAccess", Types.Empty);
             public static MethodInfo PhpValue_ToClass = Types.PhpValue.GetMethod("ToClass", Types.Empty);
             public static MethodInfo PhpValue_ToArray = Types.PhpValue.GetMethod("ToArray", Types.Empty);
+            /// <summary>Get the underlaying PhpArray, or <c>null</c>. Throws in case of a scalar or object.</summary>
+            public static MethodInfo PhpValue_GetArray = Types.PhpValue.GetMethod("GetArray", Types.Empty);
             public static MethodInfo PhpValue_AsCallable_RuntimeTypeHandle = Types.PhpValue.GetMethod("AsCallable", typeof(RuntimeTypeHandle));
             public static MethodInfo PhpValue_AsObject = Types.PhpValue.GetMethod("AsObject", Types.Empty);
             public static MethodInfo PhpValue_ToString_Context = Types.PhpValue.GetMethod("ToString", typeof(Context));

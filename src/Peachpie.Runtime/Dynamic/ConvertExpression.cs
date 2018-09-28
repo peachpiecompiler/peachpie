@@ -82,7 +82,7 @@ namespace Pchp.Core.Dynamic
             //if (target == typeof(stdClass)) return BindAsStdClass(arg);
             if (target == typeof(PhpArray) ||
                 target == typeof(IPhpEnumerable) ||
-                target == typeof(PhpHashtable)) return BindToArray(arg);   // TODO: BindToXXXX(), cast object to IPhpEnumerable if Value.IsObject
+                target == typeof(PhpHashtable)) return BindToArray(arg, target);   // TODO: BindToXXXX(), cast object to IPhpEnumerable if Value.IsObject
             if (target == typeof(IPhpArray)) return BindAsArrayAccess(arg);
             if (target == typeof(IntStringKey)) return BindIntStringKey(arg);
             if (target == typeof(IPhpCallable)) return BindAsCallable(arg);
@@ -500,13 +500,13 @@ namespace Pchp.Core.Dynamic
             return Expression.Convert(expr, target);
         }
 
-        private static Expression BindToArray(Expression expr)
+        private static Expression BindToArray(Expression expr, Type target)
         {
             var source = expr.Type;
 
-            if (source == typeof(PhpArray)) return expr;
-            if (source == typeof(PhpValue)) return Expression.Call(expr, Cache.Operators.PhpValue_ToArray);
-            if (source == typeof(object) && expr is ConstantExpression c && c.Value == null) return Expression.Constant(null, typeof(PhpArray));
+            if (source == typeof(PhpArray) || source.IsSubclassOf(target)) return expr;
+            if (source == typeof(PhpValue)) return Expression.Call(expr, Cache.Operators.PhpValue_GetArray); // TODO: (Value.Object as target) ?? Value.GetArray();
+            if (expr is ConstantExpression c && c.Value == null) return Expression.Constant(null, typeof(PhpArray));
 
             throw new NotImplementedException(source.FullName);
         }
@@ -728,6 +728,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(string)) return (ConversionCost.Pass);
             if (target == typeof(PhpString)) return (ConversionCost.PassCostly);
             if (target == typeof(PhpValue)) return (ConversionCost.PassCostly);
+            if (target == typeof(PhpArray)) return (ConversionCost.Warning);
             if (target == typeof(object)) return ConversionCost.PassCostly;    // TODO: Error when passing to a PHP function
 
             var tinfo = target.GetTypeInfo();
@@ -745,6 +746,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(string)) return (ConversionCost.PassCostly);
             if (target == typeof(PhpString)) return (ConversionCost.Pass);
             if (target == typeof(PhpValue)) return (ConversionCost.PassCostly);
+            if (target == typeof(PhpArray)) return (ConversionCost.Warning);
             if (target == typeof(object)) return ConversionCost.PassCostly;    // TODO: Error when passing to a PHP function
 
             var tinfo = target.GetTypeInfo();
@@ -755,6 +757,8 @@ namespace Pchp.Core.Dynamic
 
         static Expression BindCostFromPhpArray(Expression arg, Type target)
         {
+            if (target == typeof(PhpArray)) return Expression.Constant(ConversionCost.Pass);
+            if (target == typeof(long) || target == typeof(int) || target == typeof(uint)) return Expression.Constant(ConversionCost.LoosingPrecision);
             if (target == typeof(string) || target == typeof(PhpString)) return Expression.Constant(ConversionCost.Warning);
 
             throw new NotImplementedException($"costof(array -> {target})");
@@ -996,7 +1000,10 @@ namespace Pchp.Core.Dynamic
                 case PhpTypeCode.Boolean:
                 case PhpTypeCode.MutableString:
                 case PhpTypeCode.String:
-                    return ConversionCost.Warning;
+                    return ConversionCost.Warning; // CONSIDER: NoConversion
+
+                case PhpTypeCode.Null:
+                    return ConversionCost.ImplicitCast;
 
                 case PhpTypeCode.PhpArray:
                     return ConversionCost.Pass;
