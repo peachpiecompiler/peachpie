@@ -25,6 +25,11 @@ namespace Pchp.CodeAnalysis.Symbols
         public const string ScriptsRootNamespace = "<Root>";
 
         /// <summary>
+        /// Namespace containing script types corresponding to compiled Phar entry.
+        /// </summary>
+        public const string PharEntryRootNamespace = "<Phar>";
+
+        /// <summary>
         /// Name of special nested class containing context bound static fields and constants.
         /// </summary>
         public const string StaticsHolderClassName = "_statics";

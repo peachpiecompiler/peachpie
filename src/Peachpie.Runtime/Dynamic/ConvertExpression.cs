@@ -515,7 +515,7 @@ namespace Pchp.Core.Dynamic
         {
             var source = expr.Type;
 
-            if (typeof(IPhpCallable).GetTypeInfo().IsAssignableFrom(source.GetTypeInfo())) return expr;
+            if (typeof(IPhpCallable).IsAssignableFrom(source)) return expr;
 
             return Expression.Call(BindToValue(expr), Cache.Operators.PhpValue_AsCallable_RuntimeTypeHandle, Expression.Default(typeof(RuntimeTypeHandle)));    // TODO: call context instead of default()
         }
