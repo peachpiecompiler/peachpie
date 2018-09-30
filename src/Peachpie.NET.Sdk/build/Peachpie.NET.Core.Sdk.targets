@@ -13,7 +13,7 @@
 
   <!-- default Compile and None -->
   <ItemGroup>
-    <Compile Include="**/*.phar;**/*.php" Exclude="obj/**;bin/**" Condition=" '$(EnableDefaultPeachpieCompileItems)'!='false' " />
+    <Compile Include="**/*.phar;**/*.php" Exclude="obj/**;bin/**" Condition=" '$(EnableDefaultPeachpieCompileItems)'=='true' " />
   </ItemGroup>
 
   <ItemGroup>
