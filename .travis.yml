@@ -16,11 +16,13 @@ install:
   - dotnet build ./src/Peachpie.Library.MsSql/ /p:TargetFrameworks=netcoreapp2.0
   - dotnet build ./src/Peachpie.Library.MySql/ /p:TargetFrameworks=netcoreapp2.0
   - dotnet build ./src/PDO/Peachpie.Library.PDO/ /p:TargetFrameworks=netcoreapp2.0
+  - dotnet build ./src/PDO/Peachpie.Library.PDO.MySql/ /p:TargetFrameworks=netcoreapp2.0
   - dotnet build ./src/Peachpie.App/ /p:TargetFrameworks=netcoreapp2.0
   - dotnet build ./src/Peachpie.CodeAnalysis/ /p:TargetFrameworks=netcoreapp2.0
   - dotnet restore ./src/Peachpie.Compiler.Tools/ /p:TargetFrameworks=netcoreapp2.0
   - dotnet build ./src/Peachpie.Compiler.Tools/ /p:TargetFrameworks=netcoreapp2.0
   - dotnet build ./src/Peachpie.AspNetCore.Web/ /p:TargetFrameworks=netcoreapp2.0
+  - dotnet build ./src/Peachpie.AspNetCore.Mvc/ /p:TargetFrameworks=netcoreapp2.0
   - dotnet build ./src/Peachpie.NET.Sdk/ /p:TargetFrameworks=netcoreapp2.0
   - powershell -File ./build/update-cache.ps1 0.9.0
   - dotnet restore ./src/Tests/Peachpie.DiagnosticTests/
