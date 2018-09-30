@@ -35,6 +35,12 @@
     <RepositoryUrl>https://github.com/peachpiecompiler/peachpie</RepositoryUrl>
     <PackageProjectUrl>https://github.com/peachpiecompiler/peachpie</PackageProjectUrl>
     <PackageOutputPath>$(MSBuildThisFileDirectory)../../.nugs</PackageOutputPath>
+    <PackageIconUrl>https://github.com/peachpiecompiler/peachpie/raw/master/docs/logos/round-orange-196x196.png</PackageIconUrl>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition=" '$(PackageVersion)'=='' ">
+    <PackageVersion>$(VersionPrefix)</PackageVersion>
+    <PackageVersion Condition=" '$(VersionSuffix)'!='' ">$(PackageVersion)-$(VersionSuffix)</PackageVersion>
   </PropertyGroup>
 
   <!-- common targets -->
