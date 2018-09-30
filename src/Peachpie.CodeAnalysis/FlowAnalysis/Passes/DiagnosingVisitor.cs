@@ -255,8 +255,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             base.VisitAssign(x);
         }
 
+        public override void VisitInclude(BoundIncludeEx x)
+        {
+            // check arguments
+            base.VisitRoutineCall(x);
+
+            // do not check the TargetMethod
+        }
+
         protected override void VisitRoutineCall(BoundRoutineCall x)
         {
+            // check arguments
+            base.VisitRoutineCall(x);
+
+            // check method
             if (x.TargetMethod.IsValidMethod() && !x.HasArgumentsUnpacking)
             {
                 // check mandatory parameters are provided:
@@ -296,9 +308,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_TooManyArguments, x.TargetMethod.RoutineName, expectsmax, x.ArgumentsInSourceOrder.Length);
                 }
             }
-
-            //
-            base.VisitRoutineCall(x);
         }
 
         public override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
