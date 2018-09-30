@@ -13,7 +13,7 @@
 
   <!-- Import design time targets for Roslyn Project System. These are only available if Visual Studio is installed. -->
   <!-- Import design time targets before the common targets, which import targets from Nuget. -->
-  <Import Project="$(MSBuildThisFileDirectory)\PeachPie.DesignTime.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)\Peachpie.DesignTime.targets" />
   
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
 
