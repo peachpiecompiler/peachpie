@@ -1,0 +1,21 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- Import Microsoft.Managed.DesignTime.targets -->
+  <PropertyGroup>
+    <ManagedDesignTimeTargetsPath Condition="'$(ManagedDesignTimeTargetsPath)'==''">$(MSBuildExtensionsPath)\Microsoft\VisualStudio\Managed\Microsoft.Managed.DesignTime.targets</ManagedDesignTimeTargetsPath>
+  </PropertyGroup>
+  <Import Project="$(ManagedDesignTimeTargetsPath)" Condition="'$(ManagedDesignTimeTargetsPath)' != '' and Exists('$(ManagedDesignTimeTargetsPath)')" />
+
+  <!-- ProjetCapability -->
+  <ItemGroup Condition="'$(DefineCommonManagedCapabilities)' == 'true'">
+    <ProjectCapability Include="PHP;Managed;Pack;AppSettings;AppDesign;Publish;OpenProjectFile;GenerateDocumentationFile;" />
+  </ItemGroup>
+
+  <!-- Returns command-line arguments for the language service -->
+  <Target Name="CompileDesignTime" Returns="@(_CompilerCommandLineArgs)">
+    <ItemGroup>
+      <_CompilerCommandLineArgs Include="@(PeachpieCommandLineArgs)" />
+    </ItemGroup>
+  </Target>
+
+</Project>
