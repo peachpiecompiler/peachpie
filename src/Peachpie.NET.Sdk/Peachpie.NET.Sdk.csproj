@@ -4,16 +4,16 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <AssemblyName>Peachpie.NET.Sdk</AssemblyName>
-    <PackageId>Peachpie.NET.Sdk</PackageId>
     
-    <PackageTags>php;sdk;peachpie;msbuild</PackageTags>
-
+    <NoBuild>true</NoBuild>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
+    
+    <PackageId>Peachpie.NET.Sdk</PackageId>    
+    <PackageTags>php;sdk;peachpie;msbuild</PackageTags>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>    
     <Description>The MSBuild SDK containing build targets and runtime.</Description>
   </PropertyGroup>
 
@@ -24,6 +24,10 @@
     </Content>
     <Content Include="build/Peachpie.NET.Core.Sdk.targets">
       <PackagePath>build/Peachpie.NET.Core.Sdk.targets</PackagePath>
+      <Pack>true</Pack>
+    </Content>
+    <Content Include="build/Peachpie.DesignTime.targets">
+      <PackagePath>build/Peachpie.DesignTime.targets</PackagePath>
       <Pack>true</Pack>
     </Content>
     <Content Include="build/Peachpie.NET.Sdk.props">
@@ -38,6 +42,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Peachpie.App\Peachpie.App.csproj" />
+    <ProjectReference Include="..\Peachpie.Compiler.Tools\Peachpie.Compiler.Tools.csproj" PrivateAssets="Compile" />
   </ItemGroup>
 
 </Project>

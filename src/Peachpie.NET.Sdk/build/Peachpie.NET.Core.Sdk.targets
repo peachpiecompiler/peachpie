@@ -52,7 +52,7 @@
       DependsOnTargets="$(CreateManifestResourceNamesDependsOn)"
         >
 
-    <Error Text="Resources are not allowed in PHP projects compiled by Peachpie" />
+    <Error Text="Resources are not allowed in PHP projects compiled by PeachPie" />
 
   </Target>
 
@@ -78,7 +78,7 @@
                 @(_DebugSymbolsIntermediatePath);
                 $(NonExistentFile);
                 @(CustomAdditionalCompileOutputs)"
-          Returns="@(PeachpieCompileCommandLineArgs)"
+          Returns="@(PeachpieCommandLineArgs)"
           DependsOnTargets="$(CoreCompileDependsOn)"
     >
 
@@ -93,10 +93,6 @@
       <_DotNetHostExecutableName Condition=" '$(OS)' == 'Windows_NT' ">$(_DotNetHostExecutableName).exe</_DotNetHostExecutableName>
       <_DotNetHostExecutableDirectory>$(MSBuildSDKsPath)/../../..</_DotNetHostExecutableDirectory>
       <_DotNetHostExecutablePath>$(_DotNetHostExecutableDirectory)/$(_DotNetHostExecutableName)</_DotNetHostExecutablePath>
-    </PropertyGroup>
-
-    <PropertyGroup>
-
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(DontRunPeachpieCompileWithDotnet)' == '' ">
@@ -116,10 +112,10 @@
       <TempOutputDir>%(IntermediateAssembly.RelativeDir)</TempOutputDir>
       <EmitEntryPoint>false</EmitEntryPoint>
       <EmitEntryPoint Condition=" '$(OutputType.ToLower())' == 'exe' ">true</EmitEntryPoint>
-      
+
       <GenerateDocumentationFile Condition=" '$(GenerateDocumentationFile)' == '' and '$(DocumentationFile)' != '' ">true</GenerateDocumentationFile>
       <DocumentationFile Condition=" '$(DocumentationFile)' == '' and '$(GenerateDocumentationFile)' == 'true' ">$(IntermediateOutputPath)$(AssemblyName).xml</DocumentationFile>
-    
+
     </PropertyGroup>
 
     <!-- If compiling for full .NET, MSBuild is expected to run on it (e.g. in Visual Studio) so that it can obtain the runtime directory -->
@@ -160,7 +156,9 @@
     </ItemGroup>
 
     <WriteLinesToFile File="$(TempOutputDir)compile-php-args.rsp" Lines="@(RspLine)" Overwrite="true" />
-    <Exec Command="dotnet compile-php @$(TempOutputDir)compile-php-args.rsp" />
+    
+    <Error Condition=" '$(PeachpieToolFullPath)'=='' " Text="Path to Peachpie.Compiler.Tools was not set." />    
+    <Exec Command="dotnet &quot;$(PeachpieToolFullPath)&quot; @$(TempOutputDir)compile-php-args.rsp" />
 
     <Copy SourceFiles="$(TempOutputDir)$(DocumentationFile)" DestinationFolder="$(OutputPath)" Condition=" '$(GenerateDocumentation)'=='true' " />
   </Target>
@@ -168,6 +166,7 @@
   <!--End Required Task by .Common.target-->
 
   <!-- Helper target for outputing references to the outer build in multitargeting projects -->
+  <!-- TODO: use CollectResolvedCompilationReferencesDesignTime -->
   <Target
     Name="ReturnReferences"
     DependsOnTargets="ResolveReferences"
@@ -184,10 +183,5 @@
   <PropertyGroup Condition="'$(PackProjectInputFile)' == ''">
     <PackProjectInputFile>$(MSBuildProjectFullPath)</PackProjectInputFile>
   </PropertyGroup>
-
-  <!-- Add a project capability so that the project properties in the IDE can show the option to generate an XML documentation file without specifying the filename -->
-  <ItemGroup>
-    <ProjectCapability Include="GenerateDocumentationFile" />
-  </ItemGroup>
 
 </Project>
