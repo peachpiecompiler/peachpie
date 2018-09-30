@@ -6,10 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="**\*.php" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Peachpie.NET.Sdk" Version="$(VersionPrefix)-$(VersionSuffix)" PrivateAssets="Build" />
 	<PackageReference Include="Peachpie.AspNetCore.Web" Version="$(VersionPrefix)-$(VersionSuffix)" PrivateAssets="Build" />
 	<PackageReference Include="Peachpie.AspNetCore.Mvc" Version="$(VersionPrefix)-$(VersionSuffix)" PrivateAssets="Build" />
@@ -17,7 +13,6 @@
 	<PackageReference Include="Peachpie.Library.PDO.MySQL" Version="$(VersionPrefix)-$(VersionSuffix)" PrivateAssets="Build" />
 	<PackageReference Include="Peachpie.Library.Graphics" Version="$(VersionPrefix)-$(VersionSuffix)" PrivateAssets="Build" />
 	<PackageReference Include="Peachpie.Library.Network" Version="$(VersionPrefix)-$(VersionSuffix)" PrivateAssets="Build" />
-    <DotNetCliToolReference Include="Peachpie.Compiler.Tools" Version="$(VersionPrefix)-$(VersionSuffix)" />
   </ItemGroup>
   
 </Project>

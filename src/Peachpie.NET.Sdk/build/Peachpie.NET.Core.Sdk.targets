@@ -11,6 +11,11 @@
     <DefineCommonCapabilities Condition=" '$(DefineCommonCapabilities)' == '' ">true</DefineCommonCapabilities>
   </PropertyGroup>
 
+  <!-- default Compile and None -->
+  <ItemGroup>
+    <Compile Include="**/*.phar;**/*.php" Exclude="obj/**;bin/**" Condition=" '$(EnableDefaultPeachpieCompileItems)'!='false' " />
+  </ItemGroup>
+
   <ItemGroup>
     <DocFileItem Include="$(DocumentationFile)" Condition="'$(DocumentationFile)'!=''"/>
   </ItemGroup>

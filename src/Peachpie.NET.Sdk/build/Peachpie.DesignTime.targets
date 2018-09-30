@@ -6,6 +6,11 @@
   </PropertyGroup>
   <Import Project="$(ManagedDesignTimeTargetsPath)" Condition="'$(ManagedDesignTimeTargetsPath)' != '' and Exists('$(ManagedDesignTimeTargetsPath)')" />
 
+  <!-- items in solution hierarchy -->
+  <ItemGroup>
+    <None Include="**/*" Exclude="obj/**;bin/**;.*/**;*.msbuildproj;*.sln" />
+  </ItemGroup>
+  
   <!-- ProjetCapability -->
   <ItemGroup Condition="'$(DefineCommonManagedCapabilities)' == 'true'">
     <ProjectCapability Include="PHP;Managed;Pack;AppSettings;AppDesign;Publish;OpenProjectFile;GenerateDocumentationFile;" />

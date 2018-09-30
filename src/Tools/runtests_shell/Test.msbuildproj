@@ -4,6 +4,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.0</TargetFramework>
+	<EnableDefaultPeachpieCompileItems>false</EnableDefaultPeachpieCompileItems>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,7 +13,6 @@
 
   <ItemGroup>
     <PackageReference Include="Peachpie.NET.Sdk" Version="$(VersionPrefix)-$(VersionSuffix)" PrivateAssets="Build" />
-    <DotNetCliToolReference Include="Peachpie.Compiler.Tools" Version="$(VersionPrefix)-$(VersionSuffix)" />
   </ItemGroup>
 
 </Project>
