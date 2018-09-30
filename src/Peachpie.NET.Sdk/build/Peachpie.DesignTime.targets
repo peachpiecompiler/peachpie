@@ -13,7 +13,7 @@
   
   <!-- ProjetCapability -->
   <ItemGroup Condition="'$(DefineCommonManagedCapabilities)' == 'true'">
-    <ProjectCapability Include="PHP;Managed;Pack;AppSettings;AppDesign;Publish;OpenProjectFile;GenerateDocumentationFile;" />
+    <ProjectCapability Include="PHP;Managed;Pack;Publish;AppDesigner;OpenProjectFile;GenerateDocumentationFile;" />
   </ItemGroup>
 
   <!-- Returns command-line arguments for the language service -->
