@@ -1,0 +1,5 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PeachpieToolFullPath>$(MSBuildThisFileDirectory)../tools/dotnet-compile-php.dll</PeachpieToolFullPath>
+  </PropertyGroup>
+</Project>

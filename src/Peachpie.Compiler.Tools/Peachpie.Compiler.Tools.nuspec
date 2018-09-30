@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>$id$</id>
+    <version>$version$</version>
+    <title>Peachpie.Compiler.Tools</title>
+    <owners>peachpie</owners>
+    <authors>peachpie,jmisek</authors>
+    <projectUrl>https://github.com/peachpiecompiler/peachpie</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>
+      Peachpie.Compiler.Tools
+    </description>
+    <summary></summary>
+    <tags>php,compile-php,peachpie</tags>
+  </metadata>
+  <files>
+
+    <file src="$packToolsDir$\**" target="tools\" />
+    <file src=".\build\Peachpie.Compiler.Tools.props" target="build\Peachpie.Compiler.Tools.props" />
+
+  </files>
+</package>
