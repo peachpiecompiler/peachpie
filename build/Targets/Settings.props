@@ -4,8 +4,8 @@
   <PropertyGroup>
 
     <!-- common version -->
-    <VersionPrefix Condition=" '$(VersionPrefix)'=='' ">0.9.0</VersionPrefix>
-    <VersionSuffix Condition=" '$(VersionSuffix)'=='' ">dev</VersionSuffix>
+    <VersionPrefix Condition=" '$(VersionPrefix)'=='' ">0.9.9</VersionPrefix>
+    <VersionSuffix Condition=" '$(VersionSuffix)'=='' and '$(IsDevBuild)'!='false' ">dev</VersionSuffix>
 
     <!-- metadata generation -->
     <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>

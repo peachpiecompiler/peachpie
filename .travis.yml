@@ -24,7 +24,7 @@ install:
   - dotnet build ./src/Peachpie.AspNetCore.Web/ /p:TargetFrameworks=netcoreapp2.0
   - dotnet build ./src/Peachpie.AspNetCore.Mvc/ /p:TargetFrameworks=netcoreapp2.0
   - dotnet build ./src/Peachpie.NET.Sdk/ /p:TargetFrameworks=netcoreapp2.0
-  - powershell -File ./build/update-cache.ps1 0.9.0
+  - powershell -File ./build/update-cache.ps1 0.9.9
   - dotnet restore ./src/Tests/Peachpie.DiagnosticTests/
 
 script:
