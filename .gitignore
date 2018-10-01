@@ -274,9 +274,7 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 
-# Windows shortcuts
+# Generated files
 *.lnk
-/src/Compiler/peach/Properties/launchSettings.json
-/src/Peachpie.Compiler.Tools/Properties/launchSettings.json
-src/Peachpie.CodeAnalysis/Properties/launchSettings.json
-src/Peachpie.CodeAnalysis/Properties/launchSettings.json
+**/launchSettings.json
+**/Peachpie.Version.props

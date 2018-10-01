@@ -4,10 +4,8 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <AssemblyName>Peachpie.NET.Sdk</AssemblyName>
-    
-    <NoBuild>true</NoBuild>
-    <IncludeBuildOutput>false</IncludeBuildOutput>
-    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+
+    <PackageOnlyBuild>true</PackageOnlyBuild>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
     
@@ -15,6 +13,37 @@
     <PackageTags>php;sdk;peachpie;msbuild</PackageTags>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>    
     <Description>The MSBuild SDK containing build targets and runtime.</Description>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(PackageOnlyBuild)' == 'true'">
+    <NoBuild>true</NoBuild>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(PackageOnlyBuild)' == 'true'">
+    <IntermediateAssembly Remove="@(IntermediateAssembly)"/>
+    <IntermediateRefAssembly Remove="@(IntermediateRefAssembly)"/>
+  </ItemGroup>
+
+  <!-- This property must be overridden to remove a few targets that compile assemblies -->
+  <PropertyGroup Condition="'$(PackageOnlyBuild)' == 'true'">
+    <CoreBuildDependsOn>
+      InitializeSourceControlInformation;
+      BuildOnlySettings;
+      PrepareForBuild;
+      PreBuildEvent;
+      ResolveProjectReferences;
+      GetTargetPath;
+      PrepareForRun;
+      IncrementalClean;
+      PostBuildEvent
+    </CoreBuildDependsOn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -38,11 +67,34 @@
       <PackagePath>buildCrossTargeting/Peachpie.NET.Sdk.props</PackagePath>
       <Pack>true</Pack>
     </Content>
+    <Content Include="build/Peachpie.Version.props">
+      <PackagePath>build/Peachpie.Version.props</PackagePath>
+      <Pack>true</Pack>
+    </Content>
+    <Content Include="Sdk\Sdk.targets">
+      <PackagePath>Sdk\Sdk.targets</PackagePath>
+      <Pack>true</Pack>
+    </Content>
+    <Content Include="Sdk\Sdk.props">
+      <PackagePath>Sdk\Sdk.props</PackagePath>
+      <Pack>true</Pack>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Peachpie.App\Peachpie.App.csproj" />
     <ProjectReference Include="..\Peachpie.Compiler.Tools\Peachpie.Compiler.Tools.csproj" PrivateAssets="Compile" />
   </ItemGroup>
+
+  <Target Name="WritePeachpieVersionProps" BeforeTargets="GenerateNuspec">
+    <ItemGroup>
+      <_PropsLine Include="&lt;Project xmlns=&quot;http://schemas.microsoft.com/developer/msbuild/2003&quot;&gt;" />
+      <_PropsLine Include="&lt;PropertyGroup&gt;" />
+      <_PropsLine Include="  &lt;PeachpieVersion Condition=&quot; '%24(PeachpieVersion)'=='' &quot;&gt;$(PackageVersion)&lt;/PeachpieVersion&gt;" />
+      <_PropsLine Include="&lt;/PropertyGroup&gt;" />
+      <_PropsLine Include="&lt;/Project&gt;" />
+    </ItemGroup>
+    <WriteLinesToFile File="build\Peachpie.Version.props" Overwrite="true" Lines="@(_PropsLine)" />
+  </Target>
 
 </Project>

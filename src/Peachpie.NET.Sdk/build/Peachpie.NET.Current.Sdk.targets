@@ -9,6 +9,14 @@
     <IsCrossTargetingBuild>true</IsCrossTargetingBuild>
   </PropertyGroup>
 
+  <!-- implicit packages -->
+  <ItemGroup Condition=" '$(DisableImplicitPeachpieReferences)'!='true' and '$(PeachpieVersion)'!='' ">
+    <PackageReference Include="Peachpie.App" Version="$(PeachpieVersion)" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(PeachpieVersion)'!='' ">
+    <PackageReference Include="Peachpie.Compiler.Tools" Version="$(PeachpieVersion)" PrivateAssets="Compile" />
+  </ItemGroup>
+
   <Import Project="$(MSBuildThisFileDirectory)\Peachpie.NET.Core.Sdk.targets" />
 
   <!-- Import design time targets for Roslyn Project System. These are only available if Visual Studio is installed. -->
