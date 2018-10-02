@@ -505,6 +505,7 @@ namespace Pchp.Library.PerlRegex
                     break;
 
                 case RegexNode.Ref:
+                case RegexNode.CallSubroutine:
                     PushFC(new RegexFC(RegexCharClass.AnyClass, true, false));
                     break;
 

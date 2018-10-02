@@ -80,6 +80,7 @@ namespace Pchp.Library.PerlRegex
         internal const int End = RegexCode.End;                         //          \z
 
         internal const int ResetMatchStart = RegexCode.ResetMatchStart; //          \K
+        internal const int CallSubroutine = RegexCode.CallSubroutine;   // m        (?m)
 
         // Interior nodes do not correspond to primitive operations, but
         // control structures compositing other operations

@@ -31,6 +31,7 @@ namespace Pchp.Library.PerlRegex
         private int _count;
         private int _trackcount;
         private Dictionary<int, int> _caps;
+        private int[] _capPositions;            // code positions of all the capture group starts
 
         private const int BeforeChild = 64;
         private const int AfterChild = 128;
@@ -243,6 +244,7 @@ namespace Pchp.Library.PerlRegex
                     _caps[tree._capnumlist[i]] = i;
             }
 
+            _capPositions = new int[capsize];
             _counting = true;
 
             for (; ;)
@@ -303,7 +305,7 @@ namespace Pchp.Library.PerlRegex
 
             anchors = RegexFCD.Anchors(tree);
 
-            return new RegexCode(_emitted, _stringtable, _trackcount, _caps, capsize, bmPrefix, fcPrefix, anchors, rtl, _resetMatchStartFound);
+            return new RegexCode(_emitted, _stringtable, _trackcount, _caps, capsize, bmPrefix, fcPrefix, anchors, rtl, _resetMatchStartFound, _capPositions);
         }
 
         /// <summary>
@@ -466,6 +468,7 @@ namespace Pchp.Library.PerlRegex
                     break;
 
                 case RegexNode.Capture | BeforeChild:
+                    _capPositions[MapCapnum(node._m)] = _curpos;    // Note that this capture group starts here
                     Emit(RegexCode.Setmark);
                     break;
 
@@ -566,6 +569,10 @@ namespace Pchp.Library.PerlRegex
                 case RegexNode.ResetMatchStart:
                     _resetMatchStartFound = true;
                     Emit(node._type);
+                    break;
+
+                case RegexNode.CallSubroutine:
+                    Emit(RegexCode.CallSubroutine, MapCapnum(node._m));
                     break;
 
                 default:

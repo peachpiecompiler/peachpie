@@ -88,6 +88,32 @@ namespace Pchp.Library.PerlRegex
         }
 
         /*
+         * Copy constructor
+         */
+        private Match(Match other)
+            : base(other._text, (int[])other._caps.Clone(), other._capcount, other._name, other.Id)
+        {
+            _regex = other._regex;
+            _matchcount = other._matchcount.ShallowClone();
+
+            _matches = new int[other._matches.Length][];
+            for (int i = 0; i < _matches.Length; i++)
+            {
+                _matches[i] = other._matches[i].ShallowClone();
+            }
+
+            _textbeg = other._textbeg;
+            _textpos = other._textpos;
+            _textend = other._textend;
+            _textstart = other._textstart;
+            _balancing = other._balancing;
+
+            // _groupcoll and _pcregroups will be created on demand
+        }
+
+        internal Match DeepClone() => new Match(this);
+
+        /*
          * Nonpublic set-text method
          */
         internal virtual void Reset(Regex regex, string text, int textbeg, int textend, int textstart)

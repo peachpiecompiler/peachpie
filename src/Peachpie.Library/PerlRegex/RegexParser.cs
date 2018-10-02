@@ -427,7 +427,7 @@ namespace Pchp.Library.PerlRegex
                             {
                                 PopKeepOptions();
                             }
-                            else if (grouper.Type() == RegexNode.Ref)
+                            else if (grouper.Type() == RegexNode.Ref || grouper.Type() == RegexNode.CallSubroutine)
                             {
                                 PopKeepOptions();
                                 AddUnitNode(grouper);
@@ -905,15 +905,14 @@ namespace Pchp.Library.PerlRegex
                 var pindex = ScanDecimal();
 
                 if (!IsCaptureSlot(pindex))
-                    pindex = -1;
+                    throw MakeException(SR.Format(SR.UndefinedSubpattern, pindex.ToString(CultureInfo.CurrentCulture)));
 
                 if (CharsRight() == 0 || MoveRightGetChar() != ')')
                 {
                     goto BreakRecognize;
                 }
 
-                //return new RegexNode(RegexNode., _options, pindex);
-                throw new NotSupportedException($"recurses the {pindex} subpattern");
+                return new RegexNode(RegexNode.CallSubroutine, _options, pindex);
             }
 
             for (; ; )

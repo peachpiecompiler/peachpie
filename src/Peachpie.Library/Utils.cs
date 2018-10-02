@@ -267,6 +267,25 @@ namespace Pchp.Library
             if (!stream.TryGetBuffer(out buffer)) throw new ArgumentException();    //  stream is not exposable
             return buffer.Array;
         }
+
+        /// <summary>
+        /// Copies the elements in the array to a newly created one using assignment and returns it.
+        /// </summary>
+        public static T[] ShallowClone<T>(this T[] arr)
+        {
+            if (arr == null)
+            {
+                return null;
+            }
+
+            var result = new T[arr.Length];
+            for (int i = 0; i < arr.Length; i++)
+            {
+                result[i] = arr[i];
+            }
+
+            return result;
+        }
     }
 
     internal static class UriUtils

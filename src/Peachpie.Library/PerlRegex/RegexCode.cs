@@ -86,7 +86,8 @@ namespace Pchp.Library.PerlRegex
 
         // Extensions for PCRE
 
-        internal const int ResetMatchStart = 43;    //                          \K
+        internal const int ResetMatchStart = 43;    // back                     \K
+        internal const int CallSubroutine = 44;     // back                     (?n)
 
         // Modifiers for alternate modes
         internal const int Mask = 63;   // Mask to get unmodified ordinary operator
@@ -105,11 +106,13 @@ namespace Pchp.Library.PerlRegex
         internal readonly int _anchors;                     // the set of zero-length start anchors (RegexFCD.Bol, etc)
         internal readonly bool _rightToLeft;                // true if right to left
         internal readonly bool _containsResetMatchStart;    // true if it contains \K
+        internal readonly int[] _capPositions;              // code positions of all the capture group starts
 
         internal RegexCode(int[] codes, List<string> stringlist, int trackcount,
                            Dictionary<int, int> caps, int capsize,
                            RegexBoyerMoore bmPrefix, RegexPrefix fcPrefix,
-                           int anchors, bool rightToLeft, bool containsResetMatchStart)
+                           int anchors, bool rightToLeft, bool containsResetMatchStart,
+                           int[] capPositions)
         {
             Debug.Assert(codes != null, "codes cannot be null.");
             Debug.Assert(stringlist != null, "stringlist cannot be null.");
@@ -124,6 +127,7 @@ namespace Pchp.Library.PerlRegex
             _anchors = anchors;
             _rightToLeft = rightToLeft;
             _containsResetMatchStart = containsResetMatchStart;
+            _capPositions = capPositions;
         }
 
         internal static bool OpcodeBacktracks(int Op)
@@ -153,6 +157,7 @@ namespace Pchp.Library.PerlRegex
                 case Forejump:
                 case Goto:
                 case ResetMatchStart:
+                case CallSubroutine:
                     return true;
 
                 default:
@@ -201,6 +206,7 @@ namespace Pchp.Library.PerlRegex
                 case Lazybranchmark:
                 case Prune:
                 case Set:
+                case CallSubroutine:
                     return 2;
 
                 case Capturemark:

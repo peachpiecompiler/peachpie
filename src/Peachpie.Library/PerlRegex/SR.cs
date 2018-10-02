@@ -22,6 +22,7 @@ namespace Pchp.Library.PerlRegex
         public const string IllegalEndEscape = "";
         public const string MalformedNameRef = "";
         public const string UndefinedBackref = "{0}";
+        public const string UndefinedSubpattern = "{0}";
         public const string CaptureGroupOutOfRange = "";
         public const string MissingControl = "";
         public const string UnrecognizedControl = "";

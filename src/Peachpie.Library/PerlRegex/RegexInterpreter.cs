@@ -14,12 +14,22 @@ namespace Pchp.Library.PerlRegex
 {
     internal sealed class RegexInterpreter : RegexRunner
     {
+        private class CallStackFrame
+        {
+            public CallStackFrame next;     // Lower call stack frame, null if this is the last
+            public Match runMatchBackup;    // Match to be restored after returning from the subroutine
+            public int captureNum;          // Called capture group number
+            public int runTrackPos;         // Size of the backtracking stack before the call
+            public int returnPos;           // Where to return after a successful call
+        }
+
         private readonly RegexCode _code;
         private readonly CultureInfo _culture;
         private int _operator;
         private int _codepos;
         private bool _rightToLeft;
         private bool _caseInsensitive;
+        private CallStackFrame _callStack;      // Linked list (immutable stack) of called subroutines, null if none
 
         internal RegexInterpreter(RegexCode code, CultureInfo culture)
         {
@@ -220,6 +230,25 @@ namespace Pchp.Library.PerlRegex
         private int StackPeek(int i)
         {
             return runstack[runstackpos - i - 1];
+        }
+
+        private void PushCallFrame(int captureNum, int returnPos)
+        {
+            _callStack = new CallStackFrame()
+            {
+                next = _callStack,
+                runMatchBackup = this.runmatch.DeepClone(),
+                captureNum = captureNum,
+                runTrackPos = Trackpos(),
+                returnPos = returnPos
+            };
+        }
+
+        private void PopCallFrame()
+        {
+            this.runmatch = _callStack.runMatchBackup;
+            Trackto(_callStack.runTrackPos);
+            _callStack = _callStack.next;
         }
 
         private int Operator()
@@ -547,9 +576,21 @@ namespace Pchp.Library.PerlRegex
                             break;
                         StackPop();
                         if (Operand(1) != -1)
+                        {
                             TransferCapture(Operand(0), Operand(1), StackPeek(), Textpos());
+                        }
+                        else if (_callStack?.captureNum == Operand(0))
+                        {
+                            // Successful return from a subroutine
+                            int returnPos = _callStack.returnPos;
+                            PopCallFrame();
+                            Goto(returnPos);
+                            continue;
+                        }
                         else
+                        {
                             Capture(Operand(0), StackPeek(), Textpos());
+                        }
                         TrackPush(StackPeek());
 
                         Advance(2);
@@ -1189,6 +1230,19 @@ namespace Pchp.Library.PerlRegex
                         TrackPop();
                         SetMatchStart(TrackPeek());     // Restore the previously saved value as the match start
                         break;                          // Continue backtracking
+
+                    case RegexCode.CallSubroutine:
+                        {
+                            int captureNum = Operand(0);
+                            PushCallFrame(captureNum, returnPos: _codepos + 2);
+                            TrackPush();                                        // This TrackPush will be forgotten after it returns or backtracks
+                            Goto(_code._capPositions[captureNum]);
+                            continue;
+                        }
+
+                    case RegexCode.CallSubroutine | RegexCode.Back:
+                        PopCallFrame();                                 // It must have been from the called subroutine
+                        break;
 
                     default:
                         throw new NotImplementedException(SR.UnimplementedState);
