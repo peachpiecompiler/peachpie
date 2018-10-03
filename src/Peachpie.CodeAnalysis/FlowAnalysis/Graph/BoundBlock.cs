@@ -16,12 +16,25 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     {
         /// <summary>
         /// Initial block flow state.
-        /// Can be <c>null</c> in case there is no flow into the block or the state was released.
+        /// Can be <c>null</c> in case there is no flow into the block, the state was released, or
+        /// doesn't match the current version of the analysis.
         /// </summary>
         internal FlowState FlowState
         {
-            get; set;
+            get
+            {
+                if (_flowState != null && _flowState.Version != _flowState.FlowContext.Version)
+                {
+                    _flowState = null;
+                }
+                return _flowState;
+            }
+            set
+            {
+                _flowState = value;
+            }
         }
+        FlowState _flowState;
 
         /// <summary>
         /// Whether to reanalyse this block regardless of the flow state convergence.

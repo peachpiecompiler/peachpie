@@ -84,6 +84,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         internal TypeRefMask ReturnType { get { return _returnType; } set { _returnType = value; } }
         TypeRefMask _returnType;
 
+        /// <summary>
+        /// Version of the analysis, incremented whenever a set of semantic tree transformations happen.
+        /// </summary>
+        internal int Version => _version;
+        int _version;
+
         #endregion
 
         #region Construction
@@ -196,6 +202,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // anything >= 64 is used
             return varindex < 0 || varindex >= BitsCount || (_usedMask & (ulong)1 << varindex) != 0;
         }
+
+        /// <summary>
+        /// Increment the current version of the analysis, should be called whenever the routine is transformed.
+        /// </summary>
+        public void IncreaseVersion() => _version++;
 
         #endregion
     }
