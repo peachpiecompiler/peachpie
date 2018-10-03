@@ -16,9 +16,6 @@ namespace Peachpie.Library.PDO
         /// Get the known PDO drivers
         /// </summary>
         /// <returns></returns>
-        public static PhpArray pdo_drivers()
-        {
-            return PhpArray.New(PDOEngine.GetDriverNames());
-        }
+        public static PhpArray pdo_drivers() => new PhpArray(PDOEngine.GetDriverNames());
     }
 }
