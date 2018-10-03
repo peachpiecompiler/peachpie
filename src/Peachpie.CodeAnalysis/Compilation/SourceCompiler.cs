@@ -212,6 +212,19 @@ namespace Pchp.CodeAnalysis
             type.GetDiagnostics(_diagnostics);
         }
 
+        internal void TransformMethods()
+        {
+            // TODO: Run the analysis again on the changed methods and possibly iterate it
+            this.WalkMethods(this.TransformRoutine, allowParallel: true);
+        }
+
+        private void TransformRoutine(SourceRoutineSymbol routine)
+        {
+            Contract.ThrowIfNull(routine);
+
+            TransformationVisitor.TryTransform(routine);
+        }
+
         internal void EmitMethodBodies()
         {
             Debug.Assert(_moduleBuilder != null);
@@ -304,6 +317,15 @@ namespace Pchp.CodeAnalysis
                 compiler.DiagnoseMethods();
                 compiler.DiagnoseTypes();
                 compiler.DiagnoseFiles();
+            }
+
+            if (!diagnostics.HasAnyErrors() && compilation.Options.OptimizationLevel == OptimizationLevel.Release)
+            {
+                using (compilation.StartMetric("transform"))
+                {
+                    // 3. Transform Semantic Trees for Runtime Optimization
+                    compiler.TransformMethods();
+                }
             }
 
             //
