@@ -7,11 +7,20 @@ using System.Threading.Tasks;
 using Pchp.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.Symbols;
 using Pchp.CodeAnalysis.CodeGen;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.CodeGen
 {
     internal static class GhostMethodBuilder
     {
+        public static MethodSymbol CreateGhostOverload(MethodSymbol original, PEModuleBuilder module, DiagnosticBag diagnostic, int pcount)
+        {
+            Debug.Assert(original.Parameters.Length > pcount);
+            return GhostMethodBuilder.CreateGhostOverload(
+                original, original.ContainingType, module, diagnostic,
+                ghostreturn: original.ReturnType, ghostparams: original.Parameters.Take(pcount), explicitOverride: null);
+        }
+
         /// <summary>
         /// Creates ghost stub that calls method.
         /// </summary>

@@ -2231,12 +2231,24 @@ namespace Pchp.CodeAnalysis.CodeGen
                 //
                 ptype = EmitLoadConstant(cvalue.Value, targetp.Type);
             }
-            else if ((boundinitializer = (targetp as IPhpValue)?.Initializer) != null &&
-                targetp.ContainingSymbol is SourceRoutineSymbol srcr)
+            else if ((boundinitializer = (targetp as IPhpValue)?.Initializer) != null)
             {
-                using (var cg = new CodeGenerator(this, srcr))
+                // magically determine the source routine corresponding to the initializer expression:
+                var srcr = targetp.ContainingSymbol as SourceRoutineSymbol // common case
+                    ?? (targetp.ContainingSymbol as SynthesizedMethodSymbol)?.ForwardedCall?.OriginalDefinition as SourceRoutineSymbol; // a trait method                
+
+                Debug.Assert(srcr != null, "!srcr");
+
+                if (srcr != null)
                 {
-                    cg.EmitConvert(boundinitializer, ptype = targetp.Type);
+                    using (var cg = new CodeGenerator(this, srcr))
+                    {
+                        cg.EmitConvert(boundinitializer, ptype = targetp.Type);
+                    }
+                }
+                else
+                {   // should not happen
+                    ptype = EmitLoadDefault(targetp.Type, 0);
                 }
             }
             else if (targetp.IsParams)
@@ -2247,8 +2259,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
-                ptype = targetp.Type;
-                EmitLoadDefault(ptype, 0);
+                ptype = EmitLoadDefault(targetp.Type, 0);
             }
 
             // eventually convert emitted value to target parameter type
@@ -2994,7 +3005,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        public void EmitLoadDefault(TypeSymbol type, TypeRefMask typemask)
+        public TypeSymbol EmitLoadDefault(TypeSymbol type, TypeRefMask typemask)
         {
             Debug.Assert(type != null);
 
@@ -3085,6 +3096,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     break;
             }
+
+            return type;
         }
 
         /// <summary>
