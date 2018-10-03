@@ -133,6 +133,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override void Accept(PhpOperationVisitor visitor) => visitor.VisitBlockStatement(this);
 
+        public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitBlockStatement(this);
+
         public override void Accept(OperationVisitor visitor) => visitor.VisitBlock(this);
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)

@@ -289,7 +289,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #region BoundFunctionCall, BoundArgument, BoundEcho, BoundConcatEx, BoundNewEx
 
-    public partial class BoundArgument : BoundOperation, IArgumentOperation
+    public partial class BoundArgument : BoundOperation, IArgumentOperation, IPhpOperation
     {
         public ArgumentKind ArgumentKind { get; private set; }
 
@@ -309,6 +309,8 @@ namespace Pchp.CodeAnalysis.Semantics
         public IParameterSymbol Parameter { get; set; }
 
         public SyntaxNode Syntax => null;
+
+        public Ast.LangElement PhpSyntax { get; set; }
 
         IOperation IArgumentOperation.Value => Value;
 
@@ -355,15 +357,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitArgument(this);
 
-        void IPhpOperation.Accept(PhpOperationVisitor visitor)
-        {
-            throw new NotImplementedException();
-        }
+        void IPhpOperation.Accept(PhpOperationVisitor visitor) => visitor.VisitArgument(this);
 
-        TResult IPhpOperation.Accept<TResult>(PhpOperationVisitor<TResult> visitor)
-        {
-            throw new NotImplementedException();
-        }
+        TResult IPhpOperation.Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitArgument(this);
     }
 
     /// <summary>
@@ -375,7 +371,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         ImmutableArray<IArgumentOperation> IInvocationOperation.Arguments => StaticCast<IArgumentOperation>.From(_arguments);
 
-        public ImmutableArray<BoundArgument> ArgumentsInSourceOrder => _arguments;
+        public ImmutableArray<BoundArgument> ArgumentsInSourceOrder { get => _arguments; internal set => _arguments = value; }
 
         public IArgumentOperation ArgumentMatchingParameter(IParameterSymbol parameter)
         {
@@ -502,12 +498,14 @@ namespace Pchp.CodeAnalysis.Semantics
     public partial class BoundInstanceFunctionCall : BoundRoutineCall
     {
         public override BoundExpression Instance => _instance;
-        readonly BoundExpression _instance;
+        private BoundExpression _instance;
 
         public BoundRoutineName Name => _name;
         readonly BoundRoutineName _name;
 
         public override bool IsVirtual => this.TargetMethod.IsErrorMethodOrNull() || this.TargetMethod.IsVirtual;
+
+        internal void SetInstance(BoundExpression instance) => _instance = instance;
 
         public BoundInstanceFunctionCall(BoundExpression instance, QualifiedName name, ImmutableArray<BoundArgument> arguments)
             : this(instance, new BoundRoutineName(name), arguments)
@@ -789,7 +787,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         public override OperationKind Kind => OperationKind.None;
 
-        public BoundExpression CodeExpression { get; private set; }
+        public BoundExpression CodeExpression { get; internal set; }
 
         public BoundEvalEx(BoundExpression code)
         {
@@ -860,9 +858,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
         IMethodSymbol IBinaryOperation.OperatorMethod => Operator;
 
-        public BoundExpression Left { get; private set; }
+        public BoundExpression Left { get; internal set; }
 
-        public BoundExpression Right { get; private set; }
+        public BoundExpression Right { get; internal set; }
 
         IOperation IBinaryOperation.LeftOperand => Left;
 
@@ -1003,9 +1001,9 @@ namespace Pchp.CodeAnalysis.Semantics
         IOperation IConditionalOperation.WhenTrue => IfTrue;
         bool IConditionalOperation.IsRef => false;
 
-        public BoundExpression Condition { get; private set; }
-        public BoundExpression IfFalse { get; private set; }
-        public BoundExpression IfTrue { get; private set; }
+        public BoundExpression Condition { get; internal set; }
+        public BoundExpression IfFalse { get; internal set; }
+        public BoundExpression IfTrue { get; internal set; }
 
         public override OperationKind Kind => OperationKind.Conditional;
 
@@ -1269,16 +1267,15 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Bound target variables.
         /// </summary>
-        public KeyValuePair<BoundExpression, BoundReferenceExpression>[] Items => _items;
-        readonly KeyValuePair<BoundExpression, BoundReferenceExpression>[] _items;
+        public ImmutableArray<KeyValuePair<BoundExpression, BoundReferenceExpression>> Items { get; internal set; }
 
         public BoundListEx(IEnumerable<KeyValuePair<BoundExpression, BoundExpression>> items)
         {
             Debug.Assert(items != null);
 
-            _items = items
+            Items = items
                 .Select(pair => new KeyValuePair<BoundExpression, BoundReferenceExpression>(pair.Key, (BoundReferenceExpression)pair.Value))
-                .ToArray();
+                .ToImmutableArray();
         }
 
         public override void Accept(OperationVisitor visitor)
@@ -1331,11 +1328,21 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// In case of a non static field, gets its instance expression.
         /// </summary>
-        public BoundExpression Instance => IsInstanceField ? _instanceExpr : null;
+        public BoundExpression Instance
+        {
+            get => IsInstanceField ? _instanceExpr : null;
+            set
+            {
+                if (IsInstanceField)
+                    _instanceExpr = value;
+                else
+                    throw new InvalidOperationException();
+            }
+        }
 
         public BoundTypeRef ContainingType => _containingType;
 
-        public BoundVariableName FieldName => _fieldName;
+        public BoundVariableName FieldName { get => _fieldName; set => _fieldName = value; }
 
         public override OperationKind Kind => OperationKind.FieldReference;
 
@@ -1414,7 +1421,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Array items.
         /// </summary>
-        public ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>> Items => _items;
+        public ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>> Items { get => _items; internal set => _items = value; }
         ImmutableArray<KeyValuePair<BoundExpression, BoundExpression>> _items;
 
         public BoundArrayEx(IEnumerable<KeyValuePair<BoundExpression, BoundExpression>> items)
@@ -1511,7 +1518,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// The value to be checked.
         /// </summary>
-        public BoundExpression Operand { get; private set; }
+        public BoundExpression Operand { get; internal set; }
 
         /// <summary>
         /// The type.
@@ -1749,7 +1756,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         public override OperationKind Kind => OperationKind.FieldReference;
 
-        public BoundExpression Operand { get; private set; }
+        public BoundExpression Operand { get; internal set; }
 
         public BoundYieldFromEx(BoundExpression expression)
         {

@@ -71,7 +71,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Expression of the statement.
         /// </summary>
-        public BoundExpression Expression { get; private set; }
+        public BoundExpression Expression { get; internal set; }
 
         public override OperationKind Kind => OperationKind.ExpressionStatement;
 
@@ -106,7 +106,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         IOperation IReturnOperation.ReturnedValue => Returned;
 
-        public BoundExpression Returned { get; private set; }
+        public BoundExpression Returned { get; internal set; }
 
         public BoundReturnStatement(BoundExpression returned)
         {
@@ -242,8 +242,8 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         public override OperationKind Kind => OperationKind.VariableDeclaration;
 
-        ImmutableArray<IVariableDeclaratorOperation> IVariableDeclarationOperation.Declarators => (_variable.Variable != null)
-            ? ImmutableArray.Create((IVariableDeclaratorOperation)_variable.Variable)
+        ImmutableArray<IVariableDeclaratorOperation> IVariableDeclarationOperation.Declarators => (Variable.Variable != null)
+            ? ImmutableArray.Create((IVariableDeclaratorOperation)Variable.Variable)
             : ImmutableArray<IVariableDeclaratorOperation>.Empty;  // unbound yet
 
         IVariableInitializerOperation IVariableDeclarationOperation.Initializer => null;
@@ -251,13 +251,11 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// The variable that will be referenced to a global variable.
         /// </summary>
-        public BoundVariableRef Variable => _variable;
-
-        readonly BoundVariableRef _variable;
+        public BoundVariableRef Variable { get; internal set; }
 
         public BoundGlobalVariableStatement(BoundVariableRef variable)
         {
-            _variable = variable;
+            Variable = variable;
         }
 
         public override void Accept(OperationVisitor visitor)
@@ -281,7 +279,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public override OperationKind Kind => OperationKind.VariableDeclaration;
 
         public QualifiedName Name { get; private set; }
-        public BoundExpression Value { get; private set; }
+        public BoundExpression Value { get; internal set; }
 
         public BoundGlobalConstDeclStatement(QualifiedName name, BoundExpression value)
         {
@@ -388,8 +386,8 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         public override OperationKind Kind => OperationKind.YieldReturn;
 
-        public BoundExpression YieldedValue { get; private set; }
-        public BoundExpression YieldedKey { get; private set; }
+        public BoundExpression YieldedValue { get; internal set; }
+        public BoundExpression YieldedKey { get; internal set; }
 
         IOperation IReturnOperation.ReturnedValue => YieldedValue;
 
