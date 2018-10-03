@@ -32,7 +32,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Optional. The parameter initializer expression i.e. bound <see cref="FormalParam.InitValue"/>.
         /// </summary>
-        public BoundExpression Initializer => _initializer;
+        public override BoundExpression Initializer => _initializer;
         readonly BoundExpression _initializer;
 
         public SourceParameterSymbol(SourceRoutineSymbol routine, FormalParam syntax, int relindex, PHPDocBlock.ParamTag ptagOpt)

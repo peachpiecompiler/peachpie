@@ -2231,9 +2231,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 //
                 ptype = EmitLoadConstant(cvalue.Value, targetp.Type);
             }
-            else if ((boundinitializer = (targetp as SourceParameterSymbol)?.Initializer) != null)
+            else if ((boundinitializer = (targetp as IPhpValue)?.Initializer) != null &&
+                targetp.ContainingSymbol is SourceRoutineSymbol srcr)
             {
-                using (var cg = new CodeGenerator(this, (SourceRoutineSymbol)targetp.ContainingSymbol))
+                using (var cg = new CodeGenerator(this, srcr))
                 {
                     cg.EmitConvert(boundinitializer, ptype = targetp.Type);
                 }

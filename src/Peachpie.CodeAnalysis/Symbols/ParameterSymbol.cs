@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Immutable;
+using Pchp.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -15,6 +16,11 @@ namespace Pchp.CodeAnalysis.Symbols
         public virtual ImmutableArray<CustomModifier> RefCustomModifiers => ImmutableArray<CustomModifier>.Empty;
 
         public override SymbolKind Kind => SymbolKind.Parameter;
+
+        /// <summary>
+        /// Optional. Gets the initializer.
+        /// </summary>
+        public virtual BoundExpression Initializer => null;
 
         public virtual bool IsOptional => false;
 

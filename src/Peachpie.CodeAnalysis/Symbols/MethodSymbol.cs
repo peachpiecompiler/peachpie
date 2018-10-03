@@ -39,6 +39,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public virtual IMethodSymbol ConstructedFrom => this;
 
+        public BoundExpression Initializer => null;
+
         ImmutableArray<IMethodSymbol> IMethodSymbol.ExplicitInterfaceImplementations => StaticCast<IMethodSymbol>.From(ExplicitInterfaceImplementations);
 
         public virtual ImmutableArray<MethodSymbol> ExplicitInterfaceImplementations => ImmutableArray<MethodSymbol>.Empty;

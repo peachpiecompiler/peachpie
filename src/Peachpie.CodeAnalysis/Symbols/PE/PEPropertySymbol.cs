@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.PooledObjects;
+using Pchp.CodeAnalysis.Semantics;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -372,6 +373,11 @@ namespace Pchp.CodeAnalysis.Symbols
                     ((object)_setMethod == null || _setMethod.IsStatic);
             }
         }
+
+        /// <summary>
+        /// Used for source symbols.
+        /// </summary>
+        public BoundExpression Initializer => null;
 
         public override ImmutableArray<ParameterSymbol> Parameters
         {
