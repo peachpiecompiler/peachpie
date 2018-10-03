@@ -9,7 +9,7 @@ namespace Peachpie.Library.PDO
     /// <summary>
     /// PDO static functions
     /// </summary>
-    [PhpExtension]
+    [PhpExtension(PDOConfiguration.PdoExtensionName)]
     public static class PDOStatic
     {
         /// <summary>

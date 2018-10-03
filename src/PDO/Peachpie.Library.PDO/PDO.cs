@@ -15,6 +15,7 @@ namespace Peachpie.Library.PDO
     /// </summary>
     /// <seealso cref="Pchp.Core.PhpResource" />
     [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpExtension(PDOConfiguration.PdoExtensionName)]
     public partial class PDO : IDisposable, IPDO
     {
         /// <summary>Runtime context. Cannot be <c>null</c>.</summary>

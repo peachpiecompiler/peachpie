@@ -9,6 +9,7 @@ namespace Peachpie.Library.PDO
     /// </summary>
     /// <seealso cref="Pchp.Library.Spl.Exception" />
     [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpExtension(PDOConfiguration.PdoExtensionName)]
     public class PDOException : RuntimeException
     {
         /// <summary>

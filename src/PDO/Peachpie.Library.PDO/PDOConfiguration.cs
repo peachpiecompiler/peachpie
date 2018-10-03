@@ -13,11 +13,13 @@ namespace Peachpie.Library.PDO
     /// <seealso cref="Pchp.Core.IPhpConfiguration" />
     public class PDOConfiguration : IPhpConfiguration
     {
+        internal const string PdoExtensionName = "pdo";
+
         /// <inheritDoc />
         public IPhpConfiguration Copy() => (PDOConfiguration)this.MemberwiseClone();
 
         /// <inheritDoc />
-        public string ExtensionName => "pdo";
+        public string ExtensionName => PdoExtensionName;
 
         //public NameValueCollection Alias { get; set; } = new NameValueCollection();
 
