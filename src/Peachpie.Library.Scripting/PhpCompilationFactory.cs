@@ -8,7 +8,7 @@ using Pchp.CodeAnalysis;
 
 namespace Peachpie.Library.Scripting
 {
-    class PhpCompilationFactory
+    class PhpCompilationFactory : System.Runtime.Loader.AssemblyLoadContext
     {
         public PhpCompilationFactory()
         {
@@ -91,7 +91,7 @@ namespace Peachpie.Library.Scripting
 
         public Assembly LoadFromStream(AssemblyName assemblyName, MemoryStream peStream, MemoryStream pdbStream)
         {
-            var assembly = Assembly.Load(peStream.ToArray(), pdbStream?.ToArray());
+            var assembly = LoadFromStream(peStream, pdbStream);
             if (assembly != null)
             {
                 _assemblies.Add(assemblyName.Name, assembly);
@@ -100,7 +100,7 @@ namespace Peachpie.Library.Scripting
             return assembly;
         }
 
-        //protected override Assembly Load(AssemblyName assemblyName) => TryGetSubmissionAssembly(assemblyName);
+        protected override Assembly Load(AssemblyName assemblyName) => TryGetSubmissionAssembly(assemblyName);
 
         static int _counter = 0;
 
