@@ -735,6 +735,23 @@ namespace Peachpie.Library.Graphics
             return 0; // false
         }
 
+        /// <summary>
+        /// Should antialias functions be used or not.
+        /// </summary>
+        /// <remarks>Always enabled.</remarks>
+        public static bool imageantialias(PhpResource image, bool enabled)
+        {
+            var img = PhpGdImageResource.ValidImage(image);
+            if (img != null)
+            {
+                // always enabled.
+                return true;
+            }
+
+            //
+            return false;
+        }
+
         #region imagefilter
 
         /// <summary>
