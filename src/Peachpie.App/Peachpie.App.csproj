@@ -20,6 +20,7 @@
     <ProjectReference Include="..\Peachpie.Library.MySql\Peachpie.Library.MySql.csproj" />
     <ProjectReference Include="..\Peachpie.Library.XmlDom\Peachpie.Library.XmlDom.csproj" />
     <ProjectReference Include="..\Peachpie.Library.Network\Peachpie.Library.Network.csproj" />
+    <ProjectReference Include="..\Peachpie.Library.Graphics\Peachpie.Library.Graphics.csproj" />
   </ItemGroup>
 
 </Project>
