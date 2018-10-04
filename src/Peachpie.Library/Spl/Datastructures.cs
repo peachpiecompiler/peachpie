@@ -16,6 +16,8 @@ namespace Pchp.Library.Spl
     //SplMinHeap
     //SplPriorityQueue
 
+    #region SplFixedArray
+
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplFixedArray : ArrayAccess, Iterator, Countable
     {
@@ -139,7 +141,7 @@ namespace Pchp.Library.Spl
                     }
                 }
                 else
-                {   
+                {
                     int i = 0;
                     while (enumerator.MoveNext())
                     {
@@ -267,4 +269,87 @@ namespace Pchp.Library.Spl
 
         #endregion
     }
+
+    #endregion
+
+    #region SplDoublyLinkedList
+
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class SplDoublyLinkedList : Iterator, ArrayAccess, Countable
+    {
+        public void __construct() => throw new NotImplementedException();
+        public virtual void add(PhpValue index, PhpValue newval) => throw new NotImplementedException();
+        public virtual PhpValue bottom() => throw new NotImplementedException();
+        public virtual int getIteratorMode() => throw new NotImplementedException();
+        public virtual bool isEmpty() => throw new NotImplementedException();
+        public virtual PhpValue pop() => throw new NotImplementedException();
+        public virtual void prev() => throw new NotImplementedException();
+        public virtual void push(PhpValue value) => throw new NotImplementedException();
+        public virtual string serialize() => throw new NotImplementedException();
+        public virtual void setIteratorMode(long mode) => throw new NotImplementedException();
+        public virtual PhpValue shift() => throw new NotImplementedException();
+        public virtual PhpValue top() => throw new NotImplementedException();
+        public virtual void unserialize(string serialized) => throw new NotImplementedException();
+        public virtual void unshift(PhpValue value) => throw new NotImplementedException();
+
+        public long count() => throw new NotImplementedException();
+
+        public PhpValue offsetGet(PhpValue offset)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void offsetSet(PhpValue offset, PhpValue value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void offsetUnset(PhpValue offset)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool offsetExists(PhpValue offset)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void rewind()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void next()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool valid()
+        {
+            throw new NotImplementedException();
+        }
+
+        public PhpValue key()
+        {
+            throw new NotImplementedException();
+        }
+
+        public PhpValue current()
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+
+    #endregion
+
+    #region SplStack
+
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class SplStack : SplDoublyLinkedList, Iterator, ArrayAccess, Countable
+    {
+    }
+
+
+    #endregion
 }
