@@ -129,6 +129,17 @@ namespace Pchp.Core.Utilities
             }
             return (array[i] == c) ? i : -1;
         }
+
+        /// <summary>
+        /// Concatenates elements into a new array.
+        /// </summary>
+        public static T[] AppendRange<T>(T first, T[] array)
+        {
+            var newarr = new T[1 + array.Length];
+            newarr[0] = first;
+            Array.Copy(array, 0, newarr, 1, array.Length);
+            return newarr;
+        }
     }
 
 }
