@@ -747,7 +747,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="zp">The gz-file pointer. It must be valid, and must point to a file successfully opened by gzopen().</param>
         /// <returns>The position of the file pointer or FALSE if an error occurs.</returns>
-        public static object gztell(PhpResource zp)
+        public static int gztell(PhpResource zp)
         {
             return PhpPath.ftell(zp);
         }
@@ -823,11 +823,11 @@ namespace Pchp.Library
         /// /// <param name="allowable_tags">You can use this optional parameter to specify tags which should not be stripped.</param>
         /// <returns>The uncompressed and striped string, or FALSE on error.</returns>
         [return: CastToFalse]
-        public static object gzgetss(PhpResource zp, int length = -1, string allowable_tags = null)
+        public static string gzgetss(PhpResource zp, int length = -1, string allowable_tags = null)
         {
-            return (length == -1)
+            return length < 0
                 ? PhpPath.fgetss(zp)
-                : PhpPath.fgetss(zp, length, allowable_tags.ToString());
+                : PhpPath.fgetss(zp, length, allowable_tags);
         }
 
         #endregion
