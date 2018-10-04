@@ -85,7 +85,6 @@ namespace Peachpie.Library.Scripting
                 throw new ArgumentException();
             }
 
-            peStream.Position = 0;
             _image = peStream.ToArray().ToImmutableArray();
 
             foreach (var t in ass.GetTypes())
