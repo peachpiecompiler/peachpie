@@ -2222,9 +2222,18 @@ namespace Pchp.CodeAnalysis.CodeGen
             if ((cvalue = targetp.ExplicitDefaultConstantValue) != null)
             {
                 // keep NULL if parameter is a reference type
-                if (cvalue.IsNull && targetp.Type.IsReferenceType && targetp.Type != CoreTypes.PhpAlias)
+                if (cvalue.IsNull && targetp.Type != CoreTypes.PhpAlias)
                 {
-                    _il.EmitNullConstant();
+                    if (targetp.Type.IsReferenceType)
+                    {
+                        // reference type
+                        _il.EmitNullConstant();
+                    }
+                    else
+                    {
+                        // value type ~ default(T)
+                        EmitLoadDefaultOfValueType(targetp.Type);
+                    }
                     return;
                 }
 
