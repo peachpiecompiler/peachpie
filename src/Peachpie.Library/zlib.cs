@@ -287,6 +287,13 @@ namespace Pchp.Library
                 null);
         }
 
+        /// <summary>
+        /// Calls gzopen
+        /// Opens a gzip (.gz) file for reading or writing.
+        /// Some versions of linux have the function named differently, which is used in some PHP libraries
+        /// </summary>
+        public static PhpResource gzopen64(Context ctx, string filename, string mode, int use_include_path = 0) => gzopen(ctx, filename, mode, use_include_path);
+
         #endregion
 
         #region gzcompress, gzuncompress
@@ -743,6 +750,12 @@ namespace Pchp.Library
         }
 
         /// <summary>
+        /// Calls gzseek
+        /// Some versions of linux have the function named differently, which is used in some PHP libraries
+        /// </summary>
+        public static int gzseek64(PhpResource zp, int offset, int whence = PhpStreams.SEEK_SET) => gzseek(zp, offset, whence);
+
+        /// <summary>
         /// Gets the position of the given file pointer; i.e., its offset into the uncompressed file stream.
         /// </summary>
         /// <param name="zp">The gz-file pointer. It must be valid, and must point to a file successfully opened by gzopen().</param>
@@ -751,6 +764,13 @@ namespace Pchp.Library
         {
             return PhpPath.ftell(zp);
         }
+
+        /// <summary>
+        /// Gets the position of the given file pointer; i.e., its offset into the uncompressed file stream.
+        /// 
+        /// Some versions of linux have the function named differently, which is used in some PHP libraries
+        /// </summary>
+        public static object gztell64(PhpResource zp) => gztell(zp);
 
         #endregion
 

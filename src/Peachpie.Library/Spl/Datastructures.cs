@@ -352,4 +352,24 @@ namespace Pchp.Library.Spl
 
 
     #endregion
+
+    #region SplQueue
+
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class SplQueue: SplDoublyLinkedList, Iterator, ArrayAccess, Countable
+    {
+    }
+
+
+    #endregion
+
+    #region SplPriorityQueue
+
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class SplPriorityQueue : SplDoublyLinkedList, Iterator, ArrayAccess, Countable
+    {
+    }
+
+
+    #endregion
 }
