@@ -2592,18 +2592,11 @@ namespace Pchp.Library
         /// Strips HTML and PHP tags from a string.
         /// </summary>
         /// <param name="str">The string to strip tags from.</param>
-        /// <returns>The result.</returns>
-        public static string strip_tags(string str) => strip_tags(str, null);
-
-        /// <summary>
-        /// Strips HTML and PHP tags from a string.
-        /// </summary>
-        /// <param name="str">The string to strip tags from.</param>
         /// <param name="allowableTags">Tags which should not be stripped in the following format:
         /// &lt;tag1&gt;&lt;tag2&gt;&lt;tag3&gt;.</param>
         /// <returns>The result.</returns>
         /// <remarks>This is a slightly modified php_strip_tags which can be found in PHP sources.</remarks>
-        public static string strip_tags(string str, string allowableTags)
+        public static string strip_tags(string str, string allowableTags = null)
         {
             int state = 0;
             return StripTags(str, allowableTags, ref state);
@@ -2629,7 +2622,7 @@ namespace Pchp.Library
             // to see if we should allow it.
 
             StringBuilder result = new StringBuilder(), tagBuf = new StringBuilder();
-            if (allowableTags != null) allowableTags = allowableTags.ToLower();
+            if (allowableTags != null) allowableTags = allowableTags.ToLowerInvariant();
 
             while (i < length)
             {

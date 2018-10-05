@@ -686,7 +686,7 @@ namespace Peachpie.Library.MySql
         /// <remarks>
         /// Result is affected by run-time quoting.
         /// </remarks>
-        public static PhpValue mysql_result(PhpResource resultHandle, int row, PhpValue field)
+        public static PhpValue mysql_result(PhpResource resultHandle, int row, PhpValue field = default)
         {
             var result = MySqlResultResource.ValidResult(resultHandle);
             if (result == null)
@@ -696,7 +696,7 @@ namespace Peachpie.Library.MySql
 
             string field_name;
             object field_value;
-            if (field.IsEmpty)
+            if (!Operators.IsSet(field))
             {
                 field_value = result.GetFieldValue(row, result.CurrentFieldIndex);
             }

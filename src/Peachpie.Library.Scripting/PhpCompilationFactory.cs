@@ -8,8 +8,7 @@ using Pchp.CodeAnalysis;
 
 namespace Peachpie.Library.Scripting
 {
-    class PhpCompilationFactory
-        : System.Runtime.Loader.AssemblyLoadContext
+    class PhpCompilationFactory : System.Runtime.Loader.AssemblyLoadContext
     {
         public PhpCompilationFactory()
         {
@@ -80,18 +79,19 @@ namespace Peachpie.Library.Scripting
         public Assembly TryGetSubmissionAssembly(AssemblyName assemblyName)
         {
             if (assemblyName.Name.StartsWith(s_submissionAssemblyNamePrefix, StringComparison.Ordinal) &&
-                _assemblies.TryGetValue(assemblyName.Name, out Assembly assembly))
+                _assemblies.TryGetValue(assemblyName.Name, out var assembly))
             {
                 return assembly;
             }
-
-            return null;
+            else
+            {
+                return null;
+            }
         }
 
         public Assembly LoadFromStream(AssemblyName assemblyName, MemoryStream peStream, MemoryStream pdbStream)
         {
-            var assembly = this.LoadFromStream(peStream, pdbStream);
-
+            var assembly = LoadFromStream(peStream, pdbStream);
             if (assembly != null)
             {
                 _assemblies.Add(assemblyName.Name, assembly);
