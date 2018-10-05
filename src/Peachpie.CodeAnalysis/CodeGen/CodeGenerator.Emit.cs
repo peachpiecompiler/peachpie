@@ -2242,9 +2242,15 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else if ((boundinitializer = (targetp as IPhpValue)?.Initializer) != null)
             {
+                // TODO: use `boundinitializer.Parent` instead of following
                 // magically determine the source routine corresponding to the initializer expression:
-                var srcr = targetp.ContainingSymbol as SourceRoutineSymbol // common case
-                    ?? (targetp.ContainingSymbol as SynthesizedMethodSymbol)?.ForwardedCall?.OriginalDefinition as SourceRoutineSymbol; // a trait method                
+                SourceRoutineSymbol srcr = null;
+                for (var r = targetp.ContainingSymbol;
+                     srcr == null && r != null; // we still don't have to original SourceRoutineSymbol, but we have "r"
+                     r = (r as SynthesizedMethodSymbol)?.ForwardedCall?.OriginalDefinition) // dig in and find original SourceRoutineSymbol wrapped by this synthesized stub
+                {
+                    srcr = r as SourceRoutineSymbol;
+                }
 
                 Debug.Assert(srcr != null, "!srcr");
 
