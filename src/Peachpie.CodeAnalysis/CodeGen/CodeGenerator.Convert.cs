@@ -1051,7 +1051,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     .Expect(SpecialType.System_Object);
             }
 
-            if (from.IsOfType(to))
+            if (from.IsReferenceType && from.IsOfType(to))
             {
                 return;
             }
