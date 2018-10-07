@@ -3,9 +3,9 @@
 
   <PropertyGroup>
 
-    <!-- common version -->
-    <VersionPrefix Condition=" '$(VersionPrefix)'=='' ">0.9.9</VersionPrefix>
-    <VersionSuffix Condition=" '$(VersionSuffix)'=='' and '$(IsDevBuild)'!='false' ">dev</VersionSuffix>
+    <!-- version -->
+    <Version Condition=" '$(Version)'=='' ">0.9.9-dev</Version>
+    <PackageVersion>$(Version)</PackageVersion>
 
     <!-- metadata generation -->
     <GenerateAssemblyVersionAttribute>true</GenerateAssemblyVersionAttribute>
@@ -36,11 +36,6 @@
     <PackageProjectUrl>https://github.com/peachpiecompiler/peachpie</PackageProjectUrl>
     <PackageOutputPath>$(MSBuildThisFileDirectory)../../.nugs</PackageOutputPath>
     <PackageIconUrl>https://github.com/peachpiecompiler/peachpie/raw/master/docs/logos/round-orange-196x196.png</PackageIconUrl>
-  </PropertyGroup>
-  
-  <PropertyGroup Condition=" '$(PackageVersion)'=='' ">
-    <PackageVersion>$(VersionPrefix)</PackageVersion>
-    <PackageVersion Condition=" '$(VersionSuffix)'!='' ">$(PackageVersion)-$(VersionSuffix)</PackageVersion>
   </PropertyGroup>
 
   <!-- common targets -->
