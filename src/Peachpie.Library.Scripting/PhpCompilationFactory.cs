@@ -8,9 +8,45 @@ using Pchp.CodeAnalysis;
 
 namespace Peachpie.Library.Scripting
 {
-    class PhpCompilationFactory : System.Runtime.Loader.AssemblyLoadContext
+#if NETSTANDARD
+
+    sealed class PhpCompilationFactory : PhpCompilationFactoryBase
+    {
+        System.Runtime.Loader.AssemblyLoadContext AssemblyLoadContext => System.Runtime.Loader.AssemblyLoadContext.Default;
+
+        public PhpCompilationFactory()
+        {
+            //AssemblyLoadContext.Resolving += AssemblyLoadContext_Resolving;
+        }
+
+        //private Assembly AssemblyLoadContext_Resolving(System.Runtime.Loader.AssemblyLoadContext assCtx, AssemblyName assName)
+        //    => TryGetSubmissionAssembly(assName);
+
+        protected override Assembly LoadFromStream(MemoryStream peStream, MemoryStream pdbStream)
+            => AssemblyLoadContext.LoadFromStream(peStream, pdbStream);
+    }
+
+#else // NET461, does not have AssemblyLoadContext in System.Runtime.Loader 4.0.0 (we need >= 4.0.1)
+
+    sealed class PhpCompilationFactory : PhpCompilationFactoryBase
     {
         public PhpCompilationFactory()
+        {
+            AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+        }
+
+        private Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+            => TryGetSubmissionAssembly(new AssemblyName(args.Name));
+
+        protected override Assembly LoadFromStream(MemoryStream peStream, MemoryStream pdbStream)
+            => Assembly.Load(peStream.ToArray(), pdbStream?.ToArray());
+    }
+
+#endif
+
+    abstract class PhpCompilationFactoryBase
+    {
+        public PhpCompilationFactoryBase()
         {
             _compilation = PhpCompilation.Create("project",
                 references: MetadataReferences().Select(CreateMetadataReference),
@@ -89,6 +125,8 @@ namespace Peachpie.Library.Scripting
             }
         }
 
+        protected abstract Assembly LoadFromStream(MemoryStream peStream, MemoryStream pdbStream);
+
         public Assembly LoadFromStream(AssemblyName assemblyName, MemoryStream peStream, MemoryStream pdbStream)
         {
             var assembly = LoadFromStream(peStream, pdbStream);
@@ -99,8 +137,6 @@ namespace Peachpie.Library.Scripting
 
             return assembly;
         }
-
-        protected override Assembly Load(AssemblyName assemblyName) => TryGetSubmissionAssembly(assemblyName);
 
         static int _counter = 0;
 
