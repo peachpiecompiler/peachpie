@@ -292,7 +292,7 @@ namespace Pchp.Library.Spl
         public virtual void unserialize(string serialized) => throw new NotImplementedException();
         public virtual void unshift(PhpValue value) => throw new NotImplementedException();
 
-        public long count() => throw new NotImplementedException();
+        public virtual long count() => throw new NotImplementedException();
 
         public PhpValue offsetGet(PhpValue offset)
         {
@@ -355,9 +355,15 @@ namespace Pchp.Library.Spl
 
     #region SplQueue
 
+    /// <summary>
+    /// The SplQueue class provides the main functionalities of a queue implemented using a doubly linked list.
+    /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
-    public class SplQueue: SplDoublyLinkedList, Iterator, ArrayAccess, Countable
+    public class SplQueue : SplDoublyLinkedList, Iterator, ArrayAccess, Countable
     {
+        public virtual PhpValue dequeue() => throw new NotImplementedException();
+        public virtual void enqueue(PhpValue value) => throw new NotImplementedException();
+        public virtual void setIteratorMode(int mode) => throw new NotImplementedException();
     }
 
 
@@ -365,9 +371,28 @@ namespace Pchp.Library.Spl
 
     #region SplPriorityQueue
 
+    /// <summary>
+    /// The SplPriorityQueue class provides the main functionalities of a prioritized queue, implemented using a max heap.
+    /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
-    public class SplPriorityQueue : SplDoublyLinkedList, Iterator, ArrayAccess, Countable
+    public class SplPriorityQueue : Iterator, Countable
     {
+        public void __construct() => throw new NotImplementedException();
+        public virtual long compare(PhpValue priority1, PhpValue priority2) => throw new NotImplementedException();
+        public virtual long count() => throw new NotImplementedException();
+        public virtual PhpValue current() => throw new NotImplementedException();
+        public virtual PhpValue extract() => throw new NotImplementedException();
+        public virtual int getExtractFlags() => throw new NotImplementedException();
+        public virtual void insert(PhpValue value, PhpValue priority) => throw new NotImplementedException();
+        public virtual bool isCorrupted() => throw new NotImplementedException();
+        public virtual bool isEmpty() => throw new NotImplementedException();
+        public virtual PhpValue key() => throw new NotImplementedException();
+        public virtual void next() => throw new NotImplementedException();
+        public virtual void recoverFromCorruption() => throw new NotImplementedException();
+        public virtual void rewind() => throw new NotImplementedException();
+        public virtual void setExtractFlags(int flags) => throw new NotImplementedException();
+        public virtual PhpValue top() => throw new NotImplementedException();
+        public virtual bool valid() => throw new NotImplementedException();
     }
 
 
