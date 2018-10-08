@@ -8,13 +8,15 @@ namespace Pchp.CodeAnalysis.Semantics
 {
     public class PhpOperationRewriter : PhpOperationVisitor<BoundOperation>
     {
+        #region Helper methods
+
         private ImmutableArray<T> VisitImmutableArray<T>(ImmutableArray<T> arr) where T : BoundOperation, IPhpOperation
         {
             ImmutableArray<T>.Builder alternate = null;
             for (int i = 0; i < arr.Length; i++)
             {
                 var orig = arr[i];
-                var visited = orig.Accept(this);
+                var visited = orig?.Accept(this);
 
                 if (visited != orig)
                 {
@@ -37,8 +39,8 @@ namespace Pchp.CodeAnalysis.Semantics
             for (int i = 0; i < arr.Length; i++)
             {
                 var orig = arr[i];
-                var visitedKey = orig.Key.Accept(this);
-                var visitedValue = orig.Value.Accept(this);
+                var visitedKey = orig.Key?.Accept(this);
+                var visitedValue = orig.Value?.Accept(this);
 
                 if (visitedKey != orig.Key || visitedValue != orig.Value)
                 {
@@ -82,6 +84,8 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
+        #endregion
+
         #region Expressions
 
         protected override BoundOperation VisitRoutineCall(BoundRoutineCall x)
@@ -122,7 +126,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override BoundOperation VisitInstanceFunctionCall(BoundInstanceFunctionCall x)
         {
-            VisitAndUpdate(x.Instance, v => x.SetInstance(v));
+            VisitAndUpdate(x.Instance, x.SetInstance);
             return VisitRoutineCall(x);
         }
 
