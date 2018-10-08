@@ -346,16 +346,6 @@ namespace Pchp.Library.Spl
 
     #endregion
 
-    #region SplStack
-
-    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
-    public class SplStack : SplDoublyLinkedList, Iterator, ArrayAccess, Countable
-    {
-    }
-
-
-    #endregion
-
     #region SplQueue
 
     /// <summary>
@@ -367,6 +357,18 @@ namespace Pchp.Library.Spl
         public virtual PhpValue dequeue() => throw new NotImplementedException();
         public virtual void enqueue(PhpValue value) => throw new NotImplementedException();
         public virtual void setIteratorMode(int mode) => throw new NotImplementedException();
+    }
+
+    #endregion
+
+    #region SplStack
+
+    /// <summary>
+    /// The SplStack class provides the main functionalities of a stack implemented using a doubly linked list.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class SplStack : SplDoublyLinkedList, Iterator, ArrayAccess, Countable
+    {
     }
 
     #endregion
