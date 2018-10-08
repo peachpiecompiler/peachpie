@@ -7,15 +7,6 @@ using System.Threading.Tasks;
 
 namespace Pchp.Library.Spl
 {
-    // TODO:
-    //SplDoublyLinkedList
-    //SplStack
-    //SplQueue
-    //SplHeap
-    //SplMaxHeap
-    //SplMinHeap
-    //SplPriorityQueue
-
     #region SplFixedArray
 
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
@@ -403,6 +394,59 @@ namespace Pchp.Library.Spl
         public virtual void setExtractFlags(int flags) => throw new NotImplementedException();
         public virtual PhpValue top() => throw new NotImplementedException();
         public virtual bool valid() => throw new NotImplementedException();
+    }
+
+    #endregion
+
+    #region SplHeap, SplMinHeap, SplMaxHeap 
+
+    /// <summary>
+    /// The SplHeap class provides the main functionalities of a Heap.
+    /// </summary>
+    public abstract class SplHeap : Iterator, Countable
+    {
+        public virtual void __construct() => throw new NotImplementedException();
+        protected abstract long compare(PhpValue value1, PhpValue value2);
+        public virtual long count() => throw new NotImplementedException();
+        public virtual PhpValue current() => throw new NotImplementedException();
+        public virtual PhpValue extract() => throw new NotImplementedException();
+        public virtual void insert(PhpValue value) => throw new NotImplementedException();
+        public virtual bool isCorrupted() => throw new NotImplementedException();
+        public virtual bool isEmpty() => throw new NotImplementedException();
+        public virtual PhpValue key() => throw new NotImplementedException();
+        public virtual void next() => throw new NotImplementedException();
+        public virtual void recoverFromCorruption() => throw new NotImplementedException();
+        public virtual void rewind() => throw new NotImplementedException();
+        public virtual PhpValue top() => throw new NotImplementedException();
+        public virtual bool valid() => throw new NotImplementedException();
+    }
+
+    /// <summary>
+    /// The SplMinHeap class provides the main functionalities of a heap, keeping the minimum on the top.
+    /// </summary>
+    public class SplMinHeap : SplHeap
+    {
+        /// <summary>
+        /// Compare elements in order to place them correctly in the heap while sifting up
+        /// </summary>
+        protected override long compare(PhpValue value1, PhpValue value2)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// The SplMaxHeap class provides the main functionalities of a heap, keeping the maximum on the top.
+    /// </summary>
+    public class SplMaxHeap : SplHeap
+    {
+        /// <summary>
+        /// Compare elements in order to place them correctly in the heap while sifting up
+        /// </summary>
+        protected override long compare(PhpValue value1, PhpValue value2)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     #endregion
