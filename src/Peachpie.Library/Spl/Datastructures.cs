@@ -354,6 +354,11 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplQueue : SplDoublyLinkedList, Iterator, ArrayAccess, Countable
     {
+        public const int IT_MODE_LIFO = 2;
+        public const int IT_MODE_FIFO = 0;
+        public const int IT_MODE_DELETE = 1;
+        public const int IT_MODE_KEEP = 0;
+
         public virtual PhpValue dequeue() => throw new NotImplementedException();
         public virtual void enqueue(PhpValue value) => throw new NotImplementedException();
         public virtual void setIteratorMode(int mode) => throw new NotImplementedException();
@@ -369,6 +374,7 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplStack : SplDoublyLinkedList, Iterator, ArrayAccess, Countable
     {
+        public virtual void setIteratorMode(int mode) => throw new NotImplementedException();
     }
 
     #endregion
