@@ -86,8 +86,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             Accept(x.Condition);
 
-            x.TrueTarget.Accept(this);
-            x.FalseTarget.Accept(this);
+            x.TrueTarget?.Accept(this);
+            x.FalseTarget?.Accept(this);
         }
 
         public virtual void VisitCFGTryCatchEdge(TryCatchEdge x)

@@ -55,7 +55,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return alternate?.MoveToImmutable() ?? arr;
         }
 
-        private void VisitAndUpdate<T>(T value, Action<T> setter) where T : BoundOperation, IPhpOperation
+        public void VisitAndUpdate<T>(T value, Action<T> setter) where T : BoundOperation, IPhpOperation
         {
             var visited = Accept(value);
             if (visited != value)
@@ -64,7 +64,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        private void VisitAndUpdate<T>(ImmutableArray<T> value, Action<ImmutableArray<T>> setter) where T : BoundOperation, IPhpOperation
+        public void VisitAndUpdate<T>(ImmutableArray<T> value, Action<ImmutableArray<T>> setter) where T : BoundOperation, IPhpOperation
         {
             var visited = VisitImmutableArray(value);
             if (visited != value)
@@ -73,7 +73,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        private void VisitAndUpdate<T1, T2>(ImmutableArray<KeyValuePair<T1, T2>> value, Action<ImmutableArray<KeyValuePair<T1, T2>>> setter)
+        public void VisitAndUpdate<T1, T2>(ImmutableArray<KeyValuePair<T1, T2>> value, Action<ImmutableArray<KeyValuePair<T1, T2>>> setter)
             where T1 : BoundOperation, IPhpOperation
             where T2 : BoundOperation, IPhpOperation
         {

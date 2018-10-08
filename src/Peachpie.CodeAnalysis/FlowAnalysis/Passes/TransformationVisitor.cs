@@ -13,6 +13,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         private readonly SourceRoutineSymbol _routine;
         private int _visitedColor;
         private TransformationRewriter _rewriter;
+        private bool _wasCfgTransformed;
 
         public static bool TryTransform(SourceRoutineSymbol routine)
         {
@@ -21,7 +22,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 var visitor = new TransformationVisitor(routine);
                 visitor.VisitCFG(routine.ControlFlowGraph);
 
-                return visitor._rewriter.WasTransformationPerformed;
+                return visitor._wasCfgTransformed || visitor._rewriter.WasTransformationPerformed;
             }
             else
             {
@@ -48,10 +49,45 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             if (x.Tag != _visitedColor)
             {
                 x.Tag = _visitedColor;
-                base.VisitCFGBlockInternal(x);
 
                 // TODO: Transform also conditions in edges etc.
                 _rewriter.VisitBlockStatement(x);
+
+                if (x.NextEdge != null && !IsEdgeVisitingStopped)
+                    x.NextEdge.Visit(this);
+            }
+        }
+
+        public override void VisitCFGConditionalEdge(ConditionalEdge x)
+        {
+            _rewriter.VisitAndUpdate(x.Condition, x.SetCondition);
+
+            if (x.Condition.ConstantValue.TryConvertToBool(out bool condValue))
+            {
+                if (condValue)
+                {
+                    if (x.FalseTarget != null)
+                    {
+                        _routine.ControlFlowGraph.UnreachableBlocks.Add(x.FalseTarget);
+                        x.FalseTarget = null;
+                    }
+                }
+                else
+                {
+                    if (x.TrueTarget != null)
+                    {
+                        _routine.ControlFlowGraph.UnreachableBlocks.Add(x.TrueTarget);
+                        x.TrueTarget = null;
+                    }
+                }
+
+                _wasCfgTransformed = true;
+                Accept(condValue ? x.TrueTarget : x.FalseTarget);
+            }
+            else
+            {
+                x.TrueTarget.Accept(this);
+                x.FalseTarget.Accept(this);
             }
         }
     }

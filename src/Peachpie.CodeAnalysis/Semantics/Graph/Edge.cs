@@ -136,10 +136,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     [DebuggerDisplay("ConditionalEdge")]
     public sealed partial class ConditionalEdge : Edge
     {
-        private readonly BoundBlock _true, _false;
-        private readonly BoundExpression _condition;
+        private BoundBlock _true, _false;
+        private BoundExpression _condition;
 
-        public override BoundBlock NextBlock => _false;
+        public override BoundBlock NextBlock => _false ?? _true;
 
         /// <summary>
         /// Gets a value indicating the condition within a loop construct.
@@ -147,14 +147,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public bool IsLoop { get; internal set; }
 
         /// <summary>
-        /// Target true block
+        /// Target true block. Might be null if <see cref="Condition"/> is always FALSE.
         /// </summary>
-        public BoundBlock/*!*/TrueTarget => _true;
+        public BoundBlock TrueTarget { get => _true; set => _true = value; }
 
         /// <summary>
-        /// Target false block.
+        /// Target false block. Might be null if <see cref="Condition"/> is always TRUE.
         /// </summary>
-        public BoundBlock/*!*/FalseTarget => _false;
+        public BoundBlock FalseTarget { get => _false; set => _false = value; }
 
         internal ConditionalEdge(BoundBlock source, BoundBlock @true, BoundBlock @false, BoundExpression cond)
             : base(source)
@@ -171,7 +171,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// All target blocks.
         /// </summary>
-        public override IEnumerable<BoundBlock> Targets => new BoundBlock[] { _true, _false };
+        public override IEnumerable<BoundBlock> Targets => 
+            _true != null
+            ? (_false != null ? new BoundBlock[] { _true, _false } : new BoundBlock[] { _true })
+            : new BoundBlock[] { _false };
 
         public override bool IsConditional
         {
@@ -179,6 +182,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         }
 
         public override BoundExpression Condition => _condition;
+
+        public void SetCondition(BoundExpression condition) => _condition = condition;
 
         /// <summary>
         /// Visits the object by given visitor.
