@@ -73,6 +73,11 @@ namespace Peachpie.DiagnosticTests
             _tctx = x.FlowContext?.TypeRefContext;
             _color = x.NewColor();
             base.VisitCFG(x);
+
+            foreach (var block in x.UnreachableBlocks)
+            {
+                block.Accept(this);
+            }
         }
 
         protected override void VisitCFGBlockInternal(BoundBlock x)
