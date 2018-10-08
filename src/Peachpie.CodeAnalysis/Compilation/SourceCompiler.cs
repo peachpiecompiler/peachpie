@@ -214,15 +214,22 @@ namespace Pchp.CodeAnalysis
 
         internal void TransformMethods()
         {
-            // TODO: Run the analysis again on the changed methods and possibly iterate it
+            // TODO: Iterate the transformation cycle
             this.WalkMethods(this.TransformRoutine, allowParallel: true);
+
+            // Run the analysis again on the changed methods
+            _worklist.DoAll(concurrent: ConcurrentBuild);
         }
 
         private void TransformRoutine(SourceRoutineSymbol routine)
         {
             Contract.ThrowIfNull(routine);
 
-            TransformationVisitor.TryTransform(routine);
+            if (TransformationVisitor.TryTransform(routine))
+            {
+                routine.ControlFlowGraph.FlowContext.InvalidateAnalysis();
+                _worklist.Enqueue(routine.ControlFlowGraph.Start);
+            }
         }
 
         internal void EmitMethodBodies()

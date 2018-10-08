@@ -204,9 +204,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         }
 
         /// <summary>
-        /// Increment the current version of the analysis, should be called whenever the routine is transformed.
+        /// Discard the current flow analysis information, should be called whenever the routine is transformed.
         /// </summary>
-        public void IncreaseVersion() => _version++;
+        /// <remarks>
+        /// It is expected to be called on a routine with a CFG, hence no abstract methods etc.
+        /// </remarks>
+        public void InvalidateAnalysis()
+        {
+            Debug.Assert(Routine?.ControlFlowGraph != null);
+
+            // By incrementing the version, the current flow states won't be valid any longer
+            _version++;
+
+            // Revert the information regarding the return type to the default state
+            ReturnType = default;
+            Routine.IsReturnAnalysed = false;
+
+            // Recreate the entry state to enable another analysis
+            Routine.ControlFlowGraph.Start.FlowState = StateBinder.CreateInitialState(_routine, this);
+        }
 
         #endregion
     }
