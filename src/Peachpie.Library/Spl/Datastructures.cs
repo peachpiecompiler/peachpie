@@ -274,6 +274,9 @@ namespace Pchp.Library.Spl
 
     #region SplDoublyLinkedList
 
+    /// <summary>
+    /// The SplDoublyLinkedList class provides the main functionalities of a doubly linked list.
+    /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplDoublyLinkedList : Iterator, ArrayAccess, Countable
     {
@@ -366,7 +369,6 @@ namespace Pchp.Library.Spl
         public virtual void setIteratorMode(int mode) => throw new NotImplementedException();
     }
 
-
     #endregion
 
     #region SplPriorityQueue
@@ -394,7 +396,6 @@ namespace Pchp.Library.Spl
         public virtual PhpValue top() => throw new NotImplementedException();
         public virtual bool valid() => throw new NotImplementedException();
     }
-
 
     #endregion
 }
