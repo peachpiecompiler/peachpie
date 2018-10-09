@@ -207,7 +207,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Discard the current flow analysis information, should be called whenever the routine is transformed.
         /// </summary>
         /// <remarks>
-        /// It is expected to be called on a routine with a CFG, hence no abstract methods etc.
+        /// It is expected to be called either on a context without a routine (parameter initializers etc.) or
+        /// on a routine with a CFG, hence no abstract methods etc.
         /// </remarks>
         public void InvalidateAnalysis()
         {
@@ -218,10 +219,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // Revert the information regarding the return type to the default state
             ReturnType = default;
-            Routine.IsReturnAnalysed = false;
 
-            // Recreate the entry state to enable another analysis
-            Routine.ControlFlowGraph.Start.FlowState = StateBinder.CreateInitialState(_routine, this);
+            // TODO: Recreate the state also in the case of a standalone expression (such as a parameter initializer)
+            if (_routine != null)
+            {
+                _routine.IsReturnAnalysed = false;
+
+                // Recreate the entry state to enable another analysis
+                _routine.ControlFlowGraph.Start.FlowState = StateBinder.CreateInitialState(_routine, this);
+            }
         }
 
         #endregion

@@ -54,6 +54,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         readonly ConcurrentDictionary<T, object> _dirtyCallBlocks = new ConcurrentDictionary<T, object>();
 
+        readonly ConcurrentDictionary<FlowContext, object> _contextsToInvalidate = new ConcurrentDictionary<FlowContext, object>();
+
         ///// <summary>
         ///// Adds an analysis driver into the list of analyzers to be performed on bound operations.
         ///// </summary>
@@ -115,7 +117,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var caller = callingBlock.FlowState?.Routine;
             if (caller == null || _callGraph.GetCalleeEdges(caller).All(edge => edge.Callee.IsReturnAnalysed))
             {
-                Enqueue(callingBlock);
+                if (callingBlock.FlowState.Version >= updatedExit.FlowState.Version)
+                {
+                    Enqueue(callingBlock);
+                }
+                else
+                {
+                    // The enqueued blocks will be analysed in the next round, with the flow states already invalidated
+                    if (caller == null)
+                        Enqueue(callingBlock);
+                    else
+                        Enqueue((T)caller.ControlFlowGraph.Start);
+
+                    _contextsToInvalidate.TryAdd(callingBlock.FlowState.FlowContext, null);
+                }
             }
             else
             {
@@ -174,6 +189,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         Process(todoBlocks[i]);
                     }
                 }
+
+                // Invalidate analysis of any methods whose callees have changed
+                foreach (var ctx in _contextsToInvalidate.Keys)
+                {
+                    ctx.InvalidateAnalysis();
+                }
+                _contextsToInvalidate.Clear();
             }
         }
 
