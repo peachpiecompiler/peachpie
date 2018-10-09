@@ -274,6 +274,9 @@ namespace Pchp.Library.Spl
         // LinkedList holding the values for the doubly linked list
         LinkedList<PhpValue> baseList;
 
+        // The current node used for iteration
+        LinkedListNode<PhpValue> currentNode;
+
         public SplDoublyLinkedList()
         {
             __construct();
@@ -330,7 +333,11 @@ namespace Pchp.Library.Spl
             baseList.RemoveLast();
             return value;
         }
-        public virtual void prev() => throw new NotImplementedException();
+        public virtual void prev()
+        {
+            if (valid())
+                currentNode = currentNode.Previous;
+        }
         public virtual void push(PhpValue value)
         {
             baseList.AddLast(value);
@@ -338,7 +345,13 @@ namespace Pchp.Library.Spl
         public virtual string serialize() => throw new NotImplementedException();
         public virtual void setIteratorMode(long mode) => throw new NotImplementedException();
         public virtual PhpValue shift() => throw new NotImplementedException();
-        public virtual PhpValue top() => throw new NotImplementedException();
+        public virtual PhpValue top()
+        {
+            if (baseList.Count == 0)
+                throw new RuntimeException("The list is empty");
+
+            return baseList.Last();
+        }
         public virtual void unserialize(string serialized) => throw new NotImplementedException();
         public virtual void unshift(PhpValue value) => throw new NotImplementedException();
 
@@ -396,17 +409,21 @@ namespace Pchp.Library.Spl
 
         public void rewind()
         {
-            throw new NotImplementedException();
+            if (baseList.Count > 0)
+                currentNode = baseList.First;
+            else
+                currentNode = null;
         }
 
         public void next()
         {
-            throw new NotImplementedException();
+            if (valid())
+                currentNode = currentNode.Next;
         }
 
         public bool valid()
         {
-            throw new NotImplementedException();
+            return (baseList.Count > 0 && currentNode != null);
         }
 
         public PhpValue key()
@@ -416,7 +433,7 @@ namespace Pchp.Library.Spl
 
         public PhpValue current()
         {
-            throw new NotImplementedException();
+            return valid() ? currentNode.Value : PhpValue.Null;
         }
 
         private LinkedListNode<PhpValue> GetNodeAtIndex(PhpValue index)
