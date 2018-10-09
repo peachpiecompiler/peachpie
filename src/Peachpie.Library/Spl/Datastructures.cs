@@ -274,19 +274,25 @@ namespace Pchp.Library.Spl
         // LinkedList holding the values for the doubly linked list
         LinkedList<PhpValue> baseList;
 
+        public SplDoublyLinkedList()
+        {
+            __construct();
+        }
+
         public void __construct()
         {
             baseList = new LinkedList<PhpValue>();
         }
         public virtual void add(PhpValue index, PhpValue newval)
         {
-            if (!index.IsInteger())
-                throw new OutOfRangeException("Argument index cannot be parsed as an integer");
+            int indexBefore = -1;
+            if (index.IsInteger())
+                indexBefore = (int)index.ToLong();
+            else
+                if (!Int32.TryParse(index.ToString(), out indexBefore))
+                throw new OutOfRangeException("Index could not be parsed as an integer.");
 
-            var indexBefore = index.ToLong();
-            if (index < 0 || index > baseList.Count())
-                throw new OutOfRangeException("Argument index out of range");
-
+            //Special cases of addin the first or last item have to be taken care of separately
             if (index == 0)
             {
                 baseList.AddFirst(newval);
@@ -300,11 +306,8 @@ namespace Pchp.Library.Spl
             else
                 indexBefore--;
 
-            LinkedListNode<PhpValue> elementBefore = baseList.First;
-            for (int i = 0; i < indexBefore; i++)
-                elementBefore = elementBefore.Next;
-
-            baseList.AddAfter(elementBefore, newval);
+            var nodeBefore = GetNodeAtIndex(indexBefore);
+            baseList.AddAfter(nodeBefore, newval);
         }
         public virtual PhpValue bottom()
         {
@@ -341,12 +344,14 @@ namespace Pchp.Library.Spl
 
         public virtual long count()
         {
-            return baseList.Count();
+            return baseList.Count;
         }
 
         public PhpValue offsetGet(PhpValue offset)
         {
-            throw new NotImplementedException();
+            var node = GetNodeAtIndex(offset);
+
+            return node.Value;
         }
 
         public void offsetSet(PhpValue offset, PhpValue value)
@@ -387,6 +392,30 @@ namespace Pchp.Library.Spl
         public PhpValue current()
         {
             throw new NotImplementedException();
+        }
+
+        private LinkedListNode<PhpValue> GetNodeAtIndex(PhpValue index)
+        {
+            int indexInt = -1;
+            if (index.IsInteger())
+                indexInt = (int)index.ToLong();
+            else
+                if (!Int32.TryParse(index.ToString(), out indexInt))
+                throw new OutOfRangeException("Index could not be parsed as an integer.");
+
+            return GetNodeAtIndex(index);
+        }
+
+        private LinkedListNode<PhpValue> GetNodeAtIndex(int index)
+        {
+            if (index < 0 || index > baseList.Count())
+                throw new OutOfRangeException("Index out of range");
+
+            LinkedListNode<PhpValue> element = baseList.First;
+            for (int i = 0; i < index; i++)
+                element = element.Next;
+
+            return element;
         }
     }
 
