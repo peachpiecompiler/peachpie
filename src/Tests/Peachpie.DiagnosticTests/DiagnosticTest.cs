@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using Pchp.CodeAnalysis;
@@ -22,7 +23,8 @@ namespace Peachpie.DiagnosticTests
 
         private static readonly Regex DiagnosticAnnotationRegex = new Regex(@"/\*!([A-Z]*[0-9]*)!\*/");
         private static readonly Regex TypeAnnotationRegex = new Regex(@"/\*\|([^/]*)\|\*/");
-
+        private static readonly Regex RoutinePropertiesRegex = new Regex(@"/\*{version:([0-9]+)}\*/");
+        
         public DiagnosticTest(ITestOutputHelper output)
         {
             _output = output;
@@ -61,6 +63,13 @@ namespace Peachpie.DiagnosticTests
                         .Concat(compilation.UserDeclaredTypes.Select(type => SymbolsSelector.Select(type)))    // type declarations
                         .SelectMany(enumerators => enumerators);    // IEnumerable<IEnumerable<T>> => IEnumerable<T>
                 isCorrect &= CheckTypes(syntaxTree, symbolsInfo, expectedTypes);
+            }
+
+            // Gather and check routine properties if there are any annotations
+            var expectedRoutineProps = RoutinePropertiesRegex.Matches(code);
+            if (expectedRoutineProps.Count > 0)
+            {
+                isCorrect &= CheckRoutineProperties(syntaxTree, compilation.SourceSymbolCollection.AllRoutines, expectedRoutineProps);
             }
 
             Assert.True(isCorrect);
@@ -222,6 +231,41 @@ namespace Peachpie.DiagnosticTests
 	        {
                 return null;
             }
+        }
+
+        private bool CheckRoutineProperties(PhpSyntaxTree syntaxTree, IEnumerable<SourceRoutineSymbol> userDeclaredRoutines, MatchCollection expectedRoutineProps)
+        {
+            var positionRoutineMap = new Dictionary<int, SourceRoutineSymbol>(
+                from routine in userDeclaredRoutines
+                let position = (routine.Syntax as FunctionDecl)?.ParametersSpan.End ?? (routine.Syntax as MethodDecl)?.ParametersSpan.End
+                where position != null
+                select new KeyValuePair<int, SourceRoutineSymbol>(position.Value, routine));
+
+            // Routine properties are voluntary; therefore, check only the specified ones
+            bool isCorrect = true;
+            foreach (Match match in expectedRoutineProps)
+            {
+                int expectedPos = match.Index;
+                if (!positionRoutineMap.TryGetValue(expectedPos, out var routine))
+                {
+                    var linePos = GetLinePosition(syntaxTree.GetLineSpan(match.GetTextSpan()));
+                    _output.WriteLine($"Cannot get routine information for properties on {linePos.Line},{linePos.Character}");
+                    isCorrect = false;
+                    continue;
+                }
+
+                int expectedVersion = int.Parse(match.Groups[1].Value);
+                int actualVersion = routine.ControlFlowGraph.FlowContext.Version;
+                if (expectedVersion != actualVersion)
+                {
+                    var linePos = GetLinePosition(syntaxTree.GetLineSpan(match.GetTextSpan()));
+                    _output.WriteLine(
+                        $"Wrong final flow analysis version {actualVersion} instead of {expectedVersion} of the routine {routine.Name} on {linePos.Line},{linePos.Character}");
+                    isCorrect = false;
+                }
+            }
+
+            return isCorrect;
         }
 
         private static PhpCompilation CreateEmptyCompilation()
