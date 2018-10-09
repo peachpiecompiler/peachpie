@@ -403,7 +403,7 @@ namespace Pchp.Library.Spl
                 if (!Int32.TryParse(index.ToString(), out indexInt))
                 throw new OutOfRangeException("Index could not be parsed as an integer.");
 
-            return GetNodeAtIndex(index);
+            return GetNodeAtIndex(indexInt);
         }
 
         private LinkedListNode<PhpValue> GetNodeAtIndex(int index)
