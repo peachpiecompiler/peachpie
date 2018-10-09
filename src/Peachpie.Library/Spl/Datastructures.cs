@@ -351,22 +351,47 @@ namespace Pchp.Library.Spl
         {
             var node = GetNodeAtIndex(offset);
 
-            return node.Value;
+            Debug.Assert(node != null);
+
+            if (node != null)
+                return node.Value;
+            else
+                return PhpValue.Null;
         }
 
         public void offsetSet(PhpValue offset, PhpValue value)
         {
-            throw new NotImplementedException();
+            var node = GetNodeAtIndex(offset);
+
+            Debug.Assert(node != null);
+
+            if (node != null)
+                node.Value = value;
         }
 
         public void offsetUnset(PhpValue offset)
         {
-            throw new NotImplementedException();
+            var node = GetNodeAtIndex(offset);
+
+            Debug.Assert(node != null);
+
+            if (node != null)
+                baseList.Remove(node);
         }
 
         public bool offsetExists(PhpValue offset)
         {
-            throw new NotImplementedException();
+            int offsetInt = -1;
+            if (offset.IsInteger())
+                offsetInt = (int)offset.ToLong();
+            else
+                if (!Int32.TryParse(offset.ToString(), out offsetInt))
+                throw new OutOfRangeException("Offset could not be parsed as an integer.");
+
+            if (offsetInt < 0 || offsetInt >= baseList.Count)
+                return false;
+            else
+                return true;
         }
 
         public void rewind()
