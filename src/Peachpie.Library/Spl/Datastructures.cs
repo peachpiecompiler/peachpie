@@ -271,14 +271,67 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplDoublyLinkedList : Iterator, ArrayAccess, Countable
     {
-        public void __construct() => throw new NotImplementedException();
-        public virtual void add(PhpValue index, PhpValue newval) => throw new NotImplementedException();
-        public virtual PhpValue bottom() => throw new NotImplementedException();
+        // LinkedList holding the values for the doubly linked list
+        LinkedList<PhpValue> baseList;
+
+        public void __construct()
+        {
+            baseList = new LinkedList<PhpValue>();
+        }
+        public virtual void add(PhpValue index, PhpValue newval)
+        {
+            if (!index.IsInteger())
+                throw new OutOfRangeException("Argument index cannot be parsed as an integer");
+
+            var indexBefore = index.ToLong();
+            if (index < 0 || index > baseList.Count())
+                throw new OutOfRangeException("Argument index out of range");
+
+            if (index == 0)
+            {
+                baseList.AddFirst(newval);
+                return;
+            }
+            else if (index == baseList.Count())
+            {
+                baseList.AddLast(newval);
+                return;
+            }
+            else
+                indexBefore--;
+
+            LinkedListNode<PhpValue> elementBefore = baseList.First;
+            for (int i = 0; i < indexBefore; i++)
+                elementBefore = elementBefore.Next;
+
+            baseList.AddAfter(elementBefore, newval);
+        }
+        public virtual PhpValue bottom()
+        {
+            if (baseList.Count == 0)
+                throw new RuntimeException("The list is empty");
+
+            return baseList.First();
+        }
         public virtual int getIteratorMode() => throw new NotImplementedException();
-        public virtual bool isEmpty() => throw new NotImplementedException();
-        public virtual PhpValue pop() => throw new NotImplementedException();
+        public virtual bool isEmpty()
+        {
+            return baseList.Count == 0;
+        }
+        public virtual PhpValue pop()
+        {
+            if (baseList.Count == 0)
+                throw new RuntimeException("The list is empty");
+
+            var value = baseList.Last();
+            baseList.RemoveLast();
+            return value;
+        }
         public virtual void prev() => throw new NotImplementedException();
-        public virtual void push(PhpValue value) => throw new NotImplementedException();
+        public virtual void push(PhpValue value)
+        {
+            baseList.AddLast(value);
+        }
         public virtual string serialize() => throw new NotImplementedException();
         public virtual void setIteratorMode(long mode) => throw new NotImplementedException();
         public virtual PhpValue shift() => throw new NotImplementedException();
@@ -286,7 +339,10 @@ namespace Pchp.Library.Spl
         public virtual void unserialize(string serialized) => throw new NotImplementedException();
         public virtual void unshift(PhpValue value) => throw new NotImplementedException();
 
-        public virtual long count() => throw new NotImplementedException();
+        public virtual long count()
+        {
+            return baseList.Count();
+        }
 
         public PhpValue offsetGet(PhpValue offset)
         {
