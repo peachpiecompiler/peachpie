@@ -117,8 +117,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var caller = callingBlock.FlowState?.Routine;
             if (caller == null || _callGraph.GetCalleeEdges(caller).All(edge => edge.Callee.IsReturnAnalysed))
             {
-                if (callingBlock.FlowState.Version >= updatedExit.FlowState.Version)
+                if (callingBlock.FlowState == null)
                 {
+                    // The caller had lower version and has been already invalidated, no need to re-enqueue this block
+                    return;
+                }
+                else if (callingBlock.FlowState.Version >= updatedExit.FlowState.Version)
+                {
+                    // The caller has the same version, enqueue it for the next round
                     Enqueue(callingBlock);
                 }
                 else
