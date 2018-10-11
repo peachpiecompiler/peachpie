@@ -48,10 +48,14 @@ namespace Peachpie.AspNetCore.Web
         static RequestContextCore CreateNewContext(this HttpContext httpctx)
         {
             var hostingEnv = (IHostingEnvironment)httpctx.RequestServices.GetService(typeof(IHostingEnvironment));
+            var rootpath = GetDefaultRootPath(hostingEnv);
 
             return new RequestContextCore(httpctx,
-                rootPath: GetDefaultRootPath(hostingEnv),
-                encoding: Encoding.UTF8);
+                rootPath: rootpath,
+                encoding: Encoding.UTF8)
+            {
+                WorkingDirectory = rootpath,
+            };
         }
     }
 }
