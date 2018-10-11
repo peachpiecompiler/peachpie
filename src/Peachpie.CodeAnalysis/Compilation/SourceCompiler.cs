@@ -13,6 +13,7 @@ using Pchp.CodeAnalysis.Symbols;
 using Pchp.CodeAnalysis.Utilities;
 using Roslyn.Utilities;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -215,20 +216,18 @@ namespace Pchp.CodeAnalysis
         internal void TransformMethods()
         {
             // TODO: Iterate the transformation cycle
-            this.WalkMethods(this.TransformRoutine, allowParallel: true);
+            var updatedRoutines = new ConcurrentBag<SourceRoutineSymbol>();
+            this.WalkMethods(m =>
+                {
+                    if (TransformationVisitor.TryTransform(m))
+                        updatedRoutines.Add(m);
+                },
+                allowParallel: true);
 
             // Run the analysis again on the changed methods
-            _worklist.DoAll(concurrent: ConcurrentBuild);
-        }
-
-        private void TransformRoutine(SourceRoutineSymbol routine)
-        {
-            Contract.ThrowIfNull(routine);
-
-            if (TransformationVisitor.TryTransform(routine))
+            if (updatedRoutines.Count > 0)
             {
-                routine.ControlFlowGraph.FlowContext.InvalidateAnalysis();
-                _worklist.Enqueue(routine.ControlFlowGraph.Start);
+                _worklist.Update(updatedRoutines, concurrent: ConcurrentBuild); 
             }
         }
 

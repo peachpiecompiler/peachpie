@@ -25,3 +25,6 @@ function baz(int $arg)/*{version:1}*/ {
   return $arg + 1;
 }
 
+function main()/*{version:0}*/ {
+  echo baz(42);
+}
