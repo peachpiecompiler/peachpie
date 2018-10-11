@@ -9,14 +9,14 @@ function bar($a)/*{version:1}*/ {
 }
 
 function baz($a)/*{version:1}*/ {
-  return bar($a);
+  return /*|string|*/bar($a);
 }
 
 function foo($a)/*{version:2}*/ {
   if ($a) {
-    return bar($a);
+    return /*|string|*/bar($a);
   } else {
-    return baz($a);
+    return /*|string|*/baz($a);
   }
 }
 

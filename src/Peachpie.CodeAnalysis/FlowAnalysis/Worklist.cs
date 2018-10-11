@@ -189,13 +189,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         Process(todoBlocks[i]);
                     }
                 }
-
-                //// Invalidate analysis of any methods whose callees have changed
-                //foreach (var ctx in _contextsToInvalidate.Keys)
-                //{
-                //    ctx.InvalidateAnalysis();
-                //}
-                //_contextsToInvalidate.Clear();
             }
         }
 
