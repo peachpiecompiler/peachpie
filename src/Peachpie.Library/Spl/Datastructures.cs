@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -271,6 +272,7 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplDoublyLinkedList : Iterator, ArrayAccess, Countable
     {
+        protected readonly Context _ctx;
 
         /// <summary>
         /// SPL collections Iterator Mode constants
@@ -302,6 +304,11 @@ namespace Pchp.Library.Spl
         //Current iteration mode
         private SPL_ITERATOR_MODE iteratorMode = IT_MODE_KEEP;
 
+        public SplDoublyLinkedList(Context ctx)
+        {
+            _ctx = ctx;
+            __construct();
+        }
         public SplDoublyLinkedList()
         {
             __construct();
@@ -373,7 +380,6 @@ namespace Pchp.Library.Spl
         {
             baseList.AddLast(value);
         }
-        public virtual string serialize() => throw new NotImplementedException();
         public virtual void setIteratorMode(long mode)
         {
             if(Enum.IsDefined(typeof(SPL_ITERATOR_MODE), mode))
@@ -400,7 +406,6 @@ namespace Pchp.Library.Spl
 
             return baseList.Last();
         }
-        public virtual void unserialize(string serialized) => throw new NotImplementedException();
         public virtual void unshift(PhpValue value)
         {
             baseList.AddFirst(value);
@@ -496,6 +501,86 @@ namespace Pchp.Library.Spl
             return valid() ? currentNode.Value : PhpValue.Null;
         }
 
+        /// <summary>
+        /// Gets a serialized string representation of the List.
+        /// </summary>
+        public virtual string serialize(Context _ctx)
+        {
+            // i:{iterator_mode};:i:{item0};:i:{item1},...;
+
+            var result = new PhpString.Blob();
+            var serializer = PhpSerialization.PhpSerializer.Instance;
+
+            // x:i:{iterator_mode};
+            result.Append("i:");
+            result.Append(serializer.Serialize(_ctx, (int)this.iteratorMode, default(RuntimeTypeHandle)));
+            result.Append(";");
+
+            // :i:{item}
+            foreach (var item in baseList)
+            {
+                result.Append(":i:");
+                result.Append(serializer.Serialize(_ctx, item, default(RuntimeTypeHandle)));
+                result.Append(";");
+            }
+
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// Constructs a new SplDoublyLinkedList out of a serialized string representation
+        /// </summary>
+        public virtual SplDoublyLinkedList unserialize(PhpString serialized)
+        {
+            // i:{iterator_mode};:i:{item0};:i:{item1},...;
+
+            if (serialized.Length < 12) throw new ArgumentException(nameof(serialized)); // quick check
+
+            SplDoublyLinkedList sdll = new SplDoublyLinkedList(_ctx);
+
+            var stream = new MemoryStream(serialized.ToBytes(_ctx));
+            try
+            {
+                PhpValue tmp;
+                var reader = new PhpSerialization.PhpSerializer.ObjectReader(_ctx, stream, default(RuntimeTypeHandle));
+
+                // i:
+                if (stream.ReadByte() != 'i') throw new InvalidDataException();
+                if (stream.ReadByte() != ':') throw new InvalidDataException();
+
+                tmp = reader.Deserialize();
+                if (tmp.TypeCode != PhpTypeCode.Long) throw new InvalidDataException();
+                int iteratorMode = (int)tmp.ToLong();
+
+                // skip the ';'
+                if (stream.ReadByte() != ';') throw new InvalidDataException();
+
+                // :i:{item}
+                while (stream.ReadByte() != ':')
+                {
+                    if (stream.ReadByte() != 'i') throw new InvalidDataException();
+                    if (stream.ReadByte() != ':') throw new InvalidDataException();
+
+                    var obj = reader.Deserialize();
+
+                    sdll.push(obj);
+
+                    if (stream.ReadByte() != ';')
+                        throw new InvalidDataException();
+                }
+
+            }
+            catch (Exception e)
+            {
+                PhpException.Throw(PhpError.Notice,
+                    Resources.LibResources.deserialization_failed, e.Message, stream.Position.ToString(), stream.Length.ToString());
+            }
+
+            return sdll;
+        }
+
+        #endregion
+
         private LinkedListNode<PhpValue> GetNodeAtIndex(PhpValue index)
         {
             int indexInt = -1;
@@ -521,9 +606,6 @@ namespace Pchp.Library.Spl
         }
     }
 
-
-    #endregion
-
     #region SplQueue
 
     /// <summary>
@@ -532,11 +614,6 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplQueue : SplDoublyLinkedList, Iterator, ArrayAccess, Countable
     {
-        public const int IT_MODE_LIFO = 2;
-        public const int IT_MODE_FIFO = 0;
-        public const int IT_MODE_DELETE = 1;
-        public const int IT_MODE_KEEP = 0;
-
         public virtual PhpValue dequeue() => throw new NotImplementedException();
         public virtual void enqueue(PhpValue value) => throw new NotImplementedException();
         public virtual void setIteratorMode(int mode) => throw new NotImplementedException();
