@@ -372,8 +372,16 @@ namespace Pchp.Library.Spl
         {
             if (valid())
             {
-                currentNode = currentNode.Previous;
-                index--;
+                if(iteratorMode == SPL_ITERATOR_MODE.IT_MODE_DELETE)
+                {
+                    var newNode = currentNode.Previous;
+                    baseList.Remove(currentNode);
+                    currentNode = newNode;
+                } else
+                {
+                    currentNode = currentNode.Previous;
+                    index--;
+                }
             }
         }
         public virtual void push(PhpValue value)
@@ -481,8 +489,16 @@ namespace Pchp.Library.Spl
         {
             if (valid())
             {
-                currentNode = currentNode.Next;
-                index++;
+                if (iteratorMode == SPL_ITERATOR_MODE.IT_MODE_DELETE)
+                {
+                    var newNode = currentNode.Next;
+                    baseList.Remove(currentNode);
+                    currentNode = newNode;
+                } else
+                {
+                    currentNode = currentNode.Next;
+                    index++;
+                }
             }
         }
 
