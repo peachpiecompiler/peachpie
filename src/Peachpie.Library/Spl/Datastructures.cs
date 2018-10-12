@@ -274,8 +274,10 @@ namespace Pchp.Library.Spl
         // LinkedList holding the values for the doubly linked list
         LinkedList<PhpValue> baseList;
 
-        // The current node used for iteration
+        // The current node used for iteration, and its index
         LinkedListNode<PhpValue> currentNode;
+
+        private int index = -1;
 
         public SplDoublyLinkedList()
         {
@@ -336,7 +338,10 @@ namespace Pchp.Library.Spl
         public virtual void prev()
         {
             if (valid())
+            {
                 currentNode = currentNode.Previous;
+                index--;
+            }
         }
         public virtual void push(PhpValue value)
         {
@@ -344,7 +349,15 @@ namespace Pchp.Library.Spl
         }
         public virtual string serialize() => throw new NotImplementedException();
         public virtual void setIteratorMode(long mode) => throw new NotImplementedException();
-        public virtual PhpValue shift() => throw new NotImplementedException();
+        public virtual PhpValue shift()
+        {
+            if (baseList.Count == 0)
+                throw new RuntimeException("The list is empty");
+
+            var value = baseList.First();
+            baseList.RemoveFirst();
+            return value;
+        }
         public virtual PhpValue top()
         {
             if (baseList.Count == 0)
@@ -353,7 +366,10 @@ namespace Pchp.Library.Spl
             return baseList.Last();
         }
         public virtual void unserialize(string serialized) => throw new NotImplementedException();
-        public virtual void unshift(PhpValue value) => throw new NotImplementedException();
+        public virtual void unshift(PhpValue value)
+        {
+            baseList.AddFirst(value);
+        }
 
         public virtual long count()
         {
@@ -410,15 +426,24 @@ namespace Pchp.Library.Spl
         public void rewind()
         {
             if (baseList.Count > 0)
+            {
                 currentNode = baseList.First;
+                index = 0;
+            }
             else
+            {
                 currentNode = null;
+                index = -1;
+            }
         }
 
         public void next()
         {
             if (valid())
+            {
                 currentNode = currentNode.Next;
+                index++;
+            }
         }
 
         public bool valid()
@@ -428,7 +453,7 @@ namespace Pchp.Library.Spl
 
         public PhpValue key()
         {
-            throw new NotImplementedException();
+            return index;
         }
 
         public PhpValue current()
