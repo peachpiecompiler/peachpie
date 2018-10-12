@@ -271,13 +271,36 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplDoublyLinkedList : Iterator, ArrayAccess, Countable
     {
+
+        /// <summary>
+        /// SPL collections Iterator Mode constants
+        /// </summary>
+        [PhpHidden]
+        public enum SPL_ITERATOR_MODE
+        {
+            IT_MODE_KEEP = 0,
+
+            IT_MODE_FIFO = 0,
+
+            IT_MODE_DELETE = 1,
+
+            IT_MODE_LIFO = 2
+        }
+
+        public const int IT_MODE_KEEP = 0;
+        public const int IT_MODE_FIFO = 0;
+        public const int IT_MODE_DELETE = 1;
+        public const int IT_MODE_LIFO = 2;
+
         // LinkedList holding the values for the doubly linked list
         LinkedList<PhpValue> baseList;
 
         // The current node used for iteration, and its index
         LinkedListNode<PhpValue> currentNode;
-
         private int index = -1;
+
+        //Current iteration mode
+        private SPL_ITERATOR_MODE iteratorMode = IT_MODE_KEEP;
 
         public SplDoublyLinkedList()
         {
@@ -321,7 +344,10 @@ namespace Pchp.Library.Spl
 
             return baseList.First();
         }
-        public virtual int getIteratorMode() => throw new NotImplementedException();
+        public virtual int getIteratorMode()
+        {
+            return (int)iteratorMode;
+        }
         public virtual bool isEmpty()
         {
             return baseList.Count == 0;
@@ -348,7 +374,16 @@ namespace Pchp.Library.Spl
             baseList.AddLast(value);
         }
         public virtual string serialize() => throw new NotImplementedException();
-        public virtual void setIteratorMode(long mode) => throw new NotImplementedException();
+        public virtual void setIteratorMode(long mode)
+        {
+            if(Enum.IsDefined(typeof(SPL_ITERATOR_MODE), mode))
+            {
+                iteratorMode = (SPL_ITERATOR_MODE)mode;
+            } else
+            {
+                throw new ArgumentException("Argument value is not an iterator mode.");
+            }
+        }
         public virtual PhpValue shift()
         {
             if (baseList.Count == 0)
