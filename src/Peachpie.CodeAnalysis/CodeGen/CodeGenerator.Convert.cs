@@ -307,7 +307,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     else if (from.IsNullableType())
                     {
                         // Template: CodeGenerator.EmitNullableCastToNull(from, false);
-                        throw new NotImplementedException();
+                        throw ExceptionUtilities.UnexpectedValue(from);
                     }
                     else
                     {
