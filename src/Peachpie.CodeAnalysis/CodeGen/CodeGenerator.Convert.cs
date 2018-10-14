@@ -307,7 +307,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     else if (from.IsNullableType())
                     {
                         // Template: CodeGenerator.EmitNullableCastToNull(from, false);
-                        throw new NotImplementedException();
+                        throw ExceptionUtilities.UnexpectedValue(from);
                     }
                     else
                     {
@@ -436,22 +436,18 @@ namespace Pchp.CodeAnalysis.CodeGen
             switch (from.SpecialType)
             {
                 case SpecialType.System_Boolean:
-                    _il.EmitOpCode(ILOpCode.Conv_i8);   // bool -> Int64
-                    return;
-
+                case SpecialType.System_Double:
                 case SpecialType.System_Int32:
-                    _il.EmitOpCode(ILOpCode.Conv_i8);   // Int32 -> Int64
+                    // i4|r4 : i8
+                    _il.EmitOpCode(ILOpCode.Conv_i8);
                     return;
 
                 case SpecialType.System_Int64:
                     // nop
                     return;
 
-                case SpecialType.System_Double:
-                    _il.EmitOpCode(ILOpCode.Conv_i8);   // double -> int64
-                    break;
-
                 case SpecialType.System_String:
+                    // ToLong( <string> ) : long
                     EmitCall(ILOpCode.Call, CoreMethods.Operators.ToLong_String)
                         .Expect(SpecialType.System_Int64);
                     break;
@@ -486,13 +482,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                             .Expect(SpecialType.System_Int64);
                         return;
                     }
-                    else if (from == CoreTypes.PhpValue)
+                    else
                     {
+                        // ToLong( <PhpValue> ) : i8
+                        EmitConvertToPhpValue(from, fromHint);
                         EmitCall(ILOpCode.Call, CoreMethods.Operators.ToLong_PhpValue);
                         return;
                     }
-
-                    throw this.NotImplementedException($"(long){(from as NamedTypeSymbol)?.GetFullName() ?? from.Name}");
             }
         }
 
