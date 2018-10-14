@@ -279,62 +279,56 @@ namespace Pchp.Library.Spl
         /// </summary>
         [PhpHidden]
         [Flags]
-        public enum SPL_ITERATOR_MODE
+        public enum SplIteratorMode
         {
-            IT_MODE_KEEP = 0,
-
-            IT_MODE_FIFO = 0,
-
-            IT_MODE_DELETE = 1,
-
-            IT_MODE_LIFO = 2
+            Lifo = 2,
+            Fifo = 0,
+            Delete = 1,
+            Keep = 0
         }
 
-        public const int IT_MODE_KEEP = 0;
-        public const int IT_MODE_FIFO = 0;
-        public const int IT_MODE_DELETE = 1;
-        public const int IT_MODE_LIFO = 2;
+        public const int IT_MODE_LIFO = (int)SplIteratorMode.Lifo;
+        public const int IT_MODE_FIFO = (int)SplIteratorMode.Fifo;
+        public const int IT_MODE_DELETE = (int)SplIteratorMode.Delete;
+        public const int IT_MODE_KEEP = (int)SplIteratorMode.Keep;
 
-        // LinkedList holding the values for the doubly linked list
-        LinkedList<PhpValue> baseList;
+        // The underlying LinkedList holding the values of the PHP doubly linked list
+        private readonly LinkedList<PhpValue> baseList;
 
         // The current node used for iteration, and its index
         LinkedListNode<PhpValue> currentNode;
         private int index = -1;
 
         //Current iteration mode
-        private SPL_ITERATOR_MODE iteratorMode = IT_MODE_KEEP;
+        private SplIteratorMode iteratorMode = SplIteratorMode.Keep;
 
         public SplDoublyLinkedList(Context ctx)
         {
             _ctx = ctx;
+            baseList = new LinkedList<PhpValue>();
             __construct();
         }
         public SplDoublyLinkedList()
         {
+            baseList = new LinkedList<PhpValue>();
             __construct();
         }
 
         public void __construct()
-        {
-            baseList = new LinkedList<PhpValue>();
-        }
+        {}
+
         public virtual void add(PhpValue index, PhpValue newval)
         {
-            int indexBefore = -1;
-            if (index.IsInteger())
-                indexBefore = (int)index.ToLong();
-            else
-                if (!Int32.TryParse(index.ToString(), out indexBefore))
-                throw new OutOfRangeException("Index could not be parsed as an integer.");
+            long indexBefore = -1;
+            index.IsLong(out indexBefore);
 
             //Special cases of addin the first or last item have to be taken care of separately
-            if (index == 0)
+            if (indexBefore == 0)
             {
                 baseList.AddFirst(newval);
                 return;
             }
-            else if (index == baseList.Count())
+            else if (indexBefore == baseList.Count())
             {
                 baseList.AddLast(newval);
                 return;
@@ -382,9 +376,9 @@ namespace Pchp.Library.Spl
         }
         public virtual void setIteratorMode(long mode)
         {
-            if(Enum.IsDefined(typeof(SPL_ITERATOR_MODE), (SPL_ITERATOR_MODE)mode))
+            if(Enum.IsDefined(typeof(SplIteratorMode), (SplIteratorMode)mode))
             {
-                iteratorMode = (SPL_ITERATOR_MODE)mode;
+                iteratorMode = (SplIteratorMode)mode;
             } else
             {
                 throw new ArgumentException("Argument value is not an iterator mode.");
@@ -467,12 +461,12 @@ namespace Pchp.Library.Spl
         {
             if (baseList.Count > 0)
             {
-                if (iteratorMode.HasFlag(SPL_ITERATOR_MODE.IT_MODE_LIFO))
+                if (iteratorMode.HasFlag(SplIteratorMode.Lifo))
                 {
                     currentNode = baseList.Last;
                     index = baseList.Count - 1;
                 }
-                else if (iteratorMode.HasFlag(SPL_ITERATOR_MODE.IT_MODE_FIFO)) {
+                else if (iteratorMode.HasFlag(SplIteratorMode.Fifo)) {
                     currentNode = baseList.First;
                     index = 0;
                 }
@@ -550,7 +544,7 @@ namespace Pchp.Library.Spl
                 tmp = reader.Deserialize();
                 if (tmp.TypeCode != PhpTypeCode.Long) throw new InvalidDataException();
                 int iteratorMode = (int)tmp.ToLong();
-                this.iteratorMode = (SPL_ITERATOR_MODE)iteratorMode;
+                this.iteratorMode = (SplIteratorMode)iteratorMode;
 
                 // :{item}
                 while (stream.ReadByte() != -1)
@@ -573,9 +567,9 @@ namespace Pchp.Library.Spl
         {
             LinkedListNode<PhpValue> newNode = null;
 
-            if (iteratorMode.HasFlag(SPL_ITERATOR_MODE.IT_MODE_LIFO) && forwardDirection)
+            if (iteratorMode.HasFlag(SplIteratorMode.Lifo) && forwardDirection)
                 newNode = currentNode.Previous;
-            else if (iteratorMode.HasFlag(SPL_ITERATOR_MODE.IT_MODE_FIFO))
+            else if (iteratorMode.HasFlag(SplIteratorMode.Fifo))
                 if (forwardDirection)
                     newNode = currentNode.Next;
                 else
@@ -583,7 +577,7 @@ namespace Pchp.Library.Spl
             else
                 throw new RuntimeException("Current iterator_mode value is not supported.");
 
-            if (iteratorMode.HasFlag(SPL_ITERATOR_MODE.IT_MODE_DELETE))
+            if (iteratorMode.HasFlag(SplIteratorMode.Delete))
             {
                 baseList.Remove(currentNode);
                 currentNode = newNode;
@@ -592,7 +586,7 @@ namespace Pchp.Library.Spl
             {
                 currentNode = newNode;
 
-                if (iteratorMode.HasFlag(SPL_ITERATOR_MODE.IT_MODE_LIFO) == forwardDirection)
+                if (iteratorMode.HasFlag(SplIteratorMode.Lifo) == forwardDirection)
                     index--;
                 else
                     index++;
@@ -601,17 +595,13 @@ namespace Pchp.Library.Spl
 
         private LinkedListNode<PhpValue> GetNodeAtIndex(PhpValue index)
         {
-            int indexInt = -1;
-            if (index.IsInteger())
-                indexInt = (int)index.ToLong();
-            else
-                if (!Int32.TryParse(index.ToString(), out indexInt))
-                throw new OutOfRangeException("Index could not be parsed as an integer.");
+            long indexLong = -1;
+            index.IsLong(out indexLong);
 
-            return GetNodeAtIndex(indexInt);
+            return GetNodeAtIndex(indexLong);
         }
 
-        private LinkedListNode<PhpValue> GetNodeAtIndex(int index)
+        private LinkedListNode<PhpValue> GetNodeAtIndex(long index)
         {
             if (index < 0 || index > baseList.Count())
                 throw new OutOfRangeException("Index out of range");
