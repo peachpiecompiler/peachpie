@@ -264,21 +264,21 @@ namespace Pchp.Library.Spl
 
             // x:i:{count};
             result.Append("x:");
-            result.Append(serializer.Serialize(_ctx, (PhpValue)storage.Count, default(RuntimeTypeHandle)));
+            result.Append(serializer.Serialize(_ctx, storage.Count, default));
 
             // {item},{value};
             using (var e = storage.GetFastEnumerator())
                 while (e.MoveNext())
                 {
-                    result.Append(serializer.Serialize(_ctx, e.CurrentValue.Array[Keys.Object], default(RuntimeTypeHandle)));
+                    result.Append(serializer.Serialize(_ctx, e.CurrentValue.Array[Keys.Object], default));
                     result.Append(",");
-                    result.Append(serializer.Serialize(_ctx, e.CurrentValue.Array[Keys.Info], default(RuntimeTypeHandle)));
+                    result.Append(serializer.Serialize(_ctx, e.CurrentValue.Array[Keys.Info], default));
                     result.Append(";");
                 }
 
             // m:{array of runtime members}
             result.Append("m:");
-            result.Append(serializer.Serialize(_ctx, (PhpValue)(__peach__runtimeFields ?? PhpArray.Empty), default(RuntimeTypeHandle)));
+            result.Append(serializer.Serialize(_ctx, (__peach__runtimeFields ?? PhpArray.Empty), default));
 
             //
             return new PhpString(result);
@@ -295,16 +295,16 @@ namespace Pchp.Library.Spl
             var stream = new MemoryStream(serialized.ToBytes(_ctx));
             try
             {
-                PhpValue tmp;
-                var reader = new PhpSerialization.PhpSerializer.ObjectReader(_ctx, stream, default(RuntimeTypeHandle));
+                var reader = new PhpSerialization.PhpSerializer.ObjectReader(_ctx, stream, default);
 
                 // x:
                 if (stream.ReadByte() != 'x' || stream.ReadByte() != ':') throw new InvalidDataException();
                 // i:{count};
-                tmp = reader.Deserialize();
-                if (tmp.TypeCode != PhpTypeCode.Long) throw new InvalidDataException();
-                var count = tmp.ToLong();
-                if (count < 0) throw new InvalidDataException(nameof(count));
+                var tmp = reader.Deserialize();
+                if (!tmp.IsLong(out var count) || count < 0)
+                {
+                    throw new InvalidDataException();
+                }
 
                 stream.Seek(-1, SeekOrigin.Current);    // back to `;`
 

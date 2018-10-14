@@ -272,7 +272,10 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplDoublyLinkedList : Iterator, ArrayAccess, Countable
     {
-        protected readonly Context _ctx;
+        /// <summary>
+        /// Runtime context.
+        /// </summary>
+        protected readonly Context/*!*/_ctx;
 
         /// <summary>
         /// SPL collections Iterator Mode constants
@@ -292,77 +295,77 @@ namespace Pchp.Library.Spl
         public const int IT_MODE_DELETE = (int)SplIteratorMode.Delete;
         public const int IT_MODE_KEEP = (int)SplIteratorMode.Keep;
 
-        // The underlying LinkedList holding the values of the PHP doubly linked list
-        private readonly LinkedList<PhpValue> baseList;
+        /// <summary>
+        /// The underlying LinkedList holding the values of the PHP doubly linked list.
+        /// </summary>
+        private readonly LinkedList<PhpValue> _baseList = new LinkedList<PhpValue>();
 
-        // The current node used for iteration, and its index
+        /// <summary>
+        /// The current node used for iteration, and its index.
+        /// </summary>
         LinkedListNode<PhpValue> currentNode;
         private int index = -1;
 
-        //Current iteration mode
+        /// <summary>
+        /// Current iteration mode.
+        /// </summary>
         private SplIteratorMode iteratorMode = SplIteratorMode.Keep;
 
         public SplDoublyLinkedList(Context ctx)
         {
             _ctx = ctx;
-            baseList = new LinkedList<PhpValue>();
-            __construct();
-        }
-        public SplDoublyLinkedList()
-        {
-            baseList = new LinkedList<PhpValue>();
-            __construct();
         }
 
-        public void __construct()
-        {}
+        public void __construct() { /* nothing */ }
 
         public virtual void add(PhpValue index, PhpValue newval)
         {
-            long indexBefore = -1;
-            index.IsLong(out indexBefore);
+            var indexval = GetValidIndex(index);
 
-            //Special cases of addin the first or last item have to be taken care of separately
-            if (indexBefore == 0)
+            // Special cases of addin the first or last item have to be taken care of separately
+            if (indexval == 0)
             {
-                baseList.AddFirst(newval);
-                return;
+                _baseList.AddFirst(newval);
             }
-            else if (indexBefore == baseList.Count())
+            else if (indexval == _baseList.Count())
             {
-                baseList.AddLast(newval);
-                return;
+                _baseList.AddLast(newval);
             }
             else
-                indexBefore--;
-
-            var nodeBefore = GetNodeAtIndex(indexBefore);
-            baseList.AddAfter(nodeBefore,   newval);
+            {
+                var nodeBefore = GetNodeAtIndex(indexval - 1);
+                _baseList.AddAfter(nodeBefore, newval);
+            }
         }
+
         public virtual PhpValue bottom()
         {
-            if (baseList.Count == 0)
+            if (_baseList.Count == 0)
                 throw new RuntimeException("The list is empty");
 
-            return baseList.First();
+            return _baseList.First();
         }
+
         public virtual int getIteratorMode()
         {
             return (int)iteratorMode;
         }
+
         public virtual bool isEmpty()
         {
-            return baseList.Count == 0;
+            return _baseList.Count == 0;
         }
+
         public virtual PhpValue pop()
         {
-            if (baseList.Count == 0)
+            if (_baseList.Count == 0)
                 throw new RuntimeException("The list is empty");
 
-            var value = baseList.Last();
-            baseList.RemoveLast();
+            var value = _baseList.Last();
+            _baseList.RemoveLast();
             return value;
         }
+
         public virtual void prev()
         {
             if (valid())
@@ -370,44 +373,50 @@ namespace Pchp.Library.Spl
                 MoveCurrentPointer(false);
             }
         }
+
         public virtual void push(PhpValue value)
         {
-            baseList.AddLast(value);
+            _baseList.AddLast(value);
         }
+
         public virtual void setIteratorMode(long mode)
         {
-            if(Enum.IsDefined(typeof(SplIteratorMode), (SplIteratorMode)mode))
+            if (Enum.IsDefined(typeof(SplIteratorMode), (SplIteratorMode)mode))
             {
                 iteratorMode = (SplIteratorMode)mode;
-            } else
+            }
+            else
             {
                 throw new ArgumentException("Argument value is not an iterator mode.");
             }
         }
+
         public virtual PhpValue shift()
         {
-            if (baseList.Count == 0)
+            if (_baseList.Count == 0)
                 throw new RuntimeException("The list is empty");
 
-            var value = baseList.First();
-            baseList.RemoveFirst();
+            var value = _baseList.First();
+            _baseList.RemoveFirst();
             return value;
         }
+
         public virtual PhpValue top()
         {
-            if (baseList.Count == 0)
+            if (_baseList.Count == 0)
                 throw new RuntimeException("The list is empty");
 
-            return baseList.Last();
+            return _baseList.Last();
         }
+
         public virtual void unshift(PhpValue value)
         {
-            baseList.AddFirst(value);
+            _baseList.AddFirst(value);
         }
 
         public virtual long count()
         {
-            return baseList.Count;
+            return _baseList.Count;
         }
 
         public PhpValue offsetGet(PhpValue offset)
@@ -439,39 +448,35 @@ namespace Pchp.Library.Spl
             Debug.Assert(node != null);
 
             if (node != null)
-                baseList.Remove(node);
+                _baseList.Remove(node);
         }
 
         public bool offsetExists(PhpValue offset)
         {
-            int offsetInt = -1;
-            if (offset.IsInteger())
-                offsetInt = (int)offset.ToLong();
-            else
-                if (!Int32.TryParse(offset.ToString(), out offsetInt))
+            if (!offset.TryToIntStringKey(out var key) || key.IsString)
                 throw new OutOfRangeException("Offset could not be parsed as an integer.");
 
-            if (offsetInt < 0 || offsetInt >= baseList.Count)
-                return false;
-            else
-                return true;
+            var offsetInt = key.Integer;
+
+            return offsetInt >= 0 && offsetInt < count();
         }
 
         public void rewind()
         {
-            if (baseList.Count > 0)
+            if (_baseList.Count != 0)
             {
-                if (iteratorMode.HasFlag(SplIteratorMode.Lifo))
+                if ((iteratorMode & SplIteratorMode.Lifo) != 0)
                 {
-                    currentNode = baseList.Last;
-                    index = baseList.Count - 1;
+                    currentNode = _baseList.Last;
+                    index = _baseList.Count - 1;
                 }
-                else if (iteratorMode.HasFlag(SplIteratorMode.Fifo)) {
-                    currentNode = baseList.First;
+                else // if (iteratorMode.HasFlag(SplIteratorMode.Fifo))
+                {
+                    currentNode = _baseList.First;
                     index = 0;
                 }
-                else
-                    throw new RuntimeException("Current iterator_mode value is not supported.");
+                //else
+                //    throw new RuntimeException("Current iterator_mode value is not supported.");
             }
             else
             {
@@ -490,7 +495,7 @@ namespace Pchp.Library.Spl
 
         public bool valid()
         {
-            return (baseList.Count > 0 && currentNode != null);
+            return _baseList.Count != 0 && currentNode != null;
         }
 
         public PhpValue key()
@@ -506,23 +511,24 @@ namespace Pchp.Library.Spl
         /// <summary>
         /// Gets a serialized string representation of the List.
         /// </summary>
-        public virtual PhpString serialize(Context _ctx)
+        public virtual PhpString serialize()
         {
-            // i:{iterator_mode};:{item0};:{item1},...;
+            // {i:iterator_mode};:{item0};:{item1},...;
 
             var result = new PhpString.Blob();
             var serializer = PhpSerialization.PhpSerializer.Instance;
 
             // i:(iterator_mode};
-            result.Append(serializer.Serialize(_ctx, (int)this.iteratorMode, default(RuntimeTypeHandle)));
+            result.Append(serializer.Serialize(_ctx, (int)this.iteratorMode, default));
 
             // :{item}
-            foreach (var item in baseList)
+            foreach (var item in _baseList)
             {
                 result.Append(":");
-                result.Append(serializer.Serialize(_ctx, item, default(RuntimeTypeHandle)));
+                result.Append(serializer.Serialize(_ctx, item, default));
             }
 
+            //
             return new PhpString(result);
         }
 
@@ -531,27 +537,27 @@ namespace Pchp.Library.Spl
         /// </summary>
         public virtual void unserialize(PhpString serialized)
         {
-            // i:{iterator_mode};:s{item0};:{item1},...;
+            // {i:iterator_mode};:{item0};:{item1};...
 
-            if (serialized.Length < 12) throw new ArgumentException(nameof(serialized)); // quick check
+            if (serialized.Length < 4) throw new ArgumentException(nameof(serialized)); // quick check
 
             var stream = new MemoryStream(serialized.ToBytes(_ctx));
             try
             {
-                PhpValue tmp;
-                var reader = new PhpSerialization.PhpSerializer.ObjectReader(_ctx, stream, default(RuntimeTypeHandle));
+                var reader = new PhpSerialization.PhpSerializer.ObjectReader(_ctx, stream, default);
 
-                tmp = reader.Deserialize();
-                if (tmp.TypeCode != PhpTypeCode.Long) throw new InvalidDataException();
-                int iteratorMode = (int)tmp.ToLong();
-                this.iteratorMode = (SplIteratorMode)iteratorMode;
+                // i:iteratormode
+                var tmp = reader.Deserialize();
+                if (!tmp.IsLong(out var imode))
+                {
+                    throw new InvalidDataException();
+                }
+                this.iteratorMode = (SplIteratorMode)imode;
 
                 // :{item}
-                while (stream.ReadByte() != -1)
+                while (stream.ReadByte() == ':')
                 {
-                    var obj = reader.Deserialize();
-
-                    this.push(obj);
+                    this.push(reader.Deserialize());
                 }
             }
             catch (Exception e)
@@ -561,25 +567,29 @@ namespace Pchp.Library.Spl
             }
         }
 
-        #endregion
-
         private void MoveCurrentPointer(bool forwardDirection)
         {
             LinkedListNode<PhpValue> newNode = null;
 
             if (iteratorMode.HasFlag(SplIteratorMode.Lifo) && forwardDirection)
+            {
                 newNode = currentNode.Previous;
+            }
             else if (iteratorMode.HasFlag(SplIteratorMode.Fifo))
+            {
                 if (forwardDirection)
                     newNode = currentNode.Next;
                 else
                     newNode = currentNode.Previous;
+            }
             else
+            {
                 throw new RuntimeException("Current iterator_mode value is not supported.");
+            }
 
             if (iteratorMode.HasFlag(SplIteratorMode.Delete))
             {
-                baseList.Remove(currentNode);
+                _baseList.Remove(currentNode);
                 currentNode = newNode;
             }
             else
@@ -593,26 +603,41 @@ namespace Pchp.Library.Spl
             }
         }
 
+        /// <summary>
+        /// Gets index in valid range from given value or throws.
+        /// </summary>
+        /// <returns>Node index.</returns>
+        /// <exception cref="OutOfRangeException">Given index is out of range or invalid.</exception>
+        long GetValidIndex(PhpValue index)
+        {
+            if (index.TryToIntStringKey(out var key) && key.IsInteger && key.Integer >= 0 && key.Integer <= count()) // PHP's key conversion // == count() allowed
+            {
+                return key.Integer;
+            }
+            else
+            {
+                throw new OutOfRangeException(); // Offset invalid or out of range
+            }
+        }
+
         private LinkedListNode<PhpValue> GetNodeAtIndex(PhpValue index)
         {
-            long indexLong = -1;
-            index.IsLong(out indexLong);
-
-            return GetNodeAtIndex(indexLong);
+            return GetNodeAtIndex(GetValidIndex(index));
         }
 
-        private LinkedListNode<PhpValue> GetNodeAtIndex(long index)
+        private LinkedListNode<PhpValue>/*!*/GetNodeAtIndex(long index)
         {
-            if (index < 0 || index > baseList.Count())
-                throw new OutOfRangeException("Index out of range");
+            var node = _baseList.First;
+            while (index-- > 0 && node != null)
+            {
+                node = node.Next;
+            }
 
-            LinkedListNode<PhpValue> element = baseList.First;
-            for (int i = 0; i < index; i++)
-                element = element.Next;
-
-            return element;
+            return node ?? throw new OutOfRangeException();
         }
     }
+
+    #endregion
 
     #region SplQueue
 
@@ -622,6 +647,8 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplQueue : SplDoublyLinkedList, Iterator, ArrayAccess, Countable
     {
+        public SplQueue(Context ctx) : base(ctx) { }
+
         public virtual PhpValue dequeue() => throw new NotImplementedException();
         public virtual void enqueue(PhpValue value) => throw new NotImplementedException();
         public virtual void setIteratorMode(int mode) => throw new NotImplementedException();
@@ -637,6 +664,8 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplStack : SplDoublyLinkedList, Iterator, ArrayAccess, Countable
     {
+        public SplStack(Context ctx) : base(ctx) { }
+
         public virtual void setIteratorMode(int mode) => throw new NotImplementedException();
     }
 
