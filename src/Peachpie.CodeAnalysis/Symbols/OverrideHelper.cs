@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using Devsense.PHP.Syntax;
@@ -16,7 +17,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Conversion value used for overload resolution.
         /// </summary>
         [Flags]
-        enum ConversionCost : ushort
+        public enum ConversionCost : ushort
         {
             /// <summary>
             /// No conversion is needed. Best case.
@@ -213,6 +214,65 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Calculates override cost, i.e. whether the override is possible and its value.
         /// In case of more possible overrides, the one with better cost is selected.
         /// </summary>
+        public static ConversionCost OverrideCost(ImmutableArray<ParameterSymbol> givenps, ImmutableArray<ParameterSymbol> baseps)
+        {
+            //
+            var result = ConversionCost.Pass;
+
+            // NOTE: there shouldn't be any implicit parameters (Context and LateBoundType are known from this instance)
+
+            for (int i = 0; i < givenps.Length; i++)
+            {
+                if (i < baseps.Length)
+                {
+                    var p = givenps[i];
+                    var pbase = baseps[i];
+
+                    if (p.Type == pbase.Type)
+                    {
+                        result |= ConversionCost.Pass; // 0
+                    }
+                    else if (p.Type.Is_PhpValue() || p.Type.Is_PhpAlias())
+                    {
+                        result |= ConversionCost.ImplicitCast;
+                    }
+                    else if (p.Type.IsOfType(pbase.Type))
+                    {
+                        result |= ConversionCost.PassCostly;
+                    }
+                    else
+                    {
+                        // TODO: conversions between int, long, double
+                        result |= ConversionCost.NoConversion;
+                    }
+                }
+                else
+                {
+                    result |= ConversionCost.TooManyArgs;
+                    break;
+                }
+            }
+
+            for (int i = givenps.Length; i < baseps.Length; i++)
+            {
+                if (baseps[i].IsOptional || baseps[i].Initializer != null)
+                {
+                    result |= ConversionCost.DefaultValue;
+                }
+                else
+                {
+                    result |= ConversionCost.MissingArgs;
+                }
+            }
+
+            //
+            return result;
+        }
+
+        /// <summary>
+        /// Calculates override cost, i.e. whether the override is possible and its value.
+        /// In case of more possible overrides, the one with better cost is selected.
+        /// </summary>
         /// <param name="method">Source method.</param>
         /// <param name="basemethod">A hypothetical base method.</param>
         /// <returns></returns>
@@ -234,48 +294,7 @@ namespace Pchp.CodeAnalysis.Symbols
             //    return ConversionCost.ImplicitCast;
             //}
 
-            //
-            var ps = method.Parameters;
-            var psbase = basemethod.Parameters;
-
-            //
-            var result = ConversionCost.Pass;
-
-            // NOTE: there shouldn't be any implicit parameters (Context and LateBoundType are known from this instance)
-
-            for (int i = 0; i < ps.Length; i++)
-            {
-                if (i < psbase.Length)
-                {
-                    var p = ps[i];
-                    var pbase = psbase[i];
-
-                    if (p.Type != pbase.Type)
-                    {
-                        if (p.Type.IsOfType(pbase.Type) || p.Type.Is_PhpValue() || p.Type.Is_PhpAlias())
-                        {
-                            result |= ConversionCost.ImplicitCast;
-                        }
-                        else
-                        {
-                            result |= ConversionCost.NoConversion;
-                        }
-                    }
-                }
-                else
-                {
-                    result |= ConversionCost.TooManyArgs;
-                }
-            }
-
-            //
-            if (ps.Length < psbase.Length)
-            {
-                result |= ConversionCost.MissingArgs;
-            }
-
-            //
-            return result;
+            return OverrideCost(method.Parameters, basemethod.Parameters);
         }
 
         /// <summary>
