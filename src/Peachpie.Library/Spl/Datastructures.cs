@@ -342,7 +342,7 @@ namespace Pchp.Library.Spl
                 indexBefore--;
 
             var nodeBefore = GetNodeAtIndex(indexBefore);
-            baseList.AddAfter(nodeBefore, newval);
+            baseList.AddAfter(nodeBefore,   newval);
         }
         public virtual PhpValue bottom()
         {
@@ -390,7 +390,7 @@ namespace Pchp.Library.Spl
         }
         public virtual void setIteratorMode(long mode)
         {
-            if(Enum.IsDefined(typeof(SPL_ITERATOR_MODE), mode))
+            if(Enum.IsDefined(typeof(SPL_ITERATOR_MODE), (SPL_ITERATOR_MODE)mode))
             {
                 iteratorMode = (SPL_ITERATOR_MODE)mode;
             } else
@@ -520,7 +520,7 @@ namespace Pchp.Library.Spl
         /// <summary>
         /// Gets a serialized string representation of the List.
         /// </summary>
-        public virtual string serialize(Context _ctx)
+        public virtual PhpString serialize(Context _ctx)
         {
             // i:{iterator_mode};:i:{item0};:i:{item1},...;
 
@@ -528,19 +528,19 @@ namespace Pchp.Library.Spl
             var serializer = PhpSerialization.PhpSerializer.Instance;
 
             // x:i:{iterator_mode};
-            result.Append("i:");
+            //result.Append("i:");
             result.Append(serializer.Serialize(_ctx, (int)this.iteratorMode, default(RuntimeTypeHandle)));
-            result.Append(";");
+            //result.Append(";");
 
             // :i:{item}
             foreach (var item in baseList)
             {
-                result.Append(":i:");
+                result.Append(":");
                 result.Append(serializer.Serialize(_ctx, item, default(RuntimeTypeHandle)));
-                result.Append(";");
+                //result.Append(";");
             }
 
-            return result.ToString();
+            return new PhpString(result);
         }
 
         /// <summary>
@@ -561,15 +561,15 @@ namespace Pchp.Library.Spl
                 var reader = new PhpSerialization.PhpSerializer.ObjectReader(_ctx, stream, default(RuntimeTypeHandle));
 
                 // i:
-                if (stream.ReadByte() != 'i') throw new InvalidDataException();
-                if (stream.ReadByte() != ':') throw new InvalidDataException();
+                //if (stream.ReadByte() != 'i') throw new InvalidDataException();
+                //if (stream.ReadByte() != ':') throw new InvalidDataException();
 
                 tmp = reader.Deserialize();
                 if (tmp.TypeCode != PhpTypeCode.Long) throw new InvalidDataException();
                 int iteratorMode = (int)tmp.ToLong();
 
                 // skip the ';'
-                if (stream.ReadByte() != ';') throw new InvalidDataException();
+                //if (stream.ReadByte() != ';') throw new InvalidDataException();
 
                 // :i:{item}
                 while (stream.ReadByte() != ':')
