@@ -134,9 +134,21 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (fullname == CoreTypes.PhpTypeAttributeFullName)
                 {
                     var args = a.CommonConstructorArguments;
-                    typename = (string)args[0].Value;
-                    filename = (string)args[1].Value;
-                    return true;
+                    if (args.Length == 2)
+                    {
+                        typename = (string)args[0].Value;
+                        filename = (string)args[1].Value;
+                        return true;
+                    }
+                    else if (args.Length == 1)
+                    {
+                        typename = filename = null;
+
+                        var phptype = (int)args[0].Value; // see PhpTypeAttribute.PhpTypeName
+                        if (phptype == 1/*PhpTypeName.NameOnly*/) typename = symbol.Name;
+
+                        return true;
+                    }
                 }
             }
 

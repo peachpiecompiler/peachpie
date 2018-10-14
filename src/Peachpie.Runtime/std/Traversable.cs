@@ -5,7 +5,7 @@ using Pchp.Core;
 /// Built-in marker interface.
 /// </summary>
 [EditorBrowsable(EditorBrowsableState.Advanced)]
-[PhpType("[name]")]
+[PhpType(PhpTypeAttribute.InheritName)]
 public interface Traversable
 {
 }
