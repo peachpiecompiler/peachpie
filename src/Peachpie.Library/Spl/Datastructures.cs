@@ -278,6 +278,7 @@ namespace Pchp.Library.Spl
         /// SPL collections Iterator Mode constants
         /// </summary>
         [PhpHidden]
+        [Flags]
         public enum SPL_ITERATOR_MODE
         {
             IT_MODE_KEEP = 0,
@@ -372,16 +373,7 @@ namespace Pchp.Library.Spl
         {
             if (valid())
             {
-                if(iteratorMode == SPL_ITERATOR_MODE.IT_MODE_DELETE)
-                {
-                    var newNode = currentNode.Previous;
-                    baseList.Remove(currentNode);
-                    currentNode = newNode;
-                } else
-                {
-                    currentNode = currentNode.Previous;
-                    index--;
-                }
+                MoveCurrentPointer(false);
             }
         }
         public virtual void push(PhpValue value)
@@ -475,8 +467,17 @@ namespace Pchp.Library.Spl
         {
             if (baseList.Count > 0)
             {
-                currentNode = baseList.First;
-                index = 0;
+                if (iteratorMode.HasFlag(SPL_ITERATOR_MODE.IT_MODE_LIFO))
+                {
+                    currentNode = baseList.Last;
+                    index = baseList.Count - 1;
+                }
+                else if (iteratorMode.HasFlag(SPL_ITERATOR_MODE.IT_MODE_FIFO)) {
+                    currentNode = baseList.First;
+                    index = 0;
+                }
+                else
+                    throw new RuntimeException("Current iterator_mode value is not supported.");
             }
             else
             {
@@ -489,16 +490,7 @@ namespace Pchp.Library.Spl
         {
             if (valid())
             {
-                if (iteratorMode == SPL_ITERATOR_MODE.IT_MODE_DELETE)
-                {
-                    var newNode = currentNode.Next;
-                    baseList.Remove(currentNode);
-                    currentNode = newNode;
-                } else
-                {
-                    currentNode = currentNode.Next;
-                    index++;
-                }
+                MoveCurrentPointer(true);
             }
         }
 
@@ -576,6 +568,36 @@ namespace Pchp.Library.Spl
         }
 
         #endregion
+
+        private void MoveCurrentPointer(bool forwardDirection)
+        {
+            LinkedListNode<PhpValue> newNode = null;
+
+            if (iteratorMode.HasFlag(SPL_ITERATOR_MODE.IT_MODE_LIFO) && forwardDirection)
+                newNode = currentNode.Previous;
+            else if (iteratorMode.HasFlag(SPL_ITERATOR_MODE.IT_MODE_FIFO))
+                if (forwardDirection)
+                    newNode = currentNode.Next;
+                else
+                    newNode = currentNode.Previous;
+            else
+                throw new RuntimeException("Current iterator_mode value is not supported.");
+
+            if (iteratorMode.HasFlag(SPL_ITERATOR_MODE.IT_MODE_DELETE))
+            {
+                baseList.Remove(currentNode);
+                currentNode = newNode;
+            }
+            else
+            {
+                currentNode = newNode;
+
+                if (iteratorMode.HasFlag(SPL_ITERATOR_MODE.IT_MODE_LIFO) == forwardDirection)
+                    index--;
+                else
+                    index++;
+            }
+        }
 
         private LinkedListNode<PhpValue> GetNodeAtIndex(PhpValue index)
         {
