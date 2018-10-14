@@ -522,37 +522,32 @@ namespace Pchp.Library.Spl
         /// </summary>
         public virtual PhpString serialize(Context _ctx)
         {
-            // i:{iterator_mode};:i:{item0};:i:{item1},...;
+            // i:{iterator_mode};:{item0};:{item1},...;
 
             var result = new PhpString.Blob();
             var serializer = PhpSerialization.PhpSerializer.Instance;
 
-            // x:i:{iterator_mode};
-            //result.Append("i:");
+            // i:(iterator_mode};
             result.Append(serializer.Serialize(_ctx, (int)this.iteratorMode, default(RuntimeTypeHandle)));
-            //result.Append(";");
 
-            // :i:{item}
+            // :{item}
             foreach (var item in baseList)
             {
                 result.Append(":");
                 result.Append(serializer.Serialize(_ctx, item, default(RuntimeTypeHandle)));
-                //result.Append(";");
             }
 
             return new PhpString(result);
         }
 
         /// <summary>
-        /// Constructs a new SplDoublyLinkedList out of a serialized string representation
+        /// Constructs the SplDoublyLinkedList out of a serialized string representation
         /// </summary>
-        public virtual SplDoublyLinkedList unserialize(PhpString serialized)
+        public virtual void unserialize(PhpString serialized)
         {
-            // i:{iterator_mode};:i:{item0};:i:{item1},...;
+            // i:{iterator_mode};:s{item0};:{item1},...;
 
             if (serialized.Length < 12) throw new ArgumentException(nameof(serialized)); // quick check
-
-            SplDoublyLinkedList sdll = new SplDoublyLinkedList(_ctx);
 
             var stream = new MemoryStream(serialized.ToBytes(_ctx));
             try
@@ -560,39 +555,24 @@ namespace Pchp.Library.Spl
                 PhpValue tmp;
                 var reader = new PhpSerialization.PhpSerializer.ObjectReader(_ctx, stream, default(RuntimeTypeHandle));
 
-                // i:
-                //if (stream.ReadByte() != 'i') throw new InvalidDataException();
-                //if (stream.ReadByte() != ':') throw new InvalidDataException();
-
                 tmp = reader.Deserialize();
                 if (tmp.TypeCode != PhpTypeCode.Long) throw new InvalidDataException();
                 int iteratorMode = (int)tmp.ToLong();
+                this.iteratorMode = (SPL_ITERATOR_MODE)iteratorMode;
 
-                // skip the ';'
-                //if (stream.ReadByte() != ';') throw new InvalidDataException();
-
-                // :i:{item}
-                while (stream.ReadByte() != ':')
+                // :{item}
+                while (stream.ReadByte() != -1)
                 {
-                    if (stream.ReadByte() != 'i') throw new InvalidDataException();
-                    if (stream.ReadByte() != ':') throw new InvalidDataException();
-
                     var obj = reader.Deserialize();
 
-                    sdll.push(obj);
-
-                    if (stream.ReadByte() != ';')
-                        throw new InvalidDataException();
+                    this.push(obj);
                 }
-
             }
             catch (Exception e)
             {
                 PhpException.Throw(PhpError.Notice,
                     Resources.LibResources.deserialization_failed, e.Message, stream.Position.ToString(), stream.Length.ToString());
             }
-
-            return sdll;
         }
 
         #endregion
