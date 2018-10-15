@@ -309,14 +309,14 @@ namespace Pchp.Library.Spl
         /// <summary>
         /// Current iteration mode.
         /// </summary>
-        private SplIteratorMode iteratorMode = SplIteratorMode.Keep;
+        protected SplIteratorMode iteratorMode = SplIteratorMode.Keep;
 
         public SplDoublyLinkedList(Context ctx)
         {
             _ctx = ctx;
         }
 
-        public void __construct() { /* nothing */ }
+        public virtual void __construct() { /* nothing */ }
 
         public virtual void add(PhpValue index, PhpValue newval)
         {
@@ -470,13 +470,11 @@ namespace Pchp.Library.Spl
                     currentNode = _baseList.Last;
                     index = _baseList.Count - 1;
                 }
-                else // if (iteratorMode.HasFlag(SplIteratorMode.Fifo))
+                else
                 {
                     currentNode = _baseList.First;
                     index = 0;
                 }
-                //else
-                //    throw new RuntimeException("Current iterator_mode value is not supported.");
             }
             else
             {
@@ -571,23 +569,19 @@ namespace Pchp.Library.Spl
         {
             LinkedListNode<PhpValue> newNode = null;
 
-            if (iteratorMode.HasFlag(SplIteratorMode.Lifo) && forwardDirection)
+            if (((iteratorMode & SplIteratorMode.Lifo) != 0) && forwardDirection)
             {
                 newNode = currentNode.Previous;
             }
-            else if (iteratorMode.HasFlag(SplIteratorMode.Fifo))
+            else
             {
                 if (forwardDirection)
                     newNode = currentNode.Next;
                 else
                     newNode = currentNode.Previous;
             }
-            else
-            {
-                throw new RuntimeException("Current iterator_mode value is not supported.");
-            }
 
-            if (iteratorMode.HasFlag(SplIteratorMode.Delete))
+            if ((iteratorMode & SplIteratorMode.Delete) != 0)
             {
                 _baseList.Remove(currentNode);
                 currentNode = newNode;
@@ -596,7 +590,7 @@ namespace Pchp.Library.Spl
             {
                 currentNode = newNode;
 
-                if (iteratorMode.HasFlag(SplIteratorMode.Lifo) == forwardDirection)
+                if (((iteratorMode & SplIteratorMode.Lifo) != 0) == forwardDirection)
                     index--;
                 else
                     index++;
@@ -666,7 +660,22 @@ namespace Pchp.Library.Spl
     {
         public SplStack(Context ctx) : base(ctx) { }
 
-        public virtual void setIteratorMode(int mode) => throw new NotImplementedException();
+        public override void __construct()
+        {
+            iteratorMode = SplIteratorMode.Keep | SplIteratorMode.Lifo;
+        }
+
+        public virtual void setIteratorMode(int mode)
+        {
+            if (Enum.IsDefined(typeof(SplIteratorMode), (SplIteratorMode)mode))
+            {
+                iteratorMode = ((SplIteratorMode)mode | SplIteratorMode.Lifo);
+            }
+            else
+            {
+                throw new ArgumentException("Argument value is not an iterator mode.");
+            }
+        }
     }
 
     #endregion
