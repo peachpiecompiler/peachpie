@@ -643,9 +643,26 @@ namespace Pchp.Library.Spl
     {
         public SplQueue(Context ctx) : base(ctx) { }
 
-        public virtual PhpValue dequeue() => throw new NotImplementedException();
-        public virtual void enqueue(PhpValue value) => throw new NotImplementedException();
-        public virtual void setIteratorMode(int mode) => throw new NotImplementedException();
+        public override void __construct()
+        {
+            iteratorMode = SplIteratorMode.Keep | SplIteratorMode.Fifo;
+        }
+        public virtual PhpValue dequeue() => shift();
+        public virtual void enqueue(PhpValue value) => push(value);
+        public virtual void setIteratorMode(int mode)
+        {
+            if (((SplIteratorMode)mode & SplIteratorMode.Lifo) != 0)
+                throw new RuntimeException("Iteration direction of SplQueue can not be changed to LIFO.");
+
+            if (Enum.IsDefined(typeof(SplIteratorMode), (SplIteratorMode)mode))
+            {
+                iteratorMode = ((SplIteratorMode)mode & SplIteratorMode.Delete);
+            }
+            else
+            {
+                throw new ArgumentException("Argument value is not an iterator mode.");
+            }
+        }
     }
 
     #endregion
@@ -667,6 +684,9 @@ namespace Pchp.Library.Spl
 
         public virtual void setIteratorMode(int mode)
         {
+            if (((SplIteratorMode)mode & SplIteratorMode.Lifo) == 0)
+                throw new RuntimeException("Iteration direction of SplQueue can not be changed to FIFO.");
+
             if (Enum.IsDefined(typeof(SplIteratorMode), (SplIteratorMode)mode))
             {
                 iteratorMode = ((SplIteratorMode)mode | SplIteratorMode.Lifo);
