@@ -381,7 +381,8 @@ namespace Pchp.Library.Spl
 
         public virtual void setIteratorMode(long mode)
         {
-            if (Enum.IsDefined(typeof(SplIteratorMode), (SplIteratorMode)mode))
+            // mode is within all possible combinations of SplIteratorMode
+            if (mode >= IT_MODE_KEEP && mode <= (IT_MODE_LIFO & IT_MODE_DELETE))
             {
                 iteratorMode = (SplIteratorMode)mode;
             }
@@ -654,7 +655,8 @@ namespace Pchp.Library.Spl
             if (((SplIteratorMode)mode & SplIteratorMode.Lifo) != 0)
                 throw new RuntimeException("Iteration direction of SplQueue can not be changed to LIFO.");
 
-            if (Enum.IsDefined(typeof(SplIteratorMode), (SplIteratorMode)mode))
+            // mode can only be set to values with SplIteratorMode.Lifo unset
+            if (mode >= IT_MODE_KEEP && mode <= IT_MODE_DELETE)
             {
                 iteratorMode = ((SplIteratorMode)mode & SplIteratorMode.Delete);
             }
@@ -687,7 +689,8 @@ namespace Pchp.Library.Spl
             if (((SplIteratorMode)mode & SplIteratorMode.Lifo) == 0)
                 throw new RuntimeException("Iteration direction of SplQueue can not be changed to FIFO.");
 
-            if (Enum.IsDefined(typeof(SplIteratorMode), (SplIteratorMode)mode))
+            // mode can only be set to values with SplIteratorMode.Lifo set
+            if (mode >= IT_MODE_KEEP && mode <= (IT_MODE_LIFO + IT_MODE_DELETE))
             {
                 iteratorMode = ((SplIteratorMode)mode | SplIteratorMode.Lifo);
             }
