@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MySqlConnector" Version="0.42.1" />
+    <PackageReference Include="MySqlConnector" Version="0.46.0" />
   </ItemGroup>
 
 </Project>
