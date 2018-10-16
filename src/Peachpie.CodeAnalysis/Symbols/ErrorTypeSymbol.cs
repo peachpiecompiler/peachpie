@@ -198,7 +198,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
     internal sealed class AmbiguousErrorTypeSymbol : ErrorTypeSymbol
     {
-        ImmutableArray<NamedTypeSymbol> _candidates;
+        internal ImmutableArray<NamedTypeSymbol> _candidates;
 
         public AmbiguousErrorTypeSymbol(ImmutableArray<NamedTypeSymbol> candidates)
         {

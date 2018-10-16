@@ -110,7 +110,22 @@ namespace Pchp.CodeAnalysis.Semantics.Model
                                 var qname = t.GetPhpTypeNameOrNull();
                                 if (!qname.IsEmpty())
                                 {
-                                    result[qname] = t;
+                                    NamedTypeSymbol tsymbol = t;
+
+                                    if (result.TryGetValue(qname, out var existing))
+                                    {
+                                        if (existing is AmbiguousErrorTypeSymbol ambiguous)
+                                        {
+                                            ambiguous._candidates = ambiguous._candidates.Add(t);
+                                            continue;
+                                        }
+                                        else
+                                        {
+                                            tsymbol = new AmbiguousErrorTypeSymbol(ImmutableArray.Create(existing, t));
+                                        }
+                                    }
+
+                                    result[qname] = tsymbol;
                                 }
                             }
                         }
@@ -169,7 +184,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
         /// Gets PHP types exported from referenced extension libraries and cor library.
         /// </summary>
         /// <returns></returns>
-        internal IEnumerable<NamedTypeSymbol> GetReferencedTypes() => ExportedTypes.Values;
+        internal IEnumerable<NamedTypeSymbol> GetReferencedTypes() => ExportedTypes.Values.Where(t => t.IsValidType() && !t.IsPhpUserType());
 
         #region ISemanticModel
 
