@@ -32,6 +32,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public abstract BoundBlock NextBlock { get; }
 
         /// <summary>
+        /// The block this edge is attached to.
+        /// </summary>
+        public BoundBlock Source { get; }
+
+        /// <summary>
         /// Gets value indicating whether the edge represents a conditional edge.
         /// </summary>
         public virtual bool IsConditional => false;
@@ -69,6 +74,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         internal Edge(BoundBlock/*!*/source)
         {
             Contract.ThrowIfNull(source);
+
+            Source = source;
         }
 
         protected void Connect(BoundBlock/*!*/source)
@@ -136,10 +143,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     [DebuggerDisplay("ConditionalEdge")]
     public sealed partial class ConditionalEdge : Edge
     {
-        private BoundBlock _true, _false;
-        private BoundExpression _condition;
+        private readonly BoundBlock _true, _false;
+        private readonly BoundExpression _condition;
 
-        public override BoundBlock NextBlock => _false ?? _true;
+        public override BoundBlock NextBlock => _false;
 
         /// <summary>
         /// Gets a value indicating the condition within a loop construct.
@@ -147,14 +154,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public bool IsLoop { get; internal set; }
 
         /// <summary>
-        /// Target true block. Might be null if <see cref="Condition"/> is always FALSE.
+        /// Target true block.
         /// </summary>
-        public BoundBlock TrueTarget { get => _true; set => _true = value; }
+        public BoundBlock/*!*/TrueTarget => _true;
 
         /// <summary>
-        /// Target false block. Might be null if <see cref="Condition"/> is always TRUE.
+        /// Target false block.
         /// </summary>
-        public BoundBlock FalseTarget { get => _false; set => _false = value; }
+        public BoundBlock/*!*/FalseTarget => _false;
 
         internal ConditionalEdge(BoundBlock source, BoundBlock @true, BoundBlock @false, BoundExpression cond)
             : base(source)
@@ -171,10 +178,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// All target blocks.
         /// </summary>
-        public override IEnumerable<BoundBlock> Targets => 
-            _true != null
-            ? (_false != null ? new BoundBlock[] { _true, _false } : new BoundBlock[] { _true })
-            : new BoundBlock[] { _false };
+        public override IEnumerable<BoundBlock> Targets => new BoundBlock[] { _true, _false };
 
         public override bool IsConditional
         {
@@ -182,8 +186,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         }
 
         public override BoundExpression Condition => _condition;
-
-        public void SetCondition(BoundExpression condition) => _condition = condition;
 
         /// <summary>
         /// Visits the object by given visitor.

@@ -42,11 +42,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 var unreachable = value ? x.FalseTarget : x.TrueTarget;
 
                 reachable.Accept(this);  // Process only the reachable branch
-
-                if (unreachable != null)    // It might have been already moved to unreachable blocks by code transformation
-                {
-                    _unreachables.Enqueue(unreachable); // remember possible unreachable block
-                }
+                _unreachables.Enqueue(unreachable); // remember possible unreachable block
             }
             else
 	        {

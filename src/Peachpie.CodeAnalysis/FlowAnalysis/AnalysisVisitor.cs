@@ -401,20 +401,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var state = _state;
 
             // true branch
-            if (x.TrueTarget != null)
-            {
-                _state = state.Clone();
-                VisitCondition(x.Condition, ConditionBranch.ToTrue);
-                TraverseToBlock(x, _state, x.TrueTarget);
-            }
+            _state = state.Clone();
+            VisitCondition(x.Condition, ConditionBranch.ToTrue);
+            TraverseToBlock(x, _state, x.TrueTarget);
 
             // false branch
-            if (x.FalseTarget != null)
-            {
-                _state = state.Clone();
-                VisitCondition(x.Condition, ConditionBranch.ToFalse);
-                TraverseToBlock(x, _state, x.FalseTarget);
-            }
+            _state = state.Clone();
+            VisitCondition(x.Condition, ConditionBranch.ToFalse);
+            TraverseToBlock(x, _state, x.FalseTarget);
         }
 
         public override void VisitCFGForeachEnumereeEdge(ForeachEnumereeEdge x)

@@ -60,29 +60,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         public override void VisitCFGConditionalEdge(ConditionalEdge x)
         {
-            _rewriter.VisitAndUpdate(x.Condition, x.SetCondition);
+            //_rewriter.VisitAndUpdate(x.Condition, x.SetCondition);
 
             if (x.Condition.ConstantValue.TryConvertToBool(out bool condValue))
             {
-                if (condValue)
-                {
-                    if (x.FalseTarget != null)
-                    {
-                        _routine.ControlFlowGraph.UnreachableBlocks.Add(x.FalseTarget);
-                        x.FalseTarget = null;
-                    }
-                }
-                else
-                {
-                    if (x.TrueTarget != null)
-                    {
-                        _routine.ControlFlowGraph.UnreachableBlocks.Add(x.TrueTarget);
-                        x.TrueTarget = null;
-                    }
-                }
+                var target = condValue ? x.TrueTarget : x.FalseTarget;
+                x.Source.NextEdge = new SimpleEdge(x.Source, target);
 
                 _wasCfgTransformed = true;
-                Accept(condValue ? x.TrueTarget : x.FalseTarget);
+                _routine.ControlFlowGraph.UnreachableBlocks.Add(condValue ? x.FalseTarget : x.TrueTarget);
+                Accept(target);
             }
             else
             {
