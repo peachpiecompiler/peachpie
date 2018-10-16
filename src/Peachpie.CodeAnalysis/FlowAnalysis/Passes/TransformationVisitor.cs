@@ -13,7 +13,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         private readonly SourceRoutineSymbol _routine;
         private int _visitedColor;
         private TransformationRewriter _rewriter;
-        private bool _wasCfgTransformed;
+        private int _cfgTransformationCount;
 
         public static bool TryTransform(SourceRoutineSymbol routine)
         {
@@ -22,7 +22,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 var visitor = new TransformationVisitor(routine);
                 visitor.VisitCFG(routine.ControlFlowGraph);
 
-                return visitor._wasCfgTransformed || visitor._rewriter.WasTransformationPerformed;
+                return visitor._cfgTransformationCount + visitor._rewriter.TransformationCount > 0;
             }
             else
             {
@@ -67,7 +67,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 var target = condValue ? x.TrueTarget : x.FalseTarget;
                 x.Source.NextEdge = new SimpleEdge(x.Source, target);
 
-                _wasCfgTransformed = true;
+                _cfgTransformationCount = true;
                 _routine.ControlFlowGraph.UnreachableBlocks.Add(condValue ? x.FalseTarget : x.TrueTarget);
                 Accept(target);
             }

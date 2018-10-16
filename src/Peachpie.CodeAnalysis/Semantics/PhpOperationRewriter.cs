@@ -88,6 +88,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #region Expressions
 
+        protected override BoundOperation DefaultVisitOperation(BoundOperation x)
+        {
+            return x;
+        }
+
         protected override BoundOperation VisitRoutineCall(BoundRoutineCall x)
         {
             VisitAndUpdate(x.ArgumentsInSourceOrder, v => x.ArgumentsInSourceOrder = v);
