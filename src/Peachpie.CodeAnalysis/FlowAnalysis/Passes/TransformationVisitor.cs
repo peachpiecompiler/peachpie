@@ -67,7 +67,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 var target = condValue ? x.TrueTarget : x.FalseTarget;
                 x.Source.NextEdge = new SimpleEdge(x.Source, target);
 
-                _cfgTransformationCount = true;
+                _cfgTransformationCount++;
                 _routine.ControlFlowGraph.UnreachableBlocks.Add(condValue ? x.FalseTarget : x.TrueTarget);
                 Accept(target);
             }

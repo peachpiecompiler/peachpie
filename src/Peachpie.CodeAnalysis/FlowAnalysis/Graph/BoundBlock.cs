@@ -23,7 +23,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             get
             {
-                return _flowState?.Version == _flowState.FlowContext.Version ? _flowState : null;
+                return (_flowState != null && _flowState.Version == _flowState.FlowContext.Version) ? _flowState : null;
             }
             set
             {
