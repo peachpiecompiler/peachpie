@@ -335,12 +335,19 @@ namespace Pchp.Core.Dynamic
 
         protected override Expression BindMissingMethod(CallSiteContext bound)
         {
-            if (bound.TargetType == null)   // already reported - class cannot be found
+            var type = bound.TargetType;
+            if (type == null)   // already reported - class cannot be found
             {
                 return ConvertExpression.BindDefault(this.ReturnType);
             }
 
-            var call = BinderHelpers.FindMagicMethod(bound.TargetType, (bound.TargetInstance == null) ? TypeMethods.MagicMethods.__callstatic : TypeMethods.MagicMethods.__call);
+            if (bound.TargetInstance != null && bound.CurrentTargetInstance != null) // it has been checked it is a subclass of TargetType
+            {
+                // ensure current scope's __call() is favoured over the specified class
+                type = bound.CurrentTargetInstance.GetPhpTypeInfo();
+            }
+
+            var call = BinderHelpers.FindMagicMethod(type, (bound.TargetInstance == null) ? TypeMethods.MagicMethods.__callstatic : TypeMethods.MagicMethods.__call);
             if (call != null)
             {
                 Expression[] call_args;
