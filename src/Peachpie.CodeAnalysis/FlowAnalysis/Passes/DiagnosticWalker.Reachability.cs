@@ -7,10 +7,11 @@ using System.Threading.Tasks;
 using Devsense.PHP.Syntax.Ast;
 using Pchp.CodeAnalysis.Errors;
 using Pchp.CodeAnalysis.Semantics.Graph;
+using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
-    internal partial class DiagnosingVisitor
+    internal partial class DiagnosticWalker
     {
         int _visitedColor;
         BoundBlock _currentBlock;
@@ -22,17 +23,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             _visitedColor = x.NewColor();
         }
 
-        protected override void VisitCFGBlockInternal(BoundBlock x)
+        protected override EmptyStruct DefaultVisitBlock(BoundBlock x)
         {
             if (x.Tag != _visitedColor)
             {
                 x.Tag = _visitedColor;
                 _currentBlock = x;
-                base.VisitCFGBlockInternal(x);
+                base.DefaultVisitBlock(x);
             }
+
+            return default;
         }
 
-        public override void VisitCFGConditionalEdge(ConditionalEdge x)
+        public override EmptyStruct VisitCFGConditionalEdge(ConditionalEdge x)
         {
             Accept(x.Condition);
 
@@ -47,8 +50,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             else
 	        {
                 x.TrueTarget.Accept(this);
-                x.FalseTarget.Accept(this); 
+                x.FalseTarget.Accept(this);
             }
+
+            return default;
         }
 
         private void CheckUnreachableCode(ControlFlowGraph graph)

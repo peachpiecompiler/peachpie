@@ -280,8 +280,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected sealed override Optional<object> ConstantValueHlp => ConstantValue;
 
-        public abstract void Accept(PhpOperationVisitor visitor);
-
         public abstract TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor);
     }
 
@@ -353,11 +351,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitArgument(this, argument);
 
-        public void Accept(PhpOperationVisitor visitor) => visitor.VisitArgument(this);
-
         public TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitArgument(this);
-
-        void IPhpOperation.Accept(PhpOperationVisitor visitor) => visitor.VisitArgument(this);
 
         TResult IPhpOperation.Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitArgument(this);
     }
@@ -486,10 +480,6 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitGlobalFunctionCall(this);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitGlobalFunctionCall(this);
@@ -530,10 +520,6 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitInstanceFunctionCall(this);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitInstanceFunctionCall(this);
@@ -556,10 +542,6 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitStaticFunctionCall(this);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitStaticFunctionCall(this);
@@ -579,10 +561,6 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitEcho(this);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitEcho(this);
@@ -599,10 +577,6 @@ namespace Pchp.CodeAnalysis.Semantics
             : base(arguments)
         {
         }
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitConcat(this);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
@@ -628,10 +602,6 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             _typeref = tref;
         }
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitNew(this);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
@@ -681,10 +651,6 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitInclude(this);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitInclude(this);
@@ -704,10 +670,6 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitExit(this);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitExit(this);
@@ -722,10 +684,6 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             
         }
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitAssert(this);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
@@ -767,8 +725,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override OperationKind Kind => OperationKind.AnonymousFunction;
 
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitLambda(this);
-
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
@@ -794,8 +750,6 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(code != null);
             this.CodeExpression = code;
         }
-
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitEval(this);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
@@ -829,10 +783,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitLiteral(this, argument);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitLiteral(this);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
@@ -888,10 +838,6 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitBinaryExpression(this);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitBinaryExpression(this);
@@ -937,10 +883,6 @@ namespace Pchp.CodeAnalysis.Semantics
             => visitor.VisitUnaryOperator(this, argument);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitUnaryExpression(this);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitUnaryExpression(this);
@@ -979,10 +921,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitIncrementOrDecrement(this, argument);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitIncDec(this);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
@@ -1027,10 +965,6 @@ namespace Pchp.CodeAnalysis.Semantics
         => visitor.VisitConditional(this, argument);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitConditional(this);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitConditional(this);
@@ -1071,10 +1005,6 @@ namespace Pchp.CodeAnalysis.Semantics
             => visitor.VisitSimpleAssignment(this, argument);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitAssign(this);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitAssign(this);
@@ -1111,10 +1041,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitCompoundAssignment(this, argument);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitCompoundAssign(this);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
@@ -1217,10 +1143,6 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitVariableRef(this);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitVariableRef(this);
@@ -1240,10 +1162,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => base.Accept(visitor, argument);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitTemporalVariableRef(this);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
@@ -1283,10 +1201,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.DefaultVisit(this, argument);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitList(this);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
@@ -1362,10 +1276,6 @@ namespace Pchp.CodeAnalysis.Semantics
             => visitor.VisitFieldReference(this, argument);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitFieldRef(this);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitFieldRef(this);
@@ -1395,11 +1305,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
             public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
                 => visitor.VisitArrayInitializer(this, argument);
-
-            public override void Accept(PhpOperationVisitor visitor)
-            {
-                throw new NotImplementedException();
-            }
 
             /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
             /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
@@ -1434,10 +1339,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
             => visitor.VisitArrayCreation(this, argument);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitArray(this);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
@@ -1490,10 +1391,6 @@ namespace Pchp.CodeAnalysis.Semantics
             => visitor.VisitArrayElementReference(this, argument);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitArrayItem(this);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitArrayItem(this);
@@ -1542,10 +1439,6 @@ namespace Pchp.CodeAnalysis.Semantics
             => visitor.VisitIsType(this, argument);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitInstanceOf(this);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitInstanceOf(this);
@@ -1587,10 +1480,6 @@ namespace Pchp.CodeAnalysis.Semantics
             => visitor.DefaultVisit(this, argument);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitGlobalConstUse(this);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitGlobalConstUse(this);
@@ -1618,10 +1507,6 @@ namespace Pchp.CodeAnalysis.Semantics
             => visitor.DefaultVisit(this, argument);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitPseudoConstUse(this);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitPseudoConstUse(this);
@@ -1644,8 +1529,6 @@ namespace Pchp.CodeAnalysis.Semantics
             this.TargetType = targetType;
             this.ConstType = type;
         }
-
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitPseudoClassConstUse(this);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
@@ -1682,10 +1565,6 @@ namespace Pchp.CodeAnalysis.Semantics
             => visitor.DefaultVisit(this, argument);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitIsEmpty(this);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitIsEmpty(this);
@@ -1712,10 +1591,6 @@ namespace Pchp.CodeAnalysis.Semantics
             => visitor.DefaultVisit(this, argument);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
-        /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor "/> instance. Cannot be <c>null</c>.</param>
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitIsSet(this);
-
-        /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitIsSet(this);
@@ -1731,9 +1606,6 @@ namespace Pchp.CodeAnalysis.Semantics
     public partial class BoundYieldEx : BoundExpression
     {
         public override OperationKind Kind => OperationKind.FieldReference;
-
-        public override void Accept(PhpOperationVisitor visitor)
-            => visitor.VisitYieldEx(this);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
@@ -1762,9 +1634,6 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Operand = expression;
         }
-
-        public override void Accept(PhpOperationVisitor visitor)
-            => visitor.VisitYieldFromEx(this);
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -17,16 +18,10 @@ namespace Pchp.CodeAnalysis.Semantics
         Ast.LangElement PhpSyntax { get; set; }
 
         /// <summary>
-        /// Visitor without return value implementation.
-        /// </summary>
-        /// <param name="visitor">A reference to <see cref="PhpOperationVisitor"/> instance.</param>
-        void Accept(PhpOperationVisitor visitor);
-
-        /// <summary>
         /// Visitor with return value implementation.
         /// </summary>
-        /// <typeparam name="TResult">Result type of the <paramref name="visitor"/>.</typeparam>
-        /// <param name="visitor">A reference to <see cref="PhpOperationVisitor"/> instance.</param>
+        /// <typeparam name="TResult">Result type of the <paramref name="visitor"/>, <see cref="EmptyStruct"/> if none.</typeparam>
+        /// <param name="visitor">A reference to <see cref="PhpOperationVisitor{TResult}"/> instance.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor);
     }

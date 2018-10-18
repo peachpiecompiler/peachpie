@@ -181,7 +181,7 @@ namespace Pchp.CodeAnalysis
         {
             Contract.ThrowIfNull(routine);
 
-            DiagnosingVisitor.Analyse(_diagnostics, routine);
+            DiagnosticWalker.Analyse(_diagnostics, routine);
         }
 
         internal void DiagnoseFiles()

@@ -5,10 +5,11 @@ using System.Text;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
+using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
-    internal class TransformationVisitor : GraphVisitor
+    internal class TransformationVisitor : GraphWalker
     {
         private readonly SourceRoutineSymbol _routine;
         private int _visitedColor;
@@ -36,15 +37,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             _rewriter = new TransformationRewriter();
         }
 
-        public override void VisitCFG(ControlFlowGraph x)
+        public override EmptyStruct VisitCFG(ControlFlowGraph x)
         {
             Debug.Assert(x == _routine.ControlFlowGraph);
 
             _visitedColor = x.NewColor();
             base.VisitCFG(x);
+
+            return default;
         }
 
-        protected override void VisitCFGBlockInternal(BoundBlock x)
+        protected override EmptyStruct DefaultVisitBlock(BoundBlock x)
         {
             if (x.Tag != _visitedColor)
             {
@@ -54,11 +57,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 _rewriter.VisitBlockStatement(x);
 
                 if (x.NextEdge != null && !IsEdgeVisitingStopped)
-                    x.NextEdge.Visit(this);
+                    x.NextEdge.Accept(this);
             }
+
+            return default;
         }
 
-        public override void VisitCFGConditionalEdge(ConditionalEdge x)
+        public override EmptyStruct VisitCFGConditionalEdge(ConditionalEdge x)
         {
             //_rewriter.VisitAndUpdate(x.Condition, x.SetCondition);
 
@@ -76,6 +81,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 x.TrueTarget.Accept(this);
                 x.FalseTarget.Accept(this);
             }
+
+            return default;
         }
     }
 }

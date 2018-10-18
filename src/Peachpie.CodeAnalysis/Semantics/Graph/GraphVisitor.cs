@@ -1,130 +1,51 @@
-﻿using Microsoft.CodeAnalysis.Operations;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
     /// <summary>
-    /// Control flow graph visitor.
+    /// Base visitor for control flow graphs.
     /// </summary>
-    /// <remarks>Visitor does not implement infinite recursion prevention.</remarks>
-    public class GraphVisitor : PhpOperationVisitor
+    /// <typeparam name="TResult">Return type of all the Visit operations, use <see cref="EmptyStruct"/> if none.</typeparam>
+    public abstract class GraphVisitor<TResult> : PhpOperationVisitor<TResult>
     {
-        #region Properties
-
-        protected bool IsEdgeVisitingStopped { get; set; } = false;
-
-        #endregion
-
         #region ControlFlowGraph
 
-        public virtual void VisitCFG(ControlFlowGraph x) => x.Start.Accept(this);
+        public virtual TResult VisitCFG(ControlFlowGraph x) => default;
 
         #endregion
 
         #region Graph.Block
 
-        void VisitCFGBlockStatements(BoundBlock x)
-        {
-            for (int i = 0; i < x.Statements.Count; i++)
-            {
-                Accept(x.Statements[i]);
-            }
-        }
+        protected virtual TResult DefaultVisitBlock(BoundBlock x) => default;
 
-        /// <summary>
-        /// Visits block statements and its edge to next block.
-        /// </summary>
-        protected virtual void VisitCFGBlockInternal(BoundBlock x)
-        {
-            VisitCFGBlockStatements(x);
+        public virtual TResult VisitCFGBlock(BoundBlock x) => DefaultVisitBlock(x);
 
-            if (x.NextEdge != null && !IsEdgeVisitingStopped)
-                x.NextEdge.Visit(this);
-        }
+        public virtual TResult VisitCFGExitBlock(ExitBlock x) => DefaultVisitBlock(x);
 
-        public virtual void VisitCFGBlock(BoundBlock x)
-        {
-            VisitCFGBlockInternal(x);
-        }
+        public virtual TResult VisitCFGCatchBlock(CatchBlock x) => DefaultVisitBlock(x);
 
-        public virtual void VisitCFGExitBlock(ExitBlock x)
-        {
-            VisitCFGBlock(x);
-        }
-
-        public virtual void VisitCFGCatchBlock(CatchBlock x)
-        {
-            VisitTypeRef(x.TypeRef);
-            Accept(x.Variable);
-            VisitCFGBlockInternal(x);
-        }
-
-        public virtual void VisitCFGCaseBlock(CaseBlock x)
-        {
-            if (!x.CaseValue.IsOnlyBoundElement) { VisitCFGBlock(x.CaseValue.PreBoundBlockFirst); }
-            if (!x.CaseValue.IsEmpty) { Accept(x.CaseValue.BoundElement); }
-            
-            VisitCFGBlockInternal(x);
-        }
+        public virtual TResult VisitCFGCaseBlock(CaseBlock x) => DefaultVisitBlock(x);
 
         #endregion
 
         #region Graph.Edge
 
-        public virtual void VisitCFGSimpleEdge(SimpleEdge x)
-        {
-            Debug.Assert(x.NextBlock != null);
-            x.NextBlock.Accept(this);
-        }
+        protected virtual TResult DefaultVisitEdge(Edge x) => default;
 
-        public virtual void VisitCFGConditionalEdge(ConditionalEdge x)
-        {
-            Accept(x.Condition);
+        public virtual TResult VisitCFGSimpleEdge(SimpleEdge x) => DefaultVisitEdge(x);
 
-            x.TrueTarget.Accept(this);
-            x.FalseTarget.Accept(this);
-        }
+        public virtual TResult VisitCFGConditionalEdge(ConditionalEdge x) => DefaultVisitEdge(x);
 
-        public virtual void VisitCFGTryCatchEdge(TryCatchEdge x)
-        {
-            x.BodyBlock.Accept(this);
+        public virtual TResult VisitCFGTryCatchEdge(TryCatchEdge x) => DefaultVisitEdge(x);
 
-            foreach (var c in x.CatchBlocks)
-                c.Accept(this);
+        public virtual TResult VisitCFGForeachEnumereeEdge(ForeachEnumereeEdge x) => DefaultVisitEdge(x);
 
-            if (x.FinallyBlock != null)
-                x.FinallyBlock.Accept(this);
-        }
+        public virtual TResult VisitCFGForeachMoveNextEdge(ForeachMoveNextEdge x) => DefaultVisitEdge(x);
 
-        public virtual void VisitCFGForeachEnumereeEdge(ForeachEnumereeEdge x)
-        {
-            Accept(x.Enumeree);
-            x.NextBlock.Accept(this);
-        }
-
-        public virtual void VisitCFGForeachMoveNextEdge(ForeachMoveNextEdge x)
-        {
-            Accept(x.ValueVariable);
-            Accept(x.KeyVariable);
-
-            x.BodyBlock.Accept(this);
-            x.NextBlock.Accept(this);
-        }
-
-        public virtual void VisitCFGSwitchEdge(SwitchEdge x)
-        {
-            Accept(x.SwitchValue);
-
-            //
-            var arr = x.CaseBlocks;
-            for (int i = 0; i < arr.Length; i++)
-                arr[i].Accept(this);
-        }
+        public virtual TResult VisitCFGSwitchEdge(SwitchEdge x) => DefaultVisitEdge(x);
 
         #endregion
     }
