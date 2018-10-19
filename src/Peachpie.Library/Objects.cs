@@ -487,7 +487,8 @@ namespace Pchp.Library
                 {
                     if (!iface.IsHiddenType())
                     {
-                        result.Add(iface.Name, iface.Name);
+                        var ifaceinfo = iface.GetPhpTypeInfo();
+                        result.Add(ifaceinfo.Name, ifaceinfo.Name);
                     }
                 }
             }
