@@ -953,7 +953,7 @@ namespace Pchp.Library.Spl
             int currentIndex = LastIndex;
             int parentIndex = ParentIndex(currentIndex);
 
-            while (parentIndex >= FIRST_INDEX && compare(_heap[currentIndex], _heap[parentIndex]) < 0)
+            while (parentIndex >= FIRST_INDEX && compare(_heap[parentIndex], _heap[currentIndex]) < 0)
             {
                 Swap(currentIndex, parentIndex);
                 currentIndex = parentIndex;
@@ -975,12 +975,12 @@ namespace Pchp.Library.Spl
             {
                 int rightChild = RightChildIndex(currentIndex);
 
-                if(rightChild > 0 && compare(_heap[leftChild], _heap[rightChild]) > 0 && compare(_heap[currentIndex], _heap[rightChild]) > 0)
+                if(rightChild > 0 && compare(_heap[rightChild], _heap[leftChild]) > 0 && compare(_heap[rightChild], _heap[currentIndex]) > 0)
                 {
-                        Swap(currentIndex, rightChild);
-                        currentIndex = rightChild;
+                    Swap(currentIndex, rightChild);
+                    currentIndex = rightChild;
                 }
-                else if (compare(_heap[currentIndex], _heap[leftChild]) > 0)
+                else if (compare(_heap[leftChild], _heap[currentIndex]) > 0)
                 {
                     Swap(currentIndex, leftChild);
                     currentIndex = leftChild;
@@ -1010,11 +1010,11 @@ namespace Pchp.Library.Spl
         /// </summary>
         protected override long compare(PhpValue value1, PhpValue value2)
         {
-            if (value1 > value2)
+            if (value1 < value2)
             {
                 return 1;
             }
-            else if (value2 > value1)
+            else if (value2 < value1)
             {
                 return -1;
             }
@@ -1040,11 +1040,11 @@ namespace Pchp.Library.Spl
         /// </summary>
         protected override long compare(PhpValue value1, PhpValue value2)
         {
-            if(value1 < value2)
+            if(value1 > value2)
             {
                 return 1;
             }
-            else if (value2 < value1)
+            else if (value2 > value1)
             {
                 return -1;
             } else
