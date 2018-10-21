@@ -687,7 +687,7 @@ namespace Pchp.Library.Spl
         public virtual void setIteratorMode(int mode)
         {
             if (((SplIteratorMode)mode & SplIteratorMode.Lifo) == 0)
-                throw new RuntimeException("Iteration direction of SplQueue can not be changed to FIFO.");
+                    throw new RuntimeException("Iteration direction of SplQueue can not be changed to FIFO.");
 
             // mode can only be set to values with SplIteratorMode.Lifo set
             if (mode >= IT_MODE_KEEP && mode <= (IT_MODE_LIFO + IT_MODE_DELETE))
@@ -703,30 +703,384 @@ namespace Pchp.Library.Spl
 
     #endregion
 
+    #region AbstractHeapImplementation
+
+    /// <summary>
+    /// Generic heap functionality abstraction used for <see cref="SplHeap"/> and <see cref="SplPriorityQueue"/>
+    /// </summary>
+    /// <typeparam name="T">Heap type parameter, PhpValue for a <see cref="SplHeap"/>, or KeyValuePair of PhpValues for <see cref="SplPriorityQueue"/>/typeparam>
+    public abstract class AbstractHeap<T>
+    {
+        /// <summary>
+        /// Binary heap nodes implemented as a list 
+        /// </summary>
+        protected readonly List<T> _heap = new List<T>();
+
+        /// <summary>
+        /// Indicator if the heap might be corrupted (true only when bubbling up or down hasnl finished correctly)
+        /// </summary>
+        protected bool _corrupted = false;
+
+        /// <summary>
+        /// Compare elements in order to place them correctly in the heap while sifting up
+        /// </summary>
+        /// <returns>positive integer if value1 is greater than value2, 0 if they are equal, negative integer otherwise</returns>
+        protected abstract long compare(T value1, T value2);
+
+        /// <summary>
+        /// Gets the current top of the heap
+        /// </summary>
+        /// <returns>value on top of the heap</returns>
+        protected T Peek
+        {
+            get
+            {
+                if (_heap.Count > 0)
+                {
+                    return _heap[0];
+                }
+                else
+                {
+                    throw new RuntimeException("The heap is empty.");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the current top of the heap, and removes it
+        /// </summary>
+        /// <returns>value on top of the heap</returns>
+        protected T Pop()
+        {
+            if (_heap.Count > 0)
+            {
+                _corrupted = true;
+
+                var top = _heap[0];
+
+                _heap[0] = _heap[LastIndex];
+                _heap.RemoveAt(LastIndex);
+
+                BubbleDown();
+
+                return top;
+            }
+            else
+            {
+                throw new RuntimeException("The heap is empty.");
+            }
+        }
+
+        /// <summary>
+        /// Inserts a value into a heap, and bubbles it into correct place
+        /// </summary>
+        /// <param name="value">node to be inserted</param>
+        protected void Insert(T value)
+        {
+            _corrupted = true;
+
+            _heap.Add(value);
+
+            BubbleUp();
+        }
+
+        /// <summary>
+        /// Index of last node of a heap, or -1 if empty
+        /// </summary>
+        protected int LastIndex
+        {
+            get
+            {
+                int index = _heap.Count - 1;
+                if (index >= 0)
+                {
+                    return index;
+                }
+                else
+                {
+                    return -1;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the parent node index if exists, otherwise -1
+        /// </summary>
+        /// <param name="childIndex">index of the child node</param>
+        /// <returns>parent node index if exists, otherwise -1</returns>
+        protected int ParentIndex(int childIndex)
+        {
+            if (childIndex > 0)
+            {
+                return (childIndex - 1) / 2;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+
+        /// <summary>
+        /// Gets the left child's node index if exists, otherwise -1
+        /// </summary>
+        /// <param name="parentIndex">index of the parent node</param>
+        /// <returns>left child's index, if exists, otherwise -1</returns>
+        protected int LeftChildIndex(int parentIndex)
+        {
+            int childIndex = (parentIndex * 2) + 1;
+            if (childIndex < _heap.Count)
+            {
+                return childIndex;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+
+        /// <summary>
+        /// Gets the right child's node index if exists, otherwise -1
+        /// </summary>
+        /// <param name="parentIndex">index of the parent node</param>
+        /// <returns>right child's index, if exists, otherwise -1</returns>
+        protected int RightChildIndex(int parentIndex)
+        {
+            int childIndex = (parentIndex * 2) + 2;
+            if (childIndex < _heap.Count)
+            {
+                return childIndex;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+
+        /// <summary>
+        /// Swaps the items in the heap, throws OutOfRange if one of indexes is invalid
+        /// </summary>
+        /// <param name="index1"></param>
+        /// <param name="index2"></param>
+        /// <exception cref="OutOfRangeException">Given index is out of range or invalid.</exception>
+        protected void Swap(int index1, int index2)
+        {
+            var tmp = _heap[index1];
+            _heap[index1] = _heap[index2];
+            _heap[index2] = tmp;
+        }
+
+        /// <summary>
+        /// Bubble the last item of the heap up, to get it into correct position
+        /// </summary>
+        protected void BubbleUp()
+        {
+            int currentIndex = LastIndex;
+            int parentIndex = ParentIndex(currentIndex);
+
+            while (parentIndex >= 0 && compare(_heap[parentIndex], _heap[currentIndex]) < 0)
+            {
+                Swap(currentIndex, parentIndex);
+                currentIndex = parentIndex;
+                parentIndex = ParentIndex(currentIndex);
+            }
+
+            _corrupted = false;
+        }
+
+        /// <summary>
+        /// Bubble the first item of the heap down, to get it into the correct position
+        /// </summary>
+        protected void BubbleDown()
+        {
+            int currentIndex = 0;
+            int leftChild = LeftChildIndex(currentIndex);
+
+            while (leftChild > 0)
+            {
+                int rightChild = RightChildIndex(currentIndex);
+
+                if (rightChild > 0 && compare(_heap[rightChild], _heap[leftChild]) > 0 && compare(_heap[rightChild], _heap[currentIndex]) > 0)
+                {
+                    Swap(currentIndex, rightChild);
+                    currentIndex = rightChild;
+                }
+                else if (compare(_heap[leftChild], _heap[currentIndex]) > 0)
+                {
+                    Swap(currentIndex, leftChild);
+                    currentIndex = leftChild;
+                }
+                else
+                {
+                    currentIndex = LastIndex;
+                }
+
+                leftChild = LeftChildIndex(currentIndex);
+            }
+            _corrupted = false;
+        }
+    }
+
+    #endregion
+
     #region SplPriorityQueue
 
     /// <summary>
     /// The SplPriorityQueue class provides the main functionalities of a prioritized queue, implemented using a max heap.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
-    public class SplPriorityQueue : Iterator, Countable
+    public class SplPriorityQueue : AbstractHeap<KeyValuePair<PhpValue, PhpValue>>, Iterator, Countable
     {
-        public void __construct() => throw new NotImplementedException();
-        public virtual long compare(PhpValue priority1, PhpValue priority2) => throw new NotImplementedException();
-        public virtual long count() => throw new NotImplementedException();
-        public virtual PhpValue current() => throw new NotImplementedException();
-        public virtual PhpValue extract() => throw new NotImplementedException();
-        public virtual int getExtractFlags() => throw new NotImplementedException();
-        public virtual void insert(PhpValue value, PhpValue priority) => throw new NotImplementedException();
-        public virtual bool isCorrupted() => throw new NotImplementedException();
-        public virtual bool isEmpty() => throw new NotImplementedException();
-        public virtual PhpValue key() => throw new NotImplementedException();
-        public virtual void next() => throw new NotImplementedException();
-        public virtual void recoverFromCorruption() => throw new NotImplementedException();
-        public virtual void rewind() => throw new NotImplementedException();
-        public virtual void setExtractFlags(int flags) => throw new NotImplementedException();
-        public virtual PhpValue top() => throw new NotImplementedException();
-        public virtual bool valid() => throw new NotImplementedException();
+        /// <summary>
+        /// Runtime context.
+        /// </summary>
+        protected readonly Context/*!*/_ctx;
+
+        /// <summary>
+        /// SplPriorityQueue extraction mode
+        /// </summary>
+        [PhpHidden]
+        [Flags]
+        public enum SplExtractionMode
+        {
+            ExtrData = 1,
+            ExtrPriority = 2,
+            ExtrBoth = 3
+        }
+
+        public const int EXTR_DATA = (int)SplExtractionMode.ExtrData;
+        public const int EXTR_PRIORITY = (int)SplExtractionMode.ExtrPriority;
+        public const int EXTR_BOTH = (int)SplExtractionMode.ExtrBoth;
+
+        /// <summary>
+        /// The current extraction mode;
+        /// </summary>
+        private SplExtractionMode _extractionMode = SplExtractionMode.ExtrData;
+
+        public SplPriorityQueue(Context ctx) : base()
+        {
+            _ctx = ctx;
+        }
+
+        public void __construct() { /* Nothing */ }
+
+        protected override long compare(KeyValuePair<PhpValue, PhpValue> pair1, KeyValuePair<PhpValue, PhpValue> pair2)
+        {
+            if (pair1.Key > pair2.Key)
+            {
+                return 1;
+            }
+            else if (pair2.Key > pair1.Key)
+            {
+                return -1;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        public virtual long count()
+        {
+            return _heap.Count;
+        }
+        public virtual PhpValue current()
+        {
+            return ForExtractionMode(Peek);
+        }
+        public virtual PhpValue extract()
+        {
+            return ForExtractionMode(Pop());
+        }
+        public virtual int getExtractFlags()
+        {
+            return (int)_extractionMode;
+        }
+        public virtual void insert(PhpValue value, PhpValue priority)
+        {
+            Insert(new KeyValuePair<PhpValue, PhpValue>(priority, value));
+        }
+        public virtual bool isCorrupted()
+        {
+            return _corrupted;
+        }
+        public virtual bool isEmpty()
+        {
+            return count() == 0;
+        }
+        public virtual PhpValue key()
+        {
+            // The key is the theoretical index of the iterater, which is always the last node for the heap
+            return count() - 1;
+        }
+        public virtual void next()
+        {
+            // The only thing moving the iterator of a heap does is deletes the top and corrects the heap
+            Pop();
+        }
+        public virtual void recoverFromCorruption()
+        {
+            var backupList = new List<KeyValuePair<PhpValue, PhpValue>>();
+            foreach (var item in _heap)
+            {
+                backupList.Add(item);
+            }
+            foreach (var item in backupList)
+            {
+                insert(item.Value, item.Key);
+            }
+
+            _corrupted = false;
+        }
+        public virtual void rewind() { /* Nothing */ }
+        public virtual void setExtractFlags(int flags)
+        {
+            // flags are within all possible combinations of SplExtractionMode
+            if (flags >= EXTR_DATA && flags <= EXTR_BOTH)
+            {
+                _extractionMode = (SplExtractionMode)flags;
+            }
+            else
+            {
+                throw new ArgumentException("Argument value is not an iterator mode.");
+            }
+        }
+        public virtual PhpValue top()
+        {
+            // Top of the heap is also the current position of the iterator
+            return current();
+        }
+        public virtual bool valid()
+        {
+            // Only checks if the priorityQueue contains any nodes
+            return !isEmpty();
+        }
+
+        /// <summary>
+        /// Chooses which part of KeyValuePair to return according to current extraction mode
+        /// </summary>
+        /// <param name="pair">Node to return</param>
+        /// <returns>pair's value, priority, or both in a PhpArray accordint to <see cref="_extractionMode"/></returns>
+        private PhpValue ForExtractionMode (KeyValuePair<PhpValue, PhpValue> pair)
+        {
+            if (_extractionMode == SplExtractionMode.ExtrData)
+            {
+                return pair.Value;
+            }
+            else if (_extractionMode == SplExtractionMode.ExtrPriority)
+            {
+                return pair.Key;
+            }
+            else if (_extractionMode == SplExtractionMode.ExtrBoth)
+            {
+                var arr = new PhpArray(2);
+                arr.Add("priority", pair.Key);
+                arr.Add("data", pair.Value);
+                return arr;
+            }
+            else
+            {
+                throw new RuntimeException("SplPriorityQueue has unknown extraction mode set.");
+            }
+        }
     }
 
     #endregion
@@ -736,49 +1090,148 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// The SplHeap class provides the main functionalities of a Heap.
     /// </summary>
-    public abstract class SplHeap : Iterator, Countable
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public abstract class SplHeap : AbstractHeap<PhpValue>, Iterator, Countable
     {
-        public virtual void __construct() => throw new NotImplementedException();
-        protected abstract long compare(PhpValue value1, PhpValue value2);
-        public virtual long count() => throw new NotImplementedException();
-        public virtual PhpValue current() => throw new NotImplementedException();
-        public virtual PhpValue extract() => throw new NotImplementedException();
-        public virtual void insert(PhpValue value) => throw new NotImplementedException();
-        public virtual bool isCorrupted() => throw new NotImplementedException();
-        public virtual bool isEmpty() => throw new NotImplementedException();
-        public virtual PhpValue key() => throw new NotImplementedException();
-        public virtual void next() => throw new NotImplementedException();
-        public virtual void recoverFromCorruption() => throw new NotImplementedException();
-        public virtual void rewind() => throw new NotImplementedException();
-        public virtual PhpValue top() => throw new NotImplementedException();
-        public virtual bool valid() => throw new NotImplementedException();
+        /// <summary>
+        /// Runtime context.
+        /// </summary>
+        protected readonly Context/*!*/_ctx;
+
+        protected SplHeap(Context ctx) : base()
+        {
+            _ctx = ctx;
+            __construct();
+        }
+
+        public virtual void __construct() {/* nothing */}
+        public virtual long count()
+        {
+            return _heap.Count;
+        }
+
+        /// <summary>
+        /// Gets the current top of the heap
+        /// </summary>
+        /// <returns>value on top of the heap</returns>
+        public virtual PhpValue current()
+        {
+            return Peek;
+        }
+
+        /// <summary>
+        /// Gets the current top of the heap, and removes it
+        /// </summary>
+        /// <returns>value on top of the heap</returns>
+        public virtual PhpValue extract()
+        {
+            return Pop();
+        }
+        public virtual void insert(PhpValue value)
+        {
+            Insert(value);
+        }
+        public virtual bool isCorrupted()
+        {
+            return _corrupted;
+        }
+        public virtual bool isEmpty()
+        {
+            return count() == 0;
+        }
+        public virtual PhpValue key()
+        {
+            // The key is the theoretical index of the iterater, which is always the last node for the heap
+            return count() - 1;
+        }
+        public virtual void next()
+        {
+            // The only thing moving the iterator of a heap does is deletes the top and corrects the heap
+            Pop();
+        }
+        public virtual void recoverFromCorruption()
+        {
+            List<PhpValue> backupList = new List<PhpValue>();
+            foreach (var item in _heap)
+            {
+                backupList.Add(item);
+            }
+            foreach (var item in backupList)
+            {
+                insert(item);
+            }
+
+            _corrupted = false;
+        }
+        public virtual void rewind() { /*nothing*/ }
+        public virtual PhpValue top()
+        {
+            // Top of the heap is also the current position of the iterator
+            return Peek;
+        }
+        public virtual bool valid()
+        {
+            // Only checks if the heap contains any nodes
+            return !isEmpty();
+        }
     }
 
     /// <summary>
     /// The SplMinHeap class provides the main functionalities of a heap, keeping the minimum on the top.
     /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplMinHeap : SplHeap
     {
+        public SplMinHeap(Context ctx) : base(ctx)
+        {
+        }
+
         /// <summary>
         /// Compare elements in order to place them correctly in the heap while sifting up
         /// </summary>
         protected override long compare(PhpValue value1, PhpValue value2)
         {
-            throw new NotImplementedException();
+            if (value1 < value2)
+            {
+                return 1;
+            }
+            else if (value2 < value1)
+            {
+                return -1;
+            }
+            else
+            {
+                return 0;
+            }
         }
     }
 
     /// <summary>
     /// The SplMaxHeap class provides the main functionalities of a heap, keeping the maximum on the top.
     /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplMaxHeap : SplHeap
     {
+        public SplMaxHeap(Context ctx) : base(ctx)
+        {
+        }
+
         /// <summary>
         /// Compare elements in order to place them correctly in the heap while sifting up
         /// </summary>
         protected override long compare(PhpValue value1, PhpValue value2)
         {
-            throw new NotImplementedException();
+            if(value1 > value2)
+            {
+                return 1;
+            }
+            else if (value2 > value1)
+            {
+                return -1;
+            } else
+            {
+                return 0;
+            }
         }
     }
 
