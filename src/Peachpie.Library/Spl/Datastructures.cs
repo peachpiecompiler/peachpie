@@ -687,7 +687,7 @@ namespace Pchp.Library.Spl
         public virtual void setIteratorMode(int mode)
         {
             if (((SplIteratorMode)mode & SplIteratorMode.Lifo) == 0)
-                throw new RuntimeException("Iteration direction of SplQueue can not be changed to FIFO.");
+                    throw new RuntimeException("Iteration direction of SplQueue can not be changed to FIFO.");
 
             // mode can only be set to values with SplIteratorMode.Lifo set
             if (mode >= IT_MODE_KEEP && mode <= (IT_MODE_LIFO + IT_MODE_DELETE))
@@ -738,20 +738,258 @@ namespace Pchp.Library.Spl
     /// </summary>
     public abstract class SplHeap : Iterator, Countable
     {
-        public virtual void __construct() => throw new NotImplementedException();
+        /// <summary>
+        /// Runtime context.
+        /// </summary>
+        protected readonly Context/*!*/_ctx;
+
+        /// <summary>
+        /// Binary heap nodes implemented as a list 
+        /// </summary>
+        private readonly List<PhpValue> _heap = new List<PhpValue>(new PhpValue[] { PhpValue.Null });
+
+        /// <summary>
+        /// Heap saved in a form of array is indexed from 1, instead of 0.
+        /// </summary>
+        private const int FIRST_INDEX = 1;
+
+        /// <summary>
+        /// Indicator if the heap might be corrupted (true only when bubbling up or down hasnl finished correctly)
+        /// </summary>
+        private bool _corrupted = false;
+
+        /// <summary>
+        /// Index of last node of a heap, or -1 if empty
+        /// </summary>
+        public int LastIndex
+        {
+            get
+            {
+                int index = _heap.Count - 1;
+                if (index >= FIRST_INDEX)
+                {
+                    return index;
+                }
+                else
+                {
+                    return -1;
+                }
+            }
+        }
+
+        public SplHeap(Context ctx)
+        {
+            _ctx = ctx;
+            __construct();
+        }
+
+        public virtual void __construct() {/* nothing */}
         protected abstract long compare(PhpValue value1, PhpValue value2);
-        public virtual long count() => throw new NotImplementedException();
-        public virtual PhpValue current() => throw new NotImplementedException();
-        public virtual PhpValue extract() => throw new NotImplementedException();
-        public virtual void insert(PhpValue value) => throw new NotImplementedException();
-        public virtual bool isCorrupted() => throw new NotImplementedException();
-        public virtual bool isEmpty() => throw new NotImplementedException();
-        public virtual PhpValue key() => throw new NotImplementedException();
-        public virtual void next() => throw new NotImplementedException();
-        public virtual void recoverFromCorruption() => throw new NotImplementedException();
-        public virtual void rewind() => throw new NotImplementedException();
-        public virtual PhpValue top() => throw new NotImplementedException();
-        public virtual bool valid() => throw new NotImplementedException();
+        public virtual long count()
+        {
+            return _heap.Count - 1;
+        }
+
+        /// <summary>
+        /// Gets the current top of the heap
+        /// </summary>
+        /// <returns>value on top of the heap</returns>
+        public virtual PhpValue current()
+        {
+            if (count() > 0)
+            {
+                return _heap[FIRST_INDEX];
+            } else
+            {
+                throw new RuntimeException("The heap is empty.");
+            }
+        }
+
+        /// <summary>
+        /// Gets the current top of the heap, and removes it
+        /// </summary>
+        /// <returns>value on top of the heap</returns>
+        public virtual PhpValue extract()
+        {
+            if (count() > 0)
+            {
+                _corrupted = true;
+
+                var top = _heap[FIRST_INDEX];
+
+                _heap[FIRST_INDEX] = _heap[LastIndex];
+                _heap.RemoveAt(LastIndex);
+
+                BubbleDown();
+
+                return top;
+            } else
+            {
+                throw new RuntimeException("The heap is empty.");
+            }
+        }
+        public virtual void insert(PhpValue value)
+        {
+            _corrupted = true;
+
+            _heap.Add(value);
+
+            BubbleUp();
+        }
+        public virtual bool isCorrupted()
+        {
+            return _corrupted;
+        }
+        public virtual bool isEmpty()
+        {
+            return count() == 0;
+        }
+        public virtual PhpValue key()
+        {
+            // The key is the theoretical index of the iterater, which is always the last node for the heap
+            return count() - 1;
+        }
+        public virtual void next()
+        {
+            // The only thing moving the iterator of a heap does is deletes the top and corrects the heap
+            extract();
+        }
+        public virtual void recoverFromCorruption()
+        {
+            List<PhpValue> backupList = new List<PhpValue>();
+            foreach(var item in _heap)
+            {
+                backupList.Add(item);
+            }
+            foreach(var item in backupList)
+            {
+                insert(item);
+            }
+
+            _corrupted = false;
+        }
+        public virtual void rewind() { /*nothing*/ }
+        public virtual PhpValue top()
+        {
+            // Top of the heap is also the current position of the iterator
+            return current();
+        }
+        public virtual bool valid()
+        {
+            // Only checks if the heap contains any nodes
+            return !isEmpty();
+        }
+
+        /// <summary>
+        /// Gets the parent node index if exists, otherwise -1
+        /// </summary>
+        /// <param name="childIndex">index of the child node</param>
+        /// <returns>parent node index if exists, otherwise -1</returns>
+        private int ParentIndex(int childIndex)
+        {
+            if(childIndex > FIRST_INDEX)
+            {
+                return childIndex / 2;
+            } else
+            {
+                return -1;
+            }
+        }
+
+        /// <summary>
+        /// Gets the left child's node index if exists, otherwise -1
+        /// </summary>
+        /// <param name="parentIndex">index of the parent node</param>
+        /// <returns>left child's index, if exists, otherwise -1</returns>
+        private int LeftChildIndex(int parentIndex)
+        {
+            int childIndex = parentIndex * 2;
+            if(childIndex < _heap.Count)
+            {
+                return childIndex;
+            } else
+            {
+                return -1;
+            }
+        }
+
+        /// <summary>
+        /// Gets the right child's node index if exists, otherwise -1
+        /// </summary>
+        /// <param name="parentIndex">index of the parent node</param>
+        /// <returns>right child's index, if exists, otherwise -1</returns>
+        private int RightChildIndex(int parentIndex)
+        {
+            int childIndex = (parentIndex * 2) + 1;
+            if (childIndex < _heap.Count)
+            {
+                return childIndex;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+
+        /// <summary>
+        /// Swaps the items in the heap, throws OutOfRange if one of indexes is invalid
+        /// </summary>
+        /// <param name="index1"></param>
+        /// <param name="index2"></param>
+        /// <exception cref="OutOfRangeException">Given index is out of range or invalid.</exception>
+        private void Swap(int index1, int index2)
+        {
+            var tmp = _heap[index1];
+            _heap[index1] = _heap[index2];
+            _heap[index2] = tmp;
+        }
+
+        /// <summary>
+        /// Bubble the last item of the heap up, to get it into correct position
+        /// </summary>
+        private void BubbleUp()
+        {
+            int currentIndex = LastIndex;
+
+            while(currentIndex > FIRST_INDEX)
+            {
+                int parentIndex = ParentIndex(currentIndex);
+
+                if (compare(_heap[currentIndex], _heap[parentIndex]) < 0)
+                {
+                    Swap(currentIndex, parentIndex);
+                }
+            }
+
+            _corrupted = false;
+        }
+
+        /// <summary>
+        /// Bubble the first item of the heap down, to get it into the correct position
+        /// </summary>
+        private void BubbleDown()
+        {
+            int currentIndex = FIRST_INDEX;
+
+            while (currentIndex < LastIndex)
+            {
+                var leftChild = LeftChildIndex(currentIndex);
+                var rightChild = RightChildIndex(currentIndex);
+
+                if (compare(_heap[currentIndex], _heap[leftChild]) > 0 || compare(_heap[currentIndex], _heap[rightChild]) > 0)
+                {
+                    if(compare(_heap[leftChild], _heap[rightChild]) > 0)
+                    {
+                        Swap(currentIndex, leftChild);
+                    } else
+                    {
+                        Swap(currentIndex, rightChild);
+                    }
+                }
+            }
+
+            _corrupted = false;
+        }
     }
 
     /// <summary>
@@ -759,6 +997,10 @@ namespace Pchp.Library.Spl
     /// </summary>
     public class SplMinHeap : SplHeap
     {
+        public SplMinHeap(Context ctx) : base(ctx)
+        {
+        }
+
         /// <summary>
         /// Compare elements in order to place them correctly in the heap while sifting up
         /// </summary>
@@ -773,6 +1015,10 @@ namespace Pchp.Library.Spl
     /// </summary>
     public class SplMaxHeap : SplHeap
     {
+        public SplMaxHeap(Context ctx) : base(ctx)
+        {
+        }
+
         /// <summary>
         /// Compare elements in order to place them correctly in the heap while sifting up
         /// </summary>
