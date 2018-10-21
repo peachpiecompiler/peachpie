@@ -8,7 +8,7 @@
 
 <h3 align="center">The open-source PHP compiler to .NET</h3>
 
-> We recommend using the project with caution and testing it thoroughly before utilizing PeachPie in a production environment. There may still be inconsistencies and incompatibilities with the PHP language; if you run into any issues, kindly let us know and we'll do our best to address them. Take a look at our [Roadmap](https://github.com/peachpiecompiler/peachpie/wiki/Peachpie-Roadmap) to see which features and extensions we still have to implement.
+> We recommend using the project with caution and testing it thoroughly before utilizing PeachPie in a production environment. There may still be inconsistencies and incompatibilities with the PHP language; if you run into any issues, kindly let us know and we'll do our best to address them. Take a look at our [Roadmap](https://docs.peachpie.io/roadmap/) to see which features and extensions we still have to implement.
 
 <p align="center">
 <a href="http://www.nuget.org/profiles/peachpie"><img src="https://img.shields.io/nuget/v/Peachpie.App.svg?style=flat"></a>
@@ -34,14 +34,12 @@ We are now a member of the [.NET Foundation](https://www.dotnetfoundation.org/ab
 PeachPie is a modern PHP compiler based on the Microsoft Roslyn compiler platform and drawing from our popular Phalanger project. It allows PHP to be executed within the .NET framework, thereby opening the door for PHP developers into the world of .NET – and vice versa.
 
 ## Status and Compatibility
-You can find an up-to-date status of the project in our [Roadmap](https://github.com/peachpiecompiler/peachpie/wiki/Peachpie-Roadmap) section. Please note that the status is dynamic; PeachPie is a work in progress, which means that the list of finished and planned features frequently changes and will be updated on a regular basis.
-
-The Wiki also includes a [Compatibility matrix](https://github.com/peachpiecompiler/peachpie/wiki/Compatibility) for a quick overview of which frameworks PeachPie is compatible with and which features are already supported. 
+You can find an up-to-date status of the project in our [Roadmap](https://docs.peachpie.io/roadmap/) section. Please note that the status is dynamic; PeachPie is a work in progress, which means that the list of finished and planned features frequently changes and will be updated on a regular basis. To see the current status of compatibility with the PHP language, please refer to our [Compatibility overview](https://docs.peachpie.io/php/Compatibility/). 
 
 ## Project goals
 - **Increased performance**: PeachPie's extensive type analysis and the influence of Microsoft Roslyn should provide an improved performance of PHP applications and components. 
 
-- **Security**: since programs run within the standardized and manageable .NET or .NET Core environment, the code is fully verifiable without any unsafe constructs. 
+- **Security**: since programs run within the standardized and manageable .NET or .NET Core environment, the code is fully verifiable without any unsafe constructs. In addition, PHP applications can be distributed source-lessly for added security benefits. 
 
 - **Cross-platform development**: the project compiles legacy PHP code into portable class libraries, enabling developers to build cross-platform apps and libraries for Microsoft platforms.  
 
@@ -85,6 +83,6 @@ This project is supported by the [.NET Foundation](http://www.dotnetfoundation.o
 
 
 ## How to get in touch?
-We kindly ask you to be patient with your queries; you can follow us on [Twitter](https://twitter.com/pchpcompiler) or on [Facebook](https://www.facebook.com/pchpcompiler/). You can contact us there regarding your questions or ask the community for support on [Gitter](https://gitter.im/iolevel/peachpie), but please understand that we do not provide support at this point.
+If you have a problem or question, the easiest way is to submit an issue here. You can also follow us on [Twitter](https://twitter.com/pchpcompiler) or [Facebook](https://www.facebook.com/pchpcompiler/) and contact us there regarding your questions or ask the community for support on [Gitter](https://gitter.im/iolevel/peachpie), but please understand that we do not provide email support.
 
-For partnership inquiries or other questions, please contact us via email at info@iolevel.com.
+For partnership inquiries, commercial support or other questions, please contact us via email at info@iolevel.com.

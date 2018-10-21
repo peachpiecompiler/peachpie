@@ -230,6 +230,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override string Name => _name;
 
+        public override string RoutineName
+        {
+            get
+            {
+                // trim leading '?#' in case of compiled conditional function decl
+                var qidx = _name.IndexOf('?');
+                return qidx < 0 ? _name : _name.Remove(qidx);
+            }
+        }
+
         private bool HasFlag(MethodAttributes flag)
         {
             // flag must be exactly one bit
