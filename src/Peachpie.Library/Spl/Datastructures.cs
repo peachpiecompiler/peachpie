@@ -736,6 +736,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// The SplHeap class provides the main functionalities of a Heap.
     /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public abstract class SplHeap : Iterator, Countable
     {
         /// <summary>
@@ -777,7 +778,7 @@ namespace Pchp.Library.Spl
             }
         }
 
-        public SplHeap(Context ctx)
+        protected SplHeap(Context ctx)
         {
             _ctx = ctx;
             __construct();
@@ -950,15 +951,13 @@ namespace Pchp.Library.Spl
         private void BubbleUp()
         {
             int currentIndex = LastIndex;
+            int parentIndex = ParentIndex(currentIndex);
 
-            while(currentIndex > FIRST_INDEX)
+            while (parentIndex >= FIRST_INDEX && compare(_heap[currentIndex], _heap[parentIndex]) < 0)
             {
-                int parentIndex = ParentIndex(currentIndex);
-
-                if (compare(_heap[currentIndex], _heap[parentIndex]) < 0)
-                {
-                    Swap(currentIndex, parentIndex);
-                }
+                Swap(currentIndex, parentIndex);
+                currentIndex = parentIndex;
+                parentIndex = ParentIndex(currentIndex);
             }
 
             _corrupted = false;
@@ -970,24 +969,28 @@ namespace Pchp.Library.Spl
         private void BubbleDown()
         {
             int currentIndex = FIRST_INDEX;
+            int leftChild = LeftChildIndex(currentIndex);
 
-            while (currentIndex < LastIndex)
+            while (leftChild > 0)
             {
-                var leftChild = LeftChildIndex(currentIndex);
-                var rightChild = RightChildIndex(currentIndex);
+                int rightChild = RightChildIndex(currentIndex);
 
-                if (compare(_heap[currentIndex], _heap[leftChild]) > 0 || compare(_heap[currentIndex], _heap[rightChild]) > 0)
+                if(rightChild > 0 && compare(_heap[leftChild], _heap[rightChild]) > 0 && compare(_heap[currentIndex], _heap[rightChild]) > 0)
                 {
-                    if(compare(_heap[leftChild], _heap[rightChild]) > 0)
-                    {
-                        Swap(currentIndex, leftChild);
-                    } else
-                    {
                         Swap(currentIndex, rightChild);
-                    }
+                        currentIndex = rightChild;
                 }
-            }
+                else if (compare(_heap[currentIndex], _heap[leftChild]) > 0)
+                {
+                    Swap(currentIndex, leftChild);
+                    currentIndex = leftChild;
+                } else
+                {
+                    currentIndex = LastIndex;
+                }
 
+                leftChild = LeftChildIndex(currentIndex);
+            }
             _corrupted = false;
         }
     }
@@ -995,6 +998,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// The SplMinHeap class provides the main functionalities of a heap, keeping the minimum on the top.
     /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplMinHeap : SplHeap
     {
         public SplMinHeap(Context ctx) : base(ctx)
@@ -1006,13 +1010,25 @@ namespace Pchp.Library.Spl
         /// </summary>
         protected override long compare(PhpValue value1, PhpValue value2)
         {
-            throw new NotImplementedException();
+            if (value1 > value2)
+            {
+                return 1;
+            }
+            else if (value2 > value1)
+            {
+                return -1;
+            }
+            else
+            {
+                return 0;
+            }
         }
     }
 
     /// <summary>
     /// The SplMaxHeap class provides the main functionalities of a heap, keeping the maximum on the top.
     /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplMaxHeap : SplHeap
     {
         public SplMaxHeap(Context ctx) : base(ctx)
@@ -1024,7 +1040,17 @@ namespace Pchp.Library.Spl
         /// </summary>
         protected override long compare(PhpValue value1, PhpValue value2)
         {
-            throw new NotImplementedException();
+            if(value1 < value2)
+            {
+                return 1;
+            }
+            else if (value2 < value1)
+            {
+                return -1;
+            } else
+            {
+                return 0;
+            }
         }
     }
 
