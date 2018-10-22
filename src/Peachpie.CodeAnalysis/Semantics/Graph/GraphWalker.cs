@@ -15,8 +15,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// <remarks>Visitor does not implement infinite recursion prevention.</remarks>
     public abstract class GraphWalker : GraphVisitor<EmptyStruct>
     {
-        // TODO: Move infinite recursion prevention from subclasses here
-
         #region Properties
 
         protected bool IsEdgeVisitingStopped { get; set; } = false;

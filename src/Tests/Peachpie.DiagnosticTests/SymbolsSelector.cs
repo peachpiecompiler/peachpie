@@ -14,7 +14,7 @@ using System.Text;
 
 namespace Peachpie.DiagnosticTests
 {
-    class SymbolsSelector : GraphWalker
+    class SymbolsSelector : GraphExplorer
     {
         public struct SymbolStat
         {
@@ -40,8 +40,6 @@ namespace Peachpie.DiagnosticTests
         TypeRefContext _tctx;
 
         private SymbolsSelector() { }
-
-        int _color;
 
         public static IEnumerable<SymbolStat> Select(ControlFlowGraph cfg)
         {
@@ -69,28 +67,15 @@ namespace Peachpie.DiagnosticTests
             yield break;
         }
 
-        public override EmptyStruct VisitCFG(ControlFlowGraph x)
+        protected override void VisitCFGInternal(ControlFlowGraph x)
         {
             _tctx = x.FlowContext?.TypeRefContext;
-            _color = x.NewColor();
-            base.VisitCFG(x);
+            base.VisitCFGInternal(x);
 
             foreach (var block in x.UnreachableBlocks)
             {
                 block.Accept(this);
             }
-
-            return default;
-        }
-
-        protected override EmptyStruct DefaultVisitBlock(BoundBlock x)
-        {
-            if (x.Tag == _color) return default;
-            x.Tag = _color;
-
-            base.DefaultVisitBlock(x);
-
-            return default;
         }
 
         public override EmptyStruct VisitVariableRef(BoundVariableRef x)

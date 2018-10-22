@@ -13,26 +13,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
     internal partial class DiagnosticWalker
     {
-        int _visitedColor;
         BoundBlock _currentBlock;
 
         Queue<BoundBlock> _unreachables = new Queue<BoundBlock>();
 
-        private void InitializeReachabilityInfo(ControlFlowGraph x)
+        protected override void DefaultVisitUnexploredBlock(BoundBlock x)
         {
-            _visitedColor = x.NewColor();
-        }
-
-        protected override EmptyStruct DefaultVisitBlock(BoundBlock x)
-        {
-            if (x.Tag != _visitedColor)
-            {
-                x.Tag = _visitedColor;
-                _currentBlock = x;
-                base.DefaultVisitBlock(x);
-            }
-
-            return default;
+            _currentBlock = x;
+            base.DefaultVisitUnexploredBlock(x);
         }
 
         public override EmptyStruct VisitCFGConditionalEdge(ConditionalEdge x)
@@ -65,12 +53,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 var block = _unreachables.Dequeue();
 
                 // Skip the block if it was either proven reachable before or if it was already processed
-                if (block.Tag == _visitedColor)
+                if (block.Tag == ExploredColor)
                 {
                     continue;
                 }
 
-                block.Tag = _visitedColor;
+                block.Tag = ExploredColor;
 
                 var syntax = PickFirstSyntaxNode(block);
                 if (syntax != null)

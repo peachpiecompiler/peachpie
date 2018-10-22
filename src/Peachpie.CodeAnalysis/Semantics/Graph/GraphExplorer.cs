@@ -1,0 +1,44 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using Peachpie.CodeAnalysis.Utilities;
+
+namespace Pchp.CodeAnalysis.Semantics.Graph
+{
+    /// <summary>
+    /// Visitor used to traverse CFG and all its operations with infinite recursion prevention.
+    /// </summary>
+    public abstract class GraphExplorer : GraphWalker
+    {
+        public int ExploredColor { get; private set; }
+
+        public sealed override EmptyStruct VisitCFG(ControlFlowGraph x)
+        {
+            ExploredColor = x.NewColor();
+            VisitCFGInternal(x);
+
+            return default;
+        }
+
+        protected virtual void VisitCFGInternal(ControlFlowGraph x)
+        {
+            base.VisitCFG(x);
+        }
+
+        protected sealed override EmptyStruct DefaultVisitBlock(BoundBlock x)
+        {
+            if (x.Tag != ExploredColor)
+            {
+                x.Tag = ExploredColor;
+                DefaultVisitUnexploredBlock(x);
+            }
+
+            return default;
+        }
+
+        protected virtual void DefaultVisitUnexploredBlock(BoundBlock x)
+        {
+            base.DefaultVisitBlock(x);
+        }
+    }
+}

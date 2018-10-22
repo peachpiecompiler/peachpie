@@ -16,7 +16,7 @@ using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
-    internal partial class DiagnosticWalker : GraphWalker
+    internal partial class DiagnosticWalker : GraphExplorer
     {
         private readonly DiagnosticBag _diagnostics;
         private SourceRoutineSymbol _routine;
@@ -84,21 +84,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             _routine = routine;
         }
 
-        public override EmptyStruct VisitCFG(ControlFlowGraph x)
+        protected override void VisitCFGInternal(ControlFlowGraph x)
         {
             Debug.Assert(x == _routine.ControlFlowGraph);
 
-            InitializeReachabilityInfo(x);
-
-            base.VisitCFG(x);
+            base.VisitCFGInternal(x);
 
             // analyse missing or redefined labels
             CheckLabels(x.Labels);
 
             // report unreachable blocks
             CheckUnreachableCode(x);
-
-            return default;
         }
 
         void CheckLabels(ControlFlowGraph.LabelBlockState[] labels)
