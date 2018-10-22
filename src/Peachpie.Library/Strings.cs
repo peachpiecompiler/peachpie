@@ -816,7 +816,7 @@ namespace Pchp.Library
                 return ImplodeInternal(ctx, pieces, new PhpArray(enumerable));
 
             PhpException.InvalidArgument("pieces");
-            return PhpString.Empty;  // ~ NULL
+            return default;  // ~ NULL
         }
 
         /// <summary>
