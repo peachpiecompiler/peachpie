@@ -123,7 +123,7 @@ namespace Pchp.Core
                 .Invoke(null, new object[] { new AppConstantsComposition() });
 
             tscript.GetMethod("EnumerateScripts")
-                .Invoke(null, new object[] { new Action<string, RuntimeTypeHandle>(ScriptsMap.DeclareScript) });
+                .Invoke(null, new object[] { new Action<string, MainDelegate>(ScriptsMap.DeclareScript) });
 
             //
             ScriptAdded(tscript);

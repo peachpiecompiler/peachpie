@@ -240,6 +240,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
     partial class SourceGlobalMethodSymbol
     {
+        internal SynthesizedMethodSymbol _mainMethod0;
+
         internal override IPlace GetThisPlace() => new ParamPlace(ThisParameter);
 
         internal override IList<MethodSymbol> SynthesizeStubs(PEModuleBuilder module, DiagnosticBag diagnostic)
@@ -273,6 +275,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 // generate method body
                 module.CreateMainMethodWrapper(wrapper, this, diagnostics);
+
+                //
+                _mainMethod0 = wrapper;
             }
         }
     }

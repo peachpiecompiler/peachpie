@@ -323,15 +323,17 @@ namespace Pchp.CodeAnalysis.Emit
         {
             var method = this.ScriptType.EnumerateScriptsSymbol;
 
-            // void (Action<string, RuntimeMethodHandle> callback)
+            // void (Action<string, MainDelegate> callback)
             var body = MethodGenerator.GenerateMethodBody(this, method,
                 (il) =>
                 {
-                    var action_string_type = method.Parameters[0].Type;
-                    Debug.Assert(action_string_type.Name == "Action");
-                    var invoke = action_string_type.DelegateInvokeMethod();
+                    var action_string_delegate = method.Parameters[0].Type;
+                    Debug.Assert(action_string_delegate.Name == "Action");
+                    var invoke = action_string_delegate.DelegateInvokeMethod();
                     Debug.Assert(invoke != null);
 
+                    var ct = this.Compilation.CoreTypes;
+                    var maindelegate_ctor = ct.MainDelegate.Ctor(ct.Object, ct.IntPtr);
                     var files = this.Compilation.GlobalSemantics.ExportedScripts;
                     foreach (var f in files)
                     {
@@ -341,10 +343,26 @@ namespace Pchp.CodeAnalysis.Emit
                             continue;
                         }
 
-                        // callback.Invoke(f.Name, f)
+                        // MainDelegate ~ PhpValue <Main>(...)
+                        var main = (f.MainMethod as SourceGlobalMethodSymbol)?._mainMethod0 ?? f.MainMethod;
+                        Debug.Assert(main != null);
+                        Debug.Assert(main.ReturnType.Equals(ct.PhpValue.Symbol));
+
+                        // callback.Invoke(f.Name, new MainDelegate(null, main)):
+
+                        // LOAD callback
                         il.EmitLoadArgumentOpcode(0);
+
+                        // path : string
                         il.EmitStringConstant(f.RelativeFilePath);
-                        il.EmitLoadToken(this, diagnostic, (TypeSymbol)f, null);
+
+                        // new MainDelegate(null, main)
+                        il.EmitNullConstant();
+                        il.EmitOpCode(ILOpCode.Ldftn);
+                        il.EmitSymbolToken(this, diagnostic, (MethodSymbol)main, null); // main
+                        il.EmitCall(this, diagnostic, ILOpCode.Newobj, maindelegate_ctor);
+
+                        //
                         il.EmitCall(this, diagnostic, ILOpCode.Callvirt, invoke);
                     }
 
