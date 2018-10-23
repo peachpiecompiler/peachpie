@@ -325,14 +325,15 @@ namespace Pchp.CodeAnalysis
                 compiler.DiagnoseFiles();
             }
 
-            if (!diagnostics.HasAnyErrors() && compilation.Options.OptimizationLevel == OptimizationLevel.Release)
-            {
-                using (compilation.StartMetric("transform"))
-                {
-                    // 3. Transform Semantic Trees for Runtime Optimization
-                    compiler.TransformMethods();
-                }
-            }
+            // TODO: Enable when the rewriting mechanism is refactored
+            //if (!diagnostics.HasAnyErrors() && compilation.Options.OptimizationLevel == OptimizationLevel.Release)
+            //{
+            //    using (compilation.StartMetric("transform"))
+            //    {
+            //        // 3. Transform Semantic Trees for Runtime Optimization
+            //        compiler.TransformMethods();
+            //    }
+            //}
 
             //
             return diagnostics.AsEnumerable();
