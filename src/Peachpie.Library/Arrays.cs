@@ -2823,17 +2823,6 @@ namespace Pchp.Library
         #region array_walk, array_walk_recursive
 
         /// <summary>
-        /// Applies a user function or method on each element of a specified array or dictionary.
-        /// </summary>
-        /// <returns><B>true</B>.</returns>
-        /// <remarks>See <see cref="Walk(PHP.Core.Reflection.DTypeDesc,PhpHashtable,PhpCallback,object)"/> for details.</remarks>
-        /// <exception cref="PhpException"><paramref name="function"/> or <paramref name="array"/> are <B>null</B> references.</exception>
-        public static bool array_walk(Context ctx, [In, Out] PhpHashtable array, IPhpCallable function)
-        {
-            return array_walk(ctx, array, function, PhpValue.Null);
-        }
-
-        /// <summary>
         /// Applies a user function or method on each element (value) of a specified dictionary.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
@@ -2858,7 +2847,7 @@ namespace Pchp.Library
         /// <param name="data">An additional parameter passed to <paramref name="callback"/> as its third parameter.</param>
         /// <returns><B>true</B>.</returns>
         /// <exception cref="PhpException"><paramref name="callback"/> or <paramref name="array"/> are <B>null</B> references.</exception>
-        public static bool array_walk(Context ctx /*, caller*/, [In, Out] PhpHashtable array, IPhpCallable callback, PhpValue data)
+        public static bool array_walk(Context ctx /*, caller*/, [In, Out] PhpHashtable array, IPhpCallable callback, PhpValue data = default)
         {
             PhpValue[] args = PrepareWalk(array, callback, data);
             if (args == null) return false;
@@ -2873,17 +2862,6 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Applies a user function or method on each element of a specified array recursively.
-        /// </summary>
-        /// <returns><B>true</B>.</returns>
-        /// <remarks>See <see cref="Walk(PHP.Core.Reflection.DTypeDesc,PhpHashtable,PhpCallback,object)"/> for details.</remarks>
-        /// <exception cref="PhpException"><paramref name="callback"/> or <paramref name="array"/> are <B>null</B> references.</exception>
-        public static bool array_walk_recursive(Context ctx, [In, Out] PhpHashtable array, IPhpCallable callback)
-        {
-            return array_walk_recursive(ctx, array, callback, PhpValue.Null);
-        }
-
-        /// <summary>
         /// Applies a user function or method on each element (value) of a specified dictionary recursively.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
@@ -2892,7 +2870,7 @@ namespace Pchp.Library
         /// <param name="data">An additional parameter passed to <paramref name="callback"/> as its third parameter.</param>
         /// <exception cref="PhpException"><paramref name="callback"/> or <paramref name="array"/> are <B>null</B> references.</exception>
         /// <remarks><seealso cref="Walk"/>.</remarks>
-        public static bool array_walk_recursive(Context ctx /*, caller*/, [In, Out] PhpHashtable array, IPhpCallable callback, PhpValue data)
+        public static bool array_walk_recursive(Context ctx /*, caller*/, [In, Out] PhpHashtable array, IPhpCallable callback, PhpValue data = default)
         {
             var args = PrepareWalk(array, callback, data);
             if (args == null)
