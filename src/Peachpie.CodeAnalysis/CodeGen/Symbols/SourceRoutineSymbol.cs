@@ -240,6 +240,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
     partial class SourceGlobalMethodSymbol
     {
+        /// <summary>
+        /// Real main method with <c>MainDelegate</c> signature.
+        /// The method is generated lazily in order to provide method compatible with MainDelegate.
+        /// <see cref="SourceGlobalMethodSymbol"/> may have (usually have) a different return type.
+        /// </summary>
         internal SynthesizedMethodSymbol _mainMethod0;
 
         internal override IPlace GetThisPlace() => new ParamPlace(ThisParameter);
