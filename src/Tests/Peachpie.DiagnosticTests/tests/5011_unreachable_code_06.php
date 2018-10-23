@@ -7,7 +7,7 @@ function unreachable_bool($x) {
       echo /*|boolean|*/$x;
     }
 
-    // TODO: Test for integer when it's corrected (currently, it's boolean|integer) 
+    // TODO: Test for integer when it's corrected (currently, it's boolean|integer)
     echo $x;
   }
 

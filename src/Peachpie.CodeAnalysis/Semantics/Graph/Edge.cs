@@ -32,6 +32,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public abstract BoundBlock NextBlock { get; }
 
         /// <summary>
+        /// The block this edge is attached to.
+        /// </summary>
+        public BoundBlock Source { get; }
+
+        /// <summary>
         /// Gets value indicating whether the edge represents a conditional edge.
         /// </summary>
         public virtual bool IsConditional => false;
@@ -69,6 +74,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         internal Edge(BoundBlock/*!*/source)
         {
             Contract.ThrowIfNull(source);
+
+            Source = source;
         }
 
         protected void Connect(BoundBlock/*!*/source)
@@ -79,7 +86,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Visits the object by given visitor.
         /// </summary>
-        public abstract void Visit(GraphVisitor visitor);
+        public abstract TResult Accept<TResult>(GraphVisitor<TResult> visitor);
     }
 
     /// <summary>
@@ -115,7 +122,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Visits the object by given visitor.
         /// </summary>
-        public override void Visit(GraphVisitor visitor) => visitor.VisitCFGSimpleEdge(this);
+        public override TResult Accept<TResult>(GraphVisitor<TResult> visitor) => visitor.VisitCFGSimpleEdge(this);
     }
 
     /// <summary>
@@ -147,7 +154,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public bool IsLoop { get; internal set; }
 
         /// <summary>
-        /// Target true block
+        /// Target true block.
         /// </summary>
         public BoundBlock/*!*/TrueTarget => _true;
 
@@ -183,7 +190,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Visits the object by given visitor.
         /// </summary>
-        public override void Visit(GraphVisitor visitor) => visitor.VisitCFGConditionalEdge(this);
+        public override TResult Accept<TResult>(GraphVisitor<TResult> visitor) => visitor.VisitCFGConditionalEdge(this);
     }
 
     /// <summary>
@@ -257,7 +264,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Visits the object by given visitor.
         /// </summary>
-        public override void Visit(GraphVisitor visitor) => visitor.VisitCFGTryCatchEdge(this);
+        public override TResult Accept<TResult>(GraphVisitor<TResult> visitor) => visitor.VisitCFGTryCatchEdge(this);
     }
 
     /// <summary>
@@ -284,7 +291,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Visits the object by given visitor.
         /// </summary>
-        public override void Visit(GraphVisitor visitor) => visitor.VisitCFGForeachEnumereeEdge(this);
+        public override TResult Accept<TResult>(GraphVisitor<TResult> visitor) => visitor.VisitCFGForeachEnumereeEdge(this);
     }
 
     /// <summary>
@@ -353,7 +360,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Visits the object by given visitor.
         /// </summary>
-        public override void Visit(GraphVisitor visitor) => visitor.VisitCFGForeachMoveNextEdge(this);
+        public override TResult Accept<TResult>(GraphVisitor<TResult> visitor) => visitor.VisitCFGForeachMoveNextEdge(this);
     }
 
     /// <summary>
@@ -399,6 +406,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Visits the object by given visitor.
         /// </summary>
-        public override void Visit(GraphVisitor visitor) => visitor.VisitCFGSwitchEdge(this);
+        public override TResult Accept<TResult>(GraphVisitor<TResult> visitor) => visitor.VisitCFGSwitchEdge(this);
     }
 }

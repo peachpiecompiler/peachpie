@@ -50,9 +50,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         readonly CallGraph _callGraph = new CallGraph();
 
         /// <summary>
-        /// List of blocks that need to be processed, but the methods they call haven't been processed yet.
+        /// Set of blocks that need to be processed, but the methods they call haven't been processed yet.
         /// </summary>
         readonly ConcurrentDictionary<T, object> _dirtyCallBlocks = new ConcurrentDictionary<T, object>();
+
+        /// <summary>
+        /// In the case of updating an existing analysis, a map of the currently analysed routines to their previous return types.
+        /// Null in the case of a fresh analysis.
+        /// </summary>
+        Dictionary<SourceRoutineSymbol, TypeRefMask> _currentRoutinesLastReturnTypes;
 
         ///// <summary>
         ///// Adds an analysis driver into the list of analyzers to be performed on bound operations.
@@ -113,6 +119,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public void PingReturnUpdate(ExitBlock updatedExit, T callingBlock)
         {
             var caller = callingBlock.FlowState?.Routine;
+
+            // If the update of the analysis is in progress and the caller is not yet analysed (its FlowState is null due to invalidation) or
+            // is not within the currently analysed routines, don't enqueue it
+            if (callingBlock.FlowState == null ||
+                (caller != null && _currentRoutinesLastReturnTypes != null && !_currentRoutinesLastReturnTypes.ContainsKey(caller)))
+            {
+                return;
+            }
+
             if (caller == null || _callGraph.GetCalleeEdges(caller).All(edge => edge.Callee.IsReturnAnalysed))
             {
                 Enqueue(callingBlock);
@@ -175,6 +190,60 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Re-run the analysis for the specified routines. Repeatively propagate the changes of their return types
+        /// to their callers, until there are none left.
+        /// </summary>
+        /// <remarks>
+        /// It is expected that the introduced changes don't change the semantics of the program and hence don't
+        /// increase the set of possible return types of the particular routines.
+        /// </remarks>
+        internal void Update(IEnumerable<SourceRoutineSymbol> updatedRoutines, bool concurrent = false)
+        {
+            // Initialize the currently re-analysed set of methods with the given ones
+            _currentRoutinesLastReturnTypes = new Dictionary<SourceRoutineSymbol, TypeRefMask>();
+            foreach (var routine in updatedRoutines)
+            {
+                _currentRoutinesLastReturnTypes.Add(routine, routine.ResultTypeMask);
+            }
+
+            do
+            {
+                foreach (var kvp in _currentRoutinesLastReturnTypes)
+                {
+                    kvp.Key.ControlFlowGraph.FlowContext.InvalidateAnalysis();
+                    Enqueue((T)kvp.Key.ControlFlowGraph.Start);
+                }
+
+                // Re-run the analysis with the invalidated routine flow information
+                DoAll(concurrent);
+
+                var lastMethods = _currentRoutinesLastReturnTypes;
+                _currentRoutinesLastReturnTypes = new Dictionary<SourceRoutineSymbol, TypeRefMask>();
+
+                // Check the changes of the return types and enlist the callers for the next round
+                foreach (var kvp in lastMethods)
+                {
+                    if (kvp.Key.ResultTypeMask != kvp.Value)
+                    {
+                        // No other types could have been added, only removed (we're making the overapproximation more precise)
+                        Debug.Assert(((kvp.Key.ResultTypeMask & ~TypeRefMask.FlagsMask) & ~kvp.Value) == 0);
+
+                        var callers =_callGraph.GetCallerEdges(kvp.Key)
+                            .Select(e => e.Caller)
+                            .Where(c => !_currentRoutinesLastReturnTypes.ContainsKey(c));    // These were already reanalysed in this phase
+
+                        foreach (var caller in callers)
+                        {
+                            _currentRoutinesLastReturnTypes.Add(caller, caller.ResultTypeMask);
+                        }
+                    }
+                }
+            } while (_currentRoutinesLastReturnTypes.Count > 0);
+
+            _currentRoutinesLastReturnTypes = null;
         }
 
         /// <summary>

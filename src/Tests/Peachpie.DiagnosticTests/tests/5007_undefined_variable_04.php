@@ -30,9 +30,9 @@ function never_maybe_defined($foo) {
 }
 
 function always_defined_integer() {
-  $alwaysDefined = 42;
+  /*|integer|*/$alwaysDefined = 42;
 
-  if (isset(/*|integer|*/$alwaysDefined)) {
+  if (isset($alwaysDefined)) {
     echo /*|integer|*/$alwaysDefined;
   } else {
     echo "unreachable";/*!PHP5011!*/

@@ -118,7 +118,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return result.ToList();
         }
 
-        public virtual void Accept(GraphVisitor visitor) => visitor.VisitCFGBlock(this);
+        public virtual TResult Accept<TResult>(GraphVisitor<TResult> visitor) => visitor.VisitCFGBlock(this);
 
         #region IBlockStatement
 
@@ -131,7 +131,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         SyntaxNode IOperation.Syntax => null;
 
-        public override void Accept(PhpOperationVisitor visitor) => visitor.VisitBlockStatement(this);
+        public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitBlockStatement(this);
 
         public override void Accept(OperationVisitor visitor) => visitor.VisitBlock(this);
 
@@ -164,7 +164,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// </summary>
         protected override string DebugName => "Exit";
 
-        public override void Accept(GraphVisitor visitor) => visitor.VisitCFGExitBlock(this);
+        public override TResult Accept<TResult>(GraphVisitor<TResult> visitor) => visitor.VisitCFGExitBlock(this);
     }
 
     /// <summary>
@@ -197,7 +197,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _variable = variable;
         }
 
-        public override void Accept(GraphVisitor visitor) => visitor.VisitCFGCatchBlock(this);
+        public override TResult Accept<TResult>(GraphVisitor<TResult> visitor) => visitor.VisitCFGCatchBlock(this);
 
         //#region ICatch
 
@@ -240,6 +240,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _caseValue = caseValue;
         }
 
-        public override void Accept(GraphVisitor visitor) => visitor.VisitCFGCaseBlock(this);
+        public override TResult Accept<TResult>(GraphVisitor<TResult> visitor) => visitor.VisitCFGCaseBlock(this);
     }
 }

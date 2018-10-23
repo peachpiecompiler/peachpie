@@ -84,6 +84,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         internal TypeRefMask ReturnType { get { return _returnType; } set { _returnType = value; } }
         TypeRefMask _returnType;
 
+        /// <summary>
+        /// Version of the analysis, incremented whenever a set of semantic tree transformations happen.
+        /// </summary>
+        internal int Version => _version;
+        int _version;
+
         #endregion
 
         #region Construction
@@ -195,6 +201,33 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             // anything >= 64 is used
             return varindex < 0 || varindex >= BitsCount || (_usedMask & (ulong)1 << varindex) != 0;
+        }
+
+        /// <summary>
+        /// Discard the current flow analysis information, should be called whenever the routine is transformed.
+        /// </summary>
+        /// <remarks>
+        /// It is expected to be called either on a context without a routine (parameter initializers etc.) or
+        /// on a routine with a CFG, hence no abstract methods etc.
+        /// </remarks>
+        public void InvalidateAnalysis()
+        {
+            Debug.Assert(Routine?.ControlFlowGraph != null);
+
+            // By incrementing the version, the current flow states won't be valid any longer
+            _version++;
+
+            // Revert the information regarding the return type to the default state
+            ReturnType = default;
+
+            // TODO: Recreate the state also in the case of a standalone expression (such as a parameter initializer)
+            if (_routine != null)
+            {
+                _routine.IsReturnAnalysed = false;
+
+                // Recreate the entry state to enable another analysis
+                _routine.ControlFlowGraph.Start.FlowState = StateBinder.CreateInitialState(_routine, this);
+            }
         }
 
         #endregion

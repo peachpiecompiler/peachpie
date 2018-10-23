@@ -18,15 +18,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Creates new type context, flow context and flow state for the routine.
         /// </summary>
-        public static FlowState CreateInitialState(SourceRoutineSymbol/*!*/routine)
+        public static FlowState CreateInitialState(SourceRoutineSymbol/*!*/routine, FlowContext flowCtx = null)
         {
             Contract.ThrowIfNull(routine);
 
-            // create typeCtx
+            // get or create typeCtx
             var typeCtx = routine.TypeRefContext;
 
-            // create FlowContext 
-            var flowCtx = new FlowContext(typeCtx, routine);
+            if (flowCtx == null)
+            {
+                // create FlowContext 
+                flowCtx = new FlowContext(typeCtx, routine); 
+            }
 
             // create FlowState
             var state = new FlowState(flowCtx);

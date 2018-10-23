@@ -15,12 +15,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+// To prevent name collisions with Roslyn.Utilities classes
+using EmptyStruct = Peachpie.CodeAnalysis.Utilities.EmptyStruct;
+
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
     /// <summary>
     /// Visits single expressions and project transformations to flow state.
     /// </summary>
-    internal class ExpressionAnalysis : AnalysisVisitor
+    internal class ExpressionAnalysis : AnalysisWalker
     {
         #region Fields & Properties
 
@@ -147,7 +150,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region Declaration Statements
 
-        public override void VisitStaticStatement(BoundStaticVariableStatement x)
+        public override EmptyStruct VisitStaticStatement(BoundStaticVariableStatement x)
         {
             var v = x.Declaration;
             var local = State.GetLocalHandle(new VariableName(v.Variable.Name));
@@ -171,27 +174,33 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 State.SetLocalType(local, TypeCtx.GetNullTypeMask() | oldtype);
                 // TODO: explicitly State.SetLocalUninitialized() ?
             }
+
+            return default;
         }
 
-        public override void VisitGlobalStatement(BoundGlobalVariableStatement x)
+        public override EmptyStruct VisitGlobalStatement(BoundGlobalVariableStatement x)
         {
             base.VisitGlobalStatement(x);   // Accept(x.Variable)
+
+            return default;
         }
 
         #endregion
 
         #region Visit Literals
 
-        public override void VisitLiteral(BoundLiteral x)
+        public override EmptyStruct VisitLiteral(BoundLiteral x)
         {
             x.TypeRefMask = x.ResolveTypeMask(TypeCtx);
+
+            return default;
         }
 
         #endregion
 
         #region Visit Assignments
 
-        public override void VisitAssign(BoundAssignEx x)
+        public override EmptyStruct VisitAssign(BoundAssignEx x)
         {
             Debug.Assert(x.Target.Access.IsWrite);
             Debug.Assert(x.Value.Access.IsRead);
@@ -211,9 +220,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             //
             x.TypeRefMask = x.Value.TypeRefMask;
+
+            return default;
         }
 
-        public override void VisitCompoundAssign(BoundCompoundAssignEx x)
+        public override EmptyStruct VisitCompoundAssign(BoundCompoundAssignEx x)
         {
             Debug.Assert(x.Target.Access.IsRead && x.Target.Access.IsWrite);
             Debug.Assert(x.Value.Access.IsRead);
@@ -230,6 +241,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             //
             x.TypeRefMask = tmp.TypeRefMask;
+
+            return default;
         }
 
         protected virtual void VisitSuperglobalVariableRef(BoundVariableRef x)
@@ -403,7 +416,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        public override void VisitVariableRef(BoundVariableRef x)
+        public override EmptyStruct VisitVariableRef(BoundVariableRef x)
         {
             if (x.Name.IsDirect)
             {
@@ -446,12 +459,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
 
                 }
-
-                return;
             }
+
+            return default;
         }
 
-        public override void VisitIncDec(BoundIncDecEx x)
+        public override EmptyStruct VisitIncDec(BoundIncDecEx x)
         {
             // <target> = <target> +/- 1L
 
@@ -487,6 +500,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             //
             x.Target.Access = x.Target.Access.WithRead();   // put read access back to the target
             x.TypeRefMask = x.IsPostfix ? sourcetype : resulttype;
+
+            return default;
         }
 
         #endregion
@@ -1120,7 +1135,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region Visit Function Call
 
-        protected override void VisitRoutineCall(BoundRoutineCall x)
+        protected override EmptyStruct VisitRoutineCall(BoundRoutineCall x)
         {
             x.TypeRefMask = TypeRefMask.AnyType;
 
@@ -1130,6 +1145,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // visit arguments:
             base.VisitRoutineCall(x);
+
+            return default;
         }
 
         bool BindParams(PhpParam[] expectedparams, ImmutableArray<BoundArgument> givenargs)
@@ -1302,30 +1319,38 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        public override void VisitExit(BoundExitEx x)
+        public override EmptyStruct VisitExit(BoundExitEx x)
         {
             VisitRoutineCall(x);
             BindTargetMethod(x);
+
+            return default;
         }
 
-        public override void VisitEcho(BoundEcho x)
+        public override EmptyStruct VisitEcho(BoundEcho x)
         {
             VisitRoutineCall(x);
             x.TypeRefMask = 0;
             BindTargetMethod(x);
+
+            return default;
         }
 
-        public override void VisitConcat(BoundConcatEx x)
+        public override EmptyStruct VisitConcat(BoundConcatEx x)
         {
             VisitRoutineCall(x);
             x.TypeRefMask = TypeCtx.GetWritableStringTypeMask();
             BindTargetMethod(x);
+
+            return default;
         }
 
-        public override void VisitAssert(BoundAssertEx x)
+        public override EmptyStruct VisitAssert(BoundAssertEx x)
         {
             VisitRoutineCall(x);
             x.TypeRefMask = TypeCtx.GetBooleanTypeMask();
+
+            return default;
         }
 
         MethodSymbol[] AsMethodOverloads(MethodSymbol method)
@@ -1363,7 +1388,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             AnalysisFacts.HandleSpecialFunctionCall(x, this, branch);
         }
 
-        public override void VisitInstanceFunctionCall(BoundInstanceFunctionCall x)
+        public override EmptyStruct VisitInstanceFunctionCall(BoundInstanceFunctionCall x)
         {
             Accept(x.Instance);
             Accept(x.Name.NameExpression);
@@ -1403,9 +1428,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             BindTargetMethod(x, maybeOverload: true);
+
+            return default;
         }
 
-        public override void VisitStaticFunctionCall(BoundStaticFunctionCall x)
+        public override EmptyStruct VisitStaticFunctionCall(BoundStaticFunctionCall x)
         {
             VisitTypeRef(x.TypeRef);
 
@@ -1423,6 +1450,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             BindTargetMethod(x);
+
+            return default;
         }
 
         TypeSymbol ResolveTypeRef(TypeRef tref, BoundExpression expr = null, bool objectTypeInfoSemantic = false)
@@ -1506,11 +1535,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return null;
         }
 
-        public override void VisitTypeRef(BoundTypeRef tref)
+        public override EmptyStruct VisitTypeRef(BoundTypeRef tref)
         {
             if (tref == null)
             {
-                return;
+                return default;
             }
 
             Debug.Assert(!(tref is BoundMultipleTypeRef));
@@ -1522,9 +1551,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             tref.ResolvedType = ResolveTypeRef(tref.TypeRef,
                 expr: tref.TypeExpression,
                 objectTypeInfoSemantic: tref.ObjectTypeInfoSemantic);
+
+            return default;
         }
 
-        public override void VisitNew(BoundNewEx x)
+        public override EmptyStruct VisitNew(BoundNewEx x)
         {
             VisitTypeRef(x.TypeRef);
 
@@ -1542,9 +1573,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             x.TypeRefMask = TypeCtx.GetTypeMask(x.TypeRef.TypeRef, false);
+
+            return default;
         }
 
-        public override void VisitInclude(BoundIncludeEx x)
+        public override EmptyStruct VisitInclude(BoundIncludeEx x)
         {
             VisitRoutineCall(x);
 
@@ -1598,9 +1631,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             //
             BindTargetMethod(x);
+
+            return default;
         }
 
-        public override void VisitArgument(BoundArgument x)
+        public override EmptyStruct VisitArgument(BoundArgument x)
         {
             if (x.Parameter != null)
             {
@@ -1609,13 +1644,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             Accept(x.Value);
+
+            return default;
         }
 
         #endregion
 
         #region Visit FieldRef
 
-        public override void VisitFieldRef(BoundFieldRef x)
+        public override EmptyStruct VisitFieldRef(BoundFieldRef x)
         {
             Accept(x.Instance);
             VisitTypeRef(x.ContainingType);
@@ -1659,7 +1696,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                     x.BoundReference = new BoundFieldPlace(x.Instance, overridenf ?? field, x);
                                     x.TypeRefMask = field.GetResultType(TypeCtx);
                                     x.ResultType = field.Type;
-                                    return;
+                                    return default;
                                 }
                                 else if (srcf != null && srcf.FieldAccessorProperty != null && srcf.FieldAccessorProperty.IsAccessible(TypeCtx.SelfType))
                                 {
@@ -1679,7 +1716,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 x.BoundReference = new BoundPropertyPlace(x.Instance, prop);
                                 x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, prop.Type);
                                 x.ResultType = prop.Type;
-                                return;
+                                return default;
                             }
 
                             //
@@ -1701,7 +1738,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 x.BoundReference = new BoundIndirectFieldPlace(x);
                 x.TypeRefMask = TypeRefMask.AnyType;
-                return;
+                return default;
             }
 
             // static fields or constants
@@ -1736,7 +1773,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         }
 
                         x.TypeRefMask = field.GetResultType(TypeCtx);
-                        return;
+                        return default;
                     }
                     else if (x.IsStaticField)
                     {
@@ -1746,7 +1783,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         {
                             x.BoundReference = new BoundPropertyPlace(null, prop);
                             x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, prop.Type);
-                            return;
+                            return default;
                         }
                     }
 
@@ -1757,15 +1794,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // indirect field access with known class name:
                 x.BoundReference = new BoundIndirectStFieldPlace(x.ContainingType, x.FieldName, x);
                 x.TypeRefMask = TypeRefMask.AnyType;
-                return;
             }
+
+            return default;
         }
 
         #endregion
 
         #region Visit ArrayEx, ArrayItemEx
 
-        public override void VisitArray(BoundArrayEx x)
+        public override EmptyStruct VisitArray(BoundArrayEx x)
         {
             var items = x.Items;
             TypeRefMask elementType = 0;
@@ -1785,9 +1823,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             x.TypeRefMask = elementType.IsVoid
                 ? TypeCtx.GetArrayTypeMask()
                 : TypeCtx.GetArrayTypeMask(elementType);
+
+            return default;
         }
 
-        public override void VisitArrayItem(BoundArrayItemEx x)
+        public override EmptyStruct VisitArrayItem(BoundArrayItemEx x)
         {
             Accept(x.Array);
             Accept(x.Index);
@@ -1799,13 +1839,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             x.TypeRefMask = x.Access.IsReadRef
                 ? TypeRefMask.AnyType.WithRefFlag
                 : TypeRefMask.AnyType;
+
+            return default;
         }
 
         #endregion
 
         #region VisitLambda
 
-        public override void VisitLambda(BoundLambda x)
+        public override EmptyStruct VisitLambda(BoundLambda x)
         {
             var container = (ILambdaContainerSymbol)Routine.ContainingFile;
             var symbol = container.ResolveLambdaSymbol((LambdaFunctionExpr)x.PhpSyntax);
@@ -1824,54 +1866,65 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             for (int pi = 0; pi < x.UseVars.Length; pi++)
             {
                 x.UseVars[pi].Parameter = ps[pi];
+                VisitArgument(x.UseVars[pi]);
             }
-
-            x.UseVars.ForEach(VisitArgument);
 
             //
             x.BoundLambdaMethod = symbol;
             x.ResultType = Routine.DeclaringCompilation.CoreTypes.Closure;
             Debug.Assert(x.ResultType != null);
             x.TypeRefMask = TypeCtx.GetTypeMask(new LambdaTypeRef(TypeRefMask.AnyType, symbol.SyntaxSignature), false); // specific {Closure}, no null, no subclasses
+
+            return default;
         }
 
         #endregion
 
         #region VisitYield
 
-        public override void VisitYieldStatement(BoundYieldStatement x)
+        public override EmptyStruct VisitYieldStatement(BoundYieldStatement x)
         {
             base.VisitYieldStatement(x);
+
+            return default;
         }
 
-        public override void VisitYieldEx(BoundYieldEx x)
+        public override EmptyStruct VisitYieldEx(BoundYieldEx x)
         {
             base.VisitYieldEx(x);
             x.TypeRefMask = TypeRefMask.AnyType;
+
+            return default;
         }
 
-        public override void VisitYieldFromEx(BoundYieldFromEx x)
+        public override EmptyStruct VisitYieldFromEx(BoundYieldFromEx x)
         {
             base.VisitYieldFromEx(x);
             x.TypeRefMask = TypeRefMask.AnyType;
+
+            return default;
         }
 
         #endregion
 
         #region Visit
 
-        public override void VisitIsEmpty(BoundIsEmptyEx x)
+        public override EmptyStruct VisitIsEmpty(BoundIsEmptyEx x)
         {
             Accept(x.Operand);
             x.TypeRefMask = TypeCtx.GetBooleanTypeMask();
+
+            return default;
         }
 
-        public override void VisitUnset(BoundUnset x)
+        public override EmptyStruct VisitUnset(BoundUnset x)
         {
             base.VisitUnset(x);
+
+            return default;
         }
 
-        public override void VisitList(BoundListEx x)
+        public override EmptyStruct VisitList(BoundListEx x)
         {
             var elementtype = this.TypeCtx.GetElementType(x.Access.WriteMask);
             Debug.Assert(!elementtype.IsVoid);
@@ -1884,9 +1937,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     Visit(v.Value, v.Value.Access.WithWrite(elementtype));
                 }
             }
+
+            return default;
         }
 
-        public override void VisitPseudoConstUse(BoundPseudoConst x)
+        public override EmptyStruct VisitPseudoConstUse(BoundPseudoConst x)
         {
             object value = null;
 
@@ -1910,7 +1965,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             {
                                 // __CLASS__ inside trait resolved in runtime
                                 x.TypeRefMask = TypeCtx.GetStringTypeMask();
-                                return;
+                                return default;
                             }
 
                             if (!intrait && x.ConstType == PseudoConstUse.Types.Trait)
@@ -1968,7 +2023,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case PseudoConstUse.Types.Dir:
                 case PseudoConstUse.Types.File:
                     x.TypeRefMask = TypeCtx.GetStringTypeMask();
-                    return;
+                    return default;
 
                 default:
                     throw ExceptionUtilities.UnexpectedValue(x.ConstType);
@@ -1981,9 +2036,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (value is string) x.TypeRefMask = TypeCtx.GetStringTypeMask();
             else if (value is int || value is long) x.TypeRefMask = TypeCtx.GetLongTypeMask();
             else throw ExceptionUtilities.UnexpectedValue(value);
+
+            return default;
         }
 
-        public override void VisitPseudoClassConstUse(BoundPseudoClassConst x)
+        public override EmptyStruct VisitPseudoClassConstUse(BoundPseudoClassConst x)
         {
             base.VisitPseudoClassConstUse(x);
 
@@ -2012,9 +2069,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 throw ExceptionUtilities.UnexpectedValue(x.ConstType);
             }
+
+            return default;
         }
 
-        public override void VisitGlobalConstUse(BoundGlobalConst x)
+        public override EmptyStruct VisitGlobalConstUse(BoundGlobalConst x)
         {
             // TODO: check constant name
 
@@ -2039,9 +2098,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     x.TypeRefMask = TypeRefMask.AnyType;    // only scalars ?
                 }
             }
+
+            return default;
         }
 
-        public override void VisitConditional(BoundConditionalEx x)
+        public override EmptyStruct VisitConditional(BoundConditionalEx x)
         {
             BoundExpression positiveExpr;    // positive expression (if evaluated to true, FalseExpr is not evaluated)
             FlowState positiveState; // state after successful positive branch
@@ -2097,14 +2158,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // merge both states (after positive evaluation and the false branch)
             State = State.Merge(positiveState);
             x.TypeRefMask = positiveExpr.TypeRefMask | x.IfFalse.TypeRefMask;
+
+            return default;
         }
 
-        public override void VisitExpressionStatement(BoundExpressionStatement x)
+        public override EmptyStruct VisitExpressionStatement(BoundExpressionStatement x)
         {
             base.VisitExpressionStatement(x);
+
+            return default;
         }
 
-        public override void VisitReturn(BoundReturnStatement x)
+        public override EmptyStruct VisitReturn(BoundReturnStatement x)
         {
             if (x.Returned != null)
             {
@@ -2117,14 +2182,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var voidMask = State.TypeRefContext.GetTypeMask(TypeRefFactory.VoidTypeRef, false); // NOTE: or remember the routine may return Void
                 State.FlowThroughReturn(voidMask);
             }
+
+            return default;
         }
 
-        public override void VisitThrow(BoundThrowStatement x)
+        public override EmptyStruct VisitThrow(BoundThrowStatement x)
         {
             Accept(x.Thrown);
+
+            return default;
         }
 
-        public override void VisitEval(BoundEvalEx x)
+        public override EmptyStruct VisitEval(BoundEvalEx x)
         {
             base.VisitEval(x);
 
@@ -2133,6 +2202,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             //
             x.TypeRefMask = TypeRefMask.AnyType;
+
+            return default;
         }
 
         #endregion

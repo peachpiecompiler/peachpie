@@ -7,13 +7,14 @@ using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
+using Peachpie.CodeAnalysis.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace Peachpie.DiagnosticTests
 {
-    class SymbolsSelector : GraphVisitor
+    class SymbolsSelector : GraphExplorer
     {
         public struct SymbolStat
         {
@@ -39,8 +40,6 @@ namespace Peachpie.DiagnosticTests
         TypeRefContext _tctx;
 
         private SymbolsSelector() { }
-
-        int _color;
 
         public static IEnumerable<SymbolStat> Select(ControlFlowGraph cfg)
         {
@@ -68,22 +67,18 @@ namespace Peachpie.DiagnosticTests
             yield break;
         }
 
-        public override void VisitCFG(ControlFlowGraph x)
+        protected override void VisitCFGInternal(ControlFlowGraph x)
         {
             _tctx = x.FlowContext?.TypeRefContext;
-            _color = x.NewColor();
-            base.VisitCFG(x);
+            base.VisitCFGInternal(x);
+
+            foreach (var block in x.UnreachableBlocks)
+            {
+                block.Accept(this);
+            }
         }
 
-        protected override void VisitCFGBlockInternal(BoundBlock x)
-        {
-            if (x.Tag == _color) return;
-            x.Tag = _color;
-
-            base.VisitCFGBlockInternal(x);
-        }
-
-        public override void VisitVariableRef(BoundVariableRef x)
+        public override EmptyStruct VisitVariableRef(BoundVariableRef x)
         {
             ISymbol symbolOpt = null;
             try
@@ -102,9 +97,11 @@ namespace Peachpie.DiagnosticTests
 
             //
             base.VisitVariableRef(x);
+
+            return default;
         }
 
-        public override void VisitTypeRef(BoundTypeRef x)
+        public override EmptyStruct VisitTypeRef(BoundTypeRef x)
         {
             if (x != null)
             {
@@ -122,9 +119,11 @@ namespace Peachpie.DiagnosticTests
 
                 base.VisitTypeRef(x);
             }
+
+            return default;
         }
 
-        protected override void VisitRoutineCall(BoundRoutineCall x)
+        protected override EmptyStruct VisitRoutineCall(BoundRoutineCall x)
         {
             var invocation = (IInvocationOperation)x;
             if (invocation.TargetMethod != null)
@@ -142,24 +141,30 @@ namespace Peachpie.DiagnosticTests
 
             //
             base.VisitRoutineCall(x);
+
+            return default;
         }
 
-        public override void VisitGlobalConstUse(BoundGlobalConst x)
+        public override EmptyStruct VisitGlobalConstUse(BoundGlobalConst x)
         {
             _result.Add(new SymbolStat(_tctx, x.PhpSyntax.Span, x, null));
 
             //
             base.VisitGlobalConstUse(x);
+
+            return default;
         }
 
-        public override void VisitPseudoConstUse(BoundPseudoConst x)
+        public override EmptyStruct VisitPseudoConstUse(BoundPseudoConst x)
         {
             _result.Add(new SymbolStat(_tctx, x.PhpSyntax.Span, x, null));
 
             base.VisitPseudoConstUse(x);
+
+            return default;
         }
 
-        public override void VisitFieldRef(BoundFieldRef x)
+        public override EmptyStruct VisitFieldRef(BoundFieldRef x)
         {
             Span span = Span.Invalid;
             if (x.PhpSyntax is DirectVarUse)
@@ -182,6 +187,8 @@ namespace Peachpie.DiagnosticTests
 
             //
             base.VisitFieldRef(x);
+
+            return default;
         }
     }
 }

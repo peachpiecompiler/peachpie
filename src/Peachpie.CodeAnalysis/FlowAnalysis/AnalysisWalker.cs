@@ -10,10 +10,11 @@ using Pchp.CodeAnalysis.Semantics;
 using Devsense.PHP.Text;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
+using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
-    public partial class AnalysisVisitor : GraphVisitor
+    public partial class AnalysisWalker : GraphWalker
     {
         #region Fields
 
@@ -48,10 +49,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         #region Construction
 
         /// <summary>
-        /// Creates an instance of <see cref="AnalysisVisitor"/> that can analyse a block.
+        /// Creates an instance of <see cref="AnalysisWalker"/> that can analyse a block.
         /// </summary>
         /// <param name="worklist">The worklist to be used to enqueue next blocks.</param>
-        internal AnalysisVisitor(Worklist<BoundBlock> worklist)
+        internal AnalysisWalker(Worklist<BoundBlock> worklist)
         {
             Debug.Assert(worklist != null);
             _worklist = worklist;
@@ -257,35 +258,60 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return false;
         }
 
-        public sealed override void VisitBinaryExpression(BoundBinaryEx x) => Visit(x, ConditionBranch.Default);
+        public sealed override EmptyStruct VisitBinaryExpression(BoundBinaryEx x)
+        {
+            Visit(x, ConditionBranch.Default);
+
+            return default;
+        }
 
         protected virtual void Visit(BoundBinaryEx x, ConditionBranch branch)
         {
             base.VisitBinaryExpression(x);
         }
 
-        public sealed override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x) => VisitGlobalFunctionCall(x, ConditionBranch.Default);
+        public sealed override EmptyStruct VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
+        {
+            VisitGlobalFunctionCall(x, ConditionBranch.Default);
+
+            return default;
+        }
 
         public virtual void VisitGlobalFunctionCall(BoundGlobalFunctionCall x, ConditionBranch branch)
         {
             base.VisitGlobalFunctionCall(x);
         }
 
-        public sealed override void VisitUnaryExpression(BoundUnaryEx x) => Visit(x, ConditionBranch.Default);
+        public sealed override EmptyStruct VisitUnaryExpression(BoundUnaryEx x)
+        {
+            Visit(x, ConditionBranch.Default);
+
+            return default;
+        }
 
         protected virtual void Visit(BoundUnaryEx x, ConditionBranch branch)
         {
             base.VisitUnaryExpression(x);
         }
 
-        public sealed override void VisitInstanceOf(BoundInstanceOfEx x) => Visit(x, ConditionBranch.Default);
+        public sealed override EmptyStruct VisitInstanceOf(BoundInstanceOfEx x)
+        {
+            Visit(x, ConditionBranch.Default);
+
+            return default;
+        }
 
         protected virtual void Visit(BoundInstanceOfEx x, ConditionBranch branch)
         {
             base.VisitInstanceOf(x);
         }
 
-        public sealed override void VisitIsSet(BoundIsSetEx x) => Visit(x, ConditionBranch.Default);
+        public sealed override EmptyStruct VisitIsSet(BoundIsSetEx x)
+        {
+            Visit(x, ConditionBranch.Default);
+
+            return default;
+        }
 
         protected virtual void Visit(BoundIsSetEx x, ConditionBranch branch)
         {
@@ -310,26 +336,32 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region GraphVisitor Members
 
-        public override void VisitCFG(ControlFlowGraph x)
+        public override EmptyStruct VisitCFG(ControlFlowGraph x)
         {
             Contract.ThrowIfNull(x);
             Debug.Assert(x.Start.FlowState != null, "Start block has to have an initial state set.");
 
             _worklist.Enqueue(x.Start);
+
+            return default;
         }
 
-        public override void VisitCFGBlock(BoundBlock x)
+        public override EmptyStruct VisitCFGBlock(BoundBlock x)
         {
             VisitCFGBlockInit(x);
-            VisitCFGBlockInternal(x);   // modifies _state, traverses to the edge
+            DefaultVisitBlock(x);   // modifies _state, traverses to the edge
+
+            return default;
         }
 
-        public override void VisitCFGExitBlock(ExitBlock x)
+        public override EmptyStruct VisitCFGExitBlock(ExitBlock x)
         {
             VisitCFGBlock(x);
 
             // TODO: EdgeToCallers:
             PingSubscribers(x);
+
+            return default;
         }
 
         protected void PingSubscribers(ExitBlock exit)
@@ -364,15 +396,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        public override void VisitCFGCaseBlock(CaseBlock x)
+        public override EmptyStruct VisitCFGCaseBlock(CaseBlock x)
         {
             VisitCFGBlockInit(x);
             if (!x.CaseValue.IsOnlyBoundElement) { VisitCFGBlock(x.CaseValue.PreBoundBlockFirst); }
             if (!x.CaseValue.IsEmpty) { Accept(x.CaseValue.BoundElement); }
-            VisitCFGBlockInternal(x);
+            DefaultVisitBlock(x);
+
+            return default;
         }
 
-        public override void VisitCFGCatchBlock(CatchBlock x)
+        public override EmptyStruct VisitCFGCatchBlock(CatchBlock x)
         {
             VisitCFGBlockInit(x);
 
@@ -387,15 +421,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             x.Variable.ResultType = x.TypeRef.ResolvedType;
 
             //
-            VisitCFGBlockInternal(x);
+            DefaultVisitBlock(x);
+
+            return default;
         }
 
-        public override void VisitCFGSimpleEdge(SimpleEdge x)
+        public override EmptyStruct VisitCFGSimpleEdge(SimpleEdge x)
         {
             TraverseToBlock(x, _state, x.NextBlock);
+
+            return default;
         }
 
-        public override void VisitCFGConditionalEdge(ConditionalEdge x)
+        public override EmptyStruct VisitCFGConditionalEdge(ConditionalEdge x)
         {
             // build state for TrueBlock and FalseBlock properly, take minimal evaluation into account
             var state = _state;
@@ -409,15 +447,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             _state = state.Clone();
             VisitCondition(x.Condition, ConditionBranch.ToFalse);
             TraverseToBlock(x, _state, x.FalseTarget);
+
+            return default;
         }
 
-        public override void VisitCFGForeachEnumereeEdge(ForeachEnumereeEdge x)
+        public override EmptyStruct VisitCFGForeachEnumereeEdge(ForeachEnumereeEdge x)
         {
             Accept(x.Enumeree);
             VisitCFGSimpleEdge(x);
+
+            return default;
         }
 
-        public override void VisitCFGForeachMoveNextEdge(ForeachMoveNextEdge x)
+        public override EmptyStruct VisitCFGForeachMoveNextEdge(ForeachMoveNextEdge x)
         {
             var state = _state;
             // get type information from Enumeree to determine types value variable
@@ -446,9 +488,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // End branch
             _state = state.Clone();
             TraverseToBlock(x, _state, x.NextBlock);
+
+            return default;
         }
 
-        public override void VisitCFGSwitchEdge(SwitchEdge x)
+        public override EmptyStruct VisitCFGSwitchEdge(SwitchEdge x)
         {
             Accept(x.SwitchValue);
 
@@ -464,9 +508,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 //
                 TraverseToBlock(x, state, c);
             }
+
+            return default;
         }
 
-        public override void VisitCFGTryCatchEdge(TryCatchEdge x)
+        public override EmptyStruct VisitCFGTryCatchEdge(TryCatchEdge x)
         {
             var state = _state;
 
@@ -487,6 +533,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 TraverseToBlock(x, state, x.FinallyBlock);
             }
+
+            return default;
         }
 
         #endregion

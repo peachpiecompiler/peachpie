@@ -47,6 +47,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </remarks>
         ulong _initializedMask;
 
+        /// <summary>
+        /// Version of the analysis this state was created for.
+        /// </summary>
+        internal int Version => _version;
+        readonly int _version;
+
         #endregion
 
         #region Construction & Copying
@@ -59,6 +65,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             Debug.Assert(state1 != null);
             Debug.Assert(state2 != null);
             Debug.Assert(state1.FlowContext == state2.FlowContext);
+            Debug.Assert(state1.Version == state2.Version);
 
             //
             _flowCtx = state1._flowCtx;
@@ -71,6 +78,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 _notes = new HashSet<NoteData>(state1._notes);
                 _notes.Intersect(state2._notes);
             }
+
+            _version = state1.Version;
 
             //// merge variables kind,
             //// conflicting kinds are not allowed currently!
@@ -97,6 +106,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 ? flowCtx.Routine.LocalsTable.Count
                 : 0;
             _varsType = new TypeRefMask[countHint];
+
+            _version = flowCtx.Version;
         }
 
         /// <summary>
@@ -114,6 +125,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 _notes = new HashSet<NoteData>(other._notes);
             }
 
+            _version = other._version;
+
             //if (other._varKindMap != null)
             //{
             //    _varKindMap = new Dictionary<VariableName, VariableKind>(other._varKindMap);
@@ -130,6 +143,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             _flowCtx = flowCtx;
             _varsType = (TypeRefMask[])varsType.Clone();
+            _version = flowCtx.Version;
         }
 
         #endregion

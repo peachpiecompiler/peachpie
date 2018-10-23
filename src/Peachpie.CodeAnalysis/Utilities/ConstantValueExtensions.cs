@@ -197,5 +197,23 @@ namespace Pchp.CodeAnalysis
         /// This method does not allocate a new boolean on heap.
         /// </summary>
         public static Optional<object> AsOptional(this bool b) => new Optional<object>(AsObject(b));
+
+        /// <summary>
+        /// Checks if <paramref name="optional"/> contains a boolean value. If so, it retrieves it in
+        /// <paramref name="value"/> and return TRUE. Otherwise, returns FALSE.
+        /// </summary>
+        public static bool TryGetBool(this Optional<object> optional, out bool value)
+        {
+            if (optional.HasValue && optional.Value is bool optValue)
+            {
+                value = optValue;
+                return true;
+            }
+            else
+            {
+                value = false;
+                return false;
+            }
+        }
     }
 }

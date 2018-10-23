@@ -13,6 +13,7 @@ using Pchp.CodeAnalysis.Symbols;
 using Pchp.CodeAnalysis.Utilities;
 using Roslyn.Utilities;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -180,7 +181,7 @@ namespace Pchp.CodeAnalysis
         {
             Contract.ThrowIfNull(routine);
 
-            DiagnosingVisitor.Analyse(_diagnostics, routine);
+            DiagnosticWalker.Analyse(_diagnostics, routine);
         }
 
         internal void DiagnoseFiles()
@@ -210,6 +211,24 @@ namespace Pchp.CodeAnalysis
         private void DiagnoseType(SourceTypeSymbol type)
         {
             type.GetDiagnostics(_diagnostics);
+        }
+
+        internal void TransformMethods()
+        {
+            // TODO: Iterate the transformation cycle
+            var updatedRoutines = new ConcurrentBag<SourceRoutineSymbol>();
+            this.WalkMethods(m =>
+                {
+                    if (TransformationVisitor.TryTransform(m))
+                        updatedRoutines.Add(m);
+                },
+                allowParallel: true);
+
+            // Run the analysis again on the changed methods
+            if (updatedRoutines.Count > 0)
+            {
+                _worklist.Update(updatedRoutines, concurrent: ConcurrentBuild); 
+            }
         }
 
         internal void EmitMethodBodies()
@@ -305,6 +324,16 @@ namespace Pchp.CodeAnalysis
                 compiler.DiagnoseTypes();
                 compiler.DiagnoseFiles();
             }
+
+            // TODO: Enable when the rewriting mechanism is refactored
+            //if (!diagnostics.HasAnyErrors() && compilation.Options.OptimizationLevel == OptimizationLevel.Release)
+            //{
+            //    using (compilation.StartMetric("transform"))
+            //    {
+            //        // 3. Transform Semantic Trees for Runtime Optimization
+            //        compiler.TransformMethods();
+            //    }
+            //}
 
             //
             return diagnostics.AsEnumerable();

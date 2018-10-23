@@ -12,10 +12,11 @@ using System.Text;
 using System.Threading.Tasks;
 using Pchp.CodeAnalysis.Symbols;
 using Devsense.PHP.Syntax.Ast;
+using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
-    internal partial class DiagnosingVisitor : GraphVisitor
+    internal partial class DiagnosticWalker : GraphExplorer
     {
         private readonly DiagnosticBag _diagnostics;
         private SourceRoutineSymbol _routine;
@@ -72,24 +73,22 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         {
             if (routine.ControlFlowGraph != null)   // non-abstract method
             {
-                new DiagnosingVisitor(diagnostics, routine)
+                new DiagnosticWalker(diagnostics, routine)
                     .VisitCFG(routine.ControlFlowGraph);
             }
         }
 
-        private DiagnosingVisitor(DiagnosticBag diagnostics, SourceRoutineSymbol routine)
+        private DiagnosticWalker(DiagnosticBag diagnostics, SourceRoutineSymbol routine)
         {
             _diagnostics = diagnostics;
             _routine = routine;
         }
 
-        public override void VisitCFG(ControlFlowGraph x)
+        protected override void VisitCFGInternal(ControlFlowGraph x)
         {
             Debug.Assert(x == _routine.ControlFlowGraph);
 
-            InitializeReachabilityInfo(x);
-
-            base.VisitCFG(x);
+            base.VisitCFGInternal(x);
 
             // analyse missing or redefined labels
             CheckLabels(x.Labels);
@@ -123,14 +122,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             }
         }
 
-        public override void VisitEval(BoundEvalEx x)
+        public override EmptyStruct VisitEval(BoundEvalEx x)
         {
             _diagnostics.Add(_routine, new TextSpan(x.PhpSyntax.Span.Start, 4)/*'eval'*/, ErrorCode.INF_EvalDiscouraged);
 
-            base.VisitEval(x);
+            return base.VisitEval(x);
         }
 
-        public override void VisitArray(BoundArrayEx x)
+        public override EmptyStruct VisitArray(BoundArrayEx x)
         {
             if (x.Access.IsNone)
             {
@@ -138,10 +137,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_ExpressionNotRead);
             }
 
-            base.VisitArray(x);
+            return base.VisitArray(x);
         }
 
-        public override void VisitTypeRef(BoundTypeRef typeRef)
+        public override EmptyStruct VisitTypeRef(BoundTypeRef typeRef)
         {
             if (typeRef != null)
             {
@@ -156,9 +155,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     base.VisitTypeRef(typeRef);
                 }
             }
+
+            return default;
         }
 
-        public override void VisitNew(BoundNewEx x)
+        public override EmptyStruct VisitNew(BoundNewEx x)
         {
             if (x.TypeRef.ResolvedType.IsValidType())
             {
@@ -192,10 +193,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 }
             }
 
-            base.VisitNew(x);
+            return base.VisitNew(x);
         }
 
-        public override void VisitReturn(BoundReturnStatement x)
+        public override EmptyStruct VisitReturn(BoundReturnStatement x)
         {
             if (_routine.Syntax is MethodDecl m)
             {
@@ -226,7 +227,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             }
 
             //
-            base.VisitReturn(x);
+            return base.VisitReturn(x);
         }
 
         bool IsAllowedToStringReturnType(TypeRefMask tmask)
@@ -239,7 +240,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             // anything else (object (even convertible to string), array, number, boolean, ...) is not allowed
         }
 
-        public override void VisitAssign(BoundAssignEx x)
+        public override EmptyStruct VisitAssign(BoundAssignEx x)
         {
             // Template: <x> = <x>
             if (x.Target is BoundVariableRef lvar && lvar.Variable is BoundLocal lloc &&
@@ -252,18 +253,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             //
 
-            base.VisitAssign(x);
+            return base.VisitAssign(x);
         }
 
-        public override void VisitInclude(BoundIncludeEx x)
+        public override EmptyStruct VisitInclude(BoundIncludeEx x)
         {
             // check arguments
-            base.VisitRoutineCall(x);
+            return base.VisitRoutineCall(x);
 
             // do not check the TargetMethod
         }
 
-        protected override void VisitRoutineCall(BoundRoutineCall x)
+        protected override EmptyStruct VisitRoutineCall(BoundRoutineCall x)
         {
             // check arguments
             base.VisitRoutineCall(x);
@@ -308,9 +309,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_TooManyArguments, x.TargetMethod.RoutineName, expectsmax, x.ArgumentsInSourceOrder.Length);
                 }
             }
+
+            return default;
         }
 
-        public override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
+        public override EmptyStruct VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
         {
             CheckUndefinedFunctionCall(x);
 
@@ -325,10 +328,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             }
 
             //
-            base.VisitGlobalFunctionCall(x);
+            return base.VisitGlobalFunctionCall(x);
         }
 
-        public override void VisitInstanceFunctionCall(BoundInstanceFunctionCall call)
+        public override EmptyStruct VisitInstanceFunctionCall(BoundInstanceFunctionCall call)
         {
             // TODO: Enable the diagnostic when several problems are solved (such as __call())
             //CheckUndefinedMethodCall(call, call.Instance?.ResultType, call.Name);
@@ -340,10 +343,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             CheckObsoleteSymbol(call.PhpSyntax, call.TargetMethod);
 
             //
-            base.VisitInstanceFunctionCall(call);
+            return base.VisitInstanceFunctionCall(call);
         }
 
-        public override void VisitStaticFunctionCall(BoundStaticFunctionCall call)
+        public override EmptyStruct VisitStaticFunctionCall(BoundStaticFunctionCall call)
         {
             // TODO: Enable the diagnostic when the __callStatic() method is properly processed during analysis
             //CheckUndefinedMethodCall(call, call.TypeRef?.ResolvedType, call.Name);
@@ -352,21 +355,22 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             CheckObsoleteSymbol(call.PhpSyntax, call.TargetMethod);
 
             //
-            base.VisitStaticFunctionCall(call);
+            return base.VisitStaticFunctionCall(call);
         }
 
-        public override void VisitVariableRef(BoundVariableRef x)
+        public override EmptyStruct VisitVariableRef(BoundVariableRef x)
         {
             CheckUninitializedVariableUse(x);
-            base.VisitVariableRef(x);
+            return base.VisitVariableRef(x);
         }
 
-        public override void VisitTemporalVariableRef(BoundTemporalVariableRef x)
+        public override EmptyStruct VisitTemporalVariableRef(BoundTemporalVariableRef x)
         {
             // do not make diagnostics on syntesized variables
+            return default;
         }
 
-        public override void VisitDeclareStatement(BoundDeclareStatement x)
+        public override EmptyStruct VisitDeclareStatement(BoundDeclareStatement x)
         {
             _diagnostics.Add(
                 _routine,
@@ -374,10 +378,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 ErrorCode.WRN_NotYetImplementedIgnored,
                 "Declare construct");
 
-            base.VisitDeclareStatement(x);
+            return base.VisitDeclareStatement(x);
         }
 
-        public override void VisitAssert(BoundAssertEx x)
+        public override EmptyStruct VisitAssert(BoundAssertEx x)
         {
             base.VisitAssert(x);
 
@@ -410,9 +414,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 // assert() expects at least 1 parameter, 0 given
                 _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_MissingArguments, "assert", 1, 0);
             }
+
+            return default;
         }
 
-        public override void VisitBinaryExpression(BoundBinaryEx x)
+        public override EmptyStruct VisitBinaryExpression(BoundBinaryEx x)
         {
             base.VisitBinaryExpression(x);
 
@@ -430,6 +436,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     }
                     break;
             }
+
+            return default;
         }
 
         void CheckMethodCallTargetInstance(BoundExpression target, string methodName)
@@ -546,7 +554,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             }
         }
 
-        public override void VisitCFGTryCatchEdge(TryCatchEdge x)
+        public override EmptyStruct VisitCFGTryCatchEdge(TryCatchEdge x)
         {
             // remember scopes,
             // .Accept() on BodyBlocks traverses not only the try block but also the rest of the code
@@ -580,21 +588,23 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             // visit:
 
-            base.VisitCFGTryCatchEdge(x);
+            return base.VisitCFGTryCatchEdge(x);
         }
 
-        public override void VisitStaticStatement(BoundStaticVariableStatement x)
+        public override EmptyStruct VisitStaticStatement(BoundStaticVariableStatement x)
         {
-            base.VisitStaticStatement(x);
+            return base.VisitStaticStatement(x);
         }
 
-        public override void VisitYieldStatement(BoundYieldStatement boundYieldStatement)
+        public override EmptyStruct VisitYieldStatement(BoundYieldStatement boundYieldStatement)
         {
             if (IsInTryCatchScope())
             {
                 // TODO: Start supporting yielding from exception handling constructs.
                 _diagnostics.Add(_routine, boundYieldStatement.PhpSyntax, ErrorCode.ERR_NotYetImplemented, "Yielding from an exception handling construct (try, catch, finally)");
             }
+
+            return default;
         }
     }
 }

@@ -1,7 +1,7 @@
 <?php
 
 function unreachable_null_comparison(bool $a, bool $b, bool $c, bool $d) {
-  if (/*|boolean|*/$a === null) {
+  if ($a === null) {
     echo "unreachable";/*!PHP5011!*/
     echo /*|null|*/$a;
   } else {

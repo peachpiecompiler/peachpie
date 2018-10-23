@@ -7,32 +7,23 @@ using System.Threading.Tasks;
 using Devsense.PHP.Syntax.Ast;
 using Pchp.CodeAnalysis.Errors;
 using Pchp.CodeAnalysis.Semantics.Graph;
+using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
-    internal partial class DiagnosingVisitor
+    internal partial class DiagnosticWalker
     {
-        int _visitedColor;
         BoundBlock _currentBlock;
 
         Queue<BoundBlock> _unreachables = new Queue<BoundBlock>();
 
-        private void InitializeReachabilityInfo(ControlFlowGraph x)
+        protected override void DefaultVisitUnexploredBlock(BoundBlock x)
         {
-            _visitedColor = x.NewColor();
+            _currentBlock = x;
+            base.DefaultVisitUnexploredBlock(x);
         }
 
-        protected override void VisitCFGBlockInternal(BoundBlock x)
-        {
-            if (x.Tag != _visitedColor)
-            {
-                x.Tag = _visitedColor;
-                _currentBlock = x;
-                base.VisitCFGBlockInternal(x);
-            }
-        }
-
-        public override void VisitCFGConditionalEdge(ConditionalEdge x)
+        public override EmptyStruct VisitCFGConditionalEdge(ConditionalEdge x)
         {
             Accept(x.Condition);
 
@@ -47,8 +38,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             else
 	        {
                 x.TrueTarget.Accept(this);
-                x.FalseTarget.Accept(this); 
+                x.FalseTarget.Accept(this);
             }
+
+            return default;
         }
 
         private void CheckUnreachableCode(ControlFlowGraph graph)
@@ -60,12 +53,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 var block = _unreachables.Dequeue();
 
                 // Skip the block if it was either proven reachable before or if it was already processed
-                if (block.Tag == _visitedColor)
+                if (block.Tag == ExploredColor)
                 {
                     continue;
                 }
 
-                block.Tag = _visitedColor;
+                block.Tag = ExploredColor;
 
                 var syntax = PickFirstSyntaxNode(block);
                 if (syntax != null)

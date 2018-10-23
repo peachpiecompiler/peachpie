@@ -71,7 +71,7 @@ namespace ScriptsTest
                 {
                     Context = ctx,
                     IsSubmission = false,
-                    EmitDebugInformation = true,
+                    EmitDebugInformation = false,
                     Location = new Location(path, 0, 0),
                 }, File.ReadAllText(path));
 
