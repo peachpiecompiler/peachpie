@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core.Reflection;
 using Pchp.Core.QueryValue;
+using System.Runtime.InteropServices;
 
 namespace Pchp.Library
 {
@@ -640,35 +641,67 @@ namespace Pchp.Library
                 if ((name = PhpVariable.ToStringOrNull(names[i])) != null)
                 {
                     // if variable exists adds a copy of its current value to the result:
-                    var value = locals[name];
-                    if (value.IsSet)
+                    if (locals.TryGetValue(name, out var value))
                     {
                         result.Add(name, value.DeepCopy());
                     }
                 }
                 else if ((array = PhpVariable.ArrayOrNull(names[i])) != null)
                 {
-                    // recursively searches for string variable names:
-                    using (PhpHashtable.RecursiveEnumerator iterator = array.GetRecursiveEnumerator(false, true))
-                    {
-                        while (iterator.MoveNext())
-                        {
-                            if ((name = PhpVariable.ToStringOrNull(iterator.Current.Value)) != null)
-                            {
-                                // if variable exists adds a copy of its current value to the result:
-                                var value = locals[name];
-                                if (value.IsSet)
-                                {
-                                    result.Add(name, value.DeepCopy());
-                                }
-                            }
-                        }
-                    }
+                    // visit array values recursively
+                    new CompactVisitor(locals, result).Accept(array);
                 }
             }
 
             //
             return result;
+        }
+
+        /// <summary>
+        /// Recursively traverses given value (array) and copies variables by name from locals to result array.
+        /// </summary>
+        sealed class CompactVisitor : PhpVariableVisitor
+        {
+            readonly PhpArray _locals;
+            readonly PhpArray _result;
+
+            readonly HashSet<object> _visited = new HashSet<object>();
+
+            public CompactVisitor(PhpArray locals, [Out]PhpArray result)
+            {
+                _locals = locals;
+                _result = result;
+            }
+
+            void Accept(IntStringKey name)
+            {
+                // if variable exists adds a copy of its current value to the result:
+                if (_locals.TryGetValue(name, out var value))
+                {
+                    _result.Add(name, value.DeepCopy());
+                }
+            }
+
+            public override void Accept(PhpString obj)
+            {
+                Accept(new IntStringKey(obj.ToString()));
+            }
+
+            public override void Accept(string obj)
+            {
+                Accept(new IntStringKey(obj));
+            }
+
+            public override void Accept(PhpArray obj)
+            {
+                if (_visited.Add(obj))
+                {
+                    base.Accept(obj);
+
+                    // we don't have to remove obj from the set,
+                    // don't visit the same array twice
+                }
+            }
         }
 
         /// <summary>
