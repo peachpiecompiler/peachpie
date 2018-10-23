@@ -41,7 +41,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Method that enumerates all script files.
         /// 
-        /// EnumerateScripts(Action&lt;string, RuntimeTypeHandle&gt; callback)
+        /// EnumerateScripts(Action&lt;string, MainDelegate&gt; callback)
         /// </summary>
         internal MethodSymbol EnumerateScriptsSymbol => _enumerateScripsSymbol ?? (_enumerateScripsSymbol = CreateEnumerateScriptsSymbol());
         MethodSymbol _enumerateScripsSymbol;
@@ -184,16 +184,16 @@ namespace Pchp.CodeAnalysis.Symbols
         }
         /// <summary>
         /// Method that enumerates all script Main functions.
-        /// EnumerateScripts(Action&lt;string, RuntimeMethodHandle&gt; callback)
+        /// EnumerateScripts(Action&lt;string, MainDelegate&gt; callback)
         /// </summary>
         MethodSymbol CreateEnumerateScriptsSymbol()
         {
             var compilation = DeclaringCompilation;
             var action_T2 = compilation.GetWellKnownType(WellKnownType.System_Action_T2);
-            var action_string_type = action_T2.Construct(compilation.CoreTypes.String, compilation.CoreTypes.RuntimeTypeHandle);
+            var action_string_delegate = action_T2.Construct(compilation.CoreTypes.String, compilation.CoreTypes.MainDelegate);
 
             var method = new SynthesizedMethodSymbol(this, "EnumerateScripts", true, false, compilation.CoreTypes.Void, Accessibility.Public);
-            method.SetParameters(new SynthesizedParameterSymbol(method, action_string_type, 0, RefKind.None, "callback"));
+            method.SetParameters(new SynthesizedParameterSymbol(method, action_string_delegate, 0, RefKind.None, "callback"));
 
             //
             return method;

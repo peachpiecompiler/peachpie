@@ -171,11 +171,6 @@ namespace Pchp.Core
                 _scripts[index] = script;
             }
 
-            internal static void DeclareScript(string path, RuntimeTypeHandle scriptHandle)
-            {
-                DeclareScript(path, Type.GetTypeFromHandle(scriptHandle));
-            }
-
             /// <summary>
             /// Associates path with an ID.
             /// Does not declare the script within <see cref="_scripts"/>.

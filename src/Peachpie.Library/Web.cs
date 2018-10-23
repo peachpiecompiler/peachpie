@@ -806,5 +806,53 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        #region idn_to_ascii, idn_to_utf8
+
+        public const int IDNA_DEFAULT = 0;
+        public const int IDNA_ALLOW_UNASSIGNED = 1;
+        public const int IDNA_USE_STD3_RULES = 2;
+
+        public const int INTL_IDNA_VARIANT_2003 = 0;
+        public const int INTL_IDNA_VARIANT_UTS46 = 1;
+
+        /// <summary>
+        /// Convert domain name to IDNA ASCII form.
+        /// </summary>
+        [return: CastToFalse]
+        public static string idn_to_ascii(string domain, int options = IDNA_DEFAULT, int variant = INTL_IDNA_VARIANT_UTS46)
+        {
+            return new System.Globalization.IdnMapping().GetAscii(domain);
+        }
+
+        /// <summary>
+        /// Convert domain name to IDNA ASCII form.
+        /// </summary>
+        //[return: CastToFalse]
+        public static string idn_to_ascii(string domain, int options, int variant, ref PhpArray idna_info)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Convert domain name from IDNA ASCII to Unicode
+        /// </summary>
+        //[return: CastToFalse]
+        public static string idn_to_utf8(string domain, int options = IDNA_DEFAULT, int variant = INTL_IDNA_VARIANT_UTS46)
+        {
+            return new System.Globalization.IdnMapping().GetUnicode(domain);
+        }
+
+        /// <summary>
+        /// Convert domain name from IDNA ASCII to Unicode
+        /// </summary>
+        //[return: CastToFalse]
+        public static string idn_to_utf8(string domain, int options, int variant, ref PhpArray idna_info)
+        {
+            throw new NotImplementedException();
+        }
+
+
+        #endregion
     }
 }

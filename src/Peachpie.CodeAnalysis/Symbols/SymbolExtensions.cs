@@ -65,36 +65,14 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public static QualifiedName GetPhpTypeNameOrNull(this PENamedTypeSymbol s)
         {
-            var attrs = s.GetAttributes();
-            if (attrs.Length != 0)
+            if (TryGetPhpTypeAttribute(s, out var tname, out var fname))
             {
-                for (int i = 0; i < attrs.Length; i++)
-                {
-                    if (attrs[i].AttributeClass.MetadataName == "PhpTypeAttribute")
-                    {
-                        var ctorargs = attrs[i].ConstructorArguments;
-                        var tname = ctorargs[0];
-                        var tnamestr = tname.IsNull ? null : tname.DecodeValue<string>(SpecialType.System_String);
-
-                        const string InheritName = "[name]";
-
-                        if (tnamestr == null)
-                        {
-                            return s.MakeQualifiedName();
-                        }
-                        else if (tnamestr == InheritName)
-                        {
-                            return new QualifiedName(new Name(s.Name));
-                        }
-                        else
-                        {
-                            return QualifiedName.Parse(tnamestr.Replace(InheritName, s.Name), true);
-                        }
-                    }
-                }
+                return tname != null
+                    ? QualifiedName.Parse(tname, true)
+                    : s.MakeQualifiedName();
             }
 
-            return default(QualifiedName);
+            return default;
         }
 
         /// <summary>
@@ -134,9 +112,21 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (fullname == CoreTypes.PhpTypeAttributeFullName)
                 {
                     var args = a.CommonConstructorArguments;
-                    typename = (string)args[0].Value;
-                    filename = (string)args[1].Value;
-                    return true;
+                    if (args.Length == 2)
+                    {
+                        typename = (string)args[0].Value;
+                        filename = (string)args[1].Value;
+                        return true;
+                    }
+                    else if (args.Length == 1)
+                    {
+                        typename = filename = null;
+
+                        var phptype = (int)args[0].Value; // see PhpTypeAttribute.PhpTypeName
+                        if (phptype == 1/*PhpTypeName.NameOnly*/) typename = symbol.Name;
+
+                        return true;
+                    }
                 }
             }
 

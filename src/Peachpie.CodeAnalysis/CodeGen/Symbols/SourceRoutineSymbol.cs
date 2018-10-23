@@ -76,6 +76,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <returns>List of additional overloads.</returns>
         internal virtual IList<MethodSymbol> SynthesizeStubs(PEModuleBuilder module, DiagnosticBag diagnostic)
         {
+            // TODO: resolve this already in SourceTypeSymbol.GetMembers(), now it does not get overloaded properly
             return SynthesizeOverloadsWithOptionalParameters(module, diagnostic);
         }
 
@@ -94,7 +95,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var ps = this.Parameters;
             for (int i = 0; i < ps.Length; i++)
             {
-                if (ps[i] is SourceParameterSymbol p && p.Initializer != null && p.ExplicitDefaultConstantValue == null)   // => ConstantValue couldn't be resolved for optional parameter
+                if (ps[i] is IPhpValue p && p.Initializer != null && ps[i].ExplicitDefaultConstantValue == null)   // => ConstantValue couldn't be resolved for optional parameter
                 {
                     if (list == null)
                     {
@@ -103,26 +104,22 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     if (this.ContainingType.IsInterface)
                     {
-                        // TODO: we can't build instance method in an interface, generate static extension method ?
-                        Debug.WriteLine($"we've lost parameter explicit default value {this.ContainingType.Name}::{this.RoutineName}, parameter ${p.Name}");
+                        // TODO: we can't build instance method in an interface
+                        // - generate static extension method ?
+                        // - annotate parameter with attribute and the initializer value?
+                        //   ? [Optional(EmptyArray)]
+                        //   ? [Optional(array(1,2,3))]
+                        Debug.WriteLine($"we've lost parameter explicit default value {this.ContainingType.Name}::{this.RoutineName}, parameter ${ps[i].Name}");
                     }
                     else
                     {
                         // create ghost stub foo(p0, .. pi-1) => foo(p0, .. , pN)
-                        list.Add(CreateGhostOverload(module, diagnostic, i));
+                        list.Add(GhostMethodBuilder.CreateGhostOverload(this, module, diagnostic, i));
                     }
                 }
             }
 
             return list ?? (IList<MethodSymbol>)Array.Empty<MethodSymbol>();
-        }
-
-        MethodSymbol CreateGhostOverload(PEModuleBuilder module, DiagnosticBag diagnostic, int pcount)
-        {
-            Debug.Assert(this.Parameters.Length > pcount);
-            return GhostMethodBuilder.CreateGhostOverload(
-                this, this.ContainingType, module, diagnostic,
-                ghostreturn: this.ReturnType, ghostparams: this.Parameters.Take(pcount), explicitOverride: null);
         }
 
         public virtual void Generate(CodeGenerator cg)
@@ -243,6 +240,13 @@ namespace Pchp.CodeAnalysis.Symbols
 
     partial class SourceGlobalMethodSymbol
     {
+        /// <summary>
+        /// Real main method with <c>MainDelegate</c> signature.
+        /// The method is generated lazily in order to provide method compatible with MainDelegate.
+        /// <see cref="SourceGlobalMethodSymbol"/> may have (usually have) a different return type.
+        /// </summary>
+        internal SynthesizedMethodSymbol _mainMethod0;
+
         internal override IPlace GetThisPlace() => new ParamPlace(ThisParameter);
 
         internal override IList<MethodSymbol> SynthesizeStubs(PEModuleBuilder module, DiagnosticBag diagnostic)
@@ -276,6 +280,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 // generate method body
                 module.CreateMainMethodWrapper(wrapper, this, diagnostics);
+
+                //
+                _mainMethod0 = wrapper;
             }
         }
     }

@@ -190,17 +190,26 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(parameters != null);
 
-            if (parameters.Length == 0)
+            // trim trailing empty parameters (PHP >=7.3)
+            var pcount = parameters.Length;
+            while (pcount > 0 && parameters[pcount - 1] == null)
+            {
+                pcount--;
+            }
+
+            //
+            if (pcount == 0)
             {
                 return ImmutableArray<BoundArgument>.Empty;
             }
 
             //
             var unpacking = false;
-            var arguments = new BoundArgument[parameters.Length];
-            for (int i = 0; i < parameters.Length; i++)
+            var arguments = new BoundArgument[pcount];
+            for (int i = 0; i < pcount; i++)
             {
                 var p = parameters[i];
+                Debug.Assert(p != null);
                 var arg = BindArgument(p.Expression, p.Ampersand, p.IsUnpack);
 
                 //

@@ -1,9 +1,9 @@
 Param(
-  [string]$suffix = "dev",
+  [string]$version = "0.9.9-dev",
   [string]$config = "Debug"
 )
 
-$props = "/p:VersionSuffix=$suffix,PackageVersionSuffix=$suffix,Configuration=$config"
+$props = "/p:Version=$version,Configuration=$config"
 
 Write-Host -f Green "msbuild $props ..."
 

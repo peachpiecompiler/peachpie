@@ -155,7 +155,9 @@ namespace Pchp.CodeAnalysis.Symbols
                     .AsImmutable();
 
             // what parameters are provided
-            var givenparams = (phpconstruct != null) ? phpconstruct.Parameters.Where(p => !p.IsImplicitlyDeclared).ToArray() : Array.Empty<ParameterSymbol>();
+            var givenparams = (phpconstruct != null)
+                ? phpconstruct.Parameters.Where(p => !p.IsImplicitlyDeclared && !p.IsParams).AsImmutable()
+                : ImmutableArray<ParameterSymbol>.Empty;
 
             // first declare .ctor that initializes fields only and calls base .ctor
             var basector = ResolveBaseCtor(givenparams, basectors);
@@ -193,41 +195,30 @@ namespace Pchp.CodeAnalysis.Symbols
             yield break;
         }
 
-        static bool CanBePassedTo(ParameterSymbol[] givenparams, ParameterSymbol[] calledparams)
+        static MethodSymbol ResolveBaseCtor(ImmutableArray<ParameterSymbol> givenparams, ImmutableArray<MethodSymbol> candidates)
         {
-            for (int i = 0; i < calledparams.Length; i++)
-            {
-                if (i >= givenparams.Length)
-                {
-                    if (!calledparams[i].IsOptional)
-                    {
-                        return false;
-                    }
-                }
-                else if (!givenparams[i].CanBePassedTo(calledparams[i]))
-                {
-                    return false;
-                }
-            }
+            MethodSymbol best = null;
+            var bestcost = OverrideHelper.ConversionCost.MissingArgs; // the minimal errornous case
 
-            return true;
-        }
-
-        static MethodSymbol ResolveBaseCtor(ParameterSymbol[] givenparams, ImmutableArray<MethodSymbol> candidates)
-        {
             // find best matching basector
             foreach (var c in candidates)
             {
-                var calledparams = c.Parameters.Where(p => !p.IsImplicitlyDeclared).ToArray();
+                var calledparams = c.Parameters.Where(p => !p.IsImplicitlyDeclared && !p.IsParams).ToImmutableArray();
 
-                if (CanBePassedTo(givenparams, calledparams) && !c.IsStatic && c.DeclaredAccessibility != Accessibility.Private)
+                if (!c.IsStatic && c.DeclaredAccessibility != Accessibility.Private)
                 {
-                    // we have found base constructor with most parameters we can call with given parameters
-                    return c;
+                    var cost = OverrideHelper.OverrideCost(givenparams, calledparams);
+                    if (cost < bestcost)
+                    {
+                        // we have found base constructor with most parameters we can call with given parameters
+                        bestcost = cost;
+                        best = c;
+                    }
                 }
             }
 
-            return null;
+            //
+            return best;
         }
 
         #region .ctor metadata

@@ -18,6 +18,7 @@ namespace Peachpie.Library.PDO
     /// </summary>
     /// <seealso cref="IPDOStatement" />
     [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpExtension(PDOConfiguration.PdoExtensionName)]
     public class PDOStatement : IPDOStatement, IDisposable
     {
         /// <summary>Runtime context. Cannot be <c>null</c>.</summary>

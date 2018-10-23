@@ -372,7 +372,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         public CodeGenerator(CodeGenerator cg, SourceRoutineSymbol routine)
             : this(cg._il, cg._moduleBuilder, cg._diagnostics, cg._optimizations, cg._emitPdbSequencePoints, routine.ContainingType, cg.ContextPlaceOpt, cg.ThisPlaceOpt, routine, cg._localsPlaceOpt, cg.InitializedLocals)
         {
-            Contract.ThrowIfNull(routine);
             _emmittedTag = cg._emmittedTag;
         }
 

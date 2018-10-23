@@ -12,12 +12,7 @@ namespace Pchp.Core.Utilities
         /// <summary>
         /// Gets exported value or <c>null</c>.
         /// </summary>
-        public static T TryGetExport<T>(this CompositionContext context)
-        {
-            T value;
-            context.TryGetExport<T>(out value);
-            return value;
-        }
+        public static T TryGetExport<T>(this CompositionContext context) => context.TryGetExport<T>(out T value) ? value : default;
 
         /// <summary>
         /// Loads assembly by name. Returns <c>null</c> if load fails.

@@ -55,15 +55,28 @@ namespace Pchp.Library.DateTime
 
         #region Construction
 
-        // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
-        public DateTime(Context ctx, string time = null, DateTimeZone timezone = null)
+        [PhpFieldsOnlyCtor]
+        protected DateTime(Context ctx)
         {
             Debug.Assert(ctx != null);
 
             _ctx = ctx;
 
+            this.Time = System_DateTime.UtcNow;
+        }
+
+        // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
+        public DateTime(Context ctx, string time = null, DateTimeZone timezone = null)
+            : this(ctx)
+        {
+            __construct(time, timezone);
+        }
+
+        // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
+        public void __construct(string time = null, DateTimeZone timezone = null)
+        {
             this.TimeZone = (timezone == null)
-                ? PhpTimeZone.GetCurrentTimeZone(ctx)
+                ? PhpTimeZone.GetCurrentTimeZone(_ctx)
                 : timezone.timezone;
 
             if (TimeZone == null)
@@ -73,7 +86,7 @@ namespace Pchp.Library.DateTime
                 throw new ArgumentException();
             }
 
-            this.Time = StrToTime(ctx, time, System_DateTime.UtcNow);
+            this.Time = StrToTime(_ctx, time, System_DateTime.UtcNow);
 
             //this.date.Value = this.Time.ToString("yyyy-mm-dd HH:mm:ss");
             //this.timezone_type.Value = 3;
@@ -86,7 +99,7 @@ namespace Pchp.Library.DateTime
 
         internal static System_DateTime StrToTime(Context ctx, string timestr, System_DateTime time)
         {
-            if (string.IsNullOrEmpty(timestr) || timestr.Equals("now", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrEmpty(timestr) || timestr.EqualsOrdinalIgnoreCase("now"))
             {
                 return System_DateTime.UtcNow;
             }

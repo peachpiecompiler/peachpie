@@ -58,9 +58,9 @@ namespace Pchp.Core.Dynamic
             {
                 this.TargetInstance = target.Expression;
                 this.CurrentTargetInstance = target.Value;
-                if (this.TargetType == null && target.Value != null)
+                if (this.TargetType == null && target.HasValue)
                 {
-                    this.TargetType = target.Value.GetPhpTypeInfo();
+                    this.TargetType = target.RuntimeType.GetPhpTypeInfo();
                 }
             }
 

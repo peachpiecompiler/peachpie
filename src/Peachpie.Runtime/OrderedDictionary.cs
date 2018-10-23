@@ -832,7 +832,7 @@ namespace Pchp.Core
                 _table.entries[_currentEntry]._key = newkey;
             }
 
-            internal void ModifyCurrentValue(PhpValue newvalue)
+            private void ModifyCurrentValue(PhpValue newvalue)
             {
                 Debug.Assert(IsValid);
                 _table.entries[_currentEntry]._value = newvalue;

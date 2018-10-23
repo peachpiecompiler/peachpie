@@ -2222,20 +2222,48 @@ namespace Pchp.CodeAnalysis.CodeGen
             if ((cvalue = targetp.ExplicitDefaultConstantValue) != null)
             {
                 // keep NULL if parameter is a reference type
-                if (cvalue.IsNull && targetp.Type.IsReferenceType && targetp.Type != CoreTypes.PhpAlias)
+                if (cvalue.IsNull && targetp.Type != CoreTypes.PhpAlias)
                 {
-                    _il.EmitNullConstant();
+                    if (targetp.Type.IsReferenceType)
+                    {
+                        // reference type
+                        _il.EmitNullConstant();
+                    }
+                    else
+                    {
+                        // value type ~ default(T)
+                        EmitLoadDefaultOfValueType(targetp.Type);
+                    }
                     return;
                 }
 
                 //
                 ptype = EmitLoadConstant(cvalue.Value, targetp.Type);
             }
-            else if ((boundinitializer = (targetp as SourceParameterSymbol)?.Initializer) != null)
+            else if ((boundinitializer = (targetp as IPhpValue)?.Initializer) != null)
             {
-                using (var cg = new CodeGenerator(this, (SourceRoutineSymbol)targetp.ContainingSymbol))
+                // TODO: use `boundinitializer.Parent` instead of following
+                // magically determine the source routine corresponding to the initializer expression:
+                SourceRoutineSymbol srcr = null;
+                for (var r = targetp.ContainingSymbol;
+                     srcr == null && r != null; // we still don't have to original SourceRoutineSymbol, but we have "r"
+                     r = (r as SynthesizedMethodSymbol)?.ForwardedCall?.OriginalDefinition) // dig in and find original SourceRoutineSymbol wrapped by this synthesized stub
                 {
-                    cg.EmitConvert(boundinitializer, ptype = targetp.Type);
+                    srcr = r as SourceRoutineSymbol;
+                }
+
+                Debug.Assert(srcr != null, "!srcr");
+
+                if (srcr != null)
+                {
+                    using (var cg = new CodeGenerator(this, srcr))
+                    {
+                        cg.EmitConvert(boundinitializer, ptype = targetp.Type);
+                    }
+                }
+                else
+                {   // should not happen
+                    ptype = EmitLoadDefault(targetp.Type, 0);
                 }
             }
             else if (targetp.IsParams)
@@ -2246,8 +2274,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
-                ptype = targetp.Type;
-                EmitLoadDefault(ptype, 0);
+                ptype = EmitLoadDefault(targetp.Type, 0);
             }
 
             // eventually convert emitted value to target parameter type
@@ -2993,7 +3020,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        public void EmitLoadDefault(TypeSymbol type, TypeRefMask typemask)
+        public TypeSymbol EmitLoadDefault(TypeSymbol type, TypeRefMask typemask)
         {
             Debug.Assert(type != null);
 
@@ -3084,6 +3111,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     break;
             }
+
+            return type;
         }
 
         /// <summary>

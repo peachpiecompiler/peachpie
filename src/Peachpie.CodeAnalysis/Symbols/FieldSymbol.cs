@@ -25,6 +25,11 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
+        /// Optional. Gets the initializer.
+        /// </summary>
+        public virtual BoundExpression Initializer => null;
+
+        /// <summary>
         /// The original definition of this symbol. If this symbol is constructed from another
         /// symbol by type substitution then OriginalDefinition gets the original symbol as it was defined in
         /// source or metadata.

@@ -1,4 +1,5 @@
 ﻿using Pchp.Core.Reflection;
+using Pchp.Core.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -44,6 +45,32 @@ namespace Pchp.Core.Dynamic
 
             // TODO: ErrCode method not found
             throw new ArgumentException(string.Format("Function '{0}' not found!", nameText));
+        }
+
+        /// <summary>
+        /// Checks the method's signature is in format:
+        /// - <c>(name, params T[])</c>
+        /// - <c>(name, ...)</c>
+        /// Ignores implicit arguments at the beginning of the signature.
+        /// </summary>
+        protected static bool IsClrMagicCallWithParams(MethodInfo method)
+        {
+            var ps = method.GetParameters();
+
+            // ignore implicit parameters at beginning of the routine
+            var first = ps.TakeWhile(BinderHelpers.IsImplicitParameter).Count();
+
+            var count = ps.Length - first;
+            if (count >= 1)
+            {
+                if (!method.DeclaringType.GetPhpTypeInfo().IsPhpType) // only methods declared outside PHP code
+                {
+                    if (count > 2) return true;
+                    if (ps.Last().IsParamsParameter()) return true;
+                }
+            }
+
+            return false;
         }
 
         #region DynamicMetaObjectBinder
@@ -220,12 +247,25 @@ namespace Pchp.Core.Dynamic
             var call = BinderHelpers.FindMagicMethod(bound.TargetType, TypeMethods.MagicMethods.__call);
             if (call != null)
             {
-                // target.__call(name, array)
-                var call_args = new Expression[]
+                Expression[] call_args;
+
+                if (call.Methods.All(IsClrMagicCallWithParams))
                 {
-                    name_expr,
-                    BinderHelpers.NewPhpArray(bound.Arguments),
-                };
+                    // Template: target.__call(name, arg1, arg2, ...)
+                    // flatterns the arguments:
+                    call_args = ArrayUtils.AppendRange(name_expr, bound.Arguments);
+                }
+                else
+                {
+                    // Template: target.__call(name, array)
+                    // regular PHP behavior:
+                    call_args = new Expression[]
+                    {
+                        name_expr,
+                        BinderHelpers.NewPhpArray(bound.Arguments),
+                    };
+                }
+
                 return OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, call.Methods, bound.Context, call_args, false);
             }
 
@@ -295,22 +335,42 @@ namespace Pchp.Core.Dynamic
 
         protected override Expression BindMissingMethod(CallSiteContext bound)
         {
-            if (bound.TargetType == null)   // already reported - class cannot be found
+            var type = bound.TargetType;
+            if (type == null)   // already reported - class cannot be found
             {
                 return ConvertExpression.BindDefault(this.ReturnType);
             }
 
-            var call = BinderHelpers.FindMagicMethod(bound.TargetType, (bound.TargetInstance == null) ? TypeMethods.MagicMethods.__callstatic : TypeMethods.MagicMethods.__call);
+            if (bound.TargetInstance != null && bound.CurrentTargetInstance != null) // it has been checked it is a subclass of TargetType
+            {
+                // ensure current scope's __call() is favoured over the specified class
+                type = bound.CurrentTargetInstance.GetPhpTypeInfo();
+            }
+
+            var call = BinderHelpers.FindMagicMethod(type, (bound.TargetInstance == null) ? TypeMethods.MagicMethods.__callstatic : TypeMethods.MagicMethods.__call);
             if (call != null)
             {
+                Expression[] call_args;
+
                 var name_expr = (_name != null) ? Expression.Constant(_name) : bound.IndirectName;
 
-                // T.__callStatic(name, array)
-                var call_args = new Expression[]
+                if (call.Methods.All(IsClrMagicCallWithParams))
                 {
-                    name_expr,
-                    BinderHelpers.NewPhpArray(bound.Arguments),
-                };
+                    // Template: target.__call(name, arg1, arg2, ...)
+                    // flatterns the arguments:
+                    call_args = ArrayUtils.AppendRange(name_expr, bound.Arguments);
+                }
+                else
+                {
+                    // Template: target.__call(name, array)
+                    // regular PHP behavior:
+                    call_args = new Expression[]
+                    {
+                        name_expr,
+                        BinderHelpers.NewPhpArray(bound.Arguments),
+                    };
+                }
+
                 return OverloadBinder.BindOverloadCall(_returnType, bound.TargetInstance, call.Methods, bound.Context, call_args, true, lateStaticType: bound.TargetType);
             }
 

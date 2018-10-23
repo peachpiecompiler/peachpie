@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Peachpie.NET.Sdk" Version="$(VersionPrefix)-$(VersionSuffix)" PrivateAssets="Build" />
+    <PackageReference Include="Peachpie.NET.Sdk" Version="$(Version)" PrivateAssets="Build" />
   </ItemGroup>
 
 </Project>

@@ -322,6 +322,10 @@ namespace Pchp.CodeAnalysis.Symbols
         // abstract trait method must have an empty implementation
         public override bool IsAbstract => false;
 
+        public override bool IsVirtual => false;
+        public override bool IsOverride => false;
+        internal override bool IsMetadataFinal => false; // final trait method must not be marked sealed in CIL
+
         // abstract trait method must have an empty implementation
         internal override IList<Statement> Statements => base.IsAbstract ? Array.Empty<Statement>() : base.Statements;
     }

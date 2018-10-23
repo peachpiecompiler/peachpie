@@ -44,6 +44,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         TypeSymbol IPhpPropertySymbol.DeclaringType => _containingType;
 
+        /// <summary>
+        /// Optional. The field initializer expression.
+        /// </summary>
+        public override BoundExpression Initializer => _initializer;
+
         #endregion
 
         readonly SourceTypeSymbol _containingType;
@@ -64,10 +69,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         readonly Accessibility _accessibility;
 
-        /// <summary>
-        /// Optional. The field initializer expression.
-        /// </summary>
-        public BoundExpression Initializer => _initializer;
         readonly BoundExpression _initializer;
 
         /// <summary>

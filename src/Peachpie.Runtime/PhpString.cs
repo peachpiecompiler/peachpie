@@ -256,7 +256,7 @@ namespace Pchp.Core.Text
         /// <summary>
         /// Gets first characters <c>ord</c>.
         /// </summary>
-        public static int Ord(this PhpString str) => str.IsEmpty ? 0 : PhpString.AsArray(str)[0].Ord();
+        public static int Ord(this PhpString str) => str.IsEmpty ? 0 : (int)str[0];
 
         /// <summary>
         /// Gets substring of this instance.
@@ -304,6 +304,9 @@ namespace Pchp.Core
     [DebuggerNonUserCode]
     public struct PhpString : IPhpConvertible
     {
+        /// <summary>
+        /// Writeable string representation consisting of both Unicode (<see cref="string"/> or <see cref="char"/>[]) and Single-byte characters (<see cref="byte"/>[]).
+        /// </summary>
         [DebuggerDisplay("{DebugString}")]
         public sealed class Blob : IMutableString
         {
@@ -656,7 +659,16 @@ namespace Pchp.Core
             {
                 if (!value.IsEmpty)
                 {
-                    Add(value._blob);
+                    var data = value._data;
+                    if (data is Blob b)
+                    {
+                        Add(b);
+                    }
+                    else
+                    {
+                        Debug.Assert(data is string);
+                        AddChunk((string)data);
+                    }
                 }
             }
 
@@ -1323,67 +1335,76 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Content of the string, may be shared.
-        /// Can be <c>null</c>.
+        /// Content of the string.
+        /// Can be either <see cref="string"/> or <see cref="Blob"/> or a <c>null</c> reference (because of <c>default</c>).
         /// </summary>
-        Blob _blob; // TODO: allow union of "null|string|Blob"
+        object _data;
 
         /// <summary>
         /// Gets the count of characters and binary characters.
         /// </summary>
-        public int Length => _blob != null ? _blob.Length : 0;
+        public int Length => _data is string str ? str.Length : _data is Blob b ? b.Length : 0;
 
         /// <summary>
         /// Gets value indicating the string contains <see cref="byte"/> instead of unicode <see cref="string"/>.
         /// </summary>
-        public bool ContainsBinaryData => _blob.ContainsBinaryData;
+        public bool ContainsBinaryData => _data is Blob b && b.ContainsBinaryData;
 
         /// <summary>
         /// Gets value indicating the string is empty.
         /// </summary>
-        public bool IsEmpty => ReferenceEquals(_blob, null) || _blob.IsEmpty;
+        public bool IsEmpty => IsDefault || (_data is string s && s.Length == 0) || (_data is Blob b && b.IsEmpty);
 
         /// <summary>
         /// The value is not initialized.
         /// </summary>
-        public bool IsDefault => ReferenceEquals(_blob, null);
+        public bool IsDefault => ReferenceEquals(_data, null);
 
         /// <summary>
         /// Empty immutable string.
         /// </summary>
-        public static PhpString Empty => default(PhpString); // TODO: should be Blob.Empty.AddRef
+        public static PhpString Empty => new PhpString(string.Empty);
 
         #region Construction, DeepCopy
 
         public PhpString(Blob blob)
         {
-            _blob = blob;
+            _data = blob;
         }
 
         public PhpString(PhpString from)
-            : this(from._blob?.AddRef())
         {
+            var data = from._data;
+
+            if (data is Blob b)
+            {
+                data = b.AddRef();
+            }
+
+            _data = data;
         }
 
         public PhpString(PhpValue x, Context ctx)
         {
-            _blob = new Blob();
-            _blob.Add(x, ctx);
+            var b = new Blob();
+            b.Add(x, ctx);
+
+            _data = b;
         }
 
         public PhpString(string value)
         {
-            _blob = new Blob(value);    // TODO: _blob = string
+            _data = value; // can be null or string
         }
 
         public PhpString(byte[] value)
         {
-            _blob = new Blob(value);
+            _data = new Blob(value);
         }
 
         public PhpString(string x, string y)
         {
-            _blob = new Blob(x, y);
+            _data = new Blob(x, y);
         }
 
         public PhpString DeepCopy() => new PhpString(this);
@@ -1395,32 +1416,54 @@ namespace Pchp.Core
         /// </summary>
         public Blob EnsureWritable()
         {
-            var blob = _blob;
+            Blob blob;
 
-            if (ReferenceEquals(blob, null))
+            if ((blob = _data as Blob) != null)
             {
-                _blob = blob = new Blob();
+                if (blob.IsShared)
+                {
+                    _data = blob = blob.ReleaseOne();
+                }
             }
-            else if (blob.IsShared)
+            else if (ReferenceEquals(_data, null))
             {
-                _blob = blob = blob.ReleaseOne();
+                blob = new Blob();
+                _data = blob;
+            }
+            else if (_data is string str)
+            {
+                blob = new Blob(str);
+                _data = blob;
             }
 
             //
-
             return blob;
         }
 
         /// <summary>
         /// Outputs the string content to the context output streams.
         /// </summary>
-        internal void Output(Context ctx) => _blob?.Output(ctx);
+        internal void Output(Context ctx)
+        {
+            if (_data is Blob b)
+            {
+                b.Output(ctx);
+            }
+            else if (_data is string str)
+            {
+                ctx.Output.Write(str);
+            }
+            else
+            {
+                Debug.Assert(_data == null);
+            }
+        }
 
         // Prepend
 
         #region IPhpConvertible
 
-        public bool ToBoolean() => _blob != null && _blob.ToBoolean();
+        public bool ToBoolean() => _data != null && (_data is Blob b ? b.ToBoolean() : Convert.ToBoolean((string)_data));
 
         public double ToDouble() => Convert.StringToDouble(ToString());
 
@@ -1457,7 +1500,7 @@ namespace Pchp.Core
         /// <returns>Character at given position.</returns>
         public char this[int index]
         {
-            get => _blob[index].AsChar();
+            get => _data is Blob b ? b[index].AsChar() : _data is string str ? str[index] : '\0';
             set => EnsureWritable()[index] = value;
         }
 
@@ -1487,9 +1530,31 @@ namespace Pchp.Core
                 throw new ArgumentOutOfRangeException(nameof(startIndex));
             }
 
-            if (!ReferenceEquals(_blob, null) && length > 0 && startIndex < this.Length)
+            if (!IsDefault && length > 0)
             {
-                _blob.Substring(target, startIndex, ref length);
+                if (_data is Blob b)
+                {
+                    if (startIndex < b.Length)
+                    {
+                        b.Substring(target, startIndex, ref length);
+                    }
+                }
+                else if (_data is string str)
+                {
+                    if (startIndex < str.Length)
+                    {
+                        if (startIndex + length > str.Length)
+                        {
+                            str = str.Substring(startIndex);
+                        }
+                        else
+                        {
+                            str = str.Substring(startIndex, length);
+                        }
+
+                        target.Add(str);
+                    }
+                }
             }
         }
 
@@ -1504,20 +1569,25 @@ namespace Pchp.Core
         /// Gets read-only array access to the string.
         /// For write access, use <see cref="EnsureWritable()"/>.
         /// </summary>
-        public static Blob AsArray(PhpString str) => str._blob ?? new Blob();
+        public static Blob AsArray(PhpString str) => str._data is Blob b ? b : str._data is string s ? new Blob(s) : new Blob(); // TODO: can be removed (?)
 
         /// <summary>
         /// Wraps the string into <see cref="PhpValue"/>.
         /// </summary>
-        internal static PhpValue AsPhpValue(PhpString str) => str.IsEmpty ? PhpValue.Create(string.Empty) : PhpValue.Create(str._blob.AddRef());
+        internal static PhpValue AsPhpValue(PhpString str) =>
+            str.IsDefault
+            ? (PhpValue)string.Empty
+            : str._data is Blob b
+                ? PhpValue.Create(b.AddRef())
+                : PhpValue.Create((string)str._data);
 
-        public override string ToString() => _blob?.ToString(Encoding.UTF8);
+        public override string ToString() => ToString(Encoding.UTF8);
 
-        public string ToString(Encoding encoding) => _blob?.ToString(encoding);
+        public string ToString(Encoding encoding) => _data is Blob b ? b.ToString(encoding) : _data is string str ? str : string.Empty;
 
         public byte[] ToBytes(Context ctx) => ToBytes(ctx.StringEncoding);
 
-        public byte[] ToBytes(Encoding encoding) => IsEmpty ? Array.Empty<byte>() : _blob.ToBytes(encoding);
+        public byte[] ToBytes(Encoding encoding) => IsEmpty ? Array.Empty<byte>() : _data is Blob b ? b.ToBytes(encoding) : encoding.GetBytes((string)_data);
 
         public PhpNumber ToNumber()
         {

@@ -1472,7 +1472,7 @@ namespace Peachpie.Library.Graphics
         /// <summary>
         /// Get Mime-Type for image-type returned by getimagesize, exif_read_data, exif_thumbnail, exif_imagetype
         /// </summary> 
-        [return: CastToFalse]
+        //[return: CastToFalse]
         public static string image_type_to_mime_type(ImageType imagetype)
         {
             switch (imagetype)

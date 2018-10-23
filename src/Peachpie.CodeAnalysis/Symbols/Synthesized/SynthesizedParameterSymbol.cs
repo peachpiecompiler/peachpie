@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.PooledObjects;
+using Pchp.CodeAnalysis.Semantics;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -26,6 +27,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         private int _ordinal;
 
+        public override BoundExpression Initializer => _initializer;
+        private readonly BoundExpression _initializer; // TODO: sanitize this
+
         public SynthesizedParameterSymbol(
             MethodSymbol container,
             TypeSymbol type,
@@ -35,7 +39,8 @@ namespace Pchp.CodeAnalysis.Symbols
             bool isParams = false,
             ImmutableArray<CustomModifier> customModifiers = default(ImmutableArray<CustomModifier>),
             ushort countOfCustomModifiersPrecedingByRef = 0,
-            ConstantValue explicitDefaultConstantValue = null)
+            ConstantValue explicitDefaultConstantValue = null,
+            BoundExpression initializer = null)
         {
             Debug.Assert((object)type != null);
             Debug.Assert(name != null);
@@ -50,6 +55,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _customModifiers = customModifiers.NullToEmpty();
             _countOfCustomModifiersPrecedingByRef = countOfCustomModifiersPrecedingByRef;
             _explicitDefaultConstantValue = explicitDefaultConstantValue;
+            _initializer = initializer;
         }
 
         public static SynthesizedParameterSymbol Create(MethodSymbol container, ParameterSymbol p)
@@ -57,7 +63,8 @@ namespace Pchp.CodeAnalysis.Symbols
             return new SynthesizedParameterSymbol(container, p.Type, p.Ordinal, p.RefKind,
                 name: p.Name,
                 isParams: p.IsParams,
-                explicitDefaultConstantValue: p.ExplicitDefaultConstantValue);
+                explicitDefaultConstantValue: p.ExplicitDefaultConstantValue,
+                initializer: ((IPhpValue)p.OriginalDefinition).Initializer); // TODO: sanitize BoundExpression
         }
 
         internal override TypeSymbol Type

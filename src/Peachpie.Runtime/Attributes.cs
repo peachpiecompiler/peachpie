@@ -136,8 +136,12 @@ namespace Pchp.Core
         /// <summary>
         /// Optional. Explicitly set type name.
         /// </summary>
-        public string ExplicitTypeName => _typename;
-        readonly string _typename;
+        public string ExplicitTypeName { get; }
+
+        /// <summary>
+        /// Indicates how to treat the type name.
+        /// </summary>
+        public PhpTypeName TypeNameAs { get; }
 
         /// <summary>
         /// Optional. Relative path to the file where the type is defined.
@@ -145,21 +149,51 @@ namespace Pchp.Core
         public string FileName { get; }
 
         /// <summary>
-        /// <see cref="ExplicitTypeName"/> value stating that the type name is inherited from the CLR name excluding its namespace part.
+        /// Value stating that the type name is inherited from the CLR name excluding its namespace part, see <see cref="PhpTypeName.NameOnly"/>.
         /// It causes CLR type <c>A.B.C.X</c> to appear in PHP as <c>X</c>.
         /// </summary>
-        public const string InheritName = "[name]";
+        public const PhpTypeName InheritName = PhpTypeName.NameOnly;
+
+        /// <summary>
+        /// Value indicating how to treat the type name in PHP.
+        /// </summary>
+        public enum PhpTypeName
+        {
+            /// <summary>
+            /// Full type name including its namespace name is used.
+            /// </summary>
+            Default = 0,
+
+            /// <summary>
+            /// Namespace of the CLR type is ignored.
+            /// </summary>
+            NameOnly = 1,
+
+            /// <summary>
+            /// The name is set explicitly overriding the CLR's type name.
+            /// </summary>
+            CustomName = 2,
+        }
 
         /// <summary>
         /// Annotates the PHP type.
         /// </summary>
-        /// <param name="phpTypeName">Optional parameter overriding the default CLR name.
-        /// Special value of <c>[name]</c> denotates, the name of the PHP type will be the same as in CLR without leading namespace.</param>
-        /// <param name="fileName">Optional relative path to the file where the type is defined.</param>
-        public PhpTypeAttribute(string phpTypeName = null, string fileName = null)
+        public PhpTypeAttribute(PhpTypeName typeNameAs = PhpTypeName.Default)
         {
-            _typename = phpTypeName;
+            Debug.Assert(typeNameAs != PhpTypeName.CustomName);
+            TypeNameAs = typeNameAs;
+        }
+
+        /// <summary>
+        /// Annotates the PHP type.
+        /// </summary>
+        /// <param name="phpTypeName">The type name that will be used in PHP context instead of CLR type name.</param>
+        /// <param name="fileName">Optional relative path to the file where the type is defined.</param>
+        public PhpTypeAttribute(string phpTypeName, string fileName = null)
+        {
+            ExplicitTypeName = phpTypeName ?? throw new ArgumentNullException();
             FileName = fileName;
+            TypeNameAs = PhpTypeName.CustomName;
         }
     }
 

@@ -287,6 +287,13 @@ namespace Pchp.Library
                 null);
         }
 
+        /// <summary>
+        /// Calls gzopen
+        /// Opens a gzip (.gz) file for reading or writing.
+        /// Some versions of linux have the function named differently, which is used in some PHP libraries
+        /// </summary>
+        public static PhpResource gzopen64(Context ctx, string filename, string mode, int use_include_path = 0) => gzopen(ctx, filename, mode, use_include_path);
+
         #endregion
 
         #region gzcompress, gzuncompress
@@ -743,14 +750,27 @@ namespace Pchp.Library
         }
 
         /// <summary>
+        /// Calls gzseek
+        /// Some versions of linux have the function named differently, which is used in some PHP libraries
+        /// </summary>
+        public static int gzseek64(PhpResource zp, int offset, int whence = PhpStreams.SEEK_SET) => gzseek(zp, offset, whence);
+
+        /// <summary>
         /// Gets the position of the given file pointer; i.e., its offset into the uncompressed file stream.
         /// </summary>
         /// <param name="zp">The gz-file pointer. It must be valid, and must point to a file successfully opened by gzopen().</param>
         /// <returns>The position of the file pointer or FALSE if an error occurs.</returns>
-        public static object gztell(PhpResource zp)
+        public static int gztell(PhpResource zp)
         {
             return PhpPath.ftell(zp);
         }
+
+        /// <summary>
+        /// Gets the position of the given file pointer; i.e., its offset into the uncompressed file stream.
+        /// 
+        /// Some versions of linux have the function named differently, which is used in some PHP libraries
+        /// </summary>
+        public static object gztell64(PhpResource zp) => gztell(zp);
 
         #endregion
 
@@ -823,11 +843,11 @@ namespace Pchp.Library
         /// /// <param name="allowable_tags">You can use this optional parameter to specify tags which should not be stripped.</param>
         /// <returns>The uncompressed and striped string, or FALSE on error.</returns>
         [return: CastToFalse]
-        public static object gzgetss(PhpResource zp, int length = -1, string allowable_tags = null)
+        public static string gzgetss(PhpResource zp, int length = -1, string allowable_tags = null)
         {
-            return (length == -1)
+            return length < 0
                 ? PhpPath.fgetss(zp)
-                : PhpPath.fgetss(zp, length, allowable_tags.ToString());
+                : PhpPath.fgetss(zp, length, allowable_tags);
         }
 
         #endregion

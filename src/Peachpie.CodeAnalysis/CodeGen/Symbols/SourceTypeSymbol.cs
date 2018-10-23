@@ -332,6 +332,17 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     }, null, DiagnosticBag.GetInstance(), false));
                     module.SynthesizedManager.AddMethod(this, m);
+
+                    // ghost stubs: // TODO: resolve this already in SourceTypeSymbol.GetMembers(), now it does not get overloaded properly
+                    var ps = m.Parameters;
+                    for (int i = 0; i < ps.Length; i++)
+                    {
+                        if (ps[i] is IPhpValue p && p.Initializer != null && ps[i].ExplicitDefaultConstantValue == null)   // => ConstantValue couldn't be resolved for optional parameter
+                        {
+                            // create ghost stub foo(p0, .. pi-1) => foo(p0, .. , pN)
+                            GhostMethodBuilder.CreateGhostOverload(m, module, DiagnosticBag.GetInstance(), i);
+                        }
+                    }
                 }
             }
         }

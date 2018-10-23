@@ -252,14 +252,17 @@ namespace Pchp.Core.Reflection
         /// </summary>
         static string ResolvePhpTypeName(TypeInfo tinfo, PhpTypeAttribute attr)
         {
-            string name;
+            string name = null;
 
-            if (attr != null && (name = attr.ExplicitTypeName) != null)
+            if (attr != null)
             {
-                // explicitly specified type name
-                name = name.Replace(PhpTypeAttribute.InheritName, tinfo.Name);
+                name = attr.TypeNameAs == PhpTypeAttribute.PhpTypeName.NameOnly
+                    ? tinfo.Name
+                    : attr.ExplicitTypeName;
             }
-            else
+
+            //
+            if (name == null)
             {
                 // CLR type
                 name = tinfo.FullName       // full PHP type name instead of CLR type name

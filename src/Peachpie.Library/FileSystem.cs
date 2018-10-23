@@ -361,7 +361,7 @@ namespace Pchp.Library
                 return result;
             }
 
-            for (;;)
+            for (; ; )
             {
                 Debug.Assert(i - 1 < line.Length);
                 bool previous_field_delimited = (i == 0 || line[i - 1] == delimiter);
@@ -391,7 +391,7 @@ namespace Pchp.Library
                     int start = ++i;
                     var field_builder = new StringBuilder();
 
-                    for (;;)
+                    for (; ; )
                     {
                         // read until enclosure character found:
                         while (i < line.Length && line[i] != enclosure)
@@ -532,7 +532,7 @@ namespace Pchp.Library
                     {
                         // escapes enclosure characters:
                         int start = 0;
-                        for (;;)
+                        for (; ; )
                         {
                             // writes string starting after the last enclosure and ending by the next one:
                             stream.WriteString(str_field.Substring(start, enclosure_index - start + 1));
@@ -670,7 +670,7 @@ namespace Pchp.Library
                 // If file OpenMode is text then use string access methods.
                 var sub = data.ToString(ctx);
                 if (length > 0 && length < sub.Length) sub = sub.Remove(length);
-                
+
                 return stream.WriteString(sub);
             }
             else
@@ -683,7 +683,7 @@ namespace Pchp.Library
                     Array.Copy(sub, bytes, length);
                     sub = bytes;
                 }
-                
+
                 return stream.WriteBytes(sub);
             }
         }
@@ -875,7 +875,7 @@ namespace Pchp.Library
         /// </para>
         /// </remarks>
         [return: CastToFalse]
-        public static PhpArray file(Context ctx, string path, FileOptions flags, PhpResource context = null)
+        public static PhpArray file(Context ctx, string path, FileOptions flags = FileOptions.Empty, PhpResource context = null)
         {
             var sc = StreamContext.GetValid(context, true);
             if (sc == null) return null;

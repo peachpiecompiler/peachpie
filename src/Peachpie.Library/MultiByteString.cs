@@ -976,6 +976,39 @@ namespace Pchp.Library
         #endregion
 
         /// <summary>
+        /// Returns the internal setting parameters of mbstring.
+        /// </summary>
+        public static PhpValue mb_get_info(Context ctx, string type = null)
+        {
+            var config = GetConfig(ctx);
+
+            if (string.IsNullOrEmpty(type) || type == "all")
+            {
+                // "internal_encoding", "http_output", "http_input", "func_overload", "mail_charset", "mail_header_encoding", "mail_body_encoding"
+                return new PhpArray()
+                {
+                    { "internal_encoding", (config.InternalEncoding ?? ctx.StringEncoding).WebName},
+                    { "http_output", (config.HttpOutputEncoding ?? ctx.StringEncoding).WebName},
+                    { "http_input", ctx.StringEncoding.WebName },
+                    { "func_overload", 0 },
+                    { "mail_charset", ctx.StringEncoding.WebName },
+                    // mail_header_encoding
+                    // mail_body_encoding
+                };
+            }
+            else
+            {
+                // "http_output", "http_input", "internal_encoding", "func_overload"
+                if (type == "http_output") return (config.HttpOutputEncoding ?? ctx.StringEncoding).WebName;
+                if (type == "http_input") return ctx.StringEncoding.WebName; // TODO
+                if (type == "internal_encoding") return (config.InternalEncoding ?? ctx.StringEncoding).WebName;
+                if (type == "func_overload") return 0; // DEPRECATED // NS
+
+                throw new ArgumentException();
+            }
+        }
+
+        /// <summary>
         /// Detects the HTTP input character encoding.
         /// </summary>
         /// <param name="type">

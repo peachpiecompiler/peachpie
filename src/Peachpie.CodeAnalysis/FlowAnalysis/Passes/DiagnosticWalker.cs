@@ -287,7 +287,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     }
                     else
                     {
-                        bool isoptional = ps[i].IsOptional || (ps[i] is SourceParameterSymbol srcp && srcp.Initializer != null);
+                        bool isoptional = ps[i].IsOptional || (ps[i] is IPhpValue srcp && srcp.Initializer != null);
                         if (!isoptional && (i < ps.Length - 1 /*check for IsParams only for last parameter*/ || !ps[i].IsParams))
                         {
                             expectsmin = i - skippedps + 1;
