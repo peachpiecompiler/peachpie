@@ -256,25 +256,13 @@ namespace Pchp.Library
                 return counter.Count;
             }
 
-            public override void Accept(PhpValue obj)
-            {
-                _count++;
-                base.Accept(obj);
-            }
-
-            public override void Accept(PhpAlias obj)
-            {
-                // do not count the value again
-                obj.Value.Accept(this);
-            }
-
             public override void Accept(PhpArray obj)
             {
                 if (_visited.Add(obj))
                 {
                     base.Accept(obj);
 
-                    //
+                    _count += obj.Count;
                     _visited.Remove(obj);
                 }
             }
