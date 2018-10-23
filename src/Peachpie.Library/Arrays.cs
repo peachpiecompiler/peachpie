@@ -2822,6 +2822,101 @@ namespace Pchp.Library
 
         #region array_walk, array_walk_recursive
 
+        struct ArrayWalker // : PhpVariableVisitor
+        {
+            readonly Context _ctx;
+            readonly PhpValue[] _args; // [ &value, key, data ]
+            readonly IPhpCallable _callback;
+            readonly bool _recursive;
+
+            HashSet<object> _visited;
+            object _self;
+
+            public ArrayWalker(Context ctx, IPhpCallable callback, PhpValue data = default, bool recursive = false)
+            {
+                _ctx = ctx;
+                _callback = callback ?? throw new ArgumentNullException(nameof(callback));
+                _recursive = recursive;
+                _args = PrepareArgs(data);
+
+                _visited = null;
+                _self = null;
+            }
+
+            static PhpValue[] PrepareArgs(PhpValue data = default)
+            {
+                // prepares an array of callback's arguments (no deep copying needed because it is done so in callback):
+                return (Operators.IsSet(data))
+                    ? new PhpValue[] { PhpValue.CreateAlias(), PhpValue.Null, data }
+                    : new PhpValue[] { PhpValue.CreateAlias(), PhpValue.Null };
+            }
+
+            public void Accept(PhpArray obj)
+            {
+                // recursion prevention
+                if (_self == null)
+                {
+                    // do not allocate {_visited} for self
+                    _self = obj;
+                }
+                else
+                {
+                    if (obj == _self)
+                    {
+                        // recursion
+                        return;
+                    }
+
+                    // regular recursion prevention,
+                    // allocate HashSet with visited arrays
+                    if (_visited == null)
+                    {
+                        _visited = new HashSet<object>();
+                    }
+
+                    if (_visited.Add(obj) == false)
+                    {
+                        // recursion
+                        return;
+                    }
+                }
+
+                PhpArray tmp;
+                var enumerator = obj.GetFastEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    var value = enumerator.CurrentValue;
+
+                    if (_recursive && (tmp = value.AsArray()) != null)
+                    {
+                        Accept(tmp);
+                    }
+                    else
+                    {
+                        // fills arguments for the callback:
+                        _args[0].Alias.Value = value.GetValue();
+                        _args[1] = PhpValue.Create(enumerator.CurrentKey);
+
+                        // invoke callback:
+                        _callback.Invoke(_ctx, _args);
+
+                        // copy arg[0] back:
+                        var newvalue = _args[0].Alias.Value;
+
+                        if (value.IsAlias)
+                        {
+                            value.Alias.Value = newvalue;
+                        }
+                        else
+                        {
+                            //enumerator.CurrentValue = _args[0].Alias.Value;
+                            obj.SetItemValue(enumerator.CurrentKey, newvalue); // ensures array is writeable and not shared
+                        }
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Applies a user function or method on each element (value) of a specified dictionary.
         /// </summary>
@@ -2847,16 +2942,9 @@ namespace Pchp.Library
         /// <param name="data">An additional parameter passed to <paramref name="callback"/> as its third parameter.</param>
         /// <returns><B>true</B>.</returns>
         /// <exception cref="PhpException"><paramref name="callback"/> or <paramref name="array"/> are <B>null</B> references.</exception>
-        public static bool array_walk(Context ctx /*, caller*/, [In, Out] PhpHashtable array, IPhpCallable callback, PhpValue data = default)
+        public static bool array_walk(Context ctx, [In, Out] PhpArray array, IPhpCallable callback, PhpValue data = default)
         {
-            PhpValue[] args = PrepareWalk(array, callback, data);
-            if (args == null) return false;
-
-            var iterator = array.GetFastEnumerator();
-            while (iterator.MoveNext())
-            {
-                VisitEntryOnWalk(ctx, iterator.Current, array, callback, args);
-            }
+            new ArrayWalker(ctx, callback, data, recursive: false).Accept(array);
 
             return true;
         }
@@ -2870,27 +2958,10 @@ namespace Pchp.Library
         /// <param name="data">An additional parameter passed to <paramref name="callback"/> as its third parameter.</param>
         /// <exception cref="PhpException"><paramref name="callback"/> or <paramref name="array"/> are <B>null</B> references.</exception>
         /// <remarks><seealso cref="Walk"/>.</remarks>
-        public static bool array_walk_recursive(Context ctx /*, caller*/, [In, Out] PhpHashtable array, IPhpCallable callback, PhpValue data = default)
+        public static bool array_walk_recursive(Context ctx, [In, Out] PhpArray array, IPhpCallable callback, PhpValue data = default)
         {
-            var args = PrepareWalk(array, callback, data);
-            if (args == null)
-            {
-                return false;
-            }
+            new ArrayWalker(ctx, callback, data, recursive: true).Accept(array);
 
-            using (var iterator = array.GetRecursiveEnumerator(true, false))
-            {
-                while (iterator.MoveNext())
-                {
-                    var current = iterator.Current;
-
-                    // visits the item unless it is an array or a reference to an array:
-                    if (!current.Value.GetValue().IsArray)
-                    {
-                        VisitEntryOnWalk(ctx, iterator.Current, iterator.CurrentTable, callback, args);
-                    }
-                }
-            }
             return true;
         }
 
@@ -2898,7 +2969,7 @@ namespace Pchp.Library
         /// Prepares a walk for <see cref="array_walk(Context, PhpHashtable, IPhpCallable, PhpValue)"/> and <see cref="array_walk_recursive(Context, PhpHashtable, IPhpCallable, PhpValue)"/> methods.
         /// </summary>
         /// <exception cref="PhpException"><paramref name="callback"/> or <paramref name="array"/> are <B>null</B> references.</exception>
-        private static PhpValue[] PrepareWalk(IDictionary array, IPhpCallable callback, PhpValue data)
+        private static PhpValue[] PrepareWalk(IDictionary array, IPhpCallable callback, PhpValue data = default)
         {
             if (callback == null)
             {
