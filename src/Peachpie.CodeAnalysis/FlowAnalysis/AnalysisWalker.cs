@@ -14,7 +14,7 @@ using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
-    public partial class AnalysisWalker : GraphWalker
+    public partial class AnalysisWalker<T> : GraphWalker<T>
     {
         #region Fields
 
@@ -49,7 +49,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         #region Construction
 
         /// <summary>
-        /// Creates an instance of <see cref="AnalysisWalker"/> that can analyse a block.
+        /// Creates an instance of <see cref="AnalysisWalker{T}"/> that can analyse a block.
         /// </summary>
         /// <param name="worklist">The worklist to be used to enqueue next blocks.</param>
         internal AnalysisWalker(Worklist<BoundBlock> worklist)
@@ -258,7 +258,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return false;
         }
 
-        public sealed override EmptyStruct VisitBinaryExpression(BoundBinaryEx x)
+        public sealed override T VisitBinaryExpression(BoundBinaryEx x)
         {
             Visit(x, ConditionBranch.Default);
 
@@ -270,7 +270,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitBinaryExpression(x);
         }
 
-        public sealed override EmptyStruct VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
+        public sealed override T VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
         {
             VisitGlobalFunctionCall(x, ConditionBranch.Default);
 
@@ -282,7 +282,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitGlobalFunctionCall(x);
         }
 
-        public sealed override EmptyStruct VisitUnaryExpression(BoundUnaryEx x)
+        public sealed override T VisitUnaryExpression(BoundUnaryEx x)
         {
             Visit(x, ConditionBranch.Default);
 
@@ -294,7 +294,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitUnaryExpression(x);
         }
 
-        public sealed override EmptyStruct VisitInstanceOf(BoundInstanceOfEx x)
+        public sealed override T VisitInstanceOf(BoundInstanceOfEx x)
         {
             Visit(x, ConditionBranch.Default);
 
@@ -306,7 +306,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             base.VisitInstanceOf(x);
         }
 
-        public sealed override EmptyStruct VisitIsSet(BoundIsSetEx x)
+        public sealed override T VisitIsSet(BoundIsSetEx x)
         {
             Visit(x, ConditionBranch.Default);
 
@@ -336,7 +336,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region GraphVisitor Members
 
-        public override EmptyStruct VisitCFG(ControlFlowGraph x)
+        public override T VisitCFG(ControlFlowGraph x)
         {
             Contract.ThrowIfNull(x);
             Debug.Assert(x.Start.FlowState != null, "Start block has to have an initial state set.");
@@ -346,7 +346,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
-        public override EmptyStruct VisitCFGBlock(BoundBlock x)
+        public override T VisitCFGBlock(BoundBlock x)
         {
             VisitCFGBlockInit(x);
             DefaultVisitBlock(x);   // modifies _state, traverses to the edge
@@ -354,7 +354,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
-        public override EmptyStruct VisitCFGExitBlock(ExitBlock x)
+        public override T VisitCFGExitBlock(ExitBlock x)
         {
             VisitCFGBlock(x);
 
@@ -396,7 +396,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        public override EmptyStruct VisitCFGCaseBlock(CaseBlock x)
+        public override T VisitCFGCaseBlock(CaseBlock x)
         {
             VisitCFGBlockInit(x);
             if (!x.CaseValue.IsOnlyBoundElement) { VisitCFGBlock(x.CaseValue.PreBoundBlockFirst); }
@@ -406,7 +406,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
-        public override EmptyStruct VisitCFGCatchBlock(CatchBlock x)
+        public override T VisitCFGCatchBlock(CatchBlock x)
         {
             VisitCFGBlockInit(x);
 
@@ -426,14 +426,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
-        public override EmptyStruct VisitCFGSimpleEdge(SimpleEdge x)
+        public override T VisitCFGSimpleEdge(SimpleEdge x)
         {
             TraverseToBlock(x, _state, x.NextBlock);
 
             return default;
         }
 
-        public override EmptyStruct VisitCFGConditionalEdge(ConditionalEdge x)
+        public override T VisitCFGConditionalEdge(ConditionalEdge x)
         {
             // build state for TrueBlock and FalseBlock properly, take minimal evaluation into account
             var state = _state;
@@ -451,7 +451,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
-        public override EmptyStruct VisitCFGForeachEnumereeEdge(ForeachEnumereeEdge x)
+        public override T VisitCFGForeachEnumereeEdge(ForeachEnumereeEdge x)
         {
             Accept(x.Enumeree);
             VisitCFGSimpleEdge(x);
@@ -459,7 +459,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
-        public override EmptyStruct VisitCFGForeachMoveNextEdge(ForeachMoveNextEdge x)
+        public override T VisitCFGForeachMoveNextEdge(ForeachMoveNextEdge x)
         {
             var state = _state;
             // get type information from Enumeree to determine types value variable
@@ -492,7 +492,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
-        public override EmptyStruct VisitCFGSwitchEdge(SwitchEdge x)
+        public override T VisitCFGSwitchEdge(SwitchEdge x)
         {
             Accept(x.SwitchValue);
 
@@ -512,7 +512,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
-        public override EmptyStruct VisitCFGTryCatchEdge(TryCatchEdge x)
+        public override T VisitCFGTryCatchEdge(TryCatchEdge x)
         {
             var state = _state;
 

@@ -202,7 +202,7 @@ namespace Pchp.CodeAnalysis
         /// Checks if <paramref name="optional"/> contains a boolean value. If so, it retrieves it in
         /// <paramref name="value"/> and return TRUE. Otherwise, returns FALSE.
         /// </summary>
-        public static bool TryGetBool(this Optional<object> optional, out bool value)
+        public static bool IsBool(this Optional<object> optional, out bool value)
         {
             if (optional.HasValue && optional.Value is bool optValue)
             {
@@ -211,7 +211,7 @@ namespace Pchp.CodeAnalysis
             }
             else
             {
-                value = false;
+                value = default;
                 return false;
             }
         }

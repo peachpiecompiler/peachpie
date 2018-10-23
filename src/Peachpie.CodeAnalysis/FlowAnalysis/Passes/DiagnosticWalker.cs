@@ -16,7 +16,7 @@ using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
-    internal partial class DiagnosticWalker : GraphExplorer
+    internal partial class DiagnosticWalker<T> : GraphExplorer<T>
     {
         private readonly DiagnosticBag _diagnostics;
         private SourceRoutineSymbol _routine;
@@ -73,7 +73,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         {
             if (routine.ControlFlowGraph != null)   // non-abstract method
             {
-                new DiagnosticWalker(diagnostics, routine)
+                new DiagnosticWalker<VoidStruct>(diagnostics, routine)
                     .VisitCFG(routine.ControlFlowGraph);
             }
         }
@@ -122,14 +122,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             }
         }
 
-        public override EmptyStruct VisitEval(BoundEvalEx x)
+        public override T VisitEval(BoundEvalEx x)
         {
             _diagnostics.Add(_routine, new TextSpan(x.PhpSyntax.Span.Start, 4)/*'eval'*/, ErrorCode.INF_EvalDiscouraged);
 
             return base.VisitEval(x);
         }
 
-        public override EmptyStruct VisitArray(BoundArrayEx x)
+        public override T VisitArray(BoundArrayEx x)
         {
             if (x.Access.IsNone)
             {
@@ -140,7 +140,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return base.VisitArray(x);
         }
 
-        public override EmptyStruct VisitTypeRef(BoundTypeRef typeRef)
+        public override T VisitTypeRef(BoundTypeRef typeRef)
         {
             if (typeRef != null)
             {
@@ -159,7 +159,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return default;
         }
 
-        public override EmptyStruct VisitNew(BoundNewEx x)
+        public override T VisitNew(BoundNewEx x)
         {
             if (x.TypeRef.ResolvedType.IsValidType())
             {
@@ -196,7 +196,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return base.VisitNew(x);
         }
 
-        public override EmptyStruct VisitReturn(BoundReturnStatement x)
+        public override T VisitReturn(BoundReturnStatement x)
         {
             if (_routine.Syntax is MethodDecl m)
             {
@@ -240,7 +240,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             // anything else (object (even convertible to string), array, number, boolean, ...) is not allowed
         }
 
-        public override EmptyStruct VisitAssign(BoundAssignEx x)
+        public override T VisitAssign(BoundAssignEx x)
         {
             // Template: <x> = <x>
             if (x.Target is BoundVariableRef lvar && lvar.Variable is BoundLocal lloc &&
@@ -256,7 +256,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return base.VisitAssign(x);
         }
 
-        public override EmptyStruct VisitInclude(BoundIncludeEx x)
+        public override T VisitInclude(BoundIncludeEx x)
         {
             // check arguments
             return base.VisitRoutineCall(x);
@@ -264,7 +264,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             // do not check the TargetMethod
         }
 
-        protected override EmptyStruct VisitRoutineCall(BoundRoutineCall x)
+        protected override T VisitRoutineCall(BoundRoutineCall x)
         {
             // check arguments
             base.VisitRoutineCall(x);
@@ -313,7 +313,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return default;
         }
 
-        public override EmptyStruct VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
+        public override T VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
         {
             CheckUndefinedFunctionCall(x);
 
@@ -331,7 +331,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return base.VisitGlobalFunctionCall(x);
         }
 
-        public override EmptyStruct VisitInstanceFunctionCall(BoundInstanceFunctionCall call)
+        public override T VisitInstanceFunctionCall(BoundInstanceFunctionCall call)
         {
             // TODO: Enable the diagnostic when several problems are solved (such as __call())
             //CheckUndefinedMethodCall(call, call.Instance?.ResultType, call.Name);
@@ -346,7 +346,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return base.VisitInstanceFunctionCall(call);
         }
 
-        public override EmptyStruct VisitStaticFunctionCall(BoundStaticFunctionCall call)
+        public override T VisitStaticFunctionCall(BoundStaticFunctionCall call)
         {
             // TODO: Enable the diagnostic when the __callStatic() method is properly processed during analysis
             //CheckUndefinedMethodCall(call, call.TypeRef?.ResolvedType, call.Name);
@@ -358,19 +358,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return base.VisitStaticFunctionCall(call);
         }
 
-        public override EmptyStruct VisitVariableRef(BoundVariableRef x)
+        public override T VisitVariableRef(BoundVariableRef x)
         {
             CheckUninitializedVariableUse(x);
             return base.VisitVariableRef(x);
         }
 
-        public override EmptyStruct VisitTemporalVariableRef(BoundTemporalVariableRef x)
+        public override T VisitTemporalVariableRef(BoundTemporalVariableRef x)
         {
             // do not make diagnostics on syntesized variables
             return default;
         }
 
-        public override EmptyStruct VisitDeclareStatement(BoundDeclareStatement x)
+        public override T VisitDeclareStatement(BoundDeclareStatement x)
         {
             _diagnostics.Add(
                 _routine,
@@ -381,7 +381,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return base.VisitDeclareStatement(x);
         }
 
-        public override EmptyStruct VisitAssert(BoundAssertEx x)
+        public override T VisitAssert(BoundAssertEx x)
         {
             base.VisitAssert(x);
 
@@ -418,7 +418,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return default;
         }
 
-        public override EmptyStruct VisitBinaryExpression(BoundBinaryEx x)
+        public override T VisitBinaryExpression(BoundBinaryEx x)
         {
             base.VisitBinaryExpression(x);
 
@@ -554,7 +554,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             }
         }
 
-        public override EmptyStruct VisitCFGTryCatchEdge(TryCatchEdge x)
+        public override T VisitCFGTryCatchEdge(TryCatchEdge x)
         {
             // remember scopes,
             // .Accept() on BodyBlocks traverses not only the try block but also the rest of the code
@@ -591,12 +591,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return base.VisitCFGTryCatchEdge(x);
         }
 
-        public override EmptyStruct VisitStaticStatement(BoundStaticVariableStatement x)
+        public override T VisitStaticStatement(BoundStaticVariableStatement x)
         {
             return base.VisitStaticStatement(x);
         }
 
-        public override EmptyStruct VisitYieldStatement(BoundYieldStatement boundYieldStatement)
+        public override T VisitYieldStatement(BoundYieldStatement boundYieldStatement)
         {
             if (IsInTryCatchScope())
             {

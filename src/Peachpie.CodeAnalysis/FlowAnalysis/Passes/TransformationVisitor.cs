@@ -9,7 +9,7 @@ using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
-    internal class TransformationVisitor : GraphWalker
+    internal class TransformationVisitor<T> : GraphWalker<T>
     {
         private readonly SourceRoutineSymbol _routine;
         private int _visitedColor;
@@ -20,7 +20,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         {
             if (routine.ControlFlowGraph != null)   // non-abstract method
             {
-                var visitor = new TransformationVisitor(routine);
+                var visitor = new TransformationVisitor<VoidStruct>(routine);
                 visitor.VisitCFG(routine.ControlFlowGraph);
 
                 return visitor._cfgTransformationCount + visitor._rewriter.TransformationCount > 0;
@@ -37,7 +37,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             _rewriter = new TransformationRewriter();
         }
 
-        public override EmptyStruct VisitCFG(ControlFlowGraph x)
+        public override T VisitCFG(ControlFlowGraph x)
         {
             Debug.Assert(x == _routine.ControlFlowGraph);
 
@@ -47,7 +47,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return default;
         }
 
-        protected override EmptyStruct DefaultVisitBlock(BoundBlock x)
+        protected override T DefaultVisitBlock(BoundBlock x)
         {
             if (x.Tag != _visitedColor)
             {
@@ -63,7 +63,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return default;
         }
 
-        public override EmptyStruct VisitCFGConditionalEdge(ConditionalEdge x)
+        public override T VisitCFGConditionalEdge(ConditionalEdge x)
         {
             //_rewriter.VisitAndUpdate(x.Condition, x.SetCondition);
 

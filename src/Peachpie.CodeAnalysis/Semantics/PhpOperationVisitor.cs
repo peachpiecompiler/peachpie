@@ -11,7 +11,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// <summary>
     /// Base visitor for PHP operations.
     /// </summary>
-    /// <typeparam name="TResult">Return type of all the Visit operations, use <see cref="EmptyStruct"/> if none.</typeparam>
+    /// <typeparam name="TResult">Return type of all the Visit operations, use <see cref="VoidStruct"/> if none.</typeparam>
     public abstract class PhpOperationVisitor<TResult>
     {
         /// <summary>Visits given operation.</summary>

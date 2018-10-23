@@ -11,6 +11,7 @@ using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Semantics.Model;
 using Pchp.CodeAnalysis.Symbols;
 using Pchp.CodeAnalysis.Utilities;
+using Peachpie.CodeAnalysis.Utilities;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Concurrent;
@@ -167,9 +168,9 @@ namespace Pchp.CodeAnalysis
             block.Accept(AnalysisFactory(block.FlowState));
         }
 
-        ExpressionAnalysis AnalysisFactory(FlowState state)
+        GraphVisitor<VoidStruct> AnalysisFactory(FlowState state)
         {
-            return new ExpressionAnalysis(_worklist, new LocalSymbolProvider(_compilation.GlobalSemantics, state.FlowContext));
+            return new ExpressionAnalysis<VoidStruct>(_worklist, new LocalSymbolProvider(_compilation.GlobalSemantics, state.FlowContext));
         }
 
         internal void DiagnoseMethods()
@@ -181,7 +182,7 @@ namespace Pchp.CodeAnalysis
         {
             Contract.ThrowIfNull(routine);
 
-            DiagnosticWalker.Analyse(_diagnostics, routine);
+            DiagnosticWalker<VoidStruct>.Analyse(_diagnostics, routine);
         }
 
         internal void DiagnoseFiles()
@@ -219,7 +220,7 @@ namespace Pchp.CodeAnalysis
             var updatedRoutines = new ConcurrentBag<SourceRoutineSymbol>();
             this.WalkMethods(m =>
                 {
-                    if (TransformationVisitor.TryTransform(m))
+                    if (TransformationVisitor<VoidStruct>.TryTransform(m))
                         updatedRoutines.Add(m);
                 },
                 allowParallel: true);

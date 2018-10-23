@@ -11,7 +11,7 @@ using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
-    internal partial class DiagnosticWalker
+    internal partial class DiagnosticWalker<T>
     {
         BoundBlock _currentBlock;
 
@@ -23,7 +23,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             base.DefaultVisitUnexploredBlock(x);
         }
 
-        public override EmptyStruct VisitCFGConditionalEdge(ConditionalEdge x)
+        public override T VisitCFGConditionalEdge(ConditionalEdge x)
         {
             Accept(x.Condition);
 

@@ -14,7 +14,7 @@ using System.Text;
 
 namespace Peachpie.DiagnosticTests
 {
-    class SymbolsSelector : GraphExplorer
+    class SymbolsSelector : GraphExplorer<VoidStruct>
     {
         public struct SymbolStat
         {
@@ -45,7 +45,7 @@ namespace Peachpie.DiagnosticTests
         {
             var visitor = new SymbolsSelector();
             visitor.VisitCFG(cfg);
-            return visitor._result;
+            return (IEnumerable<SymbolStat>)visitor._result;
         }
 
         public static IEnumerable<SymbolStat> Select(IPhpRoutineSymbol routine)
@@ -78,7 +78,7 @@ namespace Peachpie.DiagnosticTests
             }
         }
 
-        public override EmptyStruct VisitVariableRef(BoundVariableRef x)
+        public override VoidStruct VisitVariableRef(BoundVariableRef x)
         {
             ISymbol symbolOpt = null;
             try
@@ -101,7 +101,7 @@ namespace Peachpie.DiagnosticTests
             return default;
         }
 
-        public override EmptyStruct VisitTypeRef(BoundTypeRef x)
+        public override VoidStruct VisitTypeRef(BoundTypeRef x)
         {
             if (x != null)
             {
@@ -123,7 +123,7 @@ namespace Peachpie.DiagnosticTests
             return default;
         }
 
-        protected override EmptyStruct VisitRoutineCall(BoundRoutineCall x)
+        protected override VoidStruct VisitRoutineCall(BoundRoutineCall x)
         {
             var invocation = (IInvocationOperation)x;
             if (invocation.TargetMethod != null)
@@ -145,7 +145,7 @@ namespace Peachpie.DiagnosticTests
             return default;
         }
 
-        public override EmptyStruct VisitGlobalConstUse(BoundGlobalConst x)
+        public override VoidStruct VisitGlobalConstUse(BoundGlobalConst x)
         {
             _result.Add(new SymbolStat(_tctx, x.PhpSyntax.Span, x, null));
 
@@ -155,7 +155,7 @@ namespace Peachpie.DiagnosticTests
             return default;
         }
 
-        public override EmptyStruct VisitPseudoConstUse(BoundPseudoConst x)
+        public override VoidStruct VisitPseudoConstUse(BoundPseudoConst x)
         {
             _result.Add(new SymbolStat(_tctx, x.PhpSyntax.Span, x, null));
 
@@ -164,7 +164,7 @@ namespace Peachpie.DiagnosticTests
             return default;
         }
 
-        public override EmptyStruct VisitFieldRef(BoundFieldRef x)
+        public override VoidStruct VisitFieldRef(BoundFieldRef x)
         {
             Span span = Span.Invalid;
             if (x.PhpSyntax is DirectVarUse)

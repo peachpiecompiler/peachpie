@@ -14,15 +14,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             base.VisitConditional(x);
 
             if (x.IfTrue != null
-                && x.IfTrue.ConstantValue.TryGetBool(out bool trueVal)
-                && x.IfFalse.ConstantValue.TryGetBool(out bool falseVal))
+                && x.IfTrue.ConstantValue.IsBool(out bool trueVal)
+                && x.IfFalse.ConstantValue.IsBool(out bool falseVal))
             {
                 if (trueVal && !falseVal)
                 {
                     // A ? true : false => (bool)A
                     TransformationCount++;
-                    return new BoundUnaryEx(x.Condition, Devsense.PHP.Syntax.Ast.Operations.BoolCast)
-                        .CopyContextFrom(x);
+                    return
+                        new BoundUnaryEx(x.Condition, Devsense.PHP.Syntax.Ast.Operations.BoolCast)
+                        .WithContext(x);
                 }
 
                 // TODO: Other possibilities

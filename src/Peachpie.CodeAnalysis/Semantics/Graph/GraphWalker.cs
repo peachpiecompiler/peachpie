@@ -13,7 +13,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// Visitor used to traverse CFG and all its operations.
     /// </summary>
     /// <remarks>Visitor does not implement infinite recursion prevention.</remarks>
-    public abstract class GraphWalker : GraphVisitor<EmptyStruct>
+    public abstract class GraphWalker<T> : GraphVisitor<T>
     {
         #region Properties
 
@@ -23,7 +23,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         #region ControlFlowGraph
 
-        public override EmptyStruct VisitCFG(ControlFlowGraph x)
+        public override T VisitCFG(ControlFlowGraph x)
         {
             x.Start.Accept(this);
 
@@ -45,7 +45,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Visits block statements and its edge to next block.
         /// </summary>
-        protected override EmptyStruct DefaultVisitBlock(BoundBlock x)
+        protected override T DefaultVisitBlock(BoundBlock x)
         {
             VisitCFGBlockStatements(x);
 
@@ -55,21 +55,21 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitCFGBlock(BoundBlock x)
+        public override T VisitCFGBlock(BoundBlock x)
         {
             DefaultVisitBlock(x);
 
             return default;
         }
 
-        public override EmptyStruct VisitCFGExitBlock(ExitBlock x)
+        public override T VisitCFGExitBlock(ExitBlock x)
         {
             VisitCFGBlock(x);
 
             return default;
         }
 
-        public override EmptyStruct VisitCFGCatchBlock(CatchBlock x)
+        public override T VisitCFGCatchBlock(CatchBlock x)
         {
             VisitTypeRef(x.TypeRef);
             Accept(x.Variable);
@@ -79,7 +79,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitCFGCaseBlock(CaseBlock x)
+        public override T VisitCFGCaseBlock(CaseBlock x)
         {
             if (!x.CaseValue.IsOnlyBoundElement) { VisitCFGBlock(x.CaseValue.PreBoundBlockFirst); }
             if (!x.CaseValue.IsEmpty) { Accept(x.CaseValue.BoundElement); }
@@ -93,7 +93,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         #region Graph.Edge
 
-        public override EmptyStruct VisitCFGSimpleEdge(SimpleEdge x)
+        public override T VisitCFGSimpleEdge(SimpleEdge x)
         {
             Debug.Assert(x.NextBlock != null);
             x.NextBlock.Accept(this);
@@ -103,7 +103,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitCFGConditionalEdge(ConditionalEdge x)
+        public override T VisitCFGConditionalEdge(ConditionalEdge x)
         {
             Accept(x.Condition);
 
@@ -113,7 +113,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitCFGTryCatchEdge(TryCatchEdge x)
+        public override T VisitCFGTryCatchEdge(TryCatchEdge x)
         {
             x.BodyBlock.Accept(this);
 
@@ -126,7 +126,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitCFGForeachEnumereeEdge(ForeachEnumereeEdge x)
+        public override T VisitCFGForeachEnumereeEdge(ForeachEnumereeEdge x)
         {
             Accept(x.Enumeree);
             x.NextBlock.Accept(this);
@@ -134,7 +134,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitCFGForeachMoveNextEdge(ForeachMoveNextEdge x)
+        public override T VisitCFGForeachMoveNextEdge(ForeachMoveNextEdge x)
         {
             Accept(x.ValueVariable);
             Accept(x.KeyVariable);
@@ -145,7 +145,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitCFGSwitchEdge(SwitchEdge x)
+        public override T VisitCFGSwitchEdge(SwitchEdge x)
         {
             Accept(x.SwitchValue);
 
@@ -162,7 +162,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         #region Expressions
 
-        protected override EmptyStruct VisitRoutineCall(BoundRoutineCall x)
+        protected override T VisitRoutineCall(BoundRoutineCall x)
         {
             for (int i = 0; i < x.ArgumentsInSourceOrder.Length; i++)
             {
@@ -172,21 +172,21 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitLiteral(BoundLiteral x)
+        public override T VisitLiteral(BoundLiteral x)
         {
             //VisitLiteralExpression(x);
 
             return default;
         }
 
-        public override EmptyStruct VisitArgument(BoundArgument x)
+        public override T VisitArgument(BoundArgument x)
         {
             Accept(x.Value);
 
             return default;
         }
 
-        public override EmptyStruct VisitTypeRef(BoundTypeRef x)
+        public override T VisitTypeRef(BoundTypeRef x)
         {
             if (x != null)
             {
@@ -196,7 +196,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitMultipleTypeRef(BoundMultipleTypeRef x)
+        public override T VisitMultipleTypeRef(BoundMultipleTypeRef x)
         {
             Debug.Assert(x != null);
             Debug.Assert(x.TypeExpression == null);
@@ -210,13 +210,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
+        public override T VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
         {
             VisitRoutineCall(x);
             return default;
         }
 
-        public override EmptyStruct VisitInstanceFunctionCall(BoundInstanceFunctionCall x)
+        public override T VisitInstanceFunctionCall(BoundInstanceFunctionCall x)
         {
             Accept(x.Instance);
             VisitRoutineCall(x);
@@ -224,7 +224,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitStaticFunctionCall(BoundStaticFunctionCall x)
+        public override T VisitStaticFunctionCall(BoundStaticFunctionCall x)
         {
             VisitTypeRef(x.TypeRef);
             VisitRoutineCall(x);
@@ -232,21 +232,21 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitEcho(BoundEcho x)
+        public override T VisitEcho(BoundEcho x)
         {
             VisitRoutineCall(x);
 
             return default;
         }
 
-        public override EmptyStruct VisitConcat(BoundConcatEx x)
+        public override T VisitConcat(BoundConcatEx x)
         {
             VisitRoutineCall(x);
 
             return default;
         }
 
-        public override EmptyStruct VisitNew(BoundNewEx x)
+        public override T VisitNew(BoundNewEx x)
         {
             VisitTypeRef(x.TypeRef);
             VisitRoutineCall(x);
@@ -254,28 +254,28 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitInclude(BoundIncludeEx x)
+        public override T VisitInclude(BoundIncludeEx x)
         {
             VisitRoutineCall(x);
 
             return default;
         }
 
-        public override EmptyStruct VisitExit(BoundExitEx x)
+        public override T VisitExit(BoundExitEx x)
         {
             VisitRoutineCall(x);
 
             return default;
         }
 
-        public override EmptyStruct VisitAssert(BoundAssertEx x)
+        public override T VisitAssert(BoundAssertEx x)
         {
             VisitRoutineCall(x);
 
             return default;
         }
 
-        public override EmptyStruct VisitBinaryExpression(BoundBinaryEx x)
+        public override T VisitBinaryExpression(BoundBinaryEx x)
         {
             Accept(x.Left);
             Accept(x.Right);
@@ -283,14 +283,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitUnaryExpression(BoundUnaryEx x)
+        public override T VisitUnaryExpression(BoundUnaryEx x)
         {
             Accept(x.Operand);
 
             return default;
         }
 
-        public override EmptyStruct VisitIncDec(BoundIncDecEx x)
+        public override T VisitIncDec(BoundIncDecEx x)
         {
             Accept(x.Target);
             Accept(x.Value);
@@ -298,7 +298,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitConditional(BoundConditionalEx x)
+        public override T VisitConditional(BoundConditionalEx x)
         {
             Accept(x.Condition);
             Accept(x.IfTrue);
@@ -307,7 +307,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitAssign(BoundAssignEx x)
+        public override T VisitAssign(BoundAssignEx x)
         {
             Accept(x.Target);
             Accept(x.Value);
@@ -315,7 +315,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitCompoundAssign(BoundCompoundAssignEx x)
+        public override T VisitCompoundAssign(BoundCompoundAssignEx x)
         {
             Accept(x.Target);
             Accept(x.Value);
@@ -323,12 +323,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitVariableRef(BoundVariableRef x)
+        public override T VisitVariableRef(BoundVariableRef x)
         {
             return default;
         }
 
-        public override EmptyStruct VisitTemporalVariableRef(BoundTemporalVariableRef x)
+        public override T VisitTemporalVariableRef(BoundTemporalVariableRef x)
         {
             // BoundSynthesizedVariableRef is based solely on BoundVariableRef so far 
             VisitVariableRef(x);
@@ -336,7 +336,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitList(BoundListEx x)
+        public override T VisitList(BoundListEx x)
         {
             x.Items.ForEach(pair =>
             {
@@ -347,7 +347,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitFieldRef(BoundFieldRef x)
+        public override T VisitFieldRef(BoundFieldRef x)
         {
             VisitTypeRef(x.ContainingType);
             Accept(x.Instance);
@@ -356,7 +356,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitArray(BoundArrayEx x)
+        public override T VisitArray(BoundArrayEx x)
         {
             x.Items.ForEach(pair =>
             {
@@ -367,7 +367,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitArrayItem(BoundArrayItemEx x)
+        public override T VisitArrayItem(BoundArrayItemEx x)
         {
             Accept(x.Array);
             Accept(x.Index);
@@ -375,7 +375,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitInstanceOf(BoundInstanceOfEx x)
+        public override T VisitInstanceOf(BoundInstanceOfEx x)
         {
             Accept(x.Operand);
             VisitTypeRef(x.AsType);
@@ -383,50 +383,50 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitGlobalConstUse(BoundGlobalConst x)
+        public override T VisitGlobalConstUse(BoundGlobalConst x)
         {
             return default;
         }
 
-        public override EmptyStruct VisitGlobalConstDecl(BoundGlobalConstDeclStatement x)
+        public override T VisitGlobalConstDecl(BoundGlobalConstDeclStatement x)
         {
             Accept(x.Value);
 
             return default;
         }
 
-        public override EmptyStruct VisitPseudoConstUse(BoundPseudoConst x)
+        public override T VisitPseudoConstUse(BoundPseudoConst x)
         {
             return default;
         }
 
-        public override EmptyStruct VisitPseudoClassConstUse(BoundPseudoClassConst x)
+        public override T VisitPseudoClassConstUse(BoundPseudoClassConst x)
         {
             VisitTypeRef(x.TargetType);
 
             return default;
         }
 
-        public override EmptyStruct VisitIsEmpty(BoundIsEmptyEx x)
+        public override T VisitIsEmpty(BoundIsEmptyEx x)
         {
             Accept(x.Operand);
 
             return default;
         }
 
-        public override EmptyStruct VisitIsSet(BoundIsSetEx x)
+        public override T VisitIsSet(BoundIsSetEx x)
         {
             Accept(x.VarReference);
 
             return default;
         }
 
-        public override EmptyStruct VisitLambda(BoundLambda x)
+        public override T VisitLambda(BoundLambda x)
         {
             return default;
         }
 
-        public override EmptyStruct VisitEval(BoundEvalEx x)
+        public override T VisitEval(BoundEvalEx x)
         {
             Accept(x.CodeExpression);
 
@@ -434,12 +434,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         }
 
 
-        public override EmptyStruct VisitYieldEx(BoundYieldEx boundYieldEx)
+        public override T VisitYieldEx(BoundYieldEx boundYieldEx)
         {
             return default;
         }
 
-        public override EmptyStruct VisitYieldFromEx(BoundYieldFromEx x)
+        public override T VisitYieldFromEx(BoundYieldFromEx x)
         {
             Accept(x.Operand);
 
@@ -450,19 +450,19 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         #region Statements
 
-        public override EmptyStruct VisitUnset(BoundUnset x)
+        public override T VisitUnset(BoundUnset x)
         {
             Accept(x.Variable);
 
             return default;
         }
 
-        public override EmptyStruct VisitEmptyStatement(BoundEmptyStatement x)
+        public override T VisitEmptyStatement(BoundEmptyStatement x)
         {
             return default;
         }
 
-        public override EmptyStruct VisitBlockStatement(Graph.BoundBlock x)
+        public override T VisitBlockStatement(Graph.BoundBlock x)
         {
             for (int i = 0; i < x.Statements.Count; i++)
             {
@@ -472,50 +472,50 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitExpressionStatement(BoundExpressionStatement x)
+        public override T VisitExpressionStatement(BoundExpressionStatement x)
         {
             Accept(x.Expression);
 
             return default;
         }
 
-        public override EmptyStruct VisitReturn(BoundReturnStatement x)
+        public override T VisitReturn(BoundReturnStatement x)
         {
             Accept(x.Returned);
 
             return default;
         }
 
-        public override EmptyStruct VisitThrow(BoundThrowStatement x)
+        public override T VisitThrow(BoundThrowStatement x)
         {
             Accept(x.Thrown);
 
             return default;
         }
 
-        public override EmptyStruct VisitFunctionDeclaration(BoundFunctionDeclStatement x)
+        public override T VisitFunctionDeclaration(BoundFunctionDeclStatement x)
         {
             return default;
         }
 
-        public override EmptyStruct VisitTypeDeclaration(BoundTypeDeclStatement x)
+        public override T VisitTypeDeclaration(BoundTypeDeclStatement x)
         {
             return default;
         }
 
-        public override EmptyStruct VisitGlobalStatement(BoundGlobalVariableStatement x)
+        public override T VisitGlobalStatement(BoundGlobalVariableStatement x)
         {
             Accept(x.Variable);
 
             return default;
         }
 
-        public override EmptyStruct VisitStaticStatement(BoundStaticVariableStatement x)
+        public override T VisitStaticStatement(BoundStaticVariableStatement x)
         {
             return default;
         }
 
-        public override EmptyStruct VisitYieldStatement(BoundYieldStatement boundYieldStatement)
+        public override T VisitYieldStatement(BoundYieldStatement boundYieldStatement)
         {
             Accept(boundYieldStatement.YieldedValue);
             Accept(boundYieldStatement.YieldedKey);
@@ -523,7 +523,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override EmptyStruct VisitDeclareStatement(BoundDeclareStatement x)
+        public override T VisitDeclareStatement(BoundDeclareStatement x)
         {
             return default;
         }

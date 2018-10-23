@@ -16,7 +16,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Resolves value of the function call in compile time if possible and updates the variable type if necessary
         /// </summary>
-        public static void HandleSpecialFunctionCall(BoundGlobalFunctionCall call, ExpressionAnalysis analysis, ConditionBranch branch)
+        public static void HandleSpecialFunctionCall<T>(BoundGlobalFunctionCall call, ExpressionAnalysis<T> analysis, ConditionBranch branch)
         {
             // Only direct function names
             if (!HasSimpleName(call, out string name))
@@ -194,11 +194,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Processes functions such as is_int, is_bool etc. Returns whether the function was one of these.
         /// </summary>
-        private static bool HandleTypeCheckingFunctions(
+        private static bool HandleTypeCheckingFunctions<T>(
             BoundGlobalFunctionCall call,
             string name,
             BoundVariableRef arg,
-            ExpressionAnalysis analysis,
+            ExpressionAnalysis<T> analysis,
             ConditionBranch branch)
         {
             var typeCtx = analysis.TypeCtx;

@@ -20,7 +20,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Visitor with return value implementation.
         /// </summary>
-        /// <typeparam name="TResult">Result type of the <paramref name="visitor"/>, <see cref="EmptyStruct"/> if none.</typeparam>
+        /// <typeparam name="TResult">Result type of the <paramref name="visitor"/>, <see cref="VoidStruct"/> if none.</typeparam>
         /// <param name="visitor">A reference to <see cref="PhpOperationVisitor{TResult}"/> instance.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor);

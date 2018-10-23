@@ -8,7 +8,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// <summary>
     /// Base visitor for control flow graphs.
     /// </summary>
-    /// <typeparam name="TResult">Return type of all the Visit operations, use <see cref="EmptyStruct"/> if none.</typeparam>
+    /// <typeparam name="TResult">Return type of all the Visit operations, use <see cref="VoidStruct"/> if none.</typeparam>
     public abstract class GraphVisitor<TResult> : PhpOperationVisitor<TResult>
     {
         #region ControlFlowGraph

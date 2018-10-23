@@ -16,6 +16,9 @@ using Xunit.Abstractions;
 
 namespace Peachpie.DiagnosticTests
 {
+    /// <summary>
+    /// Test class.
+    /// </summary>
     public class DiagnosticTest
     {
         private readonly ITestOutputHelper _output;
@@ -25,12 +28,18 @@ namespace Peachpie.DiagnosticTests
         private static readonly Regex TypeAnnotationRegex = new Regex(@"/\*\|([^/]*)\|\*/");
         private static readonly Regex RoutinePropertiesRegex = new Regex(@"/\*{version:([0-9]+)}\*/");
         
+        /// <summary>
+        /// Init test class.
+        /// </summary>
         public DiagnosticTest(ITestOutputHelper output)
         {
             _output = output;
             _emptyCompilation = CreateEmptyCompilation();
         }
 
+        /// <summary>
+        /// Test runner.
+        /// </summary>
         [Theory]
         [DiagnosticScriptsListData]
         public void DiagnosticRunTest(string dir, string fname)
