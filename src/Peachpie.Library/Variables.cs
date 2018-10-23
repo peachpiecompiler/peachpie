@@ -208,7 +208,7 @@ namespace Pchp.Library
             {
                 // PHP array
                 return (mode == COUNT_RECURSIVE)
-                    ? variable.Array.RecursiveCount
+                    ? RecursiveCounter.CountValues(variable.Array)
                     : variable.Array.Count;
             }
             else if (variable.IsObject)
@@ -234,6 +234,50 @@ namespace Pchp.Library
 
             // count not supported
             return 1;
+        }
+
+        /// <summary>
+        /// Helper visitor class that counts items and items in arrays recursively.
+        /// See <see cref="count"/> and <see cref="COUNT_RECURSIVE"/> for more details.
+        /// </summary>
+        sealed class RecursiveCounter : PhpVariableVisitor
+        {
+            /// <summary>Visited values count.</summary>
+            public int Count => _count;
+            int _count = 0;
+
+            // recursion prevention
+            readonly HashSet<object> _visited = new HashSet<object>();
+
+            public static int CountValues(PhpArray array)
+            {
+                var counter = new RecursiveCounter();
+                counter.Accept(array);
+                return counter.Count;
+            }
+
+            public override void Accept(PhpValue obj)
+            {
+                _count++;
+                base.Accept(obj);
+            }
+
+            public override void Accept(PhpAlias obj)
+            {
+                // do not count the value again
+                obj.Value.Accept(this);
+            }
+
+            public override void Accept(PhpArray obj)
+            {
+                if (_visited.Add(obj))
+                {
+                    base.Accept(obj);
+
+                    //
+                    _visited.Remove(obj);
+                }
+            }
         }
 
         #endregion

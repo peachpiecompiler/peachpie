@@ -575,15 +575,6 @@ namespace Pchp.Core
             return new RecursiveEnumerator(this, followReferences, readOnly);
         }
 
-        /// <summary>
-        /// Retrieves a recursive enumerator of this instance.
-        /// </summary>
-        /// <returns>The <see cref="RecursiveEnumerator"/> not following PHP references.</returns>
-        public RecursiveEnumerator/*!*/ GetRecursiveEnumerator()
-        {
-            return new RecursiveEnumerator(this, false, false);
-        }
-
         public OrderedDictionary.Enumerator/*!*/ GetPhpEnumerator()
         {
             ThrowIfNotPhpArrayHelper();
@@ -1449,31 +1440,6 @@ namespace Pchp.Core
             else
             {
                 return Array.Empty<PhpValue>();
-            }
-        }
-
-        #endregion
-
-        #region RecursiveCount
-
-        /// <summary>
-        /// Counts items in the array recursivelly, following contained arrays and references.
-        /// </summary>
-        public int RecursiveCount
-        {
-            get
-            {
-                int result = 0;
-                using (var iterator = this.GetRecursiveEnumerator(true, true))
-                {
-                    while (iterator.MoveNext())
-                    {
-                        result++;
-                    }
-                }
-
-                //
-                return result;
             }
         }
 
