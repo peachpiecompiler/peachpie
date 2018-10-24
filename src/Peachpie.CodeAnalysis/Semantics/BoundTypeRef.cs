@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Pchp.CodeAnalysis.CodeGen;
 using System.Collections.Immutable;
+using Microsoft.CodeAnalysis.Operations;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -64,8 +65,10 @@ namespace Pchp.CodeAnalysis.Semantics
     /// Bound <see cref="TypeRef"/>.
     /// </summary>
     [DebuggerDisplay("{DebugView,nq}")]
-    public partial class BoundTypeRef : IBoundTypeRef
+    public partial class BoundTypeRef : BoundOperation, IBoundTypeRef, IPhpOperation
     {
+        public override OperationKind Kind => OperationKind.None;
+
         public TypeRef TypeRef => _typeRef;
         readonly TypeRef _typeRef;
 
@@ -108,18 +111,41 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Expression getting type name.
         /// </summary>
-        internal BoundExpression TypeExpression { get; set; }
+        internal BoundExpression TypeExpression { get; }
 
         public virtual bool IsDirect => TypeExpression == null;
 
         ITypeSymbol IBoundTypeRef.Symbol => this.ResolvedType;
 
-        public BoundTypeRef(TypeRef tref, bool objAsTypeInfo, bool isClassName)
+        LangElement IPhpOperation.PhpSyntax { get => _typeRef; set => throw new NotSupportedException(); }
+
+        public BoundTypeRef(BoundExpression typeExpr, TypeRef tref, bool objAsTypeInfo, bool isClassName)
         {
+            TypeExpression = typeExpr;
             _typeRef = tref;
             _objectTypeInfoSemantic = objAsTypeInfo;
             _isClassName = isClassName;
         }
+
+        public BoundTypeRef Update(BoundExpression typeExpr, TypeRef typeRef, bool objAsTypeInfo, bool isClassName)
+        {
+            if (typeExpr == TypeExpression && typeRef == _typeRef && objAsTypeInfo == _objectTypeInfoSemantic && isClassName == _isClassName)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundTypeRef(typeExpr, typeRef, objAsTypeInfo, isClassName);
+            }
+        }
+
+        public virtual TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitTypeRef(this);
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.DefaultVisit(this); 
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.DefaultVisit(this, argument);
     }
 
     /// <summary>
@@ -148,12 +174,26 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         public BoundMultipleTypeRef(ImmutableArray<BoundTypeRef> boundTypes, TypeRef tref, bool objAsTypeInfo, bool isClassName)
-            : base(tref, objAsTypeInfo, isClassName)
+            : base(null, tref, objAsTypeInfo, isClassName)
         {
             Debug.Assert(boundTypes.Length > 1);
             Debug.Assert(!boundTypes.Any(t => t is BoundMultipleTypeRef));
 
             _boundTypes = boundTypes;
         }
+
+        public BoundMultipleTypeRef Update(ImmutableArray<BoundTypeRef> boundTypes, TypeRef tRef, bool objAsTypeInfo, bool isClassName)
+        {
+            if (boundTypes == _boundTypes && tRef == TypeRef && objAsTypeInfo == ObjectTypeInfoSemantic && isClassName == HasClassNameRestriction)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundMultipleTypeRef(boundTypes, tRef, objAsTypeInfo, isClassName);
+            }
+        }
+
+        public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitMultipleTypeRef(this);
     }
 }

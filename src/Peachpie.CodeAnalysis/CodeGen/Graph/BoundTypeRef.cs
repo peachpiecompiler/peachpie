@@ -211,8 +211,6 @@ namespace Pchp.CodeAnalysis.Semantics
             // CALL GetPhpTypeInfo<T>()
             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.GetPhpTypeInfo_T.Symbol.Construct(t));
         }
-
-        public virtual TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitTypeRef(this);
     }
 
     partial class BoundMultipleTypeRef
@@ -226,7 +224,5 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             throw new NotSupportedException();
         }
-
-        public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitMultipleTypeRef(this);
     }
 }

@@ -84,14 +84,32 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override BoundOperation VisitTypeRef(BoundTypeRef x)
         {
-            // TODO
-            return default;
+            return x.Update(
+                (BoundExpression)Accept(x.TypeExpression),
+                x.TypeRef,
+                x.ObjectTypeInfoSemantic,
+                x.HasClassNameRestriction); ;
         }
 
         public override BoundOperation VisitMultipleTypeRef(BoundMultipleTypeRef x)
         {
-            // TODO
-            return default;
+            var typeRefs = VisitImmutableArray(x.BoundTypes);
+            if (typeRefs == x.BoundTypes)
+            {
+                return x;
+            }
+            else if (typeRefs.Length == 1)
+            {
+                return typeRefs[0];
+            }
+            else
+            {
+                return x.Update(
+                    typeRefs,
+                    x.TypeRef,
+                    x.ObjectTypeInfoSemantic,
+                    x.HasClassNameRestriction);
+            }
         }
 
         public override BoundOperation VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
@@ -113,7 +131,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public override BoundOperation VisitStaticFunctionCall(BoundStaticFunctionCall x)
         {
             return x.Update(
-                x.TypeRef,                                      // TODO: Visit TypeRef
+                (BoundTypeRef)Accept(x.TypeRef),
                 x.Name,                                         // TODO: Visit Name
                 VisitImmutableArray(x.ArgumentsInSourceOrder));
         }
@@ -131,7 +149,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public override BoundOperation VisitNew(BoundNewEx x)
         {
             return x.Update(
-                x.TypeRef,                                      // TODO: Visit TypeRef
+                (BoundTypeRef)Accept(x.TypeRef),
                 VisitImmutableArray(x.ArgumentsInSourceOrder));
         }
 
@@ -217,7 +235,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             return x.Update(
                 (BoundExpression)Accept(x.Instance),
-                x.ContainingType,                       // TODO: Visit ContainingType
+                (BoundTypeRef)Accept(x.ContainingType),
                 x.FieldName);                           // TODO: Visit FieldName
         }
 
@@ -237,7 +255,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             return x.Update(
                 (BoundExpression)Accept(x.Operand),
-                x.AsType);                            // TODO: Visit AsType
+                (BoundTypeRef)Accept(x.AsType));
         }
 
         public override BoundOperation VisitGlobalConstUse(BoundGlobalConst x)
@@ -260,7 +278,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public override BoundOperation VisitPseudoClassConstUse(BoundPseudoClassConst x)
         {
             return x.Update(
-                x.TargetType,   // TODO: Visit TargetType
+                (BoundTypeRef)Accept(x.TargetType),
                 x.ConstType);
         }
 

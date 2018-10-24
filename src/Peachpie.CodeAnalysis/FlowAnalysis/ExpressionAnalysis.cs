@@ -1431,7 +1431,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override T VisitStaticFunctionCall(BoundStaticFunctionCall x)
         {
-            VisitTypeRef(x.TypeRef);
+            Accept(x.TypeRef);
 
             VisitRoutineCall(x);
 
@@ -1534,11 +1534,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override T VisitTypeRef(BoundTypeRef tref)
         {
-            if (tref == null)
-            {
-                return default;
-            }
-
             Debug.Assert(!(tref is BoundMultipleTypeRef));
 
             // visit indirect type
@@ -1554,7 +1549,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override T VisitNew(BoundNewEx x)
         {
-            VisitTypeRef(x.TypeRef);
+            Accept(x.TypeRef);
 
             VisitRoutineCall(x);    // analyse arguments
 
@@ -1652,7 +1647,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override T VisitFieldRef(BoundFieldRef x)
         {
             Accept(x.Instance);
-            VisitTypeRef(x.ContainingType);
+            Accept(x.ContainingType);
             Accept(x.FieldName.NameExpression);
 
             if (x.IsInstanceField)  // {Instance}->FieldName

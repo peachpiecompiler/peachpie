@@ -693,12 +693,9 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                var bound = new BoundTypeRef(tref, objectTypeInfoSemantic, isClassName);
+                var typeExpr = (tref is AST.IndirectTypeRef) ? BindExpression(((AST.IndirectTypeRef)tref).ClassNameVar) : null;
 
-                if (tref is AST.IndirectTypeRef)
-                {
-                    bound.TypeExpression = BindExpression(((AST.IndirectTypeRef)tref).ClassNameVar);
-                }
+                var bound = new BoundTypeRef(typeExpr, tref, objectTypeInfoSemantic, isClassName);
 
                 if (tref is AST.ReservedTypeRef rt && rt.Type == AST.ReservedTypeRef.ReservedType.@static && Routine != null)
                 {
