@@ -55,35 +55,6 @@ namespace Pchp.CodeAnalysis.Semantics
             return alternate?.MoveToImmutable() ?? arr;
         }
 
-        public void VisitAndUpdate<T>(T value, Action<T> setter) where T : BoundOperation, IPhpOperation
-        {
-            var visited = Accept(value);
-            if (visited != value)
-            {
-                setter((T)visited);
-            }
-        }
-
-        public void VisitAndUpdate<T>(ImmutableArray<T> value, Action<ImmutableArray<T>> setter) where T : BoundOperation, IPhpOperation
-        {
-            var visited = VisitImmutableArray(value);
-            if (visited != value)
-            {
-                setter((ImmutableArray<T>)visited);
-            }
-        }
-
-        public void VisitAndUpdate<T1, T2>(ImmutableArray<KeyValuePair<T1, T2>> value, Action<ImmutableArray<KeyValuePair<T1, T2>>> setter)
-            where T1 : BoundOperation, IPhpOperation
-            where T2 : BoundOperation, IPhpOperation
-        {
-            var visited = VisitImmutableArrayPairs(value);
-            if (visited != value)
-            {
-                setter((ImmutableArray<KeyValuePair<T1, T2>>)visited);
-            }
-        }
-
         #endregion
 
         #region Expressions
@@ -95,8 +66,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected override BoundOperation VisitRoutineCall(BoundRoutineCall x)
         {
-            VisitAndUpdate(x.ArgumentsInSourceOrder, v => x.ArgumentsInSourceOrder = v);
-
+            // It must be updated in the visits of non-abstract subclassess
             return x;
         }
 
@@ -107,9 +77,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override BoundOperation VisitArgument(BoundArgument x)
         {
-            VisitAndUpdate(x.Value, v => x.Value = v);
-
-            return x;
+            return x.Update(
+                (BoundExpression)Accept(x.Value),
+                x.ArgumentKind);
         }
 
         public override BoundOperation VisitTypeRef(BoundTypeRef x)
@@ -126,148 +96,148 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override BoundOperation VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
         {
-            return VisitRoutineCall(x);
+            return x.Update(
+                x.Name,                                           // TODO: Visit Name
+                x.NameOpt,
+                VisitImmutableArray(x.ArgumentsInSourceOrder));
         }
 
         public override BoundOperation VisitInstanceFunctionCall(BoundInstanceFunctionCall x)
         {
-            VisitAndUpdate(x.Instance, x.SetInstance);
-            return VisitRoutineCall(x);
+            return x.Update(
+                (BoundExpression)Accept(x.Instance),
+                x.Name,                                             // TODO: Visit Name
+                VisitImmutableArray(x.ArgumentsInSourceOrder));
         }
 
         public override BoundOperation VisitStaticFunctionCall(BoundStaticFunctionCall x)
         {
-            VisitTypeRef(x.TypeRef);    // TODO
-            return VisitRoutineCall(x);
+            return x.Update(
+                x.TypeRef,                                      // TODO: Visit TypeRef
+                x.Name,                                         // TODO: Visit Name
+                VisitImmutableArray(x.ArgumentsInSourceOrder));
         }
 
         public override BoundOperation VisitEcho(BoundEcho x)
         {
-            return VisitRoutineCall(x);
+            return x.Update(VisitImmutableArray(x.ArgumentsInSourceOrder));
         }
 
         public override BoundOperation VisitConcat(BoundConcatEx x)
         {
-            return VisitRoutineCall(x);
+            return x.Update(VisitImmutableArray(x.ArgumentsInSourceOrder));
         }
 
         public override BoundOperation VisitNew(BoundNewEx x)
         {
-            VisitTypeRef(x.TypeRef);    // TODO
-            return VisitRoutineCall(x);
+            return x.Update(
+                x.TypeRef,                                      // TODO: Visit TypeRef
+                VisitImmutableArray(x.ArgumentsInSourceOrder));
         }
 
         public override BoundOperation VisitInclude(BoundIncludeEx x)
         {
-            return VisitRoutineCall(x);
+            return x.Update(
+                (BoundExpression)Accept(x.ArgumentsInSourceOrder[0].Value),
+                x.InclusionType);
         }
 
         public override BoundOperation VisitExit(BoundExitEx x)
         {
-            return VisitRoutineCall(x);
+            return x.Update(VisitImmutableArray(x.ArgumentsInSourceOrder));
         }
 
         public override BoundOperation VisitAssert(BoundAssertEx x)
         {
-            return VisitRoutineCall(x);
+            return x.Update(VisitImmutableArray(x.ArgumentsInSourceOrder));
         }
 
         public override BoundOperation VisitBinaryExpression(BoundBinaryEx x)
         {
-            VisitAndUpdate(x.Left, v => x.Left = v);
-            VisitAndUpdate(x.Right, v => x.Right = v);
-
-            return x;
+            return x.Update(
+                (BoundExpression)Accept(x.Left),
+                (BoundExpression)Accept(x.Right),
+                x.Operation);
         }
 
         public override BoundOperation VisitUnaryExpression(BoundUnaryEx x)
         {
-            VisitAndUpdate(x.Operand, v => x.Operand = v);
-
-            return x;
+            return x.Update(
+                (BoundExpression)Accept(x.Operand),
+                x.Operation);
         }
 
         public override BoundOperation VisitIncDec(BoundIncDecEx x)
         {
-            VisitAndUpdate(x.Target, v => x.Target = v);
-            VisitAndUpdate(x.Value, v => x.Value = v);      // TODO: Does it make sense?
-
-            return x;
+            return x.Update(
+                (BoundReferenceExpression)Accept(x.Target),
+                x.IsIncrement,
+                x.IsPostfix);
         }
 
         public override BoundOperation VisitConditional(BoundConditionalEx x)
         {
-            VisitAndUpdate(x.Condition, v => x.Condition = v);
-            VisitAndUpdate(x.IfTrue, v => x.IfTrue = v);
-            VisitAndUpdate(x.IfFalse, v => x.IfFalse = v);
-
-            return x;
+            return x.Update(
+                (BoundExpression)Accept(x.Condition),
+                (BoundExpression)Accept(x.IfTrue),
+                (BoundExpression)Accept(x.IfFalse));
         }
 
         public override BoundOperation VisitAssign(BoundAssignEx x)
         {
-            VisitAndUpdate(x.Target, v => x.Target = v);
-            VisitAndUpdate(x.Value, v => x.Value = v);
-
-            return x;
+            return x.Update(
+                (BoundReferenceExpression)Accept(x.Target),
+                (BoundExpression)Accept(x.Value));
         }
 
         public override BoundOperation VisitCompoundAssign(BoundCompoundAssignEx x)
         {
-            VisitAndUpdate(x.Target, v => x.Target = v);
-            VisitAndUpdate(x.Value, v => x.Value = v);
-
-            return x;
+            return x.Update(
+                (BoundReferenceExpression)Accept(x.Target),
+                (BoundExpression)Accept(x.Value));
         }
 
         public override BoundOperation VisitVariableRef(BoundVariableRef x)
         {
-            return x;
+            return x.Update(x.Name);    // TODO: Visit Name
         }
 
         public override BoundOperation VisitTemporalVariableRef(BoundTemporalVariableRef x)
         {
-            // BoundSynthesizedVariableRef is based solely on BoundVariableRef so far 
-            return VisitVariableRef(x);
+            Debug.Assert(x.Name.IsDirect);
+            return x;
         }
 
         public override BoundOperation VisitList(BoundListEx x)
         {
-            VisitAndUpdate(x.Items, v => x.Items = v);
-
-            return x;
+            return x.Update(VisitImmutableArrayPairs(x.Items));
         }
 
         public override BoundOperation VisitFieldRef(BoundFieldRef x)
         {
-            VisitTypeRef(x.ContainingType);                     // TODO
-            VisitAndUpdate(x.Instance, v => x.Instance = v);
-            VisitAndUpdate(x.FieldName.NameExpression, v => x.FieldName = new BoundVariableName(v));
-
-            return x;
+            return x.Update(
+                (BoundExpression)Accept(x.Instance),
+                x.ContainingType,                       // TODO: Visit ContainingType
+                x.FieldName);                           // TODO: Visit FieldName
         }
 
         public override BoundOperation VisitArray(BoundArrayEx x)
         {
-            VisitAndUpdate(x.Items, v => x.Items = v);
-
-            return x;
+            return x.Update(VisitImmutableArrayPairs(x.Items));
         }
 
         public override BoundOperation VisitArrayItem(BoundArrayItemEx x)
         {
-            VisitAndUpdate(x.Array, v => x.Array = v);
-            VisitAndUpdate(x.Index, v => x.Index = v);
-
-            return x;
+            return x.Update(
+                (BoundExpression)Accept(x.Array),
+                (BoundExpression)Accept(x.Index));
         }
 
         public override BoundOperation VisitInstanceOf(BoundInstanceOfEx x)
         {
-            VisitAndUpdate(x.Operand, v => x.Operand = v);
-            VisitTypeRef(x.AsType);                             // TODO
-
-            return x;
+            return x.Update(
+                (BoundExpression)Accept(x.Operand),
+                x.AsType);                            // TODO: Visit AsType
         }
 
         public override BoundOperation VisitGlobalConstUse(BoundGlobalConst x)
@@ -277,9 +247,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override BoundOperation VisitGlobalConstDecl(BoundGlobalConstDeclStatement x)
         {
-            VisitAndUpdate(x.Value, v => x.Value = v);
-
-            return x;
+            return x.Update(
+                x.Name,
+                (BoundExpression)Accept(x.Value));
         }
 
         public override BoundOperation VisitPseudoConstUse(BoundPseudoConst x)
@@ -289,35 +259,29 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override BoundOperation VisitPseudoClassConstUse(BoundPseudoClassConst x)
         {
-            VisitTypeRef(x.TargetType);     // TODO
-
-            return x;
+            return x.Update(
+                x.TargetType,   // TODO: Visit TargetType
+                x.ConstType);
         }
 
         public override BoundOperation VisitIsEmpty(BoundIsEmptyEx x)
         {
-            VisitAndUpdate(x.Operand, v => x.Operand = v);
-
-            return x;
+            return x.Update((BoundExpression)Accept(x.Operand));
         }
 
         public override BoundOperation VisitIsSet(BoundIsSetEx x)
         {
-            VisitAndUpdate(x.VarReference, v => x.VarReference = v);
-
-            return x;
+            return x.Update((BoundReferenceExpression)Accept(x.VarReference));
         }
 
         public override BoundOperation VisitLambda(BoundLambda x)
         {
-            return x;
+            return x.Update(VisitImmutableArray(x.UseVars));
         }
 
         public override BoundOperation VisitEval(BoundEvalEx x)
         {
-            VisitAndUpdate(x.CodeExpression, v => x.CodeExpression = v);
-
-            return x;
+            return x.Update((BoundExpression)Accept(x.CodeExpression));
         }
 
 
@@ -328,9 +292,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override BoundOperation VisitYieldFromEx(BoundYieldFromEx x)
         {
-            VisitAndUpdate(x.Operand, v => x.Operand = v);
-
-            return x;
+            return x.Update((BoundExpression)Accept(x.Operand));
         }
 
         #endregion
@@ -339,9 +301,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override BoundOperation VisitUnset(BoundUnset x)
         {
-            VisitAndUpdate(x.Variable, v => x.Variable = v);
-
-            return x;
+            return x.Update((BoundReferenceExpression)Accept(x.Variable));
         }
 
         public override BoundOperation VisitEmptyStatement(BoundEmptyStatement x)
@@ -351,9 +311,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override BoundOperation VisitBlockStatement(Graph.BoundBlock x)
         {
+            // TODO: Return a new block if any change was made (after this class is turned into GraphRewriter)
             for (int i = 0; i < x.Statements.Count; i++)
             {
-                VisitAndUpdate(x.Statements[i], v => x.Statements[i] = v);
+                x.Statements[i] = (BoundStatement)Accept(x.Statements[i]);
             }
 
             return x;
@@ -361,23 +322,17 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override BoundOperation VisitExpressionStatement(BoundExpressionStatement x)
         {
-            VisitAndUpdate(x.Expression, v => x.Expression = v);
-
-            return x;
+            return x.Update((BoundExpression)Accept(x.Expression));
         }
 
         public override BoundOperation VisitReturn(BoundReturnStatement x)
         {
-            VisitAndUpdate(x.Returned, v => x.Returned = v);
-
-            return x;
+            return x.Update((BoundExpression)Accept(x.Returned));
         }
 
         public override BoundOperation VisitThrow(BoundThrowStatement x)
         {
-            VisitAndUpdate(x.Thrown, v => x.Thrown = v);
-
-            return x;
+            return x.Update((BoundExpression)x.Thrown);
         }
 
         public override BoundOperation VisitFunctionDeclaration(BoundFunctionDeclStatement x)
@@ -392,9 +347,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override BoundOperation VisitGlobalStatement(BoundGlobalVariableStatement x)
         {
-            VisitAndUpdate(x.Variable, v => x.Variable = v);
-
-            return x;
+            return x.Update((BoundVariableRef)Accept(x.Variable));
         }
 
         public override BoundOperation VisitStaticStatement(BoundStaticVariableStatement x)
@@ -404,10 +357,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override BoundOperation VisitYieldStatement(BoundYieldStatement x)
         {
-            VisitAndUpdate(x.YieldedValue, v => x.YieldedValue = v);
-            VisitAndUpdate(x.YieldedKey, v => x.YieldedKey = v);
-
-            return x;
+            return x.Update(
+                x.YieldIndex,
+                (BoundExpression)Accept(x.YieldedValue),
+                (BoundExpression)Accept(x.YieldedKey));
         }
 
         public override BoundOperation VisitDeclareStatement(BoundDeclareStatement x)
