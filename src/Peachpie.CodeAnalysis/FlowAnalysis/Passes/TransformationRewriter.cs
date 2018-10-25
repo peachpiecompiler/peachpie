@@ -11,7 +11,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         public override BoundOperation VisitConditional(BoundConditionalEx x)
         {
-            base.VisitConditional(x);
+            x = (BoundConditionalEx)base.VisitConditional(x);
 
             if (x.IfTrue != null
                 && x.IfTrue.ConstantValue.IsBool(out bool trueVal)
