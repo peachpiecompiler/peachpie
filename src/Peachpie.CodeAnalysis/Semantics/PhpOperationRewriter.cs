@@ -112,10 +112,17 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
+        public override BoundOperation VisitRoutineName(BoundRoutineName x)
+        {
+            return x.Update(
+                x.NameValue,
+                (BoundExpression)Accept(x.NameExpression));
+        }
+
         public override BoundOperation VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
         {
             return x.Update(
-                x.Name,                                           // TODO: Visit Name
+                (BoundRoutineName)Accept(x.Name),
                 x.NameOpt,
                 VisitImmutableArray(x.ArgumentsInSourceOrder));
         }
@@ -124,7 +131,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             return x.Update(
                 (BoundExpression)Accept(x.Instance),
-                x.Name,                                             // TODO: Visit Name
+                (BoundRoutineName)Accept(x.Name),
                 VisitImmutableArray(x.ArgumentsInSourceOrder));
         }
 
@@ -132,7 +139,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             return x.Update(
                 (BoundTypeRef)Accept(x.TypeRef),
-                x.Name,                                         // TODO: Visit Name
+                (BoundRoutineName)Accept(x.Name),
                 VisitImmutableArray(x.ArgumentsInSourceOrder));
         }
 

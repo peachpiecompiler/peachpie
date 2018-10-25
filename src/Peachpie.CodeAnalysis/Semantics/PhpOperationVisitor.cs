@@ -31,6 +31,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual TResult VisitMultipleTypeRef(BoundMultipleTypeRef x) => DefaultVisitOperation(x);
 
+        public virtual TResult VisitRoutineName(BoundRoutineName x) => DefaultVisitOperation(x);
+
         public virtual TResult VisitGlobalFunctionCall(BoundGlobalFunctionCall x) => VisitRoutineCall(x);
 
         public virtual TResult VisitInstanceFunctionCall(BoundInstanceFunctionCall x) => VisitRoutineCall(x);

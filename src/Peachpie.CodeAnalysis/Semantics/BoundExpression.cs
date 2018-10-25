@@ -439,7 +439,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// Direct or indirect routine name.
     /// </summary>
     [DebuggerDisplay("{DebugView,nq}")]
-    public partial class BoundRoutineName
+    public partial class BoundRoutineName : BoundOperation, IPhpOperation
     {
         public QualifiedName NameValue => _nameValue;
         readonly QualifiedName _nameValue;
@@ -457,17 +457,47 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public bool IsDirect => _nameExpression == null;
 
+        public override OperationKind Kind => OperationKind.None;
+
+        public Ast.LangElement PhpSyntax { get; set; }
+
         public BoundRoutineName(QualifiedName name)
+            : this(name, null)
         {
-            _nameValue = name;
-            _nameExpression = null;
         }
 
         public BoundRoutineName(BoundExpression nameExpr)
+            : this(default, nameExpr)
         {
-            Debug.Assert(nameExpr != null);
+        }
+
+        private BoundRoutineName(QualifiedName name, BoundExpression nameExpr)
+        {
+            Debug.Assert(name.IsEmpty() != (nameExpr == null));
+            _nameValue = name;
             _nameExpression = nameExpr;
         }
+
+        public BoundRoutineName Update(QualifiedName name, BoundExpression nameExpr)
+        {
+            if (name.NameEquals(_nameValue) && nameExpr == _nameExpression)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundRoutineName(name, nameExpr);
+            }
+        }
+
+        public TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor)
+            => visitor.VisitRoutineName(this);
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.DefaultVisit(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.DefaultVisit(this, argument);
     }
 
     public partial class BoundGlobalFunctionCall : BoundRoutineCall

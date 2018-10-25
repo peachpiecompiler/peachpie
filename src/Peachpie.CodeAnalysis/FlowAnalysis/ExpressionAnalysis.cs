@@ -1362,7 +1362,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x, ConditionBranch branch)
         {
-            Accept(x.Name.NameExpression);
+            Accept(x.Name);
 
             VisitRoutineCall(x);
 
@@ -1388,7 +1388,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override T VisitInstanceFunctionCall(BoundInstanceFunctionCall x)
         {
             Accept(x.Instance);
-            Accept(x.Name.NameExpression);
+            Accept(x.Name);
 
             VisitRoutineCall(x);
 
@@ -1435,7 +1435,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             VisitRoutineCall(x);
 
-            Accept(x.Name.NameExpression);
+            Accept(x.Name);
 
             if (x.Name.IsDirect && x.TypeRef.ResolvedType != null)
             {

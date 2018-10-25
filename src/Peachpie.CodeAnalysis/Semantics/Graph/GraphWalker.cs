@@ -207,15 +207,25 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
+        public override T VisitRoutineName(BoundRoutineName x)
+        {
+            Accept(x.NameExpression);
+
+            return default;
+        }
+
         public override T VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
         {
+            Accept(x.Name);
             VisitRoutineCall(x);
+
             return default;
         }
 
         public override T VisitInstanceFunctionCall(BoundInstanceFunctionCall x)
         {
             Accept(x.Instance);
+            Accept(x.Name);
             VisitRoutineCall(x);
 
             return default;
@@ -224,6 +234,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public override T VisitStaticFunctionCall(BoundStaticFunctionCall x)
         {
             Accept(x.TypeRef);
+            Accept(x.Name);
             VisitRoutineCall(x);
 
             return default;
