@@ -1333,7 +1333,7 @@ namespace Pchp.CodeAnalysis.Semantics
     /// Direct or indirect variable name.
     /// </summary>
     [DebuggerDisplay("{DebugView,nq}")]
-    public partial class BoundVariableName
+    public partial class BoundVariableName : BoundOperation, IPhpOperation
     {
         public VariableName NameValue => _nameValue;
         readonly VariableName _nameValue;
@@ -1351,17 +1351,47 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public bool IsDirect => _nameExpression == null;
 
+        public override OperationKind Kind => OperationKind.None;
+
+        public Ast.LangElement PhpSyntax { get; set; }
+
         public BoundVariableName(VariableName name)
+            : this(name, null)
         {
-            _nameValue = name;
-            _nameExpression = null;
         }
 
         public BoundVariableName(BoundExpression nameExpr)
+            : this(default, nameExpr)
         {
-            Debug.Assert(nameExpr != null);
+        }
+
+        private BoundVariableName(VariableName name, BoundExpression nameExpr)
+        {
+            Debug.Assert(name.IsEmpty() != (nameExpr == null));
+            _nameValue = name;
             _nameExpression = nameExpr;
         }
+
+        public BoundVariableName Update(VariableName name, BoundExpression nameExpr)
+        {
+            if (name.NameEquals(_nameValue) && nameExpr == _nameExpression)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundVariableName(name, nameExpr);
+            }
+        }
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.DefaultVisit(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.DefaultVisit(this, argument);
+
+        public TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor)
+            => visitor.VisitVariableName(this);
     }
 
     /// <summary>

@@ -63,6 +63,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual TResult VisitCompoundAssign(BoundCompoundAssignEx x) => DefaultVisitOperation(x);
 
+        public virtual TResult VisitVariableName(BoundVariableName x) => DefaultVisitOperation(x);
+
         public virtual TResult VisitVariableRef(BoundVariableRef x) => DefaultVisitOperation(x);
 
         public virtual TResult VisitTemporalVariableRef(BoundTemporalVariableRef x) => DefaultVisitOperation(x);

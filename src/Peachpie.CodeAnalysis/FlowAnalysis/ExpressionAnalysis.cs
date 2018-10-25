@@ -1648,7 +1648,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             Accept(x.Instance);
             Accept(x.ContainingType);
-            Accept(x.FieldName.NameExpression);
+            Accept(x.FieldName);
 
             if (x.IsInstanceField)  // {Instance}->FieldName
             {

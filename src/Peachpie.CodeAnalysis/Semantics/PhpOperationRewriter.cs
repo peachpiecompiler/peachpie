@@ -222,9 +222,16 @@ namespace Pchp.CodeAnalysis.Semantics
                 (BoundExpression)Accept(x.Value));
         }
 
+        public override BoundOperation VisitVariableName(BoundVariableName x)
+        {
+            return x.Update(
+                x.NameValue,
+                (BoundExpression)Accept(x.NameExpression));
+        }
+
         public override BoundOperation VisitVariableRef(BoundVariableRef x)
         {
-            return x.Update(x.Name);    // TODO: Visit Name
+            return x.Update((BoundVariableName)Accept(x.Name));
         }
 
         public override BoundOperation VisitTemporalVariableRef(BoundTemporalVariableRef x)
@@ -243,7 +250,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return x.Update(
                 (BoundExpression)Accept(x.Instance),
                 (BoundTypeRef)Accept(x.ContainingType),
-                x.FieldName);                           // TODO: Visit FieldName
+                (BoundVariableName)Accept(x.FieldName));
         }
 
         public override BoundOperation VisitArray(BoundArrayEx x)

@@ -331,8 +331,17 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
+        public override T VisitVariableName(BoundVariableName x)
+        {
+            Accept(x.NameExpression);
+
+            return default;
+        }
+
         public override T VisitVariableRef(BoundVariableRef x)
         {
+            Accept(x.Name);
+
             return default;
         }
 
@@ -359,7 +368,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             Accept(x.ContainingType);
             Accept(x.Instance);
-            Accept(x.FieldName.NameExpression);
+            Accept(x.FieldName);
 
             return default;
         }

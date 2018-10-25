@@ -210,6 +210,14 @@ namespace Pchp.CodeAnalysis
         }
 
         /// <summary>
+        /// Compares two variable names.
+        /// </summary>
+        /// <remarks>
+        /// The original comparison operator on <see cref="QualifiedName"/> fails when any of the comparands is not initialized.
+        /// </remarks>
+        public static bool NameEquals(this VariableName name1, VariableName name2) => name1.Value == name2.Value;
+
+        /// <summary>
         /// Gets value indicating whether given qualified name was not set.
         /// </summary>
         public static bool IsEmpty(this QualifiedName qname)
