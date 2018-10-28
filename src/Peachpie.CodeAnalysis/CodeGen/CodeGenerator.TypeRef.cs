@@ -22,7 +22,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal bool IsDoubleOnly(TypeRefMask tmask)
         {
-            return tmask.IsSingleType && this.TypeRefContext.IsDouble(tmask) && !tmask.IsRef;
+            return tmask.IsSingleType && TypeRefContext != null && TypeRefContext.IsDouble(tmask) && !tmask.IsRef;
         }
 
         /// <summary>
@@ -30,13 +30,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal bool IsLongOnly(TypeRefMask tmask)
         {
-            return tmask.IsSingleType && this.TypeRefContext.IsLong(tmask) && !tmask.IsRef;
+            return tmask.IsSingleType && TypeRefContext != null && TypeRefContext.IsLong(tmask) && !tmask.IsRef;
         }
 
         /// <summary>The given type represents only an integer, long or double.</summary>
         internal bool IsNumberOnly(TypeRefMask tmask)
         {
-            return !tmask.IsVoid && !tmask.IsAnyType && this.TypeRefContext.GetTypes(tmask).All(TypeHelpers.IsNumber) && !tmask.IsRef;
+            return !tmask.IsVoid && !tmask.IsAnyType &&  TypeRefContext != null && this.TypeRefContext.GetTypes(tmask).All(TypeHelpers.IsNumber) && !tmask.IsRef;
         }
 
         /// <summary>
@@ -44,7 +44,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal bool IsBooleanOnly(TypeRefMask tmask)
         {
-            return tmask.IsSingleType && this.TypeRefContext.IsBoolean(tmask) && !tmask.IsRef;
+            return tmask.IsSingleType && TypeRefContext != null &&  this.TypeRefContext.IsBoolean(tmask) && !tmask.IsRef;
         }
 
         /// <summary>
@@ -52,7 +52,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal bool IsReadonlyStringOnly(TypeRefMask tmask)
         {
-            return tmask.IsSingleType && this.TypeRefContext.IsReadonlyString(tmask) && !tmask.IsRef;
+            return tmask.IsSingleType && TypeRefContext != null &&  this.TypeRefContext.IsReadonlyString(tmask) && !tmask.IsRef;
         }
 
         /// <summary>
@@ -60,7 +60,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal bool IsClassOnly(TypeRefMask tmask)
         {
-            return !tmask.IsVoid && this.TypeRefContext.GetObjectsFromMask(tmask) == tmask.TypesMask && !tmask.IsRef;
+            return !tmask.IsVoid && TypeRefContext != null &&  this.TypeRefContext.GetObjectsFromMask(tmask) == tmask.TypesMask && !tmask.IsRef;
         }
 
         /// <summary>
@@ -68,7 +68,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal bool IsArrayOnly(TypeRefMask tmask)
         {
-            return !tmask.IsVoid && !tmask.IsAnyType && this.TypeRefContext.GetTypes(tmask).All(x => x.IsArray) && !tmask.IsRef;
+            return !tmask.IsVoid && !tmask.IsAnyType &&  TypeRefContext != null && this.TypeRefContext.GetTypes(tmask).All(x => x.IsArray) && !tmask.IsRef;
         }
 
         /// <summary>
@@ -76,7 +76,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         internal bool CanBeNull(TypeRefMask tmask)
         {
-            return tmask.IsAnyType || tmask.IsRef || tmask.IsUninitialized || this.TypeRefContext.IsNull(tmask);
+            return tmask.IsAnyType || tmask.IsRef || tmask.IsUninitialized || TypeRefContext == null ||  this.TypeRefContext.IsNull(tmask);
         }
 
         /// <summary>
@@ -112,6 +112,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 tmask.IsAnyType ||
                 tmask.IsUninitialized ||
                 tmask.IsRef ||
+                TypeRefContext == null ||
                 this.TypeRefContext.IsArray(tmask) ||
                 this.TypeRefContext.IsWritableString(tmask);
         }
