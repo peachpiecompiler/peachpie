@@ -187,6 +187,8 @@ namespace Pchp.CodeAnalysis
         /// <summary>Boxed <c>boolean</c> to be re-used.</summary>
         readonly static object s_false = false;
 
+        readonly static object s_long_zero = 0L;
+
         /// <summary>
         /// Boxes <see cref="bool"/> into object without memory allocation.
         /// </summary>
@@ -197,6 +199,11 @@ namespace Pchp.CodeAnalysis
         /// This method does not allocate a new boolean on heap.
         /// </summary>
         public static Optional<object> AsOptional(this bool b) => new Optional<object>(AsObject(b));
+
+        /// <summary>
+        /// Gets <see cref="Optional{Object}"/> of <see cref="long"/>.
+        /// </summary>
+        public static Optional<object> AsOptional(this long l) => new Optional<object>(l == 0L ? s_long_zero : (object)l);
 
         /// <summary>
         /// Checks if <paramref name="optional"/> contains a boolean value. If so, it retrieves it in

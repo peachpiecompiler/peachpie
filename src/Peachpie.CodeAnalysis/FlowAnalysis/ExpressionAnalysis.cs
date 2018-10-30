@@ -731,6 +731,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 case Operations.ShiftLeft:
                 case Operations.ShiftRight:
+
+                    x.ConstantValue = ResolveShift(x.Operation, x.Left.ConstantValue, x.Right.ConstantValue);
                     return TypeCtx.GetLongTypeMask();
 
                 #endregion
@@ -824,6 +826,28 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             //
             return default(Optional<object>);
+        }
+
+        static Optional<object> ResolveShift(Operations op, Optional<object> lvalue, Optional<object> rvalue)
+        {
+            if (lvalue.TryConvertToLong(out var left) && rvalue.TryConvertToLong(out var right))
+            {
+                switch (op)
+                {
+                    case Operations.ShiftLeft:
+                        return (left << (int)right).AsOptional();
+
+                    case Operations.ShiftRight:
+                        return (left >> (int)right).AsOptional();
+
+                    default:
+                        Debug.Fail("unexpected");
+                        break;
+
+                }
+            }
+
+            return default;
         }
 
         /// <summary>
