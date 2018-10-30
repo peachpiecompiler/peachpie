@@ -256,7 +256,12 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Type context of currently emitted expressions. Can be <c>null</c>.
         /// </summary>
-        internal TypeRefContext TypeRefContext => this.Routine?.TypeRefContext;
+        internal TypeRefContext TypeRefContext
+        {
+            get => _typeRefContext ?? this.Routine?.TypeRefContext;
+            set => _typeRefContext = value;
+        }
+        TypeRefContext _typeRefContext;
 
         public DiagnosticBag Diagnostics => _diagnostics;
 

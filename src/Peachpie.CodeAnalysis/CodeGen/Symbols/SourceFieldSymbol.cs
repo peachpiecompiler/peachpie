@@ -24,6 +24,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
         void IPhpPropertySymbol.EmitInit(CodeGenerator cg)
         {
+            cg.TypeRefContext = EnsureTypeRefContext();
+
+            //
+
             var fldplace = new FieldPlace(IsStatic ? null : new ArgPlace(ContainingType, 0), this, cg.Module);
 
             if (this.Initializer != null)
@@ -38,6 +42,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 // fld = default(type)
                 cg.EmitInitializePlace(fldplace);
             }
+
+            //
+            cg.TypeRefContext = null;
         }
     }
 

@@ -137,7 +137,7 @@ namespace Pchp.CodeAnalysis
                 {
                     EnqueueExpression(
                         f.Initializer,
-                        TypeRefFactory.CreateTypeRefContext(type), //the context will be lost, analysis resolves constant values only and types are temporary
+                        f.EnsureTypeRefContext(),
                         NameUtils.GetNamingContext(type.Syntax));
                 }
             });

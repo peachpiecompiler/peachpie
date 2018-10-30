@@ -50,9 +50,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 var cctor = module.GetStaticCtorBuilder(this);
                 lock (cctor)
                 {
-                    using (var cg = new CodeGenerator(cctor, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, this, null, null)
+                    using (var cg = new CodeGenerator(cctor, module, DiagnosticBag.GetInstance(), module.Compilation.Options.OptimizationLevel, false, this, null, thisPlace: null)
                     {
                         CallerType = this,
+                        ContainingFile = this.ContainingFile,
                     })
                     {
                         foreach (var f in sflds)
