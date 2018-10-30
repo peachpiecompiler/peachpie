@@ -76,7 +76,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Gets value indicating whether the type information is not initialized.
         /// </summary>
         /// <remarks>Also represents <c>void</c> type.</remarks>
-        public bool IsUninitialized { get { return _mask == (ulong)0; } }
+        public bool IsUninitialized => IsDefault;
+
+        /// <summary>
+        /// Gets value indicating whether the type information is not initialized.
+        /// </summary>
+        public bool IsDefault => _mask == 0;
 
         /// <summary>
         /// Gets value indicating whether the type represents <c>void</c>.

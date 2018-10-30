@@ -69,7 +69,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             //
             _flowCtx = state1._flowCtx;
-            _varsType = EnumeratorExtension.MixArrays(state1._varsType, state2._varsType, TypeRefMask.Or, TypeRefContext.GetNullTypeMask);
+            _varsType = EnumeratorExtension.MergeArrays(state1._varsType, state2._varsType, MergeType);
             _initializedMask = state1._initializedMask | state2._initializedMask;
 
             // intersection of other variable flags
@@ -418,10 +418,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return _flowCtx.ReturnType;
         }
 
-        //#region Variable Kind
-
-        //Dictionary<VariableName, VariableKind> _varKindMap;
-
         /// <summary>
         /// Declares variable with a specific kind (static or global).
         /// </summary>
@@ -443,6 +439,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             //_varKindMap[varname] = kind;
         }
 
-        //#endregion
+        /// <summary>
+        /// Merges given types coming from two flows.
+        /// Uninitialized value (<c>0L</c>) is treated as <c>NULL</c>.
+        /// </summary>
+        TypeRefMask MergeType(TypeRefMask t1, TypeRefMask t2)
+        {
+            var result = t1 | t2;
+
+            if (t1.IsDefault || t2.IsDefault)
+            {
+                result |= TypeRefContext.GetNullTypeMask();
+            }
+
+            return result;
+        }
     }
 }
