@@ -52,7 +52,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         internal bool IsFunction(MethodSymbol method)
         {
-            return method.IsStatic && method.DeclaredAccessibility == Accessibility.Public && method.MethodKind == MethodKind.Ordinary && !method.IsPhpHidden(_compilation);
+            return method != null && method.IsStatic && method.DeclaredAccessibility == Accessibility.Public && method.MethodKind == MethodKind.Ordinary && !method.IsPhpHidden(_compilation);
         }
 
         internal bool IsGlobalConstant(Symbol symbol)
@@ -251,32 +251,57 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         public IPhpRoutineSymbol ResolveFunction(QualifiedName name)
         {
+            //
+            // slightly optimized enumeration's SelectMany():
+            //
+
             var clrName = name.ClrName();
 
             // library functions, public static methods
-            var methods = new List<MethodSymbol>();
-            foreach (var m in ExtensionContainers.SelectMany(r => r.GetMembers().OfType<MethodSymbol>().Where(IsFunction)))
+            MethodSymbol singleresult = null; // in case there is just one result, avoids allocation the list for the results
+            List<MethodSymbol> methods = null;
+
+            foreach (var container in ExtensionContainers)
             {
-                if (m.RoutineName.Equals(clrName, StringComparison.CurrentCultureIgnoreCase))
+                var members = container.GetMembersByPhpName(clrName);
+                if (members.IsDefaultOrEmpty == false)
                 {
-                    methods.Add(m);
+                    if (singleresult == null && methods == null && members.Length == 1 && IsFunction(members[0] as MethodSymbol))
+                    {
+                        singleresult = (MethodSymbol)members[0];
+                    }
+                    else
+                    {
+                        if (methods == null)
+                        {
+                            methods = new List<MethodSymbol>(members.Length);
+
+                            if (singleresult != null)
+                            {
+                                methods.Add(singleresult);
+                            }
+                        }
+
+                        methods.AddRange(members.OfType<MethodSymbol>().Where(IsFunction));
+                    }
                 }
             }
 
-            if (methods.Count == 0)
+            if (methods != null && methods.Count != 0)
             {
-                // source functions
-                return _next.ResolveFunction(name);
+                if (methods.Count == 1)
+                {
+                    return methods[0];
+                }
+                else
+                {
+                    bool userfunc = methods.Any(m => m.ContainingType.IsPhpSourceFile()); // if the function is user defined (PHP), we might not treat this as CLR method (ie do not resolve overloads in compile time)
+                    return new AmbiguousMethodSymbol(methods.AsImmutable(), overloadable: !userfunc);
+                }
             }
-            else if (methods.Count == 1)
-            {
-                return methods[0];
-            }
-            else
-            {
-                bool userfunc = methods.Any(m => m.ContainingType.IsPhpSourceFile()); // if the function is user defined (PHP), we might not treat this as CLR method (ie do not resolve overloads in compile time)
-                return new AmbiguousMethodSymbol(methods.AsImmutable(), overloadable: !userfunc);
-            }
+
+            // our single result or continue to resolve a source function
+            return singleresult ?? _next.ResolveFunction(name);
         }
 
         public IPhpValue ResolveConstant(string name)

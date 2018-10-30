@@ -140,10 +140,9 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         // Type parameters do not have members
-        public sealed override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
-        {
-            return ImmutableArray<Symbol>.Empty;
-        }
+        public sealed override ImmutableArray<Symbol> GetMembers(string name) => ImmutableArray<Symbol>.Empty;
+
+        public override ImmutableArray<Symbol> GetMembersByPhpName(string name) => ImmutableArray<Symbol>.Empty;
 
         // Type parameters do not have members
         public sealed override ImmutableArray<NamedTypeSymbol> GetTypeMembers()

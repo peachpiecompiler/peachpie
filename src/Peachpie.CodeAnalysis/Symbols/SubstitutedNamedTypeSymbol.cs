@@ -376,7 +376,7 @@ namespace Pchp.CodeAnalysis.Symbols
         //    return builder.ToImmutableAndFree();
         //}
 
-        public sealed override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
+        public sealed override ImmutableArray<Symbol> GetMembers(string name)
         {
             if (_unbound) return StaticCast<Symbol>.From(GetTypeMembers(name));
 
@@ -387,12 +387,12 @@ namespace Pchp.CodeAnalysis.Symbols
                 return result;
             }
 
-            return GetMembersWorker(name, ignoreCase);
+            return GetMembersWorker(name);
         }
 
-        private ImmutableArray<Symbol> GetMembersWorker(string name, bool ignoreCase)
+        private ImmutableArray<Symbol> GetMembersWorker(string name)
         {
-            var originalMembers = _originalDefinition.GetMembers(name, ignoreCase);
+            var originalMembers = _originalDefinition.GetMembers(name);
             if (originalMembers.IsDefaultOrEmpty)
             {
                 return originalMembers;
@@ -414,6 +414,17 @@ namespace Pchp.CodeAnalysis.Symbols
 
             cache.TryAdd(name, substitutedMembers);
             return substitutedMembers;
+        }
+
+        public override ImmutableArray<Symbol> GetMembersByPhpName(string name)
+        {
+            var originalMembers = _originalDefinition.GetMembersByPhpName(name);
+            if (originalMembers.IsDefaultOrEmpty)
+            {
+                return originalMembers;
+            }
+
+            return originalMembers.Select(t => t.SymbolAsMember(this)).AsImmutable();
         }
 
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()

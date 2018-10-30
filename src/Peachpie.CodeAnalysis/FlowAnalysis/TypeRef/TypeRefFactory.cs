@@ -41,7 +41,7 @@ namespace Pchp.CodeAnalysis
                 case SpecialType.System_Double: return DoubleTypeRef;
                 case SpecialType.System_Boolean: return BoolTypeRef;
                 case SpecialType.System_Object: return new ClassTypeRef(NameUtils.SpecialNames.System_Object);
-                case SpecialType.System_DateTime: return new ClassTypeRef(new QualifiedName(new Name("DateTime"), new[] { new Name("System") }));
+                case SpecialType.System_DateTime: return new ClassTypeRef(NameUtils.SpecialNames.System_DateTime);
                 default:
                     if (t is NamedTypeSymbol)
                     {

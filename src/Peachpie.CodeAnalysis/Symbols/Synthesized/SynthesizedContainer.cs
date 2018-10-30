@@ -151,10 +151,15 @@ namespace Pchp.CodeAnalysis.Symbols
             return (object)constructor == null ? ImmutableArray<Symbol>.Empty : ImmutableArray.Create(constructor);
         }
 
-        public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
+        public override ImmutableArray<Symbol> GetMembers(string name)
         {
             var ctor = Constructor;
             return ((object)ctor != null && name == ctor.Name) ? ImmutableArray.Create<Symbol>(ctor) : ImmutableArray<Symbol>.Empty;
+        }
+
+        public override ImmutableArray<Symbol> GetMembersByPhpName(string name)
+        {
+            return ImmutableArray<Symbol>.Empty;
         }
 
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit()

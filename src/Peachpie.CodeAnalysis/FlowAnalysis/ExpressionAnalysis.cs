@@ -1092,7 +1092,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 var handle = State.GetLocalHandle(localname);
                 Debug.Assert(handle.IsValid);
-                
+
                 // Remove any constant value of isset()
                 x.ConstantValue = default(Optional<object>);
 

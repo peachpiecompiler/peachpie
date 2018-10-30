@@ -101,7 +101,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 for (var t = _containingType.BaseType; t != null && t.SpecialType != SpecialType.System_Object; t = t.BaseType)
                 {
-                    var candidates = t.GetMembers(_fieldName, ignoreCase: false)
+                    var candidates = t.GetMembers(_fieldName)
                         .OfType<FieldSymbol>()
                         .Where(f => f.IsStatic == false && f.DeclaredAccessibility != Accessibility.Private);
 

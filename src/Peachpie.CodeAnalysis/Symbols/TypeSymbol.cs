@@ -280,9 +280,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public MethodSymbol[] LookupMethods(string name)
         {
+            if (this.Is_PhpValue())
+            {
+                return Array.Empty<MethodSymbol>();
+            }
+
             TypeSymbol topPhpType = null; // deals with PHP-like overriding, once there is PHP method that override another method (even with a different signature) in a base PHP type
 
-            var set = new HashSet<MethodSymbol>(new SignatureEqualityComparer());
+            var set = new HashSet<MethodSymbol>(SignatureEqualityComparer.Instance);
 
             for (var t = this; t != null; t = t.BaseType)
             {
@@ -295,7 +300,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 int count = set.Count;
 
-                set.UnionWith(t.GetMembers(name, true).OfType<MethodSymbol>());
+                set.UnionWith(t.GetMembersByPhpName(name).OfType<MethodSymbol>());
 
                 // remember the top PHP class declaring the method:
                 if (topPhpType == null && count != set.Count && t.IsPhpType()) // some methods were found in PHP type
@@ -306,7 +311,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             foreach (var t in this.AllInterfaces)
             {
-                set.UnionWith(t.GetMembers(name, true).OfType<MethodSymbol>());
+                set.UnionWith(t.GetMembersByPhpName(name).OfType<MethodSymbol>());
             }
 
             //

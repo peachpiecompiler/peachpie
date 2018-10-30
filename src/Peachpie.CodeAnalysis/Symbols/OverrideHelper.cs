@@ -161,11 +161,11 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             for (; type != null; type = type.BaseType)
             {
-                var members = type.GetMembers(method.RoutineName, ignoreCase: true).OfType<MethodSymbol>().Where(CanOverride);
+                var members = type.GetMembersByPhpName(method.RoutineName).OfType<MethodSymbol>().Where(CanOverride);
                 if (method.ContainingType.IsInterface)
                 {
                     // check explicit interface override
-                    members = members.Concat(type.GetMembers(method.ContainingType.GetFullName() + "." + method.RoutineName, ignoreCase: true).OfType<MethodSymbol>());
+                    members = members.Concat(type.GetMembers(method.ContainingType.GetFullName() + "." + method.RoutineName).OfType<MethodSymbol>());
                 }
 
                 var resolved = ResolveMethodImplementation(method, members);

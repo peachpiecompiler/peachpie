@@ -55,12 +55,17 @@ namespace Pchp.CodeAnalysis.Symbols
             return ImmutableArray.Create<Symbol>(_constructor, _invoke);
         }
 
-        public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
+        public override ImmutableArray<Symbol> GetMembers(string name)
         {
             return
-                (name.StringsEqual(_constructor.Name, ignoreCase)) ? ImmutableArray.Create<Symbol>(_constructor) :
-                (name.StringsEqual(_invoke.Name, ignoreCase)) ? ImmutableArray.Create<Symbol>(_invoke) :
+                (name.StringsEqual(_constructor.Name, false)) ? ImmutableArray.Create<Symbol>(_constructor) :
+                (name.StringsEqual(_invoke.Name, false)) ? ImmutableArray.Create<Symbol>(_invoke) :
                 ImmutableArray<Symbol>.Empty;
+        }
+
+        public override ImmutableArray<Symbol> GetMembersByPhpName(string name)
+        {
+            return base.GetMembersByPhpName(name); // none
         }
 
         public override Accessibility DeclaredAccessibility

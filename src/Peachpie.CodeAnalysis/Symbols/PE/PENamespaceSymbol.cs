@@ -31,7 +31,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return StaticCast<Symbol>.From(_types.Flatten());
         }
 
-        public sealed override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
+        public sealed override ImmutableArray<Symbol> GetMembers(string name)
         {
             EnsureAllMembersLoaded();
 
@@ -42,6 +42,12 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             return ImmutableArray<Symbol>.Empty;
+        }
+
+        public override ImmutableArray<Symbol> GetMembersByPhpName(string name)
+        {
+            // return ImmutableArray<Symbol>.Empty; // should not be called, review
+            throw new NotImplementedException();
         }
 
         public sealed override ImmutableArray<NamedTypeSymbol> GetTypeMembers()
