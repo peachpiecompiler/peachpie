@@ -60,6 +60,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public bool IsEmpty => IsOnlyBoundElement && BoundElement == null;
         public bool IsOnlyBoundElement => PreBoundBlockFirst == null;
+
+        public static bool operator ==(BoundItemsBag<T> a, BoundItemsBag<T> b)
+            => a.BoundElement == b.BoundElement && a.PreBoundBlockFirst == b.PreBoundBlockFirst && a.PreBoundBlockLast == b.PreBoundBlockLast;
+
+        public static bool operator !=(BoundItemsBag<T> a, BoundItemsBag<T> b)
+            => !(a == b);
     }
 
     /// <summary>
@@ -83,7 +89,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Found yield statements (needed for ControlFlowGraph)
         /// </summary>
-        public virtual BoundYieldStatement[] Yields { get => EmptyArray<BoundYieldStatement>.Instance; }
+        public virtual ImmutableArray<BoundYieldStatement> Yields { get => ImmutableArray<BoundYieldStatement>.Empty; }
 
         /// <summary>
         /// Bag with semantic diagnostics.
@@ -1065,7 +1071,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Found yield statements (needed for ControlFlowGraph)
         /// </summary>
-        public override BoundYieldStatement[] Yields { get => _yields.ToArray(); }
+        public override ImmutableArray<BoundYieldStatement> Yields { get => _yields.ToImmutableArray(); }
         readonly List<BoundYieldStatement> _yields = new List<BoundYieldStatement>();
 
         readonly HashSet<AST.LangElement> _yieldsToStatementRootPath = new HashSet<AST.LangElement>();

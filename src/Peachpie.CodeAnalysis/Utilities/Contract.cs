@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.CodeAnalysis.Semantics.Graph;
 
 namespace Pchp.CodeAnalysis
 {
@@ -61,6 +63,14 @@ namespace Pchp.CodeAnalysis
         private static void ThrowArgumentNull<T>(string messageFormat, params object[] messageParams) where T : class
         {
             throw new ArgumentNullException(typeof(T).Name, string.Format(messageFormat, messageParams));
+        }
+
+        internal static void ThrowIfDefault<T>(ImmutableArray<T> arr)
+        {
+            if (arr.IsDefault)
+            {
+                throw new ArgumentException(typeof(ImmutableArray<T>).Name);
+            }
         }
     }
 }

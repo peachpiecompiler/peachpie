@@ -97,7 +97,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             CheckUnreachableCode(x);
         }
 
-        void CheckLabels(ControlFlowGraph.LabelBlockState[] labels)
+        void CheckLabels(ImmutableArray<ControlFlowGraph.LabelBlockState> labels)
         {
             if (labels == null || labels.Length == 0)
             {
