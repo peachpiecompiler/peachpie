@@ -220,7 +220,7 @@ namespace Pchp.CodeAnalysis
             var updatedRoutines = new ConcurrentBag<SourceRoutineSymbol>();
             this.WalkMethods(m =>
                 {
-                    if (TransformationVisitor<VoidStruct>.TryTransform(m))
+                    if (TransformationRewriter.TryTransform(m))
                         updatedRoutines.Add(m);
                 },
                 allowParallel: true);

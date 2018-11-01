@@ -52,6 +52,17 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         /// <summary>
+        /// Update current CFG to a new version.
+        /// </summary>
+        internal void UpdateControlFlowGraph(ControlFlowGraph graph)
+        {
+            Debug.Assert(_cfg != null);
+            Debug.Assert(graph != null);
+
+            _cfg = graph;
+        }
+
+        /// <summary>
         /// Gets table of local variables.
         /// Variables are lazily added to the table.
         /// </summary>
