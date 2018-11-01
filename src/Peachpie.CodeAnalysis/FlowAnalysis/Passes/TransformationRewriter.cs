@@ -75,9 +75,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         {
             if (x.Condition.ConstantValue.TryConvertToBool(out bool condValue))
             {
-                // TODO: Ensure the target unreachable from this edge is added to the unreachable blocks if not reachable from elsewhere
-
                 TransformationCount++;
+                NotePossiblyUnreachable(condValue ? x.FalseTarget : x.TrueTarget);
                 var target = condValue ? x.TrueTarget : x.FalseTarget;
                 return new SimpleEdge((BoundBlock)Accept(target));
             }

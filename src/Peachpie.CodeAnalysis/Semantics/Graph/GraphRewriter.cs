@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
@@ -9,6 +10,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     public class GraphRewriter : GraphVisitor<object>
     {
         private Dictionary<BoundBlock, BoundBlock> _updatedBlocks;
+        private List<BoundBlock> _possiblyUnreachableBlocks;
 
         public int ExploredColor { get; private set; }
 
@@ -118,6 +120,16 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
         }
 
+        protected void NotePossiblyUnreachable(BoundBlock block)
+        {
+            if (_possiblyUnreachableBlocks == null)
+            {
+                _possiblyUnreachableBlocks = new List<BoundBlock>();
+            }
+
+            _possiblyUnreachableBlocks.Add(block);
+        }
+
         #endregion
 
         #region ControlFlowGraph
@@ -132,6 +144,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             var updatedStart = (StartBlock)Accept(x.Start);
             var updatedExit = TryGetNewVersion(x.Exit);
 
+            var unreachableBlocks = x.UnreachableBlocks;
+            if (_possiblyUnreachableBlocks != null)
+            {
+                unreachableBlocks = unreachableBlocks.AddRange(_possiblyUnreachableBlocks.Where(b => !IsExplored(b)));
+            }
+
             // TODO: Rescan and fix the whole CFG if _updatedBlocks is not null
 
             return x.Update(
@@ -139,7 +157,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 updatedExit,
                 x.Labels,
                 x.Yields,
-                x.UnreachableBlocks);
+                unreachableBlocks);
         }
 
         protected virtual void OnVisitCFG(ControlFlowGraph x)

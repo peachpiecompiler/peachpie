@@ -154,7 +154,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
             else
             {
-                return new ControlFlowGraph(start, exit, ImmutableArray<BoundStatement>.Empty, null, labels, yields, unreachable);
+                return new ControlFlowGraph(start, exit, ImmutableArray<BoundStatement>.Empty, null, labels, yields, unreachable)
+                {
+                    _lastcolor = this._lastcolor
+                };
             }
         }
 
