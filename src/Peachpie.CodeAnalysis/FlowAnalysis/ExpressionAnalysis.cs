@@ -1055,6 +1055,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     case SpecialType.System_Double:
                         return ConstantValue.Create(-value.DoubleValue);
 
+                    case SpecialType.System_Int32:
+                        return value.Int32Value != int.MinValue
+                            ? ConstantValue.Create(-value.Int32Value)   // (- Int32.MinValue) overflows to int64
+                            : ConstantValue.Create(-(long)value.Int32Value);
+
                     case SpecialType.System_Int64:
                         return (value.Int64Value != long.MinValue)  // (- Int64.MinValue) overflows to double
                             ? ConstantValue.Create(-value.Int64Value)
@@ -2206,9 +2211,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override T VisitExpressionStatement(BoundExpressionStatement x)
         {
-            base.VisitExpressionStatement(x);
-
-            return default;
+            return base.VisitExpressionStatement(x);
         }
 
         public override T VisitReturn(BoundReturnStatement x)
