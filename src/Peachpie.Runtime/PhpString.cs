@@ -610,7 +610,13 @@ namespace Pchp.Core
             public void Add(Blob value)
             {
                 Debug.Assert(value != null);
-                Debug.Assert(!value.IsEmpty);
+
+                if (value.IsEmpty)
+                {
+                    // should not happen:
+                    return;
+                }
+
                 Debug.Assert(value._chunks != null);
 
                 if (value.IsArrayOfChunks)
@@ -657,18 +663,18 @@ namespace Pchp.Core
 
             public void Add(PhpString value)
             {
-                if (!value.IsEmpty)
+                var data = value._data;
+                if (data is Blob b)
                 {
-                    var data = value._data;
-                    if (data is Blob b)
-                    {
-                        Add(b);
-                    }
-                    else
-                    {
-                        Debug.Assert(data is string);
-                        AddChunk((string)data);
-                    }
+                    Add(b);
+                }
+                else if (data is string s)
+                {
+                    Add(s);
+                }
+                else
+                {
+                    Debug.Assert(value.IsDefault);
                 }
             }
 
