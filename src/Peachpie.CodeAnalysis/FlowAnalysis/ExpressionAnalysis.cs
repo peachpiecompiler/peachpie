@@ -614,6 +614,23 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return type;
         }
 
+        Optional<object> ResolveBooleanOperation(Optional<object> xobj, Optional<object> yobj, Operations op)
+        {
+            if (xobj.TryConvertToBool(out var bx) && yobj.TryConvertToBool(out var by))
+            {
+                switch (op)
+                {
+                    case Operations.And: return (bx && by).AsOptional();
+                    case Operations.Or: return (bx || by).AsOptional();
+                    case Operations.Xor: return (bx ^ by).AsOptional();
+                    default:
+                        throw ExceptionUtilities.Unreachable;
+                }
+            }
+
+            return default;
+        }
+
         /// <summary>
         /// Resolves value of bit operation.
         /// </summary>
@@ -722,9 +739,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.Div:
                 case Operations.Mul:
                 case Operations.Pow:
+
                     if (IsDoubleOnly(x.Left.TypeRefMask) || IsDoubleOnly(x.Right.TypeRefMask)) // some operand is double and nothing else
                         return TypeCtx.GetDoubleTypeMask(); // double if we are sure about operands
-                    return TypeCtx.GetNumberTypeMask();
+                    else
+                        return TypeCtx.GetNumberTypeMask();
 
                 case Operations.Mod:
                     return TypeCtx.GetLongTypeMask();
@@ -742,6 +761,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.And:
                 case Operations.Or:
                 case Operations.Xor:
+
+                    x.ConstantValue = ResolveBooleanOperation(x.Left.ConstantValue, x.Right.ConstantValue, x.Operation);
                     return TypeCtx.GetBooleanTypeMask();
 
                 case Operations.BitAnd:
