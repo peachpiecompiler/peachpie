@@ -96,6 +96,12 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        /// <summary>
+        /// Gets PHP type qualified name.
+        /// </summary>
+        public static QualifiedName PhpQualifiedName(this NamedTypeSymbol t) =>
+            t is IPhpTypeSymbol phpt ? phpt.FullName : MakeQualifiedName(t);
+
         public static bool IsAccessible(this Symbol symbol, TypeSymbol classCtx)
         {
             if (symbol.DeclaredAccessibility == Accessibility.Private)

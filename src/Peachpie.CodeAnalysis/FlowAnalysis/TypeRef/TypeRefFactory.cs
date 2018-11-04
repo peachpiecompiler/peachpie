@@ -68,12 +68,12 @@ namespace Pchp.CodeAnalysis
         {
             if (t.Arity <= 0)
             {
-                return new ClassTypeRef(t.MakeQualifiedName());
+                return new ClassTypeRef(t.PhpQualifiedName());
             }
             else
             {
                 return new GenericClassTypeRef(
-                    t.OriginalDefinition.MakeQualifiedName(),
+                    t.OriginalDefinition.PhpQualifiedName(),
                     t.TypeArguments.SelectAsArray(targ => CreateTypeRef(ctx, targ)).AsImmutable());
             }
         }
