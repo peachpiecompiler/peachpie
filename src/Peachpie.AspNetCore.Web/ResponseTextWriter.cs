@@ -86,7 +86,7 @@ namespace Peachpie.AspNetCore.Web
 
             //
             var buffer = EnsureBuffer(count);
-            var bytes = _encoding.GetBytes(chars, 0, count, buffer, 0);
+            var bytes = _encoding.GetBytes(chars, index, count, buffer, 0);
 
             //
             Write(buffer, bytes);
