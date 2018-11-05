@@ -27,6 +27,11 @@ namespace Pchp.CodeAnalysis.Semantics.Model
         /// </summary>
         Dictionary<QualifiedName, NamedTypeSymbol> _lazyExportedTypes;
 
+        /// <summary>
+        /// Functions that are visible from extension libraries.
+        /// </summary>
+        MultiDictionary<QualifiedName, MethodSymbol> _lazyExportedFunctions;
+
         #endregion
 
         public GlobalSymbolProvider(PhpCompilation compilation)
@@ -43,14 +48,13 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             .OfType<PEAssemblySymbol>()
             .Where(s => s.IsExtensionLibrary);
 
-        internal static ImmutableArray<NamedTypeSymbol> ResolveExtensionContainers(PhpCompilation compilation)
+        static IEnumerable<NamedTypeSymbol> ResolveExtensionContainers(PhpCompilation compilation)
         {
             return GetExtensionLibraries(compilation)
-                .SelectMany(r => r.ExtensionContainers)
-                .ToImmutableArray();
+                .SelectMany(r => r.ExtensionContainers);
         }
 
-        internal bool IsFunction(MethodSymbol method)
+        bool IsFunction(MethodSymbol method)
         {
             return method != null && method.IsStatic && method.DeclaredAccessibility == Accessibility.Public && method.MethodKind == MethodKind.Ordinary && !method.IsPhpHidden(_compilation);
         }
@@ -78,7 +82,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             {
                 if (_lazyExtensionContainers.IsDefault)
                 {
-                    _lazyExtensionContainers = ResolveExtensionContainers(_compilation);
+                    _lazyExtensionContainers = ResolveExtensionContainers(_compilation).ToImmutableArray();
                 }
 
                 return _lazyExtensionContainers;
@@ -186,6 +190,30 @@ namespace Pchp.CodeAnalysis.Semantics.Model
         /// <returns></returns>
         internal IEnumerable<NamedTypeSymbol> GetReferencedTypes() => ExportedTypes.Values.Where(t => t.IsValidType() && !t.IsPhpUserType());
 
+        public MultiDictionary<QualifiedName, MethodSymbol> ExportedFunctions
+        {
+            get
+            {
+                if (_lazyExportedFunctions == null)
+                {
+                    var dict = new MultiDictionary<QualifiedName, MethodSymbol>();
+
+                    foreach (var container in ExtensionContainers)
+                    {
+                        container.GetMembers()
+                            .OfType<MethodSymbol>()
+                            .Where(IsFunction)
+                            .ForEach(m => dict.Add(new QualifiedName(new Name(m.RoutineName)), m));
+                    }
+
+                    //
+                    InterlockedOperations.Initialize(ref _lazyExportedFunctions, dict);
+                }
+
+                return _lazyExportedFunctions;
+            }
+        }
+
         #region ISemanticModel
 
         public INamedTypeSymbol ResolveType(QualifiedName name)
@@ -251,57 +279,21 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         public IPhpRoutineSymbol ResolveFunction(QualifiedName name)
         {
-            //
-            // slightly optimized enumeration's SelectMany():
-            //
-
-            var clrName = name.ClrName();
-
-            // library functions, public static methods
-            MethodSymbol singleresult = null; // in case there is just one result, avoids allocation the list for the results
-            List<MethodSymbol> methods = null;
-
-            foreach (var container in ExtensionContainers)
+            var methods = ExportedFunctions[name];
+            if (methods.Count == 1)
             {
-                var members = container.GetMembersByPhpName(clrName);
-                if (members.IsDefaultOrEmpty == false)
-                {
-                    if (singleresult == null && methods == null && members.Length == 1 && IsFunction(members[0] as MethodSymbol))
-                    {
-                        singleresult = (MethodSymbol)members[0];
-                    }
-                    else
-                    {
-                        if (methods == null)
-                        {
-                            methods = new List<MethodSymbol>(members.Length);
-
-                            if (singleresult != null)
-                            {
-                                methods.Add(singleresult);
-                            }
-                        }
-
-                        methods.AddRange(members.OfType<MethodSymbol>().Where(IsFunction));
-                    }
-                }
+                return methods.Single();
             }
-
-            if (methods != null && methods.Count != 0)
+            else if (methods.Count > 1)
             {
-                if (methods.Count == 1)
-                {
-                    return methods[0];
-                }
-                else
-                {
-                    bool userfunc = methods.Any(m => m.ContainingType.IsPhpSourceFile()); // if the function is user defined (PHP), we might not treat this as CLR method (ie do not resolve overloads in compile time)
-                    return new AmbiguousMethodSymbol(methods.AsImmutable(), overloadable: !userfunc);
-                }
+                // if the function is user defined (PHP), we might not treat this as CLR method (ie do not resolve overloads in compile time)
+                bool userfunc = methods.Any(m => m.ContainingType.IsPhpSourceFile());
+                return new AmbiguousMethodSymbol(methods.AsImmutable(), overloadable: !userfunc);
             }
-
-            // our single result or continue to resolve a source function
-            return singleresult ?? _next.ResolveFunction(name);
+            else
+            {
+                return _next.ResolveFunction(name);
+            }
         }
 
         public IPhpValue ResolveConstant(string name)

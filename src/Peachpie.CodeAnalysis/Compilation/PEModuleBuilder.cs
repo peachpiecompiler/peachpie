@@ -247,15 +247,17 @@ namespace Pchp.CodeAnalysis.Emit
         internal void CreateEnumerateReferencedFunctions(DiagnosticBag diagnostic)
         {
             var method = this.ScriptType.EnumerateBuiltinFunctionsSymbol;
-            var functions = GlobalSymbolProvider.ResolveExtensionContainers(this.Compilation)
-                .Where(t => !t.IsPhpSourceFile()) // not PHP source file containers
-                .SelectMany(c => c.GetMembers().OfType<MethodSymbol>())
-                .Where(Compilation.GlobalSemantics.IsFunction);
 
             // void (Action<string, RuntimeMethodHandle> callback)
             var body = MethodGenerator.GenerateMethodBody(this, method,
                 (il) =>
                 {
+                    var functions = this.Compilation.GlobalSemantics
+                        .ExportedFunctions
+                        .SelectMany(pair => pair.Value)
+                        .Where(m => !m.ContainingType.IsPhpSourceFile()) // not PHP source file containers
+                        ;
+
                     var action_string_method = method.Parameters[0].Type;
                     Debug.Assert(action_string_method.Name == "Action");
                     var invoke = action_string_method.DelegateInvokeMethod();
