@@ -745,6 +745,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(PhpArray)) return Expression.Constant(ConversionCost.Pass);
             if (target == typeof(long) || target == typeof(int) || target == typeof(uint)) return Expression.Constant(ConversionCost.LoosingPrecision);
             if (target == typeof(string) || target == typeof(PhpString)) return Expression.Constant(ConversionCost.Warning);
+            if (target == typeof(IPhpCallable)) return Expression.Constant(ConversionCost.LoosingPrecision);
 
             throw new NotImplementedException($"costof(array -> {target})");
         }

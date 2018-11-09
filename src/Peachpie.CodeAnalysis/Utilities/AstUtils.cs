@@ -55,6 +55,14 @@ namespace Pchp.CodeAnalysis
         }
 
         /// <summary>
+        /// Creates new struct with updated <see cref="CompleteToken.TokenText"/>.
+        /// </summary>
+        public static CompleteToken WithTokenText(this CompleteToken t, string text)
+        {
+            return new CompleteToken(t.Token, t.TokenValue, t.TokenPosition, text);
+        }
+
+        /// <summary>
         /// Determines whether method has <c>$this</c> variable.
         /// </summary>
         public static bool HasThisVariable(MethodDecl method)
@@ -172,7 +180,7 @@ namespace Pchp.CodeAnalysis
         {
             return span.IsValid
                 ? new Microsoft.CodeAnalysis.Text.TextSpan(span.Start, span.Length)
-                : new Microsoft.CodeAnalysis.Text.TextSpan();
+                : default;
         }
 
         /// <summary>

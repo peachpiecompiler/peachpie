@@ -66,6 +66,11 @@ namespace Peachpie.CodeAnalysis.Utilities
             return new NotImplementedException($"{message} not implemented at {location}");
         }
 
+        public static Exception ArgumentNull()
+        {
+            return new ArgumentNullException();
+        }
+
         public static Exception UnexpectedValue(object o)
         {
             string output = string.Format("Unexpected value '{0}' of type '{1}'", o, (o != null) ? o.GetType().FullName : "<unknown>");
