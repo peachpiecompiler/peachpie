@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using Pchp.CodeAnalysis.Errors;
 using Peachpie.CodeAnalysis.Syntax;
+using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis
 {
@@ -18,7 +19,7 @@ namespace Pchp.CodeAnalysis
     /// </summary>
     public class PhpSyntaxTree : SyntaxTree
     {
-        readonly CodeSourceUnit _source;
+        readonly PhpSourceUnit _source;
 
         SourceText _lazyText;
 
@@ -65,11 +66,9 @@ namespace Pchp.CodeAnalysis
             new Version(7, 2),
         }.ToImmutableArray();
 
-        private PhpSyntaxTree(CodeSourceUnit source)
+        private PhpSyntaxTree(PhpSourceUnit source)
         {
-            Contract.ThrowIfNull(source);
-
-            _source = source;
+            _source = source ?? throw ExceptionUtilities.ArgumentNull();
         }
 
         internal override bool SupportsLocations => true;
@@ -135,15 +134,18 @@ namespace Pchp.CodeAnalysis
         {
             if (fname == null)
             {
-                throw new ArgumentNullException(nameof(fname));
+                throw ExceptionUtilities.ArgumentNull(nameof(fname));
             }
 
             // TODO: new parser implementation based on Roslyn
 
             // TODO: file.IsScript ? scriptParseOptions : parseOptions
-            var unit = new CodeSourceUnit(
-                content, fname, Encoding.UTF8,
-                (parseOptions.Kind == SourceCodeKind.Regular) ? Lexer.LexicalStates.INITIAL : Lexer.LexicalStates.ST_IN_SCRIPTING, GetLanguageFeatures(parseOptions));
+            var unit = new PhpSourceUnit(
+                fname,
+                SourceText.From(content, Encoding.UTF8),
+                encoding: Encoding.UTF8,
+                features: GetLanguageFeatures(parseOptions),
+                initialState: (parseOptions.Kind == SourceCodeKind.Regular) ? Lexer.LexicalStates.INITIAL : Lexer.LexicalStates.ST_IN_SCRIPTING);
 
             var result = new PhpSyntaxTree(unit);
 
@@ -151,7 +153,14 @@ namespace Pchp.CodeAnalysis
             var factory = new NodesFactory(unit, parseOptions.Defines);
 
             //
-            unit.Parse(factory, errorSink);
+            try
+            {
+                unit.Parse(factory, errorSink);
+            }
+            finally
+            {
+                unit.Close();
+            }
 
             //
             result.Diagnostics = errorSink.Diagnostics;
@@ -168,7 +177,7 @@ namespace Pchp.CodeAnalysis
             else
             {
                 // Parser leaves factory.Root to null in the case of syntax errors -> create a proxy syntax node
-                var fullSpan = new Devsense.PHP.Text.Span(0, unit.Code.Length);
+                var fullSpan = new Devsense.PHP.Text.Span(0, content.Length);
                 result.Root = new GlobalCode(fullSpan, ImmutableArray<Statement>.Empty, unit);
             }
 
@@ -190,7 +199,7 @@ namespace Pchp.CodeAnalysis
             }
         }
 
-        public override int Length => _source.Code.Length;
+        public override int Length => _source.SourceText.Length;
 
         protected override ParseOptions OptionsCore
         {
@@ -247,7 +256,7 @@ namespace Pchp.CodeAnalysis
             throw new NotImplementedException();
         }
 
-        public override FileLinePositionSpan GetMappedLineSpan(TextSpan span, CancellationToken cancellationToken = default(CancellationToken))
+        public override FileLinePositionSpan GetMappedLineSpan(TextSpan span, CancellationToken cancellationToken = default)
         {
             // We do not use anything like C# #line directive in PHP
             return GetLineSpan(span, cancellationToken);
@@ -260,12 +269,7 @@ namespace Pchp.CodeAnalysis
 
         public override SourceText GetText(CancellationToken cancellationToken = default)
         {
-            if (_lazyText == null)
-            {
-                _lazyText = SourceText.From(_source.Code, Encoding.UTF8);
-            }
-
-            return _lazyText;
+            return _source.SourceText;
         }
 
         public override bool HasHiddenRegions()

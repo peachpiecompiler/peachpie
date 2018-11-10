@@ -18,7 +18,7 @@ namespace Peachpie.CodeAnalysis.Syntax
     sealed class PhpTokenProvider : ITokenProvider<TValue, TSpan>, IDisposable
     {
         readonly ITokenProvider<TValue, TSpan> _provider;
-        readonly Func<SourceText> _sourceGetter;
+        readonly PhpSourceUnit _sourceunit;
 
         StringTable _strings;
         PHPDocBlock _docblock;
@@ -29,10 +29,10 @@ namespace Peachpie.CodeAnalysis.Syntax
         readonly List<CompleteToken> _buffer = new List<CompleteToken>();
         int _bufferidx = 0;
 
-        public PhpTokenProvider(ITokenProvider<TValue, TSpan> provider, Func<SourceText> sourceGetter)
+        public PhpTokenProvider(ITokenProvider<TValue, TSpan> provider, PhpSourceUnit sourceunit)
         {
             _provider = provider ?? throw ExceptionUtilities.ArgumentNull();
-            _sourceGetter = sourceGetter ?? throw ExceptionUtilities.ArgumentNull();
+            _sourceunit = sourceunit ?? throw ExceptionUtilities.ArgumentNull();
             _strings = StringTable.GetInstance();
         }
 
@@ -53,7 +53,7 @@ namespace Peachpie.CodeAnalysis.Syntax
                     var tinfo = _buffer[_bufferidx];
                     if (tinfo.TokenText == null)
                     {
-                        _buffer[_bufferidx] = tinfo = tinfo.WithTokenText(_strings.Add(_sourceGetter().ToString(TokenPosition.ToTextSpan())));
+                        _buffer[_bufferidx] = tinfo = tinfo.WithTokenText(_strings.Add(_sourceunit.GetSourceCode(TokenPosition)));
                     }
 
                     return tinfo.TokenText;
@@ -101,13 +101,8 @@ namespace Peachpie.CodeAnalysis.Syntax
             Tokens t;
             do
             {
-                // fetch next token,
-                // ignore whitespaces
-                do
-                {
-                    t = (Tokens)_provider.GetNextToken();
-                }
-                while (t == Tokens.T_WHITESPACE);
+                // fetch next token
+                t = (Tokens)_provider.GetNextToken();
 
                 // add to buffer
                 _buffer.Add(new CompleteToken(t, _provider.TokenValue, _provider.TokenPosition, null));
@@ -150,6 +145,16 @@ namespace Peachpie.CodeAnalysis.Syntax
             {
                 return default;
             }
+        }
+
+        /// <summary>
+        /// Remove range of tokens from the buffer.
+        /// </summary>
+        public void Remove(int start, int count)
+        {
+            Lookup(start + count);
+
+            _buffer.RemoveRange(start, count);
         }
     }
 }
