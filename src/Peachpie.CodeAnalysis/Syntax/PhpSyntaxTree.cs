@@ -258,7 +258,7 @@ namespace Pchp.CodeAnalysis
             throw new NotImplementedException();
         }
 
-        public override SourceText GetText(CancellationToken cancellationToken = default(CancellationToken))
+        public override SourceText GetText(CancellationToken cancellationToken = default)
         {
             if (_lazyText == null)
             {

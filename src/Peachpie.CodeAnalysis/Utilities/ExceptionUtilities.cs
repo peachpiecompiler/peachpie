@@ -66,6 +66,11 @@ namespace Peachpie.CodeAnalysis.Utilities
             return new NotImplementedException($"{message} not implemented at {location}");
         }
 
+        public static Exception ArgumentNull(string argName)
+        {
+            return new ArgumentNullException(argName);
+        }
+
         public static Exception ArgumentNull()
         {
             return new ArgumentNullException();
