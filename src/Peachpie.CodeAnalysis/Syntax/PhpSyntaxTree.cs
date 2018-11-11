@@ -143,9 +143,7 @@ namespace Pchp.CodeAnalysis
             var unit = new PhpSourceUnit(
                 fname,
                 SourceText.From(content, Encoding.UTF8),
-                encoding: Encoding.UTF8,
-                features: GetLanguageFeatures(parseOptions),
-                initialState: (parseOptions.Kind == SourceCodeKind.Regular) ? Lexer.LexicalStates.INITIAL : Lexer.LexicalStates.ST_IN_SCRIPTING);
+                encoding: Encoding.UTF8);
 
             var result = new PhpSyntaxTree(unit);
 
@@ -155,7 +153,9 @@ namespace Pchp.CodeAnalysis
             //
             try
             {
-                unit.Parse(factory, errorSink);
+                unit.Parse(factory, errorSink,
+                    features: GetLanguageFeatures(parseOptions),
+                    state: (parseOptions.Kind == SourceCodeKind.Regular) ? Lexer.LexicalStates.INITIAL : Lexer.LexicalStates.ST_IN_SCRIPTING);
             }
             finally
             {

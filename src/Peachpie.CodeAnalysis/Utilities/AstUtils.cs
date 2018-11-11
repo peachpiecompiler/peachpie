@@ -8,6 +8,9 @@ using Devsense.PHP.Text;
 using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Syntax;
 using System.Diagnostics;
+using System.Collections.Immutable;
+using Pchp.CodeAnalysis.Symbols;
+using Microsoft.CodeAnalysis;
 
 namespace Pchp.CodeAnalysis
 {
@@ -74,6 +77,28 @@ namespace Pchp.CodeAnalysis
         /// Gets value indicating the token is an ignored token - whitespace or comment.
         /// </summary>
         public static bool IsWhitespace(this CompleteToken t) => t.Token == Tokens.T_WHITESPACE || t.Token == Tokens.T_COMMENT; // not T_DOC_COMMENT
+
+        /// <summary>
+        /// Gets attributes associated with given syntax node.
+        /// </summary>
+        public static bool TryGetCustomAttributes(this LangElement element, out ImmutableArray<AttributeData> attrs)
+        {
+            return element.TryGetProperty(out attrs);
+        }
+
+        /// <summary>
+        /// Associates an attribute with syntax node.
+        /// </summary>
+        public static void AddCustomAttribute(this LangElement element, AttributeData attribute)
+        {
+            Debug.Assert(attribute != null);
+
+            var newattrs = TryGetCustomAttributes(element, out var attrs)
+                ? attrs.Add(attribute)
+                : ImmutableArray.Create(attribute);
+
+            element.SetProperty(newattrs);
+        }
 
         /// <summary>
         /// Determines whether method has <c>$this</c> variable.

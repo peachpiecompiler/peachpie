@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Text;
+using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis;
+using Pchp.CodeAnalysis.Symbols;
 using Peachpie.CodeAnalysis.Utilities;
 using TSpan = Devsense.PHP.Text.Span;
 using TValue = Devsense.PHP.Syntax.SemanticValueType;
@@ -19,12 +22,19 @@ namespace Peachpie.CodeAnalysis.Syntax
     sealed class AdditionalSyntaxProvider : ITokenProvider<TValue, TSpan>, IDisposable
     {
         readonly PhpTokenProvider _provider;
-        readonly INodesFactory<LangElement, TSpan> _nodes;
+        readonly NodesFactory _nodes;
 
-        public AdditionalSyntaxProvider(PhpTokenProvider provider, INodesFactory<LangElement, TSpan> nodes)
+        /// <summary>
+        /// Factory for <see cref="TypeRef"/>, translates given qualified name using current naming context.
+        /// Arguments: (<see cref="QualifiedNameRef"/> typeName, <see cref="bool"/> allowPrimitiveTypeNames).
+        /// </summary>
+        readonly Func<QualifiedNameRef, bool, TypeRef> _typeRefFactory;
+
+        public AdditionalSyntaxProvider(PhpTokenProvider provider, NodesFactory nodes, Func<QualifiedNameRef, bool, TypeRef> typeRefFactory)
         {
             _provider = provider ?? throw ExceptionUtilities.ArgumentNull();
             _nodes = nodes ?? throw ExceptionUtilities.ArgumentNull();
+            _typeRefFactory = typeRefFactory ?? throw ExceptionUtilities.ArgumentNull();
         }
 
         #region ITokenProvider
@@ -60,8 +70,17 @@ namespace Peachpie.CodeAnalysis.Syntax
 
         #endregion
 
+
+
         bool TryMatchSyntaxExtension(Tokens t)
         {
+            /* 
+             * NOTE:
+             * 
+             * Here we try to match our extended syntax (quietly) and consume additional tokens.
+             * 
+             */
+
             // 
             // GENERICS:
             // 
@@ -74,8 +93,23 @@ namespace Peachpie.CodeAnalysis.Syntax
             // CUSTOM ATTRIBUTES:
             //
 
-            // [QualifiedName] final? class|interface|trait
-            // [QualifiedName(Value, PropertyName = Value)] final? class|interface|trait
+            // [QualifiedName]
+            // [QualifiedName(Value, PropertyName = Value)]
+            // - must be followed: final|class|interface|trait|public|protected|private|static|function|abstract
+            if (t == Tokens.T_LBRACKET)
+            {
+                // TODO: (perf) must be prefixed: T_SEMI, T_RBRACKET, T_RBRACE, T_OPENTAG
+
+                int p = 0;
+                if (MatchCustomAttribute(ref p, out var attribute) && IsAtDeclarationKeyword(p))
+                {
+                    if (_consumedCustomAttrs == null) _consumedCustomAttrs = new List<SourceCustomAttribute>(1);
+                    _consumedCustomAttrs.Add(attribute);
+
+                    _provider.Remove(0, p);
+                    return true;
+                }
+            }
 
             //
             // TYPED PROPERTIES:
@@ -83,7 +117,350 @@ namespace Peachpie.CodeAnalysis.Syntax
 
             // T_VAR|T_STATIC|T_PUBLIC|T_PRIVATE|T_PROTECTED (VariableName)+ "T_COLON QualifiedName" T_SEMI  // var $pname : A;
 
+            //
+
+            if (_consumedCustomAttrs != null &&
+                t != Tokens.T_WHITESPACE && t != Tokens.T_COMMENT && t != Tokens.T_DOC_COMMENT)
+            {
+                foreach (var attr in _consumedCustomAttrs)
+                {
+                    _nodes.AddCustomAttribute(_provider.TokenPosition.Start, attr);
+                }
+                _consumedCustomAttrs = null;
+            }
+
             return false;
         }
+
+        List<SourceCustomAttribute> _consumedCustomAttrs;
+
+        bool IsAtDeclarationKeyword(int idx)
+        {
+            var next = NextToken(ref idx);
+
+            switch (next.Token)
+            {
+                case Tokens.T_FINAL:
+                case Tokens.T_CLASS:
+                case Tokens.T_INTERFACE:
+                case Tokens.T_TRAIT:
+                case Tokens.T_PUBLIC:
+                case Tokens.T_PROTECTED:
+                case Tokens.T_PRIVATE:
+                case Tokens.T_STATIC:
+                case Tokens.T_FUNCTION:
+                case Tokens.T_ABSTRACT:
+                case Tokens.T_VAR:
+                case Tokens.T_LBRACKET:
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
+        #region Match*
+
+        /// <summary>
+        /// Matches a custom attribute syntax.
+        /// </summary>
+        bool MatchCustomAttribute(ref int idx, out SourceCustomAttribute attribute)
+        {
+            attribute = default;
+            var p = idx;
+
+            // [
+            if (MatchToken(ref p, Tokens.T_LBRACKET))
+            {
+                // "QualifiedName"
+                if (MatchQualifiedName(ref p, out var qname))
+                {
+                    List<KeyValuePair<Name, LangElement>> arguments = null;
+
+                    // ( ... )
+                    if (MatchToken(ref p, Tokens.T_LPAREN))
+                    {
+                        bool hasProperty = false;
+
+                        // property = value
+                        // value
+                        while (MatchAttributeValue(ref p, out var property, out var value))
+                        {
+                            // quickly check the syntax makes sense:
+                            if (property.Value != null)
+                            {
+                                hasProperty = true;
+                            }
+                            else
+                            {
+                                if (hasProperty) return false; // ERR: constructor argument after property assignment
+                            }
+
+                            // property = value
+                            if (arguments == null) arguments = new List<KeyValuePair<Name, LangElement>>();
+
+                            arguments.Add(new KeyValuePair<Name, LangElement>(property, value));
+
+                            // ,
+                            if (NextToken(ref p).Token == Tokens.T_COMMA)
+                                continue;
+
+                            p--;
+                            break;
+                        }
+
+                        if (NextToken(ref p).Token != Tokens.T_RPAREN)
+                        {
+                            return false; // ERR: ')' expected
+                        }
+                    }
+
+                    // ]
+                    if (MatchToken(ref p, Tokens.T_RBRACKET, out var rbrtoken))
+                    {
+                        attribute = new SourceCustomAttribute(_typeRefFactory(qname, false), arguments);
+                        idx = p;
+                        return true;
+                    }
+                }
+            }
+
+            //
+            return false;
+        }
+
+        bool MatchAttributeValue(ref int idx, out Name property, out LangElement value)
+        {
+            var oldidx = idx;
+
+            // T_STRING = "Value"
+            if (MatchToken(ref idx, Tokens.T_STRING, out var identifier) &&
+                MatchToken(ref idx, Tokens.T_EQ))
+            {
+                property = new Name(identifier.TokenValue.String);
+            }
+            else
+            {
+                property = default;
+                idx = oldidx;
+            }
+
+            // Value:
+
+            if (MatchValue(ref idx, out value))
+            {
+                return true;
+            }
+
+            // no match
+            idx = oldidx;
+            return false;
+        }
+
+        bool MatchValue(ref int idx, out LangElement value)
+        {
+            var oldidx = idx;
+
+            // T_DNUMBER, T_LNUMBER, T_CONSTANT_ENCAPSED_STRING
+            if (MatchLiteral(ref idx, out var lit))
+            {
+                value = lit;
+                return true;
+            }
+
+            // typeof("QualifiedName")
+            if (MatchTypeOfQualifiedName(ref idx, out var typename))
+            {
+                // Template: TypeRef : System.Type
+                value = _typeRefFactory(typename, false);
+                return true;
+            }
+
+            // "QualifiedName", "QualifiedName"::T_STRING
+            if (MatchQualifiedName(ref idx, out var qname))
+            {
+                var tref = _typeRefFactory(qname, false);    // translate qname using parser's current naming context
+
+                if (MatchToken(ref idx, Tokens.T_DOUBLE_COLON))
+                {
+                    // ::T_STRING
+                    if (MatchToken(ref idx, Tokens.T_STRING, out var nametoken))
+                    {
+                        value = _nodes.ClassConstUse(default,
+                            tref,
+                            new Name(nametoken.TokenValue.String),
+                            nametoken.TokenPosition);
+                        return true;
+                    }
+                    // ERR
+                }
+                else
+                {
+                    // GlobalConst
+                    value = _nodes.ConstUse(
+                        default,
+                        new TranslatedQualifiedName(tref.QualifiedName.Value, default));
+                    return true;
+                }
+            }
+
+            // no match
+            idx = oldidx;
+            value = default;
+            return false;
+        }
+
+        bool MatchLiteral(ref int idx, out Literal value)
+        {
+            var oldidx = idx;
+
+            var token = NextToken(ref idx);
+            switch (token.Token)
+            {
+                case Tokens.T_LNUMBER:
+                    value = _nodes.Literal(token.TokenPosition, token.TokenValue.Long);
+                    return true;
+                case Tokens.T_DNUMBER:
+                    value = _nodes.Literal(token.TokenPosition, token.TokenValue.Double);
+                    return true;
+                case Tokens.T_CONSTANT_ENCAPSED_STRING:
+                    value = (Literal)_nodes.Literal(token.TokenPosition, token.TokenValue.String, originalValue: null);
+                    return true;
+            }
+
+            // rollback
+            idx = oldidx;
+            value = default;
+            return false;
+        }
+
+        bool MatchTypeOfQualifiedName(ref int idx, out QualifiedNameRef qname)
+        {
+            // Template:
+            // T_STRING("typeof") '(' "QualifiedName" ')'
+
+            var p = idx;
+
+            if (MatchToken(ref p, Tokens.T_STRING, out var t) && t.TokenValue.String == "typeof" && // typeof
+                MatchToken(ref p, Tokens.T_LPAREN) &&   // (
+                MatchQualifiedName(ref p, out qname) && // "QualifiedName"
+                MatchToken(ref p, Tokens.T_RPAREN))     // )
+            {
+                idx = p;
+                return true;
+            }
+
+            //
+            qname = default;
+            return false;
+        }
+
+        /// <summary>
+        /// Matches token at position and advances the position to next token.
+        /// If token does not match, function return <c>false</c> and position is not advanced.
+        /// </summary>
+        bool MatchToken(ref int idx, Tokens t) => MatchToken(ref idx, t, out var _, false);
+
+        /// <summary>
+        /// Matches token at position and advances the position to next token.
+        /// If token does not match, function return <c>false</c> and position is not advanced.
+        /// </summary>
+        bool MatchToken(ref int idx, Tokens t, out CompleteToken token, bool ensureTokenText = false)
+        {
+            var oldidx = idx;
+
+            token = NextToken(ref idx);
+
+            if (token.Token == t)
+            {
+                if (ensureTokenText)
+                {
+                    token = _provider.WithTokenText(token);
+                }
+
+                return true;
+            }
+
+            // rollback
+            idx = oldidx;
+            return false;
+        }
+
+        CompleteToken NextToken(ref int idx)
+        {
+            CompleteToken token;
+
+            do
+            {
+                token = _provider.Lookup(idx);
+                idx++;
+            } while (token.IsWhitespace()); // skip ws
+
+            return token;
+        }
+
+        bool MatchQualifiedName(ref int idx, out QualifiedNameRef qname)
+        {
+            // just an ugly loop that matches "QualifiedName" syntax as far as it can
+
+            // Pattern:
+            // \?T_STRING(\T_STRING)*
+
+            qname = default;
+            Name name = default;
+            List<Name> names = null;
+            bool fullyQualified = false;
+
+            int idx2 = idx;
+            var span = Span.Invalid;
+
+            for (; ; )
+            {
+                // \?T_STRING?
+                var hassep = MatchToken(ref idx2, Tokens.T_NS_SEPARATOR);
+                var hasname = MatchToken(ref idx2, Tokens.T_STRING, out var ntok);
+
+                if (hasname)
+                {
+                    if (name.Value != null)
+                    {
+                        if (!hassep) return false;  // ERR: names must be separated by separator
+                        if (names == null) names = new List<Name>();
+                        names.Add(name);
+                    }
+                    else
+                    {
+                        fullyQualified = hassep;
+                    }
+
+
+                    //
+                    Debug.Assert(ntok.TokenValue.String != null);
+                    name = new Name(ntok.TokenValue.String);
+                    span = span.IsValid ? Span.Combine(span, ntok.TokenPosition) : ntok.TokenPosition;
+                }
+                else
+                {
+                    if (hassep || name.Value == null) // && !hasname
+                    {
+                        // ERR: name must follow after the separator
+                        // ERR: or name was not matched
+                        return false;
+                    }
+
+                    //
+                    qname = new QualifiedNameRef(
+                        span,
+                        name,
+                        names != null ? names.ToArray() : Array.Empty<Name>(),
+                        fullyQualified);
+                    idx = idx2;
+
+                    return true;
+                }
+            }
+        }
+
+        #endregion
     }
 }
