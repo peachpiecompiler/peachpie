@@ -81,7 +81,7 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Gets attributes associated with given syntax node.
         /// </summary>
-        public static bool TryGetCustomAttributes(this LangElement element, out ImmutableArray<AttributeData> attrs)
+        public static bool TryGetCustomAttributes(this AstNode element, out ImmutableArray<AttributeData> attrs)
         {
             return element.TryGetProperty(out attrs);
         }
@@ -89,7 +89,7 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Associates an attribute with syntax node.
         /// </summary>
-        public static void AddCustomAttribute(this LangElement element, AttributeData attribute)
+        public static void AddCustomAttribute(this AstNode element, AttributeData attribute)
         {
             Debug.Assert(attribute != null);
 

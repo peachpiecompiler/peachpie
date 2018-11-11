@@ -351,6 +351,28 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override TypeSymbol ReturnType => PhpRoutineSymbolExtensions.ConstructClrReturnType(this);
 
+        public override ImmutableArray<AttributeData> GetAttributes()
+        {
+            // attributes from syntax node
+            if (this.Syntax.TryGetCustomAttributes(out var attrs))
+            {
+                // initialize attribute data if necessary:
+                attrs
+                    .OfType<SourceCustomAttribute>()
+                    .ForEach(x => x.Bind(this));
+            }
+            else
+            {
+                attrs = ImmutableArray<AttributeData>.Empty;
+            }
+
+            // attributes from PHPDoc
+            // ...
+
+            //
+            return base.GetAttributes().AddRange(attrs);
+        }
+
         internal override ObsoleteAttributeData ObsoleteAttributeData => null;   // TODO: from PHPDoc
 
         /// <summary>

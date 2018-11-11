@@ -218,7 +218,19 @@ namespace Peachpie.CodeAnalysis.Syntax
                     // ]
                     if (MatchToken(ref p, Tokens.T_RBRACKET, out var rbrtoken))
                     {
-                        attribute = new SourceCustomAttribute(_typeRefFactory(qname, false), arguments);
+                        // ensure the qname ends with "Attribute":
+                        const string suffix = "Attribute";
+                        if (!qname.QualifiedName.Name.Value.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                        {
+                            qname = new QualifiedNameRef(
+                                qname.Span,
+                                new Name(qname.QualifiedName.Name.Value + suffix),
+                                qname.QualifiedName.Namespaces,
+                                qname.QualifiedName.IsFullyQualifiedName);
+                        }
+
+                        //
+                        attribute = new SourceCustomAttribute((ClassTypeRef)_typeRefFactory(qname, false), arguments);
                         idx = p;
                         return true;
                     }
@@ -272,7 +284,7 @@ namespace Peachpie.CodeAnalysis.Syntax
             if (MatchTypeOfQualifiedName(ref idx, out var typename))
             {
                 // Template: TypeRef : System.Type
-                value = _typeRefFactory(typename, false);
+                value = _typeRefFactory(typename, true);
                 return true;
             }
 
