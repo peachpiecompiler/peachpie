@@ -103,6 +103,10 @@ namespace Peachpie.CodeAnalysis.Syntax
             return AddAndReturn(ref _yieldNodes, base.YieldFrom(span, fromExpr));
         }
 
+        public Literal Literal(Span span, long lvalue) => new LongIntLiteral(span, lvalue); // overload to avoid boxing
+
+        public Literal Literal(Span span, double dvalue) => new DoubleLiteral(span, dvalue); // overload to avoid boxing
+
         public override LangElement Literal(Span span, object value, string originalValue)
         {
             return base.Literal(span, value, originalValue: null);  // discard the original value string, not needed, free some memory

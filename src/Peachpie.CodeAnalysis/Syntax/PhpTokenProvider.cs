@@ -148,13 +148,28 @@ namespace Peachpie.CodeAnalysis.Syntax
         }
 
         /// <summary>
-        /// Remove range of tokens from the buffer.
+        /// Replaces range of tokens with whitespace.
+        /// We need to keep the spans of whitespaces for PHPDoc resolution.
         /// </summary>
         public void Remove(int start, int count)
         {
             Lookup(start + count);
 
-            _buffer.RemoveRange(start, count);
+            for (int i = 0; i < count; i++)
+            {
+                var idx = start + i;
+                _buffer[idx] = _buffer[idx].WithToken(Tokens.T_WHITESPACE);
+            }
+        }
+
+        public CompleteToken WithTokenText(CompleteToken token)
+        {
+            if (token.TokenText == null)
+            {
+                token = token.WithTokenText(_strings.Add(_sourceunit.GetSourceCode(token.TokenPosition)));
+            }
+
+            return token;
         }
     }
 }
