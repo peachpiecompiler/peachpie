@@ -89,85 +89,167 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        static bool TryBindTypedConstant(TypeSymbol target, long value, out TypedConstant result)
+        {
+            switch (target.SpecialType)
+            {
+                case SpecialType.System_Byte:
+                    result = new TypedConstant(target, TypedConstantKind.Primitive, (byte)value);
+                    return true;
+                case SpecialType.System_Int32:
+                    result = new TypedConstant(target, TypedConstantKind.Primitive, (int)value);
+                    return true;
+                case SpecialType.System_Int64:
+                    result = new TypedConstant(target, TypedConstantKind.Primitive, value);
+                    return true;
+                case SpecialType.System_UInt32:
+                    result = new TypedConstant(target, TypedConstantKind.Primitive, (uint)value);
+                    return true;
+                case SpecialType.System_UInt64:
+                    result = new TypedConstant(target, TypedConstantKind.Primitive, (ulong)value);
+                    return true;
+                case SpecialType.System_Double:
+                    result = new TypedConstant(target, TypedConstantKind.Primitive, (double)value);
+                    return true;
+                case SpecialType.System_Single:
+                    result = new TypedConstant(target, TypedConstantKind.Primitive, (float)value);
+                    return true;
+                default:
+
+                    if (target.IsEnumType())
+                    {
+                        return TryBindTypedConstant(target.GetEnumUnderlyingType(), value, out result);
+                    }
+
+                    result = default;
+                    return false;
+            }
+        }
+
+        static bool TryBindTypedConstant(TypeSymbol target, double value, out TypedConstant result)
+        {
+            switch (target.SpecialType)
+            {
+                case SpecialType.System_Double:
+                    result = new TypedConstant(target, TypedConstantKind.Primitive, value);
+                    return true;
+                case SpecialType.System_Single:
+                    result = new TypedConstant(target, TypedConstantKind.Primitive, (float)value);
+                    return true;
+                default:
+                    result = default;
+                    return false;
+            }
+        }
+
+        static bool TryBindTypedConstant(TypeSymbol target, string value, out TypedConstant result)
+        {
+            switch (target.SpecialType)
+            {
+                case SpecialType.System_String:
+                    result = new TypedConstant(target, TypedConstantKind.Primitive, value);
+                    return true;
+                case SpecialType.System_Char:
+                    if (value.Length != 1) goto default;
+                    result = new TypedConstant(target, TypedConstantKind.Primitive, value[0]);
+                    return true;
+                default:
+                    result = default;
+                    return false;
+            }
+        }
+
+        static bool TryBindTypedConstant(TypeSymbol target, bool value, out TypedConstant result)
+        {
+            switch (target.SpecialType)
+            {
+                case SpecialType.System_Boolean:
+                    result = new TypedConstant(target, TypedConstantKind.Primitive, value);
+                    return true;
+                default:
+                    result = default;
+                    return false;
+            }
+        }
+
+        static bool TryBindTypedConstant(TypeSymbol target, object value, out TypedConstant result)
+        {
+            Debug.Assert(!(value is LangElement));
+
+            if (ReferenceEquals(value, null))
+            {
+                // NULL
+                result = new TypedConstant(target, TypedConstantKind.Primitive, null);
+                return true && target.IsReferenceType;
+            }
+
+            if (value is int i) return TryBindTypedConstant(target, i, out result);
+            if (value is long l) return TryBindTypedConstant(target, l, out result);
+            if (value is uint u) return TryBindTypedConstant(target, u, out result);
+            if (value is byte b8) return TryBindTypedConstant(target, b8, out result);
+            if (value is double d) return TryBindTypedConstant(target, d, out result);
+            if (value is float f) return TryBindTypedConstant(target, f, out result);
+            if (value is string s) return TryBindTypedConstant(target, s, out result);
+            if (value is char c) return TryBindTypedConstant(target, c.ToString(), out result);
+            if (value is bool b) return TryBindTypedConstant(target, b, out result);
+
+            //
+            result = default;
+            return false;
+        }
+
         static bool TryBindTypedConstant(TypeSymbol target, LangElement element, PhpCompilation compilation, out TypedConstant result)
         {
-            result = default;
 
-            if (element is LongIntLiteral llit)
-            {
-                switch (target.SpecialType)
-                {
-                    case SpecialType.System_Int32:
-                        result = new TypedConstant(compilation.CoreTypes.Int32.Symbol, TypedConstantKind.Primitive, (int)llit.Value);
-                        return true;
-                    case SpecialType.System_Int64:
-                        result = new TypedConstant(compilation.CoreTypes.Long.Symbol, TypedConstantKind.Primitive, llit.Value);
-                        return true;
-                    case SpecialType.System_UInt32:
-                        result = new TypedConstant(compilation.GetSpecialType(SpecialType.System_UInt32), TypedConstantKind.Primitive, (uint)llit.Value);
-                        return true;
-                    case SpecialType.System_UInt64:
-                        result = new TypedConstant(compilation.GetSpecialType(SpecialType.System_UInt64), TypedConstantKind.Primitive, (ulong)llit.Value);
-                        return true;
-                    case SpecialType.System_Double:
-                        result = new TypedConstant(compilation.GetSpecialType(SpecialType.System_Double), TypedConstantKind.Primitive, (double)llit.Value);
-                        return true;
-                    case SpecialType.System_Single:
-                        result = new TypedConstant(compilation.GetSpecialType(SpecialType.System_Single), TypedConstantKind.Primitive, (float)llit.Value);
-                        return true;
-                    default:
-                        return false;
-                }
-            }
-
-            if (element is DoubleLiteral dlit)
-            {
-                switch (target.SpecialType)
-                {
-                    case SpecialType.System_Double:
-                        result = new TypedConstant(compilation.CoreTypes.Double.Symbol, TypedConstantKind.Primitive, dlit.Value);
-                        return true;
-                    case SpecialType.System_Single:
-                        result = new TypedConstant(compilation.GetSpecialType(SpecialType.System_Single), TypedConstantKind.Primitive, (float)dlit.Value);
-                        return true;
-                    default:
-                        return false;
-                }
-            }
-
-            if (element is StringLiteral slit)
-            {
-                switch (target.SpecialType)
-                {
-                    case SpecialType.System_String:
-                        result = new TypedConstant(compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, slit.Value);
-                        return true;
-                    case SpecialType.System_Char:
-                        if (slit.Value.Length != 1) goto default;
-                        result = new TypedConstant(compilation.GetSpecialType(SpecialType.System_Char), TypedConstantKind.Primitive, slit.Value[0]);
-                        return true;
-                    default:
-                        return false;
-                }
-            }
+            if (element is LongIntLiteral llit) return TryBindTypedConstant(target, llit.Value, out result);
+            if (element is DoubleLiteral dlit) return TryBindTypedConstant(target, dlit.Value, out result);
+            if (element is StringLiteral slit) return TryBindTypedConstant(target, slit.Value, out result);
 
             if (element is TypeRef tref)
             {
-                result = new TypedConstant(compilation.GetWellKnownType(WellKnownType.System_Type), TypedConstantKind.Type, compilation.GetTypeFromTypeRef(tref));
-                return target == compilation.GetWellKnownType(WellKnownType.System_Type);
+                var system_type = compilation.GetWellKnownType(WellKnownType.System_Type);
+                result = new TypedConstant(system_type, TypedConstantKind.Type, compilation.GetTypeFromTypeRef(tref));
+                return target == system_type;
             }
 
             if (element is GlobalConstUse gconst)
             {
-                //
+                var qname = gconst.FullName.Name.QualifiedName;
+                if (qname.IsSimpleName)
+                {
+                    // common constants
+                    if (qname == QualifiedName.True) return TryBindTypedConstant(target, true, out result);
+                    if (qname == QualifiedName.False) return TryBindTypedConstant(target, true, out result);
+                    if (qname == QualifiedName.Null) return TryBindTypedConstant(target, null, out result);
+
+                    // lookup constant
+                    var csymbol = compilation.GlobalSemantics.ResolveConstant(qname.Name.Value);
+                    if (csymbol is FieldSymbol fld && fld.HasConstantValue)
+                    {
+                        return TryBindTypedConstant(target, fld.ConstantValue, out result);
+                    }
+                }
+
+                // note: namespaced constants are unreachable
             }
 
             if (element is ClassConstUse cconst)
             {
-                // 
+                // lookup the type container
+                var ctype = compilation.GetTypeFromTypeRef(cconst.TargetType);
+                if (ctype.IsValidType())
+                {
+                    // lookup constant/enum field (both are FieldSymbol)
+                    var member = ctype.LookupMember<FieldSymbol>(cconst.Name.Value);
+                    if (member != null && member.HasConstantValue)
+                    {
+                        return TryBindTypedConstant(target, member.ConstantValue, out result);
+                    }
+                }
             }
 
             //
+            result = default;
             return false;
         }
 
