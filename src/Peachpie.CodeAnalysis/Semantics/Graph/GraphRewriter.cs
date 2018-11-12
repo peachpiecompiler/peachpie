@@ -7,16 +7,36 @@ using System.Text;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
+    /// <summary>
+    /// Enables to transform a <see cref="ControlFlowGraph"/> in a straightforward manner.
+    /// </summary>
+    /// <remarks>
+    /// The transformation is performed in two phases: updating and repairing. During updating,
+    /// virtual Visit* and OnVisit* methods are called on all the nodes, edges and operations
+    /// in the CFG. <see cref="ExploredColor"/> is used in the update to mark all the visited
+    /// nodes and prevent infinite recursion. Any update of the graph marks all the changed nodes
+    /// (their new versions) as <see cref="RepairedColor"/>. If such an update happens, in the
+    /// repairing phase the whole graph is traversed again and all the unmodified blocks are cloned,
+    /// those clones marked as repaired and edges to them fixed.
+    /// 
+    /// This is done to prevent the graph nodes from pointing to nodes of the older version of the
+    /// graph. Possible optimization would be to allow sharing graph parts in acyclic CFGs.
+    /// </remarks>
     public class GraphRewriter : GraphVisitor<object>
     {
         private Dictionary<BoundBlock, BoundBlock> _updatedBlocks;
         private List<BoundBlock> _possiblyUnreachableBlocks;
+        private bool _isRepairing;
 
         public int ExploredColor { get; private set; }
 
+        public int RepairedColor { get; private set; }
+
         #region Helper methods
 
-        private bool IsExplored(BoundBlock x) => x.Tag == ExploredColor;
+        private bool IsExplored(BoundBlock x) => x.Tag >= ExploredColor;
+
+        private bool IsRepaired(BoundBlock x) => x.Tag == RepairedColor;
 
         private List<T> VisitList<T>(List<T> list) where T : BoundOperation, IPhpOperation
         {
@@ -84,8 +104,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return alternate?.MoveToImmutable() ?? arr;
         }
 
-        private T TryGetNewVersion<T>(T block)
-            where T : BoundBlock
+        private BoundBlock TryGetNewVersion(BoundBlock block)
         {
             if (_updatedBlocks == null || !_updatedBlocks.TryGetValue(block, out var mappedBlock))
             {
@@ -93,12 +112,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
             else
             {
-                return (T)mappedBlock;
+                return mappedBlock;
             }
         }
 
         private void MapToNewVersion(BoundBlock oldBlock, BoundBlock newBlock)
         {
+            newBlock.Tag = RepairedColor;
+
             if (_updatedBlocks == null)
             {
                 _updatedBlocks = new Dictionary<BoundBlock, BoundBlock>();
@@ -130,6 +151,25 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _possiblyUnreachableBlocks.Add(block);
         }
 
+        private BoundBlock Repair(BoundBlock block)
+        {
+            Debug.Assert(_isRepairing);
+
+            if (!IsRepaired(block))
+            {
+                if (!_updatedBlocks.TryGetValue(block, out var repaired))
+                {
+                    repaired = block.Clone();
+                    MapToNewVersion(block, repaired);
+                }
+
+                block = repaired;
+            }
+
+            block.NextEdge = (Edge)Accept(block.NextEdge);
+            return block;
+        }
+
         #endregion
 
         #region ControlFlowGraph
@@ -139,6 +179,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             OnVisitCFG(x);
 
             ExploredColor = x.NewColor();
+            RepairedColor = x.NewColor();
             _updatedBlocks = null;
 
             var updatedStart = (StartBlock)Accept(x.Start);
@@ -147,10 +188,17 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             var unreachableBlocks = x.UnreachableBlocks;
             if (_possiblyUnreachableBlocks != null)
             {
+                // TODO: Update Labels and Yields accordingly
                 unreachableBlocks = unreachableBlocks.AddRange(_possiblyUnreachableBlocks.Where(b => !IsExplored(b)));
             }
 
-            // TODO: Rescan and fix the whole CFG if _updatedBlocks is not null
+            // Rescan and fix the whole CFG if any blocks were modified
+            if (_updatedBlocks != null)
+            {
+                _isRepairing = true;
+                updatedStart = (StartBlock)Accept(updatedStart);
+                updatedExit = _updatedBlocks[x.Exit];             // It must have been updated by the repair
+            }
 
             return x.Update(
                 updatedStart,
@@ -171,27 +219,62 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public sealed override object VisitCFGBlock(BoundBlock x)
         {
-            return IsExplored(x) ? x : MapIfUpdated(x, OnVisitCFGBlock(x));
+            if (_isRepairing)
+            {
+                return Repair(x);
+            }
+            else
+            {
+                return IsExplored(x) ? x : MapIfUpdated(x, OnVisitCFGBlock(x));
+            }
         }
 
         public sealed override object VisitCFGStartBlock(StartBlock x)
         {
-            return IsExplored(x) ? x : MapIfUpdated(x, OnVisitCFGStartBlock(x));
+            if (_isRepairing)
+            {
+                return Repair(x);
+            }
+            else
+            {
+                return IsExplored(x) ? x : MapIfUpdated(x, OnVisitCFGStartBlock(x));
+            }
         }
 
         public sealed override object VisitCFGExitBlock(ExitBlock x)
         {
-            return IsExplored(x) ? x : MapIfUpdated(x, OnVisitCFGExitBlock(x));
+            if (_isRepairing)
+            {
+                return Repair(x);
+            }
+            else
+            {
+                return IsExplored(x) ? x : MapIfUpdated(x, OnVisitCFGExitBlock(x));
+            }
         }
 
         public sealed override object VisitCFGCatchBlock(CatchBlock x)
         {
-            return IsExplored(x) ? x : MapIfUpdated(x, OnVisitCFGCatchBlock(x));
+            if (_isRepairing)
+            {
+                return Repair(x);
+            }
+            else
+            {
+                return IsExplored(x) ? x : MapIfUpdated(x, OnVisitCFGCatchBlock(x));
+            }
         }
 
         public sealed override object VisitCFGCaseBlock(CaseBlock x)
         {
-            return IsExplored(x) ? x : MapIfUpdated(x, OnVisitCFGCaseBlock(x));
+            if (_isRepairing)
+            {
+                return Repair(x);
+            }
+            else
+            {
+                return IsExplored(x) ? x : MapIfUpdated(x, OnVisitCFGCaseBlock(x));
+            }
         }
 
         public virtual BoundBlock OnVisitCFGBlock(BoundBlock x)
@@ -212,10 +295,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public virtual ExitBlock OnVisitCFGExitBlock(ExitBlock x)
         {
+            Debug.Assert(x.NextEdge == null);
+
             x.Tag = ExploredColor;
-            return x.Update(
-                    VisitList(x.Statements),
-                    (Edge)Accept(x.NextEdge));
+            return x.Update(VisitList(x.Statements));
         }
 
         public virtual CatchBlock OnVisitCFGCatchBlock(CatchBlock x)
