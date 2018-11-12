@@ -70,8 +70,6 @@ namespace Peachpie.CodeAnalysis.Syntax
 
         #endregion
 
-
-
         bool TryMatchSyntaxExtension(Tokens t)
         {
             /* 

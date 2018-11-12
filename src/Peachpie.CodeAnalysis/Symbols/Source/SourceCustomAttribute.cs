@@ -50,43 +50,111 @@ namespace Pchp.CodeAnalysis.Symbols
 
             if (_type == null)
             {
-                _type = (NamedTypeSymbol)symbol.DeclaringCompilation.GlobalSemantics.ResolveType(_tref.ClassName)
+                var type = (NamedTypeSymbol)symbol.DeclaringCompilation.GlobalSemantics.ResolveType(_tref.ClassName)
                     ?? new MissingMetadataTypeSymbol(_tref.ClassName.ClrName(), 0, false);
 
-                _ctorArgs = _arguments
-                    .Select(element => ToTypedConstant(element, symbol.DeclaringCompilation))
-                    .AsImmutable();
+                // bind arguments
+                TryResolveCtor(type, symbol.DeclaringCompilation, out _ctor, out _ctorArgs);
 
-                _namedArgs = _properties
-                    .Select(pair => new KeyValuePair<string, TypedConstant>(pair.Key.Value, ToTypedConstant(pair.Value, symbol.DeclaringCompilation)))
-                    .AsImmutable();
+                // bind named parameters
+                if (type.IsErrorTypeOrNull() || _properties.IsDefaultOrEmpty)
+                {
+                    _namedArgs = ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty;
+                }
+                else
+                {
+                    var namedArgs = new KeyValuePair<string, TypedConstant>[_properties.Length];
+                    for (int i = 0; i < namedArgs.Length; i++)
+                    {
+                        var prop = _properties[i];
+                        var member =
+                            (Symbol)type.LookupMember<PropertySymbol>(prop.Key.Value) ??
+                            (Symbol)type.LookupMember<FieldSymbol>(prop.Key.Value);
 
-                _ctor = ResolveCtor(_type, ref _ctorArgs);
+                        if (member != null && TryBindTypedConstant(member.GetTypeOrReturnType(), prop.Value, symbol.DeclaringCompilation, out var arg))
+                        {
+                            namedArgs[i] = new KeyValuePair<string, TypedConstant>(prop.Key.Value, arg);
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException();
+                        }
+                    }
+
+                    _namedArgs = namedArgs.AsImmutable();
+                }
+
+                //
+                _type = type;
             }
         }
 
-        static TypedConstant ToTypedConstant(LangElement element, PhpCompilation compilation)
+        static bool TryBindTypedConstant(TypeSymbol target, LangElement element, PhpCompilation compilation, out TypedConstant result)
         {
+            result = default;
+
             if (element is LongIntLiteral llit)
             {
-                // note: convert to uint, int, ulong, double, float, if matches .ctor type
-                return new TypedConstant(compilation.CoreTypes.Long.Symbol, TypedConstantKind.Primitive, llit.Value);
-            }
-
-            if (element is StringLiteral slit)
-            {
-                return new TypedConstant(compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, slit.Value);
+                switch (target.SpecialType)
+                {
+                    case SpecialType.System_Int32:
+                        result = new TypedConstant(compilation.CoreTypes.Int32.Symbol, TypedConstantKind.Primitive, (int)llit.Value);
+                        return true;
+                    case SpecialType.System_Int64:
+                        result = new TypedConstant(compilation.CoreTypes.Long.Symbol, TypedConstantKind.Primitive, llit.Value);
+                        return true;
+                    case SpecialType.System_UInt32:
+                        result = new TypedConstant(compilation.GetSpecialType(SpecialType.System_UInt32), TypedConstantKind.Primitive, (uint)llit.Value);
+                        return true;
+                    case SpecialType.System_UInt64:
+                        result = new TypedConstant(compilation.GetSpecialType(SpecialType.System_UInt64), TypedConstantKind.Primitive, (ulong)llit.Value);
+                        return true;
+                    case SpecialType.System_Double:
+                        result = new TypedConstant(compilation.GetSpecialType(SpecialType.System_Double), TypedConstantKind.Primitive, (double)llit.Value);
+                        return true;
+                    case SpecialType.System_Single:
+                        result = new TypedConstant(compilation.GetSpecialType(SpecialType.System_Single), TypedConstantKind.Primitive, (float)llit.Value);
+                        return true;
+                    default:
+                        return false;
+                }
             }
 
             if (element is DoubleLiteral dlit)
             {
-                // note: convert to float, if matches .ctor type
-                return new TypedConstant(compilation.CoreTypes.Double.Symbol, TypedConstantKind.Primitive, dlit.Value);
+                switch (target.SpecialType)
+                {
+                    case SpecialType.System_Double:
+                        result = new TypedConstant(compilation.CoreTypes.Double.Symbol, TypedConstantKind.Primitive, dlit.Value);
+                        return true;
+                    case SpecialType.System_Single:
+                        result = new TypedConstant(compilation.GetSpecialType(SpecialType.System_Single), TypedConstantKind.Primitive, (float)dlit.Value);
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+
+            if (element is StringLiteral slit)
+            {
+                switch (target.SpecialType)
+                {
+                    case SpecialType.System_String:
+                        result = new TypedConstant(compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, slit.Value);
+                        return true;
+                    case SpecialType.System_Char:
+                        if (slit.Value.Length != 1) goto default;
+                        result = new TypedConstant(compilation.GetSpecialType(SpecialType.System_Char), TypedConstantKind.Primitive, slit.Value[0]);
+                        return true;
+                    default:
+                        return false;
+                }
             }
 
             if (element is TypeRef tref)
             {
-                return new TypedConstant(compilation.GetWellKnownType(WellKnownType.System_Type), TypedConstantKind.Type, compilation.GetTypeFromTypeRef(tref));
+                result = new TypedConstant(compilation.GetWellKnownType(WellKnownType.System_Type), TypedConstantKind.Type, compilation.GetTypeFromTypeRef(tref));
+                return target == compilation.GetWellKnownType(WellKnownType.System_Type);
             }
 
             if (element is GlobalConstUse gconst)
@@ -100,10 +168,10 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             //
-            throw ExceptionUtilities.UnexpectedValue(element);
+            return false;
         }
 
-        static MethodSymbol ResolveCtor(NamedTypeSymbol type, ref ImmutableArray<TypedConstant> args)
+        bool TryResolveCtor(NamedTypeSymbol type, PhpCompilation compilation, out MethodSymbol ctor, out ImmutableArray<TypedConstant> args)
         {
             if (type.IsValidType())
             {
@@ -114,33 +182,52 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     if (m.DeclaredAccessibility != Accessibility.Public) continue; // TODO: or current class context
                     if (m.IsGenericMethod) { Debug.Fail("unexpected"); continue; } // NS
-                    if (m.ParameterCount < args.Length) continue; // be strict
+                    if (m.ParameterCount < _arguments.Length) continue; // be strict
 
                     var match = true;
                     var ps = m.Parameters;
-                    for (var pi = 0; pi < ps.Length; pi ++)
+                    var boundargs = new TypedConstant[ps.Length];
+
+                    for (var pi = 0; match && pi < ps.Length; pi++)
                     {
-                        if (pi >= args.Length)
+                        if (pi >= _arguments.Length)
                         {
-                            if (ps[pi].IsOptional) continue; // ok
-                            //
+                            //if (ps[pi].IsOptional)
+                            //{
+                            //    boundargs[pi] = ps[pi].ExplicitDefaultConstantValue.AsTypedConstant();
+                            //    continue; // ok
+                            //}
+                            //else
+                            {
+                                match = false;
+                                break;
+                            }
+                        }
+
+                        if (TryBindTypedConstant(ps[pi].Type, _arguments[pi], compilation, out var arg))
+                        {
+                            boundargs[pi] = arg;
+                        }
+                        else
+                        {
                             match = false;
                             break;
                         }
-
-                        var pt = ps[pi].Type;
-                        if (pt.Equals(args[pi].Type)) continue; // ok
-                        match = false; // TODO: type conv
                     }
 
                     if (match)
                     {
-                        return m;
+                        ctor = m;
+                        args = boundargs.AsImmutable();
+                        return true;
                     }
                 }
             }
 
-            return new MissingMethodSymbol();
+            //
+            ctor = new MissingMethodSymbol();
+            args = ImmutableArray<TypedConstant>.Empty;
+            return false;
         }
 
         public override NamedTypeSymbol AttributeClass => _type ?? throw ExceptionUtilities.Unreachable;
