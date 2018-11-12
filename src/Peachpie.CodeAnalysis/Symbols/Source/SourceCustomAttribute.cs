@@ -44,6 +44,8 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        #region Bind to Symbol and TypedConstant
+
         internal void Bind(Symbol symbol)
         {
             Debug.Assert(symbol != null);
@@ -220,7 +222,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     // common constants
                     if (qname == QualifiedName.True) return TryBindTypedConstant(target, true, out result);
                     if (qname == QualifiedName.False) return TryBindTypedConstant(target, true, out result);
-                    if (qname == QualifiedName.Null) return TryBindTypedConstant(target, null, out result);
+                    if (qname == QualifiedName.Null) return TryBindTypedConstant(target, (object)null, out result);
 
                     // lookup constant
                     var csymbol = compilation.GlobalSemantics.ResolveConstant(qname.Name.Value);
@@ -311,6 +313,8 @@ namespace Pchp.CodeAnalysis.Symbols
             args = ImmutableArray<TypedConstant>.Empty;
             return false;
         }
+
+        #endregion
 
         public override NamedTypeSymbol AttributeClass => _type ?? throw ExceptionUtilities.Unreachable;
 
