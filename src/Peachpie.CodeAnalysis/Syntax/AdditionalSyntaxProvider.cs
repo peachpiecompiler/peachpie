@@ -237,7 +237,7 @@ namespace Peachpie.CodeAnalysis.Syntax
                         }
 
                         //
-                        attribute = new SourceCustomAttribute((ClassTypeRef)_typeRefFactory(qname, false), arguments);
+                        attribute = new SourceCustomAttribute(_typeRefFactory(qname, false), arguments);
                         idx = p;
                         return true;
                     }

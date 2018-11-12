@@ -13,7 +13,7 @@ namespace Pchp.CodeAnalysis.Symbols
 {
     sealed class SourceCustomAttribute : BaseAttributeData
     {
-        readonly ClassTypeRef _tref;
+        readonly TypeRef _tref;
         readonly ImmutableArray<LangElement> _arguments;
         readonly ImmutableArray<KeyValuePair<Name, LangElement>> _properties;
 
@@ -22,7 +22,7 @@ namespace Pchp.CodeAnalysis.Symbols
         ImmutableArray<TypedConstant> _ctorArgs;
         ImmutableArray<KeyValuePair<string, TypedConstant>> _namedArgs;
 
-        public SourceCustomAttribute(ClassTypeRef tref, IList<KeyValuePair<Name, LangElement>> arguments)
+        public SourceCustomAttribute(TypeRef tref, IList<KeyValuePair<Name, LangElement>> arguments)
         {
             _tref = tref;
 
@@ -52,8 +52,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
             if (_type == null)
             {
-                var type = (NamedTypeSymbol)symbol.DeclaringCompilation.GlobalSemantics.ResolveType(_tref.ClassName)
-                    ?? new MissingMetadataTypeSymbol(_tref.ClassName.ClrName(), 0, false);
+                var type = (NamedTypeSymbol)symbol.DeclaringCompilation.GetTypeFromTypeRef(_tref);
+
+                if (type.IsErrorTypeOrNull() || type.SpecialType == SpecialType.System_Object)
+                {
+                    type = new MissingMetadataTypeSymbol(_tref.ToString(), 0, false);
+                }
 
                 // bind arguments
                 TryResolveCtor(type, symbol.DeclaringCompilation, out _ctor, out _ctorArgs);
