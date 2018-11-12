@@ -1400,16 +1400,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
-        MethodSymbol[] AsMethodOverloads(MethodSymbol method)
-        {
-            if (method is AmbiguousMethodSymbol && ((AmbiguousMethodSymbol)method).IsOverloadable)
-            {
-                return ((AmbiguousMethodSymbol)method).Ambiguities.ToArray();
-            }
-
-            return new[] { method };
-        }
-
         public override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x, ConditionBranch branch)
         {
             Accept(x.Name.NameExpression);
@@ -1424,9 +1414,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     symbol = (MethodSymbol)_model.ResolveFunction(x.NameOpt.Value);
                 }
 
+                var overloads = symbol is AmbiguousMethodSymbol ambiguous && ambiguous.IsOverloadable
+                    ? new OverloadsList(ambiguous.Ambiguities)
+                    : new OverloadsList(symbol ?? new MissingMethodSymbol(x.Name.NameValue.ToString()));
+
                 // symbol might be ErrorSymbol
 
-                x.TargetMethod = new OverloadsList(AsMethodOverloads(symbol)).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
+                x.TargetMethod = overloads.Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
             }
 
             BindTargetMethod(x);
@@ -1465,7 +1459,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 if (resolvedtype != null)
                 {
-                    var candidates = resolvedtype.LookupMethods(x.Name.NameValue.Name.Value);
+                    var candidates = resolvedtype.LookupMethods(x.Name.NameValue.Name.Value).AsImmutable();
                     x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
                 }
                 else
@@ -1490,7 +1484,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (x.Name.IsDirect && x.TypeRef.ResolvedType != null)
             {
                 // TODO: resolve all candidates, visibility, static methods or instance on self/parent/static
-                var candidates = x.TypeRef.ResolvedType.LookupMethods(x.Name.NameValue.Name.Value);
+                var candidates = x.TypeRef.ResolvedType.LookupMethods(x.Name.NameValue.Name.Value).AsImmutable();
                 // if (candidates.Any(c => c.HasThis)) throw new NotImplementedException("instance method called statically");
 
                 x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
@@ -1612,7 +1606,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var type = (NamedTypeSymbol)x.TypeRef.ResolvedType;
             if (type.IsValidType())
             {
-                var candidates = type.InstanceConstructors.ToArray();
+                var candidates = type.InstanceConstructors;
 
                 //
                 x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);

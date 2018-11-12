@@ -79,12 +79,12 @@ namespace Peachpie.CodeAnalysis.Syntax
             // check Span contains position => add to Properties
             if (_customAttributes != null)
             {
-                for (int i = 0; i < _customAttributes.Count; i++)
+                for (int i = _customAttributes.Count - 1; i >= 0; i--)
                 {
                     if (_customAttributes[i].Item1 == element.Span.Start)
                     {
                         element.AddCustomAttribute(_customAttributes[i].Item2);
-                        _customAttributes.RemoveAt(i--); // remove from the list and continue at the same index
+                        _customAttributes.RemoveAt(i);
                     }
                 }
             }
