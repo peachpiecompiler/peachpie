@@ -1197,6 +1197,18 @@ namespace Pchp.CodeAnalysis.Symbols
                         new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, ContainingFile.RelativeFilePath.ToString())),
                     ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
 
+            // attributes from syntax node
+            if (this.Syntax.TryGetCustomAttributes(out var customattrs))
+            {
+                // initialize attribute data if necessary:
+                customattrs
+                    .OfType<SourceCustomAttribute>()
+                    .ForEach(x => x.Bind(this));
+
+                //
+                attrs = attrs.AddRange(customattrs);
+            }
+
             return attrs;
         }
 
