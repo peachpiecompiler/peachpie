@@ -293,4 +293,7 @@
   <data name="ERR_CannotEmbedWithoutPdb" xml:space="preserve">
     <value>/embed switch is only supported when emitting Portable PDB (/debug:portable or /debug:embedded).</value>
   </data>
+  <data name="ERR_NoMatchingOverload" xml:space="preserve">
+    <value>No overload for method {0} can be called.</value>
+  </data>
 </root>

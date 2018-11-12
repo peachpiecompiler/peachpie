@@ -359,7 +359,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 // initialize attribute data if necessary:
                 attrs
                     .OfType<SourceCustomAttribute>()
-                    .ForEach(x => x.Bind(this));
+                    .ForEach(x => x.Bind(this, this.ContainingFile));
             }
             else
             {

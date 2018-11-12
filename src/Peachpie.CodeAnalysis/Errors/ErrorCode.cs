@@ -133,7 +133,8 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_BadAssemblyName,
         /// <summary>/embed switch is only supported when emitting Portable PDB (/debug:portable or /debug:embedded).</summary>
         ERR_CannotEmbedWithoutPdb,
-
+        /// <summary>No overload for method {0} can be called.</summary>
+        ERR_NoMatchingOverload,
         //
         // Warnings
         //

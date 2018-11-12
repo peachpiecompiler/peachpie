@@ -46,7 +46,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         #region Bind to Symbol and TypedConstant
 
-        internal void Bind(Symbol symbol)
+        internal void Bind(Symbol symbol, SourceFileSymbol file)
         {
             Debug.Assert(symbol != null);
 
@@ -56,11 +56,22 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 if (type.IsErrorTypeOrNull() || type.SpecialType == SpecialType.System_Object)
                 {
+                    symbol.DeclaringCompilation.DeclarationDiagnostics.Add(
+                        Location.Create(file.SyntaxTree, _tref.Span.ToTextSpan()),
+                        Errors.ErrorCode.ERR_TypeNameCannotBeResolved,
+                        _tref.ToString());
+
                     type = new MissingMetadataTypeSymbol(_tref.ToString(), 0, false);
                 }
 
                 // bind arguments
-                TryResolveCtor(type, symbol.DeclaringCompilation, out _ctor, out _ctorArgs);
+                if (!TryResolveCtor(type, symbol.DeclaringCompilation, out _ctor, out _ctorArgs) && type.IsValidType())
+                {
+                    symbol.DeclaringCompilation.DeclarationDiagnostics.Add(
+                        Location.Create(file.SyntaxTree, _tref.Span.ToTextSpan()),
+                        Errors.ErrorCode.ERR_NoMatchingOverload,
+                        type.Name + "..ctor");
+                }
 
                 // bind named parameters
                 if (type.IsErrorTypeOrNull() || _properties.IsDefaultOrEmpty)

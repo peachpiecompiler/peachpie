@@ -379,7 +379,6 @@ namespace Pchp.CodeAnalysis
 
                 // Entry Point (.exe)
                 compiler.CompileEntryPoint();
-
             }
         }
     }

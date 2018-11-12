@@ -850,6 +850,9 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
                 }
             }
+
+            // bind & diagnose attributes
+            GetAttributes();
         }
 
         List<Symbol> EnsureMembers()
@@ -1203,7 +1206,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 // initialize attribute data if necessary:
                 customattrs
                     .OfType<SourceCustomAttribute>()
-                    .ForEach(x => x.Bind(this));
+                    .ForEach(x => x.Bind(this, this.ContainingFile));
 
                 //
                 attrs = attrs.AddRange(customattrs);
