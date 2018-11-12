@@ -96,16 +96,20 @@ namespace Peachpie.CodeAnalysis.Syntax
             // - must be followed: final|class|interface|trait|public|protected|private|static|function|abstract
             if (t == Tokens.T_LBRACKET)
             {
-                // TODO: (perf) must be prefixed: T_SEMI, T_RBRACKET, T_RBRACE, T_OPENTAG
-
-                int p = 0;
-                if (MatchCustomAttribute(ref p, out var attribute) && IsAtDeclarationKeyword(p))
+                // (perf) must be prefixed: ;, {, }, ], <?
+                if (_lastToken == 0 ||
+                    _lastToken == Tokens.T_SEMI || _lastToken == Tokens.T_OPEN_TAG ||
+                    _lastToken == Tokens.T_RBRACKET || _lastToken == Tokens.T_RBRACE || _lastToken == Tokens.T_LBRACE)
                 {
-                    if (_consumedCustomAttrs == null) _consumedCustomAttrs = new List<SourceCustomAttribute>(1);
-                    _consumedCustomAttrs.Add(attribute);
+                    int p = 0;
+                    if (MatchCustomAttribute(ref p, out var attribute) && IsAtDeclarationKeyword(p))
+                    {
+                        if (_consumedCustomAttrs == null) _consumedCustomAttrs = new List<SourceCustomAttribute>(1);
+                        _consumedCustomAttrs.Add(attribute);
 
-                    _provider.Remove(0, p);
-                    return true;
+                        _provider.Remove(0, p);
+                        return true;
+                    }
                 }
             }
 
@@ -117,19 +121,24 @@ namespace Peachpie.CodeAnalysis.Syntax
 
             //
 
-            if (_consumedCustomAttrs != null &&
-                t != Tokens.T_WHITESPACE && t != Tokens.T_COMMENT && t != Tokens.T_DOC_COMMENT)
+            if (t != Tokens.T_WHITESPACE && t != Tokens.T_COMMENT && t != Tokens.T_DOC_COMMENT)
             {
-                foreach (var attr in _consumedCustomAttrs)
+                _lastToken = t;
+
+                if (_consumedCustomAttrs != null)
                 {
-                    _nodes.AddCustomAttribute(_provider.TokenPosition.Start, attr);
+                    foreach (var attr in _consumedCustomAttrs)
+                    {
+                        _nodes.AddCustomAttribute(_provider.TokenPosition.Start, attr);
+                    }
+                    _consumedCustomAttrs = null;
                 }
-                _consumedCustomAttrs = null;
             }
 
             return false;
         }
 
+        Tokens _lastToken = default; // last processed token so we don't lookup if not necessary
         List<SourceCustomAttribute> _consumedCustomAttrs;
 
         bool IsAtDeclarationKeyword(int idx)
