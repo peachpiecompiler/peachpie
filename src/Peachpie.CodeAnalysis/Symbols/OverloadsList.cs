@@ -86,7 +86,9 @@ namespace Pchp.CodeAnalysis.Symbols
             if (_single != null)
             {
                 return IsAccessible(_single, scope)
-                    ? _single
+                    ? scope.ScopeIsDynamic && IsNonPublic(_single)
+                        ? new AmbiguousMethodSymbol(ImmutableArray.Create(_single), false) // TODO: find a way on how to disable this check in CLR
+                        : _single
                     : new InaccessibleMethodSymbol(ImmutableArray.Create(_single));
             }
 
