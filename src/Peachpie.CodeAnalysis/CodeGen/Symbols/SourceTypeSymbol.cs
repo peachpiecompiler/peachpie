@@ -9,6 +9,9 @@ using System.Text;
 using System.Threading.Tasks;
 using static Devsense.PHP.Syntax.Name;
 using System.Collections.Immutable;
+using Microsoft.CodeAnalysis.CodeGen;
+using Pchp.CodeAnalysis.Emit;
+using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -130,6 +133,12 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 module.SetMethodBody(ctor, MethodGenerator.GenerateMethodBody(module, ctor, il =>
                 {
+                    if (ctor is SynthesizedParameterlessPhpCtorSymbol)
+                    {
+                        EmitParameterlessCtor(ctor, il, module, diagnostics);
+                        return;
+                    }
+
                     Debug.Assert(SpecialParameterSymbol.IsContextParameter(ctor.Parameters[0]));
 
                     var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, this, new ParamPlace(ctor.Parameters[0]), new ArgPlace(this, 0))
@@ -193,6 +202,36 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 }, null, diagnostics, false));
             }
+        }
+
+        void EmitParameterlessCtor(SynthesizedPhpCtorSymbol ctor, ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics)
+        {
+            Debug.Assert(ctor.BaseCtor != null);
+            Debug.Assert(ctor.PhpConstructor == null);
+            Debug.Assert(ctor.ParameterCount == 0);
+
+            // Pchp.Core.Utilities.ContextExtensions.DefaultContext
+            var extensions = (NamedTypeSymbol)module.Compilation.GetTypeByMetadataName("Pchp.Core.Utilities.ContextExtensions");
+            if (extensions.IsErrorTypeOrNull()) throw new InvalidOperationException("Class Pchp.Core.Utilities.ContextExtensions cannot be resolved.");
+
+            var ctxfield = extensions.LookupMember<PropertySymbol>("DefaultContext");
+            if (ctxfield == null) throw new InvalidOperationException("Property ContextExtensions.DefaultContext cannot be resolved.");
+
+            Debug.Assert(ctxfield.GetMethod.IsStatic);
+
+            //
+            var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, this, new PropertyPlace(null, ctxfield), new ArgPlace(this, 0))
+            {
+                CallerType = this,
+                ContainingFile = ContainingFile,
+            };
+
+            // this( Context.Default )
+            cg.EmitPop(cg.EmitForwardCall(ctor.BaseCtor, ctor));
+
+            // ret
+            Debug.Assert(ctor.ReturnsVoid);
+            cg.EmitRet(ctor.ReturnType);
         }
 
         static void EmitTraitCtorInit(CodeGenerator cg, SynthesizedPhpTraitCtorSymbol tctor)

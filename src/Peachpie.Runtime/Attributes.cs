@@ -269,6 +269,17 @@ namespace Pchp.Core
     }
 
     /// <summary>
+    /// Denotates a PHP class which defines a parameter-less constructor
+    /// which initializes the class using a default <see cref="Context"/>.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+    public sealed class SharedContextAttribute : Attribute
+    {
+
+    }
+
+
+    /// <summary>
     /// Compiler generated attribute denoting constructor that initializes only fields and calls minimal base .ctor.
     /// Such constructor is used for emitting derived class constructor that calls PHP constructor function by itself.
     /// </summary>
