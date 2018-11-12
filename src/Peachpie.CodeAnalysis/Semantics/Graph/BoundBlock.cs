@@ -82,12 +82,16 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
             else
             {
-                return new BoundBlock(statements)
-                {
-                    NextEdge = nextEdge,
-                    FlowState = this.FlowState.Clone()
-                };
+                return new BoundBlock(statements) { NextEdge = nextEdge, }
+                    .WithLocalPropertiesFrom(this);
             }
+        }
+
+        internal virtual BoundBlock Clone()
+        {
+            // We duplicate _statements because of the List's mutability
+            return new BoundBlock(new List<BoundStatement>(_statements)) { NextEdge = this.NextEdge }
+                .WithLocalPropertiesFrom(this);
         }
 
         /// <summary>
@@ -184,12 +188,15 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
             else
             {
-                return new StartBlock(statements)
-                {
-                    NextEdge = nextEdge,
-                    FlowState = this.FlowState.Clone()
-                };
+                return new StartBlock(statements) { NextEdge = nextEdge }
+                    .WithLocalPropertiesFrom(this);
             }
+        }
+
+        internal override BoundBlock Clone()
+        {
+            return new StartBlock(new List<BoundStatement>(Statements)) { NextEdge = this.NextEdge }
+                .WithLocalPropertiesFrom(this);
         }
 
         public override TResult Accept<TResult>(GraphVisitor<TResult> visitor) => visitor.VisitCFGStartBlock(this);
@@ -214,20 +221,25 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             : base(statements)
         { }
 
-        internal new ExitBlock Update(List<BoundStatement> statements, Edge nextEdge)
+        internal ExitBlock Update(List<BoundStatement> statements)
         {
-            if (statements == Statements && nextEdge == NextEdge)
+            Debug.Assert(NextEdge == null);
+
+            if (statements == Statements)
             {
                 return this;
             }
             else
             {
                 return new ExitBlock(statements)
-                {
-                    NextEdge = nextEdge,
-                    FlowState = this.FlowState.Clone()
-                };
+                    .WithLocalPropertiesFrom(this);
             }
+        }
+
+        internal override BoundBlock Clone()
+        {
+            return new ExitBlock(new List<BoundStatement>(Statements))
+                .WithLocalPropertiesFrom(this);
         }
 
         public override TResult Accept<TResult>(GraphVisitor<TResult> visitor) => visitor.VisitCFGExitBlock(this);
@@ -276,12 +288,15 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
             else
             {
-                return new CatchBlock(typeRef, variable, statements)
-                {
-                    NextEdge = nextEdge,
-                    FlowState = this.FlowState.Clone()
-                };
+                return new CatchBlock(typeRef, variable, statements) { NextEdge = nextEdge }
+                    .WithLocalPropertiesFrom(this);
             }
+        }
+
+        internal override BoundBlock Clone()
+        {
+            return new CatchBlock(_typeRef, _variable, new List<BoundStatement>(Statements)) { NextEdge = NextEdge }
+                .WithLocalPropertiesFrom(this);
         }
 
         public override TResult Accept<TResult>(GraphVisitor<TResult> visitor) => visitor.VisitCFGCatchBlock(this);
@@ -340,12 +355,15 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
             else
             {
-                return new CaseBlock(caseValue, statements)
-                {
-                    NextEdge = nextEdge,
-                    FlowState = this.FlowState.Clone()
-                };
+                return new CaseBlock(caseValue, statements) { NextEdge = nextEdge }
+                    .WithLocalPropertiesFrom(this);
             }
+        }
+
+        internal override BoundBlock Clone()
+        {
+            return new CaseBlock(_caseValue, new List<BoundStatement>(Statements)) { NextEdge = NextEdge }
+                .WithLocalPropertiesFrom(this);
         }
 
         public override TResult Accept<TResult>(GraphVisitor<TResult> visitor) => visitor.VisitCFGCaseBlock(this);
