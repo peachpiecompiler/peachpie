@@ -1413,6 +1413,31 @@ namespace Pchp.Core
             _data = new Blob(x, y);
         }
 
+        /// <summary>
+        /// Converts <see cref="string"/> to <see cref="PhpString"/>.
+        /// </summary>
+        /// <param name="value">String value, can be <c>null</c>.</param>
+        public static implicit operator PhpString(string value) => new PhpString(value);
+
+        /// <summary>
+        /// Converts <see cref="byte"/> array to <see cref="PhpString"/>.
+        /// </summary>
+        /// <param name="value">String value, can be <c>null</c>.</param>
+        public static explicit operator PhpString(byte[] value) => new PhpString(value);
+
+        /// <summary>
+        /// Converts <see cref="char"/> array to <see cref="PhpString"/>.
+        /// </summary>
+        /// <param name="value">String value, can be <c>null</c>.</param>
+        public static explicit operator PhpString(char[] value)
+        {
+            var b = new Blob();
+            b.Add(value);
+
+            //
+            return new PhpString(b);
+        }
+
         public PhpString DeepCopy() => new PhpString(this);
 
         #endregion
