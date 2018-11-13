@@ -12,7 +12,7 @@ function baz($a)/*{version:1}*/ {
   return /*|string|*/bar($a);
 }
 
-function foo($a)/*{version:2}*/ {
+function foo($a)/*{version:1}*/ {
   if ($a) {
     return /*|string|*/bar($a);
   } else {
@@ -20,6 +20,6 @@ function foo($a)/*{version:2}*/ {
   }
 }
 
-function main()/*{version:0}*/ {
+function main()/*{version:1}*/ {
   foo(42);
 }

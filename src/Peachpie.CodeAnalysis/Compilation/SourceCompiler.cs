@@ -37,6 +37,8 @@ namespace Pchp.CodeAnalysis
 
         readonly Worklist<BoundBlock> _worklist;
 
+        public static int MaxTransformCount = 10;
+
         public bool ConcurrentBuild => _compilation.Options.ConcurrentBuild;
 
         private SourceCompiler(PhpCompilation compilation, PEModuleBuilder moduleBuilder, bool emittingPdb, DiagnosticBag diagnostics, CancellationToken cancellationToken)
@@ -214,22 +216,18 @@ namespace Pchp.CodeAnalysis
             type.GetDiagnostics(_diagnostics);
         }
 
-        internal void TransformMethods()
+        internal bool TransformMethods()
         {
-            // TODO: Iterate the transformation cycle
-            var updatedRoutines = new ConcurrentBag<SourceRoutineSymbol>();
+            bool anyTransforms = false;
+
             this.WalkMethods(m =>
                 {
                     if (TransformationRewriter.TryTransform(m))
-                        updatedRoutines.Add(m);
+                        anyTransforms = true;
                 },
                 allowParallel: true);
 
-            // Run the analysis again on the changed methods
-            if (updatedRoutines.Count > 0)
-            {
-                _worklist.Update(updatedRoutines, concurrent: ConcurrentBuild); 
-            }
+            return anyTransforms;
         }
 
         internal void EmitMethodBodies()
@@ -314,25 +312,55 @@ namespace Pchp.CodeAnalysis
                 compiler.WalkTypes(compiler.EnqueueFieldsInitializer, allowParallel: true);
             }
 
-            using (compilation.StartMetric("analysis"))
+            // Repeat analysis and transformation until either the limit is met or there are no more changes
+            int transformCount = 0;
+            bool doNextTransform = (compilation.Options.OptimizationLevel == OptimizationLevel.Release);
+            while (true)
             {
-                // 2. Analyze Operations
-                //   a. type analysis (converge type - mask), resolve symbols
-                //   b. lower semantics, update bound tree, repeat
-                //   c. collect diagnostics
-                compiler.AnalyzeMethods();
-                compiler.DiagnoseMethods();
-                compiler.DiagnoseTypes();
-                compiler.DiagnoseFiles();
-            }
+                using (compilation.StartMetric("analysis"))
+                {
+                    // 2. Analyze Operations
+                    //   a. type analysis (converge type - mask), resolve symbols
+                    //   b. lower semantics, update bound tree, repeat
+                    compiler.AnalyzeMethods();
+                }
 
-            if (!diagnostics.HasAnyErrors() && compilation.Options.OptimizationLevel == OptimizationLevel.Release)
-            {
+                if (!doNextTransform)
+                {
+                    break;
+                }
+
                 using (compilation.StartMetric("transform"))
                 {
                     // 3. Transform Semantic Trees for Runtime Optimization
-                    compiler.TransformMethods();
+                    transformCount++;
+                    if (compiler.TransformMethods())
+                    {
+                        compiler.WalkMethods(m =>
+                            {
+                                m.ControlFlowGraph?.FlowContext.InvalidateAnalysis();
+                                compiler.EnqueueRoutine(m);
+                            },
+                            allowParallel: true);
+                    }
+                    else
+                    {
+                        // No changes performed => no need to repeat the analysis
+                        break;
+                    }
                 }
+
+                doNextTransform = (transformCount < MaxTransformCount);
+            }
+
+            compilation.TrackMetric("transformLoops", transformCount);
+
+            // 4. Collect diagnostics
+            using (compilation.StartMetric("diagnostic"))
+            {
+                compiler.DiagnoseMethods();
+                compiler.DiagnoseTypes();
+                compiler.DiagnoseFiles();
             }
 
             //

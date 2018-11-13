@@ -1,6 +1,6 @@
 <?php
 
-function bar()/*{version:0}*/ {
+function bar()/*{version:1}*/ {
   echo "bar";
 }
 
@@ -25,6 +25,6 @@ function baz(int $arg)/*{version:1}*/ {
   return $arg + 1;
 }
 
-function main()/*{version:0}*/ {
+function main()/*{version:1}*/ {
   echo baz(42);
 }
