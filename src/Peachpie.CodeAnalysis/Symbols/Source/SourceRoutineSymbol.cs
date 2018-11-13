@@ -79,8 +79,6 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        internal void FlushLocalsTable() => _locals = null;
-
         internal abstract IList<Statement> Statements { get; }
 
         protected abstract TypeRefContext CreateTypeRefContext();

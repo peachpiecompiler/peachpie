@@ -230,7 +230,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 // Reset routine properties related to the analysis
                 _routine.IsReturnAnalysed = false;
-                _routine.FlushLocalsTable();
 
                 // Recreate the entry state to enable another analysis
                 _routine.ControlFlowGraph.Start.FlowState = StateBinder.CreateInitialState(_routine, this);
