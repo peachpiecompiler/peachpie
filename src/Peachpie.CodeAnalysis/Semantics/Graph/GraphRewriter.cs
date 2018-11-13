@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
@@ -31,6 +32,34 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public int ExploredColor { get; private set; }
 
         public int RepairedColor { get; private set; }
+
+        #region Helper class
+
+        /// <summary>
+        /// Finds all yield statements in unreachable blocks (those not yet colored by <see cref="ExploredColor"/>)
+        /// of the original graph. The blocks encountered along the way are coloured as a side effect.
+        /// </summary>
+        private class UnreachableYieldFinder : GraphExplorer<VoidStruct>
+        {
+            public List<BoundYieldStatement> Yields { get; private set; }
+
+            public UnreachableYieldFinder(int exploredColor) : base(exploredColor)
+            { }
+
+            public override VoidStruct VisitYieldStatement(BoundYieldStatement boundYieldStatement)
+            {
+                if (Yields == null)
+                {
+                    Yields = new List<BoundYieldStatement>();
+                }
+
+                Yields.Add(boundYieldStatement);
+
+                return base.VisitYieldStatement(boundYieldStatement);
+            }
+        }
+
+        #endregion
 
         #region Helper methods
 
@@ -184,12 +213,28 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             var updatedStart = (StartBlock)Accept(x.Start);
             var updatedExit = TryGetNewVersion(x.Exit);
+            var yields = x.Yields;
 
             var unreachableBlocks = x.UnreachableBlocks;
             if (_possiblyUnreachableBlocks != null)
             {
-                // TODO: Update Labels and Yields accordingly
                 unreachableBlocks = unreachableBlocks.AddRange(_possiblyUnreachableBlocks.Where(b => !IsExplored(b)));
+
+                // Remove any yields found in the unreachable blocks, eventually marking all the original blocks as explored
+                if (!yields.IsDefaultOrEmpty && unreachableBlocks != x.UnreachableBlocks)
+                {
+                    var yieldFinder = new UnreachableYieldFinder(ExploredColor);
+
+                    for (int i = x.UnreachableBlocks.Length; i < unreachableBlocks.Length; i++)
+                    {
+                        yieldFinder.VisitCFGBlock(unreachableBlocks[i]);
+                    }
+
+                    if (yieldFinder.Yields != null)
+                    {
+                        yields = yields.RemoveRange(yieldFinder.Yields);
+                    }
+                }
             }
 
             // Rescan and fix the whole CFG if any blocks were modified
@@ -203,8 +248,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return x.Update(
                 updatedStart,
                 updatedExit,
-                x.Labels,
-                x.Yields,
+                x.Labels,           // Keep them all, they are here only for the diagnostic purposes
+                yields,
                 unreachableBlocks);
         }
 
