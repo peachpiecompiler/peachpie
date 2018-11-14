@@ -27,8 +27,8 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(PackageOnlyBuild)' == 'true'">
-    <IntermediateAssembly Remove="@(IntermediateAssembly)"/>
-    <IntermediateRefAssembly Remove="@(IntermediateRefAssembly)"/>
+    <IntermediateAssembly Remove="@(IntermediateAssembly)" />
+    <IntermediateRefAssembly Remove="@(IntermediateRefAssembly)" />
   </ItemGroup>
 
   <!-- This property must be overridden to remove a few targets that compile assemblies -->
@@ -71,12 +71,16 @@
       <PackagePath>build/Peachpie.Version.props</PackagePath>
       <Pack>true</Pack>
     </Content>
-    <Content Include="Sdk\Sdk.targets">
-      <PackagePath>Sdk\Sdk.targets</PackagePath>
+    <Content Include="build/PeachPie.ProjectItemsSchema.xaml">
+      <PackagePath>build/PeachPie.ProjectItemsSchema.xaml</PackagePath>
       <Pack>true</Pack>
     </Content>
-    <Content Include="Sdk\Sdk.props">
-      <PackagePath>Sdk\Sdk.props</PackagePath>
+    <Content Include="Sdk/Sdk.targets">
+      <PackagePath>Sdk/Sdk.targets</PackagePath>
+      <Pack>true</Pack>
+    </Content>
+    <Content Include="Sdk/Sdk.props">
+      <PackagePath>Sdk/Sdk.props</PackagePath>
       <Pack>true</Pack>
     </Content>
   </ItemGroup>
