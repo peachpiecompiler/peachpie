@@ -113,6 +113,27 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return alternate?.MoveToImmutable() ?? arr;
         }
 
+        private ImmutableArray<T> VisitBlockImmutableArray<T>(ImmutableArray<T> arr) where T : BoundBlock
+        {
+            ImmutableArray<T>.Builder alternate = null;
+            for (int i = 0; i < arr.Length; i++)
+            {
+                var orig = arr[i];
+                var visited = orig?.Accept(this);
+
+                if (visited != orig)
+                {
+                    if (alternate == null)
+                    {
+                        alternate = arr.ToBuilder();
+                    }
+                    alternate[i] = (T)visited;
+                }
+            }
+
+            return alternate?.MoveToImmutable() ?? arr;
+        }
+
         private ImmutableArray<KeyValuePair<T1, T2>> VisitImmutableArrayPairs<T1, T2>(ImmutableArray<KeyValuePair<T1, T2>> arr)
             where T1 : BoundOperation, IPhpOperation
             where T2 : BoundOperation, IPhpOperation
@@ -418,10 +439,26 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override object VisitCFGForeachEnumereeEdge(ForeachEnumereeEdge x)
         {
-            return x.Update(
+            var updated = x.Update(
                 (BoundBlock)Accept(x.Target),
                 (BoundExpression)Accept(x.Enumeree),
                 x.AreValuesAliased);
+
+            if (updated != x)
+            {
+                // Fix reference from the following ForEachMoveNextEdge
+                var moveNext = (ForeachMoveNextEdge)updated.NextBlock.NextEdge;
+                Debug.Assert(moveNext.EnumereeEdge == x);
+                updated.NextBlock.NextEdge = moveNext.Update(
+                    moveNext.BodyBlock,
+                    moveNext.NextBlock,
+                    updated,
+                    moveNext.KeyVariable,
+                    moveNext.ValueVariable,
+                    moveNext.MoveSpan);
+            }
+
+            return updated;
         }
 
         public override object VisitCFGForeachMoveNextEdge(ForeachMoveNextEdge x)
@@ -439,7 +476,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             return x.Update(
                 (BoundExpression)Accept(x.SwitchValue),
-                VisitImmutableArray(x.CaseBlocks),
+                VisitBlockImmutableArray(x.CaseBlocks),
                 (BoundBlock)Accept(x.NextBlock));
         }
 

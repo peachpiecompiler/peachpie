@@ -12,7 +12,7 @@ namespace Pchp.CodeAnalysis
         {
             self.Tag = other.Tag;
             self.Ordinal = other.Ordinal;
-            self.FlowState = other.FlowState.Clone();
+            self.FlowState = other.FlowState?.Clone();
 
             return self;
         }
