@@ -48,7 +48,7 @@ namespace Pchp.Core.Utilities
         /// Gets last character of the string.
         /// </summary>
         /// <returns>Last character or <c>\0</c>.</returns>
-        public static char Last(this string str) => str.Length != 0 ? str[str.Length - 1] : '\0';
+        public static char Last(this string str) => StringUtils.LastChar(str);
 
         /// <summary>
         /// Fast trim of a specified character.

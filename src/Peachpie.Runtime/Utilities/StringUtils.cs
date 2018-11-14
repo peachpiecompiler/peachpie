@@ -56,10 +56,7 @@ namespace Pchp.Core.Utilities
         /// <summary>
         /// Gets last string character or <c>\0</c>.
         /// </summary>
-        public static char LastChar(this string str)
-        {
-            return (str != null && str.Length != 0) ? str[str.Length - 1] : '\0';
-        }
+        public static char LastChar(this string str) => string.IsNullOrEmpty(str) ? '\0' : str[str.Length - 1];
 
         /// <summary>
         /// Most efficient way of searching for index of a substring ordinally.
