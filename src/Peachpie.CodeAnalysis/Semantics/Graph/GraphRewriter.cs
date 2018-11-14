@@ -16,9 +16,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// virtual Visit* and OnVisit* methods are called on all the nodes, edges and operations
     /// in the CFG. <see cref="ExploredColor"/> is used in the update to mark all the visited
     /// nodes and prevent infinite recursion. Any update of the graph marks all the changed nodes
-    /// (their new versions) as <see cref="RepairedColor"/>. If such an update happens, in the
+    /// (their new versions) as <see cref="ChangedColor"/>. If such an update happens, in the
     /// repairing phase the whole graph is traversed again and all the unmodified blocks are cloned,
-    /// those clones marked as repaired and edges to them fixed.
+    /// the edges fixed and all the blocks in the final graph marked as <see cref="RepairedColor"/>.
     /// 
     /// This is done to prevent the graph nodes from pointing to nodes of the older version of the
     /// graph. Possible optimization would be to allow sharing graph parts in acyclic CFGs.
@@ -30,6 +30,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         private bool _isRepairing;
 
         public int ExploredColor { get; private set; }
+
+        public int ChangedColor { get; private set; }
 
         public int RepairedColor { get; private set; }
 
@@ -64,6 +66,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         #region Helper methods
 
         private bool IsExplored(BoundBlock x) => x.Tag >= ExploredColor;
+
+        private bool IsChanged(BoundBlock x) => x.Tag >= ChangedColor;
 
         private bool IsRepaired(BoundBlock x) => x.Tag == RepairedColor;
 
@@ -147,7 +151,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private void MapToNewVersion(BoundBlock oldBlock, BoundBlock newBlock)
         {
-            newBlock.Tag = RepairedColor;
+            newBlock.Tag = ChangedColor;
 
             if (_updatedBlocks == null)
             {
@@ -170,6 +174,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
         }
 
+        /// <summary>
+        /// Inform about a possible unreachability of this block due to a change in the graph.
+        /// </summary>
         protected void NotePossiblyUnreachable(BoundBlock block)
         {
             if (_possiblyUnreachableBlocks == null)
@@ -184,7 +191,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             Debug.Assert(_isRepairing);
 
-            if (!IsRepaired(block))
+            if (IsRepaired(block))
+            {
+                return block;
+            }
+
+            if (!IsChanged(block))
             {
                 if (!_updatedBlocks.TryGetValue(block, out var repaired))
                 {
@@ -195,7 +207,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 block = repaired;
             }
 
-            block.NextEdge = (Edge)Accept(block.NextEdge);
+            if (!IsRepaired(block))
+            {
+                block.Tag = RepairedColor;
+                block.NextEdge = (Edge)Accept(block.NextEdge);
+            }
+
             return block;
         }
 
@@ -208,6 +225,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             OnVisitCFG(x);
 
             ExploredColor = x.NewColor();
+            ChangedColor = x.NewColor();
             RepairedColor = x.NewColor();
             _updatedBlocks = null;
 
