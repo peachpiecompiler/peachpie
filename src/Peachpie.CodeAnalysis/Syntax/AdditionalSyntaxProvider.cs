@@ -96,10 +96,10 @@ namespace Peachpie.CodeAnalysis.Syntax
             // - must be followed: final|class|interface|trait|public|protected|private|static|function|abstract
             if (t == Tokens.T_LBRACKET)
             {
-                // (perf) must be prefixed: ;, {, }, ], <?
+                // must be prefixed: ;, {, }, <?
                 if (_lastToken == 0 ||
                     _lastToken == Tokens.T_SEMI || _lastToken == Tokens.T_OPEN_TAG ||
-                    _lastToken == Tokens.T_RBRACKET || _lastToken == Tokens.T_RBRACE || _lastToken == Tokens.T_LBRACE)
+                    _lastToken == Tokens.T_RBRACE || _lastToken == Tokens.T_LBRACE)
                 {
                     int p = 0;
                     if (MatchCustomAttribute(ref p, out var attribute) && IsAtDeclarationKeyword(p))

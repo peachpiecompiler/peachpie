@@ -94,7 +94,7 @@ namespace Peachpie.CodeAnalysis.Syntax
 
         public override LangElement GlobalCode(Span span, IEnumerable<LangElement> statements, NamingContext context)
         {
-            Debug.Assert(_customAttributes == null || _customAttributes.Count == 0); // all parsed custom attributes have to be associated to a declaration
+            Debug.Assert(_customAttributes == null || _customAttributes.Count == 0, $"file {this.SourceUnit.FilePath} contains CLR attributes that was not consumed!"); // all parsed custom attributes have to be associated to a declaration
 
             return _root = (GlobalCode)base.GlobalCode(span, statements, context);
         }
