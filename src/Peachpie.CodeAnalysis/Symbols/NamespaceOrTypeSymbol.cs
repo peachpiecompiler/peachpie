@@ -68,7 +68,14 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         /// <returns>An ImmutableArray containing all the members of this symbol with the given name. If there are
         /// no members with this name, returns an empty ImmutableArray. Never returns null.</returns>
-        public abstract ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false);
+        public abstract ImmutableArray<Symbol> GetMembers(string name);
+
+        /// <summary>
+        /// Gets all the members with particula PHP name visible in PHP scope.
+        /// </summary>
+        /// <param name="name">The case-insensitive name of the symbol (method, field, constant).</param>
+        /// <returns>An ImmutableArray containing all the members with given name.</returns>
+        public abstract ImmutableArray<Symbol> GetMembersByPhpName(string name);
 
         /// <summary>
         /// Get all the members of this symbol that are types.
@@ -133,7 +140,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     //}
                 }
 
-                symbols = namespaceOrType.GetMembers(name, true).OfType<NamespaceOrTypeSymbol>();
+                symbols = namespaceOrType.GetMembers(name).OfType<NamespaceOrTypeSymbol>();
             }
 
             return symbols;

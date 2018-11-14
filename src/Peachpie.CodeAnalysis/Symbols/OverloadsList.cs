@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
+using Peachpie.CodeAnalysis.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -13,7 +14,7 @@ namespace Pchp.CodeAnalysis.Symbols
     /// <summary>
     /// List of overloads for a function call.
     /// </summary>
-    internal class OverloadsList
+    internal struct OverloadsList
     {
         /// <summary>
         /// Defines the scope of members visibility.
@@ -46,11 +47,28 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        readonly List<MethodSymbol> _methods;
+        readonly MethodSymbol _single;
+        readonly ImmutableArray<MethodSymbol> _methods;
 
-        public OverloadsList(params MethodSymbol[] methods)
+        public OverloadsList(MethodSymbol method)
         {
-            _methods = new List<MethodSymbol>(methods);
+            _single = method ?? throw ExceptionUtilities.ArgumentNull();
+            _methods = default;
+        }
+
+        public OverloadsList(ImmutableArray<MethodSymbol> methods)
+        {
+
+            if (methods.Length == 1)
+            {
+                _single = methods[0];
+                _methods = default;
+            }
+            else
+            {
+                _single = default;
+                _methods = methods;
+            }
         }
 
         /// <summary>
@@ -65,14 +83,18 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </returns>
         public MethodSymbol/*!*/Resolve(TypeRefContext typeCtx, ImmutableArray<BoundArgument> args, VisibilityScope scope)
         {
-            if (_methods.Count == 0)
+            if (_single != null)
             {
-                return new MissingMethodSymbol();
+                return IsAccessible(_single, scope)
+                    ? scope.ScopeIsDynamic && IsNonPublic(_single)
+                        ? new AmbiguousMethodSymbol(ImmutableArray.Create(_single), false) // TODO: find a way on how to disable this check in CLR
+                        : _single
+                    : new InaccessibleMethodSymbol(ImmutableArray.Create(_single));
             }
 
-            if (_methods.Count == 1 && _methods[0].IsErrorMethodOrNull())
+            if (_methods.IsDefaultOrEmpty)
             {
-                return _methods[0] ?? new MissingMethodSymbol();
+                return new MissingMethodSymbol();
             }
 
             // see Pchp.Core.Dynamic.OverloadBinder
@@ -161,14 +183,19 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             for (int i = methods.Count - 1; i >= 0; i--)
             {
-                var m = methods[i];
-
-                if ((!scope.ScopeIsDynamic && !m.IsAccessible(scope.Scope)) ||  // method is not accessible for sure
-                    m.IsFieldsOnlyConstructor())    // method is special .ctor which is not accessible from user's code
+                if (!IsAccessible(methods[i], scope))
                 {
                     methods.RemoveAt(i);
                 }
             }
+        }
+
+        static bool IsAccessible(MethodSymbol m, VisibilityScope scope)
+        {
+            return (
+                (scope.ScopeIsDynamic || m.IsAccessible(scope.Scope)) &&  // method is accessible (or might be in runtime)
+                !m.IsFieldsOnlyConstructor()    // method is not a special .ctor which is not accessible from user's code
+                );
         }
     }
 }

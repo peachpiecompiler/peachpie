@@ -8,6 +8,9 @@ using Devsense.PHP.Text;
 using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Syntax;
 using System.Diagnostics;
+using System.Collections.Immutable;
+using Pchp.CodeAnalysis.Symbols;
+using Microsoft.CodeAnalysis;
 
 namespace Pchp.CodeAnalysis
 {
@@ -52,6 +55,49 @@ namespace Pchp.CodeAnalysis
                 varlike.IsMemberOf = item.IsMemberOf;
                 item.IsMemberOf = null;
             }
+        }
+
+        /// <summary>
+        /// Creates new struct with updated <see cref="CompleteToken.TokenText"/>.
+        /// </summary>
+        public static CompleteToken WithTokenText(this CompleteToken t, string text)
+        {
+            return new CompleteToken(t.Token, t.TokenValue, t.TokenPosition, text);
+        }
+
+        /// <summary>
+        /// Creates new struct with updated <see cref="CompleteToken.TokenText"/>.
+        /// </summary>
+        public static CompleteToken WithToken(this CompleteToken t, Tokens token)
+        {
+            return new CompleteToken(token, t.TokenValue, t.TokenPosition, t.TokenText);
+        }
+
+        /// <summary>
+        /// Gets value indicating the token is an ignored token - whitespace or comment.
+        /// </summary>
+        public static bool IsWhitespace(this CompleteToken t) => t.Token == Tokens.T_WHITESPACE || t.Token == Tokens.T_COMMENT; // not T_DOC_COMMENT
+
+        /// <summary>
+        /// Gets attributes associated with given syntax node.
+        /// </summary>
+        public static bool TryGetCustomAttributes(this AstNode element, out ImmutableArray<AttributeData> attrs)
+        {
+            return element.TryGetProperty(out attrs);
+        }
+
+        /// <summary>
+        /// Associates an attribute with syntax node.
+        /// </summary>
+        public static void AddCustomAttribute(this AstNode element, AttributeData attribute)
+        {
+            Debug.Assert(attribute != null);
+
+            var newattrs = TryGetCustomAttributes(element, out var attrs)
+                ? attrs.Add(attribute)
+                : ImmutableArray.Create(attribute);
+
+            element.SetProperty(newattrs);
         }
 
         /// <summary>
@@ -172,7 +218,7 @@ namespace Pchp.CodeAnalysis
         {
             return span.IsValid
                 ? new Microsoft.CodeAnalysis.Text.TextSpan(span.Start, span.Length)
-                : new Microsoft.CodeAnalysis.Text.TextSpan();
+                : default;
         }
 
         /// <summary>

@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Text;
+using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis;
+using Pchp.CodeAnalysis.Symbols;
 
 namespace Peachpie.CodeAnalysis.Syntax
 {
@@ -47,6 +51,12 @@ namespace Peachpie.CodeAnalysis.Syntax
         public List<LangElement> YieldNodes => _yieldNodes;
         List<LangElement> _yieldNodes;
 
+        public void AddCustomAttribute(int position, AttributeData attr)
+        {
+            AddAndReturn(ref _customAttributes, (position, attr));
+        }
+        List<(int, AttributeData)> _customAttributes; // list of parsed custom attributes, will be taken and used for the next declaration
+
         /// <summary>
         /// Adds node to the list and returns the node.
         /// </summary>
@@ -61,21 +71,50 @@ namespace Peachpie.CodeAnalysis.Syntax
             return node;
         }
 
+        /// <summary>
+        /// If applicable, annotates the element with previously parsed <see cref="SourceCustomAttribute"/>.
+        /// </summary>
+        T WithCustomAttributes<T>(T element) where T : LangElement
+        {
+            // check Span contains position => add to Properties
+            if (_customAttributes != null)
+            {
+                for (int i = _customAttributes.Count - 1; i >= 0; i--)
+                {
+                    if (_customAttributes[i].Item1 == element.Span.Start)
+                    {
+                        element.AddCustomAttribute(_customAttributes[i].Item2);
+                        _customAttributes.RemoveAt(i);
+                    }
+                }
+            }
+
+            return element;
+        }
+
         public override LangElement GlobalCode(Span span, IEnumerable<LangElement> statements, NamingContext context)
         {
+            Debug.Assert(_customAttributes == null || _customAttributes.Count == 0); // all parsed custom attributes have to be associated to a declaration
+
             return _root = (GlobalCode)base.GlobalCode(span, statements, context);
         }
 
         public override LangElement Function(Span span, bool conditional, bool aliasReturn, PhpMemberAttributes attributes, TypeRef returnType, Name name, Span nameSpan, IEnumerable<FormalTypeParam> typeParamsOpt, IEnumerable<FormalParam> formalParams, Span formalParamsSpan, LangElement body)
         {
             return AddAndReturn(ref _functions,
-                (FunctionDecl)base.Function(span, conditional, aliasReturn, attributes, returnType, name, nameSpan, typeParamsOpt, formalParams, formalParamsSpan, body));
+                WithCustomAttributes((FunctionDecl)base.Function(span, conditional, aliasReturn, attributes, returnType, name, nameSpan, typeParamsOpt, formalParams, formalParamsSpan, body)));
         }
 
         public override LangElement Type(Span span, Span headingSpan, bool conditional, PhpMemberAttributes attributes, Name name, Span nameSpan, IEnumerable<FormalTypeParam> typeParamsOpt, INamedTypeRef baseClassOpt, IEnumerable<INamedTypeRef> implements, IEnumerable<LangElement> members, Span bodySpan)
         {
             return AddAndReturn(ref _types,
-                (TypeDecl)base.Type(span, headingSpan, conditional, attributes, name, nameSpan, typeParamsOpt, baseClassOpt, implements, members, bodySpan));
+                WithCustomAttributes((TypeDecl)base.Type(span, headingSpan, conditional, attributes, name, nameSpan, typeParamsOpt, baseClassOpt, implements, members, bodySpan)));
+        }
+
+        public override LangElement Method(Span span, bool aliasReturn, PhpMemberAttributes attributes, TypeRef returnType, Span returnTypeSpan, string name, Span nameSpan, IEnumerable<FormalTypeParam> typeParamsOpt, IEnumerable<FormalParam> formalParams, Span formalParamsSpan, IEnumerable<ActualParam> baseCtorParams, LangElement body)
+        {
+            return WithCustomAttributes(
+                base.Method(span, aliasReturn, attributes, returnType, returnTypeSpan, name, nameSpan, typeParamsOpt, formalParams, formalParamsSpan, baseCtorParams, body));
         }
 
         public override TypeRef AnonymousTypeReference(Span span, Span headingSpan, bool conditional, PhpMemberAttributes attributes, IEnumerable<FormalTypeParam> typeParamsOpt, INamedTypeRef baseClassOpt, IEnumerable<INamedTypeRef> implements, IEnumerable<LangElement> members, Span bodySpan)
@@ -102,6 +141,10 @@ namespace Peachpie.CodeAnalysis.Syntax
         {
             return AddAndReturn(ref _yieldNodes, base.YieldFrom(span, fromExpr));
         }
+
+        public Literal Literal(Span span, long lvalue) => new LongIntLiteral(span, lvalue); // overload to avoid boxing
+
+        public Literal Literal(Span span, double dvalue) => new DoubleLiteral(span, dvalue); // overload to avoid boxing
 
         public override LangElement Literal(Span span, object value, string originalValue)
         {

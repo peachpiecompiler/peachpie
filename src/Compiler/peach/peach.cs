@@ -49,6 +49,8 @@ namespace Pchp.CodeAnalysis.CommandLine
                 typeof(Library.Strings).Assembly,   // Peachpie.Library
                 typeof(Peachpie.Library.XmlDom.DOMDocument).Assembly,   // Peachpie.Library.XmlDom
                 typeof(Peachpie.Library.Scripting.PhpFunctions).Assembly,   // Peachpie.Library.Scripting
+                typeof(Peachpie.Library.Network.CURLFunctions).Assembly, // cURL
+                typeof(Peachpie.Library.Graphics.PhpGd2).Assembly, // GD2, Image
                 typeof(Peachpie.Library.MySql.MySql).Assembly,  // MySql
                 typeof(Peachpie.Library.MsSql.MsSql).Assembly,  // MsSql
             };

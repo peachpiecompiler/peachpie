@@ -2741,6 +2741,13 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
+            if (this.ArgumentsInSourceOrder.All(x => IsEmpty(x.Value)))
+            {
+                // Template: String.Empty
+                cg.Builder.EmitStringConstant(string.Empty);
+                return cg.CoreTypes.String;
+            }
+            
             // Template: new PhpString( new PhpString.Blob() { a1, a2, ..., aN } )
 
             // new PhpString.Blob()

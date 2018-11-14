@@ -27,6 +27,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 var cg = new CodeGenerator(il, module, diagnostic, module.Compilation.Options.OptimizationLevel, false, this, null, new ArgPlace(this, 0))
                 {
                     CallerType = this.ContainingType,
+                    ContainingFile = _class.ContainingFile,
                 };
 
                 // base..ctor()
@@ -77,6 +78,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 var cg = new CodeGenerator(il, module, diagnostic, module.Compilation.Options.OptimizationLevel, false, this, new ArgPlace(tt.Context, 1), new ArgPlace(this, 0), initMethod)
                 {
                     CallerType = this.ContainingType,
+                    ContainingFile = _class.ContainingFile,
                 };
 
                 foreach (var p in this.Fields.Cast<IPhpPropertySymbol>())

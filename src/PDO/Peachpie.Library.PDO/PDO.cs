@@ -50,6 +50,7 @@ namespace Peachpie.Library.PDO
         {
             Debug.Assert(ctx != null);
             _ctx = ctx;
+            _ctx.RegisterDisposable(this);
         }
 
         /// <summary>

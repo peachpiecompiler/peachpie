@@ -2462,7 +2462,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             // lookup common keys:
             var key_field = this.CoreTypes
                 .CommonPhpArrayKeys.Symbol
-                .GetMembers(key, ignoreCase: false)
+                .GetMembers(key)
                 .OfType<FieldSymbol>().FirstOrDefault();
 
             if (key_field != null)

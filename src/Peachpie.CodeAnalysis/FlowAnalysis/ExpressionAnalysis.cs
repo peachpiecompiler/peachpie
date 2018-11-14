@@ -614,6 +614,23 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return type;
         }
 
+        Optional<object> ResolveBooleanOperation(Optional<object> xobj, Optional<object> yobj, Operations op)
+        {
+            if (xobj.TryConvertToBool(out var bx) && yobj.TryConvertToBool(out var by))
+            {
+                switch (op)
+                {
+                    case Operations.And: return (bx && by).AsOptional();
+                    case Operations.Or: return (bx || by).AsOptional();
+                    case Operations.Xor: return (bx ^ by).AsOptional();
+                    default:
+                        throw ExceptionUtilities.Unreachable;
+                }
+            }
+
+            return default;
+        }
+
         /// <summary>
         /// Resolves value of bit operation.
         /// </summary>
@@ -722,15 +739,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.Div:
                 case Operations.Mul:
                 case Operations.Pow:
+
                     if (IsDoubleOnly(x.Left.TypeRefMask) || IsDoubleOnly(x.Right.TypeRefMask)) // some operand is double and nothing else
                         return TypeCtx.GetDoubleTypeMask(); // double if we are sure about operands
-                    return TypeCtx.GetNumberTypeMask();
+                    else
+                        return TypeCtx.GetNumberTypeMask();
 
                 case Operations.Mod:
                     return TypeCtx.GetLongTypeMask();
 
                 case Operations.ShiftLeft:
                 case Operations.ShiftRight:
+
+                    x.ConstantValue = ResolveShift(x.Operation, x.Left.ConstantValue, x.Right.ConstantValue);
                     return TypeCtx.GetLongTypeMask();
 
                 #endregion
@@ -740,6 +761,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case Operations.And:
                 case Operations.Or:
                 case Operations.Xor:
+
+                    x.ConstantValue = ResolveBooleanOperation(x.Left.ConstantValue, x.Right.ConstantValue, x.Operation);
                     return TypeCtx.GetBooleanTypeMask();
 
                 case Operations.BitAnd:
@@ -824,6 +847,28 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             //
             return default(Optional<object>);
+        }
+
+        static Optional<object> ResolveShift(Operations op, Optional<object> lvalue, Optional<object> rvalue)
+        {
+            if (lvalue.TryConvertToLong(out var left) && rvalue.TryConvertToLong(out var right))
+            {
+                switch (op)
+                {
+                    case Operations.ShiftLeft:
+                        return (left << (int)right).AsOptional();
+
+                    case Operations.ShiftRight:
+                        return (left >> (int)right).AsOptional();
+
+                    default:
+                        Debug.Fail("unexpected");
+                        break;
+
+                }
+            }
+
+            return default;
         }
 
         /// <summary>
@@ -1010,6 +1055,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     case SpecialType.System_Double:
                         return ConstantValue.Create(-value.DoubleValue);
 
+                    case SpecialType.System_Int32:
+                        return value.Int32Value != int.MinValue
+                            ? ConstantValue.Create(-value.Int32Value)   // (- Int32.MinValue) overflows to int64
+                            : ConstantValue.Create(-(long)value.Int32Value);
+
                     case SpecialType.System_Int64:
                         return (value.Int64Value != long.MinValue)  // (- Int64.MinValue) overflows to double
                             ? ConstantValue.Create(-value.Int64Value)
@@ -1068,7 +1118,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 var handle = State.GetLocalHandle(localname);
                 Debug.Assert(handle.IsValid);
-                
+
                 // Remove any constant value of isset()
                 x.ConstantValue = default(Optional<object>);
 
@@ -1350,16 +1400,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
-        MethodSymbol[] AsMethodOverloads(MethodSymbol method)
-        {
-            if (method is AmbiguousMethodSymbol && ((AmbiguousMethodSymbol)method).IsOverloadable)
-            {
-                return ((AmbiguousMethodSymbol)method).Ambiguities.ToArray();
-            }
-
-            return new[] { method };
-        }
-
         public override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x, ConditionBranch branch)
         {
             Accept(x.Name);
@@ -1374,9 +1414,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     symbol = (MethodSymbol)_model.ResolveFunction(x.NameOpt.Value);
                 }
 
+                var overloads = symbol is AmbiguousMethodSymbol ambiguous && ambiguous.IsOverloadable
+                    ? new OverloadsList(ambiguous.Ambiguities)
+                    : new OverloadsList(symbol ?? new MissingMethodSymbol(x.Name.NameValue.ToString()));
+
                 // symbol might be ErrorSymbol
 
-                x.TargetMethod = new OverloadsList(AsMethodOverloads(symbol)).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
+                x.TargetMethod = overloads.Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
             }
 
             BindTargetMethod(x);
@@ -1415,7 +1459,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 if (resolvedtype != null)
                 {
-                    var candidates = resolvedtype.LookupMethods(x.Name.NameValue.Name.Value);
+                    var candidates = resolvedtype.LookupMethods(x.Name.NameValue.Name.Value).AsImmutable();
                     x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
                 }
                 else
@@ -1440,7 +1484,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (x.Name.IsDirect && x.TypeRef.ResolvedType != null)
             {
                 // TODO: resolve all candidates, visibility, static methods or instance on self/parent/static
-                var candidates = x.TypeRef.ResolvedType.LookupMethods(x.Name.NameValue.Name.Value);
+                var candidates = x.TypeRef.ResolvedType.LookupMethods(x.Name.NameValue.Name.Value).AsImmutable();
                 // if (candidates.Any(c => c.HasThis)) throw new NotImplementedException("instance method called statically");
 
                 x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
@@ -1557,7 +1601,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var type = (NamedTypeSymbol)x.TypeRef.ResolvedType;
             if (type.IsValidType())
             {
-                var candidates = type.InstanceConstructors.ToArray();
+                var candidates = type.InstanceConstructors;
 
                 //
                 x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
@@ -2156,9 +2200,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override T VisitExpressionStatement(BoundExpressionStatement x)
         {
-            base.VisitExpressionStatement(x);
-
-            return default;
+            return base.VisitExpressionStatement(x);
         }
 
         public override T VisitReturn(BoundReturnStatement x)

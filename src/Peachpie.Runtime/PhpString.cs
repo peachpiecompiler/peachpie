@@ -610,7 +610,13 @@ namespace Pchp.Core
             public void Add(Blob value)
             {
                 Debug.Assert(value != null);
-                Debug.Assert(!value.IsEmpty);
+
+                if (value.IsEmpty)
+                {
+                    // should not happen:
+                    return;
+                }
+
                 Debug.Assert(value._chunks != null);
 
                 if (value.IsArrayOfChunks)
@@ -657,18 +663,18 @@ namespace Pchp.Core
 
             public void Add(PhpString value)
             {
-                if (!value.IsEmpty)
+                var data = value._data;
+                if (data is Blob b)
                 {
-                    var data = value._data;
-                    if (data is Blob b)
-                    {
-                        Add(b);
-                    }
-                    else
-                    {
-                        Debug.Assert(data is string);
-                        AddChunk((string)data);
-                    }
+                    Add(b);
+                }
+                else if (data is string s)
+                {
+                    Add(s);
+                }
+                else
+                {
+                    Debug.Assert(value.IsDefault);
                 }
             }
 
@@ -1405,6 +1411,31 @@ namespace Pchp.Core
         public PhpString(string x, string y)
         {
             _data = new Blob(x, y);
+        }
+
+        /// <summary>
+        /// Converts <see cref="string"/> to <see cref="PhpString"/>.
+        /// </summary>
+        /// <param name="value">String value, can be <c>null</c>.</param>
+        public static implicit operator PhpString(string value) => new PhpString(value);
+
+        /// <summary>
+        /// Converts <see cref="byte"/> array to <see cref="PhpString"/>.
+        /// </summary>
+        /// <param name="value">String value, can be <c>null</c>.</param>
+        public static explicit operator PhpString(byte[] value) => new PhpString(value);
+
+        /// <summary>
+        /// Converts <see cref="char"/> array to <see cref="PhpString"/>.
+        /// </summary>
+        /// <param name="value">String value, can be <c>null</c>.</param>
+        public static explicit operator PhpString(char[] value)
+        {
+            var b = new Blob();
+            b.Add(value);
+
+            //
+            return new PhpString(b);
         }
 
         public PhpString DeepCopy() => new PhpString(this);

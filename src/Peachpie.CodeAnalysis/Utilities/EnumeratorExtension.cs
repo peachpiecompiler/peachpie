@@ -99,9 +99,8 @@ namespace Pchp.CodeAnalysis
         /// <param name="arr1">First array.</param>
         /// <param name="arr2">Second array.</param>
         /// <param name="mixer">Mixing function.</param>
-        /// <param name="default">A default value if array lengths are not the same.</param>
         /// <returns>Mixed array.</returns>
-        public static T[]/*!*/MixArrays<T>(T[]/*!*/arr1, T[]/*!*/arr2, Func<T, T, T>/*!*/mixer, Func<T> @default)
+        public static T[]/*!*/MergeArrays<T>(T[]/*!*/arr1, T[]/*!*/arr2, Func<T, T, T>/*!*/mixer)
         {
             Contract.ThrowIfNull(arr1);
             Contract.ThrowIfNull(arr2);
@@ -124,7 +123,7 @@ namespace Pchp.CodeAnalysis
 
             for (; i < arr2.Length; i++)
             {
-                tmp[i] = mixer(@default(), arr2[i]);
+                tmp[i] = mixer(default, arr2[i]);
             }
 
             //

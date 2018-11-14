@@ -12,6 +12,10 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal sealed class SignatureEqualityComparer : IEqualityComparer<IMethodSymbol>
     {
+        public static readonly SignatureEqualityComparer Instance = new SignatureEqualityComparer();
+
+        private SignatureEqualityComparer() { }
+
         public bool Equals(IMethodSymbol x, IMethodSymbol y)
         {
             if (x.Name == y.Name)

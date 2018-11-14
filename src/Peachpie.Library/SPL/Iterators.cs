@@ -644,6 +644,27 @@ namespace Pchp.Library.Spl
     }
 
     /// <summary>
+    /// This iterator cannot be rewound.
+    /// </summary>
+    public class NoRewindIterator : IteratorIterator
+    {
+        [PhpFieldsOnlyCtor]
+        protected NoRewindIterator() { }
+
+        public NoRewindIterator(Traversable iterator) : base(iterator)
+        {
+        }
+
+        /// <summary>
+        /// Prevents the rewind operation on the inner iterator.
+        /// </summary>
+        public override void rewind()
+        {
+            // nothing
+        }
+    }
+
+    /// <summary>
     /// This abstract iterator filters out unwanted values.
     /// This class should be extended to implement custom iterator filters.
     /// </summary>

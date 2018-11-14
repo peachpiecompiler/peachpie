@@ -514,6 +514,12 @@ namespace Pchp.CodeAnalysis.Symbols
         Dictionary<string, ImmutableArray<Symbol>> _lazyMembersByName;
 
         /// <summary>
+        /// A map of members immediately contained within this type 
+        /// grouped by their PHP name (case-insensitively, without special suffixes).
+        /// </summary>
+        Dictionary<string, ImmutableArray<Symbol>> _lazyMembersByPhpName;
+
+        /// <summary>
         /// A map of types immediately contained within this type 
         /// grouped by their name (case-sensitively).
         /// </summary>
@@ -944,17 +950,14 @@ namespace Pchp.CodeAnalysis.Symbols
             return _lazyMembersInDeclarationOrder;
         }
 
-        public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
+        public override ImmutableArray<Symbol> GetMembers(string name)
         {
             EnsureAllMembersAreLoaded();
 
             ImmutableArray<Symbol> m;
             if (!_lazyMembersByName.TryGetValue(name, out m))
             {
-                if (!ignoreCase || !_lazyMembersByName.TryGetValue(name.ToLowerInvariant(), out m))
-                {
-                    m = ImmutableArray<Symbol>.Empty;
-                }
+                m = ImmutableArray<Symbol>.Empty;
             }
 
             // nested types are not common, but we need to check just in case
@@ -967,12 +970,37 @@ namespace Pchp.CodeAnalysis.Symbols
             return m;
         }
 
+        public override ImmutableArray<Symbol> GetMembersByPhpName(string name)
+        {
+            if (!EnsurePhpMembers().TryGetValue(name, out var m))
+            {
+                m = ImmutableArray<Symbol>.Empty;
+            }
+
+            return m;
+        }
+
         private void EnsureAllMembersAreLoaded()
         {
             if (_lazyMembersByName == null)
             {
                 LoadMembers();
             }
+        }
+
+        private Dictionary<string, ImmutableArray<Symbol>> EnsurePhpMembers()
+        {
+            if (_lazyMembersByPhpName == null)
+            {
+                EnsureAllMembersAreLoaded();
+                Interlocked.CompareExchange(ref _lazyMembersByPhpName,
+                    Microsoft.CodeAnalysis.EnumerableExtensions.ToDictionary(
+                        _lazyMembersInDeclarationOrder
+                        .Where(x => x is MethodSymbol || x is FieldSymbol),
+                        x => x.PhpName(), StringComparer.InvariantCultureIgnoreCase),
+                    null);
+            }
+            return _lazyMembersByPhpName;
         }
 
         private void EnsureNestedTypesAreLoaded()

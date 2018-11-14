@@ -111,7 +111,12 @@ namespace Pchp.CodeAnalysis.Symbols
             return ImmutableArray<Symbol>.Empty;
         }
 
-        public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
+        public override ImmutableArray<Symbol> GetMembers(string name)
+        {
+            return ImmutableArray<Symbol>.Empty;
+        }
+
+        public override ImmutableArray<Symbol> GetMembersByPhpName(string name)
         {
             return ImmutableArray<Symbol>.Empty;
         }

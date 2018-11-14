@@ -850,6 +850,9 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
                 }
             }
+
+            // bind & diagnose attributes
+            GetAttributes();
         }
 
         List<Symbol> EnsureMembers()
@@ -942,7 +945,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return null;
             }
 
-            return GetMembers(Devsense.PHP.Syntax.Name.SpecialMethodNames.Invoke.Value, true)
+            return GetMembersByPhpName(Devsense.PHP.Syntax.Name.SpecialMethodNames.Invoke.Value)
                 .OfType<MethodSymbol>()
                 .Where(m => !m.IsStatic)
                 .SingleOrDefault();
@@ -1153,11 +1156,19 @@ namespace Pchp.CodeAnalysis.Symbols
                 .AsImmutable();
         }
 
-        public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
+        public override ImmutableArray<Symbol> GetMembers(string name)
         {
             return GetDeclaredMembers()
                 .Where(m => m.ContainingType == this)   // skips members contained in _statics holder
-                .Where(s => s.Name.StringsEqual(name, ignoreCase))
+                .Where(s => s.Name == name) // s.Name.StringsEqual(name, ignoreCase))
+                .AsImmutable();
+        }
+
+        public override ImmutableArray<Symbol> GetMembersByPhpName(string name)
+        {
+            return GetDeclaredMembers()
+                .Where(s => s.ContainingType == this)   // skips members contained in _statics holder
+                .Where(s => s.PhpName().StringsEqual(name, ignoreCase: true))
                 .AsImmutable();
         }
 
@@ -1188,6 +1199,18 @@ namespace Pchp.CodeAnalysis.Symbols
                         new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, FullName.ToString()),
                         new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, ContainingFile.RelativeFilePath.ToString())),
                     ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
+
+            // attributes from syntax node
+            if (this.Syntax.TryGetCustomAttributes(out var customattrs))
+            {
+                // initialize attribute data if necessary:
+                customattrs
+                    .OfType<SourceCustomAttribute>()
+                    .ForEach(x => x.Bind(this, this.ContainingFile));
+
+                //
+                attrs = attrs.AddRange(customattrs);
+            }
 
             return attrs;
         }

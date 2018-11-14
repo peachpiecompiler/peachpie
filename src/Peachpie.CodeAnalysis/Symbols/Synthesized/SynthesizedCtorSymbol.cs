@@ -168,10 +168,12 @@ namespace Pchp.CodeAnalysis.Symbols
                 yield break;
             }
 
+            MethodSymbol defaultctor; // .ctor to be used by default
+
             // create .ctor(s)
             if (phpconstruct == null)
             {
-                yield return new SynthesizedPhpCtorSymbol(type, Accessibility.Public, false, basector, null);
+                yield return defaultctor = new SynthesizedPhpCtorSymbol(type, Accessibility.Public, false, basector, null);
             }
             else
             {
@@ -189,10 +191,25 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
                 }
 
-                yield return new SynthesizedPhpCtorSymbol(type, phpconstruct.DeclaredAccessibility, false, fieldsinitctor, phpconstruct);
+                yield return defaultctor = new SynthesizedPhpCtorSymbol(type, phpconstruct.DeclaredAccessibility, false, fieldsinitctor, phpconstruct);
+            }
+
+            // parameterless .ctor() for shared context
+            if (type.GetAttributes().FirstOrDefault(IsSharedContextAttribute) != null)
+            {
+                // Template:
+                // void .ctor() : this(Context.Default) { }
+                yield return new SynthesizedParameterlessPhpCtorSymbol(type, Accessibility.Public, defaultctor);
             }
 
             yield break;
+        }
+
+        static bool IsSharedContextAttribute(AttributeData attr)
+        {
+            return
+                attr is SourceCustomAttribute srcattr &&
+                srcattr.AttributeClass.GetFullName() == CoreTypes.SharedContextAttributeFullName;
         }
 
         static MethodSymbol ResolveBaseCtor(ImmutableArray<ParameterSymbol> givenparams, ImmutableArray<MethodSymbol> candidates)
@@ -319,6 +336,28 @@ namespace Pchp.CodeAnalysis.Symbols
 
             // !TSelf this
             yield return new SpecialParameterSymbol(this, ContainingType.TSelfParameter, SpecialParameterSymbol.ThisName, index++);
+        }
+    }
+
+    #endregion
+
+    #region SynthesizedParameterlessPhpCtorSymbol
+
+    /// <summary>
+    /// Parameter less .ctor for a PHP class.
+    /// </summary>
+    internal sealed class SynthesizedParameterlessPhpCtorSymbol : SynthesizedPhpCtorSymbol
+    {
+        public SynthesizedParameterlessPhpCtorSymbol(
+            SourceTypeSymbol containingType, Accessibility accessibility,
+            MethodSymbol defaultctor)
+            : base(containingType, accessibility, false, defaultctor, null, 0)
+        {
+        }
+
+        protected override IEnumerable<ParameterSymbol> CreateParameters(IEnumerable<ParameterSymbol> baseparams)
+        {
+            return Array.Empty<ParameterSymbol>();
         }
     }
 

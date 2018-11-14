@@ -83,6 +83,25 @@ namespace Pchp.CodeAnalysis.Symbols
             return NameUtils.MakeQualifiedName(type.Name, type.NamespaceName, true);
         }
 
+        /// <summary>
+        /// Gets the symbol name as it appears in PHP context.
+        /// </summary>
+        public static string PhpName(this Symbol s)
+        {
+            switch (s)
+            {
+                case IPhpRoutineSymbol routine: return routine.RoutineName;
+                case IPhpTypeSymbol type: return type.FullName.Name.Value;
+                default: return s.Name;
+            }
+        }
+
+        /// <summary>
+        /// Gets PHP type qualified name.
+        /// </summary>
+        public static QualifiedName PhpQualifiedName(this NamedTypeSymbol t) =>
+            t is IPhpTypeSymbol phpt ? phpt.FullName : MakeQualifiedName(t);
+
         public static bool IsAccessible(this Symbol symbol, TypeSymbol classCtx)
         {
             if (symbol.DeclaredAccessibility == Accessibility.Private)

@@ -41,7 +41,7 @@ namespace Pchp.CodeAnalysis
                 case SpecialType.System_Double: return DoubleTypeRef;
                 case SpecialType.System_Boolean: return BoolTypeRef;
                 case SpecialType.System_Object: return new ClassTypeRef(NameUtils.SpecialNames.System_Object);
-                case SpecialType.System_DateTime: return new ClassTypeRef(new QualifiedName(new Name("DateTime"), new[] { new Name("System") }));
+                case SpecialType.System_DateTime: return new ClassTypeRef(NameUtils.SpecialNames.System_DateTime);
                 default:
                     if (t is NamedTypeSymbol)
                     {
@@ -68,12 +68,12 @@ namespace Pchp.CodeAnalysis
         {
             if (t.Arity <= 0)
             {
-                return new ClassTypeRef(t.MakeQualifiedName());
+                return new ClassTypeRef(t.PhpQualifiedName());
             }
             else
             {
                 return new GenericClassTypeRef(
-                    t.OriginalDefinition.MakeQualifiedName(),
+                    t.OriginalDefinition.PhpQualifiedName(),
                     t.TypeArguments.SelectAsArray(targ => CreateTypeRef(ctx, targ)).AsImmutable());
             }
         }
@@ -84,11 +84,13 @@ namespace Pchp.CodeAnalysis
 
             switch (c.SpecialType)
             {
+                case SpecialType.System_Boolean: return BoolTypeRef;
                 case SpecialType.System_Int32:
                 case SpecialType.System_Int64: return LongTypeRef;
                 case SpecialType.System_String: return StringTypeRef;
+                case SpecialType.System_Single:
                 case SpecialType.System_Double: return DoubleTypeRef;
-                case SpecialType.System_Boolean: return BoolTypeRef;
+                // case SpecialType.System_Array: return WritableStringRef; // TODO: only array of bytes/chars
                 default:
                     if (c.IsNull) return NullTypeRef;
                     throw new NotImplementedException();
@@ -102,10 +104,12 @@ namespace Pchp.CodeAnalysis
             switch (t.SpecialType)
             {
                 case SpecialType.System_Void: return 0;
+                case SpecialType.System_Boolean: return ctx.GetBooleanTypeMask();
+                case SpecialType.System_Int32:
                 case SpecialType.System_Int64: return ctx.GetLongTypeMask();
                 case SpecialType.System_String: return ctx.GetStringTypeMask() | ctx.GetNullTypeMask();
+                case SpecialType.System_Single:
                 case SpecialType.System_Double: return ctx.GetDoubleTypeMask();
-                case SpecialType.System_Boolean: return ctx.GetBooleanTypeMask();
                 case SpecialType.None:
                     var containing = t.ContainingAssembly;
                     if (containing != null && containing.IsPeachpieCorLibrary)

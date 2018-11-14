@@ -135,7 +135,9 @@ namespace Pchp.CodeAnalysis.Symbols
             return list.AsImmutable();
         }
 
-        public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false) => GetMembers().Where(m => m.Name.StringsEqual(name, ignoreCase)).AsImmutable();
+        public override ImmutableArray<Symbol> GetMembers(string name) => GetMembers().Where(m => m.Name == name).AsImmutable();
+
+        public override ImmutableArray<Symbol> GetMembersByPhpName(string name) => ImmutableArray<Symbol>.Empty;
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers() => _lazyMembers.OfType<NamedTypeSymbol>().AsImmutable();
 
@@ -208,7 +210,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var compilation = DeclaringCompilation;
             var t = (TypeSymbol)compilation.GetTypeByMetadataName(CoreTypes.IConstantsCompositionFullName);
             Debug.Assert(t != null);
-            
+
             var method = new SynthesizedMethodSymbol(this, "BuiltinConstants", true, false, compilation.CoreTypes.Void, Accessibility.Public);
             method.SetParameters(new SynthesizedParameterSymbol(method, t, 0, RefKind.None, name: "composer"));
 

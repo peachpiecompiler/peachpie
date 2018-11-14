@@ -172,9 +172,14 @@ namespace Pchp.CodeAnalysis.Symbols
             return list.AsImmutable();
         }
 
-        public override ImmutableArray<Symbol> GetMembers(string name, bool ignoreCase = false)
+        public override ImmutableArray<Symbol> GetMembers(string name)
         {
-            return GetMembers().Where(s => s.Name.StringsEqual(name, ignoreCase)).AsImmutable();
+            return GetMembers().Where(s => s.Name.StringsEqual(name, ignoreCase: false)).AsImmutable();
+        }
+
+        public override ImmutableArray<Symbol> GetMembersByPhpName(string name)
+        {
+            return GetMembers().Where(s => s.Name.StringsEqual(name, ignoreCase: true)).AsImmutable();
         }
 
         public override ImmutableArray<MethodSymbol> Constructors => ImmutableArray.Create((MethodSymbol)_ctor);

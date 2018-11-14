@@ -103,6 +103,11 @@ namespace Pchp.CodeAnalysis.Symbols
         public const string PhpScriptAttributeFullName = "Pchp.Core.ScriptAttribute";
 
         /// <summary>
+        /// Name of <c>SharedContextAttribute</c> class.
+        /// </summary>
+        public const string SharedContextAttributeFullName = "Pchp.Core.SharedContextAttribute";
+
+        /// <summary>
         /// Name of attribute class representing a PHAR archive script type.
         /// </summary>
         public const string PharAttributeFullName = "Pchp.Core.PharAttribute";

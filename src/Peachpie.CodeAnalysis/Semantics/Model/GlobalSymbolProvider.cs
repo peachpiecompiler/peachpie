@@ -27,6 +27,11 @@ namespace Pchp.CodeAnalysis.Semantics.Model
         /// </summary>
         Dictionary<QualifiedName, NamedTypeSymbol> _lazyExportedTypes;
 
+        /// <summary>
+        /// Functions that are visible from extension libraries.
+        /// </summary>
+        MultiDictionary<QualifiedName, MethodSymbol> _lazyExportedFunctions;
+
         #endregion
 
         public GlobalSymbolProvider(PhpCompilation compilation)
@@ -43,16 +48,15 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             .OfType<PEAssemblySymbol>()
             .Where(s => s.IsExtensionLibrary);
 
-        internal static ImmutableArray<NamedTypeSymbol> ResolveExtensionContainers(PhpCompilation compilation)
+        static IEnumerable<NamedTypeSymbol> ResolveExtensionContainers(PhpCompilation compilation)
         {
             return GetExtensionLibraries(compilation)
-                .SelectMany(r => r.ExtensionContainers)
-                .ToImmutableArray();
+                .SelectMany(r => r.ExtensionContainers);
         }
 
-        internal bool IsFunction(MethodSymbol method)
+        bool IsFunction(MethodSymbol method)
         {
-            return method.IsStatic && method.DeclaredAccessibility == Accessibility.Public && method.MethodKind == MethodKind.Ordinary && !method.IsPhpHidden(_compilation);
+            return method != null && method.IsStatic && method.DeclaredAccessibility == Accessibility.Public && method.MethodKind == MethodKind.Ordinary && !method.IsPhpHidden(_compilation);
         }
 
         internal bool IsGlobalConstant(Symbol symbol)
@@ -78,7 +82,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             {
                 if (_lazyExtensionContainers.IsDefault)
                 {
-                    _lazyExtensionContainers = ResolveExtensionContainers(_compilation);
+                    _lazyExtensionContainers = ResolveExtensionContainers(_compilation).ToImmutableArray();
                 }
 
                 return _lazyExtensionContainers;
@@ -186,6 +190,30 @@ namespace Pchp.CodeAnalysis.Semantics.Model
         /// <returns></returns>
         internal IEnumerable<NamedTypeSymbol> GetReferencedTypes() => ExportedTypes.Values.Where(t => t.IsValidType() && !t.IsPhpUserType());
 
+        public MultiDictionary<QualifiedName, MethodSymbol> ExportedFunctions
+        {
+            get
+            {
+                if (_lazyExportedFunctions == null)
+                {
+                    var dict = new MultiDictionary<QualifiedName, MethodSymbol>();
+
+                    foreach (var container in ExtensionContainers)
+                    {
+                        container.GetMembers()
+                            .OfType<MethodSymbol>()
+                            .Where(IsFunction)
+                            .ForEach(m => dict.Add(new QualifiedName(new Name(m.RoutineName)), m));
+                    }
+
+                    //
+                    InterlockedOperations.Initialize(ref _lazyExportedFunctions, dict);
+                }
+
+                return _lazyExportedFunctions;
+            }
+        }
+
         #region ISemanticModel
 
         public INamedTypeSymbol ResolveType(QualifiedName name)
@@ -251,31 +279,20 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         public IPhpRoutineSymbol ResolveFunction(QualifiedName name)
         {
-            var clrName = name.ClrName();
-
-            // library functions, public static methods
-            var methods = new List<MethodSymbol>();
-            foreach (var m in ExtensionContainers.SelectMany(r => r.GetMembers().OfType<MethodSymbol>().Where(IsFunction)))
+            var methods = ExportedFunctions[name];
+            if (methods.Count == 1)
             {
-                if (m.RoutineName.Equals(clrName, StringComparison.CurrentCultureIgnoreCase))
-                {
-                    methods.Add(m);
-                }
+                return methods.Single();
             }
-
-            if (methods.Count == 0)
+            else if (methods.Count > 1)
             {
-                // source functions
-                return _next.ResolveFunction(name);
-            }
-            else if (methods.Count == 1)
-            {
-                return methods[0];
+                // if the function is user defined (PHP), we might not treat this as CLR method (ie do not resolve overloads in compile time)
+                bool userfunc = methods.Any(m => m.ContainingType.IsPhpSourceFile());
+                return new AmbiguousMethodSymbol(methods.AsImmutable(), overloadable: !userfunc);
             }
             else
             {
-                bool userfunc = methods.Any(m => m.ContainingType.IsPhpSourceFile()); // if the function is user defined (PHP), we might not treat this as CLR method (ie do not resolve overloads in compile time)
-                return new AmbiguousMethodSymbol(methods.AsImmutable(), overloadable: !userfunc);
+                return _next.ResolveFunction(name);
             }
         }
 

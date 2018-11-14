@@ -31,6 +31,23 @@ namespace Pchp.Core.Utilities
         }
 
         /// <summary>
+        /// Lazily instantiated instance of <see cref="Context"/> used for newly created PHP objects marked as shared.
+        /// </summary>
+        public static Context DefaultContext
+        {
+            get
+            {
+                // CONSIDER: extensible, web context
+                return _sharedContext ?? (_sharedContext = Context.CreateEmpty());
+            }
+            set
+            {
+                _sharedContext = value;
+            }
+        }
+        static Context _sharedContext;
+
+        /// <summary>
         /// Gets value indicating whether the runtime was built as debug.
         /// </summary>
         public static bool IsDebugRuntime() =>
