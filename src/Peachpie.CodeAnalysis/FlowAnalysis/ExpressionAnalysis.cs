@@ -1301,7 +1301,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 if (Routine != null)
                 {
-                    Routine.Flags |= x.TargetMethod.InvocationFlags();
+                    var rflags = x.TargetMethod.InvocationFlags();
+                    Routine.Flags |= rflags;
+
+                    if ((rflags & RoutineFlags.UsesLocals) != 0
+                        //&& (x is BoundGlobalFunctionCall gf && gf.Name.NameValue.Name.Value == "extract") // "compact" does not change locals // CONSIDER // TODO
+                        )
+                    {
+                        // function may change/add local variables
+                        State.SetAllUnknown(true);
+                    }
                 }
 
                 // process arguments
