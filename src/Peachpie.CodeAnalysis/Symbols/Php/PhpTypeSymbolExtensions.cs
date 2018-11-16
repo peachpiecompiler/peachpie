@@ -185,10 +185,9 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <param name="type">The type declaration which dependant symbols will be returned.</param>
         public static IList<NamedTypeSymbol> GetDependentSourceTypeSymbols(this SourceTypeSymbol type)
         {
-            // TODO: what type can be declared on Context ? SourceTypeSymbol and PENamedTypeSymbol compiled from PHP sources
             // TODO: traits
 
-            var btype = type.BaseType as SourceTypeSymbol;
+            var btype = (type.BaseType != null && type.BaseType.IsPhpUserType()) ? type.BaseType : null;
             var ifaces = type.Interfaces;
 
             if (ifaces.Length == 0 && btype == null)
@@ -198,7 +197,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             var list = new List<NamedTypeSymbol>(1 + ifaces.Length);
             if (btype != null) list.Add(btype);
-            if (ifaces.Length != 0) list.AddRange(ifaces.Where(x => x is SourceTypeSymbol));
+            if (ifaces.Length != 0) list.AddRange(ifaces.Where(x => x.IsPhpUserType()));
 
             return list;
         }

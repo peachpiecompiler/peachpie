@@ -118,8 +118,22 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
                                     if (result.TryGetValue(qname, out var existing))
                                     {
-                                        if (existing is AmbiguousErrorTypeSymbol ambiguous)
+                                        // merge {t} and {existing}:
+                                        if (t.IsPhpUserType() && !existing.IsPhpUserType())
                                         {
+                                            // ignore {t}
+                                            continue;
+                                        }
+                                        else if (existing.IsPhpUserType() && !t.IsPhpUserType())
+                                        {
+                                            // replace existing (user type) with t (library type)
+                                            tsymbol = t;
+                                        }
+                                        else if (existing is AmbiguousErrorTypeSymbol ambiguous)
+                                        {
+                                            // just collect possible types, there is perf. penalty for that
+                                            // TODO: if there are user & library types mixed together, we expect compilation assertions and errors, fix that
+                                            // this will be fixed once we stop declare unreachable types
                                             ambiguous._candidates = ambiguous._candidates.Add(t);
                                             continue;
                                         }

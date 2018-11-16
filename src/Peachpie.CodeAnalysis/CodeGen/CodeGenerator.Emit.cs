@@ -2676,17 +2676,15 @@ namespace Pchp.CodeAnalysis.CodeGen
             var dependent = new Dictionary<QualifiedName, HashSet<NamedTypeSymbol>>();
             foreach (var v in versions)
             {
-                var deps = v.GetDependentSourceTypeSymbols();
+                var deps = v.GetDependentSourceTypeSymbols(); // TODO: error when the type version reports it depends on a user type which will never be declared because of a library type
                 foreach (var d in deps.OfType<IPhpTypeSymbol>())
                 {
-                    if (dependent.ContainsKey(d.FullName))
+                    if (!dependent.TryGetValue(d.FullName, out var set))
                     {
-                        dependent[d.FullName].Add((NamedTypeSymbol)d);
+                        dependent[d.FullName] = set = new HashSet<NamedTypeSymbol>();
                     }
-                    else
-                    {
-                        dependent[d.FullName] = new HashSet<NamedTypeSymbol>() { (NamedTypeSymbol)d };
-                    }
+
+                    set.Add((NamedTypeSymbol)d);
                 }
             }
 
@@ -2721,7 +2719,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
             }
 
-            Debug.Assert(dependent_handles.Count != 0);
+            Debug.Assert(dependent_handles.Count != 0, "the type declaration is not versioned in result, there should be a single version");
 
             // At this point, all dependant types are loaded, otherwise runtime would throw an exception
 
