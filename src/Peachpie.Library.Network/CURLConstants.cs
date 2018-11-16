@@ -580,7 +580,8 @@ namespace Peachpie.Library.Network
                         ? ProcessMethod.StdOut // NOTE: if ProcessingResponse is RETURN, RETURN headers as well
                         : ProcessMethod.Ignore;
                     break;
-                case CURLOPT_HTTPHEADER: ch.Headers = value.GetValue().DeepCopy().ToArray(); break;
+                case CURLOPT_HTTPHEADER: ch.Headers = value.ToArray().DeepCopy(); break;
+                case CURLOPT_ENCODING: ch.AcceptEncoding = value.ToStringOrNull().EmptyToNull(); break;
                 case CURLOPT_COOKIE: return (ch.CookieHeader = value.AsString()) != null;
                 case CURLOPT_COOKIEFILE: ch.CookieFileSet = true; break;
 
@@ -690,6 +691,9 @@ namespace Peachpie.Library.Network
         {
             return Resources.ResourceManager.GetString(err.ToString()) ?? Resources.UnknownError;
         }
+
+        /// <summary>Empty string is converted to <c>null</c>.</summary>
+        static string EmptyToNull(this string str) => string.IsNullOrEmpty(str) ? null : str;
 
         #endregion
     }
