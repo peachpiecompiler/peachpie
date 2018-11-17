@@ -26,8 +26,9 @@ We are now a member of the [.NET Foundation](https://www.dotnetfoundation.org/ab
 
 | Service  | Platform  | Build Status  |
 |---|---|---|
-| Travis CI | Ubuntu  | [![Build status](https://api.travis-ci.org/peachpiecompiler/peachpie.svg?branch=master)](https://travis-ci.org/peachpiecompiler/peachpie)  |
-| MyGet Build Services  | Windows  | [![peachpie MyGet Build Status](https://www.myget.org/BuildSource/Badge/peachpie?identifier=14586f8c-2600-412f-b9b0-39db8e930806)](https://www.myget.org/gallery/peachpie)    |
+| Travis CI | Ubuntu  | [![Travis Build status](https://api.travis-ci.org/peachpiecompiler/peachpie.svg?branch=master)](https://travis-ci.org/peachpiecompiler/peachpie)  |
+| AppVeyor  | VS/Windows  | [![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/1ym8cd838l0od9oa?svg=true)](https://ci.appveyor.com/project/dotnetfoundation/peachpie)
+    |
 | Azure DevOps | Windows | ![VSTS Build Status](https://iolevel.visualstudio.com/_apis/public/build/definitions/bd7dcca1-8515-44f8-81d0-bb2acc03d949/1/badge)|
 
 ## What is PeachPie?
