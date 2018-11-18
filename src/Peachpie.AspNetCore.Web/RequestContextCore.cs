@@ -184,7 +184,10 @@ namespace Peachpie.AspNetCore.Web
                 else
                 {
                     // path: "directory"
-                    script = ScriptsMap.GetDeclaredScript(path + ("/" + DefaultDocument)); // "directory/index.php"
+                    script = ScriptsMap.GetDeclaredScript(
+                        path.Length == 0
+                        ? DefaultDocument                       // "index.php"
+                        : (path + ("/" + DefaultDocument)));    // "directory/index.php"
                 }
             }
 
