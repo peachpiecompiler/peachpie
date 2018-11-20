@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using Devsense.PHP.Syntax;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Symbols;
+using AST = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis
 {
@@ -40,8 +42,8 @@ namespace Pchp.CodeAnalysis
                 case SpecialType.System_Single:
                 case SpecialType.System_Double: return DoubleTypeRef;
                 case SpecialType.System_Boolean: return BoolTypeRef;
-                case SpecialType.System_Object: return new ClassTypeRef(NameUtils.SpecialNames.System_Object);
-                case SpecialType.System_DateTime: return new ClassTypeRef(NameUtils.SpecialNames.System_DateTime);
+                case SpecialType.System_Object: return CreateTypeRef(NameUtils.SpecialNames.System_Object);
+                case SpecialType.System_DateTime: return CreateTypeRef(NameUtils.SpecialNames.System_DateTime);
                 default:
                     if (t is NamedTypeSymbol)
                     {
@@ -64,11 +66,40 @@ namespace Pchp.CodeAnalysis
             }
         }
 
+        public static ITypeRef CreateTypeRef(AST.TypeRef tref)
+        {
+            if (tref is AST.PrimitiveTypeRef)
+            {
+                switch (((AST.PrimitiveTypeRef)tref).PrimitiveTypeName)
+                {
+                    case AST.PrimitiveTypeRef.PrimitiveType.@int: return TypeRefFactory.LongTypeRef;
+                    case AST.PrimitiveTypeRef.PrimitiveType.@float: return TypeRefFactory.DoubleTypeRef;
+                    case AST.PrimitiveTypeRef.PrimitiveType.@string: return TypeRefFactory.StringTypeRef;
+                    case AST.PrimitiveTypeRef.PrimitiveType.@bool: return TypeRefFactory.BoolTypeRef;
+                    //case AST.PrimitiveTypeRef.PrimitiveType.array: return TypeRefFactory.ArrayTypeRef;
+                    //case AST.PrimitiveTypeRef.PrimitiveType.callable: return TypeRefFactory.CallableTypeRef;
+                    //case AST.PrimitiveTypeRef.PrimitiveType.@void: return 0;
+                    //case AST.PrimitiveTypeRef.PrimitiveType.iterable: return GetArrayTypeMask() | GetTypeMask(NameUtils.SpecialNames.Traversable, true);   // array | Traversable
+                    case AST.PrimitiveTypeRef.PrimitiveType.@object: return TypeRefFactory.CreateTypeRef(NameUtils.SpecialNames.System_Object);
+                }
+            }
+            else if (tref is AST.INamedTypeRef named) return TypeRefFactory.CreateTypeRef(named.ClassName);
+            //else if (tref is AST.ReservedTypeRef) return GetTypeMaskOfReservedClassName(((AST.ReservedTypeRef)tref).QualifiedName.Value.Name);
+            else if (tref is AST.GenericTypeRef generic) return new GenericClassTypeRef(
+                    generic.QualifiedName.Value, // throw if indirect
+                    generic.GenericParams.Select(CreateTypeRef).ToImmutableArray());
+
+            //
+            throw new ArgumentException();
+        }
+
+        public static ITypeRef CreateTypeRef(QualifiedName qname) => new ClassTypeRef(qname);
+
         static ITypeRef CreateClassTypeRef(TypeRefContext ctx, NamedTypeSymbol t)
         {
             if (t.Arity <= 0)
             {
-                return new ClassTypeRef(t.PhpQualifiedName());
+                return CreateTypeRef(t.PhpQualifiedName());
             }
             else
             {

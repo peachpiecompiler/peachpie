@@ -51,11 +51,11 @@ namespace Peachpie.CodeAnalysis.Syntax
         public List<LangElement> YieldNodes => _yieldNodes;
         List<LangElement> _yieldNodes;
 
-        public void AddCustomAttribute(int position, AttributeData attr)
+        public void AddAnnotation(int position, object obj)
         {
-            AddAndReturn(ref _customAttributes, (position, attr));
+            AddAndReturn(ref _annotations, (position, obj));
         }
-        List<(int, AttributeData)> _customAttributes; // list of parsed custom attributes, will be taken and used for the next declaration
+        List<(int, object)> _annotations; // list of parsed custom attributes, will be taken and used for the next declaration
 
         /// <summary>
         /// Adds node to the list and returns the node.
@@ -77,24 +77,44 @@ namespace Peachpie.CodeAnalysis.Syntax
         T WithCustomAttributes<T>(T element) where T : LangElement
         {
             // check Span contains position => add to Properties
-            if (_customAttributes != null)
+            if (_annotations != null)
             {
-                for (int i = _customAttributes.Count - 1; i >= 0; i--)
+                for (int i = _annotations.Count - 1; i >= 0; i--)
                 {
-                    if (_customAttributes[i].Item1 == element.Span.Start)
+                    if (_annotations[i].Item1 == element.Span.Start && _annotations[i].Item2 is AttributeData attr)
                     {
-                        element.AddCustomAttribute(_customAttributes[i].Item2);
-                        _customAttributes.RemoveAt(i);
+                        element.AddCustomAttribute(attr);
+                        _annotations.RemoveAt(i);
                     }
                 }
             }
 
+            //
             return element;
+        }
+
+        TypeRef WithGenericTypes(TypeRef tref)
+        {
+            if (_annotations != null)
+            {
+                for (int i = _annotations.Count - 1; i >= 0; i--)
+                {
+                    if (_annotations[i].Item1 == tref.Span.End && _annotations[i].Item2 is List<TypeRef> generics)
+                    {
+                        tref = new GenericTypeRef(tref.Span, tref, generics);
+                        _annotations.RemoveAt(i);
+                        break;
+                    }
+                }
+            }
+
+            //
+            return tref;
         }
 
         public override LangElement GlobalCode(Span span, IEnumerable<LangElement> statements, NamingContext context)
         {
-            Debug.Assert(_customAttributes == null || _customAttributes.Count == 0, $"file {this.SourceUnit.FilePath} contains CLR attributes that was not consumed!"); // all parsed custom attributes have to be associated to a declaration
+            Debug.Assert(_annotations == null || _annotations.Count == 0, $"file {this.SourceUnit.FilePath} contains CLR annotations we did not consume! Probably a bogus in AdditionalSyntaxProvider."); // all parsed custom annotations have to be consumed
 
             return _root = (GlobalCode)base.GlobalCode(span, statements, context);
         }
@@ -174,6 +194,11 @@ namespace Peachpie.CodeAnalysis.Syntax
 
             //
             return base.ConstUse(span, name);
+        }
+
+        public override TypeRef TypeReference(Span span, QualifiedName className)
+        {
+            return WithGenericTypes(base.TypeReference(span, className));
         }
 
         public NodesFactory(SourceUnit sourceUnit, IReadOnlyDictionary<string, string> defines)

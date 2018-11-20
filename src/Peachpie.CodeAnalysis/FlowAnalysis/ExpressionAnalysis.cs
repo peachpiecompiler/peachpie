@@ -1580,6 +1580,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     //}
                 }
             }
+            else if (tref is GenericTypeRef generic && generic.QualifiedName.HasValue)
+            {
+                return (TypeSymbol)TypeRefFactory.CreateTypeRef(generic).GetTypeSymbol(Routine.DeclaringCompilation);
+            }
 
             //
             return null;
