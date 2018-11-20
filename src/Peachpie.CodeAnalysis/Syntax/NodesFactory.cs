@@ -112,6 +112,25 @@ namespace Peachpie.CodeAnalysis.Syntax
             return tref;
         }
 
+        CallSignature WithGenericTypes(CallSignature signature, Span nameSpan)
+        {
+            if (_annotations != null)
+            {
+                for (int i = _annotations.Count - 1; i >= 0; i--)
+                {
+                    if (_annotations[i].Item1 == nameSpan.End && _annotations[i].Item2 is List<TypeRef> generics)
+                    {
+                        signature.GenericParams = generics.ToArray();
+                        _annotations.RemoveAt(i);
+                        break;
+                    }
+                }
+            }
+
+            //
+            return signature;
+        }
+
         public override LangElement GlobalCode(Span span, IEnumerable<LangElement> statements, NamingContext context)
         {
             Debug.Assert(_annotations == null || _annotations.Count == 0, $"file {this.SourceUnit.FilePath} contains CLR annotations we did not consume! Probably a bogus in AdditionalSyntaxProvider."); // all parsed custom annotations have to be consumed
@@ -194,6 +213,16 @@ namespace Peachpie.CodeAnalysis.Syntax
 
             //
             return base.ConstUse(span, name);
+        }
+
+        public override LangElement Call(Span span, Name name, Span nameSpan, CallSignature signature, TypeRef typeRef)
+        {
+            return base.Call(span, name, nameSpan, WithGenericTypes(signature, nameSpan), typeRef);
+        }
+
+        public override LangElement Call(Span span, TranslatedQualifiedName name, CallSignature signature, LangElement memberOfOpt)
+        {
+            return base.Call(span, name, WithGenericTypes(signature, name.Span), memberOfOpt);
         }
 
         public override TypeRef TypeReference(Span span, QualifiedName className)
