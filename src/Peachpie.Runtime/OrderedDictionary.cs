@@ -2415,7 +2415,7 @@ namespace Pchp.Core
         /// True iff the data structure is shared by more PhpHashtable instances and must not be modified.
         /// </summary>
         //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsShared { get { return this.copiesCount > 0; } }
+        public bool IsShared { get { return this.copiesCount != 0; } }
 
         /// <summary>
         /// Remember whether this instance and its owner (<see cref="PhpArray"/>) can be recycled upon returning by value from a function.
