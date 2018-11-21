@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace Pchp.Core
 {
@@ -2429,7 +2430,7 @@ namespace Pchp.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public OrderedDictionary/*!*/Share()
         {
-            ++copiesCount;
+            Interlocked.Increment(ref copiesCount);
             return this;
         }
 
@@ -2440,7 +2441,7 @@ namespace Pchp.Core
         public void Unshare()
         {
             Debug.Assert(copiesCount >= 0, "Too many Unshare() calls!");    // 0 is allowed, so noone needs this table anymore
-            --copiesCount;
+            Interlocked.Decrement(ref copiesCount);
         }
 
         /// <summary>
