@@ -48,7 +48,7 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         readonly MethodSymbol _single;
-        readonly ImmutableArray<MethodSymbol> _methods;
+        readonly MethodSymbol[] _methods;
 
         public OverloadsList(MethodSymbol method)
         {
@@ -56,9 +56,8 @@ namespace Pchp.CodeAnalysis.Symbols
             _methods = default;
         }
 
-        public OverloadsList(ImmutableArray<MethodSymbol> methods)
+        public OverloadsList(MethodSymbol[] methods)
         {
-
             if (methods.Length == 1)
             {
                 _single = methods[0];
@@ -92,7 +91,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     : new InaccessibleMethodSymbol(ImmutableArray.Create(_single));
             }
 
-            if (_methods.IsDefaultOrEmpty)
+            if (_methods == null || _methods.Length == 0)
             {
                 return new MissingMethodSymbol();
             }
