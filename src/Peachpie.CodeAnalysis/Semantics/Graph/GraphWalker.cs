@@ -481,6 +481,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override T VisitBlockStatement(Graph.BoundBlock x)
         {
+            Debug.Assert(x.NextEdge == null);
+
             for (int i = 0; i < x.Statements.Count; i++)
             {
                 Accept(x.Statements[i]);

@@ -432,7 +432,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             return x.Update(
                 (BoundBlock)Accept(x.BodyBlock),
-                VisitImmutableArray(x.CatchBlocks),
+                VisitBlockImmutableArray(x.CatchBlocks),
                 (BoundBlock)Accept(x.FinallyBlock),
                 (BoundBlock)Accept(x.NextBlock));
         }
@@ -768,15 +768,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override object VisitBlockStatement(Graph.BoundBlock x)
         {
-            // TODO: Find out whether is this called at all and decide how to handle NextEdge
+            Debug.Assert(x.NextEdge == null);
 
-            //// TODO: Return a new block if any change was made (after this class is turned into GraphRewriter)
-            //for (int i = 0; i < x.Statements.Count; i++)
-            //{
-            //    x.Statements[i] = (BoundStatement)Accept(x.Statements[i]);
-            //}
-
-            return x;
+            return x.Update(
+                VisitList(x.Statements),
+                x.NextEdge);
         }
 
         public override object VisitExpressionStatement(BoundExpressionStatement x)
