@@ -51,12 +51,6 @@ namespace Peachpie.CodeAnalysis.Syntax
         public List<LangElement> YieldNodes => _yieldNodes;
         List<LangElement> _yieldNodes;
 
-        public void AddAnnotation(int position, object obj)
-        {
-            AddAndReturn(ref _annotations, (position, obj));
-        }
-        List<(int, object)> _annotations; // list of parsed custom attributes, will be taken and used for the next declaration
-
         /// <summary>
         /// Adds node to the list and returns the node.
         /// </summary>
@@ -71,22 +65,48 @@ namespace Peachpie.CodeAnalysis.Syntax
             return node;
         }
 
+        public void AddAnnotation(int position, object obj)
+        {
+            AddAndReturn(ref _annotations, (position, obj));
+        }
+        List<(int, object)> _annotations; // list of parsed custom attributes, will be taken and used for the next declaration
+
         /// <summary>
-        /// If applicable, annotates the element with previously parsed <see cref="SourceCustomAttribute"/>.
+        /// Gets an additional annotation if any.
         /// </summary>
-        T WithCustomAttributes<T>(T element) where T : LangElement
+        /// <typeparam name="T">Annotation type.</typeparam>
+        /// <param name="position">Position of the annotation.</param>
+        /// <param name="obj">Resulting object.</param>
+        /// <returns>Wtehher the annotation was found.</returns>
+        bool TryGetAnotation<T>(int position, out T obj)
         {
             // check Span contains position => add to Properties
             if (_annotations != null)
             {
                 for (int i = _annotations.Count - 1; i >= 0; i--)
                 {
-                    if (_annotations[i].Item1 == element.Span.Start && _annotations[i].Item2 is AttributeData attr)
+                    if (_annotations[i].Item1 == position && _annotations[i].Item2 is T value)
                     {
-                        element.AddCustomAttribute(attr);
                         _annotations.RemoveAt(i);
+                        obj = value;
+                        return true;
                     }
                 }
+            }
+
+            //
+            obj = default;
+            return false;
+        }
+
+        /// <summary>
+        /// If applicable, annotates the element with previously parsed <see cref="SourceCustomAttribute"/>.
+        /// </summary>
+        T WithCustomAttributes<T>(T element) where T : LangElement
+        {
+            while (TryGetAnotation<AttributeData>(element.Span.Start, out var attr))
+            {
+                element.AddCustomAttribute(attr);
             }
 
             //
@@ -95,39 +115,18 @@ namespace Peachpie.CodeAnalysis.Syntax
 
         TypeRef WithGenericTypes(TypeRef tref)
         {
-            if (_annotations != null)
-            {
-                for (int i = _annotations.Count - 1; i >= 0; i--)
-                {
-                    if (_annotations[i].Item1 == tref.Span.End && _annotations[i].Item2 is List<TypeRef> generics)
-                    {
-                        tref = new GenericTypeRef(tref.Span, tref, generics);
-                        _annotations.RemoveAt(i);
-                        break;
-                    }
-                }
-            }
-
-            //
-            return tref;
+            return TryGetAnotation<List<TypeRef>>(tref.Span.End, out var generics)
+                ? new GenericTypeRef(tref.Span, tref, generics)
+                : tref;
         }
 
         CallSignature WithGenericTypes(CallSignature signature, Span nameSpan)
         {
-            if (_annotations != null)
+            if (TryGetAnotation<List<TypeRef>>(nameSpan.End, out var generics))
             {
-                for (int i = _annotations.Count - 1; i >= 0; i--)
-                {
-                    if (_annotations[i].Item1 == nameSpan.End && _annotations[i].Item2 is List<TypeRef> generics)
-                    {
-                        signature.GenericParams = generics.ToArray();
-                        _annotations.RemoveAt(i);
-                        break;
-                    }
-                }
+                signature.GenericParams = generics.ToArray();
             }
 
-            //
             return signature;
         }
 

@@ -266,7 +266,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt is AST.ThrowStmt throwStm) return new BoundThrowStatement(BindExpression(throwStm.Expression, BoundAccess.Read));
             if (stmt is AST.PHPDocStmt) return new BoundEmptyStatement();
             if (stmt is AST.DeclareStmt declareStm) return new BoundDeclareStatement();
-            
+
             //
             _diagnostics.Add(_locals.Routine, stmt, Errors.ErrorCode.ERR_NotYetImplemented, $"Statement of type '{stmt.GetType().Name}'");
             return new BoundEmptyStatement(stmt.Span.ToTextSpan());
@@ -617,6 +617,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 boundTarget = BindIsMemberOfChain(x.IsMemberOf, BoundAccess.Read/*Object?*/);
             }
 
+            BoundRoutineCall result;
+
             if (x is AST.DirectFcnCall)
             {
                 // func(...)
@@ -633,14 +635,14 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
                     else
                     {
-                        return new BoundGlobalFunctionCall(fname.Name, fname.FallbackName, BindArguments(x.CallSignature.Parameters));
+                        result = new BoundGlobalFunctionCall(fname.Name, fname.FallbackName, BindArguments(x.CallSignature.Parameters));
                     }
                 }
                 else
                 {
                     Debug.Assert(fname.FallbackName.HasValue == false);
                     Debug.Assert(fname.Name.QualifiedName.IsSimpleName);
-                    return new BoundInstanceFunctionCall(boundTarget, fname.Name, BindArguments(x.CallSignature.Parameters));
+                    result = new BoundInstanceFunctionCall(boundTarget, fname.Name, BindArguments(x.CallSignature.Parameters));
                 }
             }
             else if (x is AST.IndirectFcnCall)
@@ -651,11 +653,11 @@ namespace Pchp.CodeAnalysis.Semantics
                 var nameExpr = BindExpression(((AST.IndirectFcnCall)x).NameExpr);
                 if (boundTarget == null)
                 {
-                    return new BoundGlobalFunctionCall(nameExpr, BindArguments(x.CallSignature.Parameters));
+                    result = new BoundGlobalFunctionCall(nameExpr, BindArguments(x.CallSignature.Parameters));
                 }
                 else
                 {
-                    return new BoundInstanceFunctionCall(boundTarget, new BoundUnaryEx(nameExpr, AST.Operations.StringCast), BindArguments(x.CallSignature.Parameters));
+                    result = new BoundInstanceFunctionCall(boundTarget, new BoundUnaryEx(nameExpr, AST.Operations.StringCast), BindArguments(x.CallSignature.Parameters));
                 }
             }
             else if (x is AST.StaticMtdCall staticMtdCall)
@@ -668,11 +670,24 @@ namespace Pchp.CodeAnalysis.Semantics
                     ? new BoundRoutineName(new QualifiedName(((AST.DirectStMtdCall)staticMtdCall).MethodName))
                     : new BoundRoutineName(new BoundUnaryEx(BindExpression(((AST.IndirectStMtdCall)staticMtdCall).MethodNameExpression), AST.Operations.StringCast));
 
-                return new BoundStaticFunctionCall(BindTypeRef(staticMtdCall.TargetType, objectTypeInfoSemantic: true, isClassName: true), boundname, BindArguments(x.CallSignature.Parameters));
+                result = new BoundStaticFunctionCall(BindTypeRef(staticMtdCall.TargetType, objectTypeInfoSemantic: true, isClassName: true), boundname, BindArguments(x.CallSignature.Parameters));
+            }
+            else
+            {
+                //
+                throw new NotImplementedException(x.GetType().FullName);
+            }
+
+            if (x.CallSignature.GenericParams.Length != 0)
+            {
+                // bind type arguments (CLR)
+                result.TypeArguments = x.CallSignature.GenericParams
+                    .Select(t => BindTypeRef(t, false, false))
+                    .AsImmutable();
             }
 
             //
-            throw new NotImplementedException(x.GetType().FullName);
+            return result;
         }
 
         BoundExpression BindAssertExpression(ImmutableArray<BoundArgument> boundArguments)
