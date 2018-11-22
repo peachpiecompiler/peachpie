@@ -609,6 +609,7 @@ namespace Pchp.Core.Dynamic
             if (t == typeof(PhpValue)) return BindCostFromValue(arg, target);
             if (t == typeof(double) || t == typeof(float)) return Expression.Constant(BindCostFromDouble(arg, target));
             if (t == typeof(long) || t == typeof(int) || t == typeof(uint)) return Expression.Constant(BindCostFromLong(arg, target));
+            if (t == typeof(bool)) return Expression.Constant(BindCostFromBool(arg, target));
             if (t == typeof(PhpNumber)) return BindCostFromNumber(arg, target);
             if (t == typeof(string)) return Expression.Constant(BindCostFromString(arg, target));
             if (t == typeof(PhpString)) return Expression.Constant(BindCostFromPhpString(arg, target));
@@ -656,6 +657,21 @@ namespace Pchp.Core.Dynamic
 
             // fallback
             return Expression.Call(typeof(CostOf).GetMethod("To" + target.Name, arg.Type), arg);
+        }
+
+        static ConversionCost BindCostFromBool(Expression arg, Type target)
+        {
+            if (target == typeof(bool)) return (ConversionCost.Pass);
+
+            if (target == typeof(PhpValue)) return (ConversionCost.PassCostly);
+
+            if (target == typeof(double) || target == typeof(float) ||
+                target == typeof(long) || target == typeof(int) || target == typeof(uint) ||
+                target == typeof(string) || target == typeof(PhpString) ||
+                target == typeof(PhpNumber)) return (ConversionCost.ImplicitCast);
+
+            //
+            return ConversionCost.NoConversion;
         }
 
         static ConversionCost BindCostFromDouble(Expression arg, Type target)
