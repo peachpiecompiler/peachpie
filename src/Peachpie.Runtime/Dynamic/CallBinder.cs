@@ -22,10 +22,8 @@ namespace Pchp.Core.Dynamic
 
         protected abstract CallSiteContext CreateContext();
 
-        protected CallBinder(RuntimeTypeHandle returnType, int genericParams)
+        protected CallBinder(RuntimeTypeHandle returnType)
         {
-            Debug.Assert(genericParams >= 0);
-
             _returnType = Type.GetTypeFromHandle(returnType);
         }
 
@@ -131,8 +129,8 @@ namespace Pchp.Core.Dynamic
 
         protected override CallSiteContext CreateContext() => new CallSiteContext(false) { Name = _name };
 
-        internal CallFunctionBinder(string name, string nameOpt, RuntimeTypeHandle returnType, int genericParams)
-            : base(returnType, genericParams)
+        internal CallFunctionBinder(string name, string nameOpt, RuntimeTypeHandle returnType)
+            : base(returnType)
         {
             _name = name;
             _nameOpt = nameOpt;
@@ -182,6 +180,12 @@ namespace Pchp.Core.Dynamic
                 bound.TargetInstance = Expression.Constant(targetInstance);
             }
 
+            if (bound.TypeArguments != null && bound.TypeArguments.Length != 0)
+            {
+                // global functions cannot be (should not be) generic!
+                throw new InvalidOperationException();  // NS
+            }
+
             //
             return routine.Methods;
         }
@@ -204,8 +208,8 @@ namespace Pchp.Core.Dynamic
 
         protected override bool HasTarget => true;
 
-        internal CallInstanceMethodBinder(string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType, int genericParams)
-            : base(returnType, genericParams)
+        internal CallInstanceMethodBinder(string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType)
+            : base(returnType)
         {
             _name = name;
             _classCtx = classContext.Equals(default(RuntimeTypeHandle)) ? null : Type.GetTypeFromHandle(classContext);
@@ -224,6 +228,7 @@ namespace Pchp.Core.Dynamic
             return bound.TargetType
                 .SelectRuntimeMethods(bound.Name)
                 .SelectVisible(bound.ClassContext)
+                .Construct(bound.TypeArguments)
                 .ToArray();
         }
 
@@ -291,8 +296,8 @@ namespace Pchp.Core.Dynamic
 
         protected override bool HasTarget => true; // there is caller instance or null as a target
 
-        internal CallStaticMethodBinder(RuntimeTypeHandle type, string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType, int genericParams)
-            : base(returnType, genericParams)
+        internal CallStaticMethodBinder(RuntimeTypeHandle type, string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType)
+            : base(returnType)
         {
             _type = type.GetPhpTypeInfo();
             _name = name;
@@ -325,7 +330,7 @@ namespace Pchp.Core.Dynamic
                 }
 
                 //
-                return candidates.ToArray();
+                return candidates.Construct(bound.TypeArguments).ToArray();
             }
             else
             {

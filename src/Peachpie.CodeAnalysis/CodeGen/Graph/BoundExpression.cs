@@ -2458,6 +2458,32 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
+        /// <summary>
+        /// Emits <c>System.Type[]</c> of type arguments.
+        /// </summary>
+        internal TypeSymbol EmitTypeArgumentsArray(CodeGenerator cg)
+        {
+            var system_type = cg.DeclaringCompilation.GetWellKnownType(WellKnownType.System_Type);
+
+            if (this.TypeArguments.IsDefaultOrEmpty)
+            {
+                // most common case
+                return cg.Emit_EmptyArray(system_type);
+            }
+            else
+            {
+                return cg.Emit_NewArray(
+                    system_type,
+                    this.TypeArguments,
+                    tref =>
+                    {
+                        if (tref.ResolvedType.IsErrorTypeOrNull()) throw ExceptionUtilities.NotImplementedException(cg, "type argument has not been resolved", this);
+
+                        return cg.EmitSystemType(tref.ResolvedType);
+                    });
+            }
+        }
+
         internal TypeSymbol EmitCallsiteCall(CodeGenerator cg)
         {
             // callsite
@@ -2475,6 +2501,11 @@ namespace Pchp.CodeAnalysis.Semantics
             callsite.EmitTargetTypeParam(RoutineTypeRef);// [target_type] : PhpTypeInfo
             callsite.EmitNameParam(RoutineNameExpr);    // [name] : string
             callsite.EmitLoadContext();                 // ctx : Context
+
+            if (this.TypeArguments.IsDefaultOrEmpty == false)
+            {
+                callsite.AddArg(EmitTypeArgumentsArray(cg), false); // typeargs : System.Type[]
+            }
 
             if (CallsiteRequiresCallerContext)
             {
@@ -2548,8 +2579,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             cg.Builder.EmitStringConstant(CallsiteName);    // function name
             cg.Builder.EmitStringConstant(_nameOpt.HasValue ? _nameOpt.Value.ToString() : null);    // fallback function name
-            cg.EmitLoadToken(returntype, null); // return type
-            cg.Builder.EmitIntConstant(0);      // generic params count
+            cg.EmitLoadToken(returntype, null);             // return type
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.BinderFactory_Function);
         }
     }
@@ -2565,7 +2595,6 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.Builder.EmitStringConstant(CallsiteName);        // name
             cg.EmitLoadToken(cg.CallerType, null);              // class context
             cg.EmitLoadToken(returntype, null);                 // return type
-            cg.Builder.EmitIntConstant(0);                      // generic params count
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.BinderFactory_InstanceFunction);
         }
     }
@@ -2603,7 +2632,6 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.Builder.EmitStringConstant(CallsiteName);        // name
             cg.EmitLoadToken(cg.CallerType, null);              // class context
             cg.EmitLoadToken(returntype, null);                 // return type
-            cg.Builder.EmitIntConstant(0);                      // generic params count
             cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Dynamic.BinderFactory_StaticFunction);
         }
 

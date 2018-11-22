@@ -527,6 +527,18 @@ namespace Pchp.CodeAnalysis.CodeGen
             _il.EmitSymbolToken(_moduleBuilder, _diagnostics, method, syntaxNode);
         }
 
+        /// <summary>
+        /// Emits <c>typeof(symbol) : System.Type</c>.
+        /// </summary>
+        internal TypeSymbol EmitSystemType(TypeSymbol symbol)
+        {
+            // ldtoken !!T
+            EmitLoadToken(symbol, null);
+            
+            // call class System.Type System.Type::GetTypeFromHandle(valuetype System.RuntimeTypeHandle)
+            return EmitCall(ILOpCode.Call, (MethodSymbol)DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Type__GetTypeFromHandle));
+        }
+
         internal void EmitSequencePoint(LangElement element)
         {
             if (element != null)
@@ -689,7 +701,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void Emit_NewArray(TypeSymbol elementType, ImmutableArray<BoundArgument> values) => Emit_NewArray(elementType, values, a => Emit(a.Value));
         public void Emit_NewArray(TypeSymbol elementType, ImmutableArray<BoundExpression> values) => Emit_NewArray(elementType, values, a => Emit(a));
 
-        public void Emit_NewArray<T>(TypeSymbol elementType, ImmutableArray<T> values, Func<T, TypeSymbol> emitter)
+        public TypeSymbol Emit_NewArray<T>(TypeSymbol elementType, ImmutableArray<T> values, Func<T, TypeSymbol> emitter)
         {
             if (values.Length != 0)
             {
@@ -707,15 +719,18 @@ namespace Pchp.CodeAnalysis.CodeGen
                     _il.EmitOpCode(ILOpCode.Stelem);
                     EmitSymbolToken(elementType, null);
                 }
+
+                // T[]
+                return ArrayTypeSymbol.CreateSZArray(this.DeclaringCompilation.SourceAssembly, elementType);
             }
             else
             {
                 // empty array
-                Emit_EmptyArray(elementType);
+                return Emit_EmptyArray(elementType);
             }
         }
 
-        TypeSymbol Emit_EmptyArray(TypeSymbol elementType)
+        internal TypeSymbol Emit_EmptyArray(TypeSymbol elementType)
         {
             // Array.Empty<elementType>()
             var array_empty_T = ((MethodSymbol)this.DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Array__Empty))

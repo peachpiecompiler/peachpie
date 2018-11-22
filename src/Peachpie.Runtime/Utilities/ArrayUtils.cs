@@ -39,6 +39,27 @@ namespace Pchp.Core.Utilities
         public static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T> e) where T : class => e.Where<T>(FuncExtensions.s_not_null);
 
         /// <summary>
+        /// Checks two arrays are equal.
+        /// </summary>
+        public static bool Equals<T>(T[] first, T[] second, IEqualityComparer<T> comparer)
+        {
+            if (first.Length != second.Length)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < first.Length; i ++)
+            {
+                if (comparer.Equals(first[i], second[i]) == false)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Gets last element of the list.
         /// </summary>
         /// <returns>Last element or default of {T}.</returns>
