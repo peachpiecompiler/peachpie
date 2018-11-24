@@ -41,6 +41,11 @@ namespace Pchp.Core.Utilities
         /// <summary>
         /// Checks two arrays are equal.
         /// </summary>
+        public static bool Equals<T>(T[] first, T[] second) => Equals(first, second, EqualityComparer<T>.Default);
+
+        /// <summary>
+        /// Checks two arrays are equal.
+        /// </summary>
         public static bool Equals<T>(T[] first, T[] second, IEqualityComparer<T> comparer)
         {
             if (first.Length != second.Length)

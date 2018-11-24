@@ -85,11 +85,23 @@ namespace Pchp.Core.Dynamic
             }
             else if (arg.Value is Type[] typeargs)
             {
-                this.TypeArguments = typeargs;
+                ProcessTypeArguments(typeargs, arg.Expression);
                 return true;
             }
 
             return false;
+        }
+
+        void ProcessTypeArguments(Type[] typeargs, Expression arg)
+        {
+            // 
+            this.TypeArguments = typeargs;
+
+            // restriction: ArrayUtils.Equals<Type>( arg, typeargs )
+            AddRestriction(Expression.Call(
+                new Func<Type[], Type[], bool>(Utilities.ArrayUtils.Equals<System.Type>).Method,
+                arg0: arg,
+                arg1: Expression.Constant(typeargs)));
         }
 
         /// <summary>
