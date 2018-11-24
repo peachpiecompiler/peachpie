@@ -51,12 +51,6 @@ namespace Peachpie.CodeAnalysis.Syntax
         public List<LangElement> YieldNodes => _yieldNodes;
         List<LangElement> _yieldNodes;
 
-        public void AddCustomAttribute(int position, AttributeData attr)
-        {
-            AddAndReturn(ref _customAttributes, (position, attr));
-        }
-        List<(int, AttributeData)> _customAttributes; // list of parsed custom attributes, will be taken and used for the next declaration
-
         /// <summary>
         /// Adds node to the list and returns the node.
         /// </summary>
@@ -71,30 +65,74 @@ namespace Peachpie.CodeAnalysis.Syntax
             return node;
         }
 
+        public void AddAnnotation(int position, object obj)
+        {
+            AddAndReturn(ref _annotations, (position, obj));
+        }
+        List<(int, object)> _annotations; // list of parsed custom attributes, will be taken and used for the next declaration
+
+        /// <summary>
+        /// Gets an additional annotation if any.
+        /// </summary>
+        /// <typeparam name="T">Annotation type.</typeparam>
+        /// <param name="position">Position of the annotation.</param>
+        /// <param name="obj">Resulting object.</param>
+        /// <returns>Wtehher the annotation was found.</returns>
+        bool TryGetAnotation<T>(int position, out T obj)
+        {
+            // check Span contains position => add to Properties
+            if (_annotations != null)
+            {
+                for (int i = _annotations.Count - 1; i >= 0; i--)
+                {
+                    if (_annotations[i].Item1 == position && _annotations[i].Item2 is T value)
+                    {
+                        _annotations.RemoveAt(i);
+                        obj = value;
+                        return true;
+                    }
+                }
+            }
+
+            //
+            obj = default;
+            return false;
+        }
+
         /// <summary>
         /// If applicable, annotates the element with previously parsed <see cref="SourceCustomAttribute"/>.
         /// </summary>
         T WithCustomAttributes<T>(T element) where T : LangElement
         {
-            // check Span contains position => add to Properties
-            if (_customAttributes != null)
+            while (TryGetAnotation<AttributeData>(element.Span.Start, out var attr))
             {
-                for (int i = _customAttributes.Count - 1; i >= 0; i--)
-                {
-                    if (_customAttributes[i].Item1 == element.Span.Start)
-                    {
-                        element.AddCustomAttribute(_customAttributes[i].Item2);
-                        _customAttributes.RemoveAt(i);
-                    }
-                }
+                element.AddCustomAttribute(attr);
             }
 
+            //
             return element;
+        }
+
+        TypeRef WithGenericTypes(TypeRef tref)
+        {
+            return TryGetAnotation<List<TypeRef>>(tref.Span.End, out var generics)
+                ? new GenericTypeRef(tref.Span, tref, generics)
+                : tref;
+        }
+
+        CallSignature WithGenericTypes(CallSignature signature, Span nameSpan)
+        {
+            if (TryGetAnotation<List<TypeRef>>(nameSpan.End, out var generics))
+            {
+                signature.GenericParams = generics.ToArray();
+            }
+
+            return signature;
         }
 
         public override LangElement GlobalCode(Span span, IEnumerable<LangElement> statements, NamingContext context)
         {
-            Debug.Assert(_customAttributes == null || _customAttributes.Count == 0); // all parsed custom attributes have to be associated to a declaration
+            Debug.Assert(_annotations == null || _annotations.Count == 0, $"file {this.SourceUnit.FilePath} contains CLR annotations we did not consume! Probably a bogus in AdditionalSyntaxProvider."); // all parsed custom annotations have to be consumed
 
             return _root = (GlobalCode)base.GlobalCode(span, statements, context);
         }
@@ -174,6 +212,21 @@ namespace Peachpie.CodeAnalysis.Syntax
 
             //
             return base.ConstUse(span, name);
+        }
+
+        public override LangElement Call(Span span, Name name, Span nameSpan, CallSignature signature, TypeRef typeRef)
+        {
+            return base.Call(span, name, nameSpan, WithGenericTypes(signature, nameSpan), typeRef);
+        }
+
+        public override LangElement Call(Span span, TranslatedQualifiedName name, CallSignature signature, LangElement memberOfOpt)
+        {
+            return base.Call(span, name, WithGenericTypes(signature, name.Span), memberOfOpt);
+        }
+
+        public override TypeRef TypeReference(Span span, QualifiedName className)
+        {
+            return WithGenericTypes(base.TypeReference(span, className));
         }
 
         public NodesFactory(SourceUnit sourceUnit, IReadOnlyDictionary<string, string> defines)

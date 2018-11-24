@@ -164,6 +164,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         protected override T VisitRoutineCall(BoundRoutineCall x)
         {
+            if (x.TypeArguments.IsDefaultOrEmpty == false)
+            {
+                for (int i = 0; i < x.TypeArguments.Length; i++)
+                {
+                    VisitTypeRef(x.TypeArguments[i]);
+                }
+            }
+
             for (int i = 0; i < x.ArgumentsInSourceOrder.Length; i++)
             {
                 VisitArgument(x.ArgumentsInSourceOrder[i]);

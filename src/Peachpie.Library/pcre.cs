@@ -597,15 +597,6 @@ namespace Pchp.Library
             return result;
         }
 
-        /// <summary>
-        /// Return array entries that match the pattern.
-        /// </summary>
-        [return: CastToFalse]
-        public static PhpArray preg_grep(string pattern, PhpArray input, int flags = 0)
-        {
-            throw new NotImplementedException();
-        }
-
         #endregion
 
         static void AddGroupNameToResult(Regex regex, PhpArray matches, int i, Action<PhpArray, string> action)

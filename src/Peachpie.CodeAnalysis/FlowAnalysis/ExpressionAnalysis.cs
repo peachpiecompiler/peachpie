@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Ast = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
@@ -1301,7 +1302,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 if (Routine != null)
                 {
-                    Routine.Flags |= x.TargetMethod.InvocationFlags();
+                    var rflags = x.TargetMethod.InvocationFlags();
+                    Routine.Flags |= rflags;
+
+                    if ((rflags & RoutineFlags.UsesLocals) != 0
+                        //&& (x is BoundGlobalFunctionCall gf && gf.Name.NameValue.Name.Value == "extract") // "compact" does not change locals // CONSIDER // TODO
+                        )
+                    {
+                        // function may change/add local variables
+                        State.SetAllUnknown(true);
+                    }
                 }
 
                 // process arguments
@@ -1415,8 +1425,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 }
 
                 var overloads = symbol is AmbiguousMethodSymbol ambiguous && ambiguous.IsOverloadable
-                    ? new OverloadsList(ambiguous.Ambiguities)
+                    ? new OverloadsList(ambiguous.Ambiguities.ToArray())
                     : new OverloadsList(symbol ?? new MissingMethodSymbol(x.Name.NameValue.ToString()));
+
+                Debug.Assert(x.TypeArguments.IsDefaultOrEmpty);
 
                 // symbol might be ErrorSymbol
 
@@ -1459,7 +1471,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 if (resolvedtype != null)
                 {
-                    var candidates = resolvedtype.LookupMethods(x.Name.NameValue.Name.Value).AsImmutable();
+                    var candidates = resolvedtype.LookupMethods(x.Name.NameValue.Name.Value);
+
+                    candidates = Construct(candidates, x);
+
                     x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
                 }
                 else
@@ -1484,8 +1499,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (x.Name.IsDirect && x.TypeRef.ResolvedType != null)
             {
                 // TODO: resolve all candidates, visibility, static methods or instance on self/parent/static
-                var candidates = x.TypeRef.ResolvedType.LookupMethods(x.Name.NameValue.Name.Value).AsImmutable();
+                var candidates = x.TypeRef.ResolvedType.LookupMethods(x.Name.NameValue.Name.Value);
                 // if (candidates.Any(c => c.HasThis)) throw new NotImplementedException("instance method called statically");
+
+                candidates = Construct(candidates, x);
 
                 x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
             }
@@ -1493,6 +1510,28 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             BindTargetMethod(x);
 
             return default;
+        }
+
+        MethodSymbol[] Construct(MethodSymbol[] methods, BoundRoutineCall bound)
+        {
+            if (bound.TypeArguments.IsDefaultOrEmpty)
+            {
+                return methods;
+            }
+            else
+            {
+                var types = bound.TypeArguments.Select(t => t.ResolvedType).AsImmutable();
+                var result = new List<MethodSymbol>();
+
+                for (int i = 0; i < methods.Length; i++)
+                {
+                    if (methods[i].Arity == types.Length) // TODO: check the type argument is assignable
+                    {
+                        result.Add(methods[i].Construct(types));
+                    }
+                }
+                return result.ToArray();
+            }
         }
 
         TypeSymbol ResolveTypeRef(TypeRef tref, BoundExpression expr = null, bool objectTypeInfoSemantic = false)
@@ -1571,6 +1610,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     //}
                 }
             }
+            else if (tref is GenericTypeRef generic && generic.QualifiedName.HasValue)
+            {
+                // TODO: resolve within the context to support for: self, parent, T, ...
+                return (TypeSymbol)TypeRefFactory.CreateTypeRef(generic).GetTypeSymbol(Routine.DeclaringCompilation);
+            }
+            else if (tref is Ast.PrimitiveTypeRef primitive)
+            {
+                return (TypeSymbol)TypeRefFactory
+                    .CreateTypeRef(primitive)
+                    .GetTypeSymbol(Routine.DeclaringCompilation)
+                ?? throw ExceptionUtilities.UnexpectedValue(null);
+            }
 
             //
             return null;
@@ -1601,7 +1652,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             var type = (NamedTypeSymbol)x.TypeRef.ResolvedType;
             if (type.IsValidType())
             {
-                var candidates = type.InstanceConstructors;
+                var candidates = type.InstanceConstructors.ToArray();
 
                 //
                 x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);

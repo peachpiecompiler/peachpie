@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ProjectSchemaDefinitions xmlns="http://schemas.microsoft.com/build/2009/properties">
+
+    <ContentType
+        Name="PhpSourceFile"
+        DisplayName="PHP file"
+        ItemType="Compile">
+    </ContentType>
+
+    <ItemType Name="Compile" UpToDateCheckInput="true" DisplayName="PeachPie compiler"/>
+    <ItemType Name="AdditionalFiles" UpToDateCheckInput="true" DisplayName="PeachPie analyzer additional file"/>
+
+    <FileExtension Name=".php" ContentType="PhpSourceFile"/>
+    <FileExtension Name=".phar" ContentType="PhpSourceFile"/>
+</ProjectSchemaDefinitions>

@@ -15,8 +15,7 @@ namespace Pchp.Library.DateTime
     [PhpType(PhpTypeAttribute.InheritName)]
     public class DateTimeZone
     {
-        internal TimeZoneInfo timezone;
-        protected readonly Context _ctx;
+        internal TimeZoneInfo _timezone;
 
         #region Constants
 
@@ -38,33 +37,24 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
-        private DateTimeZone(Context ctx)
+        internal DateTimeZone(TimeZoneInfo resolvedTimeZone)
         {
-            Debug.Assert(ctx != null);
-            _ctx = ctx;
-        }
-
-        internal DateTimeZone(Context ctx, TimeZoneInfo resolvedTimeZone)
-            : this(ctx)
-        {
-            Debug.Assert(resolvedTimeZone != null);
-            timezone = resolvedTimeZone;
+            _timezone = resolvedTimeZone ?? throw new ArgumentNullException();
         }
 
         public DateTimeZone(Context ctx, string timezone_name)
-            : this(ctx)
         {
-            __construct(timezone_name);
+            __construct(ctx, timezone_name);
         }
 
         // public __construct ( string $timezone )
-        public void __construct(string timezone_name)
+        public void __construct(Context ctx, string timezone_name)
         {
             if (timezone_name != null)
             {
-                this.timezone = PhpTimeZone.GetTimeZone(timezone_name);
+                _timezone = PhpTimeZone.GetTimeZone(timezone_name);
 
-                if (this.timezone == null)
+                if (_timezone == null)
                 {
                     //PhpException.Throw(PhpError.Notice, LibResources.GetString("unknown_timezone", zoneName));
                     throw new ArgumentException();
@@ -72,15 +62,38 @@ namespace Pchp.Library.DateTime
             }
             else
             {
-                this.timezone = PhpTimeZone.GetCurrentTimeZone(_ctx);
+                _timezone = PhpTimeZone.GetCurrentTimeZone(ctx);
             }
         }
 
         #region Methods
 
-        //public array getLocation ( void )
+        /// <summary>
+        /// Returns location information for a timezone, including country code, latitude/longitude and comments.
+        /// </summary>
+        [return: CastToFalse]
         public virtual PhpArray getLocation()
         {
+            //Array
+            //(
+            //    [country_code] => CZ
+            //    [latitude] => 50.08333
+            //    [longitude] => 14.43333
+            //    [comments] => 
+            //)
+
+            //if (_timezone != null)
+            //{
+            //    return new PhpArray(4)
+            //    {
+            //        { .., .. }
+            //    }
+            //}
+            //else
+            //{
+            //    return null;
+            //}
+
             throw new NotImplementedException();
         }
 
@@ -94,7 +107,7 @@ namespace Pchp.Library.DateTime
         //public int getOffset ( DateTime $datetime )
         public virtual int getOffset(Library.DateTime.DateTime datetime)
         {
-            if (timezone == null)
+            if (_timezone == null)
                 //return false;
                 throw new InvalidOperationException();
 
@@ -105,7 +118,7 @@ namespace Pchp.Library.DateTime
                 throw new ArgumentNullException();
             }
 
-            return (int)timezone.BaseUtcOffset.TotalSeconds + (timezone.IsDaylightSavingTime(datetime.Time) ? 3600 : 0);
+            return (int)_timezone.BaseUtcOffset.TotalSeconds + (_timezone.IsDaylightSavingTime(datetime.Time) ? 3600 : 0);
         }
 
         //public array getTransitions ([ int $timestamp_begin [, int $timestamp_end ]] )

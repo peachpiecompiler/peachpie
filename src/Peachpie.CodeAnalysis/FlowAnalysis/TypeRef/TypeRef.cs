@@ -328,6 +328,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 case PhpTypeCode.WritableString: return compilation.CoreTypes.PhpString.Symbol;
                 case PhpTypeCode.PhpArray: return compilation.CoreTypes.PhpArray.Symbol;
                 case PhpTypeCode.Resource: return compilation.CoreTypes.PhpResource.Symbol;
+                case PhpTypeCode.Object: return compilation.CoreTypes.Object.Symbol;
                 case PhpTypeCode.Null: return compilation.CoreTypes.Object.Symbol; // object // when merging, NULL should be handled separatelly (e.g. PhpValue|NULL -> PhpValue)
                 default:
                     throw new NotImplementedException();

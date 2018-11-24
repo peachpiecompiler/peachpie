@@ -293,6 +293,7 @@ namespace Peachpie.Library.Network
             if (ch.CookieHeader != null) TryAddCookieHeader(req, ch.CookieHeader);
             if (ch.CookieFileSet) req.CookieContainer = new CookieContainer();
             if (ch.Username != null) req.Credentials = new NetworkCredential(ch.Username, ch.Password ?? string.Empty);
+            if (ch.AcceptEncoding != null) req.Accept = ch.AcceptEncoding;
             // TODO: certificate
             // TODO: proxy
 

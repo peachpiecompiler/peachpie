@@ -15,7 +15,7 @@ using TValue = Devsense.PHP.Syntax.SemanticValueType;
 namespace Peachpie.CodeAnalysis.Syntax
 {
     /// <summary>
-    /// Tokens provider that matches additional syntax patters,
+    /// Tokens provider that matches additional syntax patterns,
     /// stores them in <see cref="NodesFactory"/> and
     /// does not pass used tokens to the <see cref="GetNextToken"/>.
     /// </summary>
@@ -83,9 +83,29 @@ namespace Peachpie.CodeAnalysis.Syntax
             // GENERICS:
             // 
 
-            // T_NEW QualifiedName "<GenericTypes>"             // new classname<A,B,C>
+            // T_NEW QualifiedName "<GenericTypes>"             // new classname<A,B,C> // see _followsNewKeyword
             // QualifiedName "<GenericTypes>" T_DOUBLE_COLON    // classname<A,B,C>::
             // QualifiedName "<GenericTypes>" T_LPAREN          // fooname<A,B,C>(
+            if (t == Tokens.T_LT)
+            {
+                if (_lastToken == Tokens.T_STRING)
+                {
+                    // try match "<GenericTypes>" : List<TypeRef>
+                    int p = 0;
+                    if (MatchGenericTypes(ref p, out var types))
+                    {
+                        var next = NextToken(ref p);
+                        if (_followsNewKeyword || (next.Token == Tokens.T_DOUBLE_COLON || next.Token == Tokens.T_LPAREN))
+                        {
+                            // we got it!
+                            _nodes.AddAnnotation(_provider.TokenPosition.Start, types);
+                            _provider.Remove(0, p - 1);
+
+                            return true;
+                        }
+                    }
+                }
+            }
 
             //
             // CUSTOM ATTRIBUTES:
@@ -96,10 +116,10 @@ namespace Peachpie.CodeAnalysis.Syntax
             // - must be followed: final|class|interface|trait|public|protected|private|static|function|abstract
             if (t == Tokens.T_LBRACKET)
             {
-                // (perf) must be prefixed: ;, {, }, ], <?
+                // must be prefixed: ;, {, }, <?
                 if (_lastToken == 0 ||
                     _lastToken == Tokens.T_SEMI || _lastToken == Tokens.T_OPEN_TAG ||
-                    _lastToken == Tokens.T_RBRACKET || _lastToken == Tokens.T_RBRACE || _lastToken == Tokens.T_LBRACE)
+                    _lastToken == Tokens.T_RBRACE || _lastToken == Tokens.T_LBRACE)
                 {
                     int p = 0;
                     if (MatchCustomAttribute(ref p, out var attribute) && IsAtDeclarationKeyword(p))
@@ -123,13 +143,29 @@ namespace Peachpie.CodeAnalysis.Syntax
 
             if (t != Tokens.T_WHITESPACE && t != Tokens.T_COMMENT && t != Tokens.T_DOC_COMMENT)
             {
+                // remember last (non-whitespace) token
                 _lastToken = t;
 
+                // remember we are in "T_NEW QualifiedName" context:
+                if (_followsNewKeyword)
+                {
+                    if (t != Tokens.T_STRING &&
+                        t != Tokens.T_NS_SEPARATOR)
+                    {
+                        _followsNewKeyword = false;
+                    }
+                }
+                else if (t == Tokens.T_NEW)
+                {
+                    _followsNewKeyword = true;
+                }
+
+                // push collected attributes to "nodes"
                 if (_consumedCustomAttrs != null)
                 {
                     foreach (var attr in _consumedCustomAttrs)
                     {
-                        _nodes.AddCustomAttribute(_provider.TokenPosition.Start, attr);
+                        _nodes.AddAnnotation(_provider.TokenPosition.Start, attr);
                     }
                     _consumedCustomAttrs = null;
                 }
@@ -138,6 +174,7 @@ namespace Peachpie.CodeAnalysis.Syntax
             return false;
         }
 
+        bool _followsNewKeyword = false;
         Tokens _lastToken = default; // last processed token so we don't lookup if not necessary
         List<SourceCustomAttribute> _consumedCustomAttrs;
 
@@ -478,6 +515,47 @@ namespace Peachpie.CodeAnalysis.Syntax
                     return true;
                 }
             }
+        }
+
+        /// <summary>
+        /// Matches "&lt;T1,T2&gt;".
+        /// </summary>
+        bool MatchGenericTypes(ref int idx, out List<TypeRef> types)
+        {
+            if (MatchToken(ref idx, Tokens.T_LT))
+            {
+                types = null;
+
+                for (; ; )
+                {
+                    if (MatchQualifiedName(ref idx, out var qname))
+                    {
+                        // T
+                        if (types == null) types = new List<TypeRef>(1);
+                        types.Add(_typeRefFactory(qname, true));
+
+                        if (MatchToken(ref idx, Tokens.T_COMMA))
+                        {
+                            // match next T
+                            continue;
+                        }
+                        else if (MatchToken(ref idx, Tokens.T_GT))
+                        {
+                            // match
+                            return true;
+                        }
+                    }
+
+                    // TODO: nested "<GenericTypes>"
+
+                    // unexpected token -> exit
+                    break;
+                }
+            }
+
+            //
+            types = default;
+            return false;
         }
 
         #endregion

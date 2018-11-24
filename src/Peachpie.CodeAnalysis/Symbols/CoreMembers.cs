@@ -912,9 +912,9 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             public DynamicHolder(CoreTypes ct)
             {
-                BinderFactory_Function = ct.BinderFactory.Method("Function", ct.String, ct.String, ct.RuntimeTypeHandle, ct.Int32);
-                BinderFactory_InstanceFunction = ct.BinderFactory.Method("InstanceFunction", ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.Int32);
-                BinderFactory_StaticFunction = ct.BinderFactory.Method("StaticFunction", ct.RuntimeTypeHandle, ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.Int32);
+                BinderFactory_Function = ct.BinderFactory.Method("Function", ct.String, ct.String, ct.RuntimeTypeHandle);
+                BinderFactory_InstanceFunction = ct.BinderFactory.Method("InstanceFunction", ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle);
+                BinderFactory_StaticFunction = ct.BinderFactory.Method("StaticFunction", ct.RuntimeTypeHandle, ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle);
 
                 GetFieldBinder = ct.BinderFactory.Method("GetField", ct.String, ct.RuntimeTypeHandle, ct.RuntimeTypeHandle, ct.AccessMask);
                 SetFieldBinder = ct.BinderFactory.Method("SetField", ct.String, ct.RuntimeTypeHandle, ct.AccessMask);

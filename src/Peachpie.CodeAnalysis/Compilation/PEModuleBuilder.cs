@@ -346,7 +346,13 @@ namespace Pchp.CodeAnalysis.Emit
                         }
 
                         // MainDelegate ~ PhpValue <Main>(...)
-                        var main = (f.MainMethod as SourceGlobalMethodSymbol)?._mainMethod0 ?? f.MainMethod;
+                        var main =
+                            (f.MainMethod as SourceGlobalMethodSymbol)?._mainMethod0 // wrapper that returns PhpValue
+                            ?? f.GetMembers(WellKnownPchpNames.GlobalRoutineName + "`0")
+                                .OfType<MethodSymbol>()
+                                .SingleOrDefault() // wrapper that returns PhpValue in PE
+                            ?? f.MainMethod; // compiled main method, returns PhpValue is there is no wrapper
+
                         Debug.Assert(main != null);
                         Debug.Assert(main.ReturnType.Equals(ct.PhpValue.Symbol));
 

@@ -6,14 +6,30 @@
   </PropertyGroup>
   <Import Project="$(ManagedDesignTimeTargetsPath)" Condition="'$(ManagedDesignTimeTargetsPath)' != '' and Exists('$(ManagedDesignTimeTargetsPath)')" />
 
+  <!-- Properties -->
+  <PropertyGroup>
+    <TemplateLanguage Condition="'$(TemplateLanguage)' == ''">PeachPie</TemplateLanguage>
+  </PropertyGroup>
+
   <!-- items in solution hierarchy -->
   <ItemGroup>
     <None Include="**/*" Exclude="obj/**;bin/**;.*/**;*.msbuildproj;*.sln" />
   </ItemGroup>
-  
-  <!-- ProjetCapability -->
+
+  <!-- Schemas -->
+  <ItemGroup>
+    <PropertyPageSchema Include="$(MSBuildThisFileDirectory)PeachPie.ProjectItemsSchema.xaml;"/>
+    <PropertyPageSchema Include="$(ManagedXamlResourcesDirectory)Compile.xaml;">
+      <Context>File</Context>
+    </PropertyPageSchema>
+    <PropertyPageSchema Include="$(ManagedXamlResourcesDirectory)Compile.BrowseObject.xaml;">
+      <Context>BrowseObject</Context>
+    </PropertyPageSchema>
+  </ItemGroup>
+
+  <!-- ProjectCapability -->
   <ItemGroup Condition="'$(DefineCommonManagedCapabilities)' == 'true'">
-    <ProjectCapability Include="PHP;Managed;Pack;Publish;AppDesigner;OpenProjectFile;GenerateDocumentationFile;" />
+    <ProjectCapability Include="PHP;PeachPie;Managed;Pack;Publish;AppDesigner;OpenProjectFile;GenerateDocumentationFile;" />
   </ItemGroup>
 
   <!-- Returns command-line arguments for the language service -->

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace Pchp.Core
 {
@@ -2415,7 +2416,7 @@ namespace Pchp.Core
         /// True iff the data structure is shared by more PhpHashtable instances and must not be modified.
         /// </summary>
         //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool IsShared { get { return this.copiesCount > 0; } }
+        public bool IsShared { get { return this.copiesCount != 0; } }
 
         /// <summary>
         /// Remember whether this instance and its owner (<see cref="PhpArray"/>) can be recycled upon returning by value from a function.
@@ -2429,7 +2430,7 @@ namespace Pchp.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public OrderedDictionary/*!*/Share()
         {
-            ++copiesCount;
+            Interlocked.Increment(ref copiesCount);
             return this;
         }
 
@@ -2440,7 +2441,7 @@ namespace Pchp.Core
         public void Unshare()
         {
             Debug.Assert(copiesCount >= 0, "Too many Unshare() calls!");    // 0 is allowed, so noone needs this table anymore
-            --copiesCount;
+            Interlocked.Decrement(ref copiesCount);
         }
 
         /// <summary>

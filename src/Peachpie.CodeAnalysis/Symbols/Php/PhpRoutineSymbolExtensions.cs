@@ -146,7 +146,7 @@ namespace Pchp.CodeAnalysis.Symbols
             }
             else
             {
-                throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(symbol);
+                throw ExceptionUtilities.UnexpectedValue(symbol);
             }
 
             // create the type mask from the CLR type symbol

@@ -128,10 +128,17 @@ namespace Peachpie.Library.PDO
         /// <returns>true on success, false otherwise</returns>
         public bool StoreQueryResult()
         {
-            if(m_dr?.HasRows ?? false)
+            if(m_dr != null)
             {
-                storedQueryResult = fetchAll();
-                storedResultPosition = 0;
+                if (m_dr.HasRows)
+                {
+                    storedQueryResult = fetchAll();
+                    storedResultPosition = 0;
+                } else
+                {
+                    // No rows to save - possibly a non-query statement was executed
+                    return true;
+                }
             } else
             {
                 //m_pdo.HandleError(new PDOException("There are no rows to store."));
@@ -787,7 +794,17 @@ namespace Peachpie.Library.PDO
                 }
             }
 
-            m_dr = null;
+            // Close the previously used reader, so that the same connection can open a new one
+            if(m_dr != null)
+            {
+                if (!m_dr.IsClosed)
+                {
+                    m_dr.Close();
+                }
+                m_dr = null;
+            }
+
+            // Actually execute
             try
             {
                 m_dr = m_cmd.ExecuteReader();

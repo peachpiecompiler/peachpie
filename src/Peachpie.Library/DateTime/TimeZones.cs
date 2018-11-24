@@ -239,20 +239,21 @@ namespace Pchp.Library.DateTime
                 }
             }
 
-            //
-            //{ "US/Alaska"        
-            //{ "US/Aleutian"      
-            //{ "US/Arizona"       
+            // other time zones:
+
+            yield return new TimeZoneInfoItem("US/Alaska", cachelookup("Alaskan Standard Time"), null, true);
+            //yield return new TimeZoneInfoItem("US/Aleutian", cachelookup(???), null, true);
+            yield return new TimeZoneInfoItem("US/Arizona", cachelookup("US Mountain Standard Time"), null, true);
             yield return new TimeZoneInfoItem("US/Central", cachelookup("Central Standard Time"), null, true);
-            //{ "US/East-Indiana"  
-            //{ "US/Eastern"       
+            yield return new TimeZoneInfoItem("East-Indiana", cachelookup("US Eastern Standard Time"), null, true);
+            yield return new TimeZoneInfoItem("Eastern", cachelookup("Eastern Standard Time"), null, true);
             yield return new TimeZoneInfoItem("US/Hawaii", cachelookup("Hawaiian Standard Time"), null, true);
-            //{ "US/Indiana-Starke"
-            //{ "US/Michigan"      
-            //{ "US/Mountain"      
-            //{ "US/Pacific"       
-            //{ "US/Pacific-New"   
-            //{ "US/Samoa"   
+            // "US/Indiana-Starke"
+            // "US/Michigan"
+            yield return new TimeZoneInfoItem("US/Mountain", cachelookup("Mountain Standard Time"), null, true);
+            yield return new TimeZoneInfoItem("US/Pacific", cachelookup("Pacific Standard Time"), null, true);
+            yield return new TimeZoneInfoItem("US/Pacific-New", cachelookup("Pacific Standard Time"), null, true);
+            yield return new TimeZoneInfoItem("US/Samoa", cachelookup("Samoa Standard Time"), null, true);
         }
 
         #endregion
@@ -625,20 +626,20 @@ namespace Pchp.Library.DateTime
         /// Alias of new <see cref="DateTimeZone"/>
         /// </summary>
         [return: CastToFalse]
-        public static DateTimeZone timezone_open(Context/*!*/context, string timezone)
+        public static DateTimeZone timezone_open(string timezone)
         {
             var tz = GetTimeZone(timezone);
             if (tz == null)
                 return null;
 
-            return new DateTimeZone(context, tz);
+            return new DateTimeZone(tz);
         }
 
         /// <summary>
         /// Alias of <see cref="DateTimeZone.getOffset"/>
         /// </summary>
         [return: CastToFalse]
-        public static int timezone_offset_get(Context context, DateTimeZone timezone, Library.DateTime.DateTime datetime)
+        public static int timezone_offset_get(DateTimeZone timezone, Library.DateTime.DateTime datetime)
         {
             return (timezone != null) ? timezone.getOffset(datetime) : -1;
         }
@@ -648,6 +649,16 @@ namespace Pchp.Library.DateTime
         {
             return timezone?.getTransitions(timestamp_begin, timestamp_end);
         }
+
+        #endregion
+
+        #region timezone_location_get 
+
+        /// <summary>
+        /// Returns location information for a timezone.
+        /// </summary>
+        [return: CastToFalse]
+        public static PhpArray timezone_location_get(DateTimeZone @object) => @object.getLocation();
 
         #endregion
     }

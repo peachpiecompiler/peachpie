@@ -77,10 +77,15 @@ namespace Pchp.Core.Dynamic
                 sp.Process(this, Expression.Field(arg.Expression, "Value"));
                 return true;
             }
-            else if (this.Context == null && arg.Value is Context)
+            else if (this.Context == null && arg.Value is Context ctx)
             {
                 this.Context = arg.Expression;
-                this.CurrentContext = (Context)arg.Value;
+                this.CurrentContext = ctx;
+                return true;
+            }
+            else if (arg.Value is Type[] typeargs)
+            {
+                this.TypeArguments = typeargs;
                 return true;
             }
 
@@ -166,5 +171,11 @@ namespace Pchp.Core.Dynamic
         /// Gets member name if set in compile time or if provided by <see cref="IndirectName"/>.
         /// </summary>
         public string Name { get; set; }
+
+        /// <summary>
+        /// Type arguments in case of a generic method call.
+        /// Can be <c>null</c> or empty array.
+        /// </summary>
+        public Type[] TypeArguments { get; set; }
     }
 }

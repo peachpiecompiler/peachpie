@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using Devsense.PHP.Syntax;
@@ -307,7 +308,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 return GetTypeMaskOfReservedClassName(qname.Name);
             }
 
-            return GetTypeMask(new ClassTypeRef(qname), includesSubclasses);
+            return GetTypeMask(TypeRefFactory.CreateTypeRef(qname), includesSubclasses);
         }
 
         /// <summary>
@@ -335,8 +336,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         default: throw new ArgumentException();
                     }
                 }
-                else if (tref is AST.INamedTypeRef) return GetTypeMask(((AST.INamedTypeRef)tref).ClassName, includesSubclasses);
-                else if (tref is AST.ReservedTypeRef) return GetTypeMaskOfReservedClassName(((AST.ReservedTypeRef)tref).QualifiedName.Value.Name);
+                else if (tref is AST.INamedTypeRef named) return GetTypeMask(named.ClassName, includesSubclasses);
+                else if (tref is AST.ReservedTypeRef reserved) return GetTypeMaskOfReservedClassName(reserved.QualifiedName.Value.Name);
                 else if (tref is AST.AnonymousTypeRef) return GetTypeMask(((AST.AnonymousTypeRef)tref).TypeDeclaration.GetAnonymousTypeQualifiedName(), false);
                 else if (tref is AST.MultipleTypeRef)
                 {
@@ -347,8 +348,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     }
                     return result;
                 }
-                else if (tref is AST.NullableTypeRef) return GetTypeMask(((AST.NullableTypeRef)tref).TargetType) | this.GetNullTypeMask();
-                else if (tref is AST.GenericTypeRef) return GetTypeMask(((AST.GenericTypeRef)tref).TargetType, includesSubclasses);  // TODO: now we are ignoring type args
+                else if (tref is AST.NullableTypeRef nullable) return GetTypeMask(nullable.TargetType) | this.GetNullTypeMask();
+                else if (tref is AST.GenericTypeRef) return GetTypeMask(TypeRefFactory.CreateTypeRef(tref), includesSubclasses);
                 else if (tref is AST.IndirectTypeRef) return GetTypeMask((AST.IndirectTypeRef)tref, true);
             }
 

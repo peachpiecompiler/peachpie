@@ -128,7 +128,7 @@ namespace Peachpie.AspNetCore.Web
             get
             {
                 var maxsize = _httpctx.Features.Get<IHttpMaxRequestBodySizeFeature>()?.MaxRequestBodySize;
-             
+
                 return maxsize ?? 30_000_000;
             }
         }
@@ -167,24 +167,28 @@ namespace Peachpie.AspNetCore.Web
 
         public static ScriptInfo ResolveScript(HttpRequest req)
         {
-            var script = default(ScriptInfo);
             var path = req.Path.Value;
-
-            var isfile = !path.Last().IsDirectorySeparator();
-            if (isfile)
-            {
-                // path
-                script = ScriptsMap.GetDeclaredScript(path);
-            }
+            var script = ScriptsMap.GetDeclaredScript(path);    // path: "filename"
 
             if (!script.IsValid)
             {
-                // path/defaultdocument
-                path = path.TrimEndSeparator();
-                path = path.Length != 0 ? (path + ('/' + DefaultDocument)) : DefaultDocument;
-
-                //
-                script = ScriptsMap.GetDeclaredScript(path);
+                if (path.LastChar().IsDirectorySeparator())
+                {
+                    // path: "filename/"
+                    if ((script = ScriptsMap.GetDeclaredScript(path.Substring(0, path.Length - 1))).IsValid == false) // "filename"
+                    {
+                        // path: "directory/"
+                        script = ScriptsMap.GetDeclaredScript(path + DefaultDocument); // "directory/index.php"
+                    }
+                }
+                else
+                {
+                    // path: "directory"
+                    script = ScriptsMap.GetDeclaredScript(
+                        path.Length == 0
+                        ? DefaultDocument                       // "index.php"
+                        : (path + ("/" + DefaultDocument)));    // "directory/index.php"
+                }
             }
 
             //

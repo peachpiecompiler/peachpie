@@ -145,7 +145,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                if (this.DeclaredAccessibility == Accessibility.Public && this.IsSealed)
+                if (this.DeclaredAccessibility == Accessibility.Public && this.IsStatic)
                 {
                     // [ScriptAtribute( string file_path )]
                     var scriptattr = this.GetPhpScriptAttribute();

@@ -44,6 +44,33 @@ namespace Pchp.Core.Dynamic
             }
         }
 
+        public static IEnumerable<MethodBase> Construct(this IEnumerable<MethodBase> methods, Type[] typeargs)
+        {
+            if (typeargs != null && typeargs.Length != 0)
+            {
+                return methods
+                    .Where(m => m.IsGenericMethodDefinition && m.GetGenericArguments().Length == typeargs.Length)
+                    .OfType<MethodInfo>()
+                    .Select(m =>
+                    {
+                        try
+                        {
+                            return m.MakeGenericMethod(typeargs);
+                        }
+                        catch
+                        {
+                            return null;
+                        }
+                    })
+                    .WhereNotNull();
+            }
+            else
+            {
+                // select non-generic methods
+                return methods.Where(m => m.IsGenericMethodDefinition == false);
+            }
+        }
+
         public static IEnumerable<MethodBase> SelectVisible(this IEnumerable<MethodBase> candidates, Type classCtx)
         {
             if (classCtx == null)

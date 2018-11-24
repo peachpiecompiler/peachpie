@@ -152,7 +152,7 @@ namespace Peachpie.Library.MySql
             var config = ctx.Configuration.Get<MySqlConfiguration>();
             Debug.Assert(config != null);
 
-            var connection_string = BuildConnectionString(config, ref server, username, password, client_flags);
+            var connection_string = BuildConnectionString(config, ref server, config.Port, username, password, client_flags);
 
             bool success;
             var connection = MySqlConnectionManager.GetInstance(ctx)
@@ -183,7 +183,7 @@ namespace Peachpie.Library.MySql
             return mysql_connect(ctx, server, username, password, new_link, client_flags | ConnectFlags.Pooling);
         }
 
-        internal static string BuildConnectionString(MySqlConfiguration config, ref string server, string user, string password, ConnectFlags flags, int connectiontimeout = 0)
+        internal static string BuildConnectionString(MySqlConfiguration config, ref string server, int defaultport = 3306, string user = null, string password = null, ConnectFlags flags = ConnectFlags.None, int connectiontimeout = 0)
         {
             // connection strings:
             if (!string.IsNullOrEmpty(config.ConnectionString) && server == null && user == null && password == null)
@@ -200,7 +200,7 @@ namespace Peachpie.Library.MySql
             else
                 server = config.Server;
 
-            if (port == -1) port = config.Port;
+            if (port == -1) port = defaultport > 0 ? defaultport : config.Port;
             if (user == null) user = config.User;
             if (password == null) password = config.Password;
             if (connectiontimeout <= 0) connectiontimeout = config.ConnectTimeout;

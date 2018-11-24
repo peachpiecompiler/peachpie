@@ -23,9 +23,8 @@ namespace Pchp.Core.Dynamic
             public int _type;
             public string _name, _name2;
             public RuntimeTypeHandle _h1, _h2, _h3;
-            public int _generics;
 
-            public BinderKey(int type, string name, string name2 = null, RuntimeTypeHandle h1 = default(RuntimeTypeHandle), RuntimeTypeHandle h2 = default(RuntimeTypeHandle), RuntimeTypeHandle h3 = default(RuntimeTypeHandle), int generics = 0)
+            public BinderKey(int type, string name, string name2 = null, RuntimeTypeHandle h1 = default, RuntimeTypeHandle h2 = default, RuntimeTypeHandle h3 = default)
             {
                 _type = type;
                 _name = name;
@@ -33,7 +32,6 @@ namespace Pchp.Core.Dynamic
                 _h1 = h1;
                 _h2 = h2;
                 _h3 = h3;
-                _generics = generics;
             }
         }
 
@@ -50,8 +48,7 @@ namespace Pchp.Core.Dynamic
                     x._h1.Equals(y._h1) &&
                     x._h2.Equals(y._h2) &&
                     x._h3.Equals(y._h3) &&
-                    x._name2 == y._name2 &&
-                    x._generics == y._generics;
+                    x._name2 == y._name2;
             }
 
             public int GetHashCode(BinderKey obj)
@@ -68,34 +65,34 @@ namespace Pchp.Core.Dynamic
 
         #endregion
 
-        public static CallSiteBinder Function(string name, string nameOpt, RuntimeTypeHandle returnType, int genericParams)
+        public static CallSiteBinder Function(string name, string nameOpt, RuntimeTypeHandle returnType)
         {
-            var key = new BinderKey(1, name, nameOpt, returnType, generics: genericParams);
+            var key = new BinderKey(1, name, nameOpt, returnType);
             if (_bindersCache.TryGetValue(key, out CallSiteBinder binder) == false)
             {
-                _bindersCache[key] = binder = new CallFunctionBinder(name, nameOpt, returnType, genericParams);
+                _bindersCache[key] = binder = new CallFunctionBinder(name, nameOpt, returnType);
             }
 
             return binder;
         }
 
-        public static CallSiteBinder InstanceFunction(string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType, int genericParams)
+        public static CallSiteBinder InstanceFunction(string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType)
         {
-            var key = new BinderKey(2, name, null, classContext, returnType, generics: genericParams);
+            var key = new BinderKey(2, name, null, classContext, returnType);
             if (_bindersCache.TryGetValue(key, out CallSiteBinder binder) == false)
             {
-                _bindersCache[key] = binder = new CallInstanceMethodBinder(name, classContext, returnType, genericParams);
+                _bindersCache[key] = binder = new CallInstanceMethodBinder(name, classContext, returnType);
             }
 
             return binder;
         }
 
-        public static CallSiteBinder StaticFunction(RuntimeTypeHandle type, string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType, int genericParams)
+        public static CallSiteBinder StaticFunction(RuntimeTypeHandle type, string name, RuntimeTypeHandle classContext, RuntimeTypeHandle returnType)
         {
-            var key = new BinderKey(3, name, null, type, classContext, returnType, generics: genericParams);
+            var key = new BinderKey(3, name, null, type, classContext, returnType);
             if (_bindersCache.TryGetValue(key, out CallSiteBinder binder) == false)
             {
-                _bindersCache[key] = binder = new CallStaticMethodBinder(type, name, classContext, returnType, genericParams);
+                _bindersCache[key] = binder = new CallStaticMethodBinder(type, name, classContext, returnType);
             }
 
             return binder;

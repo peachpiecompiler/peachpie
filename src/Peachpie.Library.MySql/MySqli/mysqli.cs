@@ -302,7 +302,7 @@ namespace Peachpie.Library.MySql.MySqli
             }
 
             //
-            var connection_string = MySql.BuildConnectionString(config, ref host, username, passwd,
+            var connection_string = MySql.BuildConnectionString(config, ref host, port, username, passwd,
                 flags: (MySql.ConnectFlags)flags,
                 connectiontimeout: connectiontimeout);
 

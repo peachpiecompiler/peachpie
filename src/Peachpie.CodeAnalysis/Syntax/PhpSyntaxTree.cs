@@ -21,8 +21,6 @@ namespace Pchp.CodeAnalysis
     {
         readonly PhpSourceUnit _source;
 
-        SourceText _lazyText;
-
         /// <summary>
         /// Gets constructed lambda nodes.
         /// </summary>

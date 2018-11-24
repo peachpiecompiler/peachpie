@@ -224,6 +224,11 @@ namespace Pchp.Core
 
             public static ScriptInfo GetDeclaredScript(string path)
             {
+                if (string.IsNullOrEmpty(path))
+                {
+                    return default;
+                }
+
                 // trim leading slash
                 if (path[0].IsDirectorySeparator())
                 {
@@ -236,7 +241,7 @@ namespace Pchp.Core
                 {
                     if (!_scriptsMap.TryGetValue(NormalizeSlashes(path), out index))
                     {
-                        return default(ScriptInfo);
+                        return default;
                     }
                 }
 
