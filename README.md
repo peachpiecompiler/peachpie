@@ -55,7 +55,7 @@ There are currently two ways of using PeachPie via `msbuild`: in your favorite s
 Download our official [Visual Studio extension](https://marketplace.visualstudio.com/items?itemName=iolevel.peachpie-vs), which makes working with PeachPie compiler as convenient as possible. The extension allows you to easily create a new project using our templates, build & debug, profile your PHP code using the VS diagnostic tools and deploy your project to Azure:
 
 <p align="center">
-<a href="https://marketplace.visualstudio.com/items?itemName=iolevel.peachpie-vs" target="_blank"><img src="https://raw.githubusercontent.com/iolevel/peachpie-vs/master/imgs/new-project.png?raw=true" 
+<a href="https://marketplace.visualstudio.com/items?itemName=iolevel.peachpie-vs" target="_blank"><img src="https://github.com/iolevel/peachpie-vs/blob/master/imgs/peachpie-new-project.gif?raw=true" 
 alt="Peachpie Extension" border="10" /></a> 
 </p>
 
