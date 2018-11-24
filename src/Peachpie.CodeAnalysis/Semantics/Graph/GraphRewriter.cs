@@ -466,7 +466,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return x.Update(
                 (BoundBlock)Accept(x.BodyBlock),
                 (BoundBlock)Accept(x.NextBlock),
-                (ForeachEnumereeEdge)Accept(x.EnumereeEdge),
+                x.EnumereeEdge,                                     // It updates this reference in its visit instead
                 (BoundReferenceExpression)Accept(x.KeyVariable),
                 (BoundReferenceExpression)Accept(x.ValueVariable),
                 x.MoveSpan);
