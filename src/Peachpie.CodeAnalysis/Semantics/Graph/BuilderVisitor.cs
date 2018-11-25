@@ -1,6 +1,7 @@
 ﻿using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Text;
+using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -392,7 +393,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                     return true;
                 }
 
-                if (_binder.Routine.DeclaringCompilation.GlobalSemantics.ResolveType(qname) != null)
+                if (_binder.Routine.DeclaringCompilation.GlobalSemantics.ResolveType(qname) is NamedTypeSymbol named &&
+                    named.IsValidType() &&
+                    !named.IsPhpUserType()) // user types are not declared in compile time // CONSIDER: more flow analysis
                 {
                     return true;
                 }
