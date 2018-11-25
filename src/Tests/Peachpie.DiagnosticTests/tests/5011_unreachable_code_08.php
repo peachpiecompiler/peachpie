@@ -9,7 +9,7 @@ function unreachable_null_comparison(bool $a, bool $b, bool $c, bool $d) {
     echo /*|boolean|*/$a;
   }
   
-  if (/*|boolean|*/$b !== null) {
+  if ($b !== null) {
     echo "reachable";
     echo /*|boolean|*/$b;
   } else {

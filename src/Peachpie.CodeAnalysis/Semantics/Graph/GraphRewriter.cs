@@ -188,36 +188,41 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             var updatedStart = (StartBlock)Accept(x.Start);
             var updatedExit = TryGetNewVersion(x.Exit);
 
-            // Rescan and repair nodes and edges if any blocks were modified
+            // Assume that yields and unreachable blocks stay the same
+            var yields = x.Yields;
+            var unreachableBlocks = x.UnreachableBlocks;
+
+            // Fix the structure of the graph if any changes were performed
             if (_updatedBlocks != null)
             {
+                Debug.Assert(updatedStart != x.Start);
+
+                // Rescan and repair nodes and edges if any blocks were modified
                 var repairer = new GraphRepairer(this);
                 updatedStart = (StartBlock)updatedStart.Accept(repairer);
                 updatedExit = _updatedBlocks[x.Exit];                       // It must have been updated by repairer
-            }
 
-            // Handle yields and unreachable blocks
-            var yields = x.Yields;
-            var unreachableBlocks = x.UnreachableBlocks;
-            if (_possiblyUnreachableBlocks != null)
-            {
-                unreachableBlocks = unreachableBlocks.AddRange(_possiblyUnreachableBlocks.Where(b => !IsExplored(b)));
-
-                // Remove any yields found in the unreachable blocks, eventually marking all the original blocks as explored
-                if (!yields.IsDefaultOrEmpty && unreachableBlocks != x.UnreachableBlocks)
+                // Handle newly unreachable blocks
+                var newlyUnreachableBlocks =
+                    _possiblyUnreachableBlocks?.Where(b => !IsExplored(b)).ToList()  // Confirm that they are unexplored
+                    ?? Enumerable.Empty<BoundBlock>();
+                if (newlyUnreachableBlocks.Any())
                 {
+                    // Discover all the yields and remove them from the next CFG version
                     var yieldFinder = new UnreachableYieldFinder(ExploredColor);
-
-                    for (int i = x.UnreachableBlocks.Length; i < unreachableBlocks.Length; i++)
-                    {
-                        yieldFinder.VisitCFGBlock(unreachableBlocks[i]);
-                    }
-
+                    newlyUnreachableBlocks.ForEach(b => b.Accept(yieldFinder));
                     if (yieldFinder.Yields != null)
                     {
                         yields = yields.RemoveRange(yieldFinder.Yields);
                     }
                 }
+
+                // Repair all the unreachable blocks so that they reference the updated versions of the blocks
+                // (enables to properly produce reachability diagnostics)
+                unreachableBlocks =
+                    unreachableBlocks.Concat(newlyUnreachableBlocks)
+                    .Select(b => (BoundBlock)b.Accept(repairer))
+                    .ToImmutableArray();
             }
 
             // Create a new CFG from the new versions of blocks and edges (expressions and statements are reused where unchanged)
