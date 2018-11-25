@@ -27,7 +27,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     {
         private Dictionary<BoundBlock, BoundBlock> _updatedBlocks;
         private List<BoundBlock> _possiblyUnreachableBlocks;
-        private bool _isRepairing;
 
         public int ExploredColor { get; private set; }
 
@@ -35,7 +34,58 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public int RepairedColor { get; private set; }
 
-        #region Helper class
+        #region Helper classes
+
+        /// <summary>
+        /// Clones unmodified blocks and fixes the edges between them so that no edge targets
+        /// a block from the previous version of the graph.
+        /// </summary>
+        private class GraphRepairer : GraphUpdater
+        {
+            private readonly GraphRewriter _rewriter;
+
+            public GraphRepairer(GraphRewriter rewriter)
+            {
+                _rewriter = rewriter;
+            }
+
+            private BoundBlock Repair(BoundBlock block)
+            {
+                if (_rewriter.IsRepaired(block))
+                {
+                    return block;
+                }
+
+                if (!_rewriter.IsChanged(block))
+                {
+                    if (!_rewriter._updatedBlocks.TryGetValue(block, out var repaired))
+                    {
+                        repaired = block.Clone();
+                        _rewriter.MapToNewVersion(block, repaired);
+                    }
+
+                    block = repaired;
+                }
+
+                if (!_rewriter.IsRepaired(block))
+                {
+                    block.Tag = _rewriter.RepairedColor;
+                    block.NextEdge = (Edge)Accept(block.NextEdge);
+                }
+
+                return block;
+            }
+
+            public sealed override object VisitCFGBlock(BoundBlock x) => Repair(x);
+
+            public sealed override object VisitCFGStartBlock(StartBlock x) => Repair(x);
+
+            public sealed override object VisitCFGExitBlock(ExitBlock x) => Repair(x);
+
+            public sealed override object VisitCFGCatchBlock(CatchBlock x) => Repair(x);
+
+            public sealed override object VisitCFGCaseBlock(CaseBlock x) => Repair(x);
+        }
 
         /// <summary>
         /// Finds all yield statements in unreachable blocks (those not yet colored by <see cref="ExploredColor"/>)
@@ -121,35 +171,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _possiblyUnreachableBlocks.Add(block);
         }
 
-        private BoundBlock Repair(BoundBlock block)
-        {
-            Debug.Assert(_isRepairing);
-
-            if (IsRepaired(block))
-            {
-                return block;
-            }
-
-            if (!IsChanged(block))
-            {
-                if (!_updatedBlocks.TryGetValue(block, out var repaired))
-                {
-                    repaired = block.Clone();
-                    MapToNewVersion(block, repaired);
-                }
-
-                block = repaired;
-            }
-
-            if (!IsRepaired(block))
-            {
-                block.Tag = RepairedColor;
-                block.NextEdge = (Edge)Accept(block.NextEdge);
-            }
-
-            return block;
-        }
-
         #endregion
 
         #region ControlFlowGraph
@@ -163,10 +184,20 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             RepairedColor = x.NewColor();
             _updatedBlocks = null;
 
+            // Traverse the whole graph and possibly obtain new versions of start and exit
             var updatedStart = (StartBlock)Accept(x.Start);
             var updatedExit = TryGetNewVersion(x.Exit);
-            var yields = x.Yields;
 
+            // Rescan and repair nodes and edges if any blocks were modified
+            if (_updatedBlocks != null)
+            {
+                var repairer = new GraphRepairer(this);
+                updatedStart = (StartBlock)updatedStart.Accept(repairer);
+                updatedExit = _updatedBlocks[x.Exit];                       // It must have been updated by repairer
+            }
+
+            // Handle yields and unreachable blocks
+            var yields = x.Yields;
             var unreachableBlocks = x.UnreachableBlocks;
             if (_possiblyUnreachableBlocks != null)
             {
@@ -189,18 +220,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 }
             }
 
-            // Rescan and fix the whole CFG if any blocks were modified
-            if (_updatedBlocks != null)
-            {
-                _isRepairing = true;
-                updatedStart = (StartBlock)Accept(updatedStart);
-                updatedExit = _updatedBlocks[x.Exit];             // It must have been updated by the repair
-            }
-
+            // Create a new CFG from the new versions of blocks and edges (expressions and statements are reused where unchanged)
             return x.Update(
                 updatedStart,
                 updatedExit,
-                x.Labels,           // Keep them all, they are here only for the diagnostic purposes
+                x.Labels,           // Keep all the labels, they are here only for the diagnostic purposes
                 yields,
                 unreachableBlocks);
         }
@@ -216,95 +240,78 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public sealed override object VisitCFGBlock(BoundBlock x)
         {
-            if (_isRepairing)
+            if (IsExplored(x))
             {
-                return Repair(x);
+                return x;
             }
             else
             {
-                return IsExplored(x) ? x : MapIfUpdated(x, OnVisitCFGBlock(x));
+                x.Tag = ExploredColor;
+                return MapIfUpdated(x, OnVisitCFGBlock(x));
             }
         }
 
         public sealed override object VisitCFGStartBlock(StartBlock x)
         {
-            if (_isRepairing)
+            if (IsExplored(x))
             {
-                return Repair(x);
+                return x;
             }
             else
             {
-                return IsExplored(x) ? x : MapIfUpdated(x, OnVisitCFGStartBlock(x));
+                x.Tag = ExploredColor;
+                return MapIfUpdated(x, OnVisitCFGStartBlock(x));
             }
         }
 
         public sealed override object VisitCFGExitBlock(ExitBlock x)
         {
-            if (_isRepairing)
+            if (IsExplored(x))
             {
-                return Repair(x);
+                return x;
             }
             else
             {
-                return IsExplored(x) ? x : MapIfUpdated(x, OnVisitCFGExitBlock(x));
+                x.Tag = ExploredColor;
+                return MapIfUpdated(x, OnVisitCFGExitBlock(x));
             }
         }
 
         public sealed override object VisitCFGCatchBlock(CatchBlock x)
         {
-            if (_isRepairing)
+            if (IsExplored(x))
             {
-                return Repair(x);
+                return x;
             }
             else
             {
-                return IsExplored(x) ? x : MapIfUpdated(x, OnVisitCFGCatchBlock(x));
+                x.Tag = ExploredColor;
+                return MapIfUpdated(x, OnVisitCFGCatchBlock(x));
             }
         }
 
         public sealed override object VisitCFGCaseBlock(CaseBlock x)
         {
-            if (_isRepairing)
+            if (IsExplored(x))
             {
-                return Repair(x);
+                return x;
             }
             else
             {
-                return IsExplored(x) ? x : MapIfUpdated(x, OnVisitCFGCaseBlock(x));
+                x.Tag = ExploredColor;
+                return MapIfUpdated(x, OnVisitCFGCaseBlock(x));
             }
         }
 
-        public virtual BoundBlock OnVisitCFGBlock(BoundBlock x)
-        {
-            x.Tag = ExploredColor;
-            return (BoundBlock)base.VisitCFGBlock(x);
-        }
+        public virtual BoundBlock OnVisitCFGBlock(BoundBlock x) => (BoundBlock)base.VisitCFGBlock(x);
 
-        public virtual StartBlock OnVisitCFGStartBlock(StartBlock x)
-        {
-            x.Tag = ExploredColor;
-            return (StartBlock)base.VisitCFGStartBlock(x);
-        }
+        public virtual StartBlock OnVisitCFGStartBlock(StartBlock x) => (StartBlock)base.VisitCFGStartBlock(x);
 
-        public virtual ExitBlock OnVisitCFGExitBlock(ExitBlock x)
-        {
-            Debug.Assert(x.NextEdge == null);
+        public virtual ExitBlock OnVisitCFGExitBlock(ExitBlock x) => (ExitBlock)base.VisitCFGExitBlock(x);
 
-            x.Tag = ExploredColor;
-            return (ExitBlock)base.VisitCFGExitBlock(x);
-        }
+        public virtual CatchBlock OnVisitCFGCatchBlock(CatchBlock x) => (CatchBlock)base.VisitCFGCatchBlock(x);
 
-        public virtual CatchBlock OnVisitCFGCatchBlock(CatchBlock x)
-        {
-            x.Tag = ExploredColor;
-            return (CatchBlock)base.VisitCFGCatchBlock(x);
-        }
-
-        public virtual CaseBlock OnVisitCFGCaseBlock(CaseBlock x)
-        {
-            x.Tag = ExploredColor;
-            return (CaseBlock)base.VisitCFGCaseBlock(x);
-        }
+        public virtual CaseBlock OnVisitCFGCaseBlock(CaseBlock x) => (CaseBlock)base.VisitCFGCaseBlock(x);
 
         #endregion
     }
