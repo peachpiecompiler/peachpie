@@ -37,7 +37,11 @@ namespace Pchp.CodeAnalysis
 
         readonly Worklist<BoundBlock> _worklist;
 
-        public static int MaxTransformCount = 10;
+        /// <summary>
+        /// Number of control flow graph transformation cycles to do at most.
+        /// <c>0</c> to disable the lowering.
+        /// </summary>
+        int MaxTransformCount => _compilation.Options.OptimizationLevel == OptimizationLevel.Release ? 8 : 0;
 
         public bool ConcurrentBuild => _compilation.Options.ConcurrentBuild;
 
@@ -216,16 +220,15 @@ namespace Pchp.CodeAnalysis
             type.GetDiagnostics(_diagnostics);
         }
 
-        internal bool TransformMethods()
+        bool TransformMethods(bool allowParallel)
         {
             bool anyTransforms = false;
 
             this.WalkMethods(m =>
                 {
-                    if (TransformationRewriter.TryTransform(m))
-                        anyTransforms = true;
+                    anyTransforms |= TransformationRewriter.TryTransform(m);
                 },
-                allowParallel: true);
+                allowParallel: allowParallel);
 
             return anyTransforms;
         }
@@ -296,12 +299,40 @@ namespace Pchp.CodeAnalysis
             _moduleBuilder.CreateEnumerateConstantsSymbol(_diagnostics);
         }
 
-        public static IEnumerable<Diagnostic> BindAndAnalyze(PhpCompilation compilation)
+        /// <summary>
+        /// Performs 
+        /// </summary>
+        /// <returns></returns>
+        bool TryLowering(bool allowParallel)
+        {
+            using (_compilation.StartMetric("transform"))
+            {
+                if (TransformMethods(allowParallel))
+                {
+                    WalkMethods(m =>
+                        {
+                            m.ControlFlowGraph?.FlowContext?.InvalidateAnalysis();
+                            EnqueueRoutine(m);
+                        },
+                        allowParallel: allowParallel);
+                }
+                else
+                {
+                    // No changes performed => no need to repeat the analysis
+                    return false;
+                }
+            }
+
+            //
+            return true;
+        }
+
+        public static IEnumerable<Diagnostic> BindAndAnalyze(PhpCompilation compilation, CancellationToken cancellationToken)
         {
             var manager = compilation.GetBoundReferenceManager();   // ensure the references are resolved! (binds ReferenceManager)
 
             var diagnostics = new DiagnosticBag();
-            var compiler = new SourceCompiler(compilation, null, true, diagnostics, CancellationToken.None);
+            var compiler = new SourceCompiler(compilation, null, true, diagnostics, cancellationToken);
 
             using (compilation.StartMetric("bind"))
             {
@@ -313,47 +344,24 @@ namespace Pchp.CodeAnalysis
             }
 
             // Repeat analysis and transformation until either the limit is met or there are no more changes
-            int transformCount = 0;
-            bool doNextTransform = (compilation.Options.OptimizationLevel == OptimizationLevel.Release);
-            while (true)
+            int transformation = 0;
+            do
             {
+                // 2. Analyze Operations
+                //   a. type analysis (converge type - mask), resolve symbols
+                //   b. lower semantics, update bound tree, repeat
                 using (compilation.StartMetric("analysis"))
                 {
-                    // 2. Analyze Operations
-                    //   a. type analysis (converge type - mask), resolve symbols
-                    //   b. lower semantics, update bound tree, repeat
                     compiler.AnalyzeMethods();
                 }
 
-                if (!doNextTransform)
-                {
-                    break;
-                }
+                // 3. Transform Semantic Trees for Runtime Optimization
+            } while (
+                transformation++ < compiler.MaxTransformCount   // limit number of lowering cycles
+                && !cancellationToken.IsCancellationRequested   // user canceled ?
+                && compiler.TryLowering(allowParallel: true));  // try lower the semantics
 
-                using (compilation.StartMetric("transform"))
-                {
-                    // 3. Transform Semantic Trees for Runtime Optimization
-                    transformCount++;
-                    if (compiler.TransformMethods())
-                    {
-                        compiler.WalkMethods(m =>
-                            {
-                                m.ControlFlowGraph?.FlowContext.InvalidateAnalysis();
-                                compiler.EnqueueRoutine(m);
-                            },
-                            allowParallel: true);
-                    }
-                    else
-                    {
-                        // No changes performed => no need to repeat the analysis
-                        break;
-                    }
-                }
-
-                doNextTransform = (transformCount < MaxTransformCount);
-            }
-
-            compilation.TrackMetric("transformLoops", transformCount);
+            compilation.TrackMetric("transformations", transformation);
 
             // 4. Collect diagnostics
             using (compilation.StartMetric("diagnostic"))

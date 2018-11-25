@@ -383,9 +383,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 return false;
             }
 
-            /// <summary>
-            /// Helper that lookups for the type if it is declared unconditionally.
-            /// </summary>
+            // Helper that lookups for the type if it is declared unconditionally.
             bool IsDeclared(QualifiedName qname)
             {
                 if (_declarations != null &&

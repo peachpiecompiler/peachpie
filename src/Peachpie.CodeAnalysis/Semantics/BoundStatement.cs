@@ -369,7 +369,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public sealed partial class BoundStaticVariableStatement : BoundStatement, IVariableDeclarationOperation
     {
-        public struct StaticVarDecl
+        public struct StaticVarDecl : IEquatable<StaticVarDecl>
         {
             public BoundVariable Variable;
             public BoundExpression InitialValue;
@@ -379,12 +379,17 @@ namespace Pchp.CodeAnalysis.Semantics
             /// </summary>
             public string Name => Variable.Name;
 
-            public static bool operator==(StaticVarDecl a, StaticVarDecl b)
-            {
-                return a.Variable == b.Variable && a.InitialValue == b.InitialValue;
-            }
+            public bool Equals(StaticVarDecl other) =>
+                Variable == other.Variable &&
+                InitialValue == other.InitialValue;
 
-            public static bool operator !=(StaticVarDecl a, StaticVarDecl b) => !(a == b);
+            public override bool Equals(object obj) => obj is StaticVarDecl v && Equals(v);
+
+            public override int GetHashCode() => Variable != null ? Variable.GetHashCode() : -1;
+
+            public static bool operator ==(StaticVarDecl a, StaticVarDecl b) => a.Equals(b);
+
+            public static bool operator !=(StaticVarDecl a, StaticVarDecl b) => !a.Equals(b);
         }
 
         public override OperationKind Kind => OperationKind.VariableDeclaration;

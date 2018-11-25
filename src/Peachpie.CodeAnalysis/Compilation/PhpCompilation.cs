@@ -843,7 +843,7 @@ namespace Pchp.CodeAnalysis
         {
             if (_lazyAnalysisTask == null)
             {
-                _lazyAnalysisTask = Task.Run(() => SourceCompiler.BindAndAnalyze(this));
+                _lazyAnalysisTask = Task.Run(() => SourceCompiler.BindAndAnalyze(this, CancellationToken.None));
             }
 
             return await _lazyAnalysisTask;
