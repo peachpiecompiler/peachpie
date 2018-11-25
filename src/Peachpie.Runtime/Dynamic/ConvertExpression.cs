@@ -733,7 +733,8 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(object)) return ConversionCost.PassCostly;    // TODO: Error when passing to a PHP function
 
             var tinfo = target.GetTypeInfo();
-            if (tinfo.IsAssignableFrom(typeof(IPhpCallable).GetTypeInfo())) throw new NotImplementedException("IPhpCallable");
+
+            if (tinfo.IsAssignableFrom(typeof(IPhpCallable).GetTypeInfo())) return (ConversionCost.ImplicitCast); // string -> callable
 
             return ConversionCost.Error;
         }
@@ -751,7 +752,8 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(object)) return ConversionCost.PassCostly;    // TODO: Error when passing to a PHP function
 
             var tinfo = target.GetTypeInfo();
-            if (tinfo.IsAssignableFrom(typeof(IPhpCallable).GetTypeInfo())) throw new NotImplementedException("IPhpCallable");
+
+            if (tinfo.IsAssignableFrom(typeof(IPhpCallable).GetTypeInfo())) return (ConversionCost.ImplicitCast); // string -> callable
 
             return ConversionCost.Error;
         }
