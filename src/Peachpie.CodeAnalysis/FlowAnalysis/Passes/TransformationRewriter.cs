@@ -16,26 +16,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         public static bool TryTransform(SourceRoutineSymbol routine)
         {
-            if (routine.ControlFlowGraph != null)   // non-abstract method
+            if (routine.ControlFlowGraph == null)
             {
-                var rewriter = new TransformationRewriter(routine);
-                var updatedCFG = (ControlFlowGraph)rewriter.VisitCFG(routine.ControlFlowGraph);
-
-                if (updatedCFG != routine.ControlFlowGraph)
-                {
-                    Debug.Assert(rewriter.TransformationCount > 0);
-                    routine.UpdateControlFlowGraph(updatedCFG);
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            else
-            {
+                // abstract method
                 return false;
             }
+
+            //
+            var rewriter = new TransformationRewriter(routine);
+            var currentCFG = routine.ControlFlowGraph;
+            var updatedCFG = (ControlFlowGraph)rewriter.VisitCFG(currentCFG);
+
+            routine.ControlFlowGraph = updatedCFG;
+
+            Debug.Assert((rewriter.TransformationCount != 0) == (updatedCFG != currentCFG)); // transformations <=> cfg updated                                                                                 //
+            return updatedCFG != currentCFG;
         }
 
         private TransformationRewriter(SourceRoutineSymbol routine)

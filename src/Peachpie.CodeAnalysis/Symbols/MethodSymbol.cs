@@ -293,7 +293,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// For source routines, gets their control flow graph.
         /// Can be <c>null</c> for routines from PE or synthesized routines.
         /// </summary>
-        public virtual ControlFlowGraph ControlFlowGraph => null;
+        public virtual ControlFlowGraph ControlFlowGraph { get => null; internal set { } }
 
         /// <summary>
         /// Gets the routine name, equivalent to a PHP pseudoconstant <c>__FUNCTION__</c>.

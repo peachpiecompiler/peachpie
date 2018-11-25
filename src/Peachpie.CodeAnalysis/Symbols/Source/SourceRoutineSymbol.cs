@@ -49,17 +49,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 return _cfg;
             }
-        }
-
-        /// <summary>
-        /// Update current CFG to a new version.
-        /// </summary>
-        internal void UpdateControlFlowGraph(ControlFlowGraph graph)
-        {
-            Debug.Assert(_cfg != null);
-            Debug.Assert(graph != null);
-
-            _cfg = graph;
+            internal set
+            {
+                _cfg = value;
+            }
         }
 
         /// <summary>
