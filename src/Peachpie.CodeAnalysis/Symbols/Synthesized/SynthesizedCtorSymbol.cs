@@ -222,7 +222,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 var calledparams = c.Parameters.Where(p => !p.IsImplicitlyDeclared && !p.IsParams).ToImmutableArray();
 
-                if (!c.IsStatic && c.DeclaredAccessibility != Accessibility.Private)
+                if (!c.IsStatic && c.DeclaredAccessibility != Accessibility.Private && c.DeclaredAccessibility != Accessibility.Internal)
                 {
                     var cost = OverrideHelper.OverrideCost(givenparams, calledparams);
                     if (cost < bestcost)
