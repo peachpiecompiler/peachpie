@@ -387,9 +387,8 @@ namespace Pchp.Core
         /// </summary>
         public static bool IsValidBoundCallback(Context ctx, IPhpCallable callable)
         {
-            var tmp = callable as PhpCallback;
-            return (tmp != null)
-                ? tmp.IsValidBound(ctx)
+            return callable is PhpCallback phpcallback
+                ? phpcallback.IsValidBound(ctx)
                 : callable != null;
         }
 

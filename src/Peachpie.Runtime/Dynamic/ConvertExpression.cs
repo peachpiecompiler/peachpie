@@ -632,10 +632,6 @@ namespace Pchp.Core.Dynamic
 
             //
             var target_type = target.GetTypeInfo();
-            if (!target_type.IsValueType)
-            {
-                // TODO
-            }
 
             //
             if (target_type.IsEnum)
@@ -649,10 +645,24 @@ namespace Pchp.Core.Dynamic
             }
 
             //
-            if (ReflectionUtils.IsPhpClassType(target_type))
+            if (!target_type.IsValueType)
             {
-                var toclass_T = typeof(CostOf).GetTypeInfo().GetDeclaredMethod("ToClass").MakeGenericMethod(target);
-                return Expression.Call(toclass_T, arg); // CostOf.ToClass<T>(arg)
+                if (target_type.IsByRef)
+                {
+                    // ref T : cost(T) | ConversionCost.Warning
+                    // CONSIDER: no warning if PhpValue is passed by ref as well and we implement this in CallBinder {ref PhpValue value; int tmp; foo(ref tmp); value = tmp;}
+                    return Expression.Or(
+                        BindCostFromValue(arg, target_type.GetElementType()),
+                        Expression.Constant(ConversionCost.Warning));
+                }
+
+                if (ReflectionUtils.IsPhpClassType(target_type))
+                {
+                    var toclass_T = typeof(CostOf).GetTypeInfo().GetDeclaredMethod("ToClass").MakeGenericMethod(target);
+                    return Expression.Call(toclass_T, arg); // CostOf.ToClass<T>(arg)
+                }
+
+                // TODO
             }
 
             // fallback
