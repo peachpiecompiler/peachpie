@@ -22,11 +22,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         private Stack<TryCatchEdge> _tryTargets;
         private Stack<LocalScopeInfo> _scopes = new Stack<LocalScopeInfo>(1);
         private int _index = 0;
-        
+
         /// <summary>
         /// Gets enumeration of unconditional declarations.
         /// </summary>
-        public IEnumerable<BoundStatement> Declarations => _declarations != null ? _declarations : Enumerable.Empty<BoundStatement>();
+        public IEnumerable<BoundStatement> Declarations => _declarations ?? Enumerable.Empty<BoundStatement>();
         public List<BoundStatement> _declarations;
 
         public BoundBlock/*!*/Start { get; private set; }
@@ -152,7 +152,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             binder.SetupBuilder(this.NewBlock);
 
             _binder = binder;
-            
+
             this.Start = WithNewOrdinal(new StartBlock());
             this.Exit = new ExitBlock();
 
@@ -381,11 +381,48 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 return false;
             }
 
-            if (x.BaseClass != null || x.ImplementsList.Length != 0 || x.Members.OfType<TraitsUse>().Any())
+            /// <summary>
+            /// Helper that lookups for the type if it is declared unconditionally.
+            /// </summary>
+            bool IsDeclared(QualifiedName qname)
             {
-                return true;
+                if (_declarations != null &&
+                    _declarations.OfType<TypeDecl>().FirstOrDefault(t => t.QualifiedName == qname) != default)
+                {
+                    return true;
+                }
+
+                if (_binder.Routine.DeclaringCompilation.GlobalSemantics.ResolveType(qname) != null)
+                {
+                    return true;
+                }
+
+                //
+                return false;
             }
 
+            // the base class should be resolved first?
+            if (x.BaseClass is ClassTypeRef cref) // != null
+            {
+                if (!IsDeclared(cref.ClassName))
+                    return true;
+            }
+
+            // the interface should be resolved first?
+            if (x.ImplementsList.Length != 0)
+            {
+                if (x.ImplementsList.OfType<ClassTypeRef>().Any(t => !IsDeclared(t.ClassName)))
+                    return true;
+            }
+
+            // the trait type should be resolved first?
+            foreach (var t in x.Members.OfType<TraitsUse>())
+            {
+                if (t.TraitsList.OfType<ClassTypeRef>().Any(tu => !IsDeclared(tu.ClassName)))
+                    return true;
+            }
+
+            // can be declared unconditionally
             return false;
         }
 
