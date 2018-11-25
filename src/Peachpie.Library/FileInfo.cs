@@ -43,18 +43,14 @@ namespace Pchp.Library
         /// <summary>
         /// Create a new fileinfo resource. Alias of <c>new finfo</c>.
         /// </summary>
-        public static finfo finfo_open(Context ctx, int options = FILEINFO_NONE, string magic_file = null) => new finfo(ctx, options, magic_file);
+        public static PhpResource finfo_open(Context ctx, int options = FILEINFO_NONE, string magic_file = null) => new finfoResource(new finfo(ctx, options, magic_file));
 
         /// <summary>
         /// Close fileinfo resource
         /// </summary>
-        public static bool finfo_close(finfo finfo)
+        public static bool finfo_close(PhpResource finfo)
         {
-            if (finfo != null && finfo.IsValid)
-            {
-                finfo.Dispose();
-            }
-
+            finfo?.Dispose();
             return true;
         }
 
@@ -62,20 +58,20 @@ namespace Pchp.Library
         /// Return information about a string buffer.
         /// </summary>
         [return: CastToFalse]
-        public static string finfo_buffer(finfo finfo, byte[] @string = null, int options = FILEINFO_NONE, PhpResource context = null)
-            => finfo?.buffer(@string, options, context);
+        public static string finfo_buffer(PhpResource finfo, byte[] @string = null, int options = FILEINFO_NONE, PhpResource context = null)
+            => ((finfoResource)finfo).finfo.buffer(@string, options, context);
 
         /// <summary>
         /// Return information about a file.
         /// </summary>
         [return: CastToFalse]
-        public static string finfo_file(finfo finfo, string file_name = null, int options = FILEINFO_NONE, PhpResource context = null)
-            => finfo?.file(file_name, options, context);
+        public static string finfo_file(PhpResource finfo, string file_name = null, int options = FILEINFO_NONE, PhpResource context = null)
+            => ((finfoResource)finfo).finfo.file(file_name, options, context);
 
         /// <summary>
         /// Set configuration options.
         /// </summary>
-        public static bool finfo_set_flags(finfo finfo, int options) => finfo.set_flags(options);
+        public static bool finfo_set_flags(PhpResource finfo, int options) => ((finfoResource)finfo).finfo.set_flags(options);
 
         /// <summary>
         /// Detect MIME Content-type for a file.
@@ -346,11 +342,29 @@ namespace Pchp.Library
     }
 
     /// <summary>
+    /// <c>resource</c> wrapping instance of <see cref="finfo"/>.
+    /// </summary>
+    sealed class finfoResource : PhpResource
+    {
+        /// <summary>
+        /// Underlaying <see cref="finfo"/> instance. Cannot be <c>null</c>.
+        /// </summary>
+        public finfo finfo => _finfo;
+        readonly finfo _finfo;
+
+        public finfoResource(finfo finfo)
+           : base("file_info")
+        {
+            _finfo = finfo;
+        }
+    }
+
+    /// <summary>
     /// This class provides an object oriented interface into the fileinfo functions.
     /// </summary>
     [PhpExtension(PhpFileInfo.ExtensionName)]
     [PhpType(PhpTypeAttribute.InheritName)]
-    public class finfo : PhpResource
+    public class finfo
     {
         readonly protected Context/*!*/_ctx;
         int _options;
@@ -363,7 +377,6 @@ namespace Pchp.Library
 
         [PhpFieldsOnlyCtor]
         protected finfo(Context ctx)
-            : base("file_info")
         {
             _ctx = ctx;
         }
