@@ -178,7 +178,11 @@ namespace Peachpie.DiagnosticTests
 
         private bool CheckTypes(PhpSyntaxTree syntaxTree, IEnumerable<SymbolsSelector.SymbolStat> symbolStats, MatchCollection expectedTypes)
         {
-            var positionSymbolMap = symbolStats.ToDictionary(info => info.Span.Start);
+            var positionSymbolMap = new Dictionary<int, SymbolsSelector.SymbolStat>();
+            foreach (var stat in symbolStats)
+            {
+                positionSymbolMap.TryAdd(stat.Span.Start, stat);
+            }
 
             // Type annotation is voluntary; therefore, check only the specified types
             bool isCorrect = true;

@@ -40,6 +40,18 @@ namespace Pchp.CodeAnalysis.Semantics
             _span = span;
         }
 
+        public BoundEmptyStatement Update(TextSpan span)
+        {
+            if (span == _span)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundEmptyStatement(span);
+            }
+        }
+
         public override void Accept(OperationVisitor visitor)
             => visitor.VisitEmpty(this);
 
@@ -75,6 +87,18 @@ namespace Pchp.CodeAnalysis.Semantics
             this.Expression = expression;
         }
 
+        public BoundExpressionStatement Update(BoundExpression expression)
+        {
+            if (expression == Expression)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundExpressionStatement(expression);
+            }
+        }
+
         public override void Accept(OperationVisitor visitor)
             => visitor.VisitExpressionStatement(this);
 
@@ -101,6 +125,18 @@ namespace Pchp.CodeAnalysis.Semantics
         public BoundReturnStatement(BoundExpression returned)
         {
             this.Returned = returned;
+        }
+
+        public BoundReturnStatement Update(BoundExpression returned)
+        {
+            if (returned == Returned)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundReturnStatement(returned);
+            }
         }
 
         public override void Accept(OperationVisitor visitor)
@@ -133,6 +169,18 @@ namespace Pchp.CodeAnalysis.Semantics
             this.Thrown = thrown;
         }
 
+        public BoundThrowStatement Update(BoundExpression thrown)
+        {
+            if (thrown == Thrown)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundThrowStatement(thrown);
+            }
+        }
+
         public override void Accept(OperationVisitor visitor)
             => visitor.VisitThrow(this);
 
@@ -163,6 +211,18 @@ namespace Pchp.CodeAnalysis.Semantics
 
             _function = function;
             this.PhpSyntax = (Ast.FunctionDecl)function.Syntax;
+        }
+
+        internal BoundFunctionDeclStatement Update(SourceFunctionSymbol function)
+        {
+            if (function == _function)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundFunctionDeclStatement(function);
+            }
         }
 
         public override void Accept(OperationVisitor visitor)
@@ -200,6 +260,18 @@ namespace Pchp.CodeAnalysis.Semantics
             type.PostponedDeclaration();
         }
 
+        internal BoundTypeDeclStatement Update(SourceTypeSymbol type)
+        {
+            if (type == _type)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundTypeDeclStatement(type);
+            }
+        }
+
         public override void Accept(OperationVisitor visitor)
             => visitor.VisitInvalid(this);
 
@@ -232,6 +304,18 @@ namespace Pchp.CodeAnalysis.Semantics
             Variable = variable;
         }
 
+        public BoundGlobalVariableStatement Update(BoundVariableRef variable)
+        {
+            if (variable == Variable)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundGlobalVariableStatement(variable);
+            }
+        }
+
         public override void Accept(OperationVisitor visitor)
             => visitor.VisitVariableDeclaration(this);
 
@@ -259,6 +343,18 @@ namespace Pchp.CodeAnalysis.Semantics
             this.Value = value;
         }
 
+        public BoundGlobalConstDeclStatement Update(QualifiedName name, BoundExpression value)
+        {
+            if (name == Name && value == Value)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundGlobalConstDeclStatement(name, value);
+            }
+        }
+
         public override void Accept(OperationVisitor visitor)
             => visitor.DefaultVisit(this);
 
@@ -282,6 +378,13 @@ namespace Pchp.CodeAnalysis.Semantics
             /// Variable name.
             /// </summary>
             public string Name => Variable.Name;
+
+            public static bool operator==(StaticVarDecl a, StaticVarDecl b)
+            {
+                return a.Variable == b.Variable && a.InitialValue == b.InitialValue;
+            }
+
+            public static bool operator !=(StaticVarDecl a, StaticVarDecl b) => !(a == b);
         }
 
         public override OperationKind Kind => OperationKind.VariableDeclaration;
@@ -297,6 +400,18 @@ namespace Pchp.CodeAnalysis.Semantics
         public BoundStaticVariableStatement(StaticVarDecl variable)
         {
             _variable = variable;
+        }
+
+        public BoundStaticVariableStatement Update(StaticVarDecl variable)
+        {
+            if (variable == _variable)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundStaticVariableStatement(variable);
+            }
         }
 
         public override void Accept(OperationVisitor visitor)
@@ -323,6 +438,18 @@ namespace Pchp.CodeAnalysis.Semantics
         public BoundUnset(BoundReferenceExpression variable)
         {
             this.Variable = variable;
+        }
+
+        public BoundUnset Update(BoundReferenceExpression variable)
+        {
+            if (variable == Variable)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundUnset(variable);
+            }
         }
 
         public override void Accept(OperationVisitor visitor)
@@ -368,6 +495,18 @@ namespace Pchp.CodeAnalysis.Semantics
             YieldIndex = index;
             YieldedValue = valueExpression;
             YieldedKey = keyExpression;
+        }
+
+        public BoundYieldStatement Update(int index, BoundExpression valueExpression, BoundExpression keyExpression)
+        {
+            if (index == YieldIndex && valueExpression == YieldedValue && keyExpression == YieldedKey)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundYieldStatement(index, valueExpression, keyExpression);
+            }
         }
 
         /// <summary>Invokes corresponding <c>Visit</c> method on given <paramref name="visitor"/>.</summary>

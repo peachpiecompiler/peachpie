@@ -21,17 +21,17 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected virtual TResult DefaultVisitOperation(BoundOperation x) => default;
 
-        protected virtual TResult DefaultVisitType(BoundTypeRef x) => default;
-
         protected virtual TResult VisitRoutineCall(BoundRoutineCall x) => DefaultVisitOperation(x);
 
         public virtual TResult VisitLiteral(BoundLiteral x) => DefaultVisitOperation(x);
 
         public virtual TResult VisitArgument(BoundArgument x) => DefaultVisitOperation(x);
 
-        public virtual TResult VisitTypeRef(BoundTypeRef x) => DefaultVisitType(x);
+        public virtual TResult VisitTypeRef(BoundTypeRef x) => DefaultVisitOperation(x);
 
-        public virtual TResult VisitMultipleTypeRef(BoundMultipleTypeRef x) => DefaultVisitType(x);
+        public virtual TResult VisitMultipleTypeRef(BoundMultipleTypeRef x) => DefaultVisitOperation(x);
+
+        public virtual TResult VisitRoutineName(BoundRoutineName x) => DefaultVisitOperation(x);
 
         public virtual TResult VisitGlobalFunctionCall(BoundGlobalFunctionCall x) => VisitRoutineCall(x);
 
@@ -62,6 +62,8 @@ namespace Pchp.CodeAnalysis.Semantics
         public virtual TResult VisitAssign(BoundAssignEx x) => DefaultVisitOperation(x);
 
         public virtual TResult VisitCompoundAssign(BoundCompoundAssignEx x) => DefaultVisitOperation(x);
+
+        public virtual TResult VisitVariableName(BoundVariableName x) => DefaultVisitOperation(x);
 
         public virtual TResult VisitVariableRef(BoundVariableRef x) => DefaultVisitOperation(x);
 

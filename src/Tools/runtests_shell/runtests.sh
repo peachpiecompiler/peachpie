@@ -3,7 +3,7 @@
 
 # Absolute paths - https://stackoverflow.com/a/246128/2105235
 TOOL_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-OUTPUT_DIR="$TOOL_DIR/bin/Debug/netcoreapp2.0"
+OUTPUT_DIR="$TOOL_DIR/bin/Release/netcoreapp2.0"
 
 PHP_TMP_FILE=$OUTPUT_DIR/php.out
 PEACH_TMP_FILE=$OUTPUT_DIR/peach.out
@@ -30,7 +30,7 @@ do
     echo -e $COLOR_YELLOW"SKIPPED"$COLOR_RESET
     continue;
   fi
-  COMPILE_OUTPUT="$(dotnet build $TOOL_DIR /p:TestFile=$PHP_FILE)"
+  COMPILE_OUTPUT="$(dotnet build $TOOL_DIR -c Release /p:TestFile=$PHP_FILE)"
   if [ $PIPESTATUS != 0 ] ; then
     echo -e $COLOR_RED"Compilation error"$COLOR_RESET
     echo "$COMPILE_OUTPUT"

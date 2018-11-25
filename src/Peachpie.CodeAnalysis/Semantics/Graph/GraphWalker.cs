@@ -71,7 +71,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override T VisitCFGCatchBlock(CatchBlock x)
         {
-            VisitTypeRef(x.TypeRef);
+            Accept(x.TypeRef);
             Accept(x.Variable);
 
             DefaultVisitBlock(x);
@@ -196,10 +196,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override T VisitTypeRef(BoundTypeRef x)
         {
-            if (x != null)
-            {
-                Accept(x.TypeExpression);
-            }
+            Accept(x.TypeExpression);
 
             return default;
         }
@@ -218,15 +215,25 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
+        public override T VisitRoutineName(BoundRoutineName x)
+        {
+            Accept(x.NameExpression);
+
+            return default;
+        }
+
         public override T VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
         {
+            Accept(x.Name);
             VisitRoutineCall(x);
+
             return default;
         }
 
         public override T VisitInstanceFunctionCall(BoundInstanceFunctionCall x)
         {
             Accept(x.Instance);
+            Accept(x.Name);
             VisitRoutineCall(x);
 
             return default;
@@ -234,7 +241,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override T VisitStaticFunctionCall(BoundStaticFunctionCall x)
         {
-            VisitTypeRef(x.TypeRef);
+            Accept(x.TypeRef);
+            Accept(x.Name);
             VisitRoutineCall(x);
 
             return default;
@@ -256,7 +264,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override T VisitNew(BoundNewEx x)
         {
-            VisitTypeRef(x.TypeRef);
+            Accept(x.TypeRef);
             VisitRoutineCall(x);
 
             return default;
@@ -331,8 +339,17 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
+        public override T VisitVariableName(BoundVariableName x)
+        {
+            Accept(x.NameExpression);
+
+            return default;
+        }
+
         public override T VisitVariableRef(BoundVariableRef x)
         {
+            Accept(x.Name);
+
             return default;
         }
 
@@ -357,9 +374,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override T VisitFieldRef(BoundFieldRef x)
         {
-            VisitTypeRef(x.ContainingType);
+            Accept(x.ContainingType);
             Accept(x.Instance);
-            Accept(x.FieldName.NameExpression);
+            Accept(x.FieldName);
 
             return default;
         }
@@ -386,7 +403,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public override T VisitInstanceOf(BoundInstanceOfEx x)
         {
             Accept(x.Operand);
-            VisitTypeRef(x.AsType);
+            Accept(x.AsType);
 
             return default;
         }
@@ -410,7 +427,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override T VisitPseudoClassConstUse(BoundPseudoClassConst x)
         {
-            VisitTypeRef(x.TargetType);
+            Accept(x.TargetType);
 
             return default;
         }
@@ -472,6 +489,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override T VisitBlockStatement(Graph.BoundBlock x)
         {
+            Debug.Assert(x.NextEdge == null);
+
             for (int i = 0; i < x.Statements.Count; i++)
             {
                 Accept(x.Statements[i]);

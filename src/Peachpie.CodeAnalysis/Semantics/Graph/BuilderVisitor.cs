@@ -4,6 +4,7 @@ using Devsense.PHP.Text;
 using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -37,15 +38,15 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Gets labels defined within the routine.
         /// </summary>
-        public ControlFlowGraph.LabelBlockState[] Labels
+        public ImmutableArray<ControlFlowGraph.LabelBlockState> Labels
         {
-            get { return (_labels != null) ? _labels.Values.ToArray() : EmptyArray<ControlFlowGraph.LabelBlockState>.Instance; }
+            get { return (_labels != null) ? _labels.Values.ToImmutableArray() : ImmutableArray<ControlFlowGraph.LabelBlockState>.Empty; }
         }
 
         /// <summary>
         /// Blocks we know nothing is pointing to (right after jump, throw, etc.).
         /// </summary>
-        public List<BoundBlock>/*!*/DeadBlocks { get { return _deadBlocks; } }
+        public ImmutableArray<BoundBlock>/*!*/DeadBlocks { get { return _deadBlocks.ToImmutableArray(); } }
         private readonly List<BoundBlock>/*!*/_deadBlocks = new List<BoundBlock>();
 
         #region LocalScope
@@ -794,7 +795,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
 
             // SwitchEdge // Connects _current to cases
-            var edge = new SwitchEdge(_current, switchValue, cases.ToArray(), end);
+            var edge = new SwitchEdge(_current, switchValue, cases.ToImmutableArray(), end);
             _current = WithNewOrdinal(cases[0]);
 
             OpenBreakScope(end, end); // NOTE: inside switch, Continue ~ Break
@@ -861,12 +862,19 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             var body = NewBlock();
 
             // init catch blocks and finally block
-            var catchBlocks = new CatchBlock[(x.Catches == null) ? 0 : x.Catches.Length];
+            var catchBlocks = ImmutableArray<CatchBlock>.Empty;
+            if (x.Catches != null)
+            {
+                var catchBuilder = ImmutableArray.CreateBuilder<CatchBlock>(x.Catches.Length);
+                for (int i = 0; i < x.Catches.Length; i++)
+                {
+                    catchBuilder.Add(NewBlock(x.Catches[i]));
+                }
+
+                catchBlocks = catchBuilder.MoveToImmutable();
+            }
+
             BoundBlock finallyBlock = null;
-
-            for (int i = 0; i < catchBlocks.Length; i++)
-                catchBlocks[i] = NewBlock(x.Catches[i]);
-
             if (x.FinallyItem != null)
                 finallyBlock = NewBlock();
 

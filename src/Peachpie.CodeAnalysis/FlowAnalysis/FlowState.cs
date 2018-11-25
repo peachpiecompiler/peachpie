@@ -103,7 +103,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // initial size of the array
             var countHint = (flowCtx.Routine != null)
-                ? flowCtx.Routine.LocalsTable.Count
+                ? flowCtx.VarsType.Length
                 : 0;
             _varsType = new TypeRefMask[countHint];
 

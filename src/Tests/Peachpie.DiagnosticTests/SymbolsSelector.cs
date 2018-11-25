@@ -103,22 +103,19 @@ namespace Peachpie.DiagnosticTests
 
         public override VoidStruct VisitTypeRef(BoundTypeRef x)
         {
-            if (x != null)
+            if (x.Symbol != null)
             {
-                if (x.Symbol != null)
+                if (x.TypeRef is AnonymousTypeRef)
                 {
-                    if (x.TypeRef is AnonymousTypeRef)
-                    {
-                        // nada
-                    }
-                    else
-                    {
-                        _result.Add(new SymbolStat(_tctx, x.TypeRef.Span, null, x.Symbol));
-                    }
+                    // nada
                 }
-
-                base.VisitTypeRef(x);
+                else
+                {
+                    _result.Add(new SymbolStat(_tctx, x.TypeRef.Span, null, x.Symbol));
+                }
             }
+
+            base.VisitTypeRef(x);
 
             return default;
         }

@@ -8,6 +8,7 @@ using System;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis.Text;
+using System.Collections.Immutable;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
 {
@@ -32,11 +33,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public abstract BoundBlock NextBlock { get; }
 
         /// <summary>
-        /// The block this edge is attached to.
-        /// </summary>
-        public BoundBlock Source { get; }
-
-        /// <summary>
         /// Gets value indicating whether the edge represents a conditional edge.
         /// </summary>
         public virtual bool IsConditional => false;
@@ -59,7 +55,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Catch blocks if try/catch edge.
         /// </summary>
-        public virtual CatchBlock[] CatchBlocks => EmptyArray<CatchBlock>.Instance;
+        public virtual ImmutableArray<CatchBlock> CatchBlocks => ImmutableArray<CatchBlock>.Empty;
 
         /// <summary>
         /// Finally block of try/catch edge.
@@ -69,14 +65,15 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Enumeration with single case blocks.
         /// </summary>
-        public virtual CaseBlock[] CaseBlocks => EmptyArray<CaseBlock>.Instance;
+        public virtual ImmutableArray<CaseBlock> CaseBlocks => ImmutableArray<CaseBlock>.Empty;
 
         internal Edge(BoundBlock/*!*/source)
         {
             Contract.ThrowIfNull(source);
-
-            Source = source;
         }
+
+        protected Edge()
+        { }
 
         protected void Connect(BoundBlock/*!*/source)
         {
@@ -114,6 +111,23 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Connect(source);
         }
 
+        internal SimpleEdge(BoundBlock target)
+        {
+            _target = target;
+        }
+
+        public SimpleEdge Update(BoundBlock target)
+        {
+            if (target == _target)
+            {
+                return this;
+            }
+            else
+            {
+                return new SimpleEdge(target);
+            }
+        }
+
         /// <summary>
         /// Target blocks.
         /// </summary>
@@ -135,6 +149,24 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             :base(source, target)
         {
         }
+
+        internal LeaveEdge(BoundBlock target)
+            : base(target)
+        { }
+
+        public new LeaveEdge Update(BoundBlock target)
+        {
+            if (target == Target)
+            {
+                return this;
+            }
+            else
+            {
+                return new LeaveEdge(target);
+            }
+        }
+
+        public override TResult Accept<TResult>(GraphVisitor<TResult> visitor) => visitor.VisitCFGLeaveEdge(this);
     }
 
     /// <summary>
@@ -175,6 +207,27 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Connect(source);
         }
 
+        internal ConditionalEdge(BoundBlock @true, BoundBlock @false, BoundExpression cond)
+        {
+            Debug.Assert(@true != @false);
+
+            _true = @true;
+            _false = @false;
+            _condition = cond;
+        }
+
+        public ConditionalEdge Update(BoundBlock @true, BoundBlock @false, BoundExpression cond)
+        {
+            if (@true == _true && @false == _false && cond == _condition)
+            {
+                return this;
+            }
+            else
+            {
+                return new ConditionalEdge(@true, @false, cond);
+            }
+        }
+
         /// <summary>
         /// All target blocks.
         /// </summary>
@@ -200,7 +253,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     public sealed partial class TryCatchEdge : Edge
     {
         private readonly BoundBlock _body, _end;
-        private readonly CatchBlock[] _catchBlocks;
+        private readonly ImmutableArray<CatchBlock> _catchBlocks;
         private readonly BoundBlock _finallyBlock;
 
         /// <summary>
@@ -213,7 +266,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// </summary>
         public BoundBlock BodyBlock => _body;
         
-        internal TryCatchEdge(BoundBlock source, BoundBlock body, CatchBlock[] catchBlocks, BoundBlock finallyBlock, BoundBlock endBlock)
+        internal TryCatchEdge(BoundBlock source, BoundBlock body, ImmutableArray<CatchBlock> catchBlocks, BoundBlock finallyBlock, BoundBlock endBlock)
             : base(source)
         {
             Debug.Assert(catchBlocks != null);
@@ -224,6 +277,29 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _finallyBlock = finallyBlock;
             _end = endBlock;
             Connect(source);
+        }
+
+        internal TryCatchEdge(BoundBlock body, ImmutableArray<CatchBlock> catchBlocks, BoundBlock finallyBlock, BoundBlock endBlock)
+        {
+            Debug.Assert(catchBlocks != null);
+            Debug.Assert(catchBlocks.Length != 0 || finallyBlock != null);  // catch or finally or both
+
+            _body = body;
+            _catchBlocks = catchBlocks;
+            _finallyBlock = finallyBlock;
+            _end = endBlock;
+        }
+
+        public TryCatchEdge Update(BoundBlock body, ImmutableArray<CatchBlock> catchBlocks, BoundBlock finallyBlock, BoundBlock endBlock)
+        {
+            if (body == _body && catchBlocks == _catchBlocks && finallyBlock == _finallyBlock && endBlock == _end)
+            {
+                return this;
+            }
+            else
+            {
+                return new TryCatchEdge(body, catchBlocks, finallyBlock, endBlock);
+            }
         }
 
         /// <summary>
@@ -239,7 +315,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // [ body, ...catches, finally]
 
                 arr[0] = _body;
-                Array.Copy(_catchBlocks, 0, arr, 1, _catchBlocks.Length);
+                ImmutableArray<BoundBlock>.CastUp(_catchBlocks).CopyTo(arr, 1);
                 if (_finallyBlock != null)
                 {
                     arr[size - 1] = _finallyBlock;
@@ -252,7 +328,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override bool IsTryCatch => true;
 
-        public override CatchBlock[] CatchBlocks => _catchBlocks;
+        public override ImmutableArray<CatchBlock> CatchBlocks => _catchBlocks;
 
         public override BoundBlock FinallyBlock => _finallyBlock;
 
@@ -278,6 +354,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// </summary>
         public BoundExpression Enumeree => _enumeree;
         private readonly BoundExpression _enumeree;
+
+        public bool AreValuesAliased => _aliasedValues;
         readonly bool _aliasedValues;
 
         internal ForeachEnumereeEdge(BoundBlock/*!*/source, BoundBlock/*!*/target, BoundExpression/*!*/enumeree, bool aliasedValues)
@@ -286,6 +364,26 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Contract.ThrowIfNull(enumeree);
             _enumeree = enumeree;
             _aliasedValues = aliasedValues;
+        }
+
+        internal ForeachEnumereeEdge(BoundBlock/*!*/target, BoundExpression/*!*/enumeree, bool aliasedValues)
+            : base(target)
+        {
+            Contract.ThrowIfNull(enumeree);
+            _enumeree = enumeree;
+            _aliasedValues = aliasedValues;
+        }
+
+        public ForeachEnumereeEdge Update(BoundBlock target, BoundExpression enumeree, bool aliasedValues)
+        {
+            if (target == Target && enumeree == _enumeree && aliasedValues == _aliasedValues)
+            {
+                return this;
+            }
+            else
+            {
+                return new ForeachEnumereeEdge(target, enumeree, aliasedValues);
+            }
         }
 
         /// <summary>
@@ -306,6 +404,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// Span of the move expression to emit sequence point of <c>MoveNext</c> operation.
         /// </summary>
         readonly TextSpan _moveSpan;
+        public TextSpan MoveSpan => _moveSpan;
 
         /// <summary>
         /// Content of the foreach.
@@ -352,6 +451,32 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Connect(source);
         }
 
+        internal ForeachMoveNextEdge(BoundBlock/*!*/body, BoundBlock/*!*/end, ForeachEnumereeEdge/*!*/enumereeEdge, BoundReferenceExpression keyVar, BoundReferenceExpression/*!*/valueVar, TextSpan moveSpan)
+        {
+            Contract.ThrowIfNull(body);
+            Contract.ThrowIfNull(end);
+            Contract.ThrowIfNull(enumereeEdge);
+
+            _body = body;
+            _end = end;
+            _enumereeEdge = enumereeEdge;
+            _keyVariable = keyVar;
+            _valueVariable = valueVar;
+            _moveSpan = moveSpan;
+        }
+
+        public ForeachMoveNextEdge Update(BoundBlock body, BoundBlock end, ForeachEnumereeEdge enumereeEdge, BoundReferenceExpression keyVar, BoundReferenceExpression/*!*/valueVar, TextSpan moveSpan)
+        {
+            if (body == _body && end == _end && enumereeEdge == _enumereeEdge && keyVar == _keyVariable && valueVar == _valueVariable && moveSpan == _moveSpan)
+            {
+                return this;
+            }
+            else
+            {
+                return new ForeachMoveNextEdge(body, end, enumereeEdge, keyVar, valueVar, moveSpan);
+            }
+        }
+
         public override IEnumerable<BoundBlock> Targets
         {
             get { return new BoundBlock[] { _body, _end }; }
@@ -370,7 +495,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     public sealed partial class SwitchEdge : Edge
     {
         readonly BoundExpression _switchValue;
-        readonly CaseBlock[] _caseBlocks;
+        readonly ImmutableArray<CaseBlock> _caseBlocks;
 
         readonly BoundBlock _end;
 
@@ -385,22 +510,42 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override bool IsSwitch => true;
 
-        public override CaseBlock[] CaseBlocks => _caseBlocks;
+        public override ImmutableArray<CaseBlock> CaseBlocks => _caseBlocks;
 
         /// <summary>
         /// Gets the case blocks representing a default section.
         /// </summary>
         public CaseBlock DefaultBlock => _caseBlocks.FirstOrDefault(c => c.IsDefault);
 
-        internal SwitchEdge(BoundBlock source, BoundExpression switchValue, CaseBlock[] caseBlocks, BoundBlock endBlock)
+        internal SwitchEdge(BoundBlock source, BoundExpression switchValue, ImmutableArray<CaseBlock> caseBlocks, BoundBlock endBlock)
             : base(source)
         {
-            Contract.ThrowIfNull(caseBlocks);
+            Contract.ThrowIfDefault(caseBlocks);
             _switchValue = switchValue;
             _caseBlocks = caseBlocks;
             _end = endBlock;
 
             Connect(source);
+        }
+
+        internal SwitchEdge(BoundExpression switchValue, ImmutableArray<CaseBlock> caseBlocks, BoundBlock endBlock)
+        {
+            Contract.ThrowIfDefault(caseBlocks);
+            _switchValue = switchValue;
+            _caseBlocks = caseBlocks;
+            _end = endBlock;
+        }
+
+        public SwitchEdge Update(BoundExpression switchValue, ImmutableArray<CaseBlock> caseBlocks, BoundBlock endBlock)
+        {
+            if (switchValue == _switchValue && caseBlocks == _caseBlocks && endBlock == _end)
+            {
+                return this;
+            }
+            else
+            {
+                return new SwitchEdge(switchValue, caseBlocks, endBlock);
+            }
         }
 
         /// <summary>

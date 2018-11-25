@@ -1412,7 +1412,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override void VisitGlobalFunctionCall(BoundGlobalFunctionCall x, ConditionBranch branch)
         {
-            Accept(x.Name.NameExpression);
+            Accept(x.Name);
 
             VisitRoutineCall(x);
 
@@ -1444,7 +1444,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override T VisitInstanceFunctionCall(BoundInstanceFunctionCall x)
         {
             Accept(x.Instance);
-            Accept(x.Name.NameExpression);
+            Accept(x.Name);
 
             VisitRoutineCall(x);
 
@@ -1490,11 +1490,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override T VisitStaticFunctionCall(BoundStaticFunctionCall x)
         {
-            VisitTypeRef(x.TypeRef);
+            Accept(x.TypeRef);
 
             VisitRoutineCall(x);
 
-            Accept(x.Name.NameExpression);
+            Accept(x.Name);
 
             if (x.Name.IsDirect && x.TypeRef.ResolvedType != null)
             {
@@ -1629,11 +1629,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override T VisitTypeRef(BoundTypeRef tref)
         {
-            if (tref == null)
-            {
-                return default;
-            }
-
             Debug.Assert(!(tref is BoundMultipleTypeRef));
 
             // visit indirect type
@@ -1649,7 +1644,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override T VisitNew(BoundNewEx x)
         {
-            VisitTypeRef(x.TypeRef);
+            Accept(x.TypeRef);
 
             VisitRoutineCall(x);    // analyse arguments
 
@@ -1747,8 +1742,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override T VisitFieldRef(BoundFieldRef x)
         {
             Accept(x.Instance);
-            VisitTypeRef(x.ContainingType);
-            Accept(x.FieldName.NameExpression);
+            Accept(x.ContainingType);
+            Accept(x.FieldName);
 
             if (x.IsInstanceField)  // {Instance}->FieldName
             {

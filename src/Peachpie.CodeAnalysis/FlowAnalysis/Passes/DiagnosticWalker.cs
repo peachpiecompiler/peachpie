@@ -97,7 +97,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             CheckUnreachableCode(x);
         }
 
-        void CheckLabels(ControlFlowGraph.LabelBlockState[] labels)
+        void CheckLabels(ImmutableArray<ControlFlowGraph.LabelBlockState> labels)
         {
             if (labels == null || labels.Length == 0)
             {
@@ -142,18 +142,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         public override T VisitTypeRef(BoundTypeRef typeRef)
         {
-            if (typeRef != null)
+            if (typeRef.HasClassNameRestriction && typeRef.TypeRef is Devsense.PHP.Syntax.Ast.PrimitiveTypeRef)
             {
-                if (typeRef.HasClassNameRestriction && typeRef.TypeRef is Devsense.PHP.Syntax.Ast.PrimitiveTypeRef)
-                {
-                    // error: use of primitive type {0} is misused // primitive type does not make any sense in this context
-                    _diagnostics.Add(_routine, typeRef.TypeRef, ErrorCode.ERR_PrimitiveTypeNameMisused, typeRef.TypeRef);
-                }
-                else
-                {
-                    CheckUndefinedType(typeRef);
-                    base.VisitTypeRef(typeRef);
-                }
+                // error: use of primitive type {0} is misused // primitive type does not make any sense in this context
+                _diagnostics.Add(_routine, typeRef.TypeRef, ErrorCode.ERR_PrimitiveTypeNameMisused, typeRef.TypeRef);
+            }
+            else
+            {
+                CheckUndefinedType(typeRef);
+                base.VisitTypeRef(typeRef);
             }
 
             return default;

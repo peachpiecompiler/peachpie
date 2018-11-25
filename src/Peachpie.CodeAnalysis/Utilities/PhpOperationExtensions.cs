@@ -11,7 +11,8 @@
         /// Copies context information (type mask, access, constant value) from another expression.
         /// </summary>
         /// <returns>The given expression, to enable chaining.</returns>
-        public static BoundExpression WithContext(this BoundExpression expr, BoundExpression other)
+        public static TExpression WithContext<TExpression>(this TExpression expr, BoundExpression other)
+            where TExpression : BoundExpression
         {
             expr.TypeRefMask = other.TypeRefMask;
             expr.Access = other.Access;

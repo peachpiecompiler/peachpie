@@ -718,14 +718,15 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 cg.ReturnTemporaryLocal(switch_loc);
 
                 // Switch Body
-                this.CaseBlocks.ForEach((i, this_block) =>
+                for (int i = 0; i < this.CaseBlocks.Length; i++)
                 {
                     var next_case = (i + 1 < this.CaseBlocks.Length) ? this.CaseBlocks[i + 1] : null;
 
                     // {
-                    cg.GenerateScope(this_block, (next_case ?? NextBlock).Ordinal);
+                    cg.GenerateScope(this.CaseBlocks[i], (next_case ?? NextBlock).Ordinal);
                     // }
-                });
+
+                }
             }
 
             cg.Scope.ContinueWith(NextBlock);

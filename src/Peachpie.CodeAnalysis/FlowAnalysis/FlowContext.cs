@@ -217,12 +217,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // By incrementing the version, the current flow states won't be valid any longer
             _version++;
 
+            // Reset internal structures to prevent possible bugs in re-analysis
+            _usedMask = 0;
+            _varsIndex.Clear();
+            _varsType = EmptyArray<TypeRefMask>.Instance;
+
             // Revert the information regarding the return type to the default state
             ReturnType = default;
 
             // TODO: Recreate the state also in the case of a standalone expression (such as a parameter initializer)
             if (_routine != null)
             {
+                // Reset routine properties related to the analysis
                 _routine.IsReturnAnalysed = false;
 
                 // Recreate the entry state to enable another analysis
