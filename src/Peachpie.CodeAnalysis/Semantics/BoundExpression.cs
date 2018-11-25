@@ -531,15 +531,15 @@ namespace Pchp.CodeAnalysis.Semantics
             _nameOpt = nameOpt;
         }
 
-        public BoundGlobalFunctionCall Update(BoundRoutineName name, QualifiedName? nameOpt, ImmutableArray<BoundArgument> arguments)
+        public BoundGlobalFunctionCall Update(BoundRoutineName name, QualifiedName? nameOpt, ImmutableArray<BoundArgument> arguments, ImmutableArray<BoundTypeRef> typeArguments = default)
         {
-            if (name == _name && nameOpt == _nameOpt && arguments == ArgumentsInSourceOrder)
+            if (name == _name && nameOpt == _nameOpt && arguments == ArgumentsInSourceOrder && typeArguments == _typeargs)
             {
                 return this;
             }
             else
             {
-                return new BoundGlobalFunctionCall(name, nameOpt, arguments).WithContext(this);
+                return new BoundGlobalFunctionCall(name, nameOpt, arguments){ TypeArguments = typeArguments }.WithContext(this);
             }
         }
 
@@ -583,15 +583,15 @@ namespace Pchp.CodeAnalysis.Semantics
             _name = name;
         }
 
-        public BoundInstanceFunctionCall Update(BoundExpression instance, BoundRoutineName name, ImmutableArray<BoundArgument> arguments)
+        public BoundInstanceFunctionCall Update(BoundExpression instance, BoundRoutineName name, ImmutableArray<BoundArgument> arguments, ImmutableArray<BoundTypeRef> typeArguments)
         {
-            if (instance == _instance && name == _name && arguments == ArgumentsInSourceOrder)
+            if (instance == _instance && name == _name && arguments == ArgumentsInSourceOrder && typeArguments == _typeargs)
             {
                 return this;
             }
             else
             {
-                return new BoundInstanceFunctionCall(instance, name, arguments).WithContext(this);
+                return new BoundInstanceFunctionCall(instance, name, arguments) { TypeArguments = typeArguments }.WithContext(this);
             }
         }
 
@@ -618,15 +618,15 @@ namespace Pchp.CodeAnalysis.Semantics
             _name = name;
         }
 
-        public BoundStaticFunctionCall Update(BoundTypeRef typeRef, BoundRoutineName name, ImmutableArray<BoundArgument> arguments)
+        public BoundStaticFunctionCall Update(BoundTypeRef typeRef, BoundRoutineName name, ImmutableArray<BoundArgument> arguments, ImmutableArray<BoundTypeRef> typeArguments)
         {
-            if (typeRef == _typeRef && name == _name && arguments == ArgumentsInSourceOrder)
+            if (typeRef == _typeRef && name == _name && arguments == ArgumentsInSourceOrder && typeArguments == _typeargs)
             {
                 return this;
             }
             else
             {
-                return new BoundStaticFunctionCall(typeRef, name, arguments).WithContext(this);
+                return new BoundStaticFunctionCall(typeRef, name, arguments){ TypeArguments = typeArguments }.WithContext(this);
             }
         }
 
@@ -716,15 +716,15 @@ namespace Pchp.CodeAnalysis.Semantics
             _typeref = tref;
         }
 
-        public BoundNewEx Update(BoundTypeRef tref, ImmutableArray<BoundArgument> arguments)
+        public BoundNewEx Update(BoundTypeRef tref, ImmutableArray<BoundArgument> arguments, ImmutableArray<BoundTypeRef> typeArguments)
         {
-            if (tref == _typeref && arguments == ArgumentsInSourceOrder)
+            if (tref == _typeref && arguments == ArgumentsInSourceOrder && typeArguments == _typeargs)
             {
                 return this;
             }
             else
             {
-                return new BoundNewEx(tref, arguments).WithContext(this);
+                return new BoundNewEx(tref, arguments){ TypeArguments = typeArguments }.WithContext(this);
             }
         }
 

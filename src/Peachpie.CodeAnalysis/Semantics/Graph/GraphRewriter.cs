@@ -73,6 +73,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private List<T> VisitList<T>(List<T> list) where T : BoundOperation, IPhpOperation
         {
+            if (list == null || list.Count == 0)
+            {
+                return list;
+            }
+
             List<T> alternate = null;
             for (int i = 0; i < list.Count; i++)
             {
@@ -94,6 +99,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private ImmutableArray<T> VisitImmutableArray<T>(ImmutableArray<T> arr) where T : BoundOperation, IPhpOperation
         {
+            if (arr.IsDefaultOrEmpty)
+            {
+                return arr;
+            }
+
             ImmutableArray<T>.Builder alternate = null;
             for (int i = 0; i < arr.Length; i++)
             {
@@ -115,6 +125,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private ImmutableArray<T> VisitBlockImmutableArray<T>(ImmutableArray<T> arr) where T : BoundBlock
         {
+            if (arr.IsDefaultOrEmpty)
+            {
+                return arr;
+            }
+
             ImmutableArray<T>.Builder alternate = null;
             for (int i = 0; i < arr.Length; i++)
             {
@@ -138,6 +153,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             where T1 : BoundOperation, IPhpOperation
             where T2 : BoundOperation, IPhpOperation
         {
+            if (arr.IsDefaultOrEmpty)
+            {
+                return arr;
+            }
+
             ImmutableArray<KeyValuePair<T1, T2>>.Builder alternate = null;
             for (int i = 0; i < arr.Length; i++)
             {
@@ -557,7 +577,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return x.Update(
                 (BoundExpression)Accept(x.Instance),
                 (BoundRoutineName)Accept(x.Name),
-                VisitImmutableArray(x.ArgumentsInSourceOrder));
+                VisitImmutableArray(x.ArgumentsInSourceOrder),
+                VisitImmutableArray(x.TypeArguments));
         }
 
         public override object VisitStaticFunctionCall(BoundStaticFunctionCall x)
@@ -565,7 +586,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return x.Update(
                 (BoundTypeRef)Accept(x.TypeRef),
                 (BoundRoutineName)Accept(x.Name),
-                VisitImmutableArray(x.ArgumentsInSourceOrder));
+                VisitImmutableArray(x.ArgumentsInSourceOrder),
+                VisitImmutableArray(x.TypeArguments));
         }
 
         public override object VisitEcho(BoundEcho x)
@@ -582,7 +604,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             return x.Update(
                 (BoundTypeRef)Accept(x.TypeRef),
-                VisitImmutableArray(x.ArgumentsInSourceOrder));
+                VisitImmutableArray(x.ArgumentsInSourceOrder),
+                VisitImmutableArray(x.TypeArguments));
         }
 
         public override object VisitInclude(BoundIncludeEx x)
