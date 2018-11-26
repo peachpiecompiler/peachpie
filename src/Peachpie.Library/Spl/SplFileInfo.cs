@@ -7,7 +7,7 @@ using Pchp.Library.Streams;
 
 namespace Pchp.Library.Spl
 {
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplFileInfo
     {
         protected readonly Context _ctx;
@@ -87,7 +87,7 @@ namespace Pchp.Library.Spl
         public override string ToString() => _filename;
     }
 
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplFileObject : SplFileInfo, SeekableIterator, RecursiveIterator
     {
         public const long DROP_NEW_LINE = 1;
@@ -174,7 +174,7 @@ namespace Pchp.Library.Spl
         public virtual void setMaxLineLen(int max_len) { throw new NotImplementedException(); }
     }
 
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplTempFileObject : SplFileObject
     {
         public SplTempFileObject(Context ctx, long max_memory = 2 * 1024 * 1024 /*2MB*/)
