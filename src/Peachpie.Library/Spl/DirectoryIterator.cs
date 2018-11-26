@@ -98,6 +98,13 @@ namespace Pchp.Library.Spl
             return base.getFilename();
         }
 
+        public virtual bool isDot()
+        {
+            return
+                _entry == _original ||
+                _entry.FullName.Length < _original.FullName.Length; // do not compare with _original.Parent
+        }
+
         #region SeekableIterator
 
         public virtual DirectoryIterator current() => this;
