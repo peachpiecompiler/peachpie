@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 using Pchp.Library.Streams;
 
 namespace Pchp.Library.Spl
@@ -10,55 +12,119 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class DirectoryIterator : SplFileInfo, SeekableIterator
     {
-        public DirectoryIterator(Context ctx, string file_name)
-            : base(ctx, file_name)
+        int _index; // where we are pointing right now
+        FileSystemInfo[] _children;
+        DirectoryInfo _original;
+
+        int Position
+        {
+            get => _index;
+            set
+            {
+                _index = value;
+
+                // . always listed
+                if (value == 0)
+                {
+                    _entry = _original;
+                }
+                else
+                {
+                    // .. listed ?
+                    var hasparent = (_original.Parent != null);
+                    if (hasparent && value == 1)
+                    {
+                        _entry = _original.Parent;
+                    }
+                    else
+                    {
+                        // the rest
+                        var index = hasparent ? value - 2 : value - 1;
+
+                        if (index < 0) throw new ArgumentException();
+
+                        if (index >= _children.Length)
+                        {
+                            _entry = _original;
+                            _fullpath = string.Empty; // not valid()
+                            return;
+                        }
+
+                        _entry = _children[index];
+                    }
+                }
+
+                _fullpath = _entry.FullName;
+            }
+        }
+
+        public DirectoryIterator(Context ctx, string path) : base(ctx, path)
+        {
+        }
+
+        protected internal DirectoryIterator(FileSystemInfo/*!*/entry)
+            : base(entry)
         {
         }
 
         [PhpFieldsOnlyCtor]
-        protected DirectoryIterator(Context ctx)
-            : base(ctx)
+        protected DirectoryIterator()
         {
         }
 
-        public override void __construct(string file_name)
+        public override void __construct(Context ctx, string path)
         {
-            base.__construct(file_name);
+            base.__construct(ctx, path);
+
+            _original = new DirectoryInfo(_fullpath);
+
+            if (!_original.Exists)
+            {
+                throw new UnexpectedValueException();
+            }
+
+            _children = _original.GetFileSystemInfos();
+
+            //
+            Position = 0;
+        }
+
+        public override string getFilename()
+        {
+            if (_entry == _original) return ".";
+            if (_entry.FullName.Length < _original.FullName.Length) return ".."; // do not compare with _original.Parent
+
+            //
+            return base.getFilename();
         }
 
         #region SeekableIterator
 
-        public virtual DirectoryIterator current()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual DirectoryIterator current() => this;
 
         PhpValue Iterator.current() => PhpValue.FromClass(current());
 
-        public virtual PhpValue key()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual PhpValue key() => Position;
 
         public virtual void next()
         {
-            throw new NotImplementedException();
+            if (valid())
+            {
+                Position++;
+            }
         }
 
         public virtual void rewind()
         {
-            throw new NotImplementedException();
+            Position = 0;
         }
 
         public virtual void seek(long position)
         {
-            throw new NotImplementedException();
+            Position = (int)position;
         }
 
-        public virtual bool valid()
-        {
-            throw new NotImplementedException();
-        }
+        public virtual bool valid() => !string.IsNullOrEmpty(_fullpath);
 
         #endregion
     }
@@ -81,29 +147,29 @@ namespace Pchp.Library.Spl
         int _flags;
 
         [PhpFieldsOnlyCtor]
-        protected FilesystemIterator(Context ctx)
-            : base(ctx)
+        protected FilesystemIterator()
         {
         }
 
-        public FilesystemIterator(Context ctx, string file_name, int flags = KEY_AS_PATHNAME | CURRENT_AS_FILEINFO | SKIP_DOTS)
-            : this(ctx)
+        public FilesystemIterator(Context ctx, string path, int flags = KEY_AS_PATHNAME | CURRENT_AS_FILEINFO | SKIP_DOTS)
+            : base(ctx, path)
         {
-            __construct(file_name, flags);
+            __construct(ctx, path, flags);
         }
 
-        public override sealed void __construct(string file_name)
+        public override sealed void __construct(Context ctx, string file_name)
         {
-            this.__construct(file_name);
+            this.__construct(ctx, file_name);
         }
 
-        public virtual void __construct(string path, int flags = KEY_AS_PATHNAME | CURRENT_AS_FILEINFO | SKIP_DOTS)
+        public virtual void __construct(Context ctx, string path, int flags = KEY_AS_PATHNAME | CURRENT_AS_FILEINFO | SKIP_DOTS)
         {
+            base.__construct(ctx, path);
             _flags = flags;
-            base.__construct(path);
         }
 
         public virtual int getFlags() => _flags;
+
         public virtual void setFlags(int flags) => _flags = flags;
     }
 
@@ -116,16 +182,13 @@ namespace Pchp.Library.Spl
         }
 
         [PhpFieldsOnlyCtor]
-        protected RecursiveDirectoryIterator(Context ctx)
-            : base(ctx)
+        protected RecursiveDirectoryIterator()
         {
         }
 
-        public override void __construct(string path, int flags = KEY_AS_PATHNAME | CURRENT_AS_FILEINFO)
+        public override void __construct(Context ctx, string path, int flags = KEY_AS_PATHNAME | CURRENT_AS_FILEINFO)
         {
-            base.__construct(path, flags);
-
-            //
+            base.__construct(ctx, path, flags);
         }
 
         public RecursiveIterator getChildren()

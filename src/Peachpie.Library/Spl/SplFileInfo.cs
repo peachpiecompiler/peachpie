@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 using Pchp.Library.Streams;
 
 namespace Pchp.Library.Spl
@@ -10,49 +12,82 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplFileInfo
     {
-        protected readonly Context _ctx;
+        internal protected string _fullpath;
+        internal protected FileSystemInfo _entry;
 
-        protected internal string _filename;
+        /// <summary>
+        /// Resolves <see cref="FileSystemInfo"/> in case it is not initialized explicitly.
+        /// Only applies to <see cref="SplFileInfo"/>.
+        /// </summary>
+        FileSystemInfo ResolvedInfo
+        {
+            get
+            {
+                var entry = _entry;
+                if (entry == null)
+                {
+                    if (System.IO.Directory.Exists(_fullpath))
+                    {
+                        entry = new DirectoryInfo(_fullpath);
+                    }
+                    else
+                    {
+                        entry = new FileInfo(_fullpath);
+                    }
 
+                    _entry = entry;
+                }
+
+                return entry;
+            }
+        }
+
+        [PhpHidden]
         private string _info_class = "SplFileInfo";
+
+        [PhpHidden]
         private string _file_class = "SplFileObject";
 
-        private SplFileInfo CreateFileInfo(string class_name, string file_name)
+        private SplFileInfo CreateFileInfo(Context ctx, string class_name, string file_name)
         {
             if (string.IsNullOrEmpty(class_name) ||
                 string.Equals(class_name, "SplFileInfo", StringComparison.OrdinalIgnoreCase))
             {
-                return new SplFileInfo(_ctx, file_name);
+                return new SplFileInfo(ctx, file_name);
             }
             else
             {
-                return (SplFileInfo)_ctx.Create(class_name, (PhpValue)file_name);
+                return (SplFileInfo)ctx.Create(class_name, (PhpValue)file_name);
             }
         }
 
         public SplFileInfo(Context ctx, string file_name)
-            : this(ctx)
         {
-            __construct(file_name);
+            __construct(ctx, file_name);
         }
 
         [PhpFieldsOnlyCtor]
-        protected SplFileInfo(Context ctx)
+        protected SplFileInfo()
         {
-            _ctx = ctx;
         }
 
-        public virtual void __construct(string file_name)
+        protected internal SplFileInfo(FileSystemInfo/*!*/entry)
         {
-            _filename = file_name;
+            _entry = entry;
+            _fullpath = entry.FullName;
+        }
+
+        public virtual void __construct(Context ctx, string file_name)
+        {
+            _fullpath = FileSystemUtils.AbsolutePath(ctx, file_name);
         }
 
         public virtual long getATime() { throw new NotImplementedException(); }
-        public virtual string getBasename(string suffix = null) => PhpPath.basename(_filename, suffix);
+        public virtual string getBasename(string suffix = null) => PhpPath.basename(_fullpath, suffix);
         public virtual long getCTime() { throw new NotImplementedException(); }
         public virtual string getExtension()
         {
-            var ext = System.IO.Path.GetExtension(_filename);
+            var ext = ResolvedInfo.Extension;
             if (string.IsNullOrEmpty(ext))
             {
                 return string.Empty;
@@ -60,31 +95,31 @@ namespace Pchp.Library.Spl
             Debug.Assert(ext[0] == '.');
             return ext.Substring(1);
         }
-        public virtual SplFileInfo getFileInfo(string class_name = null) => CreateFileInfo(class_name, _filename);
-        public virtual string getFilename() => _filename;
+        public virtual SplFileInfo getFileInfo(Context ctx, string class_name = null) => CreateFileInfo(ctx, class_name, _fullpath);
+        public virtual string getFilename() => ResolvedInfo.Name;
         public virtual long getGroup() { throw new NotImplementedException(); }
         public virtual long getInode() { throw new NotImplementedException(); }
         public virtual string getLinkTarget() { throw new NotImplementedException(); }
         public virtual long getMTime() { throw new NotImplementedException(); }
         public virtual long getOwner() { throw new NotImplementedException(); }
-        public virtual string getPath() => PhpPath.dirname(_filename);
-        public virtual SplFileInfo getPathInfo(string class_name = null) => CreateFileInfo(class_name, PhpPath.dirname(_filename));
-        public virtual string getPathname() => _filename;
+        public virtual string getPath() => PhpPath.dirname(_fullpath);
+        public virtual SplFileInfo getPathInfo(Context ctx, string class_name = null) => CreateFileInfo(ctx, class_name, PhpPath.dirname(_fullpath));
+        public virtual string getPathname() => _fullpath;
         public virtual long getPerms() { throw new NotImplementedException(); }
-        public virtual string getRealPath() => PhpPath.realpath(_ctx, _filename);
+        public virtual string getRealPath(Context ctx) => ResolvedInfo.FullName;
         public virtual long getSize() { throw new NotImplementedException(); }
         public virtual string getType() { throw new NotImplementedException(); }
-        public virtual bool isDir() { throw new NotImplementedException(); }
+        public virtual bool isDir() => ResolvedInfo.Exists && ResolvedInfo is DirectoryInfo;
         public virtual bool isExecutable() { throw new NotImplementedException(); }
-        public virtual bool isFile() { throw new NotImplementedException(); }
+        public virtual bool isFile() => ResolvedInfo.Exists && ResolvedInfo is FileInfo;
         public virtual bool isLink() { throw new NotImplementedException(); }
         public virtual bool isReadable() { throw new NotImplementedException(); }
         public virtual bool isWritable() { throw new NotImplementedException(); }
         public virtual SplFileObject openFile(string open_mode = "r", bool use_include_path = false, PhpResource context = null) { throw new NotImplementedException(); }
         public virtual void setFileClass(string class_name = "SplFileObject") => _file_class = class_name;
         public virtual void setInfoClass(string class_name = "SplFileInfo") => _info_class = class_name;
-        public virtual string __toString() => _filename;
-        public override string ToString() => _filename;
+        public virtual string __toString() => _fullpath;
+        public override string ToString() => _fullpath;
     }
 
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
@@ -95,14 +130,18 @@ namespace Pchp.Library.Spl
         public const long SKIP_EMPTY = 4;
         public const long READ_CSV = 8;
 
-        public SplFileObject(Context ctx, string file_name)
-            : base(ctx, file_name)
+        public SplFileObject(Context ctx, string file_name) : base(ctx, file_name)
         {
         }
 
+        public override void __construct(Context ctx, string file_name)
+        {
+            base.__construct(ctx, file_name);
+            _entry = new FileInfo(_fullpath);
+        }
+
         [PhpFieldsOnlyCtor]
-        protected SplFileObject(Context ctx)
-            : base(ctx)
+        protected SplFileObject()
         {
         }
 
@@ -177,8 +216,7 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplTempFileObject : SplFileObject
     {
-        public SplTempFileObject(Context ctx, long max_memory = 2 * 1024 * 1024 /*2MB*/)
-            : base(ctx)
+        public SplTempFileObject(long max_memory = 2 * 1024 * 1024 /*2MB*/)
         {
             throw new NotImplementedException();
         }
