@@ -35,6 +35,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         HasUserFunctionCall = 128,
 
         /// <summary>
+        /// Indicates that the routine declaration was proven unreachable during the analysis.
+        /// </summary>
+        IsUnreachable = 256,
+
+        /// <summary>
         /// Whether the routine has to define local variables as an array instead of native local variables.
         /// </summary>
         RequiresLocalsArray = HasEval | HasInclude | HasIndirectVar | UsesLocals | IsGenerator,

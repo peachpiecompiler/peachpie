@@ -34,10 +34,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         BaseAttributeData _lazyScriptAttribute;
 
+        private IEnumerable<Symbol> ReachableMembers => _lazyMembers.Where(m => !m.IsUnreachable);
+
         /// <summary>
         /// List of functions declared within the file.
         /// </summary>
-        public ImmutableArray<SourceFunctionSymbol> Functions => _lazyMembers.OfType<SourceFunctionSymbol>().ToImmutableArray();
+        public ImmutableArray<SourceFunctionSymbol> Functions => ReachableMembers.OfType<SourceFunctionSymbol>().ToImmutableArray();
 
         /// <summary>
         /// List of types declared within the file.
@@ -89,7 +91,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                return _lazyMembers.OfType<SourceLambdaSymbol>();
+                return ReachableMembers.OfType<SourceLambdaSymbol>();
             }
         }
 
@@ -265,7 +267,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var builder = ImmutableArray.CreateBuilder<Symbol>(1 + _lazyMembers.Count);
 
             builder.Add(_mainMethod);
-            builder.AddRange(_lazyMembers);
+            builder.AddRange(ReachableMembers);
 
             return builder.ToImmutable();
         }
@@ -277,23 +279,23 @@ namespace Pchp.CodeAnalysis.Symbols
                 return ImmutableArray.Create<Symbol>(_mainMethod);
             }
 
-            return _lazyMembers
+            return ReachableMembers
                 .Where(x => x.Name == name)
                 .ToImmutableArray();
         }
 
         public override ImmutableArray<Symbol> GetMembersByPhpName(string name)
         {
-            return _lazyMembers
+            return ReachableMembers
                 .Where(x => x.Name.StringsEqual(name, ignoreCase: true))
                 .ToImmutableArray();
         }
 
         public override ImmutableArray<MethodSymbol> StaticConstructors => ImmutableArray<MethodSymbol>.Empty;
 
-        public override ImmutableArray<NamedTypeSymbol> GetTypeMembers() => _lazyMembers.OfType<NamedTypeSymbol>().AsImmutable();
+        public override ImmutableArray<NamedTypeSymbol> GetTypeMembers() => ReachableMembers.OfType<NamedTypeSymbol>().AsImmutable();
 
-        public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name) => _lazyMembers.OfType<NamedTypeSymbol>().Where(t => t.Name.Equals(name, StringComparison.OrdinalIgnoreCase)).AsImmutable();
+        public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name) => ReachableMembers.OfType<NamedTypeSymbol>().Where(t => t.Name.Equals(name, StringComparison.OrdinalIgnoreCase)).AsImmutable();
 
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit() => GetMembers().OfType<FieldSymbol>();
 

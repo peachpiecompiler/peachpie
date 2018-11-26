@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using Pchp.CodeAnalysis.FlowAnalysis;
 using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
@@ -89,13 +90,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         /// <summary>
         /// Finds all yield statements in unreachable blocks (those not yet colored by <see cref="ExploredColor"/>)
-        /// of the original graph. The blocks encountered along the way are coloured as a side effect.
+        /// of the original graph. Marks all declarations as unreachable. The blocks encountered along the way are
+        /// coloured as a side effect.
         /// </summary>
-        private class UnreachableYieldFinder : GraphExplorer<VoidStruct>
+        private class UnreachableProcessor : GraphExplorer<VoidStruct>
         {
             public List<BoundYieldStatement> Yields { get; private set; }
 
-            public UnreachableYieldFinder(int exploredColor) : base(exploredColor)
+            public UnreachableProcessor(int exploredColor) : base(exploredColor)
             { }
 
             public override VoidStruct VisitYieldStatement(BoundYieldStatement boundYieldStatement)
@@ -108,6 +110,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 Yields.Add(boundYieldStatement);
 
                 return base.VisitYieldStatement(boundYieldStatement);
+            }
+
+            public override VoidStruct VisitFunctionDeclaration(BoundFunctionDeclStatement x)
+            {
+                x.Function.Flags |= RoutineFlags.IsUnreachable;
+
+                return base.VisitFunctionDeclaration(x);
             }
         }
 
@@ -208,12 +217,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                     ?? Enumerable.Empty<BoundBlock>();
                 if (newlyUnreachableBlocks.Any())
                 {
-                    // Discover all the yields and remove them from the next CFG version
-                    var yieldFinder = new UnreachableYieldFinder(ExploredColor);
-                    newlyUnreachableBlocks.ForEach(b => b.Accept(yieldFinder));
-                    if (yieldFinder.Yields != null)
+                    // Scan all the newly unreachable blocks (for yields, declarations,...)
+                    var unreachableProcessor = new UnreachableProcessor(ExploredColor);
+                    newlyUnreachableBlocks.ForEach(b => b.Accept(unreachableProcessor));
+
+                    // Remove the discovered yields from the next CFG version
+                    if (unreachableProcessor.Yields != null)
                     {
-                        yields = yields.RemoveRange(yieldFinder.Yields);
+                        yields = yields.RemoveRange(unreachableProcessor.Yields);
                     }
                 }
 
