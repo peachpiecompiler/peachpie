@@ -226,7 +226,9 @@ namespace Pchp.CodeAnalysis
 
             this.WalkMethods(m =>
                 {
-                    anyTransforms |= TransformationRewriter.TryTransform(m);
+                    // Cannot be simplified due to multithreading ('=' is atomic unlike '|=')
+                    if (TransformationRewriter.TryTransform(m))
+                        anyTransforms = true;
                 },
                 allowParallel: allowParallel);
 
