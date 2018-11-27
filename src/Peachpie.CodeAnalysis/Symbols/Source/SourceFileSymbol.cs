@@ -265,7 +265,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var builder = ImmutableArray.CreateBuilder<Symbol>(1 + _lazyMembers.Count);
 
             builder.Add(_mainMethod);
-            builder.AddRange(_lazyMembers.Where(s => !s.IsUnreachable));
+            builder.AddRange(_lazyMembers);
 
             return builder.ToImmutable();
         }
@@ -278,14 +278,14 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             return _lazyMembers
-                .Where(x => x.Name == name && !x.IsUnreachable)
+                .Where(x => x.Name == name)
                 .ToImmutableArray();
         }
 
         public override ImmutableArray<Symbol> GetMembersByPhpName(string name)
         {
             return _lazyMembers
-                .Where(x => x.Name.StringsEqual(name, ignoreCase: true) && !x.IsUnreachable)
+                .Where(x => x.Name.StringsEqual(name, ignoreCase: true))
                 .ToImmutableArray();
         }
 
@@ -298,6 +298,11 @@ namespace Pchp.CodeAnalysis.Symbols
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit() => GetMembers().OfType<FieldSymbol>();
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit() => ImmutableArray<NamedTypeSymbol>.Empty;
+
+        internal override IEnumerable<IMethodSymbol> GetMethodsToEmit() =>
+            GetMembers()
+            .Where(m => m.Kind == SymbolKind.Method && !m.IsUnreachable)
+            .Cast<IMethodSymbol>();
     }
 
     /// <summary>
