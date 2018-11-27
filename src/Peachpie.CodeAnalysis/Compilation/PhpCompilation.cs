@@ -846,7 +846,7 @@ namespace Pchp.CodeAnalysis
                 _lazyAnalysisTask = Task.Run(() => SourceCompiler.BindAndAnalyze(this, CancellationToken.None));
             }
 
-            return await _lazyAnalysisTask;
+            return await _lazyAnalysisTask.ConfigureAwait(false);
         }
 
         internal override bool CompileMethods(CommonPEModuleBuilder moduleBuilder, bool emittingPdb, bool emitMetadataOnly, bool emitTestCoverageData, DiagnosticBag diagnostics, Predicate<ISymbol> filterOpt, CancellationToken cancellationToken)
