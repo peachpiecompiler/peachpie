@@ -317,6 +317,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns>New type on top of evaluation stack.</returns>
         internal TypeSymbol EmitSpecialize(TypeSymbol stack, TypeRefMask tmask)
         {
+            Debug.Assert(!stack.IsUnreachable);
+
             // specialize type if possible
             if (tmask.IsSingleType && !tmask.IsRef)
             {
@@ -469,6 +471,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public void EmitNotNull(TypeSymbol t, TypeRefMask tmask)
         {
+            Debug.Assert(!t.IsUnreachable);
             // CanBeNull(tmask)
             // CanBeNull(t)
 
@@ -508,6 +511,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void EmitFieldAddress(FieldSymbol fld)
         {
             Debug.Assert(fld != null);
+
             _il.EmitOpCode(fld.IsStatic ? ILOpCode.Ldsflda : ILOpCode.Ldflda);
             EmitSymbolToken(fld, null);
         }
@@ -2322,6 +2326,9 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         internal TypeSymbol EmitCastClass(TypeSymbol from, TypeSymbol to)
         {
+            Debug.Assert(!from.IsUnreachable);
+            Debug.Assert(!to.IsUnreachable);
+
             if (from.IsOfType(to))
             {
                 return from;
@@ -2335,6 +2342,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         internal void EmitCastClass(TypeSymbol type)
         {
+            Debug.Assert(!type.IsUnreachable);
+
             // (T)
             _il.EmitOpCode(ILOpCode.Castclass);
             EmitSymbolToken(type, null);
@@ -2574,6 +2583,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void EmitDeclareFunction(SourceFunctionSymbol f)
         {
             Debug.Assert(f != null);
+            Debug.Assert(!f.IsUnreachable);
 
             var field = f.EnsureRoutineInfoField(_moduleBuilder);
 
@@ -2648,6 +2658,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void EmitExpectTypeDeclared(TypeSymbol d)
         {
             Debug.Assert(d.IsValidType());
+            Debug.Assert(!d.IsUnreachable);
 
             if (d is NamedTypeSymbol ntype)
             {
@@ -2701,6 +2712,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             var dependent = new Dictionary<QualifiedName, HashSet<NamedTypeSymbol>>();
             foreach (var v in versions)
             {
+                Debug.Assert(!v.IsUnreachable);
+
                 var deps = v.GetDependentSourceTypeSymbols(); // TODO: error when the type version reports it depends on a user type which will never be declared because of a library type
                 foreach (var d in deps.OfType<IPhpTypeSymbol>())
                 {
@@ -2814,6 +2827,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             foreach (var h in types)
             {
+                Debug.Assert(!h.IsUnreachable);
+
                 if (lblElse != null) _il.MarkLabel(lblElse);
 
                 // Template: if (thandle.Equals(h)) { ... } else goto lblElse;
