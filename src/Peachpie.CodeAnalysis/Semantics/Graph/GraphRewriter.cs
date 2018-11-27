@@ -123,6 +123,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
                 return base.VisitFunctionDeclaration(x);
             }
+
+            public override VoidStruct VisitTypeDeclaration(BoundTypeDeclStatement x)
+            {
+                _rewriter.OnUnreachableTypeFound(x.DeclaredType);
+
+                return base.VisitTypeDeclaration(x);
+            }
         }
 
         #endregion
@@ -337,6 +344,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         #endregion
 
         protected private virtual void OnUnreachableRoutineFound(SourceRoutineSymbol routine)
+        { }
+
+        protected private virtual void OnUnreachableTypeFound(SourceTypeSymbol type)
         { }
     }
 }

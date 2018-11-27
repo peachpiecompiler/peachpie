@@ -283,7 +283,7 @@ namespace Pchp.CodeAnalysis.Symbols
             NamedTypeSymbol first = null;
             List<NamedTypeSymbol> alternatives = null;
 
-            var types = _types.GetAll(name).SelectMany(t => t.AllVersions());   // get all types with {name} and their versions
+            var types = _types.GetAll(name).SelectMany(t => t.AllReachableVersions());   // get all types with {name} and their versions
             foreach (var t in types)
             {
                 if (first == null)
@@ -322,6 +322,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets all source types and their versions.
         /// </summary>
-        public IEnumerable<SourceTypeSymbol> GetTypes() => GetDeclaredTypes().SelectMany(t => t.AllVersions());
+        public IEnumerable<SourceTypeSymbol> GetTypes() => GetDeclaredTypes().SelectMany(t => t.AllReachableVersions());
     }
 }

@@ -50,6 +50,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             _delayedTransformations.UnreachableRoutines.Add(routine);
         }
 
+        private protected override void OnUnreachableTypeFound(SourceTypeSymbol type)
+        {
+            _delayedTransformations.UnreachableTypes.Add(type);
+        }
+
         public override object VisitConditional(BoundConditionalEx x)
         {
             x = (BoundConditionalEx)base.VisitConditional(x);

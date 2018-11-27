@@ -2598,13 +2598,23 @@ namespace Pchp.CodeAnalysis.CodeGen
             this.EmitSequencePoint(t.Syntax.HeadingSpan);
 
             // autoload base types or throw an error
-            if (t.HasVersions)
+            var versions = t.HasVersions ? t.AllReachableVersions() : default;
+            if (!versions.IsDefault && versions.Length > 1)
             {
                 // emit declaration of type that has ambiguous versions
-                EmitVersionedTypeDeclaration(t.AllVersions());
+                EmitVersionedTypeDeclaration(versions);
             }
             else
             {
+                // Ensure to emit only reachable type
+                if (t.HasVersions)
+                {
+                    // TODO: Error when all the ancestors have been eliminated
+                    Debug.Assert(versions.Length == 1);
+                    t = versions[0];
+                }
+                Debug.Assert(!t.IsUnreachable);
+                
                 var dependent = t.GetDependentSourceTypeSymbols();
 
                 // ensure all types are loaded into context,
