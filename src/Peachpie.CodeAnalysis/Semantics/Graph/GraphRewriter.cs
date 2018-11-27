@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Pchp.CodeAnalysis.FlowAnalysis;
+using Pchp.CodeAnalysis.Symbols;
 using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
@@ -95,10 +96,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// </summary>
         private class UnreachableProcessor : GraphExplorer<VoidStruct>
         {
+            private readonly GraphRewriter _rewriter;
+
             public List<BoundYieldStatement> Yields { get; private set; }
 
-            public UnreachableProcessor(int exploredColor) : base(exploredColor)
-            { }
+            public UnreachableProcessor(GraphRewriter rewriter, int exploredColor) : base(exploredColor)
+            {
+                _rewriter = rewriter;
+            }
 
             public override VoidStruct VisitYieldStatement(BoundYieldStatement boundYieldStatement)
             {
@@ -114,7 +119,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             public override VoidStruct VisitFunctionDeclaration(BoundFunctionDeclStatement x)
             {
-                x.Function.Flags |= RoutineFlags.IsUnreachable;
+                _rewriter.OnUnreachableRoutineFound(x.Function);
 
                 return base.VisitFunctionDeclaration(x);
             }
@@ -218,7 +223,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 if (newlyUnreachableBlocks.Any())
                 {
                     // Scan all the newly unreachable blocks (for yields, declarations,...)
-                    var unreachableProcessor = new UnreachableProcessor(ExploredColor);
+                    var unreachableProcessor = new UnreachableProcessor(this, ExploredColor);
                     newlyUnreachableBlocks.ForEach(b => b.Accept(unreachableProcessor));
 
                     // Remove the discovered yields from the next CFG version
@@ -330,5 +335,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public virtual CaseBlock OnVisitCFGCaseBlock(CaseBlock x) => (CaseBlock)base.VisitCFGCaseBlock(x);
 
         #endregion
+
+        protected private virtual void OnUnreachableRoutineFound(SourceRoutineSymbol routine)
+        { }
     }
 }
