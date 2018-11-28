@@ -309,9 +309,12 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
             }
 
-            foreach (var t in this.AllInterfaces)
+            if (this.IsAbstract || set.Count == 0) // abstract or interface, otherwise all methods should be declared on this already
             {
-                set.UnionWith(t.GetMembersByPhpName(name).OfType<MethodSymbol>());
+                foreach (var t in this.AllInterfaces)
+                {
+                    set.UnionWith(t.GetMembersByPhpName(name).OfType<MethodSymbol>());
+                }
             }
 
             //
