@@ -243,17 +243,17 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public MethodSymbol GetFunction(QualifiedName name)
         {
-            var fncs = _functions.GetAll(name).Where(f => !f.IsUnreachable).AsImmutable();
+            var fncs = _functions.GetAll(name).WhereReachable().AsImmutable();
             if (fncs.Length == 1 && !fncs[0].IsConditional) return fncs[0];
             if (fncs.Length == 0) return new MissingMethodSymbol(name.Name.Value);
             return new AmbiguousMethodSymbol(fncs.AsImmutable<MethodSymbol>(), overloadable: false);
         }
 
-        public IEnumerable<MethodSymbol> GetFunctions(QualifiedName name) => _functions[name].Where(f => !f.IsUnreachable);
+        public IEnumerable<MethodSymbol> GetFunctions(QualifiedName name) => _functions[name].WhereReachable();
 
         public IEnumerable<SourceFunctionSymbol> GetFunctions()
         {
-            return _functions.Symbols.Where(f => !f.IsUnreachable);
+            return _functions.Symbols.WhereReachable();
         }
 
         public IEnumerable<SourceLambdaSymbol> GetLambdas()
@@ -311,7 +311,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal IEnumerable<SourceTypeSymbol> GetDeclaredTypes(QualifiedName name)
         {
-            return _types.GetAll(name);
+            return _types.GetAll(name);//.WhereReachable();
         }
 
         /// <summary>

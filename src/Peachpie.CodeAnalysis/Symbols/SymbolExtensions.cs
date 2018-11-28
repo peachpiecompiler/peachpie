@@ -12,6 +12,10 @@ namespace Pchp.CodeAnalysis.Symbols
 {
     internal static partial class SymbolExtensions
     {
+        public static readonly Func<Symbol, bool> s_IsReachable = new Func<Symbol, bool>(t => !t.IsUnreachable);
+
+        public static IEnumerable<T> WhereReachable<T>(this IEnumerable<T> symbols) where T : Symbol => symbols.Where<T>(s_IsReachable);
+
         /// <summary>
         /// Returns a constructed named type symbol if 'type' is generic, otherwise just returns 'type'
         /// </summary>
