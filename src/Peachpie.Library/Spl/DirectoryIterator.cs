@@ -12,13 +12,14 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class DirectoryIterator : SplFileInfo, SeekableIterator
     {
-        int _index; // where we are pointing right now
-        string _dotname; // in case we are pointing at . or .., otheriwse null
+        private protected int _index; // where we are pointing right now
+        private protected string _dotname; // in case we are pointing at . or .., otheriwse null
 
-        FileSystemInfo[] _children; // list of children elements
-        DirectoryInfo _original; // the directory we are iterating
+        private protected FileSystemInfo[] _children; // list of child elements
+        private protected DirectoryInfo _original; // the directory we are iterating
 
-        int Position
+        /// <summary>Gets or sets the internal iterator position.</summary>
+        private protected int Position
         {
             get
             {
@@ -26,67 +27,83 @@ namespace Pchp.Library.Spl
             }
             set
             {
-                _index = value;
-
-                // . always listed
-                if (value == 0)
-                {
-                    _entry = _original;
-                    _dotname = ".";
-                }
-                else
-                {
-                    // .. listed ?
-                    var hasparent = (_original.Parent != null);
-                    if (hasparent && value == 1)
-                    {
-                        _entry = _original.Parent;
-                        _dotname = "..";
-                    }
-                    else
-                    {
-                        _dotname = null;
-
-                        // the rest
-                        var index = hasparent ? value - 2 : value - 1;
-
-                        if (index < 0) throw new ArgumentException();
-
-                        if (index >= _children.Length)
-                        {
-                            _entry = _original;
-                            _fullpath = string.Empty; // not valid()
-                            return;
-                        }
-
-                        _entry = _children[index];
-                    }
-                }
-
-                _fullpath = _entry.FullName;
+                MoveTo(_index = value);
             }
         }
 
-        public DirectoryIterator(Context ctx, string path) : base(ctx, path)
+        private protected bool TryGetEntryOnPosition(int position, bool dots, out FileSystemInfo entry, out string dotname)
         {
+            int dotscount = 0;
+
+            if (dots)
+            {
+                // . always listed
+                if (position == 0)
+                {
+                    entry = _original;
+                    dotname = ".";
+                    return true;
+                }
+                else
+                {
+                    // .. listed if parent
+                    var parent = _original.Parent;
+                    var hasparent = parent != null;
+
+                    // ..
+                    if (position == 1 && hasparent)
+                    {
+                        entry = parent;
+                        dotname = "..";
+                        return true;
+                    }
+
+                    dotscount = hasparent ? 2 : 1;
+                }
+            }
+
+            dotname = null;
+
+            // the rest
+            var index = position - dotscount;
+
+            if (index < 0)
+            {
+                throw new ArgumentException();
+            }
+
+            if (index >= _children.Length)
+            {
+                entry = default;
+                return false;
+            }
+
+            entry = _children[index];
+
+            //
+            return true;
         }
 
-        protected internal DirectoryIterator(FileSystemInfo/*!*/entry)
-            : base(entry)
+        private protected virtual bool MoveTo(int position)
         {
+            if (TryGetEntryOnPosition(position, true, out _entry, out _dotname))
+            {
+                _fullpath = _entry.FullName;
+                return true;
+            }
+            else
+            {
+                _fullpath = string.Empty;
+                _entry = _original;
+                return false;
+            }
         }
 
-        [PhpFieldsOnlyCtor]
-        protected DirectoryIterator()
+        private protected void __construct(DirectoryInfo entry)
         {
-        }
-
-        public override void __construct(Context ctx, string path)
-        {
-            base.__construct(ctx, path);
-
-            _original = new DirectoryInfo(_fullpath);
-
+            _entry = entry;
+            _original = entry ?? throw new ArgumentNullException();
+            
             if (!_original.Exists)
             {
                 throw new UnexpectedValueException();
@@ -98,15 +115,35 @@ namespace Pchp.Library.Spl
             Position = 0;
         }
 
+        public DirectoryIterator(Context ctx, string path)
+            : base(ctx, path)
+        {
+        }
+
+        protected internal DirectoryIterator(FileSystemInfo/*!*/entry)
+            : base(entry)
+        {
+            __construct((DirectoryInfo)entry);
+        }
+
+        [PhpFieldsOnlyCtor]
+        protected DirectoryIterator()
+        {
+        }
+
+        public override void __construct(Context ctx, string path)
+        {
+            base.__construct(ctx, path); // init _fullpath
+            __construct(new DirectoryInfo(_fullpath));
+        }
+
         public override string getFilename() => _dotname ?? base.getFilename();
 
         public virtual bool isDot() => _dotname != null;
 
         #region SeekableIterator
 
-        public virtual DirectoryIterator current() => this;
-
-        PhpValue Iterator.current() => PhpValue.FromClass(current());
+        public virtual PhpValue current() => PhpValue.FromClass(this);
 
         public virtual PhpValue key() => Position;
 
@@ -136,19 +173,51 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class FilesystemIterator : DirectoryIterator
     {
-        public const int CURRENT_AS_PATHNAME = 32;
         public const int CURRENT_AS_FILEINFO = 0;
         public const int CURRENT_AS_SELF = 16;
+        public const int CURRENT_AS_PATHNAME = 32;
         public const int CURRENT_MODE_MASK = 240;
+
         public const int KEY_AS_PATHNAME = 0;
         public const int KEY_AS_FILENAME = 256;
-        public const int FOLLOW_SYMLINKS = 512;
         public const int KEY_MODE_MASK = 3840;
-        public const int NEW_CURRENT_AND_KEY = 256;
+
+        public const int FOLLOW_SYMLINKS = 512;
+
+        /// <summary>Combination of <see cref="KEY_AS_FILENAME"/> | <see cref="CURRENT_AS_FILEINFO"/></summary>
+        public const int NEW_CURRENT_AND_KEY = KEY_AS_FILENAME | CURRENT_AS_FILEINFO;
         public const int SKIP_DOTS = 4096;
         public const int UNIX_PATHS = 8192;
 
-        int _flags;
+        private protected int _flags;
+        private protected FileSystemInfo _current;
+
+        private protected override bool MoveTo(int position)
+        {
+            _index = position;
+
+            if (!TryGetEntryOnPosition(position, (_flags & SKIP_DOTS) == 0, out _current, out _dotname))
+            {
+                _current = null;
+            }
+
+            //
+
+            if ((_flags & CURRENT_AS_SELF) != 0)
+            {
+                _entry = _current ?? _original;
+                _fullpath = _entry.FullName;
+            }
+            else
+            {
+                _dotname = null;
+                _entry = _original;
+                _fullpath = _original.FullName;
+            }
+
+            //
+            return _current != null;
+        }
 
         [PhpFieldsOnlyCtor]
         protected FilesystemIterator()
@@ -161,6 +230,14 @@ namespace Pchp.Library.Spl
             __construct(ctx, path, flags);
         }
 
+        protected internal FilesystemIterator(DirectoryInfo/*!*/entry, int flags)
+        {
+            _flags = flags;
+            _fullpath = entry.FullName;
+            
+            __construct(entry);
+        }
+
         public override sealed void __construct(Context ctx, string file_name)
         {
             this.__construct(ctx, file_name);
@@ -170,17 +247,61 @@ namespace Pchp.Library.Spl
         {
             base.__construct(ctx, path);
             _flags = flags;
+
+            //
+            Position = 0;
         }
 
         public virtual int getFlags() => _flags;
 
         public virtual void setFlags(int flags) => _flags = flags;
+
+        public override bool isDot() => false;
+
+        #region Iterator
+
+        public override PhpValue current()
+        {
+            if (_current == null)
+            {
+                return PhpValue.Null;
+            }
+
+            switch (_flags & CURRENT_MODE_MASK)
+            {
+                case CURRENT_AS_FILEINFO: return PhpValue.FromClass(new SplFileInfo(_current));
+                case CURRENT_AS_PATHNAME: return _current.FullName;
+                case CURRENT_AS_SELF: return PhpValue.FromClass(this);
+                default: throw new InvalidOperationException();
+            }
+        }
+
+        public override PhpValue key()
+        {
+            if (_current == null)
+            {
+                return PhpValue.Null;
+            }
+
+            switch (_flags & KEY_MODE_MASK)
+            {
+                case KEY_AS_PATHNAME: return _current.FullName;
+                case KEY_AS_FILENAME: return _current.Name;
+                default: throw new InvalidOperationException();
+            }
+        }
+
+        public override bool valid() => _current != null;
+
+        #endregion
     }
 
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class RecursiveDirectoryIterator : FilesystemIterator, SeekableIterator, RecursiveIterator
     {
-        public RecursiveDirectoryIterator(Context ctx, string file_name, int flags = KEY_AS_PATHNAME | CURRENT_AS_FILEINFO)
+        private string subPath =  string.Empty;
+        
+        public RecursiveDirectoryIterator(Context ctx, string file_name, int flags = KEY_AS_PATHNAME | CURRENT_AS_FILEINFO | SKIP_DOTS)
             : base(ctx, file_name, flags)
         {
         }
@@ -190,6 +311,12 @@ namespace Pchp.Library.Spl
         {
         }
 
+        private protected RecursiveDirectoryIterator(DirectoryInfo entry, int flags, string subPath)
+            : base(entry, flags)
+        {
+            this.subPath = subPath;
+        }
+
         public override void __construct(Context ctx, string path, int flags = KEY_AS_PATHNAME | CURRENT_AS_FILEINFO)
         {
             base.__construct(ctx, path, flags);
@@ -197,16 +324,23 @@ namespace Pchp.Library.Spl
 
         public RecursiveIterator getChildren()
         {
-            throw new NotImplementedException();
+            if (_current is DirectoryInfo dinfo)
+            {
+                return new RecursiveDirectoryIterator(
+                    dinfo,
+                    _flags,
+                    string.IsNullOrEmpty(subPath) ? dinfo.Name : Path.Combine(subPath, dinfo.Name));
+            }
+            else
+            {
+                throw new UnexpectedValueException(); // the directory name is invalid
+            }
         }
 
-        public bool hasChildren()
-        {
-            throw new NotImplementedException();
-        }
+        public bool hasChildren() => _current is DirectoryInfo && _dotname == null;
 
-        public virtual string getSubPath() => throw new NotImplementedException();
+        public virtual string getSubPath() => subPath;
 
-        public virtual string getSubPathname() => throw new NotImplementedException();
+        public virtual string getSubPathname() => string.IsNullOrEmpty(subPath) ? string.Empty : Path.GetFileName(subPath);
     }
 }
