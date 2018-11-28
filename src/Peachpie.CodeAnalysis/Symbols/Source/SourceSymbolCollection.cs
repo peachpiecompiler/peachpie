@@ -13,6 +13,7 @@ using Pchp.CodeAnalysis.Utilities;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
 using static Pchp.CodeAnalysis.AstUtils;
+using Pchp.CodeAnalysis.FlowAnalysis;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -242,17 +243,17 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public MethodSymbol GetFunction(QualifiedName name)
         {
-            var fncs = _functions.GetAll(name).AsImmutable();
+            var fncs = _functions.GetAll(name).Where(f => !f.IsUnreachable).AsImmutable();
             if (fncs.Length == 1 && !fncs[0].IsConditional) return fncs[0];
             if (fncs.Length == 0) return new MissingMethodSymbol(name.Name.Value);
             return new AmbiguousMethodSymbol(fncs.AsImmutable<MethodSymbol>(), overloadable: false);
         }
 
-        public IEnumerable<MethodSymbol> GetFunctions(QualifiedName name) => _functions[name];
+        public IEnumerable<MethodSymbol> GetFunctions(QualifiedName name) => _functions[name].Where(f => !f.IsUnreachable);
 
         public IEnumerable<SourceFunctionSymbol> GetFunctions()
         {
-            return _functions.Symbols;
+            return _functions.Symbols.Where(f => !f.IsUnreachable);
         }
 
         public IEnumerable<SourceLambdaSymbol> GetLambdas()
@@ -282,7 +283,7 @@ namespace Pchp.CodeAnalysis.Symbols
             NamedTypeSymbol first = null;
             List<NamedTypeSymbol> alternatives = null;
 
-            var types = _types.GetAll(name).SelectMany(t => t.AllVersions());   // get all types with {name} and their versions
+            var types = _types.GetAll(name).SelectMany(t => t.AllReachableVersions());   // get all types with {name} and their versions
             foreach (var t in types)
             {
                 if (first == null)
@@ -321,6 +322,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Gets all source types and their versions.
         /// </summary>
-        public IEnumerable<SourceTypeSymbol> GetTypes() => GetDeclaredTypes().SelectMany(t => t.AllVersions());
+        public IEnumerable<SourceTypeSymbol> GetTypes() => GetDeclaredTypes().SelectMany(t => t.AllReachableVersions());
     }
 }

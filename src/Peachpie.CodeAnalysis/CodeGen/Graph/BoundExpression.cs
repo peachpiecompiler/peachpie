@@ -2393,6 +2393,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (TargetMethod.IsValidMethod())
             {
+                Debug.Assert(!TargetMethod.IsUnreachable);
                 // the most preferred case when method is known,
                 // the method can be called directly
                 return EmitDirectCall(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod, LateStaticTypeRef);

@@ -300,6 +300,12 @@ namespace Pchp.CodeAnalysis
         }
 
         /// <summary>
+        /// Returns true if this symbol is declared in the source code, but this declaration is proven
+        /// to be unreachable in execution. Symbols marked this way will not by emitted.
+        /// </summary>
+        public virtual bool IsUnreachable => false;
+
+        /// <summary>
         /// Returns true if this symbol can be referenced by its name in code. Examples of symbols
         /// that cannot be referenced by name are:
         ///    constructors, destructors, operators, explicit interface implementations,

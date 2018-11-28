@@ -10,11 +10,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
     internal class TransformationRewriter : GraphRewriter
     {
+        private readonly DelayedTransformations _delayedTransformations;
         private readonly SourceRoutineSymbol _routine;
 
         public int TransformationCount { get; private set; }
 
-        public static bool TryTransform(SourceRoutineSymbol routine)
+        public static bool TryTransform(DelayedTransformations delayedTransformations, SourceRoutineSymbol routine)
         {
             if (routine.ControlFlowGraph == null)
             {
@@ -23,7 +24,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             }
 
             //
-            var rewriter = new TransformationRewriter(routine);
+            var rewriter = new TransformationRewriter(delayedTransformations, routine);
             var currentCFG = routine.ControlFlowGraph;
             var updatedCFG = (ControlFlowGraph)rewriter.VisitCFG(currentCFG);
 
@@ -33,14 +34,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return updatedCFG != currentCFG;
         }
 
-        private TransformationRewriter(SourceRoutineSymbol routine)
+        private TransformationRewriter(DelayedTransformations delayedTransformations, SourceRoutineSymbol routine)
         {
+            _delayedTransformations = delayedTransformations;
             _routine = routine;
         }
 
         protected override void OnVisitCFG(ControlFlowGraph x)
         {
             Debug.Assert(_routine.ControlFlowGraph == x);
+        }
+
+        private protected override void OnUnreachableRoutineFound(SourceRoutineSymbol routine)
+        {
+            _delayedTransformations.UnreachableRoutines.Add(routine);
+        }
+
+        private protected override void OnUnreachableTypeFound(SourceTypeSymbol type)
+        {
+            _delayedTransformations.UnreachableTypes.Add(type);
         }
 
         public override object VisitConditional(BoundConditionalEx x)

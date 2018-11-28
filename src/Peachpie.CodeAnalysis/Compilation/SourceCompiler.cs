@@ -223,12 +223,18 @@ namespace Pchp.CodeAnalysis
         bool TransformMethods(bool allowParallel)
         {
             bool anyTransforms = false;
+            var delayedTrn = new DelayedTransformations();
 
             this.WalkMethods(m =>
                 {
-                    anyTransforms |= TransformationRewriter.TryTransform(m);
+                    // Cannot be simplified due to multithreading ('=' is atomic unlike '|=')
+                    if (TransformationRewriter.TryTransform(delayedTrn, m))
+                        anyTransforms = true;
                 },
                 allowParallel: allowParallel);
+
+            // Apply transformation that cannot run in the parallel way
+            delayedTrn.Apply();
 
             return anyTransforms;
         }

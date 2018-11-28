@@ -298,6 +298,11 @@ namespace Pchp.CodeAnalysis.Symbols
         internal override IEnumerable<IFieldSymbol> GetFieldsToEmit() => GetMembers().OfType<FieldSymbol>();
 
         internal override ImmutableArray<NamedTypeSymbol> GetInterfacesToEmit() => ImmutableArray<NamedTypeSymbol>.Empty;
+
+        internal override IEnumerable<IMethodSymbol> GetMethodsToEmit() =>
+            GetMembers()
+            .Where(m => m.Kind == SymbolKind.Method && !m.IsUnreachable)
+            .Cast<IMethodSymbol>();
     }
 
     /// <summary>

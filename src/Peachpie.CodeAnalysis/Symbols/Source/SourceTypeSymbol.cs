@@ -360,6 +360,18 @@ namespace Pchp.CodeAnalysis.Symbols
         ImmutableArray<TraitUse> _lazyTraitUses;
 
         /// <summary>
+        /// Whether is this particular declaration unreachable according to the analysis.
+        /// </summary>
+        public bool IsMarkedUnreachable { get; set; }
+
+        /// <summary>
+        /// Whether this declarations or any of the ancestors is unreachable.
+        /// </summary>
+        public override bool IsUnreachable =>
+            IsMarkedUnreachable || (BaseType?.IsUnreachable == true)
+            || Interfaces.Any(i => i.IsUnreachable) || TraitUses.Any(tu => tu.Symbol.IsUnreachable);
+
+        /// <summary>
         /// In case the declaration is ambiguous, this references symbol with alternative declaration.
         /// </summary>
         public SourceTypeSymbol NextVersion
@@ -379,26 +391,32 @@ namespace Pchp.CodeAnalysis.Symbols
         public bool HasVersions => (_version != 0);
 
         /// <summary>
-        /// Enumerates all versions of this declaration.
+        /// Enumerates all reachable versions of this declaration.
         /// </summary>
-        public ImmutableArray<SourceTypeSymbol> AllVersions()
+        public ImmutableArray<SourceTypeSymbol> AllReachableVersions()
         {
             ResolveBaseTypes();
 
             if (_nextVersion == null)
             {
-                return ImmutableArray.Create(this);
+                return IsUnreachable ? ImmutableArray<SourceTypeSymbol>.Empty : ImmutableArray.Create(this);
             }
             else
             {
                 Debug.Assert(_version != 0);
-                var result = new SourceTypeSymbol[_version];
+                var builder = ImmutableArray.CreateBuilder<SourceTypeSymbol>(_version);
                 for (var x = this; x != null; x = x.NextVersion)
                 {
-                    Debug.Assert(x._version > 0 && x._version <= result.Length);
-                    result[x._version - 1] = x;
+                    Debug.Assert(x._version > 0 && x._version <= builder.Capacity);
+                    if (!x.IsUnreachable)
+                    {
+                        builder.Add(x);
+                    }
+                    else
+                    {
+                    }
                 }
-                return ImmutableArray.Create(result);
+                return (builder.Capacity == builder.Count) ? builder.MoveToImmutable() : builder.ToImmutable();
             }
         }
 

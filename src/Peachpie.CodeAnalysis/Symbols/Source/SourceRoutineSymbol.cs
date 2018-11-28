@@ -98,6 +98,8 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal abstract SourceFileSymbol ContainingFile { get; }
 
+        public override bool IsUnreachable => Flags.HasFlag(RoutineFlags.IsUnreachable);
+
         protected ImmutableArray<ParameterSymbol> _implicitParameters;
         private SourceParameterSymbol[] _srcParams;
 

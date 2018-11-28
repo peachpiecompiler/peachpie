@@ -304,7 +304,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var funcs = file.Functions.Cast<SourceRoutineSymbol>();
             var main = (SourceRoutineSymbol)file.MainMethod;
 
-            var types = file.ContainedTypes.SelectMany(t => t.AllVersions());
+            var types = file.ContainedTypes.SelectMany(t => t.AllReachableVersions());
             var methods = types.SelectMany(f => f.GetMembers().OfType<SourceRoutineSymbol>());
             var lambdas = ((ILambdaContainerSymbol)file).Lambdas;
 
