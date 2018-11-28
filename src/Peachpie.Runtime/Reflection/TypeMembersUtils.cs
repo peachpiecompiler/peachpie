@@ -340,7 +340,7 @@ namespace Pchp.Core.Reflection
         {
             Debug.Assert(memberctx != null);
 
-            return caller != null && memberctx.GetTypeInfo().IsAssignableFrom(caller);
+            return caller != null && memberctx.IsAssignableFrom(caller);
         }
 
         /// <summary>
@@ -366,12 +366,21 @@ namespace Pchp.Core.Reflection
                 }
                 else
                 {
-                    var m_type = ((MethodInfo)m).GetBaseDefinition().DeclaringType.GetTypeInfo();
-                    var classCtx_type = classCtx.GetTypeInfo();
+                    var m_type = ((MethodInfo)m).GetBaseDefinition().DeclaringType;
 
                     // language.oop5.visibility: Members declared protected can be accessed only within the class itself and by inheriting and parent classes
-                    return classCtx_type.IsAssignableFrom(m_type) || m_type.IsAssignableFrom(classCtx_type);
+                    return classCtx.IsAssignableFrom(m_type) || m_type.IsAssignableFrom(classCtx);
                 }
+            }
+
+            if (m.IsFamilyAndAssembly) // private protected
+            {
+                if (classCtx != null && classCtx.Assembly == m.DeclaringType.Assembly)
+                {
+                    return classCtx.IsAssignableFrom(m.DeclaringType) || m.DeclaringType.IsAssignableFrom(classCtx);
+                }
+
+                return false;
             }
 
             //

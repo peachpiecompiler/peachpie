@@ -114,6 +114,12 @@ namespace Pchp.CodeAnalysis.Symbols
                     symbol.ContainingType.IsEqualToOrDerivedFrom(classCtx) ||
                     classCtx.IsEqualToOrDerivedFrom(symbol.ContainingType));
             }
+            else if (
+                symbol.DeclaredAccessibility == Accessibility.ProtectedAndInternal ||
+                symbol.DeclaredAccessibility == Accessibility.Internal)
+            {
+                return classCtx.ContainingAssembly == symbol.ContainingAssembly; // TODO
+            }
 
             return true;
         }

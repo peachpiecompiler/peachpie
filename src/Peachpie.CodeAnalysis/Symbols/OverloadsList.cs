@@ -192,6 +192,8 @@ namespace Pchp.CodeAnalysis.Symbols
         static bool IsAccessible(MethodSymbol m, VisibilityScope scope)
         {
             return (
+                m.DeclaredAccessibility != Accessibility.ProtectedAndInternal && // C# 7.2 "private protected"
+                m.DeclaredAccessibility != Accessibility.Internal && // "internal"
                 (scope.ScopeIsDynamic || m.IsAccessible(scope.Scope)) &&  // method is accessible (or might be in runtime)
                 !m.IsFieldsOnlyConstructor()    // method is not a special .ctor which is not accessible from user's code
                 );
