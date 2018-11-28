@@ -21,6 +21,24 @@ namespace Pchp.Library.DateTime
             return TimeZoneInfo.ConvertTime(System_DateTime.UtcNow, PhpTimeZone.GetCurrentTimeZone(ctx));
         }
 
+        internal static int CompareTime(System_DateTime time, PhpValue value)
+        {
+            if (!value.IsNull)
+            {
+                var otherObj = value.GetValue().Object;
+                if (otherObj is DateTime dt) return time.CompareTo(dt.Time);
+                if (otherObj is DateTimeImmutable dti) return time.CompareTo(dti.Time);
+            }
+            else
+            {
+                return 1;
+            }
+
+            //
+            throw new ArgumentException();
+            //return 1;
+        }
+
         #region Constants
 
         public const string DATE_ATOM = @"Y-m-d\TH:i:sP";
@@ -134,7 +152,7 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Returns the difference between two DateTime objects.
         /// </summary>
-        public static DateInterval date_diff(DateTimeInterface datetime1 , DateTimeInterface datetime2, bool absolute = false)
+        public static DateInterval date_diff(DateTimeInterface datetime1, DateTimeInterface datetime2, bool absolute = false)
         {
             var interval = new DateInterval(TimeFromInterface(datetime1) - TimeFromInterface(datetime2));
 

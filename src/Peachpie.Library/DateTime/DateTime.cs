@@ -14,7 +14,7 @@ namespace Pchp.Library.DateTime
     /// Representation of date and time.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
-    public class DateTime : DateTimeInterface
+    public class DateTime : DateTimeInterface, IPhpComparable
     {
         #region Constants
 
@@ -314,14 +314,11 @@ namespace Pchp.Library.DateTime
 
         }
 
-        // TODO: IPhpComparable
-        //public override int CompareTo(object obj, System.Collections.IComparer comparer)
-        //{
-        //    var other = obj as __PHP__DateTime;
-        //    return other != null
-        //        ? Time.CompareTo(other.Time)
-        //        : base.CompareTo(obj, comparer);
-        //}
+        #endregion
+
+        #region IPhpComparable
+
+        int IPhpComparable.Compare(PhpValue obj) => DateTimeFunctions.CompareTime(this.Time, obj);
 
         #endregion
     }
@@ -330,7 +327,7 @@ namespace Pchp.Library.DateTime
     /// Representation of date and time.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
-    public class DateTimeImmutable : DateTimeInterface
+    public class DateTimeImmutable : DateTimeInterface, IPhpComparable
     {
         /// <summary>
         /// Get the date-time value, stored in UTC
@@ -426,5 +423,11 @@ namespace Pchp.Library.DateTime
         /// Returns the difference between two DateTime objects
         /// </summary>
         public virtual DateInterval diff(DateTimeInterface datetime2, bool absolute = false) => DateTimeFunctions.date_diff(this, datetime2, absolute);
+
+        #region IPhpComparable
+
+        int IPhpComparable.Compare(PhpValue obj) => DateTimeFunctions.CompareTime(this.Time, obj);
+
+        #endregion
     }
 }
