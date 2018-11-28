@@ -4579,6 +4579,12 @@ namespace Pchp.CodeAnalysis.Semantics
             var t = cg.Emit(this.VarReference);
 
             // t.IsSet
+            if (t == cg.CoreTypes.PhpAlias)
+            {
+                // <PhpAlias>.Value
+                t = cg.Emit_PhpAlias_GetValue();
+            }
+
             if (t == cg.CoreTypes.PhpValue)
             {
                 // IsSet(value)
