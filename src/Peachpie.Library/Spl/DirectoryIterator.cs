@@ -13,12 +13,17 @@ namespace Pchp.Library.Spl
     public class DirectoryIterator : SplFileInfo, SeekableIterator
     {
         int _index; // where we are pointing right now
-        FileSystemInfo[] _children;
-        DirectoryInfo _original;
+        string _dotname; // in case we are pointing at . or .., otheriwse null
+
+        FileSystemInfo[] _children; // list of children elements
+        DirectoryInfo _original; // the directory we are iterating
 
         int Position
         {
-            get => _index;
+            get
+            {
+                return _index;
+            }
             set
             {
                 _index = value;
@@ -27,6 +32,7 @@ namespace Pchp.Library.Spl
                 if (value == 0)
                 {
                     _entry = _original;
+                    _dotname = ".";
                 }
                 else
                 {
@@ -35,9 +41,12 @@ namespace Pchp.Library.Spl
                     if (hasparent && value == 1)
                     {
                         _entry = _original.Parent;
+                        _dotname = "..";
                     }
                     else
                     {
+                        _dotname = null;
+
                         // the rest
                         var index = hasparent ? value - 2 : value - 1;
 
@@ -89,21 +98,9 @@ namespace Pchp.Library.Spl
             Position = 0;
         }
 
-        public override string getFilename()
-        {
-            if (_entry == _original) return ".";
-            if (_entry.FullName.Length < _original.FullName.Length) return ".."; // do not compare with _original.Parent
+        public override string getFilename() => _dotname ?? base.getFilename();
 
-            //
-            return base.getFilename();
-        }
-
-        public virtual bool isDot()
-        {
-            return
-                _entry == _original ||
-                _entry.FullName.Length < _original.FullName.Length; // do not compare with _original.Parent
-        }
+        public virtual bool isDot() => _dotname != null;
 
         #region SeekableIterator
 
