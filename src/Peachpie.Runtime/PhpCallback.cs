@@ -286,7 +286,20 @@ namespace Pchp.Core
             }
 
             public override bool Equals(PhpCallback other) => base.Equals(other) || Equals(other as ArrayCallback);
-            bool Equals(ArrayCallback other) => other != null && other._item1 == _item1 && other._item2 == _item2;
+            bool Equals(ArrayCallback other) => other != null && EqualsObj(other._item1, _item1) && other._item2 == _item2;
+
+            static bool EqualsObj(PhpValue a, PhpValue b)
+            {
+                // avoid incomparable object comparison
+                var targetSelf = a.AsObject();
+                var targetOther = b.AsObject();
+
+                if (targetSelf != null) return ReferenceEquals(targetSelf, targetOther);
+                if (targetOther != null) return false;
+
+                //
+                return a == b;
+            }
         }
 
         [DebuggerDisplay("empty callback")]
