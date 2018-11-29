@@ -71,10 +71,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         public static void Analyse(DiagnosticBag diagnostics, SourceRoutineSymbol routine)
         {
+            //
+            routine.GetDiagnostics(diagnostics);
+
+            //
             if (routine.ControlFlowGraph != null)   // non-abstract method
             {
-                new DiagnosticWalker<VoidStruct>(diagnostics, routine)
-                    .VisitCFG(routine.ControlFlowGraph);
+                new DiagnosticWalker<VoidStruct>(diagnostics, routine).VisitCFG(routine.ControlFlowGraph);
             }
         }
 

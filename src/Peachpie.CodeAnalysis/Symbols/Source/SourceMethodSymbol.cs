@@ -65,7 +65,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected override TypeRefContext CreateTypeRefContext() => TypeRefFactory.CreateTypeRefContext(_type);
 
-        protected override void GetDiagnostics(DiagnosticBag diagnostic)
+        public override void GetDiagnostics(DiagnosticBag diagnostic)
         {
             var name = _syntax.Name.Name;
 

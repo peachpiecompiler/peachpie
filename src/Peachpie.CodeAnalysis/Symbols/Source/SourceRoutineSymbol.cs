@@ -129,7 +129,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Collects declaration diagnostics.
         /// </summary>
-        protected virtual void GetDiagnostics(DiagnosticBag diagnostic)
+        public virtual void GetDiagnostics(DiagnosticBag diagnostic)
         {
             // check mandatory behind and optional parameter
             bool foundopt = false;
@@ -166,10 +166,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected virtual IEnumerable<SourceParameterSymbol> BuildSrcParams(Signature signature, PHPDocBlock phpdocOpt = null)
         {
-            // collect diagnostics
-            GetDiagnostics(DeclaringCompilation.DeclarationDiagnostics);
-
-            //
             return BuildSrcParams(signature.FormalParams, phpdocOpt);
         }
 

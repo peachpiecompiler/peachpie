@@ -70,7 +70,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(null);
 
-        protected override void GetDiagnostics(DiagnosticBag diagnostic)
+        public override void GetDiagnostics(DiagnosticBag diagnostic)
         {
             if (this.QualifiedName == new QualifiedName(Devsense.PHP.Syntax.Name.AutoloadName))
             {
