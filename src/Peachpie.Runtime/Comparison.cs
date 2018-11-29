@@ -157,9 +157,8 @@ namespace Pchp.Core
                 case PhpTypeCode.Alias: return Compare(x, y.Alias.Value);
                 case PhpTypeCode.String: return -CompareStringToObject(y.String, x);
                 case PhpTypeCode.Object:
-                    if (y.Object == null) goto case PhpTypeCode.Null;
-                    bool incomparable;
-                    var result = CompareObjects(x, y.Object, PhpComparer.Default, out incomparable);
+                    Debug.Assert(y.Object != null);
+                    var result = CompareObjects(x, y.Object, PhpComparer.Default, out var incomparable);
                     if (incomparable)
                     {
                         PhpException.Throw(PhpError.Warning,
