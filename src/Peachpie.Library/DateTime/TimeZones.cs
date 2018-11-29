@@ -102,7 +102,7 @@ namespace Pchp.Library.DateTime
         private static TimeZoneInfoItem[]/*!!*/InitializeTimeZones()
         {
             // read list of initial timezones
-            var sortedTZ = new SortedSet<TimeZoneInfoItem>(InitialTimeZones(), new TimeZoneInfoItem.Comparer());
+            var sortedTZ = new SortedSet<TimeZoneInfoItem>(ReadTimeZones(), new TimeZoneInfoItem.Comparer());
 
             // add additional time zones:
             sortedTZ.Add(new TimeZoneInfoItem("UTC", TimeZoneInfo.Utc, "utc", false));
@@ -138,30 +138,10 @@ namespace Pchp.Library.DateTime
             return !isphpname;
         }
 
-        static IEnumerable<TimeZoneInfoItem>/*!!*/InitialTimeZones()
+        static Dictionary<string, string> LoadAbbreviations()
         {
-            // time zone cache:
-            var tzcache = new Dictionary<string, TimeZoneInfo>(128, StringComparer.OrdinalIgnoreCase);
-            Func<string, TimeZoneInfo> cachelookup = (id) =>
-            {
-                TimeZoneInfo tz;
-                if (!tzcache.TryGetValue(id, out tz))
-                {
-                    TimeZoneInfo winTZ = null;
-                    try
-                    {
-                        winTZ = TimeZoneInfo.FindSystemTimeZoneById(id);
-                    }
-                    catch { }
-
-                    tzcache[id] = tz = winTZ;   // null in case "id" is not defined in Windows registry (probably missing Windows Update)
-                }
-
-                return tz;
-            };
-
-            // read abbreviations
             var abbrs = new Dictionary<string, string>(512); // timezone_id => abbrs
+
             using (var abbrsstream = new System.IO.StreamReader(typeof(PhpTimeZone).Assembly.GetManifestResourceStream("Pchp.Library.Resources.abbreviations.txt")))
             {
                 string line;
@@ -186,23 +166,11 @@ namespace Pchp.Library.DateTime
                 }
             }
 
-            string getabbr(string tz_id)
-            {
-                abbrs.TryGetValue(tz_id, out var result);
-                return result;
-            }
+            return abbrs;
+        }
 
-            // system timezones:
-            var tzns = TimeZoneInfo.GetSystemTimeZones();
-            if (tzns != null)
-            {
-                foreach (var x in tzns)
-                {
-                    tzcache[x.Id] = x;
-                    yield return new TimeZoneInfoItem(x.Id, x, getabbr(x.Id), IsAlias(x.Id));
-                }
-            }
-
+        static IEnumerable<string[]> LoadKnownTimeZones()
+        {
             // collect php time zone names and match them with Windows TZ IDs:
             using (var xml = XmlReader.Create(new System.IO.StreamReader(typeof(PhpTimeZone).Assembly.GetManifestResourceStream("Pchp.Library.Resources.WindowsTZ.xml"))))
             {
@@ -215,23 +183,22 @@ namespace Pchp.Library.DateTime
                             {
                                 // <mapZone other="Dateline Standard Time" type="Etc/GMT+12"/>
 
-                                var windowsTZ = cachelookup(xml.GetAttribute("other"));  // Windows ID
-                                if (windowsTZ != null)
+                                var winId = xml.GetAttribute("other");
+                                var phpIds = xml.GetAttribute("type");
+
+                                if (string.IsNullOrEmpty(phpIds))
                                 {
-                                    var phpIds = xml.GetAttribute("type");
-                                    if (phpIds != null)
-                                    {
-                                        // map php TZ name to Windows TZ if not defined by OS (Unix)
-                                        foreach (var phpTzName in phpIds.Split(' '))
-                                        {
-                                            Debug.Assert(!string.IsNullOrWhiteSpace(phpTzName));
-                                            if (!tzcache.ContainsKey(phpTzName))
-                                            {
-                                                tzcache[phpTzName] = windowsTZ; //  write back to cache
-                                                yield return new TimeZoneInfoItem(phpTzName, windowsTZ, getabbr(phpTzName), IsAlias(phpTzName));
-                                            }
-                                        }
-                                    }
+                                    yield return new[] { winId };
+                                }
+                                else if (phpIds.IndexOf(' ') < 0)
+                                {
+                                    yield return new[] { winId, phpIds };
+                                }
+                                else
+                                {
+                                    var list = new List<string>(4) { winId };
+                                    list.AddRange(phpIds.Split(' '));
+                                    yield return list.ToArray();
                                 }
                             }
                             break;
@@ -241,19 +208,61 @@ namespace Pchp.Library.DateTime
 
             // other time zones:
 
-            yield return new TimeZoneInfoItem("US/Alaska", cachelookup("Alaskan Standard Time"), null, true);
-            //yield return new TimeZoneInfoItem("US/Aleutian", cachelookup(???), null, true);
-            yield return new TimeZoneInfoItem("US/Arizona", cachelookup("US Mountain Standard Time"), null, true);
-            yield return new TimeZoneInfoItem("US/Central", cachelookup("Central Standard Time"), null, true);
-            yield return new TimeZoneInfoItem("East-Indiana", cachelookup("US Eastern Standard Time"), null, true);
-            yield return new TimeZoneInfoItem("Eastern", cachelookup("Eastern Standard Time"), null, true);
-            yield return new TimeZoneInfoItem("US/Hawaii", cachelookup("Hawaiian Standard Time"), null, true);
+            yield return new[] { "US/Alaska", "Alaskan Standard Time" };
+            //yield return new[] { "US/Aleutian", (???) };
+            yield return new[] { "US/Arizona", "US Mountain Standard Time" };
+            yield return new[] { "US/Central", "Central Standard Time" };
+            yield return new[] { "East-Indiana", "US Eastern Standard Time" };
+            yield return new[] { "Eastern", "Eastern Standard Time" };
+            yield return new[] { "US/Hawaii", "Hawaiian Standard Time" };
             // "US/Indiana-Starke"
             // "US/Michigan"
-            yield return new TimeZoneInfoItem("US/Mountain", cachelookup("Mountain Standard Time"), null, true);
-            yield return new TimeZoneInfoItem("US/Pacific", cachelookup("Pacific Standard Time"), null, true);
-            yield return new TimeZoneInfoItem("US/Pacific-New", cachelookup("Pacific Standard Time"), null, true);
-            yield return new TimeZoneInfoItem("US/Samoa", cachelookup("Samoa Standard Time"), null, true);
+            yield return new[] { "US/Mountain", "Mountain Standard Time" };
+            yield return new[] { "US/Pacific", "Pacific Standard Time" };
+            yield return new[] { "US/Pacific-New", "Pacific Standard Time" };
+            yield return new[] { "US/Samoa", "Samoa Standard Time" };
+        }
+
+        static IEnumerable<TimeZoneInfoItem>/*!!*/ReadTimeZones()
+        {
+            // map of time zones:
+            var tzdict = TimeZoneInfo
+                .GetSystemTimeZones()
+                .ToDictionary(tz => tz.Id, StringComparer.OrdinalIgnoreCase);
+
+            // add aliases and knonwn time zones from bundled XML:
+            foreach (var names in LoadKnownTimeZones())
+            {
+                TimeZoneInfo tz = null;
+
+                for (int i = 0; i < names.Length; i++)
+                {
+                    if (tzdict.TryGetValue(names[i], out tz))
+                    {
+                        break;
+                    }
+                }
+
+                // update the map of known time zones:
+                if (tz != null)
+                {
+                    for (int i = 0; i < names.Length; i++)
+                    {
+                        tzdict[names[i]] = tz;
+                    }
+                }
+            }
+
+            // prepare abbreviations
+            var abbrs = LoadAbbreviations();
+
+            // yield return all discovered time zones:
+            foreach (var pair in tzdict)
+            {
+                abbrs.TryGetValue(pair.Key, out var abbreviation);
+
+                yield return new TimeZoneInfoItem(pair.Key, pair.Value, abbreviation, IsAlias(pair.Key));
+            }
         }
 
         #endregion
