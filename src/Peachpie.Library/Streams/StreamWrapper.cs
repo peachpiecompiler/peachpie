@@ -1401,6 +1401,8 @@ namespace Pchp.Library.Streams
 
             // EX: Use a cache of persistent streams (?) instead of static properties.
 
+            // TODO: path may be case insensitive
+
             FileAccess supportedAccess;
             switch (path)
             {
@@ -1436,12 +1438,18 @@ namespace Pchp.Library.Streams
                     supportedAccess = FileAccess.Write;
                     break;
 
+                case "php://memory":
+                    native = new MemoryStream();
+                    supportedAccess = FileAccess.ReadWrite;
+                    break;
+
                 default:
                     const string filter_uri = "php://filter/";
+                    const string temp_uri = "php://temp";
                     const string resource_param = "/resource=";
 
                     // The only remaining option is the "php://filter"
-                    if (path.StartsWith(filter_uri))
+                    if (path.StartsWith(filter_uri, StringComparison.OrdinalIgnoreCase))
                     {
                         int pos = path.IndexOf(resource_param, filter_uri.Length - 1);
                         if (pos > 0)
@@ -1455,6 +1463,14 @@ namespace Pchp.Library.Streams
                         //PhpException.Throw(PhpError.Warning, CoreResources.GetString("url_resource_missing"));
                         //return null;
                         throw new ArgumentException("No URL resource specified.");  // TODO: Err
+                    }
+                    else if (path.StartsWith(temp_uri, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // TODO: /maxmemory:NN option
+                        // TODO: use temp file if size in memory exceeds NN (2MB by default)
+                        native = new MemoryStream();
+                        supportedAccess = FileAccess.ReadWrite;
+                        break;
                     }
                     else
                     {
