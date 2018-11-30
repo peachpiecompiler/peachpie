@@ -263,6 +263,10 @@ namespace Pchp.CodeAnalysis.Symbols
                     {
                         return DeclaringCompilation.CoreTypes.String;   // NOTE: we may need PhpString instead in some cases, consider once we implement PhpString as struct
                     }
+                    //if (_syntax.Name.Name.IsConstructName)   // __construct() : void
+                    //{
+                    //    return DeclaringCompilation.CoreTypes.Void; // NOTE: in PHP we can return anything but it is reported as warning
+                    //}
                 }
 
                 // default:
@@ -274,7 +278,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsAbstract => !IsStatic && (_syntax.Modifiers.IsAbstract() || _type.IsInterface);
 
-        public override bool IsOverride => !IsStatic && this.OverriddenMethod != null && this.SignaturesMatch((MethodSymbol)this.OverriddenMethod);
+        public override bool IsOverride => IsVirtual && this.OverriddenMethod != null && this.SignaturesMatch((MethodSymbol)this.OverriddenMethod);
 
         public override bool IsSealed => _syntax.Modifiers.IsSealed() && IsVirtual;
 
@@ -289,9 +293,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 if (!IsAbstract)
                 {
-                    if (_syntax.Name.Name.IsConstructName)
+                    // __construct is not treated as virtual
+                    if (_syntax.Name.Name.IsConstructName || _syntax.Name.Name == _type.FullName.Name)
                     {
-                        return this.OverriddenMethod != null && this.SignaturesMatch((MethodSymbol)this.OverriddenMethod);
+                        // not called virtually
+                        // its signature usually does not match the base
+                        return false; // this.OverriddenMethod != null && this.SignaturesMatch((MethodSymbol)this.OverriddenMethod);
                     }
                 }
 

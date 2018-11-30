@@ -23,7 +23,7 @@ namespace Pchp.CodeAnalysis.Symbols
             return
                 routine.IsStatic ||
                 routine.DeclaredAccessibility == Accessibility.Private ||
-                ((routine.IsSealed || routine.ContainingType.IsSealed) && routine.OverriddenMethod == null);
+                (routine.OverriddenMethod == null && (routine.ContainingType.IsSealed || routine.IsSealed));
         }
 
         /// <summary>
