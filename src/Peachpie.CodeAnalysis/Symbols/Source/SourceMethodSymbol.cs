@@ -286,7 +286,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                if (IsStatic)
+                if (IsStatic || DeclaredAccessibility == Accessibility.Private)
                 {
                     return false;
                 }
