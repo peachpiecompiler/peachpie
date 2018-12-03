@@ -1006,21 +1006,22 @@ namespace Peachpie.Library.PDO
         [return: CastToFalse]
         public PhpArray getColumnMeta(int column)
         {
-            if (this.m_dr == null)
+            if (m_dr == null || column < 0 || column >= m_dr.FieldCount)
             {
                 return null;
             }
-
-            if (column < 0 || column >= this.m_dr.FieldCount)
-                return null;
-
-            initializeColumnNames();
+            
+            // If the column names are not initialized, then initialize them
+            if (m_dr_names == null)
+            {
+                initializeColumnNames();
+            }
 
             PhpArray meta = new PhpArray();
-            meta.Add("native_type", this.m_dr.GetFieldType(column).FullName);
-            meta.Add("driver:decl_type", this.m_dr.GetDataTypeName(column));
+            meta.Add("native_type", m_dr.GetFieldType(column)?.FullName);
+            meta.Add("driver:decl_type", m_dr.GetDataTypeName(column));
             //meta.Add("flags", PhpValue.Null);
-            meta.Add("name", this.m_dr_names[column]);
+            meta.Add("name", m_dr_names[column]);
             //meta.Add("table", PhpValue.Null);
             //meta.Add("len", PhpValue.Null);
             //meta.Add("prevision", PhpValue.Null);
