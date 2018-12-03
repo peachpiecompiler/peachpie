@@ -888,7 +888,7 @@ namespace Peachpie.Library.PDO
                         case PDO.PDO_FETCH.FETCH_NUM:
                             return PhpValue.Create(this.ReadArray(false, true));
                         case PDO.PDO_FETCH.FETCH_COLUMN:
-                            if (FetchColNo != -1)
+                            if (FetchColNo == -1)
                             {
                                 m_pdo.HandleError(new PDOException("The column number for FETCH_COLUMN mode is not set."));
                                 return PhpValue.False;
