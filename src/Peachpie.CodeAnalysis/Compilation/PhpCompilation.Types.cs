@@ -175,9 +175,15 @@ namespace Pchp.CodeAnalysis
         /// <param name="tref">Type reference.</param>
         /// <param name="selfHint">Optional.
         /// Current type scope for better <paramref name="tref"/> resolution since <paramref name="tref"/> might be ambiguous</param>
+        /// <param name="nullable">Whether the resulting type must be able to contain NULL. Default is <c>false</c>.</param>
         /// <returns>Resolved symbol.</returns>
-        internal TypeSymbol GetTypeFromTypeRef(AST.TypeRef tref, SourceTypeSymbol selfHint = null)
+        internal TypeSymbol GetTypeFromTypeRef(AST.TypeRef tref, SourceTypeSymbol selfHint = null, bool nullable = false)
         {
+            if (nullable)
+            {
+                return MergeNull(GetTypeFromTypeRef(tref, selfHint, nullable: false)); // TODO: Nullable<T>
+            }
+
             if (tref != null)
             {
                 if (tref is AST.PrimitiveTypeRef)
@@ -221,7 +227,7 @@ namespace Pchp.CodeAnalysis
                     }
                     return result;
                 }
-                else if (tref is AST.NullableTypeRef) return MergeNull(GetTypeFromTypeRef(((AST.NullableTypeRef)tref).TargetType, selfHint)); // ?((AST.NullableTypeRef)tref).TargetType
+                else if (tref is AST.NullableTypeRef nullableref) return GetTypeFromTypeRef(nullableref.TargetType, selfHint, nullable: true);
                 else if (tref is AST.GenericTypeRef) throw new NotImplementedException(); //((AST.GenericTypeRef)tref).TargetType
                 else if (tref is AST.IndirectTypeRef) throw new NotImplementedException();
             }

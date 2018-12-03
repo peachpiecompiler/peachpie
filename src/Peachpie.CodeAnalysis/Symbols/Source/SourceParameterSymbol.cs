@@ -93,8 +93,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (_syntax.TypeHint != null)
                 {
                     // when providing type hint, only allow null if explicitly specified:
-                    if (_syntax.TypeHint is NullableTypeRef ||
-                        (_initializer != null && _initializer.ConstantValue.IsNull()))
+                    if (_syntax.TypeHint is NullableTypeRef || DefaultsToNull)
                     {
                         return false;
                     }
@@ -106,6 +105,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 return false;
             }
         }
+
+        internal bool DefaultsToNull => _initializer != null && _initializer.ConstantValue.IsNull();
 
         /// <summary>
         /// Gets value indicating whether the parameter has been replaced with <see cref="SourceRoutineSymbol.VarargsParam"/>.
@@ -153,7 +154,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 // remove once it gets updated in parser
                 if (rtref.Type == ReservedTypeRef.ReservedType.self) return _routine.ContainingType; // self
             }
-            var result = DeclaringCompilation.GetTypeFromTypeRef(typeHint, _routine.ContainingType as SourceTypeSymbol);
+            var result = DeclaringCompilation.GetTypeFromTypeRef(typeHint, _routine.ContainingType as SourceTypeSymbol, nullable: DefaultsToNull);
 
             // 2. optionally type specified in PHPDoc
             if (result == null && _ptagOpt != null && _ptagOpt.TypeNamesArray.Length != 0
