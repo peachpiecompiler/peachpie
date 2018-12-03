@@ -179,60 +179,62 @@ namespace Pchp.CodeAnalysis
         /// <returns>Resolved symbol.</returns>
         internal TypeSymbol GetTypeFromTypeRef(AST.TypeRef tref, SourceTypeSymbol selfHint = null, bool nullable = false)
         {
+            if (tref == null)
+            {
+                return null;
+            }
+
             if (nullable)
             {
                 return MergeNull(GetTypeFromTypeRef(tref, selfHint, nullable: false)); // TODO: Nullable<T>
             }
 
-            if (tref != null)
+            if (tref is AST.PrimitiveTypeRef)
             {
-                if (tref is AST.PrimitiveTypeRef)
+                switch (((AST.PrimitiveTypeRef)tref).PrimitiveTypeName)
                 {
-                    switch (((AST.PrimitiveTypeRef)tref).PrimitiveTypeName)
-                    {
-                        case AST.PrimitiveTypeRef.PrimitiveType.@int: return CoreTypes.Long;
-                        case AST.PrimitiveTypeRef.PrimitiveType.@float: return CoreTypes.Double;
-                        case AST.PrimitiveTypeRef.PrimitiveType.@string: return CoreTypes.String;   // TODO: PhpString ?
-                        case AST.PrimitiveTypeRef.PrimitiveType.@bool: return CoreTypes.Boolean;
-                        case AST.PrimitiveTypeRef.PrimitiveType.array: return CoreTypes.PhpArray;
-                        case AST.PrimitiveTypeRef.PrimitiveType.callable: return CoreTypes.PhpValue; // array|string|object
-                        case AST.PrimitiveTypeRef.PrimitiveType.@void: return CoreTypes.Void;
-                        case AST.PrimitiveTypeRef.PrimitiveType.iterable: return CoreTypes.PhpValue;   // array|Traversable
-                        case AST.PrimitiveTypeRef.PrimitiveType.@object: return CoreTypes.Object;   // Object
-                        default: throw new ArgumentException();
-                    }
+                    case AST.PrimitiveTypeRef.PrimitiveType.@int: return CoreTypes.Long;
+                    case AST.PrimitiveTypeRef.PrimitiveType.@float: return CoreTypes.Double;
+                    case AST.PrimitiveTypeRef.PrimitiveType.@string: return CoreTypes.String;   // TODO: PhpString ?
+                    case AST.PrimitiveTypeRef.PrimitiveType.@bool: return CoreTypes.Boolean;
+                    case AST.PrimitiveTypeRef.PrimitiveType.array: return CoreTypes.PhpArray;
+                    case AST.PrimitiveTypeRef.PrimitiveType.callable: return CoreTypes.PhpValue; // array|string|object
+                    case AST.PrimitiveTypeRef.PrimitiveType.@void: return CoreTypes.Void;
+                    case AST.PrimitiveTypeRef.PrimitiveType.iterable: return CoreTypes.PhpValue;   // array|Traversable
+                    case AST.PrimitiveTypeRef.PrimitiveType.@object: return CoreTypes.Object;   // Object
+                    default: throw new ArgumentException();
                 }
-                else if (tref is AST.INamedTypeRef namedtref)
-                {
-                    if (selfHint != null)
-                    {
-                        if (namedtref.ClassName == selfHint.FullName) return selfHint;
-                        if (selfHint.BaseType is IPhpTypeSymbol phpt && namedtref.ClassName == phpt.FullName) return selfHint.BaseType;
-                    }
-
-                    var t = (NamedTypeSymbol)GlobalSemantics.ResolveType(namedtref.ClassName);
-                    return t.IsErrorTypeOrNull()
-                        ? CoreTypes.Object.Symbol   // TODO: merge candidates if any
-                        : t;
-                }
-                else if (tref is AST.ReservedTypeRef) throw new ArgumentException(); // NOTE: should be translated by parser to AliasedTypeRef
-                else if (tref is AST.AnonymousTypeRef) return (NamedTypeSymbol)GlobalSemantics.ResolveType(((AST.AnonymousTypeRef)tref).TypeDeclaration.GetAnonymousTypeQualifiedName());
-                else if (tref is AST.MultipleTypeRef)
-                {
-                    TypeSymbol result = null;
-                    foreach (var x in ((AST.MultipleTypeRef)tref).MultipleTypes)
-                    {
-                        var resolved = GetTypeFromTypeRef(x, selfHint);
-                        result = (result != null) ? Merge(result, resolved) : resolved;
-                    }
-                    return result;
-                }
-                else if (tref is AST.NullableTypeRef nullableref) return GetTypeFromTypeRef(nullableref.TargetType, selfHint, nullable: true);
-                else if (tref is AST.GenericTypeRef) throw new NotImplementedException(); //((AST.GenericTypeRef)tref).TargetType
-                else if (tref is AST.IndirectTypeRef) throw new NotImplementedException();
             }
+            else if (tref is AST.INamedTypeRef namedtref)
+            {
+                if (selfHint != null)
+                {
+                    if (namedtref.ClassName == selfHint.FullName) return selfHint;
+                    if (selfHint.BaseType is IPhpTypeSymbol phpt && namedtref.ClassName == phpt.FullName) return selfHint.BaseType;
+                }
 
-            return null;
+                var t = (NamedTypeSymbol)GlobalSemantics.ResolveType(namedtref.ClassName);
+                return t.IsErrorTypeOrNull()
+                    ? CoreTypes.Object.Symbol   // TODO: merge candidates if any
+                    : t;
+            }
+            else if (tref is AST.ReservedTypeRef) throw new ArgumentException(); // NOTE: should be translated by parser to AliasedTypeRef
+            else if (tref is AST.AnonymousTypeRef) return (NamedTypeSymbol)GlobalSemantics.ResolveType(((AST.AnonymousTypeRef)tref).TypeDeclaration.GetAnonymousTypeQualifiedName());
+            else if (tref is AST.MultipleTypeRef)
+            {
+                TypeSymbol result = null;
+                foreach (var x in ((AST.MultipleTypeRef)tref).MultipleTypes)
+                {
+                    var resolved = GetTypeFromTypeRef(x, selfHint);
+                    result = (result != null) ? Merge(result, resolved) : resolved;
+                }
+                return result;
+            }
+            else if (tref is AST.NullableTypeRef nullableref) return GetTypeFromTypeRef(nullableref.TargetType, selfHint, nullable: true);
+            else if (tref is AST.GenericTypeRef) throw new NotImplementedException(); //((AST.GenericTypeRef)tref).TargetType
+            else if (tref is AST.IndirectTypeRef) throw new NotImplementedException();
+
+            throw ExceptionUtilities.UnexpectedValue(tref);
         }
 
         #endregion
