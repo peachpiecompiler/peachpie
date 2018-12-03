@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -316,11 +316,8 @@ namespace Peachpie.Library.PDO
                     default:
                         throw new InvalidProgramException();
                 }
-                this.m_dr_names = new string[this.m_dr.FieldCount];
-                for (int i = 0; i < this.m_dr_names.Length; i++)
-                {
-                    this.m_dr_names[i] = this.m_dr.GetName(i);
-                }
+
+                initializeColumnNames();
             }
         }
 
@@ -855,25 +852,9 @@ namespace Peachpie.Library.PDO
                         return PhpValue.False;
 
                     // Get the column schema, if possible, for the associative fetch
-                    if (this.m_dr_names == null)
+                    if (m_dr_names == null)
                     {
-                        this.m_dr_names = new string[m_dr.FieldCount];
-
-                        if (this.m_dr.CanGetColumnSchema())
-                        {
-                            var columnSchema = this.m_dr.GetColumnSchema();
-
-                            for (int i = 0; i < m_dr.FieldCount; i++)
-                            {
-                                this.m_dr_names[i] = columnSchema[i].ColumnName;
-                            }
-                        } else
-                        {
-                            for (int i = 0; i < m_dr.FieldCount; i++)
-                            {
-                                this.m_dr_names[i] = this.m_dr.GetName(i);
-                            }
-                        }
+                        initializeColumnNames();
                     }
 
                     switch (style)
@@ -1033,6 +1014,8 @@ namespace Peachpie.Library.PDO
             if (column < 0 || column >= this.m_dr.FieldCount)
                 return null;
 
+            initializeColumnNames();
+
             PhpArray meta = new PhpArray();
             meta.Add("native_type", this.m_dr.GetFieldType(column).FullName);
             meta.Add("driver:decl_type", this.m_dr.GetDataTypeName(column));
@@ -1054,11 +1037,7 @@ namespace Peachpie.Library.PDO
             }
             if (this.m_dr.NextResult())
             {
-                this.m_dr_names = new string[this.m_dr.FieldCount];
-                for (int i = 0; i < this.m_dr_names.Length; i++)
-                {
-                    this.m_dr_names[i] = this.m_dr.GetName(i);
-                }
+                initializeColumnNames();
                 return true;
             }
             else
@@ -1169,6 +1148,29 @@ namespace Peachpie.Library.PDO
             }
 
             return true;
+        }
+        
+        // Initializes the column names by looping through the data reads columns or using the schema if it is available
+        private void initializeColumnNames()
+        {
+            m_dr_names = new string[m_dr.FieldCount];
+
+            if (m_dr.CanGetColumnSchema())
+            {
+                var columnSchema = m_dr.GetColumnSchema();
+
+                for (var i = 0; i < m_dr.FieldCount; i++)
+                {
+                    m_dr_names[i] = columnSchema[i].ColumnName;
+                }
+            } 
+            else 
+            {
+                for (var i = 0; i < m_dr.FieldCount; i++)
+                {
+                    m_dr_names[i] = m_dr.GetName(i);
+                }
+            }
         }
     }
 }
