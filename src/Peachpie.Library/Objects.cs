@@ -18,11 +18,13 @@ namespace Pchp.Library
 		/// </summary>
         /// <param name="ctx">Runtime context.</param>
         /// <param name="classNameOrObject">The object or the name of a class (<see cref="string"/>).</param>
-		/// <param name="baseClassName">The name of the (base) class.</param>
+		/// <param name="baseClassName">The name of a base class or interface.</param>
+        /// <param name="allow_string">Whether class name can be used as <paramref name="classNameOrObject"/>. Otherwise only an object instance is allowed.
+        /// This can be used to prevent from calling autoloader if the class doesn't exist.</param>
 		/// <returns><B>true</B> if <paramref name="classNameOrObject"/> implements or extends <paramref name="baseClassName"/>, <B>false</B> otherwise.</returns>
-		public static bool is_subclass_of(Context ctx, PhpValue classNameOrObject, string baseClassName)
+		public static bool is_subclass_of(Context ctx, PhpValue classNameOrObject, string baseClassName, bool allow_string = true)
         {
-            var tinfo = TypeNameOrObjectToType(ctx, classNameOrObject);
+            var tinfo = TypeNameOrObjectToType(ctx, classNameOrObject, allowName: allow_string);
             if (tinfo == null) return false;
 
             // look for the class, do not use autoload (since PHP 5.1):
@@ -30,7 +32,9 @@ namespace Pchp.Library
             if (base_tinfo == null) return false;
 
             //
-            return base_tinfo.Type.IsAssignableFrom(tinfo.Type) && base_tinfo.Type != tinfo.Type;
+            return
+                base_tinfo != tinfo &&
+                base_tinfo.Type.IsAssignableFrom(tinfo.Type);
         }
 
         /// <summary>
@@ -199,32 +203,13 @@ namespace Pchp.Library
         public static bool is_a(Context ctx, PhpValue value, string class_name, bool allow_string)
         {
             // first load type of {value}
-            PhpTypeInfo tvalue;
-            var obj = value.AsObject();
-            if (obj != null)
-            {
-                tvalue = obj.GetPhpTypeInfo();
-            }
-            else
-            {
-                var tname = value.AsString();
-                if (tname != null && allow_string)
-                {
-                    // value can be a string specifying a class name
-                    tvalue = ctx.GetDeclaredType(tname, true);
-                }
-                else
-                {
-                    // invalid argument type ignored
-                    return false;
-                }
-            }
+            PhpTypeInfo tvalue = TypeNameOrObjectToType(ctx, value, autoload: true, allowName: allow_string);
 
             // second, load type of {class_name}
             var ctype = ctx.GetDeclaredType(class_name, false);
 
             // check is_a
-            return tvalue != null && ctype != null && tvalue.Type.IsSubclassOf(ctype.Type.AsType());
+            return tvalue != null && ctype != null && ctype.Type.IsAssignableFrom(tvalue.Type);
         }
 
         /// <summary>
@@ -265,23 +250,23 @@ namespace Pchp.Library
 		/// Get <see cref="PhpTypeInfo"/> from either a class name or a class instance.
         /// </summary>
         /// <returns>Type info instance if object is valid class reference, otherwise <c>null</c>.</returns>
-        internal static PhpTypeInfo TypeNameOrObjectToType(Context ctx, PhpValue @object, RuntimeTypeHandle selftype = default(RuntimeTypeHandle), bool autoload = true)
+        internal static PhpTypeInfo TypeNameOrObjectToType(Context ctx, PhpValue @object, RuntimeTypeHandle selftype = default(RuntimeTypeHandle), bool autoload = true, bool allowName = true)
         {
             object obj;
             string str;
 
             if ((obj = (@object.AsObject())) != null)
             {
-                return obj.GetType().GetPhpTypeInfo();
+                return obj.GetPhpTypeInfo();
             }
             else if ((str = PhpVariable.AsString(@object)) != null)
             {
-                return ctx.GetDeclaredType(str, autoload);
+                return allowName ? ctx.GetDeclaredType(str, autoload) : null;
             }
             else
             {
                 // other @object types are not handled
-                return (selftype.Equals(default(RuntimeTypeHandle)) || !@object.IsNull)
+                return (selftype.Equals(default) || !@object.IsNull)
                     ? null
                     : Type.GetTypeFromHandle(selftype)?.GetPhpTypeInfo();
             }
