@@ -30,7 +30,7 @@ namespace Pchp.Library
             if (base_tinfo == null) return false;
 
             //
-            return base_tinfo.Type.IsAssignableFrom(tinfo.Type);
+            return base_tinfo.Type.IsAssignableFrom(tinfo.Type) && base_tinfo.Type != tinfo.Type;
         }
 
         /// <summary>
