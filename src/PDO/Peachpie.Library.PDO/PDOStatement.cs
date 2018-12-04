@@ -38,7 +38,7 @@ namespace Peachpie.Library.PDO
         private Dictionary<string, string> m_namedPlaceholders;
         private List<String> m_positionalPlaceholders;
 
-        private Dictionary<string, PhpAlias> m_boundParams;      
+        private Dictionary<string, PhpAlias> m_boundParams;
         private PDO.PDO_FETCH m_fetchStyle = PDO.PDO_FETCH.FETCH_BOTH;
 
         private PhpArray storedQueryResult = null;
@@ -51,7 +51,7 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// Column Number property for FETCH_COLUMN fetching.
         /// </summary>
-        int FetchColNo { get; set; } = -1;
+        int? FetchColNo { get; set; }
         /// <summary>
         /// Class Name property for FETCH_CLASS fetching mode.
         /// </summary>
@@ -110,9 +110,9 @@ namespace Peachpie.Library.PDO
         [return: CastToFalse]
         private PhpValue FetchFromStored()
         {
-            if(storedQueryResult != null)
+            if (storedQueryResult != null)
             {
-                if(storedResultPosition < storedQueryResult.Count)
+                if (storedResultPosition < storedQueryResult.Count)
                 {
                     return storedQueryResult[storedResultPosition++];
                 }
@@ -128,18 +128,20 @@ namespace Peachpie.Library.PDO
         /// <returns>true on success, false otherwise</returns>
         public bool StoreQueryResult()
         {
-            if(m_dr != null)
+            if (m_dr != null)
             {
                 if (m_dr.HasRows)
                 {
                     storedQueryResult = fetchAll();
                     storedResultPosition = 0;
-                } else
+                }
+                else
                 {
                     // No rows to save - possibly a non-query statement was executed
                     return true;
                 }
-            } else
+            }
+            else
             {
                 //m_pdo.HandleError(new PDOException("There are no rows to store."));
                 return false;
@@ -167,7 +169,7 @@ namespace Peachpie.Library.PDO
             var rewrittenQuery = new StringBuilder();
 
             // Go throught the text query and find either positional or named parameters
-            while(pos < m_stmt.Length)
+            while (pos < m_stmt.Length)
             {
                 char currentChar = m_stmt[pos];
                 string paramName = "";
@@ -175,7 +177,7 @@ namespace Peachpie.Library.PDO
                 switch (currentChar)
                 {
                     case '?':
-                        if(m_namedAttr)
+                        if (m_namedAttr)
                         {
                             throw new PDOException("Mixing positional and named parameters not allowed. Use only '?' or ':name' pattern");
                         }
@@ -189,21 +191,21 @@ namespace Peachpie.Library.PDO
                         break;
 
                     case ':':
-                        if(m_positionalAttr)
+                        if (m_positionalAttr)
                         {
                             throw new PDOException("Mixing positional and named parameters not allowed.Use only '?' or ':name' pattern");
                         }
 
                         m_namedAttr = true;
 
-                        var match= regName.Match(m_stmt, pos);
+                        var match = regName.Match(m_stmt, pos);
                         string param = match.Value;
 
                         paramName = "@" + param;
                         m_namedPlaceholders[param] = paramName;
                         rewrittenQuery.Append(paramName);
 
-                        pos += param.Length; 
+                        pos += param.Length;
 
                         break;
 
@@ -227,7 +229,7 @@ namespace Peachpie.Library.PDO
             m_cmd.CommandText = rewrittenQuery.ToString();
             m_cmd.Parameters.Clear();
 
-            if(m_positionalAttr)
+            if (m_positionalAttr)
             {
                 // Mixed parameters not allowed
                 if (m_namedAttr)
@@ -242,7 +244,8 @@ namespace Peachpie.Library.PDO
                     param.ParameterName = paramName;
                     m_cmd.Parameters.Add(param);
                 }
-            } else if(m_namedAttr)
+            }
+            else if (m_namedAttr)
             {
                 foreach (var paramPair in m_namedPlaceholders)
                 {
@@ -273,7 +276,7 @@ namespace Peachpie.Library.PDO
         /// <returns>New position in the query</returns>
         private int SkipQuotedWord(string query, StringBuilder rewrittenBuilder, int pos, char quoteType)
         {
-            while(++pos < query.Length)
+            while (++pos < query.Length)
             {
                 char currentChar = query[pos];
                 rewrittenBuilder.Append(currentChar);
@@ -471,7 +474,7 @@ namespace Peachpie.Library.PDO
                 }
 
                 string key = parameter.AsString();
-                if(key == null)
+                if (key == null)
                 {
                     m_pdo.HandleError(new PDOException("Supplied parameter name must be a string."));
                     return false;
@@ -485,11 +488,12 @@ namespace Peachpie.Library.PDO
                 param = m_cmd.Parameters[key];
 
                 //rewrite the bounded params dictionary
-                if(HasParamsBound)
+                if (HasParamsBound)
                     if (m_boundParams.ContainsKey(key))
                         m_boundParams.Remove(key);
 
-            } else if(m_positionalAttr)
+            }
+            else if (m_positionalAttr)
             {
                 if (!parameter.IsInteger())
                 {
@@ -498,29 +502,30 @@ namespace Peachpie.Library.PDO
                 }
                 int paramIndex = (int)parameter;
 
-                if(paramIndex < m_positionalPlaceholders.Count)
+                if (paramIndex < m_positionalPlaceholders.Count)
                 {
                     param = m_cmd.Parameters[paramIndex];
                 }
 
                 //rewrite the bounded params dictionary
-                if(HasParamsBound)
+                if (HasParamsBound)
                     if (m_boundParams.ContainsKey(paramIndex.ToString()))
                         m_boundParams.Remove(paramIndex.ToString());
 
-            } else
+            }
+            else
             {
                 m_pdo.HandleError(new PDOException("No parameter mode set yet for this Statement. Possibly no parameters required?"));
                 return false;
             }
 
-            if(param == null)
+            if (param == null)
             {
                 m_pdo.HandleError(new PDOException("No matching parameter found."));
                 return false;
             }
 
-            switch(data_type)
+            switch (data_type)
             {
                 case PDO.PARAM.PARAM_INT:
                     if (value.IsInteger())
@@ -553,7 +558,8 @@ namespace Peachpie.Library.PDO
                     {
                         param.DbType = DbType.Boolean;
                         param.Value = value.ToBoolean();
-                    } else
+                    }
+                    else
                     {
                         m_pdo.HandleError(new PDOException("Parameter type does not match the declared type."));
                         return false;
@@ -573,8 +579,8 @@ namespace Peachpie.Library.PDO
                         return false;
                     }
                     break;
-                    
-                    // Currently not supported by any drivers
+
+                // Currently not supported by any drivers
                 case PDO.PARAM.PARAM_NULL:
                 case PDO.PARAM.PARAM_STMT:
                 default:
@@ -652,13 +658,13 @@ namespace Peachpie.Library.PDO
             m_pdo.HasExecutedQuery = true;
 
             // Assign the bound variables from bindParam() function if any present
-            if(HasParamsBound)
+            if (HasParamsBound)
             {
-                foreach(KeyValuePair<string, PhpAlias> pair in m_boundParams)
+                foreach (KeyValuePair<string, PhpAlias> pair in m_boundParams)
                 {
                     IDbDataParameter param = null;
 
-                    if(m_namedAttr)
+                    if (m_namedAttr)
                     {
                         // Mixed parameters not allowed
                         if (m_positionalAttr)
@@ -668,21 +674,24 @@ namespace Peachpie.Library.PDO
                         }
 
                         param = m_cmd.Parameters[pair.Key];
-                    } else if(m_positionalAttr)
+                    }
+                    else if (m_positionalAttr)
                     {
                         int index = -1;
                         bool result = Int32.TryParse(pair.Key, out index);
 
-                        if(result)
+                        if (result)
                         {
                             param = m_cmd.Parameters[index];
-                        } else
+                        }
+                        else
                         {
                             m_pdo.HandleError(new PDOException("The string for positional parameter index must be an integer."));
                             return false;
                         }
 
-                    } else
+                    }
+                    else
                     {
                         m_pdo.HandleError(new PDOException("No parameter mode set yet for this Statement. Possibly no parameters required?"));
                         return false;
@@ -792,7 +801,7 @@ namespace Peachpie.Library.PDO
             }
 
             // Close the previously used reader, so that the same connection can open a new one
-            if(m_dr != null)
+            if (m_dr != null)
             {
                 if (!m_dr.IsClosed)
                 {
@@ -805,17 +814,18 @@ namespace Peachpie.Library.PDO
             try
             {
                 m_dr = m_cmd.ExecuteReader();
-            } catch(Exception e)
+            }
+            catch (Exception e)
             {
                 m_pdo.HandleError(new PDOException("Query could not be executed; \n" + e.Message));
                 return false;
-            }           
+            }
 
             return true;
         }
 
         /// <inheritDoc />
-        public PhpValue fetch(PDO.PDO_FETCH fetch_style = PDO.PDO_FETCH.FETCH_USE_DEFAULT ,int cursor_orientation = default(int), int cursor_offet = 0)
+        public PhpValue fetch(PDO.PDO_FETCH fetch_style = PDO.PDO_FETCH.FETCH_USE_DEFAULT, int cursor_orientation = default(int), int cursor_offet = 0)
         {
             this.m_pdo.ClearError();
 
@@ -869,13 +879,13 @@ namespace Peachpie.Library.PDO
                         case PDO.PDO_FETCH.FETCH_NUM:
                             return PhpValue.Create(this.ReadArray(false, true));
                         case PDO.PDO_FETCH.FETCH_COLUMN:
-                            if (FetchColNo == -1)
+                            if (!FetchColNo.HasValue)
                             {
                                 m_pdo.HandleError(new PDOException("The column number for FETCH_COLUMN mode is not set."));
                                 return PhpValue.False;
                             }
 
-                            return this.ReadArray(false, true)[FetchColNo].GetValue();
+                            return this.ReadArray(false, true)[FetchColNo.Value].GetValue();
                         case PDO.PDO_FETCH.FETCH_CLASS:
                             if (FetchClassName == null)
                             {
@@ -929,7 +939,7 @@ namespace Peachpie.Library.PDO
 
         /// <inheritDoc />
         [return: CastToFalse]
-        public PhpArray fetchAll(PDO.PDO_FETCH fetch_style = FETCH_USE_DEFAULT, PhpValue fetch_argument = default(PhpValue), PhpArray ctor_args = null)
+        public PhpArray fetchAll(PDO.PDO_FETCH fetch_style = FETCH_USE_DEFAULT, PhpValue fetch_argument = default, PhpArray ctor_args = null)
         {
             if (m_dr == null)
             {
@@ -937,19 +947,20 @@ namespace Peachpie.Library.PDO
                 return null;
             }
 
-            if(fetch_style == PDO.PDO_FETCH.FETCH_COLUMN)
+            if (fetch_style == PDO.PDO_FETCH.FETCH_COLUMN)
             {
-                if(fetch_argument.IsInteger())
+                if (!fetch_argument.IsDefault && fetch_argument.IsLong(out var l))
                 {
-                    FetchColNo = (int)fetch_argument;
-                } else
+                    FetchColNo = (int)l;
+                }
+                else
                 {
                     m_pdo.HandleError(new PDOException("The fetch_argument must be an integer for FETCH_COLUMN."));
                     return null;
                 }
             }
 
-            PhpArray returnArray = new PhpArray();
+            var returnArray = new PhpArray();
 
             while (m_dr.HasRows)
             {
@@ -967,7 +978,7 @@ namespace Peachpie.Library.PDO
         /// <inheritDoc />
         public PhpValue fetchColumn(int column_number = 0)
         {
-            if(m_dr == null)
+            if (m_dr == null)
             {
                 m_pdo.HandleError(new PDOException("The data reader can not be null."));
                 return PhpValue.False;
@@ -986,10 +997,11 @@ namespace Peachpie.Library.PDO
                 return null;
             }
 
-            if(class_name == "stdClass")
+            if (class_name == "stdClass")
             {
                 return this.ReadObj();
-            } else
+            }
+            else
             {
                 object obj = _ctx.Create(class_name, ctor_args?.GetValues() ?? Array.Empty<PhpValue>());
                 return obj;
@@ -1010,7 +1022,7 @@ namespace Peachpie.Library.PDO
             {
                 return null;
             }
-            
+
             // If the column names are not initialized, then initialize them
             if (m_dr_names == null)
             {
@@ -1050,12 +1062,12 @@ namespace Peachpie.Library.PDO
         /// <inheritDoc />
         public int rowCount()
         {
-            if(m_cmd == null)
+            if (m_cmd == null)
             {
                 m_pdo.HandleError(new PDOException("Command cannot be null."));
                 return -1;
             }
-            if(m_pdo == null)
+            if (m_pdo == null)
             {
                 m_pdo.HandleError(new PDOException("The associated PDO object cannot be null."));
                 return -1;
@@ -1063,11 +1075,12 @@ namespace Peachpie.Library.PDO
 
             var statement = m_pdo.query("SELECT ROW_COUNT()");
             var rowCount = statement.fetchColumn(0);
-            
-            if(rowCount.IsInteger())
+
+            if (rowCount.IsInteger())
             {
                 return (int)rowCount;
-            } else
+            }
+            else
             {
                 m_pdo.HandleError(new PDOException("The rowCount returned by the database is not a integer."));
                 return -1;
@@ -1107,13 +1120,11 @@ namespace Peachpie.Library.PDO
 
             if (fetch == PDO_FETCH.FETCH_COLUMN)
             {
-                int colNo = -1;
                 if (args.Length > 1)
                 {
-                    if (args[1].IsInteger())
+                    if (args[1].IsLong(out var l))
                     {
-                        colNo = (int)args[1].ToLong();
-                        this.FetchColNo = colNo;
+                        this.FetchColNo = (int)l;
                     }
                     else
                     {
@@ -1150,7 +1161,7 @@ namespace Peachpie.Library.PDO
 
             return true;
         }
-        
+
         // Initializes the column names by looping through the data reads columns or using the schema if it is available
         private void initializeColumnNames()
         {
@@ -1164,8 +1175,8 @@ namespace Peachpie.Library.PDO
                 {
                     m_dr_names[i] = columnSchema[i].ColumnName;
                 }
-            } 
-            else 
+            }
+            else
             {
                 for (var i = 0; i < m_dr.FieldCount; i++)
                 {
