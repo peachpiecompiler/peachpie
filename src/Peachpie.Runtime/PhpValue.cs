@@ -217,6 +217,38 @@ namespace Pchp.Core
         public static implicit operator PhpValue(PhpArray value) => Create(value);
         public static implicit operator PhpValue(Delegate value) => FromClass(value);
 
+        public static implicit operator bool(PhpValue value) => value.ToBoolean();
+
+        public static explicit operator long(PhpValue value) => value.ToLong();
+
+        public static explicit operator ushort(PhpValue value) => checked((ushort)value.ToLong());
+
+        public static explicit operator int(PhpValue value) => checked((int)value.ToLong());
+
+        public static explicit operator uint(PhpValue value) => checked((uint)value.ToLong());
+
+        public static explicit operator double(PhpValue value) => value.ToDouble();
+
+        public static explicit operator PhpNumber(PhpValue value)
+        {
+            PhpNumber result;
+            if ((value.ToNumber(out result) & Convert.NumberInfo.Unconvertible) != 0)
+            {
+                // TODO: ErrCode
+                throw new InvalidCastException();
+            }
+
+            return result;
+        }
+
+        public static explicit operator PhpArray(PhpValue value) => value.ToArray();
+
+        /// <summary>
+        /// Implicit conversion to string,
+        /// preserves <c>null</c>,
+        /// throws if conversion is not possible.</summary>
+        public string AsString(Context ctx) => _type.AsString(ref this, ctx);
+
         #endregion
 
         #region Operators
@@ -276,32 +308,6 @@ namespace Pchp.Core
 
             return dx / ny;
         }
-
-        public static implicit operator bool(PhpValue value) => value.ToBoolean();
-
-        public static explicit operator long(PhpValue value) => value.ToLong();
-
-        public static explicit operator ushort(PhpValue value) => checked((ushort)value.ToLong());
-
-        public static explicit operator int(PhpValue value) => checked((int)value.ToLong());
-
-        public static explicit operator uint(PhpValue value) => checked((uint)value.ToLong());
-
-        public static explicit operator double(PhpValue value) => value.ToDouble();
-
-        public static explicit operator PhpNumber(PhpValue value)
-        {
-            PhpNumber result;
-            if ((value.ToNumber(out result) & Convert.NumberInfo.Unconvertible) != 0)
-            {
-                // TODO: ErrCode
-                throw new InvalidCastException();
-            }
-
-            return result;
-        }
-
-        public static explicit operator PhpArray(PhpValue value) => value.ToArray();
 
         /// <summary>
         /// Accesses the value as an array and gets item at given index.

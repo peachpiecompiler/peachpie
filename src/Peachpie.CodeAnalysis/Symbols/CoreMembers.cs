@@ -462,6 +462,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 PassValue = ct.PhpValue.Method("PassValue");
                 ToArray = ct.PhpValue.Method("ToArray");
                 AsObject = ct.PhpValue.Method("AsObject");
+                AsString_Context = ct.PhpValue.Method("AsString", ct.Context);
                 GetArray = ct.PhpValue.Method("GetArray");
 
                 get_Long = ct.PhpValue.Method("get_Long");   // TODO: special name, property
@@ -493,7 +494,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             public readonly CoreMethod
                 ToLong, ToDouble, ToBoolean, ToString_Context, ToClass, EnsureObject, EnsureArray, EnsureAlias, GetArrayAccess, ToArray,
-                AsObject,
+                AsObject, AsString_Context,
                 DeepCopy, GetValue, PassValue, GetArray,
                 Eq_PhpValue_PhpValue, Eq_PhpValue_String,
                 get_Long, get_Double, get_Boolean, get_String, get_Array,

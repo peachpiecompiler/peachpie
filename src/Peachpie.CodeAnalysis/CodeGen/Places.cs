@@ -1696,7 +1696,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         case SpecialType.System_String:
                             EmitOpCode_LoadAddress(cg); // &PhpValue.ToString(ctx)
                             cg.EmitLoadContext();
-                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToString_Context);
+                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.AsString_Context);
                         case SpecialType.System_Object:
                             EmitOpCode_LoadAddress(cg); // &PhpValue.ToClass()
                             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToClass);

@@ -57,7 +57,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpValue_GetArray = Types.PhpValue.GetMethod("GetArray", Types.Empty);
             public static MethodInfo PhpValue_AsCallable_RuntimeTypeHandle = Types.PhpValue.GetMethod("AsCallable", typeof(RuntimeTypeHandle));
             public static MethodInfo PhpValue_AsObject = Types.PhpValue.GetMethod("AsObject", Types.Empty);
-            public static MethodInfo PhpValue_ToString_Context = Types.PhpValue.GetMethod("ToString", typeof(Context));
+            public static MethodInfo PhpValue_AsString_Context = Types.PhpValue.GetMethod("AsString", typeof(Context));
             public static MethodInfo PhpValue_ToIntStringKey = Types.PhpValue.GetMethod("ToIntStringKey");
             public static MethodInfo PhpValue_GetValue = Types.PhpValue.GetMethod("GetValue");
             public static MethodInfo PhpValue_DeepCopy = Types.PhpValue.GetMethod("DeepCopy");

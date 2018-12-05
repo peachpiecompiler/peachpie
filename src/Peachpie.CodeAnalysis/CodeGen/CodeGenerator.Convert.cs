@@ -736,7 +736,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         EmitPhpValueAddr(); // PhpValue -> PhpValue addr
                         EmitLoadContext();  // Context
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToString_Context)
+                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.AsString_Context)
                             .Expect(SpecialType.System_String);
                         break;
                     }
@@ -1218,7 +1218,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                             // <place>.ToString(<ctx>)
                             place.EmitLoadAddress(_il);
                             EmitLoadContext();
-                            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToString_Context);
+                            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.AsString_Context);
                             return;
                         }
                         if (to.SpecialType == SpecialType.System_Object)

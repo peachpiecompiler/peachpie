@@ -1987,8 +1987,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case Operations.UnicodeCast: // TODO
                 case Operations.StringCast:
-                    // (string)x
+                    // (string)x ?? String.Empty
                     cg.EmitConvert(this.Operand, cg.CoreTypes.String);  // TODO: to String or PhpString ? to not corrupt single-byte string
+                    cg.EmitNullCoalescing(_cg => cg.Builder.EmitStringConstant(string.Empty));
                     return cg.CoreTypes.String;
 
                 case Operations.BinaryCast:

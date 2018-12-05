@@ -199,6 +199,13 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             if (place != null && tmask.IsSingleType && !tmask.IsRef)
             {
+                //if (tmask.IsSingleType && TypeRefContext.IsNull(tmask))
+                //{
+                //    // NULL
+                //    _il.EmitNullConstant();
+                //    return;
+                //}
+
                 if (place.HasAddress)
                 {
                     if (place.TypeOpt == CoreTypes.PhpNumber)
@@ -2240,23 +2247,6 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if ((cvalue = targetp.ExplicitDefaultConstantValue) != null)
             {
-                // keep NULL if parameter is a reference type
-                if (cvalue.IsNull && targetp.Type != CoreTypes.PhpAlias)
-                {
-                    if (targetp.Type.IsReferenceType)
-                    {
-                        // reference type
-                        _il.EmitNullConstant();
-                    }
-                    else
-                    {
-                        // value type ~ default(T)
-                        EmitLoadDefaultOfValueType(targetp.Type);
-                    }
-                    return;
-                }
-
-                //
                 ptype = EmitLoadConstant(cvalue.Value, targetp.Type);
             }
             else if ((boundinitializer = (targetp as IPhpValue)?.Initializer) != null)
@@ -2894,19 +2884,29 @@ namespace Pchp.CodeAnalysis.CodeGen
             return EmitCall(ILOpCode.Call, mainmethod);
         }
 
-        public TypeSymbol EmitLoadConstant(object value, TypeSymbol targetOpt = null)
+        public TypeSymbol EmitLoadConstant(object value, TypeSymbol targetOpt = null, bool nullable = true)
         {
             if (value == null)
             {
-                if (targetOpt != null)
+                Debug.Assert(nullable);
+
+                if (targetOpt != null && targetOpt.IsValueType)
                 {
-                    EmitLoadDefault(targetOpt, 0);
-                    return targetOpt;
+                    return EmitLoadDefaultOfValueType(targetOpt);
                 }
-                else
+                else // reference type
                 {
-                    Builder.EmitNullConstant();
-                    return CoreTypes.Object;
+                    if (targetOpt == CoreTypes.PhpAlias)
+                    {
+                        // new PhpAlias(PhpValue.Null)
+                        Emit_PhpValue_Null();
+                        return Emit_PhpValue_MakeAlias();
+                    }
+                    else
+                    {
+                        Builder.EmitNullConstant();
+                        return targetOpt ?? CoreTypes.Object;
+                    }
                 }
             }
             else
@@ -3157,7 +3157,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Emits <c>default(valuetype)</c>.
         /// Handles special types with a default ctor.
         /// </summary>
-        public void EmitLoadDefaultOfValueType(TypeSymbol valuetype)
+        public TypeSymbol EmitLoadDefaultOfValueType(TypeSymbol valuetype)
         {
             Debug.Assert(valuetype != null && valuetype.IsValueType);
 
@@ -3177,6 +3177,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // default(T)
                 _il.EmitValueDefault(this.Module, this.Diagnostics, this.GetTemporaryLocal(valuetype, true));
             }
+
+            //
+            return valuetype;
         }
 
         public void EmitRetDefault()

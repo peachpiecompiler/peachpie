@@ -38,6 +38,8 @@ namespace Pchp.Core
             public abstract string ToStringQuiet(ref PhpValue me);
             public abstract string ToString(ref PhpValue me, Context ctx);
             public abstract string ToStringOrThrow(ref PhpValue me, Context ctx);
+            /// <summary>Implicit conversion to string, preserves <c>null</c>, throws if conversion is not possible.</summary>
+            public virtual string AsString(ref PhpValue me, Context ctx) => ToString(ref me, ctx);
             public abstract long ToLong(ref PhpValue me);
             public abstract double ToDouble(ref PhpValue me);
             public abstract bool ToBoolean(ref PhpValue me);
@@ -178,6 +180,7 @@ namespace Pchp.Core
             public override string ToStringQuiet(ref PhpValue me) => string.Empty;
             public override string ToString(ref PhpValue me, Context ctx) => string.Empty;
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => string.Empty;
+            public override string AsString(ref PhpValue me, Context ctx) => null;
             public override long ToLong(ref PhpValue me) => 0;
             public override double ToDouble(ref PhpValue me) => 0.0;
             public override bool ToBoolean(ref PhpValue me) => false;
@@ -608,8 +611,9 @@ namespace Pchp.Core
             public override bool IsEmpty(ref PhpValue me) => me.Array.Count == 0;
             public override object ToClass(ref PhpValue me) => me.Array.ToClass();
             public override string ToStringQuiet(ref PhpValue me) => PhpArray.PrintablePhpTypeName;
-            public override string ToString(ref PhpValue me, Context ctx) => me.Array.ToString(ctx);
+            public override string ToString(ref PhpValue me, Context ctx) => me.Array.ToStringOrThrow(ctx);
             public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.Array.ToStringOrThrow(ctx);
+            public override string AsString(ref PhpValue me, Context ctx) => me.Array.ToStringOrThrow(ctx);
             public override long ToLong(ref PhpValue me) => me.Array.ToLong();
             public override double ToDouble(ref PhpValue me) => me.Array.ToDouble();
             public override bool ToBoolean(ref PhpValue me) => me.Array.ToBoolean();

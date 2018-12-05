@@ -273,13 +273,13 @@ namespace Pchp.Core.Dynamic
                 return expr;
 
             if (source == typeof(PhpString))
-                return Expression.Call(expr, Cache.PhpString.ToString_Context, ctx); ;
+                return Expression.Call(expr, Cache.PhpString.ToString_Context, ctx);
 
             if (source == typeof(PhpValue))
-                return Expression.Call(expr, Cache.Operators.PhpValue_ToString_Context, ctx);
+                return Expression.Call(expr, Cache.Operators.PhpValue_AsString_Context, ctx);
 
             if (source == typeof(void))
-                return VoidAsConstant(expr, string.Empty, typeof(string));
+                return VoidAsConstant(expr, null, typeof(string));
 
             if (source == typeof(PhpNumber))
                 return Expression.Call(expr, Cache.Operators.PhpNumber_ToString_Context, ctx);
@@ -290,14 +290,15 @@ namespace Pchp.Core.Dynamic
                 if (expr is ConstantExpression && ((ConstantExpression)expr).Value == null)
                 {
                     // (string)null
-                    return Expression.Constant(string.Empty, typeof(string));
+                    return Expression.Constant(null, typeof(string));
                 }
 
                 // __toString
 
             }
 
-            throw new NotImplementedException($"{source.FullName} -> string");
+            // ToString()
+            return Expression.Call(expr, Cache.Object.ToString);
         }
 
         private static Expression BindToChar(Expression expr, Expression ctx)
