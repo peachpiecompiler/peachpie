@@ -762,7 +762,7 @@ namespace Pchp.Library.Streams
             readOffset += length;
 
             readPosition = 0;
-            return readBuffers.Count > 0;
+            return readBuffers.Count != 0;
         }
 
 
@@ -851,10 +851,12 @@ namespace Pchp.Library.Streams
             byte[] peek = readBuffers.Peek().AsBytes(_encoding.StringEncoding);
             Debug.Assert(peek.Length >= readPosition);
 
+            //
+            byte[] data = new byte[length];
+
             if (peek.Length - readPosition >= length)
             {
                 // Great! We can just take a sub-data.
-                byte[] data = new byte[length];
                 Array.Copy(peek, readPosition, data, 0, length);
                 readPosition += length;
 
@@ -871,7 +873,7 @@ namespace Pchp.Library.Streams
                 // Start building the data from the remainder in the buffer.
                 int buffered = this.ReadBufferLength;
                 if (buffered < length) length = buffered;
-                byte[] data = new byte[length];
+
                 int copied = peek.Length - readPosition;
                 Array.Copy(peek, readPosition, data, 0, copied); readPosition += copied;
                 length -= copied;
@@ -907,9 +909,7 @@ namespace Pchp.Library.Streams
                 Debug.Assert(copied > 0);
                 if (copied < length)
                 {
-                    byte[] sub = new byte[copied];
-                    Array.Copy(data, 0, sub, 0, copied);
-                    return sub;
+                    Array.Resize(ref data, copied);
                 }
                 return data;
             } // else
@@ -1084,7 +1084,7 @@ namespace Pchp.Library.Streams
             else
             {
                 // There is not enough data in the buffers, read more.
-                for (;;)
+                for (; ; )
                 {
                     data = ReadFiltered(readChunkSize);
                     if (data.IsNull)
@@ -1136,7 +1136,7 @@ namespace Pchp.Library.Streams
                 return new TextElement(ReadTextBuffer(length));
             else
                 return new TextElement(ReadBinaryBuffer(length));
-            // Data may only be a string or PhpBytes (and consistently throughout all the buffers).
+            // Data may only be a string or byte[] (and consistently throughout all the buffers).
         }
 
         /// <summary>
@@ -1401,7 +1401,7 @@ namespace Pchp.Library.Streams
         /// Reads one line (text ending with the <paramref name="ending"/> delimiter)
         /// from the stream up to <paramref name="length"/> characters long.
         /// </summary>
-        /// <param name="length">Maximum length of the returned <see cref="string"/> or <c>-1</c> for unlimited reslut.</param>
+        /// <param name="length">Maximum length of the returned <see cref="string"/> or <c>-1</c> for unlimited result.</param>
         /// <param name="ending">Delimiter of the returned line or <b>null</b> to use the system default.</param>
         /// <returns>A <see cref="string"/> containing one line from the input stream.</returns>
         public string ReadLine(int length, string ending)
@@ -1417,32 +1417,44 @@ namespace Pchp.Library.Streams
                 int pos = (ending.Length == 1) ? str.IndexOf(ending[0]) : str.IndexOf(ending);
                 if (pos >= 0)
                 {
-                    string left, right;
-                    SplitData(str, pos + ending.Length - 1, out left, out right);
-                    Debug.Assert(right != null);
-                    int returnedLength = right.Length;
-                    TextElement rightElement = (this.IsBinary)
-                        ? new TextElement(_encoding.StringEncoding.GetBytes(right))
-                        : new TextElement(right);
-                    
-                    if (readBuffers.Count != 0)
+                    SplitData(str, pos + ending.Length - 1, out var left, out var right);
+                    if (right != null)
                     {
-                        // EX: Damn. Have to put the data to the front of the queue :((
-                        // Better first look into the buffers for the ending..
-                        var newBuffers = new Queue<TextElement>(readBuffers.Count + 2);
-                        newBuffers.Enqueue(rightElement);
-                        foreach (var o in readBuffers)
+                        int returnedLength = right.Length;
+                        var rightElement = this.IsBinary
+                            ? new TextElement(_encoding.StringEncoding.GetBytes(right))
+                            : new TextElement(right);
+
+                        if (readBuffers.Count != 0)
                         {
-                            newBuffers.Enqueue(o);
+                            // EX: Damn. Have to put the data to the front of the queue :((
+                            // Better first look into the buffers for the ending..
+                            var newBuffers = new Queue<TextElement>(readBuffers.Count + 2);
+                            newBuffers.Enqueue(rightElement);
+                            foreach (var o in readBuffers)
+                            {
+                                var data = o;
+                                if (readPosition > 0)
+                                {
+                                    // the buffered portion of text was read
+                                    Debug.Assert(data.Length > readPosition);
+                                    data = this.IsBinary
+                                        ? new TextElement(data.GetBytes().Slice(readPosition))
+                                        : new TextElement(data.GetText().Substring(readPosition));
+                                    readPosition = 0;
+                                }
+                                newBuffers.Enqueue(data);
+                            }
+                            readBuffers = newBuffers;
                         }
-                        readBuffers = newBuffers;
+                        else
+                        {
+                            readBuffers.Enqueue(rightElement);
+                        }
+                        // Update the offset as the data gets back.
+                        readOffset -= returnedLength;
                     }
-                    else
-                    {
-                        readBuffers.Enqueue(rightElement);
-                    }
-                    // Update the offset as the data gets back.
-                    readOffset -= returnedLength;
+
                     return left;
                 }
             }

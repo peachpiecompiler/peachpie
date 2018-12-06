@@ -714,7 +714,7 @@ namespace Pchp.Library.Streams
             if (rv == null) return null;
             if (rv.Length >= ending.Length)
             {
-                rv = rv.Substring(rv.Length - ending.Length);
+                rv = rv.Remove(rv.Length - ending.Length);
             }
 
             return rv;

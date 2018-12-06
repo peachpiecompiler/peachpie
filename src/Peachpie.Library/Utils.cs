@@ -286,6 +286,24 @@ namespace Pchp.Library
 
             return result;
         }
+
+        /// <summary>
+        /// Gets a slice of array.
+        /// </summary>
+        public static T[] Slice<T>(this T[] array, int start) // TODO: Span<T>
+        {
+            return Slice(array, start, array.Length - start);
+        }
+
+        /// <summary>
+        /// Gets a slice of array.
+        /// </summary>
+        public static T[] Slice<T>(this T[] array, int start, int length)   // TODO: Span<T>
+        {
+            var slice = new T[length];
+            Buffer.BlockCopy(array, start, slice, 0, length);
+            return slice;
+        }
     }
 
     internal static class UriUtils
