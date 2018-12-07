@@ -337,30 +337,16 @@ namespace Pchp.Core.Dynamic
 
             //
             if (source == typeof(PhpString))
-            {
                 return expr;
-            }
-
-            // string -> PhpString
-            if (source == typeof(int) ||
-                source == typeof(uint) ||
-                source == typeof(long) ||
-                source == typeof(float) || source == typeof(double))   // TODO: ToString_Double_Context
-            {
-                expr = Expression.Call(expr, Cache.Object.ToString);
-                source = expr.Type;
-            }
 
             if (source == typeof(PhpValue))
-            {
-                return Expression.Call(Cache.Operators.ToPhpString_PhpValue_Context, expr, ctx);    // Convert.ToPhpString(PhpValue, Context)
-            }
+                Expression.Call(Cache.Operators.ToPhpString_PhpValue_Context, expr, ctx);    // Convert.ToPhpString(PhpValue, Context)
 
-            if (source == typeof(string)) return Expression.New(Cache.PhpString.ctor_String, expr);        // new PhpString(string)
-            if (source == typeof(byte[])) return Expression.New(Cache.PhpString.ctor_ByteArray, expr);     // new PhpString(byte[])
+            if (source == typeof(byte[]))
+                return Expression.New(Cache.PhpString.ctor_ByteArray, expr);     // new PhpString(byte[])
 
-            //
-            throw new NotImplementedException(source.FullName);
+            // expr -> string -> PhpString
+            return Expression.New(Cache.PhpString.ctor_String, BindToString(expr, ctx));        // new PhpString(string)
         }
 
         private static Expression BindIntStringKey(Expression expr)
