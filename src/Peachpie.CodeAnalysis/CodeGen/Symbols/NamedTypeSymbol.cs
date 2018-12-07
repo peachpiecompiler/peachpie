@@ -70,7 +70,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 if (methodoverride != null)
                 {
-                    if (!method.SignaturesMatch(methodoverride))
+                    if (!method.SignaturesMatch(methodoverride) || !methodoverride.IsVirtual)
                     {
                         overridecandidate = methodoverride;
                         methodoverride = null;
