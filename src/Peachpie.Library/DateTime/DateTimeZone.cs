@@ -17,6 +17,9 @@ namespace Pchp.Library.DateTime
     {
         internal TimeZoneInfo _timezone;
 
+        /// <summary>The timezone name if it differs from <see cref="TimeZoneInfo.Id"/>.</summary>
+        private protected string _name;
+
         #region Constants
 
         /* Constants */
@@ -53,10 +56,13 @@ namespace Pchp.Library.DateTime
             if (timezone_name != null)
             {
                 _timezone = PhpTimeZone.GetTimeZone(timezone_name);
+                _name = timezone_name;
 
                 if (_timezone == null)
                 {
-                    //PhpException.Throw(PhpError.Notice, LibResources.GetString("unknown_timezone", zoneName));
+                    // TODO: an offset value (+0200)
+
+                    //PhpException.Throw(PhpError.Notice, LibResources.GetString("unknown_timezone", timezone_name));
                     throw new ArgumentException();
                 }
             }
@@ -100,8 +106,7 @@ namespace Pchp.Library.DateTime
         //public string getName ( void )
         public virtual string getName()
         {
-            //return (timezone != null) ? timezone.Id : null;
-            throw new NotImplementedException();
+            return _name ?? _timezone.Id;
         }
 
         //public int getOffset ( DateTime $datetime )
