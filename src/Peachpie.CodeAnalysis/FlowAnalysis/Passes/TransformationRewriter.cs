@@ -90,5 +90,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             return base.VisitCFGConditionalEdge(x);
         }
+
+        public override object VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
+        {
+            // dirname( __FILE__ ) -> __DIR__
+            if (x.Name.NameValue == NameUtils.SpecialNames.dirname &&
+                x.ArgumentsInSourceOrder.Length == 1 &&
+                x.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc &&
+                pc.ConstType == Devsense.PHP.Syntax.Ast.PseudoConstUse.Types.File)
+            {
+                TransformationCount++;
+                return new BoundPseudoConst(Devsense.PHP.Syntax.Ast.PseudoConstUse.Types.Dir).WithAccess(x.Access);
+            }
+
+            //
+            return base.VisitGlobalFunctionCall(x);
+        }
     }
 }

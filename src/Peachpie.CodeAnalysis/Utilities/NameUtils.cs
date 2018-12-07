@@ -349,6 +349,9 @@ namespace Pchp.CodeAnalysis
 
             /// <summary>Special <c>assert</c> function name.</summary>
             public static QualifiedName assert { get { return new QualifiedName(new Name("assert")); } }
+
+            /// <summary>Special <c>dirname</c> function name.</summary>
+            public static QualifiedName dirname { get { return new QualifiedName(new Name("dirname")); } }
         }
     }
 }
