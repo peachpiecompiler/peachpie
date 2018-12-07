@@ -208,7 +208,6 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             Debug.Assert(ctor.BaseCtor != null);
             Debug.Assert(ctor.PhpConstructor == null);
-            Debug.Assert(ctor.ParameterCount == 0);
 
             // Pchp.Core.Utilities.ContextExtensions.DefaultContext
             var extensions = (NamedTypeSymbol)module.Compilation.GetTypeByMetadataName("Pchp.Core.Utilities.ContextExtensions");

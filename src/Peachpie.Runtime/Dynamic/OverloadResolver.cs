@@ -71,16 +71,6 @@ namespace Pchp.Core.Dynamic
             }
         }
 
-        public static IEnumerable<MethodBase> SelectVisible(this IEnumerable<MethodBase> candidates, Type classCtx)
-        {
-            if (classCtx == null)
-            {
-                return candidates.Where(m => m.IsPublic);
-            }
-
-            return candidates.Where(m => m.IsVisible(classCtx));
-        }
-
         /// <summary>
         /// Selects only static methods.
         /// </summary>

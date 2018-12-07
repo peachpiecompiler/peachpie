@@ -151,6 +151,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var basectors = (fieldsonlyctor != null)
                 ? ImmutableArray.Create(fieldsonlyctor)
                 : btype.InstanceConstructors
+                    .Where(c => c.DeclaredAccessibility != Accessibility.Private)   // ignore inaccessible .ctors
                     .OrderByDescending(c => c.ParameterCount)   // longest ctors first
                     .AsImmutable();
 
@@ -194,22 +195,16 @@ namespace Pchp.CodeAnalysis.Symbols
                 yield return defaultctor = new SynthesizedPhpCtorSymbol(type, phpconstruct.DeclaredAccessibility, false, fieldsinitctor, phpconstruct);
             }
 
-            // parameterless .ctor() for shared context
-            if (type.GetAttributes().FirstOrDefault(IsSharedContextAttribute) != null)
+            // parameterless .ctor() with shared context
+            if (defaultctor.DeclaredAccessibility == Accessibility.Public && !type.IsAbstract)
             {
-                // Template:
-                // void .ctor() : this(Context.Default) { }
-                yield return new SynthesizedParameterlessPhpCtorSymbol(type, Accessibility.Public, defaultctor);
+                //// Template:
+                //// void .ctor() : this(Context.Default) { }
+                //yield return new SynthesizedParameterlessPhpCtorSymbol(type, Accessibility.Public, defaultctor);
+                // TODO: uncomment once overload resolution will prioritize the overload with Context parameter over this one!
             }
 
             yield break;
-        }
-
-        static bool IsSharedContextAttribute(AttributeData attr)
-        {
-            return
-                attr is SourceCustomAttribute srcattr &&
-                srcattr.AttributeClass.GetFullName() == CoreTypes.SharedContextAttributeFullName;
         }
 
         static MethodSymbol ResolveBaseCtor(ImmutableArray<ParameterSymbol> givenparams, ImmutableArray<MethodSymbol> candidates)
@@ -347,20 +342,40 @@ namespace Pchp.CodeAnalysis.Symbols
     #region SynthesizedParameterlessPhpCtorSymbol
 
     /// <summary>
-    /// Parameter less .ctor for a PHP class.
+    /// Context-less .ctor for a PHP class.
     /// </summary>
     internal sealed class SynthesizedParameterlessPhpCtorSymbol : SynthesizedPhpCtorSymbol
     {
         public SynthesizedParameterlessPhpCtorSymbol(
             SourceTypeSymbol containingType, Accessibility accessibility,
             MethodSymbol defaultctor)
-            : base(containingType, accessibility, false, defaultctor, null, 0)
+            : base(containingType, accessibility, false, defaultctor, null)
         {
         }
 
         protected override IEnumerable<ParameterSymbol> CreateParameters(IEnumerable<ParameterSymbol> baseparams)
         {
-            return Array.Empty<ParameterSymbol>();
+            int index = 0;
+
+            // same parameters as PHP constructor
+            foreach (var p in baseparams)
+            {
+                if (!SpecialParameterSymbol.IsContextParameter(p))
+                {
+                    yield return new SynthesizedParameterSymbol(this, p.Type, index++, p.RefKind, p.Name, p.IsParams,
+                        explicitDefaultConstantValue: p.ExplicitDefaultConstantValue);
+                }
+            }
+        }
+
+        public override ImmutableArray<AttributeData> GetAttributes()
+        {
+            // [CompilerGenerated]
+            var compilergenerated = (MethodSymbol)DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Runtime_CompilerServices_CompilerGeneratedAttribute__ctor);
+
+            return base.GetAttributes().Add(
+                new SynthesizedAttributeData(compilergenerated, ImmutableArray<TypedConstant>.Empty, ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty)
+            );
         }
     }
 
