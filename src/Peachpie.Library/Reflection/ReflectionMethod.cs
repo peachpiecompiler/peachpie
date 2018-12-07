@@ -56,9 +56,26 @@ namespace Pchp.Library.Reflection
             _routine = routine;
         }
 
-        public ReflectionMethod(Context ctx, PhpValue @class, string name)
+        public ReflectionMethod(Context ctx, PhpValue @class, string name) => __construct(ctx, @class, name);
+
+        public ReflectionMethod(Context ctx, string class_method) => __construct(ctx, class_method);
+
+        public void __construct(Context ctx, string class_method)
         {
-            __construct(ctx, @class, name);
+            if (class_method != null)
+            {
+                var col = class_method.IndexOf("::", StringComparison.Ordinal);
+                if (col > 0)
+                {
+                    var @class = class_method.Remove(col);      // class name
+                    var name = class_method.Substring(col + 2); // method namne
+
+                    _tinfo = ctx.GetDeclaredTypeOrThrow(@class, true);
+                    _routine = _tinfo.RuntimeMethods[name] ?? throw new ReflectionException(string.Format(Resources.Resources.method_does_not_exist, _tinfo.Name, name));
+                }
+            }
+
+            throw new ReflectionException();
         }
 
         public void __construct(Context ctx, PhpValue @class, string name)
