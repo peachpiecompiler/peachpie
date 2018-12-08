@@ -734,7 +734,7 @@ namespace Pchp.Library
         /// </summary>  
         public static string urldecode(string str)
         {
-            return WebUtility.UrlDecode(str);
+            return string.IsNullOrEmpty(str) ? string.Empty : WebUtility.UrlDecode(str);
         }
 
         /// <summary>
@@ -742,7 +742,7 @@ namespace Pchp.Library
         /// </summary>  
         public static string urlencode(string str)
         {
-            return UpperCaseEncodedChars(WebUtility.UrlEncode(str));
+            return string.IsNullOrEmpty(str) ? string.Empty : UpperCaseEncodedChars(WebUtility.UrlEncode(str));
         }
 
         static string UpperCaseEncodedChars(string encoded)
