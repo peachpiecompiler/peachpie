@@ -63,7 +63,7 @@ namespace Pchp.Library.DateTime
                     // TODO: an offset value (+0200)
 
                     //PhpException.Throw(PhpError.Notice, LibResources.GetString("unknown_timezone", timezone_name));
-                    throw new ArgumentException();
+                    throw new Spl.InvalidArgumentException();
                 }
             }
             else
