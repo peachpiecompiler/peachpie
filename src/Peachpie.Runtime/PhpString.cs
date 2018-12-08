@@ -256,7 +256,7 @@ namespace Pchp.Core.Text
         /// <summary>
         /// Gets first characters <c>ord</c>.
         /// </summary>
-        public static int Ord(this PhpString str) => str.AsCharacter().Ord();
+        public static int Ord(this PhpString str) => str.IsEmpty ? 0 : (int)str[0];
 
         /// <summary>
         /// Gets substring of this instance.
@@ -1617,22 +1617,17 @@ namespace Pchp.Core
         /// </summary>
         internal BlobChar AsCharacter()
         {
-            if (IsEmpty)
-            {
-                return default;
-            }
-
             if (_data is Blob b)
             {
-                return b[0];
+                return b.IsEmpty ? default : b[0];
             }
             else if (_data is string str)
             {
-                return str[0];
+                return str.Length != 0 ? str[0] : default;
             }
             else
             {
-                // unreachable
+                Debug.Assert(_data == null);
                 return 0;
             }
         }

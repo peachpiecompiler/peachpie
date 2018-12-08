@@ -340,7 +340,7 @@ namespace Pchp.Core.Dynamic
                 return expr;
 
             if (source == typeof(PhpValue))
-                Expression.Call(Cache.Operators.ToPhpString_PhpValue_Context, expr, ctx);    // Convert.ToPhpString(PhpValue, Context)
+                return Expression.Call(Cache.Operators.ToPhpString_PhpValue_Context, expr, ctx);    // Convert.ToPhpString(PhpValue, Context)
 
             if (source == typeof(byte[]))
                 return Expression.New(Cache.PhpString.ctor_ByteArray, expr);     // new PhpString(byte[])
