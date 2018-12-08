@@ -1911,7 +1911,7 @@ namespace Pchp.Library
         /// is set then '\0' characters are slashed and single quotes are replaced with two single quotes. Otherwise,
         /// '\'', '"', '\\' and '\0 characters are slashed.
         /// </remarks>
-        public static string addslashes(string str) => StringUtils.AddCSlashes(str, true, true);
+        public static string addslashes(string str) => string.IsNullOrEmpty(str) ? string.Empty : StringUtils.AddCSlashes(str, true, true);
 
         /// <summary>
         /// Quote string with slashes in a C style.
