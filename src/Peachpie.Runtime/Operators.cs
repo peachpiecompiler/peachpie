@@ -491,15 +491,37 @@ namespace Pchp.Core
         /// </summary>
         public static string GetItemValue(string value, PhpValue index, bool quiet)
         {
-            if (Convert.TryToIntStringKey(index, out IntStringKey key))
+            if (Convert.TryToIntStringKey(index, out var key))
             {
-                return GetItemValue(value, key);
+                int i;
+
+                if (key.IsInteger)
+                {
+                    i = key.Integer;
+                }
+                else
+                {
+                    if (quiet) return null;
+
+                    i = (int)Convert.StringToLongInteger(key.String);
+                }
+
+                if (value != null && i >= 0 && i < value.Length)
+                {
+                    return value[i].ToString();
+                }
+            }
+
+            //
+            if (quiet)
+            {
+                // used by isset() and empty()
+                return null;
             }
             else
             {
-                return quiet
-                    ? (string)null
-                    : throw new ArgumentException();    // string.Empty + warning
+                PhpException.InvalidArgument(nameof(index));
+                return string.Empty;
             }
         }
 
