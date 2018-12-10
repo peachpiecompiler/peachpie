@@ -390,7 +390,9 @@ namespace Pchp.Library
         static int Match(Context ctx, string pattern, string subject, out PhpArray matches, int flags, long offset, bool matchAll)
         {
             var regex = new PerlRegex.Regex(pattern);
-            var m = regex.Match(subject, (offset < subject.Length) ? (int)offset : subject.Length);
+            var m = subject != null
+                ? regex.Match(subject, (offset < subject.Length) ? (int)offset : subject.Length)
+                : PerlRegex.Match.Empty;
 
             if ((regex.Options & PerlRegex.RegexOptions.PCRE_ANCHORED) != 0 && m.Success && m.Index != offset)
             {
