@@ -1094,15 +1094,22 @@ namespace Pchp.Library
         //[PureFunction]
         public static string str_repeat(string str, int count)
         {
-            if (str == null) return String.Empty;
-
-            if (count < 0)
+            if (str == null)
             {
+                return string.Empty;
+            }
+
+            if (count <= 0)
+            {
+                if (count == 0)
+                {
+                    return string.Empty;
+                }
+
                 //PhpException.Throw(PhpError.Warning, LibResources.GetString("number_of_repetitions_negative"));
                 //return null;
                 throw new ArgumentException();
             }
-            if (count == 0) return null;
 
             //PhpBytes binstr = str as PhpBytes;
             //if (binstr != null)
@@ -3706,7 +3713,7 @@ namespace Pchp.Library
             {
                 char c = format[i];
 
-                Lambda:
+            Lambda:
                 switch (state)
                 {
                     case 0: // the initial state
