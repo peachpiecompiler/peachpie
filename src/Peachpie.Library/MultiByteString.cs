@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -117,11 +118,14 @@ namespace Pchp.Library
             MB_CASE_LOWER = 1,
 
             MB_CASE_TITLE = 2,
+
+            MB_CASE_FOLD = 3,
         }
 
         public const int MB_CASE_UPPER = (int)CaseConstants.MB_CASE_UPPER;
         public const int MB_CASE_LOWER = (int)CaseConstants.MB_CASE_LOWER;
         public const int MB_CASE_TITLE = (int)CaseConstants.MB_CASE_TITLE;
+        public const int MB_CASE_FOLD = (int)CaseConstants.MB_CASE_FOLD;
 
         #endregion
 
@@ -596,6 +600,59 @@ namespace Pchp.Library
         {
             UriUtils.ParseQuery(encoded_string, ctx.Globals.AddVariable);
             return true;
+        }
+
+        #endregion
+
+        #region mb_convert_case
+
+        /// <summary>
+        /// Perform case folding on a string.
+        /// </summary>
+        public static string mb_convert_case(/*Context ctx,*/ string str, CaseConstants mode, string encoding = default)
+        {
+            if (string.IsNullOrEmpty(str))
+            {
+                return string.Empty;
+            }
+
+            // var enc = GetEncoding(encoding) ?? GetInternalEncoding(ctx);
+
+            switch (mode)
+            {
+                case CaseConstants.MB_CASE_UPPER: return str.ToUpper();
+                case CaseConstants.MB_CASE_LOWER: return str.ToLower();
+                case CaseConstants.MB_CASE_TITLE: return CaseTitle(str);
+                default: throw new ArgumentException();
+            }
+        }
+
+        static string CaseTitle(string str)
+        {
+            var culture = CultureInfo.CurrentCulture;
+
+            var result = new StringBuilder(str.Length);
+            var upper = true;
+
+            for (int i = 0; i < str.Length; i++)
+            {
+                var ch = str[i];
+
+                if (char.IsWhiteSpace(ch) || char.IsSeparator(ch))
+                {
+                    upper = true;
+                }
+                else if (upper)
+                {
+                    upper = false;
+                    ch = char.ToUpper(ch, culture);
+                }
+
+                result.Append(ch);
+            }
+
+            //
+            return result.ToString();
         }
 
         #endregion
