@@ -372,7 +372,7 @@ namespace Pchp.Library
         public static int preg_match(Context ctx, string pattern, string subject)
         {
             var regex = new PerlRegex.Regex(pattern);
-            return regex.Match(subject).Success ? 1 : 0;
+            return subject != null && regex.Match(subject).Success ? 1 : 0;
         }
 
         /// <summary>
