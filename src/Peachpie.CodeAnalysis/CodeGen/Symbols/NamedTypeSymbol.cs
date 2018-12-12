@@ -100,11 +100,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 return _lazyOverrides;
             }
 
-            // TODO: ignore System.Object ?
-
             // inherit abstracts from base type
+            // ignoring System.Object (we don't override its methods from PHP)
             var overrides = new List<OverrideInfo>();
-            if (BaseType != null)
+            if (BaseType != null && BaseType.SpecialType != SpecialType.System_Object)
             {
                 overrides.AddRange(BaseType.ResolveOverrides(diagnostics));
             }
