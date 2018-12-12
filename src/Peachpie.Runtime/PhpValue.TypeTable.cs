@@ -438,13 +438,25 @@ namespace Pchp.Core
                 //return obj;
                 throw new NotImplementedException();
             }
+            public override PhpAlias EnsureAlias(ref PhpValue me)
+            {
+                // ensure blob is lazily copied
+                if (me.MutableStringBlob.IsShared)
+                {
+                    me._obj = me.MutableStringBlob.ReleaseOne();
+                }
+                //
+                return base.EnsureAlias(ref me);
+            }
             public override IPhpArray EnsureArray(ref PhpValue me)
             {
+                // ensure blob is lazily copied
                 var blob = me.MutableStringBlob;
                 if (blob.IsShared)
                 {
                     me._obj = blob = blob.ReleaseOne();
                 }
+                //
                 return blob;
             }
             public override IPhpArray GetArrayAccess(ref PhpValue me) => me.MutableStringBlob;
@@ -623,13 +635,24 @@ namespace Pchp.Core
             public override int Compare(ref PhpValue me, PhpValue right) => me.Array.Compare(right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right) => me.Array.StrictCompareEq(right.ArrayOrNull());
             public override object EnsureObject(ref PhpValue me) => ToClass(ref me);    // me is not modified
-            public override IPhpArray EnsureArray(ref PhpValue me) => me.Array;
+            public override IPhpArray EnsureArray(ref PhpValue me) => me.Array; // EnsureWritable() called lazily when writing
+            public override PhpAlias EnsureAlias(ref PhpValue me)
+            {
+                // ensure array is lazily copied
+                me.Array.EnsureWritable();
+                //
+                return base.EnsureAlias(ref me);
+            }
             public override IPhpArray GetArrayAccess(ref PhpValue me) => me.Array;
             public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => me.Array.GetItemValue(index); // , quiet);
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) => me.Array.EnsureItemAlias(index, quiet);
             public override PhpValue DeepCopy(ref PhpValue me) => new PhpValue(me.Array.DeepCopy());
             public override void PassValue(ref PhpValue me) => me = new PhpValue(me.Array.DeepCopy());
-            public override PhpArray ToArray(ref PhpValue me) => me.Array;
+            public override PhpArray ToArray(ref PhpValue me)
+            {
+                me.Array.EnsureWritable();
+                return me.Array;
+            }
             public override PhpArray GetArray(ref PhpValue me) => me.Array;
             public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx)
             {

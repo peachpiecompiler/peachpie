@@ -639,11 +639,15 @@ namespace Pchp.Core
             if (aliasedValues)
             {
                 EnsureWritable();
-            }
 
-            return aliasedValues
-                ? new OrderedDictionary.Enumerator(this)            // when enumerating aliases, changes are reflected to the enumerator
-                : new OrderedDictionary.ReadonlyEnumerator(this);   // when enumerating values, any upcoming changes to the array do not take effect to the enumerator
+                // when enumerating aliases, changes are reflected to the enumerator;
+                return new OrderedDictionary.Enumerator(this);
+            }
+            else
+            {
+                // when enumerating values, any upcoming changes to the array do not take effect to the enumerator
+                return new OrderedDictionary.ReadonlyEnumerator(this);
+            }
         }
 
         /// <summary>

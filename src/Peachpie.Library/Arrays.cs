@@ -2005,10 +2005,12 @@ namespace Pchp.Library
                     using (var enumerator = arrays[i].GetFastEnumerator())
                         while (enumerator.MoveNext())
                         {
+                            var value = enumerator.CurrentValue.DeepCopy();
+
                             if (enumerator.CurrentKey.IsString)
-                                result[enumerator.CurrentKey] = enumerator.CurrentValue;
+                                result[enumerator.CurrentKey] = value;
                             else
-                                result.Add(enumerator.CurrentValue);
+                                result.Add(value);
                         }
                 }
             }
