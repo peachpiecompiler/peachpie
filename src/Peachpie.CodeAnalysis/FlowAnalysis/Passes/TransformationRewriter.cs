@@ -5,6 +5,7 @@ using System.Text;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
+using Ast = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
@@ -76,6 +77,50 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             }
 
             return x;
+        }
+
+        public override object VisitBinaryExpression(BoundBinaryEx x)
+        {
+            // AND, OR:
+            if (x.Operation == Ast.Operations.And ||
+                x.Operation == Ast.Operations.Or)
+            {
+                if (x.Left.ConstantValue.TryConvertToBool(out var bleft))
+                {
+                    if (x.Operation == Ast.Operations.And)
+                    {
+                        TransformationCount++;
+                        // TRUE && Right => Right
+                        // FALSE && Right => FALSE
+                        return bleft ? x.Right : x.Left;
+                    }
+                    else if (x.Operation == Ast.Operations.Or)
+                    {
+                        TransformationCount++;
+                        // TRUE || Right => TRUE
+                        // FALSE || Right => Right
+                        return bleft ? x.Left : x.Right;
+                    }
+                }
+
+                if (x.Right.ConstantValue.TryConvertToBool(out var bright))
+                {
+                    if (x.Operation == Ast.Operations.And && bright == true)
+                    {
+                        TransformationCount++;
+                        return x.Left; // Left && TRUE => Left
+                    }
+                    else if (x.Operation == Ast.Operations.Or && bright == false)
+                    {
+                        TransformationCount++;
+                        // Left || FALSE => Left
+                        return x.Left;
+                    }
+                }
+            }
+
+            //
+            return base.VisitBinaryExpression(x);
         }
 
         public override object VisitCFGConditionalEdge(ConditionalEdge x)
