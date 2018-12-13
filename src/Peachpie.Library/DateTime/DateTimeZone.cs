@@ -128,7 +128,7 @@ namespace Pchp.Library.DateTime
 
         //public array getTransitions ([ int $timestamp_begin [, int $timestamp_end ]] )
         [return: CastToFalse]
-        public PhpArray getTransitions(int timestamp_begin = 0, int timestamp_end = 0)
+        public PhpArray getTransitions(long timestamp_begin = Environment.PHP_INT_MIN, long timestamp_end = Environment.PHP_INT_MAX)
         {
             // TODO: timestamp_begin, timestamp_end
 
@@ -154,7 +154,7 @@ namespace Pchp.Library.DateTime
 
             //return array;
 
-            PhpException.FunctionNotSupported(nameof(timestamp_begin));
+            PhpException.FunctionNotSupported(nameof(getTransitions));
 
             return null;
         }
