@@ -15,9 +15,26 @@ namespace Pchp.CodeAnalysis.Semantics
             return expr;
         }
 
+        public static T WithAccess<T>(this T expr, BoundExpression other) where T : BoundExpression => WithAccess(expr, other.Access);
+
         public static T WithSyntax<T>(this T expr, LangElement syntax) where T : IPhpOperation
         {
             expr.PhpSyntax = syntax;
+            return expr;
+        }
+
+        /// <summary>
+        /// Copies semantic information (<see cref="BoundExpression.Access"/>, <see cref="BoundExpression.PhpSyntax"/>) from another expression.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        public static T WithContext<T>(this T expr, BoundExpression other) where T : BoundExpression
+        {
+            expr.Access = other.Access;
+            expr.PhpSyntax = other.PhpSyntax;
+
+            // expr.TypeRefMask has to be set by the type analysis
+            // expr.ConstantValue the same
+
             return expr;
         }
 

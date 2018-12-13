@@ -60,20 +60,30 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         {
             x = (BoundConditionalEx)base.VisitConditional(x);
 
-            if (x.IfTrue != null
-                && x.IfTrue.ConstantValue.IsBool(out bool trueVal)
-                && x.IfFalse.ConstantValue.IsBool(out bool falseVal))
+            if (x.IfTrue != null) // otherwise it is (A ?: B) operator
             {
-                if (trueVal && !falseVal)
+                if (x.Condition.ConstantValue.TryConvertToBool(out var condVal))
                 {
-                    // A ? true : false => (bool)A
                     TransformationCount++;
-                    return
-                        new BoundUnaryEx(x.Condition, Devsense.PHP.Syntax.Ast.Operations.BoolCast)
-                        .WithContext(x);
+                    return (condVal ? x.IfTrue : x.IfFalse).WithAccess(x);
                 }
 
-                // TODO: Other possibilities
+                if (x.IfTrue.ConstantValue.IsBool(out bool trueVal) &&
+                    x.IfFalse.ConstantValue.IsBool(out bool falseVal))
+                {
+                    if (trueVal && !falseVal)
+                    {
+                        // A ? true : false => (bool)A
+                        TransformationCount++;
+                        return new BoundUnaryEx(x.Condition, Ast.Operations.BoolCast).WithAccess(x);
+                    }
+                    else if (!trueVal && falseVal)
+                    {
+                        // A ? false : true => !A
+                        TransformationCount++;
+                        return new BoundUnaryEx(x.Condition, Ast.Operations.LogicNegation).WithAccess(x);
+                    }
+                }
             }
 
             return x;
