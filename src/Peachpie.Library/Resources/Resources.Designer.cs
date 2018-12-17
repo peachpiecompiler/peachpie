@@ -880,6 +880,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to CachingIterator does not use a full cache (see CachingIterator::__construct).
+        /// </summary>
+        public static string iterator_full_cache_not_enabled {
+            get {
+                return ResourceManager.GetString("iterator_full_cache_not_enabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Limit is less than 1.
         /// </summary>
         public static string limit_less_than_one {

@@ -977,4 +977,147 @@ namespace Pchp.Library.Spl
             return ((RecursiveIterator)getInnerIterator()).hasChildren();
         }
     }
+
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class CachingIterator : OuterIterator, ArrayAccess, Countable
+    {
+        #region Constants
+
+        public const int CALL_TOSTRING = 1;
+        public const int TOSTRING_USE_KEY = 2;
+        public const int TOSTRING_USE_CURRENT = 4;
+        public const int TOSTRING_USE_INNER = 8;
+        public const int CATCH_GET_CHILD = 16;
+        public const int FULL_CACHE = 256;
+
+        #endregion
+
+        #region Fields and properties
+
+        private Iterator _iterator;
+        private int _flags;
+        private bool _isValid;
+        private PhpValue _currentVal = PhpValue.Null;
+        private PhpValue _currentKey = PhpValue.Null;
+        private PhpArray _cache;
+
+        private bool IsFullCacheEnabled => (_flags & FULL_CACHE) != 0;
+
+        #endregion
+
+        #region Construction
+
+        [PhpFieldsOnlyCtor]
+        protected CachingIterator() { }
+
+        public CachingIterator(Iterator iterator, int flags = CALL_TOSTRING) => __construct(iterator, flags);
+
+        public virtual void __construct(Iterator iterator, int flags = CALL_TOSTRING)
+        {
+            if (iterator == null)
+                PhpException.ArgumentNull(nameof(iterator));
+
+            _iterator = iterator;
+            _flags = flags;
+
+            if (IsFullCacheEnabled)
+            {
+                _cache = PhpArray.NewEmpty();
+            }
+        }
+
+        #endregion
+
+        #region CachingIterator
+
+        public virtual bool hasNext() => _iterator.valid();
+
+        public virtual PhpArray getCache()
+        {
+            if (!IsFullCacheEnabled)
+                throw new BadMethodCallException(Resources.Resources.iterator_full_cache_not_enabled);
+
+            return _cache.DeepCopy();
+        }
+
+        public virtual int getFlags() => _flags;
+
+        public virtual void setFlags(int flags) => _flags = flags;
+
+        private void NextImpl()
+        {
+            _isValid = _iterator.valid();
+            _currentVal = _iterator.current();
+            _currentKey = _iterator.key();
+
+            if (_isValid && IsFullCacheEnabled)
+            {
+                bool isKeyConverted = _currentKey.TryToIntStringKey(out var key);
+                Debug.Assert(isKeyConverted);                                       // It was already used as a key in the previous iterator
+
+                _cache.Add(key, _currentVal);
+            }
+
+            _iterator.next();
+        }
+
+        #endregion
+
+        #region OuterIterator
+
+        public virtual bool valid() => _isValid;
+
+        public virtual PhpValue current() => _currentVal;
+
+        public virtual PhpValue key() => _currentKey;
+
+        public virtual Iterator getInnerIterator() => _iterator;
+
+        public virtual void next() => NextImpl();
+
+        public virtual void rewind()
+        {
+            _iterator.rewind();
+            _cache?.Clear();
+            NextImpl();
+        }
+
+        #endregion
+
+        #region ArrayAccess
+
+        public virtual bool offsetExists(PhpValue offset)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual PhpValue offsetGet(PhpValue offset)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual void offsetSet(PhpValue offset, PhpValue value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual void offsetUnset(PhpValue offset)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
+
+        #region Countable
+
+        public virtual long count()
+        {
+            if (!IsFullCacheEnabled)
+                throw new BadMethodCallException(Resources.Resources.iterator_full_cache_not_enabled);
+
+            return _cache.Count;
+        }
+
+        #endregion
+    }
 }

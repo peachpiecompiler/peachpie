@@ -633,4 +633,7 @@
   <data name="zip_entry_exists" xml:space="preserve">
     <value>Zip archive entry '{0}' already exists</value>
   </data>
+  <data name="iterator_full_cache_not_enabled" xml:space="preserve">
+    <value>CachingIterator does not use a full cache (see CachingIterator::__construct)</value>
+  </data>
 </root>
