@@ -206,6 +206,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(string)) return Expression.Call(Cache.Operators.ToLong_String, expr);
             if (source == typeof(PhpString)) return Expression.Call(expr, typeof(PhpString).GetMethod("ToLong", Cache.Types.Empty));
             if (source == typeof(void)) return VoidAsConstant(expr, 0L, typeof(long));
+            if (source == typeof(bool)) return Expression.Call(typeof(System.Convert).GetMethod("ToInt64", Cache.Types.Bool), expr);
             if (source == typeof(long)) return expr;    // unreachable
 
             // TODO: following conversions may fail, we should report it failed and throw an error
