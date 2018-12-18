@@ -435,11 +435,23 @@ namespace Pchp.Core
         public PhpValue DeepCopy() => _type.DeepCopy(ref this);
 
         /// <summary>
-        /// Dereferences and deep copies in-place.
+        /// Deep copies the value in-place.
         /// Called when this has been passed by value and inplace dereferencing and copying is necessary.
         /// </summary>
         [DebuggerNonUserCode, DebuggerStepThrough]
-        public void PassValue() => _type.PassValue(ref this);
+        public void PassValue()
+        {
+            if (_type != null)
+            {
+                // make copy if applicable
+                _type.PassValue(ref this);
+            }
+            else
+            {
+                // ensure the value is not default(PhpValue)
+                _type = Null._type;
+            }
+        }
 
         /// <summary>
         /// Outputs current value to <see cref="Context"/>.
