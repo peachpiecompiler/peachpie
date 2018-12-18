@@ -5276,7 +5276,10 @@ namespace Pchp.Library
         /// </summary>
         static int Strpos(string haystack, PhpValue needle, int offset, StringComparison comparisonType)
         {
-            if (String.IsNullOrEmpty(haystack)) return -1;
+            if (string.IsNullOrEmpty(haystack))
+            {
+                return -1;
+            }
 
             if (offset < 0 || offset >= haystack.Length)
             {
@@ -5293,9 +5296,8 @@ namespace Pchp.Library
             {
                 if (str_needle == String.Empty)
                 {
-                    throw new ArgumentException();
-                    //PhpException.InvalidArgument("needle", LibResources.GetString("arg_empty"));
-                    //return -1;
+                    PhpException.InvalidArgument(nameof(needle), LibResources.arg_empty);
+                    return -1;
                 }
 
                 return haystack.IndexOf(str_needle, offset, comparisonType);
@@ -5332,9 +5334,8 @@ namespace Pchp.Library
             {
                 if (str_needle.Length == 0)
                 {
-                    throw new ArgumentException();
-                    //PhpException.InvalidArgument("needle", LibResources.GetString("arg_empty"));
-                    //return -1;
+                    PhpException.InvalidArgument(nameof(needle), LibResources.arg_empty);
+                    return -1;
                 }
 
                 return haystack.LastIndexOf(str_needle, end, end - offset + 1, comparisonType);
