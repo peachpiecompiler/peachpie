@@ -1247,6 +1247,31 @@ namespace Pchp.Library.Streams
             }
         }
 
+        /// <summary>
+        /// Splits a <see cref="string"/> to "upto" bytes at left, ignores "separator" and the rest or <c>null</c> at right.
+        /// </summary>
+        static void SplitStringAt(string str, int upto, int separator, out string left, out string right)
+        {
+            if (upto < str.Length)
+            {
+                left = str.Remove(upto);
+
+                if (upto + separator < str.Length)
+                {
+                    right = str.Substring(upto + separator);
+                }
+                else
+                {
+                    right = null;
+                }
+            }
+            else
+            {
+                left = str;
+                right = null;
+            }
+        }
+
         #endregion
 
         #region Maximum Block Reading
@@ -1417,7 +1442,7 @@ namespace Pchp.Library.Streams
                 int pos = (ending.Length == 1) ? str.IndexOf(ending[0]) : str.IndexOf(ending);
                 if (pos >= 0)
                 {
-                    SplitData(str, pos + ending.Length - 1, out var left, out var right);
+                    SplitStringAt(str, pos, ending.Length, out var left, out var right);
                     if (right != null)
                     {
                         int returnedLength = right.Length;
@@ -2312,7 +2337,7 @@ namespace Pchp.Library.Streams
         /// <summary>The maximum count of buffered output bytes. <c>0</c> to disable buffering.</summary>
         protected int writeBufferSize = DefaultBufferSize;
 
-        /// <summary>Store the filtered input data queued as either <see cref="string"/>s or <see cref="byte"/>[].</summary>
+        /// <summary>Store the filtered input data queued as <see cref="TextElement"/>s (either a <see cref="string"/> or <see cref="byte"/>[]).</summary>
         protected Queue<TextElement> readBuffers = null;
 
         /// <summary>Store the filtered output data in a <c>byte[]</c> up to <see cref="writeBufferSize"/> bytes.</summary>
