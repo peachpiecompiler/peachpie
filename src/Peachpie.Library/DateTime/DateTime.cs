@@ -63,6 +63,7 @@ namespace Pchp.Library.DateTime
             _ctx = ctx;
 
             this.Time = System_DateTime.UtcNow;
+            this.TimeZone = PhpTimeZone.GetCurrentTimeZone(ctx);
         }
 
         // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
@@ -75,11 +76,12 @@ namespace Pchp.Library.DateTime
         // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
         public void __construct(string time = null, DateTimeZone timezone = null)
         {
-            this.TimeZone = (timezone == null)
-                ? PhpTimeZone.GetCurrentTimeZone(_ctx)
-                : timezone._timezone;
+            if (timezone != null)
+            {
+                this.TimeZone = timezone._timezone;
+            }
 
-            if (TimeZone == null)
+            if (this.TimeZone == null)
             {
                 //PhpException.InvalidArgument("timezone");
                 //return null;
