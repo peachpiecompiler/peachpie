@@ -100,7 +100,19 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
             return result;
         }
 
-        public override string ToString() => _type.ToString().ToLowerInvariant();
+        public override string ToString()
+        {
+            switch (_type)
+            {
+                case PhpTypeCode.Void: return "void"; // report "void" instead of "undefined"
+                case PhpTypeCode.Long: return "integer";
+                case PhpTypeCode.String:
+                case PhpTypeCode.WritableString: return "string";
+                case PhpTypeCode.PhpArray: return "array";
+                default:
+                    return _type.ToString().ToLowerInvariant();
+            }
+        }
 
         public override bool Equals(IBoundTypeRef other) => base.Equals(other) || (other is BoundPrimitiveTypeRef pt && pt._type == this._type);
     }
@@ -372,8 +384,8 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
             }
 
             // TODO: resolve with respect to current scope (routine, self), resolve ambiguites
-            var t = (NamedTypeSymbol)compilation.GlobalSemantics.ResolveType(_qname);
-            return t.IsErrorTypeOrNull() ? compilation.CoreTypes.Object.Symbol : t;
+            var t = compilation.GlobalSemantics.ResolveType(_qname);
+            return t;
         }
 
         public override string ToString() => _qname.ToString();
@@ -654,11 +666,13 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
     {
         readonly ITypeSymbol _symbol;
 
+        bool IsPeachpieCorLibrary => _symbol.ContainingAssembly is AssemblySymbol ass && ass.IsPeachpieCorLibrary;
+
         public override bool IsObject => _symbol.SpecialType == SpecialType.None; // CONSIDER
 
-        public override bool IsArray => ((AssemblySymbol)_symbol.ContainingAssembly).IsPeachpieCorLibrary && _symbol.Name == "PhpArray";
+        public override bool IsArray => IsPeachpieCorLibrary && _symbol.Name == "PhpArray";
 
-        public override bool IsLambda => ((AssemblySymbol)_symbol.ContainingAssembly).IsPeachpieCorLibrary && _symbol.Name == "Closure";
+        public override bool IsLambda => IsPeachpieCorLibrary && _symbol.Name == "Closure";
 
         public override ITypeSymbol Type => _symbol;
 
@@ -689,8 +703,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
                 case SpecialType.System_Single:
                 case SpecialType.System_Double: return WithNullableMask(ctx.GetDoubleTypeMask(), ctx);
                 case SpecialType.None:
-                    var containing = (AssemblySymbol)_symbol.ContainingAssembly;
-                    if (containing != null && containing.IsPeachpieCorLibrary)
+                    if (IsPeachpieCorLibrary)
                     {
                         if (t.Name == "PhpValue") return TypeRefMask.AnyType;
                         if (t.Name == "PhpAlias") return TypeRefMask.AnyType.WithRefFlag;

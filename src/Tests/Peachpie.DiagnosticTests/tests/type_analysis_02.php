@@ -90,12 +90,12 @@ function object_check(/*|mixed|*/$x) {
       /*|null|*/$y = null;
       break;
     default:
-      /*|System\Object|*/$y = new System\Object();
+      /*|object|*/$y = new System\Object();
       break;
   }
 
-  if (is_object(/*|Closure|integer|MyClass|null|string|System\Object|*/$y)) {
-    echo /*|Closure|MyClass|System\Object|*/$y;
+  if (is_object(/*|Closure|integer|MyClass|null|string|object|*/$y)) {
+    echo /*|Closure|MyClass|object|*/$y;
   } else {
     echo /*|integer|null|string|*/$y;
   }
@@ -132,13 +132,13 @@ function callable_check(/*|mixed|*/$x) {
       /*|array|*/$y = array();
       break;
     default:
-      /*|System\Object|*/$y = new System\Object();
+      /*|object|*/$y = new System\Object();
       break;
   }
 
-  if (is_callable(/*|array|Closure|integer|string|System\Object|*/$y)) {
-    echo /*|array|Closure|string|System\Object|*/$y;
+  if (is_callable(/*|array|Closure|integer|string|object|*/$y)) {
+    echo /*|array|Closure|string|object|*/$y;
   } else {
-    echo /*|array|integer|string|System\Object|*/$y;
+    echo /*|array|integer|string|object|*/$y;
   }
 }

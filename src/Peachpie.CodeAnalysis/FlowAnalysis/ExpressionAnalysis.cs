@@ -96,16 +96,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return false;
         }
 
-        internal TypeSymbol ResolveType(INamedTypeRef dtype)
-        {
-            if (dtype.ClassName.IsReservedClassName)
-            {
-                throw ExceptionUtilities.UnexpectedValue(dtype.ClassName);
-            }
-
-            return (TypeSymbol)_model.ResolveType(dtype.ClassName);
-        }
-
         /// <summary>
         /// Finds the root of given chain, i.e.:
         /// $a : $a

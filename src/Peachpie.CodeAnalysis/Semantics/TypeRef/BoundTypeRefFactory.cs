@@ -104,6 +104,9 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else if (tref is Ast.INamedTypeRef named)
             {
+                if (named.ClassName == NameUtils.SpecialNames.System_Object) return ObjectTypeRef;
+                //if (named.ClassName == NameUtils.SpecialNames.stdClass) return StdClassTypeRef;
+                
                 if (named is Ast.TranslatedTypeRef tt && self != null && tt.OriginalType is Ast.ReservedTypeRef reserved)
                 {
                     // keep self,parent,static not translated - better in cases where the type is ambiguous
