@@ -13,18 +13,6 @@ using Microsoft.CodeAnalysis.Operations;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
-    /// <summary>
-    /// Bound type reference.
-    /// </summary>
-    internal partial interface IBoundTypeRef
-    {
-        /// <summary>
-        /// Resolved symbol if possible.
-        /// Can be <c>null</c>.
-        /// </summary>
-        ITypeSymbol Symbol { get; }
-    }
-
     sealed class BoundTypeRefFromSymbol : IBoundTypeRef
     {
         readonly ITypeSymbol _symbol;

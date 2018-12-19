@@ -12,14 +12,6 @@ using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
-    partial interface IBoundTypeRef
-    {
-        /// <summary>
-        /// Emits load of <c>PhpTypeInfo</c>.
-        /// </summary>
-        ITypeSymbol EmitLoadTypeInfo(CodeGenerator cg, bool throwOnError = false);
-    }
-
     partial class BoundTypeRef : IBoundTypeRef
     {
         /// <summary>
