@@ -176,7 +176,7 @@ namespace Pchp.CodeAnalysis
 
         GraphVisitor<VoidStruct> AnalysisFactory(FlowState state)
         {
-            return new ExpressionAnalysis<VoidStruct>(_worklist, new LocalSymbolProvider(_compilation.GlobalSemantics, state.FlowContext));
+            return new ExpressionAnalysis<VoidStruct>(_worklist, _compilation.GlobalSemantics);
         }
 
         internal void DiagnoseMethods()

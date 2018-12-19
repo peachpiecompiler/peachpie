@@ -380,6 +380,11 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
 
         public override ITypeSymbol ResolveTypeSymbol(PhpCompilation compilation)
         {
+            if (ResolvedType.IsValidType())
+            {
+                return ResolvedType;
+            }
+
             TypeSymbol type = null;
 
             if (_self != null)
@@ -388,7 +393,6 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
                 else if (_self.BaseType is IPhpTypeSymbol phpt && phpt.FullName == _qname) type = _self.BaseType;
             }
 
-            // TODO: resolve with respect to current scope (routine, self), resolve ambiguites
             if (type == null)
             {
                 type = (TypeSymbol)compilation.GlobalSemantics.ResolveType(_qname);
@@ -397,7 +401,6 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
             if (type is AmbiguousErrorTypeSymbol ambiguous)
             {
                 // choose the one declared in this file unconditionally
-                // TODO: resolution scope, includes, ...
                 var best = ambiguous.CandidateSymbols.FirstOrDefault(x => x is SourceTypeSymbol srct && !srct.Syntax.IsConditional && srct.ContainingFile == _routine.ContainingFile);
                 if (best != null)
                 {
@@ -413,7 +416,8 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
                 type = t.Construct(t.Construct(compilation.CoreTypes.Object));
             }
 
-            return type;
+            //
+            return (ResolvedType = type);
         }
 
         public override string ToString() => _qname.ToString();
