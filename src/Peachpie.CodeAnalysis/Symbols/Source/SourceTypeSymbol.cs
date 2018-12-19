@@ -900,7 +900,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         IEnumerable<FieldSymbol> LoadFields()
         {
-            var binder = new SemanticsBinder(locals: null, diagnostics: DeclaringCompilation.DeclarationDiagnostics);
+            var binder = new SemanticsBinder(locals: null, routine: null, self: this, diagnostics: DeclaringCompilation.DeclarationDiagnostics);
 
             // fields
             foreach (var flist in _syntax.Members.OfType<FieldDeclList>())

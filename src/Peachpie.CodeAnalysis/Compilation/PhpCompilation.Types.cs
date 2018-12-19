@@ -17,6 +17,7 @@ using AST = Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Operations;
 using Pchp.CodeAnalysis.Errors;
+using Pchp.CodeAnalysis.Semantics;
 
 namespace Pchp.CodeAnalysis
 {
@@ -111,7 +112,10 @@ namespace Pchp.CodeAnalysis
             return CoreTypes.PhpValue;
         }
 
-        internal NamedTypeSymbol MergeNull(NamedTypeSymbol type)
+        /// <summary>
+        /// Merges CLR type to be nullable.
+        /// </summary>
+        internal TypeSymbol MergeNull(TypeSymbol type)
         {
             if (type == null || type.SpecialType == SpecialType.System_Void)
             {
@@ -124,19 +128,6 @@ namespace Pchp.CodeAnalysis
             }
 
             return type;
-        }
-
-        /// <summary>
-        /// Merges CLR type to be nullable.
-        /// </summary>
-        internal TypeSymbol MergeNull(TypeSymbol t)
-        {
-            if (t.IsReferenceType)
-            {
-                return t;
-            }
-
-            return CoreTypes.PhpValue;
         }
 
         /// <summary>
@@ -184,57 +175,23 @@ namespace Pchp.CodeAnalysis
                 return null;
             }
 
+            var t = BoundTypeRefFactory.CreateFromTypeRef(tref, null, selfHint);
+
+            t.IsNullable = nullable;
+
+            var symbol = (TypeSymbol)t.ResolveTypeSymbol(this);
+
+            if (symbol.IsErrorTypeOrNull())
+            {
+                symbol = CoreTypes.PhpValue.Symbol;
+            }
+
             if (nullable)
             {
-                return MergeNull(GetTypeFromTypeRef(tref, selfHint, nullable: false)); // TODO: Nullable<T>
+                symbol = MergeNull(symbol);
             }
 
-            if (tref is AST.PrimitiveTypeRef)
-            {
-                switch (((AST.PrimitiveTypeRef)tref).PrimitiveTypeName)
-                {
-                    case AST.PrimitiveTypeRef.PrimitiveType.@int: return CoreTypes.Long;
-                    case AST.PrimitiveTypeRef.PrimitiveType.@float: return CoreTypes.Double;
-                    case AST.PrimitiveTypeRef.PrimitiveType.@string: return CoreTypes.String;   // TODO: PhpString ?
-                    case AST.PrimitiveTypeRef.PrimitiveType.@bool: return CoreTypes.Boolean;
-                    case AST.PrimitiveTypeRef.PrimitiveType.array: return CoreTypes.PhpArray;
-                    case AST.PrimitiveTypeRef.PrimitiveType.callable: return CoreTypes.PhpValue; // array|string|object
-                    case AST.PrimitiveTypeRef.PrimitiveType.@void: return CoreTypes.Void;
-                    case AST.PrimitiveTypeRef.PrimitiveType.iterable: return CoreTypes.PhpValue;   // array|Traversable
-                    case AST.PrimitiveTypeRef.PrimitiveType.@object: return CoreTypes.Object;   // Object
-                    default: throw new ArgumentException();
-                }
-            }
-            else if (tref is AST.INamedTypeRef namedtref)
-            {
-                if (selfHint != null)
-                {
-                    if (namedtref.ClassName == selfHint.FullName) return selfHint;
-                    if (selfHint.BaseType is IPhpTypeSymbol phpt && namedtref.ClassName == phpt.FullName) return selfHint.BaseType;
-                }
-
-                var t = (NamedTypeSymbol)GlobalSemantics.ResolveType(namedtref.ClassName);
-                return t.IsErrorTypeOrNull()
-                    ? CoreTypes.Object.Symbol   // TODO: merge candidates if any
-                    : t;
-            }
-            else if (tref is AST.ReservedTypeRef) throw new ArgumentException(); // NOTE: should be translated by parser to AliasedTypeRef
-            else if (tref is AST.AnonymousTypeRef) return (NamedTypeSymbol)GlobalSemantics.ResolveType(((AST.AnonymousTypeRef)tref).TypeDeclaration.GetAnonymousTypeQualifiedName());
-            else if (tref is AST.MultipleTypeRef)
-            {
-                TypeSymbol result = null;
-                foreach (var x in ((AST.MultipleTypeRef)tref).MultipleTypes)
-                {
-                    var resolved = GetTypeFromTypeRef(x, selfHint);
-                    result = (result != null) ? Merge(result, resolved) : resolved;
-                }
-                return result;
-            }
-            else if (tref is AST.NullableTypeRef nullableref) return GetTypeFromTypeRef(nullableref.TargetType, selfHint, nullable: true);
-            else if (tref is AST.GenericTypeRef) throw new NotImplementedException(); //((AST.GenericTypeRef)tref).TargetType
-            else if (tref is AST.IndirectTypeRef) throw new NotImplementedException();
-
-            throw ExceptionUtilities.UnexpectedValue(tref);
+            return symbol;
         }
 
         #endregion
@@ -544,7 +501,7 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Resolves <see cref="TypeSymbol"/> best fitting given type mask.
         /// </summary>
-        internal NamedTypeSymbol GetTypeFromTypeRef(TypeRefContext typeCtx, TypeRefMask typeMask)
+        internal TypeSymbol GetTypeFromTypeRef(TypeRefContext typeCtx, TypeRefMask typeMask)
         {
             if (typeMask.IsRef)
             {
@@ -567,18 +524,18 @@ namespace Pchp.CodeAnalysis
                 }
 
                 //
-                NamedTypeSymbol result;
+                TypeSymbol result;
                 var types = typeCtx.GetTypes(typeMask);
                 if (types.Count != 0)
                 {
                     // determine best fitting CLR type based on defined PHP types hierarchy
-                    result = GetTypeFromTypeRef(types[0]);
+                    result = (TypeSymbol)types[0].ResolveTypeSymbol(this);
 
                     for (int i = 1; i < types.Count; i++)
                     {
-                        var tdesc = GetTypeFromTypeRef(types[i]);
+                        var tdesc = (TypeSymbol)types[i].ResolveTypeSymbol(this);
                         Debug.Assert(!tdesc.IsErrorType());
-                        result = (NamedTypeSymbol)Merge(result, GetTypeFromTypeRef(types[i]));
+                        result = (NamedTypeSymbol)Merge(result, tdesc);
                     }
                 }
                 else
@@ -598,12 +555,10 @@ namespace Pchp.CodeAnalysis
             return CoreTypes.PhpValue;
         }
 
-        internal NamedTypeSymbol GetTypeFromTypeRef(ITypeRef t) => (NamedTypeSymbol)t.GetTypeSymbol(this);
-
         /// <summary>
         /// Resolves <see cref="INamedTypeSymbol"/> best fitting given type mask.
         /// </summary>
-        internal NamedTypeSymbol GetTypeFromTypeRef(SourceRoutineSymbol/*!*/routine, TypeRefMask typeMask)
+        internal TypeSymbol GetTypeFromTypeRef(SourceRoutineSymbol/*!*/routine, TypeRefMask typeMask)
         {
             Debug.Assert(routine != null);
             return this.GetTypeFromTypeRef(routine.TypeRefContext, typeMask);

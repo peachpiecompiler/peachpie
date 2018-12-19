@@ -62,6 +62,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         Resource,
 
         /// <summary>
+        /// An iterable object (array, Traversable).
+        /// </summary>
+        Iterable,
+
+        /// <summary>
+        /// Callable type (array(2), string, object).
+        /// </summary>
+        Callable,
+
+        /// <summary>
         /// Object that might be <c>NULL</c>.
         /// Used in combination with <see cref="Object"/> (?).
         /// </summary>

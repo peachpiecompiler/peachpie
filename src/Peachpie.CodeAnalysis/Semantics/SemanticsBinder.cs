@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using AST = Devsense.PHP.Syntax.Ast;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.FlowAnalysis;
+using Pchp.CodeAnalysis.Semantics.TypeRef;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -89,10 +90,17 @@ namespace Pchp.CodeAnalysis.Semantics
         protected readonly LocalsTable _locals;
 
         /// <summary>
+        /// Optional. Self type context.
+        /// </summary>
+        public SourceTypeSymbol Self => _self;
+        readonly SourceTypeSymbol _self;
+
+        /// <summary>
         /// Gets corresponding routine.
         /// Can be <c>null</c>.
         /// </summary>
-        public SourceRoutineSymbol Routine => _locals?.Routine;
+        public SourceRoutineSymbol Routine => _routine ?? _locals?.Routine;
+        readonly SourceRoutineSymbol _routine;
 
         /// <summary>
         /// Found yield statements (needed for ControlFlowGraph)
@@ -116,8 +124,9 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Creates <see cref="SemanticsBinder"/> for given routine (passed with <paramref name="locals"/>).
         /// </summary>
         /// <param name="locals">Table of local variables within routine.</param>
+        /// <param name="self">Current self context.</param>
         /// <param name="diagnostics">Optional. Diagnostics.</param>
-        public static SemanticsBinder Create(LocalsTable locals, DiagnosticBag diagnostics = null)
+        public static SemanticsBinder Create(LocalsTable locals, SourceTypeSymbol self = null, DiagnosticBag diagnostics = null)
         {
             Debug.Assert(locals != null);
 
@@ -131,13 +140,15 @@ namespace Pchp.CodeAnalysis.Semantics
 
             //
             return (isGeneratorMethod)
-                ? new GeneratorSemanticsBinder(yields, locals, diagnostics)
-                : new SemanticsBinder(locals, diagnostics);
+                ? new GeneratorSemanticsBinder(yields, locals, routine, self, diagnostics)
+                : new SemanticsBinder(locals, routine, self, diagnostics);
         }
 
-        public SemanticsBinder(LocalsTable locals = null, DiagnosticBag diagnostics = null)
+        public SemanticsBinder(LocalsTable locals = null, SourceRoutineSymbol routine = null, SourceTypeSymbol self = null, DiagnosticBag diagnostics = null)
         {
             _locals = locals;
+            _routine = routine;
+            _self = self;
             _diagnostics = diagnostics ?? DiagnosticBag.GetInstance();
         }
 
@@ -466,7 +477,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (x is AST.ClassConstUse)
             {
                 var cx = (AST.ClassConstUse)x;
-                var typeref = BindTypeRef(cx.TargetType, objectTypeInfoSemantic: true, isClassName: true);
+                var typeref = BindTypeRef(cx.TargetType, objectTypeInfoSemantic: true);
 
                 if (cx.Name.Equals("class"))   // pseudo class constant
                 {
@@ -520,7 +531,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindInstanceOfEx(AST.InstanceOfEx x)
         {
-            return new BoundInstanceOfEx(BindExpression(x.Expression, BoundAccess.Read), BindTypeRef(x.ClassNameRef, objectTypeInfoSemantic: true, isClassName: true));
+            return new BoundInstanceOfEx(BindExpression(x.Expression, BoundAccess.Read), BindTypeRef(x.ClassNameRef, objectTypeInfoSemantic: true));
         }
 
         protected BoundExpression BindIncludeEx(AST.IncludingEx x)
@@ -684,7 +695,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     ? new BoundRoutineName(new QualifiedName(((AST.DirectStMtdCall)staticMtdCall).MethodName))
                     : new BoundRoutineName(new BoundUnaryEx(BindExpression(((AST.IndirectStMtdCall)staticMtdCall).MethodNameExpression), AST.Operations.StringCast));
 
-                result = new BoundStaticFunctionCall(BindTypeRef(staticMtdCall.TargetType, objectTypeInfoSemantic: true, isClassName: true), boundname, BindArguments(x.CallSignature.Parameters));
+                result = new BoundStaticFunctionCall(BindTypeRef(staticMtdCall.TargetType, objectTypeInfoSemantic: true), boundname, BindArguments(x.CallSignature.Parameters));
             }
             else
             {
@@ -696,7 +707,7 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 // bind type arguments (CLR)
                 result.TypeArguments = x.CallSignature.GenericParams
-                    .Select(t => BindTypeRef(t, false, false))
+                    .Select(t => BindTypeRef(t, false))
                     .AsImmutable();
             }
 
@@ -711,28 +722,18 @@ namespace Pchp.CodeAnalysis.Semantics
                 : (BoundExpression)new BoundLiteral(true.AsObject());
         }
 
-        public BoundTypeRef BindTypeRef(AST.TypeRef tref, bool objectTypeInfoSemantic = false, bool isClassName = false)
+        public IBoundTypeRef BindTypeRef(AST.TypeRef tref, bool objectTypeInfoSemantic = false)
         {
-            if (tref is AST.MultipleTypeRef mref)
+            var type = BoundTypeRefFactory.CreateFromTypeRef(tref, this, this.Self, objectTypeInfoSemantic).WithSyntax(tref);
+
+            // update flags
+            if (type is BoundReservedTypeRef rt && rt.ReservedType == AST.ReservedTypeRef.ReservedType.@static && Routine != null)
             {
-                return new BoundMultipleTypeRef(
-                    mref.MultipleTypes.Select(r => BindTypeRef(r, objectTypeInfoSemantic, isClassName)).AsImmutable(),
-                    tref,
-                    objectTypeInfoSemantic, isClassName);
+                Routine.Flags |= RoutineFlags.UsesLateStatic;
             }
-            else
-            {
-                var typeExpr = (tref is AST.IndirectTypeRef) ? BindExpression(((AST.IndirectTypeRef)tref).ClassNameVar) : null;
 
-                var bound = new BoundTypeRef(typeExpr, tref, objectTypeInfoSemantic, isClassName);
-
-                if (tref is AST.ReservedTypeRef rt && rt.Type == AST.ReservedTypeRef.ReservedType.@static && Routine != null)
-                {
-                    Routine.Flags |= RoutineFlags.UsesLateStatic;
-                }
-
-                return bound;
-            }
+            //
+            return type;
         }
 
         protected virtual BoundExpression BindConditionalEx(AST.ConditionalEx expr, BoundAccess access)
@@ -765,7 +766,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(access.IsRead || access.IsReadRef || access.IsNone);
 
-            return new BoundNewEx(BindTypeRef(x.ClassNameRef, isClassName: true), BindArguments(x.CallSignature.Parameters))
+            return new BoundNewEx(BindTypeRef(x.ClassNameRef), BindArguments(x.CallSignature.Parameters))
                 .WithAccess(access);
         }
 
@@ -892,7 +893,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindFieldUse(AST.StaticFieldUse x, BoundAccess access)
         {
-            var typeref = BindTypeRef(x.TargetType, objectTypeInfoSemantic: true, isClassName: true);
+            var typeref = BindTypeRef(x.TargetType, objectTypeInfoSemantic: true);
             BoundVariableName varname;
 
             if (x is AST.DirectStFldUse)
@@ -1156,8 +1157,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #region Construction
 
-        public GeneratorSemanticsBinder(ImmutableArray<AST.IYieldLikeEx> yields, LocalsTable locals, DiagnosticBag diagnostics)
-            : base(locals, diagnostics)
+        public GeneratorSemanticsBinder(ImmutableArray<AST.IYieldLikeEx> yields, LocalsTable locals, SourceRoutineSymbol routine, SourceTypeSymbol self, DiagnosticBag diagnostics)
+            : base(locals, routine, self, diagnostics)
         {
             Debug.Assert(Routine != null);
 

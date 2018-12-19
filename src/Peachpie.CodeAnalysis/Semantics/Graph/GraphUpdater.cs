@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using Pchp.CodeAnalysis.Semantics.TypeRef;
 using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Semantics.Graph
@@ -43,7 +44,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return alternate ?? list;
         }
 
-        protected ImmutableArray<T> VisitImmutableArray<T>(ImmutableArray<T> arr) where T : BoundOperation, IPhpOperation
+        protected ImmutableArray<T> VisitImmutableArray<T>(ImmutableArray<T> arr) where T : class, IPhpOperation
         {
             if (arr.IsDefaultOrEmpty)
             {
@@ -271,45 +272,30 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return x;
         }
 
-        public override object VisitLiteral(BoundLiteral x)
-        {
-            return x;
-        }
-
         public override object VisitArgument(BoundArgument x)
         {
             return x.Update(
                 (BoundExpression)Accept(x.Value),
                 x.ArgumentKind);
         }
-
-        public override object VisitTypeRef(BoundTypeRef x)
+        internal override object VisitIndirectTypeRef(BoundIndirectTypeRef x)
         {
             return x.Update(
                 (BoundExpression)Accept(x.TypeExpression),
-                x.TypeRef,
-                x.ObjectTypeInfoSemantic,
-                x.HasClassNameRestriction); ;
+                x.ObjectTypeInfoSemantic);
         }
 
-        public override object VisitMultipleTypeRef(BoundMultipleTypeRef x)
+        internal override object VisitMultipleTypeRef(BoundMultipleTypeRef x)
         {
-            var typeRefs = VisitImmutableArray(x.BoundTypes);
-            if (typeRefs == x.BoundTypes)
+            var typeRefs = VisitImmutableArray(x.TypeRefs);
+            if (typeRefs.Length == 1)
             {
-                return x;
-            }
-            else if (typeRefs.Length == 1)
-            {
+                // reduce // CONSIDER: here?
                 return typeRefs[0];
             }
             else
             {
-                return x.Update(
-                    typeRefs,
-                    x.TypeRef,
-                    x.ObjectTypeInfoSemantic,
-                    x.HasClassNameRestriction);
+                return x.Update(typeRefs);
             }
         }
 

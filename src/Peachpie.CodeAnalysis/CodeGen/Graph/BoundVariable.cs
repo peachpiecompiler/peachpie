@@ -420,7 +420,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (srcparam.IsFake || (srcparam.Type != cg.CoreTypes.PhpValue && srcparam.Type != cg.CoreTypes.PhpAlias && srcparam.Type != clrtype))
                 {
                     var loc = cg.Builder.LocalSlotManager.DeclareLocal(
-                        clrtype, new SynthesizedLocalSymbol(srcparam.Routine, srcparam.Name, clrtype), srcparam.Name,
+                        (Cci.ITypeReference)clrtype, new SynthesizedLocalSymbol(srcparam.Routine, srcparam.Name, clrtype), srcparam.Name,
                         SynthesizedLocalKind.UserDefined, LocalDebugId.None, 0, LocalSlotConstraints.None, ImmutableArray<bool>.Empty, ImmutableArray<string>.Empty, false);
                     _lazyplace = new LocalPlace(loc);
                     cg.Builder.AddLocalToScope(loc);

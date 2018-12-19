@@ -2397,7 +2397,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 Debug.Assert(!TargetMethod.IsUnreachable);
                 // the most preferred case when method is known,
                 // the method can be called directly
-                return EmitDirectCall(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod, LateStaticTypeRef);
+                return EmitDirectCall(cg, IsVirtualCall ? ILOpCode.Callvirt : ILOpCode.Call, TargetMethod, (BoundTypeRef)LateStaticTypeRef);
             }
 
             //
@@ -2433,14 +2433,14 @@ namespace Pchp.CodeAnalysis.Semantics
         protected virtual bool IsVirtualCall => true;
 
         /// <summary>Type reference to the static type. The containing type of called routine, e.g. <c>THE_TYPE::foo()</c>. Used for direct method call requiring late static type..</summary>
-        protected virtual BoundTypeRef LateStaticTypeRef => null;
+        protected virtual IBoundTypeRef LateStaticTypeRef => null;
 
         #region Emit CallSite
 
         protected virtual bool CallsiteRequiresCallerContext => false;
         protected virtual string CallsiteName => null;
         protected virtual BoundExpression RoutineNameExpr => null;
-        protected virtual BoundTypeRef RoutineTypeRef => null;
+        protected virtual IBoundTypeRef RoutineTypeRef => null;
 
         /// <summary>
         /// Optional. Emits instance on which the method is invoked.
@@ -2479,9 +2479,13 @@ namespace Pchp.CodeAnalysis.Semantics
                     this.TypeArguments,
                     tref =>
                     {
-                        if (tref.ResolvedType.IsErrorTypeOrNull()) throw ExceptionUtilities.NotImplementedException(cg, "type argument has not been resolved", this);
+                        var t = (BoundTypeRef)tref;
+                        if (t.ResolvedType.IsErrorTypeOrNull())
+                        {
+                            throw ExceptionUtilities.NotImplementedException(cg, "type argument has not been resolved", this);
+                        }
 
-                        return cg.EmitSystemType(tref.ResolvedType);
+                        return cg.EmitSystemType(t.ResolvedType);
                     });
             }
         }
@@ -2606,8 +2610,8 @@ namespace Pchp.CodeAnalysis.Semantics
         protected override bool CallsiteRequiresCallerContext => true;
         protected override string CallsiteName => _name.IsDirect ? _name.NameValue.ToString() : null;
         protected override BoundExpression RoutineNameExpr => _name.NameExpression;
-        protected override BoundTypeRef RoutineTypeRef => _typeRef.ResolvedType.IsErrorTypeOrNull() ? _typeRef : null;    // in case the type has to be resolved in runtime and passed to callsite
-        protected override BoundTypeRef LateStaticTypeRef => _typeRef;  // used for direct routine call requiring late static type
+        protected override IBoundTypeRef RoutineTypeRef => _typeRef.ResolvedType.IsErrorTypeOrNull() ? _typeRef : null;    // in case the type has to be resolved in runtime and passed to callsite
+        protected override IBoundTypeRef LateStaticTypeRef => _typeRef;  // used for direct routine call requiring late static type
         protected override bool IsVirtualCall => false;
 
         /// <summary>
@@ -2685,10 +2689,10 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                if (_typeref.ResolvedType.IsValidType())
+                if (((BoundTypeRef)_typeref).ResolvedType.IsValidType())
                 {
                     // ensure type is delcared
-                    cg.EmitExpectTypeDeclared(_typeref.ResolvedType);
+                    cg.EmitExpectTypeDeclared(_typeref.Type);
 
                     // context.Create<T>(caller, params)
                     var create_t = cg.CoreTypes.Context.Symbol.GetMembers("Create")
@@ -2697,7 +2701,7 @@ namespace Pchp.CodeAnalysis.Semantics
                             s.Parameters[1].IsParams &&
                             SpecialParameterSymbol.IsCallerClassParameter(s.Parameters[0]))
                         .Single()
-                        .Construct(_typeref.ResolvedType);
+                        .Construct(_typeref.Type);
 
                     cg.EmitLoadContext();                       // Context
                     cg.EmitCallerTypeHandle();           // RuntimeTypeHandle
@@ -2947,7 +2951,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             if ((cg.Routine.Flags & FlowAnalysis.RoutineFlags.UsesLateStatic) != 0)
             {
-                BoundTypeRef.EmitLoadStaticPhpTypeInfo(cg);
+                cg.EmitLoadStaticPhpTypeInfo();
             }
             else
             {
@@ -4345,13 +4349,14 @@ namespace Pchp.CodeAnalysis.Semantics
             Debug.Assert(type.IsReferenceType);
 
             //
-            if (AsType.ResolvedType.IsValidType())
+            var tref = (BoundTypeRef)AsType;
+            if (tref.ResolvedType.IsValidType())
             {
                 if (!isnull)
                 {
                     // Template: value is T : object
                     cg.Builder.EmitOpCode(ILOpCode.Isinst);
-                    cg.EmitSymbolToken(AsType.ResolvedType, null);
+                    cg.EmitSymbolToken(tref.ResolvedType, null);
 
                     // object != null
                     cg.Builder.EmitNullConstant(); // .ldnull
@@ -4370,7 +4375,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                AsType.EmitLoadTypeInfo(cg, false);
+                tref.EmitLoadTypeInfo(cg, false);
 
                 // Template: Operators.IsInstanceOf(value, type);
                 return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.IsInstanceOf_Object_PhpTypeInfo);
@@ -4421,7 +4426,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                     // resolve name of self in runtime:
                     // Template: (string)Operators.GetSelfOrNull(<self>)?.Name
-                    BoundTypeRef.EmitLoadSelf(cg, throwOnError: false);  // GetSelf() : PhpTypeInfo
+                    cg.EmitLoadSelf(throwOnError: false);  // GetSelf() : PhpTypeInfo
                     cg.EmitNullCoalescing(
                         () => cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetName_PhpTypeInfo.Getter), // Name : string
                         () => cg.Builder.EmitStringConstant(string.Empty));

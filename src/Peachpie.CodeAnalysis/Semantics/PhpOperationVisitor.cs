@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using Peachpie.CodeAnalysis.Utilities;
+using Pchp.CodeAnalysis.Semantics.TypeRef;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -27,9 +28,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual TResult VisitArgument(BoundArgument x) => DefaultVisitOperation(x);
 
-        public virtual TResult VisitTypeRef(BoundTypeRef x) => DefaultVisitOperation(x);
+        internal virtual TResult VisitTypeRef(BoundTypeRef x) => DefaultVisitOperation(x);
 
-        public virtual TResult VisitMultipleTypeRef(BoundMultipleTypeRef x) => DefaultVisitOperation(x);
+        internal virtual TResult VisitIndirectTypeRef(BoundIndirectTypeRef x) => DefaultVisitOperation(x);
+
+        internal virtual TResult VisitMultipleTypeRef(BoundMultipleTypeRef x) => DefaultVisitOperation(x);
 
         public virtual TResult VisitRoutineName(BoundRoutineName x) => DefaultVisitOperation(x);
 

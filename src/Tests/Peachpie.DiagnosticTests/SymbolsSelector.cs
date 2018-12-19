@@ -101,17 +101,17 @@ namespace Peachpie.DiagnosticTests
             return default;
         }
 
-        public override VoidStruct VisitTypeRef(BoundTypeRef x)
+        internal override VoidStruct VisitTypeRef(BoundTypeRef x)
         {
-            if (x.Symbol != null)
+            if (x.Type != null)
             {
-                if (x.TypeRef is AnonymousTypeRef)
+                if (x.Type.IsAnonymousType)
                 {
                     // nada
                 }
                 else
                 {
-                    _result.Add(new SymbolStat(_tctx, x.TypeRef.Span, null, x.Symbol));
+                    _result.Add(new SymbolStat(_tctx, x.PhpSyntax.Span, null, x.Type));
                 }
             }
 
