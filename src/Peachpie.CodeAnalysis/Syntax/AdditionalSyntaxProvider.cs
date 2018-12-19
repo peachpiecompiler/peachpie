@@ -531,8 +531,16 @@ namespace Peachpie.CodeAnalysis.Syntax
                     if (MatchQualifiedName(ref idx, out var qname))
                     {
                         // T
+                        var tref = _typeRefFactory(qname, true);
+
+                        if (MatchGenericTypes(ref idx, out var nested))
+                        {
+                            // nested "<GenericTypes>"
+                            tref = new GenericTypeRef(tref.Span, tref, nested);
+                        }
+
                         if (types == null) types = new List<TypeRef>(1);
-                        types.Add(_typeRefFactory(qname, true));
+                        types.Add(tref);
 
                         if (MatchToken(ref idx, Tokens.T_COMMA))
                         {
@@ -545,8 +553,6 @@ namespace Peachpie.CodeAnalysis.Syntax
                             return true;
                         }
                     }
-
-                    // TODO: nested "<GenericTypes>"
 
                     // unexpected token -> exit
                     break;
