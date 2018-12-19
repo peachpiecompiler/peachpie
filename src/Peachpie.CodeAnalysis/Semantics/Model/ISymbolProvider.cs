@@ -17,6 +17,11 @@ namespace Pchp.CodeAnalysis.Semantics
     internal interface ISymbolProvider
     {
         /// <summary>
+        /// Gets declaring compilation.
+        /// </summary>
+        PhpCompilation Compilation { get; }
+
+        /// <summary>
         /// Gets a file by its path relative to current context.
         /// </summary>
         IPhpScriptTypeSymbol ResolveFile(string path);

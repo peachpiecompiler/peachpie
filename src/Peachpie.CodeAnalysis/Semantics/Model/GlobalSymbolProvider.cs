@@ -230,6 +230,11 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         #region ISemanticModel
 
+        /// <summary>
+        /// Gets declaring compilation.
+        /// </summary>
+        public PhpCompilation Compilation => _compilation;
+
         public INamedTypeSymbol ResolveType(QualifiedName name)
         {
             Debug.Assert(!name.IsReservedClassName);

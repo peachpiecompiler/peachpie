@@ -338,7 +338,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     }
                     if (x.Access.EnsureArray)
                     {
-                        if (!TypeHelpers.HasArrayAccess(vartype, TypeCtx, Routine.DeclaringCompilation))
+                        if (!TypeHelpers.HasArrayAccess(vartype, TypeCtx, _model.Compilation))
                         {
                             vartype |= TypeCtx.GetArrayTypeMask();
                         }
@@ -1447,7 +1447,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     var typeref = TypeCtx.GetObjectTypes(TypeCtx.WithoutNull(x.Instance.TypeRefMask));    // ignore NULL, causes runtime exception anyway
                     if (typeref.Count == 1)
                     {
-                        resolvedtype = (TypeSymbol)typeref[0].ResolveTypeSymbol(this.Routine.DeclaringCompilation);
+                        resolvedtype = (TypeSymbol)typeref[0].ResolveTypeSymbol(_model.Compilation);
                     }
                     // else: a common base?
                 }
@@ -1533,7 +1533,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             Debug.Assert(!(tref is BoundMultipleTypeRef));
 
             // resolve type symbol
-            tref.ResolvedType = (TypeSymbol)tref.ResolveTypeSymbol(this.Routine.DeclaringCompilation);
+            tref.ResolvedType = (TypeSymbol)tref.ResolveTypeSymbol(_model.Compilation);
 
             return default;
         }
@@ -1653,7 +1653,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     var typerefs = TypeCtx.GetObjectTypes(TypeCtx.WithoutNull(x.Instance.TypeRefMask));   // ignore NULL, would cause runtime exception in read access, will be ensured to non-null in write access
                     if (typerefs.Count == 1)
                     {
-                        resolvedtype = (NamedTypeSymbol)typerefs[0].ResolveTypeSymbol(Routine.DeclaringCompilation);
+                        resolvedtype = (NamedTypeSymbol)typerefs[0].ResolveTypeSymbol(_model.Compilation);
                     }
                 }
 
@@ -1854,7 +1854,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             //
             x.BoundLambdaMethod = symbol;
-            x.ResultType = Routine.DeclaringCompilation.CoreTypes.Closure;
+            x.ResultType = _model.Compilation.CoreTypes.Closure;
             Debug.Assert(x.ResultType != null);
             x.TypeRefMask = TypeCtx.GetTypeMask(new BoundLambdaTypeRef(TypeRefMask.AnyType), false); // specific {Closure}, no null, no subclasses
 

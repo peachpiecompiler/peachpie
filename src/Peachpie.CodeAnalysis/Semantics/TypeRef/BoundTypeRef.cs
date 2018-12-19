@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
 using Devsense.PHP.Syntax;
@@ -362,30 +363,57 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
             var t = ResolvedType ?? (TypeSymbol)ResolveTypeSymbol(cg.DeclaringCompilation);
             if (t.IsValidType())
             {
-                cg.EmitLoadPhpTypeInfo(t);
+                return cg.EmitLoadPhpTypeInfo(t);
             }
+            else
+            {
+                // CALL <ctx>.GetDeclaredType(<typename>, autoload: true)
+                cg.EmitLoadContext();
+                cg.Builder.EmitStringConstant(_qname.ToString());
+                cg.Builder.EmitBoolConstant(true);
 
-            // CALL <ctx>.GetDeclaredType(<typename>, autoload: true)
-            cg.EmitLoadContext();
-            cg.Builder.EmitStringConstant(_qname.ToString());
-            cg.Builder.EmitBoolConstant(true);
-
-            return cg.EmitCall(ILOpCode.Call, throwOnError
-                ? cg.CoreMethods.Context.GetDeclaredTypeOrThrow_string_bool
-                : cg.CoreMethods.Context.GetDeclaredType_string_bool);
+                return cg.EmitCall(ILOpCode.Call, throwOnError
+                    ? cg.CoreMethods.Context.GetDeclaredTypeOrThrow_string_bool
+                    : cg.CoreMethods.Context.GetDeclaredType_string_bool);
+            }
         }
 
         public override ITypeSymbol ResolveTypeSymbol(PhpCompilation compilation)
         {
+            TypeSymbol type = null;
+
             if (_self != null)
             {
-                if (_self.FullName == _qname) return _self;
-                if (_self.BaseType is IPhpTypeSymbol phpt && phpt.FullName == _qname) return _self.BaseType;
+                if (_self.FullName == _qname) type = _self;
+                else if (_self.BaseType is IPhpTypeSymbol phpt && phpt.FullName == _qname) type = _self.BaseType;
             }
 
             // TODO: resolve with respect to current scope (routine, self), resolve ambiguites
-            var t = compilation.GlobalSemantics.ResolveType(_qname);
-            return t;
+            if (type == null)
+            {
+                type = (TypeSymbol)compilation.GlobalSemantics.ResolveType(_qname);
+            }
+
+            if (type is AmbiguousErrorTypeSymbol ambiguous)
+            {
+                // choose the one declared in this file unconditionally
+                // TODO: resolution scope, includes, ...
+                var best = ambiguous.CandidateSymbols.FirstOrDefault(x => x is SourceTypeSymbol srct && !srct.Syntax.IsConditional && srct.ContainingFile == _routine.ContainingFile);
+                if (best != null)
+                {
+                    type = (NamedTypeSymbol)best;
+                }
+            }
+
+            // translate trait prototype to constructed trait type
+            if (type.IsTraitType())
+            {
+                // <!TSelf> -> <T<Object>>
+                var t = (NamedTypeSymbol)type;
+                type = t.Construct(t.Construct(compilation.CoreTypes.Object));
+            }
+
+            return type;
         }
 
         public override string ToString() => _qname.ToString();
@@ -574,8 +602,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
             //    //}
             //}
 
-            // System.Object
-            return compilation.CoreTypes.Object.Symbol;
+            return null; // type cannot be resolved
         }
 
         public override IBoundTypeRef Transfer(TypeRefContext source, TypeRefContext target)
@@ -678,6 +705,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
 
         public BoundTypeRefFromSymbol(ITypeSymbol symbol)
         {
+            Debug.Assert(((TypeSymbol)symbol).IsValidType());
             _symbol = symbol ?? throw ExceptionUtilities.ArgumentNull(nameof(symbol));
         }
 
