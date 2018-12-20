@@ -98,18 +98,84 @@ namespace Pchp.CodeAnalysis
                 // unify class types to the common one (lowest)
                 if (first.IsReferenceType && second.IsReferenceType)
                 {
-                    // TODO: find common base
-                    // TODO: otherwise find a common interface
-
-                    if (first.IsOfType(second)) return second;  // A >> B -> B
-                    if (second.IsOfType(first)) return first;   // A << B -> A
-
-                    return CoreTypes.Object;
+                    return FindCommonBase(first, second);
                 }
             }
 
             // most common PHP value type
             return CoreTypes.PhpValue;
+        }
+
+        internal TypeSymbol FindCommonBase(ImmutableArray<NamedTypeSymbol> types)
+        {
+            if (types.Length == 0)
+            {
+                return null;
+            }
+            else if (types.Length == 1)
+            {
+                return types[0];
+            }
+            else if (types.Length == 2)
+            {
+                return FindCommonBase(types[0], types[1]);
+            }
+            else
+            {
+                var t = (TypeSymbol)types[0];
+                for (int i = 1; i < types.Length && t != null && t.SpecialType != SpecialType.System_Object; i++)
+                {
+                    t = FindCommonBase(t, types[i]);
+                }
+
+                return t;
+            }
+        }
+
+        /// <summary>
+        /// Resolves a <see cref="TypeSymbol"/> that both given types share.
+        /// Gets <c>System.Object</c> in worst case.
+        /// </summary>
+        internal TypeSymbol FindCommonBase(TypeSymbol a, TypeSymbol b)
+        {
+            Debug.Assert(a != null && b != null);
+
+            if (a.IsReferenceType && b.IsReferenceType)
+            {
+                if (a.SpecialType != SpecialType.System_Object &&
+                    b.SpecialType != SpecialType.System_Object)
+                {
+                    if (a.IsOfType(b)) return b;    // A >> B -> B
+                    if (b.IsOfType(a)) return a;    // A << B -> A
+
+                    // find common base
+                    // find a common interface
+
+                    var set = new HashSet<TypeSymbol>();
+
+                    // walk through "a" and remember all the base types
+                    for (var ax = a.BaseType; ax != null && ax.SpecialType != SpecialType.System_Object; ax = ax.BaseType)
+                        set.Add(ax);
+                    foreach (var ax in a.AllInterfaces)
+                        set.Add(ax);
+
+                    // walk through "b" and find something in the hierarchy shared by "a",
+                    // base types first
+                    for (var ax = b.BaseType; ax != null && ax.SpecialType != SpecialType.System_Object; ax = ax.BaseType)
+                        if (set.Contains(ax))
+                            return ax; // a common base
+
+                    foreach (var ax in b.AllInterfaces)
+                        if (set.Contains(ax))
+                            return ax;  // a common interface
+                }
+
+                //
+                return CoreTypes.Object;
+            }
+
+            // dunno
+            return null;
         }
 
         /// <summary>
@@ -178,7 +244,7 @@ namespace Pchp.CodeAnalysis
             var t = BoundTypeRefFactory.CreateFromTypeRef(tref, null, selfHint);
 
             var symbol = t.ResolveRuntimeType(this);
-            
+
             if (t.IsNullable || nullable)
             {
                 // TODO: for value types -> Nullable<T>
@@ -523,13 +589,13 @@ namespace Pchp.CodeAnalysis
                 if (types.Count != 0)
                 {
                     // determine best fitting CLR type based on defined PHP types hierarchy
-                    result = (TypeSymbol)types[0].ResolveRuntimeType(this);
+                    result = types[0].ResolveRuntimeType(this);
 
                     for (int i = 1; i < types.Count; i++)
                     {
-                        var tdesc = (TypeSymbol)types[i].ResolveRuntimeType(this);
+                        var tdesc = types[i].ResolveRuntimeType(this);
                         Debug.Assert(!tdesc.IsErrorType());
-                        result = (NamedTypeSymbol)Merge(result, tdesc);
+                        result = Merge(result, tdesc);
                     }
                 }
                 else
@@ -539,7 +605,7 @@ namespace Pchp.CodeAnalysis
 
                 result = maybenull ? MergeNull(result) : result;
 
-                Debug.Assert(result != null);
+                Debug.Assert(result.IsValidType());
 
                 //
                 return result;

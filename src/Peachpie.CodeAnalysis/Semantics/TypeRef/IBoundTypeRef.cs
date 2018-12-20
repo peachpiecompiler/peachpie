@@ -131,48 +131,4 @@ namespace Pchp.CodeAnalysis.Semantics
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument) => visitor.DefaultVisit(this, argument);
         public virtual TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitTypeRef(this);
     }
-
-    internal static class BoundTypeRefExtensions
-    {
-        public static ITypeSymbol EmitLoadTypeInfo(this IBoundTypeRef tref, CodeGenerator cg, bool throwOnError = false) => ((BoundTypeRef)tref).EmitLoadTypeInfo(cg, throwOnError);
-
-        public static void EmitClassName(this IBoundTypeRef tref, CodeGenerator cg)
-        {
-            if (tref is BoundIndirectTypeRef it)
-            {
-                it.EmitClassName(cg);
-            }
-            else if (tref is BoundClassTypeRef ct)
-            {
-                cg.Builder.EmitStringConstant(ct.ClassName.ToString());
-            }
-            else
-            {
-                // Template: {LOAD PhpTypeInfo}.Name
-                tref.EmitLoadTypeInfo(cg, true);
-                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetName_PhpTypeInfo.Getter)
-                    .Expect(SpecialType.System_String);
-            }
-        }
-
-        /// <summary>
-        /// Gets <see cref="TypeSymbol"/> suitable to be used for the runtime operations.
-        /// Does not return <c>null</c> nor <see cref="ErrorTypeSymbol"/>.
-        /// </summary>
-        public static TypeSymbol ResolveRuntimeType(this IBoundTypeRef tref, PhpCompilation compilation)
-        {
-            var boundType = (BoundTypeRef)tref;
-
-            var t = boundType.ResolvedType ?? (TypeSymbol)boundType.ResolveTypeSymbol(compilation);
-
-            if (t.IsErrorTypeOrNull()) // error type => class could not be found
-            {
-                // TODO: ambiguity -> find common base
-
-                t = compilation.CoreTypes.Object.Symbol;
-            }
-
-            return t;
-        }
-    }
 }
