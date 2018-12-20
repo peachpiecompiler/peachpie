@@ -1157,7 +1157,7 @@ namespace Pchp.Library.Spl
             }
         }
 
-        private void NextImpl()
+        protected virtual void NextImpl()
         {
             var innerIterator = getInnerIterator();
             _valid = innerIterator.valid();
@@ -1268,5 +1268,58 @@ namespace Pchp.Library.Spl
         }
 
         #endregion
+    }
+
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class RecursiveCachingIterator : CachingIterator, RecursiveIterator
+    {
+        private RecursiveCachingIterator _children;
+
+        [PhpFieldsOnlyCtor]
+        protected RecursiveCachingIterator(Context ctx) : base(ctx)
+        { }
+
+        public RecursiveCachingIterator(Context ctx, Iterator iterator, int flags = CALL_TOSTRING) : this(ctx)
+        {
+            __construct(iterator, flags);
+        }
+
+        public override void __construct(Iterator iterator, int flags = 1)
+        {
+            if (!(iterator is RecursiveIterator))
+            {
+                PhpException.InvalidArgument(nameof(iterator));
+            }
+
+            base.__construct(iterator, flags);
+        }
+
+        protected override void NextImpl()
+        {
+            var innerIterator = (RecursiveIterator)_iterator;
+            if (innerIterator.hasChildren())
+            {
+                _children = new RecursiveCachingIterator(
+                    _ctx,
+                    innerIterator.getChildren(),
+                    getFlags());
+            }
+            else
+            {
+                _children = null;
+            }
+
+            base.NextImpl();
+        }
+
+        /// <summary>
+        /// Return the inner iterator's children as a RecursiveCachingIterator.
+        /// </summary>
+        public RecursiveIterator getChildren() => _children;
+
+        /// <summary>
+        /// Check whether the current element of the inner iterator has children.
+        /// </summary>
+        public bool hasChildren() => _children != null;
     }
 }
