@@ -251,12 +251,12 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             /// <summary>Emits new instance of wrapper with value. Returns wrapper.</summary>
-            public TypeSymbol EmitWrapParam(NamedTypeSymbol wrapper, TypeSymbol value)
+            public TypeSymbol EmitWrapParam(NamedTypeSymbol wrapper, ITypeSymbol value)
             {
                 // Template: new wrapper(<STACK:value>)
 
                 var ctor = wrapper.InstanceConstructors.Single(m => m.ParameterCount == 1);
-                Debug.Assert(ctor.Parameters[0].Type == value);
+                Debug.Assert((ITypeSymbol)ctor.Parameters[0].Type == value);
                 var t = _cg.EmitCall(ILOpCode.Newobj, ctor);
 
                 AddArg(t, byref: false);
@@ -285,7 +285,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             /// <summary>Template: new TargetTypeParam(PhpTypeInfo)</summary>
-            public TypeSymbol EmitTargetTypeParam(BoundTypeRef tref)
+            public TypeSymbol EmitTargetTypeParam(IBoundTypeRef tref)
                 => tref != null ? EmitWrapParam(_cg.CoreTypes.Dynamic_TargetTypeParam, tref.EmitLoadTypeInfo(_cg, true)) : null;
 
             /// <summary>Template: new NameParam{T}(STACK)</summary>

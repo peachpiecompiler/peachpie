@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis.Operations;
+using Pchp.CodeAnalysis.Semantics.TypeRef;
 using Peachpie.CodeAnalysis.Utilities;
 using System;
 using System.Collections.Generic;
@@ -168,7 +169,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             {
                 for (int i = 0; i < x.TypeArguments.Length; i++)
                 {
-                    VisitTypeRef(x.TypeArguments[i]);
+                    x.TypeArguments[i].Accept(this);
                 }
             }
 
@@ -194,22 +195,25 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
-        public override T VisitTypeRef(BoundTypeRef x)
+        internal override T VisitTypeRef(BoundTypeRef x)
         {
-            Accept(x.TypeExpression);
-
-            return default;
+            return base.VisitTypeRef(x);
         }
 
-        public override T VisitMultipleTypeRef(BoundMultipleTypeRef x)
+        internal override T VisitIndirectTypeRef(BoundIndirectTypeRef x)
+        {
+            Accept(x.TypeExpression);
+            return base.VisitIndirectTypeRef(x);
+        }
+
+        internal override T VisitMultipleTypeRef(BoundMultipleTypeRef x)
         {
             Debug.Assert(x != null);
-            Debug.Assert(x.TypeExpression == null);
-            Debug.Assert(x.BoundTypes.Length > 1);
+            Debug.Assert(x.TypeRefs.Length > 1);
 
-            for (int i = 0; i < x.BoundTypes.Length; i++)
+            for (int i = 0; i < x.TypeRefs.Length; i++)
             {
-                x.BoundTypes[i].Accept(this);
+                x.TypeRefs[i].Accept(this);
             }
 
             return default;

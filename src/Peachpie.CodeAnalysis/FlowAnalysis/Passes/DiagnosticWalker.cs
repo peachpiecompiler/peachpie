@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using Pchp.CodeAnalysis.Symbols;
 using Devsense.PHP.Syntax.Ast;
 using Peachpie.CodeAnalysis.Utilities;
+using Pchp.CodeAnalysis.Semantics.TypeRef;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
@@ -59,14 +60,23 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         #endregion
 
+        void CheckMissusedPrimitiveType(IBoundTypeRef tref)
+        {
+            if (tref.IsPrimitiveType)
+            {
+                // error: use of primitive type {0} is misused // primitive type does not make any sense in this context
+                _diagnostics.Add(_routine, tref.PhpSyntax, ErrorCode.ERR_PrimitiveTypeNameMisused, tref);
+            }
+        }
+
         void Add(Devsense.PHP.Text.Span span, Devsense.PHP.Errors.ErrorInfo err, params string[] args)
         {
             _diagnostics.Add(DiagnosticBagExtensions.ParserDiagnostic(_routine, span, err, args));
         }
 
-        void CannotInstantiate(IPhpOperation op, string kind, BoundTypeRef t)
+        void CannotInstantiate(IPhpOperation op, string kind, IBoundTypeRef t)
         {
-            _diagnostics.Add(_routine, op.PhpSyntax, ErrorCode.ERR_CannotInstantiateType, kind, t.ResolvedType);
+            _diagnostics.Add(_routine, op.PhpSyntax, ErrorCode.ERR_CannotInstantiateType, kind, t.Type);
         }
 
         public static void Analyse(DiagnosticBag diagnostics, SourceRoutineSymbol routine)
@@ -143,49 +153,48 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return base.VisitArray(x);
         }
 
-        public override T VisitTypeRef(BoundTypeRef typeRef)
+        internal override T VisitIndirectTypeRef(BoundIndirectTypeRef x)
         {
-            if (typeRef.HasClassNameRestriction && typeRef.TypeRef is Devsense.PHP.Syntax.Ast.PrimitiveTypeRef)
-            {
-                // error: use of primitive type {0} is misused // primitive type does not make any sense in this context
-                _diagnostics.Add(_routine, typeRef.TypeRef, ErrorCode.ERR_PrimitiveTypeNameMisused, typeRef.TypeRef);
-            }
-            else
-            {
-                CheckUndefinedType(typeRef);
-                base.VisitTypeRef(typeRef);
-            }
+            return base.VisitIndirectTypeRef(x);
+        }
 
-            return default;
+        internal override T VisitTypeRef(BoundTypeRef typeRef)
+        {
+            CheckUndefinedType(typeRef);
+            return base.VisitTypeRef(typeRef);
         }
 
         public override T VisitNew(BoundNewEx x)
         {
-            if (x.TypeRef.ResolvedType.IsValidType())
+            CheckMissusedPrimitiveType(x.TypeRef);
+
+            var type = (TypeSymbol)x.TypeRef.Type;
+
+            if (type.IsValidType())
             {
-                if (x.TypeRef.ResolvedType.IsInterfaceType())
+                if (type.IsInterfaceType())
                 {
                     CannotInstantiate(x, "interface", x.TypeRef);
                 }
-                else if (x.TypeRef.ResolvedType.IsStatic)
+                else if (type.IsStatic)
                 {
                     CannotInstantiate(x, "static", x.TypeRef);
                 }
-                else if (x.TypeRef.ResolvedType.IsTraitType())
+                else if (type.IsTraitType())
                 {
                     CannotInstantiate(x, "trait", x.TypeRef);
                 }
                 else // class:
                 {
                     // cannot instantiate Closure
-                    if (x.TypeRef.ResolvedType == DeclaringCompilation.CoreTypes.Closure)
+                    if (type == DeclaringCompilation.CoreTypes.Closure)
                     {
                         // Instantiation of '{0}' is not allowed
-                        Add(x.TypeRef.TypeRef.Span, Devsense.PHP.Errors.Errors.ClosureInstantiated, x.TypeRef.ResolvedType.Name);
+                        Add(x.TypeRef.PhpSyntax.Span, Devsense.PHP.Errors.Errors.ClosureInstantiated, type.Name);
                     }
 
                     //
-                    else if (x.TypeRef.ResolvedType.IsAbstract)
+                    else if (type.IsAbstract)
                     {
                         // Cannot instantiate abstract class {0}
                         CannotInstantiate(x, "abstract class", x.TypeRef);
@@ -346,8 +355,29 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return base.VisitInstanceFunctionCall(call);
         }
 
+        public override T VisitFieldRef(BoundFieldRef x)
+        {
+            if (x.ContainingType != null)
+            {
+                // class const
+                // static field
+                CheckMissusedPrimitiveType(x.ContainingType);
+            }
+
+            return base.VisitFieldRef(x);
+        }
+
+        public override T VisitCFGCatchBlock(CatchBlock x)
+        {
+            // TODO: x.TypeRefs -> CheckMissusedPrimitiveType
+
+            return base.VisitCFGCatchBlock(x);
+        }
+
         public override T VisitStaticFunctionCall(BoundStaticFunctionCall call)
         {
+            CheckMissusedPrimitiveType(call.TypeRef);
+
             // TODO: Enable the diagnostic when the __callStatic() method is properly processed during analysis
             //CheckUndefinedMethodCall(call, call.TypeRef?.ResolvedType, call.Name);
 
@@ -356,6 +386,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             //
             return base.VisitStaticFunctionCall(call);
+        }
+        public override T VisitInstanceOf(BoundInstanceOfEx x)
+        {
+            CheckMissusedPrimitiveType(x.AsType);
+
+            return base.VisitInstanceOf(x);
         }
 
         public override T VisitVariableRef(BoundVariableRef x)
@@ -531,8 +567,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         private void CheckUndefinedType(BoundTypeRef typeRef)
         {
+            var type = typeRef.ResolvedType;
+
             // Ignore indirect types (e.g. $foo = new $className())
-            if (typeRef.IsDirect && (typeRef.ResolvedType == null || typeRef.ResolvedType.IsErrorType()))
+            if (type.IsErrorTypeOrNull() && !(typeRef is BoundIndirectTypeRef))
             {
                 var errtype = typeRef.ResolvedType as ErrorTypeSymbol;
                 if (errtype != null && errtype.CandidateReason == CandidateReason.Ambiguous)
@@ -542,14 +580,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     return;
                 }
 
-                if (typeRef.TypeRef is ReservedTypeRef)
+                if (typeRef is BoundReservedTypeRef)
                 {
                     // unresolved parent, self ?
                 }
                 else
                 {
-                    var name = typeRef.TypeRef.QualifiedName?.ToString();
-                    _diagnostics.Add(_routine, typeRef.TypeRef, ErrorCode.WRN_UndefinedType, name);
+                    _diagnostics.Add(_routine, typeRef.PhpSyntax, ErrorCode.WRN_UndefinedType, typeRef.ToString());
                 }
             }
         }

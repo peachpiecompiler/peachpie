@@ -249,7 +249,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     // Keep IncludesSubclasses flag in the true branch and clear it in the false branch
                     HandleTypeCheckingExpression(
                         arg,
-                        currentType => typeCtx.GetObjectsFromMask(currentType).WithIncludesSubclasses,
+                        currentType => typeCtx.GetObjectsFromMask(currentType).WithSubclasses,
                         branch,
                         flowState,
                         skipPositiveIfAnyType: true,
@@ -332,15 +332,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         private static void AddTypeIfInContext(
             TypeRefContext typeCtx,
-            Func<ITypeRef, bool> selector,
+            Func<IBoundTypeRef, bool> selector,
             bool includeSubclasses,
             ref TypeRefMask mask)
         {
+            //
             var closureTypeRef = typeCtx.Types.FirstOrDefault(selector);
             if (closureTypeRef != null)
             {
-                mask |= typeCtx.GetTypeMask(closureTypeRef, includeSubclasses);
+                mask |= closureTypeRef.GetTypeRefMask(typeCtx);
             }
+
+            //
+            mask.IncludesSubclasses = includeSubclasses;
         }
 
         /// <summary>

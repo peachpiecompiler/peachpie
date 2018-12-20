@@ -109,7 +109,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets copy of this type mask with the including subclasses flag.
         /// </summary>
-        public TypeRefMask WithIncludesSubclasses => _mask | (ulong)MaskFlags.IncludesSubclasses;
+        public TypeRefMask WithSubclasses => _mask | (ulong)MaskFlags.IncludesSubclasses;
+
+        /// <summary>
+        /// Gets copy of this type mask with the including subclasses flag.
+        /// </summary>
+        public TypeRefMask WithoutSubclasses => _mask & ~(ulong)MaskFlags.IncludesSubclasses;
 
         /// <summary>
         /// Gets bits corresponding to types only, excluding flags.

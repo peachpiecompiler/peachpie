@@ -4,13 +4,15 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using Devsense.PHP.Syntax;
+using Pchp.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.Semantics.TypeRef;
 using Pchp.CodeAnalysis.Symbols;
 using AST = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
 {
     /// <summary>
-    /// Context of <see cref="TypeRefMask"/> and <see cref="ITypeRef"/> instances.
+    /// Context of <see cref="TypeRefMask"/> and <see cref="IBoundTypeRef"/> instances.
     /// Contains additional information for routine context like current namespace, current type context etc.
     /// </summary>
     public sealed partial class TypeRefContext
@@ -21,7 +23,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Bit masks initialized when such type is added to the context.
         /// Its bits corresponds to <see cref="_typeRefs"/> indices.
         /// </summary>
-        private ulong _isNullMask, _isObjectMask, _isArrayMask, _isLongMask, _isDoubleMask, _isBoolMask, _isStringMask, _isWritableStringMask, _isPrimitiveMask, _isLambdaMask;
+        private ulong _isNullMask, _isObjectMask, _isArrayMask, _isLongMask, _isDoubleMask, _isBoolMask, _isStringMask, _isWritableStringMask, _isLambdaMask;
         private ulong IsNumberMask { get { return _isLongMask | _isDoubleMask; } }
         private ulong IsAStringMask { get { return _isStringMask | _isWritableStringMask; } }
         private ulong IsNullableMask { get { return _isNullMask | _isObjectMask | _isArrayMask | IsAStringMask | _isLambdaMask; } }
@@ -34,7 +36,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// List of types occuring in the context.
         /// </summary>
-        private readonly List<ITypeRef>/*!*/_typeRefs;
+        private readonly List<IBoundTypeRef>/*!*/_typeRefs = new List<IBoundTypeRef>();
 
         /// <summary>
         /// Contains type of current context (refers to <c>self</c>).
@@ -65,25 +67,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         internal TypeRefContext(SourceTypeSymbol selfType, SourceTypeSymbol thisType)
         {
-            _typeRefs = new List<ITypeRef>();
             _selfType = selfType;
             _thisType = thisType;
-        }
-
-        /// <summary>
-        /// Gets type mask corresponding to <c>self</c> with <c>includesSubclasses</c> flag set whether type is not final.
-        /// </summary>
-        private TypeRefMask GetTypeCtxMask(AST.TypeDecl typeCtx)
-        {
-            if (typeCtx != null)
-            {
-                var typeIsFinal = (typeCtx.MemberAttributes & PhpMemberAttributes.Final) != 0;
-                return GetTypeMask(new ClassTypeRef(NameUtils.MakeQualifiedName(typeCtx)), !typeIsFinal);
-            }
-            else
-            {
-                return GetSystemObjectTypeMask();
-            }
         }
 
         /// <summary>
@@ -104,7 +89,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         /// <param name="typeRef">Type reference to be in the context.</param>
         /// <returns>Index of the type within the context. Can return <c>-1</c> if there is too many types in the context already.</returns>
-        public int AddToContext(ITypeRef/*!*/typeRef)
+        public int AddToContext(IBoundTypeRef/*!*/typeRef)
         {
             Contract.ThrowIfNull(typeRef);
 
@@ -117,7 +102,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return index;
         }
 
-        private int AddToContextNoCheck(ITypeRef/*!*/typeRef)
+        private int AddToContextNoCheck(IBoundTypeRef/*!*/typeRef)
         {
             Contract.ThrowIfNull(typeRef);
             Debug.Assert(_typeRefs.IndexOf(typeRef) == -1);
@@ -136,7 +121,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         /// <param name="typeRef">Type.</param>
         /// <param name="index">Type index.</param>
-        private void UpdateMasks(ITypeRef/*!*/typeRef, int index)
+        private void UpdateMasks(IBoundTypeRef/*!*/typeRef, int index)
         {
             Debug.Assert(index >= 0 && index < TypeRefMask.IndicesCount);
 
@@ -146,16 +131,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (typeRef.IsArray) _isArrayMask |= mask;
             if (typeRef.IsLambda) _isLambdaMask |= mask;
 
-            if (typeRef.IsPrimitiveType)
+            if (typeRef is BoundPrimitiveTypeRef pt)
             {
-                _isPrimitiveMask |= mask;
-                switch (typeRef.TypeCode)
+                switch (pt.TypeCode)
                 {
                     case PhpTypeCode.Boolean:
                         _isBoolMask = mask;
                         break;
                     case PhpTypeCode.Long:
-                        _isLongMask |= mask;
+                        _isLongMask = mask;
                         break;
                     case PhpTypeCode.Double:
                         _isDoubleMask = mask;
@@ -228,13 +212,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets enumeration of types matching given masks.
         /// </summary>
-        private IList<ITypeRef>/*!!*/GetTypes(TypeRefMask typemask, ulong bitmask)
+        private IList<IBoundTypeRef>/*!!*/GetTypes(TypeRefMask typemask, ulong bitmask)
         {
             var mask = typemask.Mask & bitmask & ~TypeRefMask.FlagsMask;
             if (mask == (ulong)0 || typemask.IsAnyType)
-                return EmptyArray<ITypeRef>.Instance;
+                return EmptyArray<IBoundTypeRef>.Instance;
 
-            var result = new List<ITypeRef>(1);
+            var result = new List<IBoundTypeRef>(1);
             for (int i = 0; mask != 0; i++, mask = (mask & ~(ulong)1) >> 1)
                 if ((mask & 1) != 0)
                 {
@@ -245,8 +229,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return result;
         }
 
-        private TypeRefMask GetPrimitiveTypeRefMask(PrimitiveTypeRef/*!*/typeref)
+        private TypeRefMask GetPrimitiveTypeRefMask(IBoundTypeRef/*!*/typeref)
         {
+            Debug.Assert(typeref.IsPrimitiveType);
+
             // primitive type cannot include subclasses
             var index = AddToContext(typeref);
             return TypeRefMask.CreateFromTypeIndex(index);
@@ -255,8 +241,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Does not lookup existing types whether there is typeref already.
         /// </summary>
-        private TypeRefMask GetPrimitiveTypeRefMaskNoCheck(PrimitiveTypeRef/*!*/typeref)
+        private TypeRefMask GetPrimitiveTypeRefMaskNoCheck(IBoundTypeRef/*!*/typeref)
         {
+            Debug.Assert(typeref.IsPrimitiveType);
+
             if (this.Types.Count < TypeRefMask.IndicesCount)
             {
                 var index = AddToContextNoCheck(typeref);
@@ -268,18 +256,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        /// <summary>
-        /// Gets type mask for reserved class name (self, parent, static).
-        /// </summary>
-        private TypeRefMask GetTypeMaskOfReservedClassName(Name name)
-        {
-            if (name == Name.SelfClassName) return GetSelfTypeMask();
-            if (name == Name.ParentClassName) return GetParentTypeMask();
-            if (name == Name.StaticClassName) return GetStaticTypeMask();
-
-            throw new ArgumentException();
-        }
-
         #endregion
 
         #region GetTypeMask
@@ -287,101 +263,28 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Helper method that builds <see cref="TypeRefMask"/> for given type in this context.
         /// </summary>
-        public TypeRefMask GetTypeMask(ITypeRef/*!*/typeref, bool includesSubclasses)
+        public TypeRefMask GetTypeMask(IBoundTypeRef/*!*/typeref, bool includesSubclasses)
         {
             var index = AddToContext(typeref);
             var mask = TypeRefMask.CreateFromTypeIndex(index);
 
             if (includesSubclasses && typeref.IsObject)
+            {
                 mask.SetIncludesSubclasses();
+            }
+
+            if (typeref.IsNullable)
+            {
+                mask |= GetNullTypeMask();
+            }
 
             return mask;
         }
 
         /// <summary>
-        /// Gets type mask corresponding to given qualified name within this context.
-        /// </summary>
-        public TypeRefMask GetTypeMask(QualifiedName qname, bool includesSubclasses = true)
-        {
-            if (qname.IsReservedClassName)
-            {
-                return GetTypeMaskOfReservedClassName(qname.Name);
-            }
-
-            return GetTypeMask(TypeRefFactory.CreateTypeRef(qname), includesSubclasses);
-        }
-
-        /// <summary>
-        /// Gets type mask corresponding to given TypeRef within this context.
-        /// </summary>
-        public TypeRefMask GetTypeMask(AST.TypeRef/*!*/tref, bool includesSubclasses = true)
-        {
-            Contract.ThrowIfNull(tref);
-
-            if (tref != null)
-            {
-                if (tref is AST.PrimitiveTypeRef)
-                {
-                    switch (((AST.PrimitiveTypeRef)tref).PrimitiveTypeName)
-                    {
-                        case AST.PrimitiveTypeRef.PrimitiveType.@int: return GetLongTypeMask();
-                        case AST.PrimitiveTypeRef.PrimitiveType.@float: return GetDoubleTypeMask();
-                        case AST.PrimitiveTypeRef.PrimitiveType.@string: return GetStringTypeMask();
-                        case AST.PrimitiveTypeRef.PrimitiveType.@bool: return GetBooleanTypeMask();
-                        case AST.PrimitiveTypeRef.PrimitiveType.array: return GetArrayTypeMask();
-                        case AST.PrimitiveTypeRef.PrimitiveType.callable: return GetCallableTypeMask();
-                        case AST.PrimitiveTypeRef.PrimitiveType.@void: return 0;
-                        case AST.PrimitiveTypeRef.PrimitiveType.iterable: return GetArrayTypeMask() | GetTypeMask(NameUtils.SpecialNames.Traversable, true);   // array | Traversable
-                        case AST.PrimitiveTypeRef.PrimitiveType.@object: return GetSystemObjectTypeMask();
-                        default: throw new ArgumentException();
-                    }
-                }
-                else if (tref is AST.INamedTypeRef named) return GetTypeMask(named.ClassName, includesSubclasses);
-                else if (tref is AST.ReservedTypeRef reserved) return GetTypeMaskOfReservedClassName(reserved.QualifiedName.Value.Name);
-                else if (tref is AST.AnonymousTypeRef) return GetTypeMask(((AST.AnonymousTypeRef)tref).TypeDeclaration.GetAnonymousTypeQualifiedName(), false);
-                else if (tref is AST.MultipleTypeRef)
-                {
-                    TypeRefMask result = 0;
-                    foreach (var x in ((AST.MultipleTypeRef)tref).MultipleTypes)
-                    {
-                        result |= GetTypeMask(x, includesSubclasses);
-                    }
-                    return result;
-                }
-                else if (tref is AST.NullableTypeRef nullable) return GetTypeMask(nullable.TargetType) | this.GetNullTypeMask();
-                else if (tref is AST.GenericTypeRef) return GetTypeMask(TypeRefFactory.CreateTypeRef(tref), includesSubclasses);
-                else if (tref is AST.IndirectTypeRef) return GetTypeMask((AST.IndirectTypeRef)tref, true);
-            }
-
-            return TypeRefMask.AnyType;
-        }
-
-        /// <summary>
-        /// Gets type mask corresponding to given TypeRef within this context.
-        /// </summary>
-        private TypeRefMask GetTypeMask(AST.IndirectTypeRef/*!*/tref, bool includesSubclasses)
-        {
-            Contract.ThrowIfNull(tref);
-
-            if (tref.ClassNameVar is AST.DirectVarUse dvar)
-            {
-                if (dvar.IsMemberOf == null && dvar.VarName.IsThisVariableName)
-                {
-                    return GetThisTypeMask();
-                }
-            }
-
-            //
-            return TypeRefMask.AnyType;
-        }
-
-        /// <summary>
         /// Gets type mask corresponding to <see cref="System.Object"/>.
         /// </summary>
-        public TypeRefMask GetSystemObjectTypeMask()
-        {
-            return GetTypeMask(NameUtils.SpecialNames.System_Object, true);
-        }
+        public TypeRefMask GetSystemObjectTypeMask() => GetTypeMask(BoundTypeRefFactory.ObjectTypeRef, true);
 
         /// <summary>
         /// Gets type mask corresponding to <c>NULL</c>.
@@ -390,11 +293,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (_isNullMask != 0)
             {
-                return new TypeRefMask(_isNullMask);
+                return _isNullMask;
             }
             else
             {
-                return GetPrimitiveTypeRefMaskNoCheck(TypeRefFactory.NullTypeRef);
+                return GetPrimitiveTypeRefMaskNoCheck(BoundTypeRefFactory.NullTypeRef);
             }
         }
 
@@ -409,7 +312,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else
             {
-                return GetPrimitiveTypeRefMaskNoCheck(TypeRefFactory.StringTypeRef);
+                return GetPrimitiveTypeRefMaskNoCheck(BoundTypeRefFactory.StringTypeRef);
             }
         }
 
@@ -424,7 +327,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else
             {
-                return GetPrimitiveTypeRefMaskNoCheck(TypeRefFactory.WritableStringRef);
+                return GetPrimitiveTypeRefMaskNoCheck(BoundTypeRefFactory.WritableStringRef);
             }
         }
 
@@ -439,7 +342,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else
             {
-                return GetPrimitiveTypeRefMaskNoCheck(TypeRefFactory.LongTypeRef);
+                return GetPrimitiveTypeRefMaskNoCheck(BoundTypeRefFactory.LongTypeRef);
             }
         }
 
@@ -454,7 +357,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else
             {
-                return GetPrimitiveTypeRefMaskNoCheck(TypeRefFactory.BoolTypeRef);
+                return GetPrimitiveTypeRefMaskNoCheck(BoundTypeRefFactory.BoolTypeRef);
             }
         }
 
@@ -469,7 +372,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else
             {
-                return GetPrimitiveTypeRefMaskNoCheck(TypeRefFactory.DoubleTypeRef);
+                return GetPrimitiveTypeRefMaskNoCheck(BoundTypeRefFactory.DoubleTypeRef);
             }
         }
 
@@ -486,7 +389,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetResourceTypeMask()
         {
-            return GetPrimitiveTypeRefMask(TypeRefFactory.ResourceTypeRef);
+            return GetPrimitiveTypeRefMask(BoundTypeRefFactory.ResourceTypeRef);
         }
 
         /// <summary>
@@ -494,7 +397,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetClosureTypeMask()
         {
-            return GetTypeMask(NameUtils.SpecialNames.Closure, false);
+            return GetTypeMask(BoundTypeRefFactory.ClosureTypeRef, false);
         }
 
         /// <summary>
@@ -511,7 +414,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetArrayTypeMask()
         {
-            return GetPrimitiveTypeRefMask(TypeRefFactory.ArrayTypeRef);
+            return GetPrimitiveTypeRefMask(BoundTypeRefFactory.ArrayTypeRef);
         }
 
         /// <summary>
@@ -527,11 +430,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else if (elementType.IsVoid)
             {
-                result = GetTypeMask(new ArrayTypeRef(null, 0), false);   // empty array
+                result = GetTypeMask(new BoundArrayTypeRef(0), false);   // empty array
             }
             else if (elementType.IsSingleType)
             {
-                result = GetTypeMask(new ArrayTypeRef(null, elementType), false);
+                result = GetTypeMask(new BoundArrayTypeRef(elementType), false);
             }
             else
             {
@@ -551,7 +454,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 for (int i = 0; mask != 0; i++, mask = (mask & ~(ulong)1) >> 1)
                     if ((mask & 1) != 0)    // _typeRefs[i].IsArray
                     {
-                        result |= GetTypeMask(new ArrayTypeRef(null, (ulong)1 << i), false);
+                        result |= GetTypeMask(new BoundArrayTypeRef((ulong)1 << i), false);
                     }
             }
 
@@ -568,8 +471,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             if (_selfType != null && !_selfType.IsTrait)
             {
-                result = GetTypeCtxMask(_selfType.Syntax);
-                result.IncludesSubclasses = false;
+                result = GetTypeMask(BoundTypeRefFactory.Create(_selfType), includesSubclasses: false);
             }
             else
             {
@@ -584,7 +486,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetThisTypeMask()
         {
-            return GetTypeCtxMask(_thisType?.Syntax);
+            if (_thisType != null)
+            {
+                return GetTypeMask(BoundTypeRefFactory.Create(_thisType), includesSubclasses: !_thisType.IsSealed);
+            }
+            else
+            {
+                return GetSystemObjectTypeMask();
+            }
         }
 
         /// <summary>
@@ -594,7 +503,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (_selfType != null && _selfType.Syntax.BaseClass != null)
             {
-                return GetTypeMask(new ClassTypeRef(_selfType.Syntax.BaseClass.ClassName), false);
+                return GetTypeMask(BoundTypeRefFactory.Create(_selfType.BaseType), false);
             }
             else
             {
@@ -642,12 +551,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets enumeration of all types in the context.
         /// </summary>
-        public IList<ITypeRef>/*!*/Types { get { return _typeRefs; } }
+        public IList<IBoundTypeRef>/*!*/Types { get { return _typeRefs; } }
 
         /// <summary>
         /// Gets types referenced by given type mask.
         /// </summary>
-        public IList<ITypeRef>/*!*/GetTypes(TypeRefMask mask)
+        public IList<IBoundTypeRef>/*!*/GetTypes(TypeRefMask mask)
         {
             return GetTypes(mask, TypeRefMask.AnyTypeMask);
         }
@@ -655,10 +564,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets types of type <c>object</c> (classes, interfaces, traits) referenced by given type mask.
         /// </summary>
-        public IList<ITypeRef>/*!*/GetObjectTypes(TypeRefMask mask)
+        public IList<IBoundTypeRef>/*!*/GetObjectTypes(TypeRefMask mask)
         {
             if (mask.IsAnyType)
-                return EmptyArray<ITypeRef>.Instance;
+                return EmptyArray<IBoundTypeRef>.Instance;
 
             return GetTypes(mask, _isObjectMask);
         }
@@ -681,15 +590,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (arrmask != 0)
                 {
                     mask &= ~_isArrayMask;
-                    ITypeRef elementtype = null;
+                    IBoundTypeRef elementtype = null;
                     var elementmask = GetElementType(arrmask);
                     if (elementmask.IsSingleType)
                         elementtype = GetTypes(elementmask).FirstOrDefault();
 
                     if (elementtype != null)
-                        types.Add(elementtype.QualifiedName.ToString() + "[]");
+                        types.Add(elementtype.ToString() + "[]");
                     else
-                        types.Add(TypeRefFactory.ArrayTypeRef.QualifiedName.ToString());
+                        types.Add(QualifiedName.Array.ToString());
                 }
 
                 //// int|double => number
@@ -704,7 +613,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 //}
 
                 //
-                types.AddRange(GetTypes(mask).Select(t => t.QualifiedName.ToString()));
+                types.AddRange(GetTypes(mask).Select(t => t.ToString()));
 
                 //if (isNumber)
                 //    types.Add("number");
@@ -723,7 +632,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets index of the given type within the context. Returns <c>-1</c> if such type is not present.
         /// </summary>
-        public int GetTypeIndex(ITypeRef/*!*/typeref) { return _typeRefs.IndexOf(typeref); }
+        public int GetTypeIndex(IBoundTypeRef/*!*/typeref) { return _typeRefs.IndexOf(typeref); }
 
         /// <summary>
         /// Gets value indicating whether given type mask represents a number.
@@ -784,11 +693,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         ///// Gets value indicating whether given type mask represents a resource.
         ///// </summary>
         //public bool IsResource(TypeRefMask mask) { return GetObjectTypes(mask).Any(InheritesFromPhpResource); }
-
-        /// <summary>
-        /// Gets value indicating whether given type mask represents a primitive type.
-        /// </summary>
-        public bool IsPrimitiveType(TypeRefMask mask) { return (mask.Mask & _isPrimitiveMask) != 0; }
 
         /// <summary>
         /// Gets value indicating whether given type can be <c>null</c>.

@@ -259,8 +259,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// <summary>
         /// Catch variable type.
         /// </summary>
-        public BoundTypeRef TypeRef { get { return _typeRef; } }
-        private readonly BoundTypeRef _typeRef;
+        public IBoundTypeRef TypeRef { get { return _typeRef; } }
+        private readonly IBoundTypeRef _typeRef;
 
         /// <summary>
         /// A variable where an exception is assigned in.
@@ -269,11 +269,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         readonly BoundVariableRef _variable;
 
-        public CatchBlock(BoundTypeRef typeRef, BoundVariableRef variable)
+        public CatchBlock(IBoundTypeRef typeRef, BoundVariableRef variable)
             : this(typeRef, variable, new List<BoundStatement>())
         { }
 
-        private CatchBlock(BoundTypeRef typeRef, BoundVariableRef variable, List<BoundStatement> statements)
+        private CatchBlock(IBoundTypeRef typeRef, BoundVariableRef variable, List<BoundStatement> statements)
             : base(statements)
         {
             _typeRef = typeRef;

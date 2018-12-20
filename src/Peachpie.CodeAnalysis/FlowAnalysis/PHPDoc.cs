@@ -1,4 +1,6 @@
 ﻿using Devsense.PHP.Syntax;
+using Pchp.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,9 +35,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             { "double", ctx => ctx.GetDoubleTypeMask()},
             { "array", ctx => ctx.GetArrayTypeMask()},
             { "resource", ctx => ctx.GetResourceTypeMask()},
-            { "null", ctx => ctx.GetTypeMask(NameUtils.SpecialNames.System_Object, false)},
-            { "object", ctx => ctx.GetTypeMask(NameUtils.SpecialNames.System_Object, true)},
-            { "void", ctx => default(TypeRefMask).WithIncludesSubclasses},  // avoid being 0 (which means uninitialized)
+            { "null", ctx => ctx.GetNullTypeMask()},
+            { "object", ctx => ctx.GetSystemObjectTypeMask()},
+            { "void", ctx => default(TypeRefMask).WithSubclasses},  // avoid being 0 (which means uninitialized)
             //{ "nothing", ctx => 0},
             { "callable", ctx => ctx.GetCallableTypeMask()},
             { "mixed", ctx => TypeRefMask.AnyType},
@@ -116,7 +118,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 return result;
                         }
 
-                        result = typeCtx.GetTypeMask(qname, true);
+                        result = BoundTypeRefFactory.Create(qname, typeCtx.SelfType as SourceTypeSymbol).GetTypeRefMask(typeCtx);
                     }
 
                     //Contract.Assert(!result.IsUninitialized);

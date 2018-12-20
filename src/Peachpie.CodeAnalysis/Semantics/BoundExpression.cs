@@ -374,13 +374,13 @@ namespace Pchp.CodeAnalysis.Semantics
     public abstract partial class BoundRoutineCall : BoundExpression, IInvocationOperation
     {
         protected ImmutableArray<BoundArgument> _arguments;
-        protected ImmutableArray<BoundTypeRef> _typeargs;
+        protected ImmutableArray<IBoundTypeRef> _typeargs;
 
         ImmutableArray<IArgumentOperation> IInvocationOperation.Arguments => StaticCast<IArgumentOperation>.From(_arguments);
 
         public ImmutableArray<BoundArgument> ArgumentsInSourceOrder { get => _arguments; internal set => _arguments = value; }
 
-        public ImmutableArray<BoundTypeRef> TypeArguments { get => _typeargs; internal set => _typeargs = value; }
+        public ImmutableArray<IBoundTypeRef> TypeArguments { get => _typeargs; internal set => _typeargs = value; }
 
         public IArgumentOperation ArgumentMatchingParameter(IParameterSymbol parameter)
         {
@@ -531,7 +531,7 @@ namespace Pchp.CodeAnalysis.Semantics
             _nameOpt = nameOpt;
         }
 
-        public BoundGlobalFunctionCall Update(BoundRoutineName name, QualifiedName? nameOpt, ImmutableArray<BoundArgument> arguments, ImmutableArray<BoundTypeRef> typeArguments = default)
+        public BoundGlobalFunctionCall Update(BoundRoutineName name, QualifiedName? nameOpt, ImmutableArray<BoundArgument> arguments, ImmutableArray<IBoundTypeRef> typeArguments = default)
         {
             if (name == _name && nameOpt == _nameOpt && arguments == ArgumentsInSourceOrder && typeArguments == _typeargs)
             {
@@ -583,7 +583,7 @@ namespace Pchp.CodeAnalysis.Semantics
             _name = name;
         }
 
-        public BoundInstanceFunctionCall Update(BoundExpression instance, BoundRoutineName name, ImmutableArray<BoundArgument> arguments, ImmutableArray<BoundTypeRef> typeArguments)
+        public BoundInstanceFunctionCall Update(BoundExpression instance, BoundRoutineName name, ImmutableArray<BoundArgument> arguments, ImmutableArray<IBoundTypeRef> typeArguments)
         {
             if (instance == _instance && name == _name && arguments == ArgumentsInSourceOrder && typeArguments == _typeargs)
             {
@@ -603,7 +603,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public partial class BoundStaticFunctionCall : BoundRoutineCall
     {
-        public BoundTypeRef TypeRef => _typeRef;
+        public IBoundTypeRef TypeRef => _typeRef;
         readonly BoundTypeRef _typeRef;
 
         public override BoundExpression Instance => null;
@@ -611,14 +611,14 @@ namespace Pchp.CodeAnalysis.Semantics
         public BoundRoutineName Name => _name;
         readonly BoundRoutineName _name;
 
-        public BoundStaticFunctionCall(BoundTypeRef typeRef, BoundRoutineName name, ImmutableArray<BoundArgument> arguments)
+        public BoundStaticFunctionCall(IBoundTypeRef typeRef, BoundRoutineName name, ImmutableArray<BoundArgument> arguments)
             : base(arguments)
         {
-            _typeRef = typeRef;
+            _typeRef = (BoundTypeRef)typeRef;
             _name = name;
         }
 
-        public BoundStaticFunctionCall Update(BoundTypeRef typeRef, BoundRoutineName name, ImmutableArray<BoundArgument> arguments, ImmutableArray<BoundTypeRef> typeArguments)
+        public BoundStaticFunctionCall Update(IBoundTypeRef typeRef, BoundRoutineName name, ImmutableArray<BoundArgument> arguments, ImmutableArray<IBoundTypeRef> typeArguments)
         {
             if (typeRef == _typeRef && name == _name && arguments == ArgumentsInSourceOrder && typeArguments == _typeargs)
             {
@@ -705,18 +705,18 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Instantiated class type name.
         /// </summary>
-        public BoundTypeRef TypeRef => _typeref;
-        readonly BoundTypeRef _typeref;
+        public IBoundTypeRef TypeRef => _typeref;
+        readonly IBoundTypeRef _typeref;
 
         public override BoundExpression Instance => null;
 
-        public BoundNewEx(BoundTypeRef tref, ImmutableArray<BoundArgument> arguments)
+        public BoundNewEx(IBoundTypeRef tref, ImmutableArray<BoundArgument> arguments)
             : base(arguments)
         {
             _typeref = tref;
         }
 
-        public BoundNewEx Update(BoundTypeRef tref, ImmutableArray<BoundArgument> arguments, ImmutableArray<BoundTypeRef> typeArguments)
+        public BoundNewEx Update(IBoundTypeRef tref, ImmutableArray<BoundArgument> arguments, ImmutableArray<IBoundTypeRef> typeArguments)
         {
             if (tref == _typeref && arguments == ArgumentsInSourceOrder && typeArguments == _typeargs)
             {
@@ -1573,9 +1573,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
         FieldType _type;
 
-        BoundExpression _instanceExpr;    // in case of instance field
-        BoundTypeRef _containingType;       // in case of class constant or static field
-        BoundVariableName _fieldName;   // field name
+        BoundExpression _instanceExpr;      // in case of instance field
+        IBoundTypeRef _containingType;      // in case of class constant or static field
+        BoundVariableName _fieldName;       // field name
 
         public bool IsInstanceField => _type == FieldType.InstanceField;
         public bool IsStaticField => _type == FieldType.StaticField;
@@ -1596,13 +1596,13 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        public BoundTypeRef ContainingType => _containingType;
+        public IBoundTypeRef ContainingType => _containingType;
 
         public BoundVariableName FieldName { get => _fieldName; set => _fieldName = value; }
 
         public override OperationKind Kind => OperationKind.FieldReference;
 
-        private BoundFieldRef(BoundExpression instance, BoundTypeRef containingType, BoundVariableName name, FieldType fieldType)
+        private BoundFieldRef(BoundExpression instance, IBoundTypeRef containingType, BoundVariableName name, FieldType fieldType)
         {
             Debug.Assert((instance == null) != (containingType == null));
             Debug.Assert((fieldType == FieldType.InstanceField) == (instance != null));
@@ -1614,10 +1614,10 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         public static BoundFieldRef CreateInstanceField(BoundExpression instance, BoundVariableName name) => new BoundFieldRef(instance, null, name, FieldType.InstanceField);
-        public static BoundFieldRef CreateStaticField(BoundTypeRef type, BoundVariableName name) => new BoundFieldRef(null, type, name, FieldType.StaticField);
-        public static BoundFieldRef CreateClassConst(BoundTypeRef type, BoundVariableName name) => new BoundFieldRef(null, type, name, FieldType.ClassConstant);
+        public static BoundFieldRef CreateStaticField(IBoundTypeRef type, BoundVariableName name) => new BoundFieldRef(null, type, name, FieldType.StaticField);
+        public static BoundFieldRef CreateClassConst(IBoundTypeRef type, BoundVariableName name) => new BoundFieldRef(null, type, name, FieldType.ClassConstant);
 
-        public BoundFieldRef Update(BoundExpression instance, BoundTypeRef type, BoundVariableName name)
+        public BoundFieldRef Update(BoundExpression instance, IBoundTypeRef type, BoundVariableName name)
         {
             if (instance == _instanceExpr && type == _containingType && name == _fieldName)
             {
@@ -1802,7 +1802,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         IOperation IIsTypeOperation.ValueOperand => Operand;
 
-        ITypeSymbol IIsTypeOperation.TypeOperand => AsType?.ResolvedType;
+        ITypeSymbol IIsTypeOperation.TypeOperand => AsType?.Type;
 
         bool IIsTypeOperation.IsNegated => false;
 
@@ -1816,9 +1816,9 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// The type.
         /// </summary>
-        public BoundTypeRef AsType { get; private set; }
+        public IBoundTypeRef AsType { get; private set; }
 
-        public BoundInstanceOfEx(BoundExpression operand, BoundTypeRef tref)
+        public BoundInstanceOfEx(BoundExpression operand, IBoundTypeRef tref)
         {
             Contract.ThrowIfNull(operand);
 
@@ -1826,7 +1826,7 @@ namespace Pchp.CodeAnalysis.Semantics
             this.AsType = tref;
         }
 
-        public BoundInstanceOfEx Update(BoundExpression operand, BoundTypeRef tref)
+        public BoundInstanceOfEx Update(BoundExpression operand, IBoundTypeRef tref)
         {
             if (operand == Operand && tref == AsType)
             {
@@ -1954,15 +1954,15 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override OperationKind Kind => OperationKind.None;
 
-        public BoundTypeRef TargetType { get; private set; }
+        public IBoundTypeRef TargetType { get; private set; }
 
-        public BoundPseudoClassConst(BoundTypeRef targetType, Ast.PseudoClassConstUse.Types type)
+        public BoundPseudoClassConst(IBoundTypeRef targetType, Ast.PseudoClassConstUse.Types type)
         {
             this.TargetType = targetType;
             this.ConstType = type;
         }
 
-        public BoundPseudoClassConst Update(BoundTypeRef targetType, Ast.PseudoClassConstUse.Types type)
+        public BoundPseudoClassConst Update(IBoundTypeRef targetType, Ast.PseudoClassConstUse.Types type)
         {
             if (targetType == TargetType && type == ConstType)
             {

@@ -266,7 +266,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                             if (tmask.IsSingleType)
                             {
                                 var tref = this.TypeRefContext.GetTypes(tmask)[0];
-                                var clrtype = (NamedTypeSymbol)this.DeclaringCompilation.GlobalSemantics.ResolveType(tref.QualifiedName);
+                                var clrtype = (TypeSymbol)tref.ResolveTypeSymbol(DeclaringCompilation);
                                 if (clrtype.IsValidType() && !clrtype.IsObjectType())
                                 {
                                     this.EmitCastClass(clrtype);
@@ -380,7 +380,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         // naive IL beutifier,
                         // that casts a reference type to its actual type that we determined in type analysis
 
-                        var t = (NamedTypeSymbol)_routine.DeclaringCompilation.GlobalSemantics.ResolveType(tref.QualifiedName);
+                        var t = (TypeSymbol)tref.ResolveTypeSymbol(DeclaringCompilation);
                         if (t == stack)
                         {
                             return stack;
@@ -397,7 +397,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         else
                         {
                             // TODO: class aliasing
-                            Debug.WriteLine($"'{tref.QualifiedName}' is {(t is AmbiguousErrorTypeSymbol ? "ambiguous" : "unknown")}!");
+                            Debug.WriteLine($"'{tref}' is {(t is AmbiguousErrorTypeSymbol ? "ambiguous" : "unknown")}!");
                         }
                     }
                 }
@@ -545,7 +545,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             // ldtoken !!T
             EmitLoadToken(symbol, null);
-            
+
             // call class System.Type System.Type::GetTypeFromHandle(valuetype System.RuntimeTypeHandle)
             return EmitCall(ILOpCode.Call, (MethodSymbol)DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Type__GetTypeFromHandle));
         }
@@ -590,6 +590,113 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 // value already dereferenced
                 return t;
+            }
+        }
+
+        /// <summary>
+        /// GetPhpTypeInfo&lt;T&gt;() : PhpTypeInfo
+        /// </summary>
+        public TypeSymbol EmitLoadPhpTypeInfo(ITypeSymbol t)
+        {
+            Contract.ThrowIfNull(t);
+
+            // CALL GetPhpTypeInfo<T>()
+            return EmitCall(ILOpCode.Call, CoreMethods.Dynamic.GetPhpTypeInfo_T.Symbol.Construct(t));
+        }
+
+        /// <summary>
+        /// Emits <c>PhpTypeInfo</c> of late static bound type.
+        /// </summary>
+        /// <returns>
+        /// Type symbol of <c>PhpTypeInfo</c>.
+        /// </returns>
+        public TypeSymbol EmitLoadStaticPhpTypeInfo()
+        {
+            if (Routine != null)
+            {
+                if (Routine is SourceLambdaSymbol lambda)
+                {
+                    // Handle lambda since $this can be null (unbound)
+                    // Template: CLOSURE.Static();
+                    lambda.ClosureParameter.EmitLoad(Builder);
+                    return EmitCall(ILOpCode.Call, CoreMethods.Operators.Static_Closure)
+                        .Expect(CoreTypes.PhpTypeInfo);
+                }
+
+                var thisVariablePlace = Routine.GetPhpThisVariablePlace(Module);
+                if (thisVariablePlace != null)
+                {
+                    // Template: GetPhpTypeInfo(this)
+                    thisVariablePlace.EmitLoad(Builder);
+                    return EmitCall(ILOpCode.Call, CoreMethods.Dynamic.GetPhpTypeInfo_Object);
+                }
+
+                var lateStaticParameter = Routine.ImplicitParameters.FirstOrDefault(SpecialParameterSymbol.IsLateStaticParameter);
+                if (lateStaticParameter != null)
+                {
+                    // Template: LOAD @static   // ~ @static parameter passed by caller
+                    return lateStaticParameter
+                        .EmitLoad(Builder)
+                        .Expect(CoreTypes.PhpTypeInfo);
+                }
+
+                var caller = CallerType;
+                if (caller is SourceTypeSymbol srct && srct.IsSealed)
+                {
+                    // `static` == `self` <=> self is sealed
+                    // Template: GetPhpTypeInfo<CallerType>()
+                    return EmitLoadPhpTypeInfo(caller);
+                }
+            }
+
+            throw new InvalidOperationException();
+        }
+
+        /// <summary>
+        /// Loads <c>PhpTypeInfo</c> of <c>self</c>.
+        /// </summary>
+        /// <param name="throwOnError">Whether to expect only valid scope.</param>
+        /// <returns>Type symbol of PhpTypeInfo.</returns>
+        public TypeSymbol EmitLoadSelf(bool throwOnError = false)
+        {
+            var caller = CallerType;
+            if (caller != null)
+            {
+                // current scope is resolved in compile-time:
+                // Template: GetPhpTypeInfo<CallerType>()
+                return EmitLoadPhpTypeInfo(caller);
+            }
+            else
+            {
+                // Template: Operators.GetSelf( {caller type handle} )
+                EmitCallerTypeHandle();
+                return EmitCall(ILOpCode.Call, throwOnError
+                    ? CoreMethods.Operators.GetSelf_RuntimeTypeHandle
+                    : CoreMethods.Operators.GetSelfOrNull_RuntimeTypeHandle);
+            }
+        }
+
+        /// <summary>
+        /// Loads <c>PhpTypeInfo</c> of current scope's <c>parent</c> class;
+        /// </summary>
+        /// <returns>
+        /// Type symbol of <c>PhpTypeInfo</c>.
+        /// </returns>
+        public TypeSymbol EmitLoadParent()
+        {
+            var caller = CallerType;
+            if (caller != null)
+            {
+                // current scope is resolved in compile-time:
+                // Template: Operators.GetParent( GetPhpTypeInfo<CallerType>() )
+                EmitLoadPhpTypeInfo(caller);
+                return EmitCall(ILOpCode.Call, CoreMethods.Operators.GetParent_PhpTypeInfo);
+            }
+            else
+            {
+                // Template: Operators.GetParent( {caller type handle} )
+                EmitCallerTypeHandle();
+                return EmitCall(ILOpCode.Call, CoreMethods.Operators.GetParent_RuntimeTypeHandle);
             }
         }
 
@@ -1234,7 +1341,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        TypeSymbol LoadMethodSpecialArgument(ParameterSymbol p, IBoundTypeRef staticType)
+        TypeSymbol LoadMethodSpecialArgument(ParameterSymbol p, BoundTypeRef staticType)
         {
             // Context
             if (SpecialParameterSymbol.IsContextParameter(p))
@@ -1289,7 +1396,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else
                     {
-                        BoundTypeRef.EmitLoadSelf(this, throwOnError: false);
+                        EmitLoadSelf(throwOnError: false);
                     }
                 }
                 else if (p.Type.SpecialType == SpecialType.System_String)
@@ -1307,7 +1414,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     else
                     {
                         // {LOAD PhpTypeInfo}?.Name
-                        BoundTypeRef.EmitLoadSelf(this, throwOnError: false);
+                        EmitLoadSelf(throwOnError: false);
                         EmitNullCoalescing(
                             () => EmitCall(ILOpCode.Call, CoreMethods.Operators.GetName_PhpTypeInfo.Getter).Expect(SpecialType.System_String),
                             () => Builder.EmitNullConstant());
@@ -1330,7 +1437,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (p.Type == CoreTypes.PhpTypeInfo)
                 {
-                    return BoundTypeRef.EmitLoadStaticPhpTypeInfo(this);
+                    return EmitLoadStaticPhpTypeInfo();
                 }
                 throw ExceptionUtilities.UnexpectedValue(p.Type);
             }
@@ -1358,7 +1465,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits known method call if arguments have to be unpacked before the call.
         /// </summary>
-        internal TypeSymbol EmitCall_UnpackingArgs(ILOpCode code, MethodSymbol method, BoundExpression thisExpr, ImmutableArray<BoundArgument> packedarguments, IBoundTypeRef staticType = null)
+        internal TypeSymbol EmitCall_UnpackingArgs(ILOpCode code, MethodSymbol method, BoundExpression thisExpr, ImmutableArray<BoundArgument> packedarguments, BoundTypeRef staticType = null)
         {
             Contract.ThrowIfNull(method);
             Debug.Assert(packedarguments.Any(a => a.IsUnpacking));
@@ -1395,7 +1502,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     p.IsImplicitlyDeclared &&   // implicitly declared parameter
                     !p.IsParams)
                 {
-                    LoadMethodSpecialArgument(p, staticType ?? BoundTypeRefFromSymbol.CreateOrNull(thisType ?? method.ContainingType));
+                    LoadMethodSpecialArgument(p, staticType ?? BoundTypeRefFactory.Create(thisType ?? method.ContainingType));
                     continue;
                 }
 
@@ -1453,7 +1560,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             return result;
         }
 
-        internal TypeSymbol EmitCall(ILOpCode code, MethodSymbol method, BoundExpression thisExpr, ImmutableArray<BoundArgument> arguments, IBoundTypeRef staticType = null)
+        internal TypeSymbol EmitCall(ILOpCode code, MethodSymbol method, BoundExpression thisExpr, ImmutableArray<BoundArgument> arguments, BoundTypeRef staticType = null)
         {
             Contract.ThrowIfNull(method);
 
@@ -1487,7 +1594,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     p.IsImplicitlyDeclared &&   // implicitly declared parameter
                     !p.IsParams)
                 {
-                    LoadMethodSpecialArgument(p, staticType ?? BoundTypeRefFromSymbol.CreateOrNull(thisType ?? method.ContainingType));
+                    LoadMethodSpecialArgument(p, staticType ?? BoundTypeRefFactory.Create(thisType ?? method.ContainingType));
                     continue;
                 }
 
@@ -1652,7 +1759,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             // bind arguments
             var givenps = thismethod.Parameters;
             var arguments = new List<BoundArgument>(givenps.Length);
-            IBoundTypeRef staticTypeRef = null;
+            BoundTypeRef staticTypeRef = null;
             for (int i = 0; i < givenps.Length; i++)
             {
                 var p = givenps[i];
@@ -1660,7 +1767,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     if (SpecialParameterSymbol.IsLateStaticParameter(p))
                     {
-                        staticTypeRef = new BoundTypeRefFromPlace(new ParamPlace(p));
+                        staticTypeRef = BoundTypeRefFactory.CreateFromPlace(new ParamPlace(p));
                     }
 
                     continue;
@@ -2614,7 +2721,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     t = versions[0];
                 }
                 Debug.Assert(!t.IsUnreachable);
-                
+
                 var dependent = t.GetDependentSourceTypeSymbols();
 
                 // ensure all types are loaded into context,
@@ -2645,14 +2752,14 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// If necessary, emits autoload and check the given type is loaded into context.
         /// </summary>
-        public void EmitExpectTypeDeclared(TypeSymbol d)
+        public void EmitExpectTypeDeclared(ITypeSymbol d)
         {
-            Debug.Assert(d.IsValidType());
-            Debug.Assert(!d.IsUnreachable);
+            Debug.Assert(((TypeSymbol)d).IsValidType());
+            Debug.Assert(!((TypeSymbol)d).IsUnreachable);
 
             if (d is NamedTypeSymbol ntype)
             {
-                if (d.IsAnonymousType || !d.IsPhpUserType())
+                if (ntype.IsAnonymousType || !ntype.IsPhpUserType())
                 {
                     // anonymous classes are not declared
                     // regular CLR types declared in app context
@@ -2661,14 +2768,14 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 // TODO: type has been checked already in current branch -> skip
 
-                if (d.OriginalDefinition is SourceTypeSymbol srct && ReferenceEquals(srct.ContainingFile, this.ContainingFile) && !srct.Syntax.IsConditional)
+                if (ntype.OriginalDefinition is SourceTypeSymbol srct && ReferenceEquals(srct.ContainingFile, this.ContainingFile) && !srct.Syntax.IsConditional)
                 {
                     // declared in same file unconditionally,
                     // we don't have to check anything
                     return;
                 }
 
-                if (this.CallerType != null && this.CallerType.IsOfType(d))
+                if (this.CallerType != null && this.CallerType.IsOfType(ntype))
                 {
                     // the type is a sub-type of current class context, so it must be declared for sure
                     // e.g. self, parent
@@ -2684,7 +2791,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 // Template: ctx.ExpectTypeDeclared<d>
                 EmitLoadContext();
-                EmitCall(ILOpCode.Call, CoreMethods.Context.ExpectTypeDeclared_T.Symbol.Construct(d));
+                EmitCall(ILOpCode.Call, CoreMethods.Context.ExpectTypeDeclared_T.Symbol.Construct(ntype));
             }
         }
 

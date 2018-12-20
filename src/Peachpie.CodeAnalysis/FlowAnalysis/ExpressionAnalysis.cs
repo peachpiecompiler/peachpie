@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis.Operations;
 using Pchp.CodeAnalysis.CodeGen;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
+using Pchp.CodeAnalysis.Semantics.TypeRef;
 using Pchp.CodeAnalysis.Symbols;
 using Roslyn.Utilities;
 using System;
@@ -95,16 +96,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return false;
         }
 
-        internal TypeSymbol ResolveType(INamedTypeRef dtype)
-        {
-            if (dtype.ClassName.IsReservedClassName)
-            {
-                throw ExceptionUtilities.UnexpectedValue(dtype.ClassName);
-            }
-
-            return (TypeSymbol)_model.ResolveType(dtype.ClassName);
-        }
-
         /// <summary>
         /// Finds the root of given chain, i.e.:
         /// $a : $a
@@ -120,7 +111,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (x != null)
             {
                 if (x is BoundVariableRef v) return v.Name.IsDirect ? v : TryGetExpressionChainRoot(v.Name.NameExpression);
-                if (x is BoundFieldRef f) return TryGetExpressionChainRoot(f.Instance ?? f.ContainingType?.TypeExpression);
+                if (x is BoundFieldRef f) return TryGetExpressionChainRoot(f.Instance ?? (f.ContainingType as BoundIndirectTypeRef)?.TypeExpression);
                 if (x is BoundInstanceFunctionCall m) return TryGetExpressionChainRoot(m.Instance);
                 if (x is BoundArrayItemEx a) return TryGetExpressionChainRoot(a.Array);
             }
@@ -347,7 +338,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     }
                     if (x.Access.EnsureArray)
                     {
-                        if (!TypeHelpers.HasArrayAccess(vartype, TypeCtx, model: Model))
+                        if (!TypeHelpers.HasArrayAccess(vartype, TypeCtx, _model.Compilation))
                         {
                             vartype |= TypeCtx.GetArrayTypeMask();
                         }
@@ -969,7 +960,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     if (cvalue != null)
                     {
                         x.ConstantValue = new Optional<object>(cvalue.Value);
-                        return TypeCtx.GetTypeMask(TypeRefFactory.Create(cvalue), false);
+                        return TypeCtx.GetTypeMask(BoundTypeRefFactory.Create(cvalue), false);
                     }
                     else
                     {
@@ -1094,7 +1085,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (vref.Name.IsDirect)
                 {
                     // if (Variable is T) => variable is T in True branch state
-                    var vartype = TypeCtx.GetTypeMask(x.AsType.TypeRef, true);
+                    var vartype = x.AsType.GetTypeRefMask(TypeCtx);
                     if (x.Operand.TypeRefMask.IsRef) vartype = vartype.WithRefFlag; // keep IsRef flag
 
                     State.SetLocalType(State.GetLocalHandle(vref.Name.NameValue), vartype);
@@ -1453,23 +1444,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var resolvedtype = x.Instance.ResultType;
                 if (resolvedtype == null)
                 {
-                    var typeref = TypeCtx.GetTypes(TypeCtx.WithoutNull(x.Instance.TypeRefMask));    // ignore NULL, causes runtime exception anyway
-                    if (typeref.Count > 1)
-                    {
-                        // TODO: some common base ?
-                    }
-
+                    var typeref = TypeCtx.GetObjectTypes(TypeCtx.WithoutNull(x.Instance.TypeRefMask));    // ignore NULL, causes runtime exception anyway
                     if (typeref.Count == 1)
                     {
-                        var classtype = typeref.Where(t => t.IsObject).AsImmutable().SingleOrDefault();
-                        if (classtype != null)
-                        {
-                            resolvedtype = (NamedTypeSymbol)_model.ResolveType(classtype.QualifiedName);
-                        }
+                        resolvedtype = (TypeSymbol)typeref[0].ResolveTypeSymbol(_model.Compilation);
                     }
+                    // else: a common base?
                 }
 
-                if (resolvedtype != null)
+                if (resolvedtype.IsValidType())
                 {
                     var candidates = resolvedtype.LookupMethods(x.Name.NameValue.Name.Value);
 
@@ -1496,10 +1479,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             Accept(x.Name);
 
-            if (x.Name.IsDirect && x.TypeRef.ResolvedType != null)
+            var type = (TypeSymbol)x.TypeRef.Type;
+
+            if (x.Name.IsDirect && type.IsValidType())
             {
                 // TODO: resolve all candidates, visibility, static methods or instance on self/parent/static
-                var candidates = x.TypeRef.ResolvedType.LookupMethods(x.Name.NameValue.Name.Value);
+                var candidates = type.LookupMethods(x.Name.NameValue.Name.Value);
                 // if (candidates.Any(c => c.HasThis)) throw new NotImplementedException("instance method called statically");
 
                 candidates = Construct(candidates, x);
@@ -1520,7 +1505,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
             else
             {
-                var types = bound.TypeArguments.Select(t => t.ResolvedType).AsImmutable();
+                var types = bound.TypeArguments.Select(t => (TypeSymbol)t.Type).AsImmutable();
                 var result = new List<MethodSymbol>();
 
                 for (int i = 0; i < methods.Length; i++)
@@ -1534,110 +1519,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        TypeSymbol ResolveTypeRef(TypeRef tref, BoundExpression expr = null, bool objectTypeInfoSemantic = false)
+        internal override T VisitIndirectTypeRef(BoundIndirectTypeRef tref)
         {
-            if (tref is INamedTypeRef namedref)
-            {
-                if (tref is TranslatedTypeRef translatedref && translatedref.OriginalType is ReservedTypeRef)
-                {
-                    // resolve self or parent directly
-                    var resolved = ResolveTypeRef(translatedref.OriginalType);
-                    if (resolved.IsValidType())
-                    {
-                        return resolved;
-                    }
-                }
-
-                return ResolveType(namedref);
-            }
-            else if (tref is ReservedTypeRef)
-            {
-                if (TypeCtx.SelfType == null || TypeCtx.SelfType.IsTraitType())
-                {
-                    // no self, parent, static resolvable in compile-time:
-                    return new MissingMetadataTypeSymbol(tref.QualifiedName.ToString(), 0, false);
-                }
-
-                // resolve types that parser skipped
-                switch (((ReservedTypeRef)tref).Type)
-                {
-                    case ReservedTypeRef.ReservedType.self:
-                        return TypeCtx.SelfType;
-
-                    case ReservedTypeRef.ReservedType.parent:
-                        var btype = TypeCtx.SelfType.BaseType;
-                        return (btype == null || btype.IsObjectType()) // no "System.Object" in PHP, invalid parent
-                            ? new MissingMetadataTypeSymbol(tref.QualifiedName.ToString(), 0, false)
-                            : btype;
-
-                    case ReservedTypeRef.ReservedType.@static:
-                        if (TypeCtx.SelfType.IsSealed)
-                        {
-                            // `static` == `self` <=> self is sealed
-                            return TypeCtx.SelfType;
-                        }
-                        break;
-                }
-            }
-            else if (tref is AnonymousTypeRef anonymousref)
-            {
-                return ((TypeSymbol)_model
-                    .ResolveType(anonymousref.TypeDeclaration.GetAnonymousTypeQualifiedName()))
-                    .ExpectValid();
-            }
-            else if (tref is IndirectTypeRef)
-            {
-                Debug.Assert(expr != null);
-
-                // string:
-                if (expr.ConstantValue.HasValue && expr.ConstantValue.Value is string tname)
-                {
-                    return (TypeSymbol)_model.ResolveType(NameUtils.MakeQualifiedName(tname, true));
-                }
-                else if (objectTypeInfoSemantic)
-                {
-                    // $this:
-                    if (expr is BoundVariableRef varref && varref.Name.NameValue.IsThisVariableName)
-                    {
-                        if (TypeCtx.ThisType != null && TypeCtx.ThisType.IsSealed)
-                        {
-                            return TypeCtx.ThisType; // $this, self
-                        }
-                    }
-                    //else if (IsClassOnly(tref.TypeExpression.TypeRefMask))
-                    //{
-                    //    // ...
-                    //}
-                }
-            }
-            else if (tref is GenericTypeRef generic && generic.QualifiedName.HasValue)
-            {
-                // TODO: resolve within the context to support for: self, parent, T, ...
-                return (TypeSymbol)TypeRefFactory.CreateTypeRef(generic).GetTypeSymbol(Routine.DeclaringCompilation);
-            }
-            else if (tref is Ast.PrimitiveTypeRef primitive)
-            {
-                return (TypeSymbol)TypeRefFactory
-                    .CreateTypeRef(primitive)
-                    .GetTypeSymbol(Routine.DeclaringCompilation)
-                ?? throw ExceptionUtilities.UnexpectedValue(null);
-            }
+            // visit indirect type
+            base.VisitIndirectTypeRef(tref);
 
             //
-            return null;
+            return VisitTypeRef(tref);
         }
 
-        public override T VisitTypeRef(BoundTypeRef tref)
+        internal override T VisitTypeRef(BoundTypeRef tref)
         {
             Debug.Assert(!(tref is BoundMultipleTypeRef));
 
-            // visit indirect type
-            Accept(tref.TypeExpression);
-
             // resolve type symbol
-            tref.ResolvedType = ResolveTypeRef(tref.TypeRef,
-                expr: tref.TypeExpression,
-                objectTypeInfoSemantic: tref.ObjectTypeInfoSemantic);
+            tref.ResolvedType = (TypeSymbol)tref.ResolveTypeSymbol(_model.Compilation);
 
             return default;
         }
@@ -1649,7 +1545,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             VisitRoutineCall(x);    // analyse arguments
 
             // resolve target type
-            var type = (NamedTypeSymbol)x.TypeRef.ResolvedType;
+            var type = (NamedTypeSymbol)x.TypeRef.Type;
             if (type.IsValidType())
             {
                 var candidates = type.InstanceConstructors.ToArray();
@@ -1659,7 +1555,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 x.ResultType = type;
             }
 
-            x.TypeRefMask = TypeCtx.GetTypeMask(x.TypeRef.TypeRef, false);
+            x.TypeRefMask = x.TypeRef.GetTypeRefMask(TypeCtx).WithoutSubclasses;
 
             return default;
         }
@@ -1754,10 +1650,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var resolvedtype = x.Instance.ResultType as NamedTypeSymbol;
                 if (resolvedtype == null)
                 {
-                    var typerefs = TypeCtx.GetTypes(TypeCtx.WithoutNull(x.Instance.TypeRefMask));   // ignore NULL, would cause runtime exception in read access, will be ensured to non-null in write access
-                    if (typerefs.Count == 1 && typerefs[0].IsObject)
+                    var typerefs = TypeCtx.GetObjectTypes(TypeCtx.WithoutNull(x.Instance.TypeRefMask));   // ignore NULL, would cause runtime exception in read access, will be ensured to non-null in write access
+                    if (typerefs.Count == 1)
                     {
-                        resolvedtype = (NamedTypeSymbol)_model.ResolveType(typerefs[0].QualifiedName);
+                        resolvedtype = (NamedTypeSymbol)typerefs[0].ResolveTypeSymbol(_model.Compilation);
                     }
                 }
 
@@ -1831,7 +1727,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // static fields or constants
             if (x.IsStaticField || x.IsClassConstant)    // {ClassName}::${StaticFieldName}, {ClassName}::{ConstantName}
             {
-                var containingType = (NamedTypeSymbol)x.ContainingType.ResolvedType;
+                var containingType = (NamedTypeSymbol)x.ContainingType.Type;
 
                 if (x.IsClassConstant)
                 {
@@ -1839,7 +1735,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     Debug.Assert(!x.Access.IsEnsure && !x.Access.IsWrite && !x.Access.IsReadRef);
                 }
 
-                if (containingType != null && x.FieldName.IsDirect)
+                if (containingType.IsValidType() && x.FieldName.IsDirect)
                 {
                     var fldname = x.FieldName.NameValue.Value;
                     var field = x.IsStaticField ? containingType.ResolveStaticField(fldname) : containingType.ResolveClassConstant(fldname);
@@ -1879,7 +1775,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 // indirect field access:
                 // indirect field access with known class name:
-                x.BoundReference = new BoundIndirectStFieldPlace(x.ContainingType, x.FieldName, x);
+                x.BoundReference = new BoundIndirectStFieldPlace((BoundTypeRef)x.ContainingType, x.FieldName, x);
                 x.TypeRefMask = TypeRefMask.AnyType;
             }
 
@@ -1958,9 +1854,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             //
             x.BoundLambdaMethod = symbol;
-            x.ResultType = Routine.DeclaringCompilation.CoreTypes.Closure;
+            x.ResultType = _model.Compilation.CoreTypes.Closure;
             Debug.Assert(x.ResultType != null);
-            x.TypeRefMask = TypeCtx.GetTypeMask(new LambdaTypeRef(TypeRefMask.AnyType, symbol.SyntaxSignature), false); // specific {Closure}, no null, no subclasses
+            x.TypeRefMask = TypeCtx.GetTypeMask(new BoundLambdaTypeRef(TypeRefMask.AnyType), false); // specific {Closure}, no null, no subclasses
 
             return default;
         }
@@ -2136,19 +2032,23 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 x.TypeRefMask = TypeCtx.GetStringTypeMask();
 
-                var qname = x.TargetType.TypeRef.QualifiedName;
-                if (qname.HasValue)
+                // resolve the value:
+
+                var type = x.TargetType.Type as TypeSymbol;
+                if (type.IsValidType() && type is IPhpTypeSymbol phpt)
                 {
-                    if (qname.Value.IsReservedClassName) // self, static, parent
+                    x.ConstantValue = new Optional<object>(phpt.FullName.ToString());
+                }
+                else
+                {
+                    var tref = x.TargetType.PhpSyntax as TypeRef;
+                    var qname = tref?.QualifiedName;
+                    if (qname.HasValue)
                     {
-                        if (x.TargetType.ResolvedType.IsValidType() && x.TargetType.ResolvedType is IPhpTypeSymbol phpt)
+                        if (!qname.Value.IsReservedClassName) // self, static, parent
                         {
-                            x.ConstantValue = new Optional<object>(phpt.FullName.ToString());
+                            x.ConstantValue = new Optional<object>(qname.Value.ToString());
                         }
-                    }
-                    else
-                    {
-                        x.ConstantValue = new Optional<object>(qname.Value.ToString());
                     }
                 }
             }
@@ -2264,7 +2164,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             else
             {
                 // remember "void" type explicitly
-                var voidMask = State.TypeRefContext.GetTypeMask(TypeRefFactory.VoidTypeRef, false); // NOTE: or remember the routine may return Void
+                var voidMask = State.TypeRefContext.GetTypeMask(BoundTypeRefFactory.VoidTypeRef, false); // NOTE: or remember the routine may return Void
                 State.FlowThroughReturn(voidMask);
             }
 

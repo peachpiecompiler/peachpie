@@ -681,7 +681,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     if (_thint.IsSingleType && cg.IsClassOnly(_thint))
                     {
                         var tref = cg.Routine.TypeRefContext.GetTypes(_thint)[0];
-                        var clrtype = (TypeSymbol)cg.DeclaringCompilation.GetTypeByMetadataName(tref.QualifiedName.ClrName());
+                        var clrtype = (TypeSymbol)tref.ResolveTypeSymbol(cg.DeclaringCompilation);
                         if (clrtype != null && !clrtype.IsErrorType() && clrtype != cg.CoreTypes.Object)
                         {
                             cg.EmitCastClass(clrtype);

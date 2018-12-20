@@ -245,7 +245,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             il.AdjustStack(1); // Account for exception on the stack.
 
-            var trefs = BoundMultipleTypeRef.Flattern(catchBlock.TypeRef);  // set of types we catch in this catch block
+            // set of types we catch in this catch block
+            var trefs = catchBlock.TypeRef is TypeRef.BoundMultipleTypeRef mt
+                ? mt.TypeRefs
+                : ImmutableArray.Create((BoundTypeRef)catchBlock.TypeRef);
 
             // do we have to generate .filter or just .catch<type>:
             if (trefs.Length != 1 || trefs[0].ResolvedType.IsErrorTypeOrNull() || !trefs[0].ResolvedType.IsOfType(cg.CoreTypes.Exception))

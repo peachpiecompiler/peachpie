@@ -1,5 +1,7 @@
-﻿using Pchp.CodeAnalysis.FlowAnalysis;
+﻿using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.Semantics.TypeRef;
 using Pchp.CodeAnalysis.Symbols;
 using System;
 using System.Collections.Generic;
@@ -16,9 +18,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     internal static class TypeHelpers
     {
         /// <summary>
-        /// Determines if given <see cref="ITypeRef"/> represents a number (integral or real).
+        /// Determines if given <see cref="IBoundTypeRef"/> represents a number (integral or real).
         /// </summary>
-        public static bool IsNumber(this ITypeRef tref) => tref.TypeCode == PhpTypeCode.Long || tref.TypeCode == PhpTypeCode.Double;
+        public static bool IsNumber(this IBoundTypeRef tref) => tref is BoundPrimitiveTypeRef pt && pt.IsNumber;
 
         ///// <summary>
         ///// Gets value determining whether <paramref name="totype"/> type can be assigned from <paramref name="fromtype"/>.
@@ -157,9 +159,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         /// <param name="type">Type of the object.</param>
         /// <param name="ctx">Type context.</param>
-        /// <param name="model">Type provider.</param>
+        /// <param name="compilation">Type provider.</param>
         /// <returns>True iff <c>[]</c> operator is allowed.</returns>
-        internal static bool HasArrayAccess(TypeRefMask type, TypeRefContext/*!*/ctx, ISymbolProvider/*!*/model)
+        internal static bool HasArrayAccess(TypeRefMask type, TypeRefContext/*!*/ctx, PhpCompilation/*!*/compilation)
         {
             // quick check:
             if (type.IsAnyType || type.IsVoid || type.IsRef)
@@ -170,23 +172,29 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // check types with array access operator support:
             foreach (var t in ctx.GetTypes(type))
             {
-                switch (t.TypeCode)
-                {
-                    case PhpTypeCode.String:
-                    case PhpTypeCode.WritableString:
-                    case PhpTypeCode.PhpArray:
-                        break;  // ok
+                var symbol = (TypeSymbol)t.ResolveTypeSymbol(compilation);
 
-                    case PhpTypeCode.Object:
-                        // object implementing ArrayAccess
-                        var symbol = (NamedTypeSymbol)model.ResolveType(t.QualifiedName);
-                        if (symbol.IsValidType() && symbol.IsOfType((TypeSymbol)model.ResolveType(NameUtils.SpecialNames.ArrayAccess)))
-                        {
-                            break; // ok
-                        }
-                        goto default;
+                // TODO: resolve array access operator
+
+                switch (symbol.SpecialType)
+                {
+                    case SpecialType.System_String:
+                        return true;
 
                     default:
+                        if (symbol == compilation.CoreTypes.PhpString.Symbol ||
+                            symbol == compilation.CoreTypes.PhpArray.Symbol)
+                        {
+                            return true;
+                        }
+
+                        // object implementing ArrayAccess
+
+                        if (symbol.IsValidType() && symbol.IsOfType(compilation.CoreTypes.ArrayAccess.Symbol))
+                        {
+                            return true;
+                        }
+
                         return false;
                 }
             }
