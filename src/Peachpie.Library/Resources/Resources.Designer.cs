@@ -880,6 +880,33 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to CachingIterator does not fetch string value (see CachingIterator::__construct).
+        /// </summary>
+        public static string iterator_caching_string_disabled {
+            get {
+                return ResourceManager.GetString("iterator_caching_string_disabled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unsetting flag {0} is not possible.
+        /// </summary>
+        public static string iterator_caching_string_flag_unset_impossible {
+            get {
+                return ResourceManager.GetString("iterator_caching_string_flag_unset_impossible", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Flags must contain only one of CALL_TOSTRING, TOSTRING_USE_KEY, TOSTRING_USE_CURRENT, TOSTRING_USE_INNER.
+        /// </summary>
+        public static string iterator_caching_string_flags_invalid {
+            get {
+                return ResourceManager.GetString("iterator_caching_string_flags_invalid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to CachingIterator does not use a full cache (see CachingIterator::__construct).
         /// </summary>
         public static string iterator_full_cache_not_enabled {

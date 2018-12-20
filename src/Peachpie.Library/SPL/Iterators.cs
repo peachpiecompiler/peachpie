@@ -994,28 +994,66 @@ namespace Pchp.Library.Spl
 
         #region Fields and properties
 
+        readonly protected Context _ctx;
         private Iterator _iterator;
         private int _flags;
         private bool _isValid;
         private PhpValue _currentVal = PhpValue.Null;
         private PhpValue _currentKey = PhpValue.Null;
         private PhpArray _cache;
+        private string _currentString;
 
         private bool IsFullCacheEnabled => (_flags & FULL_CACHE) != 0;
+
+        private static bool ValidateFlags(int flags)
+        {
+            // Only one of these flags must be specified
+            int stringMask = CALL_TOSTRING | TOSTRING_USE_KEY | TOSTRING_USE_CURRENT | TOSTRING_USE_INNER;
+            int stringSubset = flags & stringMask;
+            return stringSubset == 0 || stringSubset == CALL_TOSTRING || stringSubset == TOSTRING_USE_KEY || stringSubset == TOSTRING_USE_CURRENT || stringSubset == TOSTRING_USE_INNER;
+        }
+
+        private static bool ValidateFlagUnset(int currentFlags, int newFlags, out string violatedFlagName)
+        {
+            if ((currentFlags & CALL_TOSTRING) != 0 && (newFlags & CALL_TOSTRING) == 0)
+            {
+                violatedFlagName = nameof(CALL_TOSTRING);
+                return false;
+            }
+            else if ((currentFlags & TOSTRING_USE_INNER) != 0 && (newFlags & TOSTRING_USE_INNER) == 0)
+            {
+                violatedFlagName = nameof(TOSTRING_USE_INNER);
+                return false;
+            }
+            else
+            {
+                violatedFlagName = null;
+                return true;
+            }
+        }
 
         #endregion
 
         #region Construction
 
         [PhpFieldsOnlyCtor]
-        protected CachingIterator() { }
+        protected CachingIterator(Context ctx)
+        {
+            this._ctx = ctx;
+        }
 
-        public CachingIterator(Iterator iterator, int flags = CALL_TOSTRING) => __construct(iterator, flags);
+        public CachingIterator(Context ctx, Iterator iterator, int flags = CALL_TOSTRING) : this(ctx)
+        {
+            __construct(iterator, flags);
+        }
 
         public virtual void __construct(Iterator iterator, int flags = CALL_TOSTRING)
         {
             if (iterator == null)
                 PhpException.ArgumentNull(nameof(iterator));
+
+            if (!ValidateFlags(flags))
+                PhpException.InvalidArgument(nameof(flags), Resources.Resources.iterator_caching_string_flags_invalid);
 
             _iterator = iterator;
             _flags = flags;
@@ -1042,13 +1080,52 @@ namespace Pchp.Library.Spl
 
         public virtual int getFlags() => _flags;
 
-        public virtual void setFlags(int flags) => _flags = flags;
+        public virtual void setFlags(int flags)
+        {
+            if (!ValidateFlags(flags))
+                PhpException.InvalidArgument(nameof(flags), Resources.Resources.iterator_caching_string_flags_invalid);
+
+            if (!ValidateFlagUnset(_flags, flags, out string violatedFlagName))
+                PhpException.InvalidArgument(nameof(flags), string.Format(Resources.Resources.iterator_caching_string_flag_unset_impossible, violatedFlagName));
+
+            _flags = flags;
+        }
+
+        public override string ToString()
+        {
+            if ((_flags & (CALL_TOSTRING | TOSTRING_USE_INNER)) != 0)
+            {
+                return _currentString ?? string.Empty;
+            }
+            else if ((_flags & TOSTRING_USE_KEY) != 0)
+            {
+                return key().ToString(_ctx);
+            }
+            else if ((_flags & TOSTRING_USE_CURRENT) != 0)
+            {
+                return current().ToString(_ctx);
+            }
+            else
+            {
+                PhpException.Throw(PhpError.Error, Resources.Resources.iterator_caching_string_disabled);
+                return string.Empty;
+            }
+        }
 
         private void NextImpl()
         {
             _isValid = _iterator.valid();
             _currentVal = _iterator.current();
             _currentKey = _iterator.key();
+
+            if ((_flags & CALL_TOSTRING) != 0)
+            {
+                _currentString = _currentVal.ToString(_ctx);
+            }
+            else if ((_flags & TOSTRING_USE_INNER) != 0)
+            {
+                _currentString = _iterator.ToString();
+            }
 
             if (_isValid && IsFullCacheEnabled)
             {
