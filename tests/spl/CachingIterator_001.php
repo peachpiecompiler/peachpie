@@ -20,6 +20,8 @@ function test() {
         display_state($cache);
     }
     display_state($cache);
+    $cache->offsetUnset($key);
+    print_r($cache->getCache());
 }
 
 test();

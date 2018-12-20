@@ -636,4 +636,13 @@
   <data name="iterator_full_cache_not_enabled" xml:space="preserve">
     <value>CachingIterator does not use a full cache (see CachingIterator::__construct)</value>
   </data>
+  <data name="iterator_caching_string_disabled" xml:space="preserve">
+    <value>CachingIterator does not fetch string value (see CachingIterator::__construct)</value>
+  </data>
+  <data name="iterator_caching_string_flags_invalid" xml:space="preserve">
+    <value>Flags must contain only one of CALL_TOSTRING, TOSTRING_USE_KEY, TOSTRING_USE_CURRENT, TOSTRING_USE_INNER</value>
+  </data>
+  <data name="iterator_caching_string_flag_unset_impossible" xml:space="preserve">
+    <value>Unsetting flag {0} is not possible</value>
+  </data>
 </root>
