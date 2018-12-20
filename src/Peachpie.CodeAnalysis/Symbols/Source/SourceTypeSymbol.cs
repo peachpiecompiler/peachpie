@@ -368,8 +368,10 @@ namespace Pchp.CodeAnalysis.Symbols
         /// Whether this declarations or any of the ancestors is unreachable.
         /// </summary>
         public override bool IsUnreachable =>
-            IsMarkedUnreachable || (BaseType?.IsUnreachable == true)
-            || Interfaces.Any(i => i.IsUnreachable) || TraitUses.Any(tu => tu.Symbol.IsUnreachable);
+            IsMarkedUnreachable ||
+            BaseType?.IsUnreachable == true ||
+            Interfaces.Any(i => i.IsUnreachable) ||
+            TraitUses.Any(tu => tu.Symbol.IsUnreachable);
 
         /// <summary>
         /// In case the declaration is ambiguous, this references symbol with alternative declaration.
@@ -411,9 +413,6 @@ namespace Pchp.CodeAnalysis.Symbols
                     if (!x.IsUnreachable)
                     {
                         builder.Add(x);
-                    }
-                    else
-                    {
                     }
                 }
                 return (builder.Capacity == builder.Count) ? builder.MoveToImmutable() : builder.ToImmutable();

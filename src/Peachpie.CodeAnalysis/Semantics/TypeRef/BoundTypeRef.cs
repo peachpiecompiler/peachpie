@@ -380,7 +380,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
 
         public override ITypeSymbol ResolveTypeSymbol(PhpCompilation compilation)
         {
-            if (ResolvedType.IsValidType())
+            if (ResolvedType.IsValidType() && !ResolvedType.IsUnreachable)
             {
                 return ResolvedType;
             }
@@ -398,10 +398,28 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
                 type = (TypeSymbol)compilation.GlobalSemantics.ResolveType(_qname);
             }
 
-            if (type is AmbiguousErrorTypeSymbol ambiguous)
+            if (type is AmbiguousErrorTypeSymbol ambiguous && _routine != null)
             {
+                TypeSymbol best = null;
+
                 // choose the one declared in this file unconditionally
-                var best = ambiguous.CandidateSymbols.FirstOrDefault(x => x is SourceTypeSymbol srct && !srct.Syntax.IsConditional && srct.ContainingFile == _routine.ContainingFile);
+                foreach (var x in ambiguous
+                    .CandidateSymbols
+                    .Cast<TypeSymbol>()
+                    .Where(t => !t.IsUnreachable)
+                    .Where(x => x is SourceTypeSymbol srct && !srct.Syntax.IsConditional && srct.ContainingFile == _routine.ContainingFile))
+                {
+                    if (best == null)
+                    {
+                        best = x;
+                    }
+                    else
+                    {
+                        best = null;
+                        break;
+                    }
+                }
+
                 if (best != null)
                 {
                     type = (NamedTypeSymbol)best;
