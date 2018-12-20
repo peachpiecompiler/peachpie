@@ -177,17 +177,11 @@ namespace Pchp.CodeAnalysis
 
             var t = BoundTypeRefFactory.CreateFromTypeRef(tref, null, selfHint);
 
-            t.IsNullable = nullable;
-
-            var symbol = (TypeSymbol)t.ResolveTypeSymbol(this);
-
-            if (symbol.IsErrorTypeOrNull())
+            var symbol = t.ResolveRuntimeType(this);
+            
+            if (t.IsNullable || nullable)
             {
-                symbol = CoreTypes.PhpValue.Symbol;
-            }
-
-            if (nullable)
-            {
+                // TODO: for value types -> Nullable<T>
                 symbol = MergeNull(symbol);
             }
 
@@ -529,11 +523,11 @@ namespace Pchp.CodeAnalysis
                 if (types.Count != 0)
                 {
                     // determine best fitting CLR type based on defined PHP types hierarchy
-                    result = (TypeSymbol)types[0].ResolveTypeSymbol(this);
+                    result = (TypeSymbol)types[0].ResolveRuntimeType(this);
 
                     for (int i = 1; i < types.Count; i++)
                     {
-                        var tdesc = (TypeSymbol)types[i].ResolveTypeSymbol(this);
+                        var tdesc = (TypeSymbol)types[i].ResolveRuntimeType(this);
                         Debug.Assert(!tdesc.IsErrorType());
                         result = (NamedTypeSymbol)Merge(result, tdesc);
                     }

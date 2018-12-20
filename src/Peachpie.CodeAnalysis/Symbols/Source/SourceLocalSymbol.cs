@@ -129,6 +129,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     tsymbol = DeclaringCompilation.CoreTypes.PhpValue;  // temporary workaround for uninitialized variables
                 }
+                Debug.Assert(tsymbol.IsValidType());
                 return tsymbol;
             }
         }
