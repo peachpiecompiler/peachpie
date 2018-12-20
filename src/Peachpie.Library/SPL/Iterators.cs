@@ -978,16 +978,42 @@ namespace Pchp.Library.Spl
         }
     }
 
+    /// <summary>
+    /// This object supports cached iteration over another iterator.
+    /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
-    public class CachingIterator : OuterIterator, ArrayAccess, Countable
+    public class CachingIterator : IteratorIterator, OuterIterator, ArrayAccess, Countable
     {
         #region Constants
 
+        /// <summary>
+        /// Convert every element to string.
+        /// </summary>
         public const int CALL_TOSTRING = 1;
+
+        /// <summary>
+        /// Use key for conversion to string.
+        /// </summary>
         public const int TOSTRING_USE_KEY = 2;
+
+        /// <summary>
+        /// Use current for conversion to string.
+        /// </summary>
         public const int TOSTRING_USE_CURRENT = 4;
+
+        /// <summary>
+        /// Use inner for conversion to string.
+        /// </summary>
         public const int TOSTRING_USE_INNER = 8;
+
+        /// <summary>
+        /// Don't throw exception in accessing children.
+        /// </summary>
         public const int CATCH_GET_CHILD = 16;
+
+        /// <summary>
+        /// Cache all read data.
+        /// </summary>
         public const int FULL_CACHE = 256;
 
         #endregion
@@ -995,9 +1021,7 @@ namespace Pchp.Library.Spl
         #region Fields and properties
 
         readonly protected Context _ctx;
-        private Iterator _iterator;
         private int _flags;
-        private bool _isValid;
         private PhpValue _currentVal = PhpValue.Null;
         private PhpValue _currentKey = PhpValue.Null;
         private PhpArray _cache;
@@ -1047,10 +1071,11 @@ namespace Pchp.Library.Spl
             __construct(iterator, flags);
         }
 
+        public sealed override void __construct(Traversable iterator, string classname = null) => base.__construct(iterator, classname);
+
         public virtual void __construct(Iterator iterator, int flags = CALL_TOSTRING)
         {
-            if (iterator == null)
-                PhpException.ArgumentNull(nameof(iterator));
+            base.__construct(iterator);
 
             if (!ValidateFlags(flags))
                 PhpException.InvalidArgument(nameof(flags), Resources.Resources.iterator_caching_string_flags_invalid);
@@ -1068,8 +1093,18 @@ namespace Pchp.Library.Spl
 
         #region CachingIterator
 
-        public virtual bool hasNext() => _iterator.valid();
+        /// <summary>
+        /// Check whether the inner iterator has a valid next element.
+        /// </summary>
+        /// <returns>
+        /// TRUE on success or FALSE on failure.
+        /// </returns>
+        public virtual bool hasNext() => getInnerIterator().valid();
 
+        /// <summary>
+        /// Retrieve the contents of the cache.
+        /// </summary>
+        /// <returns>An array containing the cache items.</returns>
         public virtual PhpArray getCache()
         {
             if (!IsFullCacheEnabled)
@@ -1078,8 +1113,15 @@ namespace Pchp.Library.Spl
             return _cache.DeepCopy();
         }
 
+        /// <summary>
+        /// Get the bitmask of the flags used for this CachingIterator instance.
+        /// </summary>
         public virtual int getFlags() => _flags;
 
+        /// <summary>
+        /// Set the flags for the CachingIterator object.
+        /// </summary>
+        /// <param name="flags">Bitmask of the flags to set.</param>
         public virtual void setFlags(int flags)
         {
             if (!ValidateFlags(flags))
@@ -1091,6 +1133,9 @@ namespace Pchp.Library.Spl
             _flags = flags;
         }
 
+        /// <summary>
+        /// Return the string representation of the current element.
+        /// </summary>
         public override string ToString()
         {
             if ((_flags & (CALL_TOSTRING | TOSTRING_USE_INNER)) != 0)
@@ -1114,9 +1159,10 @@ namespace Pchp.Library.Spl
 
         private void NextImpl()
         {
-            _isValid = _iterator.valid();
-            _currentVal = _iterator.current();
-            _currentKey = _iterator.key();
+            var innerIterator = getInnerIterator();
+            _valid = innerIterator.valid();
+            _currentVal = innerIterator.current();
+            _currentKey = innerIterator.key();
 
             if ((_flags & CALL_TOSTRING) != 0)
             {
@@ -1127,7 +1173,7 @@ namespace Pchp.Library.Spl
                 _currentString = _iterator.ToString();
             }
 
-            if (_isValid && IsFullCacheEnabled)
+            if (_valid && IsFullCacheEnabled)
             {
                 bool isKeyConverted = _currentKey.TryToIntStringKey(out var key);
                 Debug.Assert(isKeyConverted);                                       // It was already used as a key in the previous iterator
@@ -1135,26 +1181,30 @@ namespace Pchp.Library.Spl
                 _cache.Add(key, _currentVal);
             }
 
-            _iterator.next();
+            try
+            {
+                innerIterator.next();
+            }
+            catch (System.Exception)
+            {
+                if ((_flags & CATCH_GET_CHILD) == 0)
+                    throw;
+            }
         }
 
         #endregion
 
         #region OuterIterator
 
-        public virtual bool valid() => _isValid;
+        public override PhpValue current() => _currentVal;
 
-        public virtual PhpValue current() => _currentVal;
+        public override PhpValue key() => _currentKey;
 
-        public virtual PhpValue key() => _currentKey;
+        public override void next() => NextImpl();
 
-        public virtual Iterator getInnerIterator() => _iterator;
-
-        public virtual void next() => NextImpl();
-
-        public virtual void rewind()
+        public override void rewind()
         {
-            _iterator.rewind();
+            getInnerIterator().rewind();
             _cache?.Clear();
             NextImpl();
         }
@@ -1165,22 +1215,44 @@ namespace Pchp.Library.Spl
 
         public virtual bool offsetExists(PhpValue offset)
         {
-            throw new NotImplementedException();
+            if (!IsFullCacheEnabled)
+                throw new BadMethodCallException(Resources.Resources.iterator_full_cache_not_enabled);
+
+            return offset.TryToIntStringKey(out var key) && _cache.ContainsKey(key);
         }
 
         public virtual PhpValue offsetGet(PhpValue offset)
         {
-            throw new NotImplementedException();
+            if (!IsFullCacheEnabled)
+                throw new BadMethodCallException(Resources.Resources.iterator_full_cache_not_enabled);
+
+            return _cache.GetItemValue(offset);
         }
 
         public virtual void offsetSet(PhpValue offset, PhpValue value)
         {
-            throw new NotImplementedException();
+            if (!IsFullCacheEnabled)
+                throw new BadMethodCallException(Resources.Resources.iterator_full_cache_not_enabled);
+
+            if (offset.IsNull)
+            {
+                _cache.Add(value);
+            }
+            else
+            {
+                _cache.Add(offset, value);
+            }
         }
 
         public virtual void offsetUnset(PhpValue offset)
         {
-            throw new NotImplementedException();
+            if (!IsFullCacheEnabled)
+                throw new BadMethodCallException(Resources.Resources.iterator_full_cache_not_enabled);
+
+            if (offset.TryToIntStringKey(out var key))
+            {
+                _cache.Remove(key);
+            }
         }
 
         #endregion
