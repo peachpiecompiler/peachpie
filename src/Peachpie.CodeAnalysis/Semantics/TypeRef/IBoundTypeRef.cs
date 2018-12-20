@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Reflection.Metadata;
 using System.Text;
 using Devsense.PHP.Syntax;
 using Devsense.PHP.Syntax.Ast;
@@ -147,7 +148,10 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                throw ExceptionUtilities.UnexpectedValue(tref);
+                // Template: {LOAD PhpTypeInfo}.Name
+                tref.EmitLoadTypeInfo(cg, true);
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetName_PhpTypeInfo.Getter)
+                    .Expect(SpecialType.System_String);
             }
         }
     }

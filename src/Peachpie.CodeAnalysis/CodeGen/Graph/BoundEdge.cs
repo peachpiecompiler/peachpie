@@ -247,7 +247,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             // set of types we catch in this catch block
             var trefs = catchBlock.TypeRef is TypeRef.BoundMultipleTypeRef mt
-                ? mt.TypeRefs.CastArray<BoundTypeRef>()
+                ? mt.TypeRefs
                 : ImmutableArray.Create((BoundTypeRef)catchBlock.TypeRef);
 
             // do we have to generate .filter or just .catch<type>:

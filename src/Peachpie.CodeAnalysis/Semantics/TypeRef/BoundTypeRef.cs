@@ -435,15 +435,15 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
     sealed class BoundGenericClassTypeRef : BoundTypeRef
     {
         readonly IBoundTypeRef _targetType;
-        readonly ImmutableArray<IBoundTypeRef> _typeArguments;
+        readonly ImmutableArray<BoundTypeRef> _typeArguments;
 
-        public BoundGenericClassTypeRef(IBoundTypeRef targetType, ImmutableArray<IBoundTypeRef> typeArguments)
+        public BoundGenericClassTypeRef(IBoundTypeRef targetType, ImmutableArray<BoundTypeRef> typeArguments)
         {
             _targetType = targetType ?? throw ExceptionUtilities.ArgumentNull(nameof(targetType));
             _typeArguments = typeArguments;
         }
 
-        public override ImmutableArray<IBoundTypeRef> TypeArguments => _typeArguments;
+        public override ImmutableArray<IBoundTypeRef> TypeArguments => _typeArguments.CastArray<IBoundTypeRef>();
 
         public override ITypeSymbol EmitLoadTypeInfo(CodeGenerator cg, bool throwOnError = false)
         {
@@ -478,9 +478,9 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
         {
             if (ReferenceEquals(this, other)) return true;
 
-            if (other is BoundGenericClassTypeRef gt && gt._targetType.Equals(_targetType) && other.TypeArguments.Length == this.TypeArguments.Length)
+            if (other is BoundGenericClassTypeRef gt && gt._targetType.Equals(_targetType) && gt._typeArguments.Length == _typeArguments.Length)
             {
-                for (int i = 0; i < TypeArguments.Length; i++)
+                for (int i = 0; i < _typeArguments.Length; i++)
                 {
                     if (!other.TypeArguments[i].Equals(this.TypeArguments[i])) return false;
                 }
@@ -515,7 +515,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
             }
             else
             {
-                return new BoundIndirectTypeRef(typeExpression, _objectTypeInfoSemantic);
+                return new BoundIndirectTypeRef(typeExpression, _objectTypeInfoSemantic).WithSyntax(PhpSyntax);
             }
         }
 
@@ -638,11 +638,11 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
 
     sealed class BoundMultipleTypeRef : BoundTypeRef
     {
-        public ImmutableArray<IBoundTypeRef> TypeRefs { get; private set; }
+        public ImmutableArray<BoundTypeRef> TypeRefs { get; private set; }
 
         public override bool IsObject => true;
 
-        public BoundMultipleTypeRef(ImmutableArray<IBoundTypeRef> trefs)
+        public BoundMultipleTypeRef(ImmutableArray<BoundTypeRef> trefs)
         {
             this.TypeRefs = trefs;
         }
@@ -673,7 +673,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
 
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitMultipleTypeRef(this);
 
-        public BoundMultipleTypeRef Update(ImmutableArray<IBoundTypeRef> trefs)
+        public BoundMultipleTypeRef Update(ImmutableArray<BoundTypeRef> trefs)
         {
             if (trefs == this.TypeRefs)
             {
@@ -681,7 +681,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
             }
             else
             {
-                return new BoundMultipleTypeRef(trefs);
+                return new BoundMultipleTypeRef(trefs).WithSyntax(PhpSyntax);
             }
         }
     }

@@ -145,9 +145,11 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        static ImmutableArray<IBoundTypeRef> Create(IList<Ast.TypeRef> trefs, SemanticsBinder binder, SourceTypeSymbol self)
+        static ImmutableArray<BoundTypeRef> Create(IList<Ast.TypeRef> trefs, SemanticsBinder binder, SourceTypeSymbol self)
         {
-            return trefs.Select(t => (IBoundTypeRef)CreateFromTypeRef(t, binder, self, objectTypeInfoSemantic: false)).AsImmutable();
+            return trefs
+                .Select(t => CreateFromTypeRef(t, binder, self, objectTypeInfoSemantic: false).WithSyntax(t))
+                .AsImmutable();
         }
 
         public static IBoundTypeRef Create(QualifiedName qname, SourceTypeSymbol self) => new BoundClassTypeRef(qname, null, self);
