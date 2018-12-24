@@ -13,11 +13,6 @@ namespace Peachpie.Library.MySql.MySqli
     {
         internal const string ExtensionName = "mysqli";
 
-        /// <summary>
-        /// Option for RSA public key file used with the SHA-256 based authentication.
-        /// </summary>
-        public const int MYSQLI_SERVER_PUBLIC_KEY = 35;
-
         //MYSQLI_READ_DEFAULT_GROUP
         //Read options from the named group from my.cnf or the file specified with MYSQLI_READ_DEFAULT_FILE
 
@@ -34,6 +29,21 @@ namespace Peachpie.Library.MySql.MySqli
 
         //MYSQLI_INIT_COMMAND
         //Command to execute when connecting to MySQL server.Will automatically be re-executed when reconnecting.
+
+        /// <summary>
+        /// Option whether to verify SSL cert.
+        /// </summary>
+        public const int MYSQLI_OPT_SSL_VERIFY_SERVER_CERT = 21;
+
+        /// <summary>
+        /// Option for RSA public key file used with the SHA-256 based authentication.
+        /// </summary>
+        public const int MYSQLI_SERVER_PUBLIC_KEY = 35;
+
+        internal const int MYSQLI_CACertificateFile = 1000;
+        //internal const int MYSQLI_CertificateThumbprint = 1001;
+        //internal const int MYSQLI_CertificatePassword = 1002;
+        internal const int MYSQLI_CertificateFile = 1003;
 
         /// <summary>
         /// Use SSL (encrypted protocol). This option should not be set by application programs; it is set internally in the MySQL client library
@@ -57,14 +67,12 @@ namespace Peachpie.Library.MySql.MySqli
         /// </summary>
         public const int MYSQLI_CLIENT_IGNORE_SPACE = MySql.MYSQL_CLIENT_IGNORE_SPACE;
 
-
         //MYSQLI_CLIENT_NO_SCHEMA
         //Don't allow the db_name.tbl_name.col_name syntax.
 
 
         //MYSQLI_CLIENT_MULTI_QUERIES
         //Allows multiple semicolon-delimited queries in a single mysqli_query() call.
-
 
         /// <summary>
         /// For using buffered resultsets.

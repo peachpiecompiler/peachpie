@@ -167,6 +167,13 @@ namespace Peachpie.Library.MySql.MySqli
         public static bool mysqli_options(mysqli link, int option, PhpValue value) => link.options(option, value);
 
         /// <summary>
+        /// Used for establishing secure connections using SSL
+        /// </summary>
+        /// <returns>Always true.</returns>
+        public static bool mysqli_ssl_set(mysqli link, string key = null, string cert = null, string ca = null, string capath = null, string cipher = null)
+            => link.ssl_set(key, cert, ca, capath, cipher);
+
+        /// <summary>
         /// Fetch a result row as an associative, a numeric array, or both.
         /// </summary>
         public static PhpArray mysqli_fetch_array(mysqli_result result, int resulttype = Constants.MYSQLI_BOTH) => result.fetch_array(resulttype);

@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
+using System.IO;
 using System.Text;
+using MySql.Data.MySqlClient;
 using Pchp.Core;
 using static Peachpie.Library.MySql.MySqli.Functions;
 
@@ -18,7 +21,7 @@ namespace Peachpie.Library.MySql.MySqli
         MySqlConnectionResource/*!*/_connection;
 
         [PhpHidden]
-        Dictionary<int, PhpValue> _lazyoptions;
+        List<(int option, PhpValue value)> _lazyoptions;
 
         /// <summary>
         /// A number that represents given version in format: main_version*10000 + minor_version *100 + sub_version.
@@ -194,16 +197,12 @@ namespace Peachpie.Library.MySql.MySqli
         /// </summary>
         public bool options(int option, PhpValue value)
         {
-            if (_lazyoptions == null)
-            {
-                _lazyoptions = new Dictionary<int, PhpValue>();
-            }
-
             switch (option)
             {
                 case Constants.MYSQLI_OPT_CONNECT_TIMEOUT: // connection timeout in seconds(supported on Windows with TCP / IP since PHP 5.3.1)
                 case Constants.MYSQLI_SET_CHARSET_NAME:
                 case Constants.MYSQLI_SERVER_PUBLIC_KEY: // RSA public key file used with the SHA-256 based authentication.
+                case Constants.MYSQLI_OPT_SSL_VERIFY_SERVER_CERT:
                     //case Constants.MYSQLI_OPT_LOCAL_INFILE enable/ disable use of LOAD LOCAL INFILE
                     //case Constants.MYSQLI_INIT_COMMAND command to execute after when connecting to MySQL server
                     //case Constants.MYSQLI_READ_DEFAULT_FILE    Read options from named option file instead of my.cnf
@@ -211,14 +210,23 @@ namespace Peachpie.Library.MySql.MySqli
                     //case Constants.MYSQLI_OPT_NET_CMD_BUFFER_SIZE  The size of the internal command/network buffer.Only valid for mysqlnd.
                     //case Constants.MYSQLI_OPT_NET_READ_BUFFER_SIZE Maximum read chunk size in bytes when reading the body of a MySQL command packet. Only valid for mysqlnd.
                     //case Constants.MYSQLI_OPT_INT_AND_FLOAT_NATIVE Convert integer and float columns back to PHP numbers. Only valid for mysqlnd.
-                    //case Constants.MYSQLI_OPT_SSL_VERIFY_SERVER_CERT
-                    _lazyoptions[option] = value.DeepCopy();
+                    SetOption(option, value.DeepCopy());
                     return true;
 
                 default:
                     PhpException.InvalidArgument(nameof(option));
                     return false;
             }
+        }
+
+        void SetOption(int option, PhpValue value)
+        {
+            if (_lazyoptions == null)
+            {
+                _lazyoptions = new List<(int option, PhpValue value)>(4);
+            }
+
+            _lazyoptions.Add((option, value));
         }
 
         /// <summary>
@@ -303,9 +311,20 @@ namespace Peachpie.Library.MySql.MySqli
 
             if (_lazyoptions != null)
             {
-                PhpValue value;
-                if (_lazyoptions.TryGetValue(Constants.MYSQLI_OPT_CONNECT_TIMEOUT, out value)) connection_string.ConnectionTimeout = (uint)value.ToLong();
-                if (_lazyoptions.TryGetValue(Constants.MYSQLI_SERVER_PUBLIC_KEY, out value)) connection_string.ServerRsaPublicKeyFile = value.ToStringOrThrow(ctx);
+                // process additional options
+                for (int i = 0; i < _lazyoptions.Count; i++)
+                {
+                    var pair = _lazyoptions[i];
+                    switch (pair.option)
+                    {
+                        case Constants.MYSQLI_OPT_CONNECT_TIMEOUT: connection_string.ConnectionTimeout = (uint)pair.value.ToLong(); break;
+                        case Constants.MYSQLI_SERVER_PUBLIC_KEY: connection_string.ServerRsaPublicKeyFile = pair.value.ToStringOrThrow(ctx); break;
+                        case Constants.MYSQLI_OPT_SSL_VERIFY_SERVER_CERT: if (pair.value) { connection_string.SslMode = MySqlSslMode.VerifyCA; } break;
+                        case Constants.MYSQLI_CACertificateFile: connection_string.CACertificateFile = Path.Combine(ctx.WorkingDirectory, pair.value.String); break;
+                        case Constants.MYSQLI_CertificateFile: connection_string.CertificateFile = Path.Combine(ctx.WorkingDirectory, pair.value.String); break;
+                        default: Debug.WriteLine($"MySqli option {pair.option} not handled!"); break;
+                    }
+                }
             }
 
             _connection = MySqlConnectionManager.GetInstance(ctx)
@@ -382,10 +401,33 @@ namespace Peachpie.Library.MySql.MySqli
         /// <summary>
         /// Used for establishing secure connections using SSL
         /// </summary>
+        /// <param name="key">The path name to the key file.</param>
+        /// <param name="cert">The path name to the certificate file.</param>
+        /// <param name="ca">The path name to the certificate authority file.</param>
+        /// <param name="capath"></param>
+        /// <param name="cipher"></param>
         /// <returns>Always true.</returns>
-        public bool ssl_set(string key, string cert, string ca, string capath, string cipher)
+        public bool ssl_set(string key = null, string cert = null, string ca = null, string capath = null, string cipher = null)
         {
-            throw new NotImplementedException();
+            if (key != null) throw new NotImplementedException(nameof(key));
+
+            if (cert != null)
+            {
+                // The path name to the certificate file.
+                SetOption(Constants.MYSQLI_CertificateFile, cert);
+            }
+
+            if (ca != null)
+            {
+                // The path name to the certificate authority file.
+                SetOption(Constants.MYSQLI_CACertificateFile, ca);
+            }
+
+            if (capath != null) throw new NotImplementedException(nameof(capath));
+
+            if (cipher != null) throw new NotImplementedException(nameof(cipher));
+
+            return true;
         }
 
         //string stat(void )
