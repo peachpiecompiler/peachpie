@@ -1056,6 +1056,17 @@ namespace Pchp.Library.Spl
             }
         }
 
+        /// <summary>
+        /// Throws <see cref="BadMethodCallException"/> if <see cref="FULL_CACHE"/> flag is not set (<see cref="_cache"/> is not used).
+        /// </summary>
+        private protected void ThrowIfNoFullCache()
+        {
+            if (!IsFullCacheEnabled)
+            {
+                throw new BadMethodCallException(Resources.Resources.iterator_full_cache_not_enabled);
+            }
+        }
+
         #endregion
 
         #region Construction
@@ -1107,8 +1118,7 @@ namespace Pchp.Library.Spl
         /// <returns>An array containing the cache items.</returns>
         public virtual PhpArray getCache()
         {
-            if (!IsFullCacheEnabled)
-                throw new BadMethodCallException(Resources.Resources.iterator_full_cache_not_enabled);
+            ThrowIfNoFullCache();
 
             return _cache.DeepCopy();
         }
@@ -1215,24 +1225,21 @@ namespace Pchp.Library.Spl
 
         public virtual bool offsetExists(PhpValue offset)
         {
-            if (!IsFullCacheEnabled)
-                throw new BadMethodCallException(Resources.Resources.iterator_full_cache_not_enabled);
+            ThrowIfNoFullCache();
 
             return offset.TryToIntStringKey(out var key) && _cache.ContainsKey(key);
         }
 
         public virtual PhpValue offsetGet(PhpValue offset)
         {
-            if (!IsFullCacheEnabled)
-                throw new BadMethodCallException(Resources.Resources.iterator_full_cache_not_enabled);
+            ThrowIfNoFullCache();
 
             return _cache.GetItemValue(offset);
         }
 
         public virtual void offsetSet(PhpValue offset, PhpValue value)
         {
-            if (!IsFullCacheEnabled)
-                throw new BadMethodCallException(Resources.Resources.iterator_full_cache_not_enabled);
+            ThrowIfNoFullCache();
 
             if (offset.IsNull)
             {
@@ -1246,8 +1253,7 @@ namespace Pchp.Library.Spl
 
         public virtual void offsetUnset(PhpValue offset)
         {
-            if (!IsFullCacheEnabled)
-                throw new BadMethodCallException(Resources.Resources.iterator_full_cache_not_enabled);
+            ThrowIfNoFullCache();
 
             if (offset.TryToIntStringKey(out var key))
             {
@@ -1261,8 +1267,7 @@ namespace Pchp.Library.Spl
 
         public virtual long count()
         {
-            if (!IsFullCacheEnabled)
-                throw new BadMethodCallException(Resources.Resources.iterator_full_cache_not_enabled);
+            ThrowIfNoFullCache();
 
             return _cache.Count;
         }
