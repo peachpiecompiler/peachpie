@@ -272,6 +272,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return x;
         }
 
+        public override object VisitCopyValue(BoundCopyValue x)
+        {
+            return x.Update((BoundExpression)Accept(x.Expression));
+        }
+
         public override object VisitArgument(BoundArgument x)
         {
             return x.Update(

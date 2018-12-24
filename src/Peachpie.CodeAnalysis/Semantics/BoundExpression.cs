@@ -13,6 +13,7 @@ using Pchp.CodeAnalysis.CodeGen;
 using Microsoft.CodeAnalysis.CodeGen;
 using Devsense.PHP.Syntax;
 using Ast = Devsense.PHP.Syntax.Ast;
+using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -985,6 +986,36 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitLiteral(this);
+    }
+
+    #endregion
+
+    #region BoundCopyValue
+
+    /// <summary>
+    /// Deeply copies the expression's value.
+    /// </summary>
+    public partial class BoundCopyValue : BoundExpression
+    {
+        public BoundCopyValue(BoundExpression expression)
+        {
+            this.Expression = expression ?? throw ExceptionUtilities.ArgumentNull(nameof(expression));
+        }
+
+        public BoundExpression Expression { get; }
+
+        public override OperationKind Kind => OperationKind.None;
+
+        public override void Accept(OperationVisitor visitor) => visitor.DefaultVisit(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument) => visitor.DefaultVisit(this, argument);
+
+        public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitCopyValue(this);
+
+        internal BoundCopyValue Update(BoundExpression expression)
+        {
+            return expression == Expression ? this : new BoundCopyValue(expression);
+        }
     }
 
     #endregion

@@ -160,7 +160,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         #endregion
 
-
         #region Expressions
 
         protected override T VisitRoutineCall(BoundRoutineCall x)
@@ -184,6 +183,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         public override T VisitLiteral(BoundLiteral x)
         {
             //VisitLiteralExpression(x);
+
+            return default;
+        }
+
+        public override T VisitCopyValue(BoundCopyValue x)
+        {
+            Accept(x.Expression);
 
             return default;
         }

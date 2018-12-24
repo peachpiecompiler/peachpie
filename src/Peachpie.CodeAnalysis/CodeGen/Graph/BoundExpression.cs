@@ -2175,6 +2175,14 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundCopyValue
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            return cg.EmitDeepCopy(cg.Emit(this.Expression), this.Expression.TypeRefMask);
+        }
+    }
+
     partial class BoundReferenceExpression
     {
         /// <summary>

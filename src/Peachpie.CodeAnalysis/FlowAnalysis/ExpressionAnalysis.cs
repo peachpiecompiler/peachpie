@@ -187,6 +187,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #endregion
 
+        #region Visit CopyValue
+
+        public override T VisitCopyValue(BoundCopyValue x)
+        {
+            Accept(x.Expression);
+
+            Debug.Assert(!x.Expression.TypeRefMask.IsRef); // value should be dereferenced already
+
+            x.TypeRefMask = x.Expression.TypeRefMask;
+
+            return default;
+        }
+
+        #endregion
+
         #region Visit Assignments
 
         public override T VisitAssign(BoundAssignEx x)

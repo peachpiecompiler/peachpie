@@ -26,6 +26,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual TResult VisitLiteral(BoundLiteral x) => DefaultVisitOperation(x);
 
+        public virtual TResult VisitCopyValue(BoundCopyValue x) => DefaultVisitOperation(x);
+
         public virtual TResult VisitArgument(BoundArgument x) => DefaultVisitOperation(x);
 
         internal virtual TResult VisitTypeRef(BoundTypeRef x) => DefaultVisitOperation(x);
