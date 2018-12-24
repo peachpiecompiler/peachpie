@@ -13,6 +13,11 @@ namespace Peachpie.Library.MySql.MySqli
     {
         internal const string ExtensionName = "mysqli";
 
+        /// <summary>
+        /// Option for RSA public key file used with the SHA-256 based authentication.
+        /// </summary>
+        public const int MYSQLI_SERVER_PUBLIC_KEY = 35;
+
         //MYSQLI_READ_DEFAULT_GROUP
         //Read options from the named group from my.cnf or the file specified with MYSQLI_READ_DEFAULT_FILE
 

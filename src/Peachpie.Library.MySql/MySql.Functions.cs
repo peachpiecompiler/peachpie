@@ -152,7 +152,7 @@ namespace Peachpie.Library.MySql
             var config = ctx.Configuration.Get<MySqlConfiguration>();
             Debug.Assert(config != null);
 
-            var connection_string = BuildConnectionString(config, ref server, config.Port, username, password, client_flags);
+            var connection_string = config.ConnectionString ?? BuildConnectionString(config, ref server, config.Port, username, password, client_flags).ToString();
 
             bool success;
             var connection = MySqlConnectionManager.GetInstance(ctx)
@@ -183,14 +183,8 @@ namespace Peachpie.Library.MySql
             return mysql_connect(ctx, server, username, password, new_link, client_flags | ConnectFlags.Pooling);
         }
 
-        internal static string BuildConnectionString(MySqlConfiguration config, ref string server, int defaultport = 3306, string user = null, string password = null, ConnectFlags flags = ConnectFlags.None, int connectiontimeout = 0)
+        internal static MySqlConnectionStringBuilder BuildConnectionString(MySqlConfiguration config, ref string server, int defaultport = 3306, string user = null, string password = null, ConnectFlags flags = ConnectFlags.None)
         {
-            // connection strings:
-            if (!string.IsNullOrEmpty(config.ConnectionString) && server == null && user == null && password == null)
-            {
-                return config.ConnectionString;
-            }
-
             // build connection string:
             string pipe_name = null;
             int port = -1;
@@ -203,8 +197,7 @@ namespace Peachpie.Library.MySql
             if (port == -1) port = defaultport > 0 ? defaultport : config.Port;
             if (user == null) user = config.User;
             if (password == null) password = config.Password;
-            if (connectiontimeout <= 0) connectiontimeout = config.ConnectTimeout;
-
+            
             //
             var builder = new MySqlConnectionStringBuilder()
             {
@@ -219,16 +212,17 @@ namespace Peachpie.Library.MySql
                 UseCompression = (flags & ConnectFlags.Compress) != 0,
                 MaximumPoolSize = (uint)config.MaxPoolSize,
                 Pooling = (flags & ConnectFlags.Pooling) != 0,
+                
             };
 
             // optional:
-            if (connectiontimeout > 0) builder.ConnectionTimeout = (uint)connectiontimeout;
             if (pipe_name != null) builder.PipeName = pipe_name;
             if ((flags & ConnectFlags.Interactive) != 0) builder.InteractiveSession = true;
+            if (config.ConnectTimeout > 0) builder.ConnectionTimeout = (uint)config.ConnectTimeout;
             if (config.DefaultCommandTimeout >= 0) builder.DefaultCommandTimeout = (uint)config.DefaultCommandTimeout;
 
             //
-            return builder.ToString();
+            return builder;
         }
 
         static void ParseServerName(ref string/*!*/ server, out int port, out string socketPath)

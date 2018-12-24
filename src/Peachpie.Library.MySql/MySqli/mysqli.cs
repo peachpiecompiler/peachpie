@@ -203,16 +203,16 @@ namespace Peachpie.Library.MySql.MySqli
             {
                 case Constants.MYSQLI_OPT_CONNECT_TIMEOUT: // connection timeout in seconds(supported on Windows with TCP / IP since PHP 5.3.1)
                 case Constants.MYSQLI_SET_CHARSET_NAME:
+                case Constants.MYSQLI_SERVER_PUBLIC_KEY: // RSA public key file used with the SHA-256 based authentication.
                     //case Constants.MYSQLI_OPT_LOCAL_INFILE enable/ disable use of LOAD LOCAL INFILE
                     //case Constants.MYSQLI_INIT_COMMAND command to execute after when connecting to MySQL server
                     //case Constants.MYSQLI_READ_DEFAULT_FILE    Read options from named option file instead of my.cnf
                     //case Constants.MYSQLI_READ_DEFAULT_GROUP   Read options from the named group from my.cnf or the file specified with MYSQL_READ_DEFAULT_FILE.
-                    //case Constants.MYSQLI_SERVER_PUBLIC_KEY RSA public key file used with the SHA-256 based authentication.
                     //case Constants.MYSQLI_OPT_NET_CMD_BUFFER_SIZE  The size of the internal command/network buffer.Only valid for mysqlnd.
                     //case Constants.MYSQLI_OPT_NET_READ_BUFFER_SIZE Maximum read chunk size in bytes when reading the body of a MySQL command packet. Only valid for mysqlnd.
                     //case Constants.MYSQLI_OPT_INT_AND_FLOAT_NATIVE Convert integer and float columns back to PHP numbers. Only valid for mysqlnd.
                     //case Constants.MYSQLI_OPT_SSL_VERIFY_SERVER_CERT
-                    _lazyoptions[option] = value;
+                    _lazyoptions[option] = value.DeepCopy();
                     return true;
 
                 default:
@@ -279,13 +279,6 @@ namespace Peachpie.Library.MySql.MySqli
         public bool real_connect(Context ctx, string host = null, string username = null, string passwd = null, string dbname = "", int port = -1, string socket = null, int flags = 0)
         {
             var config = ctx.Configuration.Get<MySqlConfiguration>();
-            int connectiontimeout = 0;
-
-            if (_lazyoptions != null)
-            {
-                PhpValue value;
-                if (_lazyoptions.TryGetValue(Constants.MYSQLI_OPT_CONNECT_TIMEOUT, out value)) connectiontimeout = (int)value.ToLong();
-            }
 
             // string $host = ini_get("mysqli.default_host")
             // string $username = ini_get("mysqli.default_user")
@@ -302,12 +295,21 @@ namespace Peachpie.Library.MySql.MySqli
             }
 
             //
-            var connection_string = MySql.BuildConnectionString(config, ref host, port, username, passwd,
-                flags: (MySql.ConnectFlags)flags,
-                connectiontimeout: connectiontimeout);
+            var connection_string = MySql.BuildConnectionString(config, ref host,
+                defaultport: port,
+                user: username,
+                password: passwd,
+                flags: (MySql.ConnectFlags)flags);
+
+            if (_lazyoptions != null)
+            {
+                PhpValue value;
+                if (_lazyoptions.TryGetValue(Constants.MYSQLI_OPT_CONNECT_TIMEOUT, out value)) connection_string.ConnectionTimeout = (uint)value.ToLong();
+                if (_lazyoptions.TryGetValue(Constants.MYSQLI_SERVER_PUBLIC_KEY, out value)) connection_string.ServerRsaPublicKeyFile = value.ToStringOrThrow(ctx);
+            }
 
             _connection = MySqlConnectionManager.GetInstance(ctx)
-                .CreateConnection(connection_string, false, -1, out bool success);
+                .CreateConnection(connection_string.ToString(), false, -1, out bool success);
 
             if (success)
             {
