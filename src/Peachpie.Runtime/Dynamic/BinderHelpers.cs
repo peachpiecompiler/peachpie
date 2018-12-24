@@ -490,7 +490,8 @@ namespace Pchp.Core.Dynamic
                 }
                 else if (expr.Type == typeof(PhpAlias))
                 {
-                    // TODO: specify - ReadCopy | ReadValue | ReadValueCopy - currently not consistent
+                    // Template: alias.Value.DeepCopy()
+                    expr = Expression.Call(Expression.Field(expr, Cache.PhpAlias.Value), Cache.Operators.PhpValue_DeepCopy);
                 }
             }
             else if (access.Isset())
