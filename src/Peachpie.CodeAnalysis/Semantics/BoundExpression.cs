@@ -27,14 +27,9 @@ namespace Pchp.CodeAnalysis.Semantics
     public struct BoundAccess
     {
         /// <summary>
-        /// 
+        /// The expression access kind - read, write, ensured.
         /// </summary>
         AccessMask _flags;
-
-        ///// <summary>
-        ///// Optional. Type the expression result will be converted to.
-        ///// </summary>
-        //TypeRefMask _readTypeMask;
 
         /// <summary>
         /// Optional. Type the expression will be converted to.
@@ -253,8 +248,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundAccess Access { get; internal set; }
 
-        public virtual bool IsInvalid => false;
-
         /// <summary>
         /// The expression result type.
         /// Can be <c>null</c> until emit.
@@ -293,8 +286,6 @@ namespace Pchp.CodeAnalysis.Semantics
         public ArgumentKind ArgumentKind { get; private set; }
 
         public CommonConversion InConversion => default(CommonConversion);
-
-        public bool IsInvalid => false;
 
         /// <summary>
         /// Variable unpacking in PHP, the triple-dot syntax.

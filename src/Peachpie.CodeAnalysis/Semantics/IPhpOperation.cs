@@ -38,7 +38,9 @@ namespace Pchp.CodeAnalysis.Semantics
         TypeRefMask TypeRefMask { get; set; }
 
         /// <summary>
-        /// Expression access information, whether it is being read, written to and what is the expected result type.
+        /// The way the expression is accessed.
+        /// May specify an additional operation or conversion.
+        /// May specify the type that the expression will be converted to.
         /// </summary>
         BoundAccess Access { get; }
 

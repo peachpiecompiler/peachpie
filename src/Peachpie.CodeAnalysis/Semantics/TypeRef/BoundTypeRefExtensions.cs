@@ -50,6 +50,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     var common = compilation.FindCommonBase(ambiguous._candidates);
                     if (common.IsValidType())
                     {
+                        
                         return common;
                     }
                 }
