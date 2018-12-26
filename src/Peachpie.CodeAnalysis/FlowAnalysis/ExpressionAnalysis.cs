@@ -193,9 +193,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             Accept(x.Expression);
 
-            Debug.Assert(!x.Expression.TypeRefMask.IsRef); // value should be dereferenced already
-
-            x.TypeRefMask = x.Expression.TypeRefMask;
+            x.TypeRefMask = x.Expression.TypeRefMask.WithoutRefFlag;
 
             return default;
         }
@@ -1191,7 +1189,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         protected override T VisitRoutineCall(BoundRoutineCall x)
         {
-            x.TypeRefMask = TypeRefMask.AnyType;
+            x.TypeRefMask = TypeRefMask.AnyType.WithRefFlag; // unknown function might return a reference
 
             // TODO: write arguments Access
             // TODO: visit invocation member of
@@ -1834,9 +1832,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             // var element_type = TypeCtx.GetElementType(x.Array.TypeRefMask); // + handle classes with ArrayAccess and TypeRefMask.Uninitialized
 
             //
-            x.TypeRefMask = x.Access.IsReadRef
-                ? TypeRefMask.AnyType.WithRefFlag
-                : TypeRefMask.AnyType;
+
+            if (x.Access.IsEnsure) x.TypeRefMask = TypeRefMask.AnyType;
+            else x.TypeRefMask = TypeRefMask.AnyType.WithRefFlag; // result might be a reference
 
             return default;
         }

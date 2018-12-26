@@ -1806,8 +1806,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             // and copy the value on stack if necessary
             if (access.IsRead)
             {
-                bool deepcopy = access.IsReadValueCopy;
-
                 if (method != null && method.CastToFalse)
                 {
                     // casts to false and copy the value
@@ -1817,8 +1815,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     //    stack = EmitNullableCastToFalse(stack, access.IsReadValueCopy);
                     //} else
 
-                    stack = EmitCastToFalse(stack, deepcopy);
-                    deepcopy = false;
+                    stack = EmitCastToFalse(stack);
                 }
 
                 if (access.EnsureArray)
@@ -1868,32 +1865,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (access.IsReadRef)
                 {
-                    deepcopy = false; // already false
-
                     if (stack != CoreTypes.PhpAlias)
                     {
                         EmitConvertToPhpValue(stack, 0);
                         stack = Emit_PhpValue_MakeAlias();
                     }
-                }
-
-                //
-                if (deepcopy) // ~ IsReadValueCopy
-                {
-                    // copy the value
-                    if (stack == CoreTypes.PhpAlias)
-                    {
-                        // dereference & deep copy
-                        // Template: <PhpAlias>.Value.DeepCopy()
-                        Emit_PhpAlias_GetValueAddr();
-                        stack = EmitCall(ILOpCode.Call, CoreMethods.PhpValue.DeepCopy);
-                    }
-                    //else
-                    //{
-                    //    // deep copy
-                    //    // note: functions return refs only if their return type is PhpAlias, see above
-                    //    stack = EmitDeepCopy(stack);
-                    //}
                 }
             }
 
@@ -1905,9 +1881,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Converts <b>negative</b> number or <c>null</c> to <c>FALSE</c>.
         /// </summary>
         /// <param name="stack">Type of value on stack.</param>
-        /// <param name="deepcopy">Whether to deep copy returned non-FALSE value.</param>
         /// <returns>New type of value on stack.</returns>
-        internal TypeSymbol EmitCastToFalse(TypeSymbol stack, bool deepcopy)
+        internal TypeSymbol EmitCastToFalse(TypeSymbol stack)
         {
             if (stack.SpecialType == SpecialType.System_Boolean)
             {
@@ -1954,11 +1929,6 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // test(<stack>) ? POP,FALSE : (PhpValue)<stack>
 
-            if (deepcopy)
-            {
-                // DeepCopy(<stack>)
-                stack = EmitDeepCopy(stack, false);
-            }
             // (PhpValue)<stack>
             EmitConvertToPhpValue(stack, 0);
             _il.EmitBranch(ILOpCode.Br, lblend);

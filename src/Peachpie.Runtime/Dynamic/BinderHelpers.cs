@@ -466,34 +466,6 @@ namespace Pchp.Core.Dynamic
                     expr = Expression.Assign(expr, ConvertExpression.Bind(rvalue, expr.Type, ctx));
                 }
             }
-            else if (access.ReadValue())
-            {
-                // dereference
-                if (expr.Type == typeof(PhpValue))
-                {
-                    // Template: value.GetValue().DeepCopy()
-                    expr = Expression.Call(expr, Cache.Operators.PhpValue_GetValue);
-                }
-                else if (expr.Type == typeof(PhpAlias))
-                {
-                    // Template: alias.Value // expecting alias cannot be null ref
-                    expr = Expression.Field(expr, Cache.PhpAlias.Value);
-                }
-            }
-            else if (access.ReadValueCopy())
-            {
-                // dereference & copy
-                if (expr.Type == typeof(PhpValue))
-                {
-                    // Template: value.GetValue().DeepCopy()
-                    expr = Expression.Call(Expression.Call(expr, Cache.Operators.PhpValue_GetValue), Cache.Operators.PhpValue_DeepCopy);
-                }
-                else if (expr.Type == typeof(PhpAlias))
-                {
-                    // Template: alias.Value.DeepCopy()
-                    expr = Expression.Call(Expression.Field(expr, Cache.PhpAlias.Value), Cache.Operators.PhpValue_DeepCopy);
-                }
-            }
             else if (access.Isset())
             {
                 if (expr.Type == typeof(PhpAlias))

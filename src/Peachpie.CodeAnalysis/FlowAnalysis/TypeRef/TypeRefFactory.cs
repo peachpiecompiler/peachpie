@@ -13,7 +13,16 @@ namespace Pchp.CodeAnalysis
 {
     internal static partial class TypeRefFactory
     {
-        public static TypeRefMask CreateMask(TypeRefContext ctx, TypeSymbol t) => BoundTypeRefFactory.Create(t).GetTypeRefMask(ctx);
+        public static TypeRefMask CreateMask(TypeRefContext ctx, TypeSymbol t)
+        {
+            // shortcuts:
+            if (t.Is_PhpValue()) return TypeRefMask.AnyType;
+            if (t.Is_PhpAlias()) return TypeRefMask.AnyType.WithRefFlag;
+            if (t.IsNullableType(out var ttype)) return CreateMask(ctx, ttype) | ctx.GetNullTypeMask();
+
+            //
+            return BoundTypeRefFactory.Create(t).GetTypeRefMask(ctx);
+        }
         
         /// <summary>
         /// Creates type context for a method within given type, determines naming, type context.

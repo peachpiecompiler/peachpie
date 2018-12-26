@@ -385,14 +385,36 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt.Type == AST.JumpStmt.Types.Return)
             {
                 Debug.Assert(_locals != null);
-                var access = _locals.Routine.SyntaxSignature.AliasReturn
-                    ? BoundAccess.ReadRef
-                    : BoundAccess.ReadValue;
 
-                return new BoundReturnStatement(stmt.Expression != null ? BindExpression(stmt.Expression, access) : null);
+                var isByRef = _locals.Routine.SyntaxSignature.AliasReturn;
+                var expr = stmt.Expression != null
+                    ? BindExpression(stmt.Expression, isByRef ? BoundAccess.ReadRef : BoundAccess.Read)
+                    : null;
+
+                if (!isByRef)
+                {
+                    // copy returned value
+                    expr = BindCopyValue(expr);
+                }
+
+                return new BoundReturnStatement(expr);
             }
 
             throw ExceptionUtilities.Unreachable;
+        }
+
+        protected BoundExpression BindCopyValue(BoundExpression expr)
+        {
+            if (expr == null ||
+                expr is BoundCopyValue ||
+                expr is BoundNewEx ||
+                expr is BoundArrayEx)
+            {
+                // do not copy
+                return expr;
+            }
+
+            return new BoundCopyValue(expr).WithAccess(BoundAccess.Read);
         }
 
         public BoundVariableRef BindCatchVariable(AST.CatchItem x)
@@ -813,6 +835,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (x == null)
                 {
                     // list() may contain empty items
+                    Debug.Assert(islist);
                     yield return default;
                 }
                 else
@@ -820,9 +843,25 @@ namespace Pchp.CodeAnalysis.Semantics
                     Debug.Assert(x is AST.RefItem || x is AST.ValueItem);
 
                     var boundIndex = (x.Index != null) ? BindExpression(x.Index, BoundAccess.Read) : null;
-                    var boundValue = (x is AST.RefItem refItem)
-                        ? BindExpression(refItem.RefToGet, islist ? BoundAccess.None.WithWriteRef(0) : BoundAccess.ReadRef)
-                        : BindExpression(((AST.ValueItem)x).ValueExpr, islist ? BoundAccess.Write : BoundAccess.ReadValueCopy);
+                    BoundExpression boundValue;
+
+                    var value = (AST.Expression)((AST.IArrayItem)x).Value;
+
+                    if (islist)
+                    {
+                        // write access
+                        boundValue = BindExpression(value, x.IsByRef ? BoundAccess.Write.WithWriteRef(0) : BoundAccess.Write);
+                    }
+                    else
+                    {
+                        // read access
+                        boundValue = BindExpression(value, x.IsByRef ? BoundAccess.ReadRef : BoundAccess.Read);
+
+                        if (!x.IsByRef)
+                        {
+                            boundValue = BindCopyValue(boundValue);
+                        }
+                    }
 
                     yield return new KeyValuePair<BoundExpression, BoundExpression>(boundIndex, boundValue);
                 }
@@ -980,15 +1019,13 @@ namespace Pchp.CodeAnalysis.Semantics
             // bind value (read as value or as ref)
             if (expr is AST.ValueAssignEx assignEx)
             {
-                var readaccess = BoundAccess.Read;
+                value = BindExpression(assignEx.RValue, BoundAccess.Read);
 
                 // we don't need copy of RValue if assigning to list() or in a part of compound operation
                 if (expr.Operation == AST.Operations.AssignValue && !(target is BoundListEx))
                 {
-                    readaccess = BoundAccess.ReadValueCopy;
+                    value = BindCopyValue(value);
                 }
-
-                value = BindExpression(assignEx.RValue, readaccess);
             }
             else if (expr is AST.RefAssignEx refAssignEx)
             {

@@ -85,16 +85,6 @@ namespace Pchp.CodeAnalysis.Semantics
         public bool IsReadRef => (_flags & AccessMask.ReadRef) == AccessMask.ReadRef;
 
         /// <summary>
-        /// The variable will be dereferenced.
-        /// </summary>
-        public bool IsReadValue => (_flags & AccessMask.ReadValue) == AccessMask.ReadValue;
-
-        /// <summary>
-        /// The variable will be dereferenced and copied.
-        /// </summary>
-        public bool IsReadValueCopy => (_flags & AccessMask.ReadValueCopy) == AccessMask.ReadValueCopy;
-
-        /// <summary>
         /// A reference will be written.
         /// </summary>
         public bool IsWriteRef => (_flags & AccessMask.WriteRef) == AccessMask.WriteRef;
@@ -199,16 +189,6 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Read as a reference access.
         /// </summary>
         public static BoundAccess ReadRef => new BoundAccess(AccessMask.ReadRef, null, 0);
-
-        /// <summary>
-        /// Read by value.
-        /// </summary>
-        public static BoundAccess ReadValue => new BoundAccess(AccessMask.ReadValue, null, 0);
-
-        /// <summary>
-        /// Read by value copy.
-        /// </summary>
-        public static BoundAccess ReadValueCopy => new BoundAccess(AccessMask.ReadValueCopy, null, 0);
 
         /// <summary>
         /// Simple write access without bound write type mask.
@@ -984,7 +964,7 @@ namespace Pchp.CodeAnalysis.Semantics
     #region BoundCopyValue
 
     /// <summary>
-    /// Deeply copies the expression's value.
+    /// Deeply copies the expression's dereferenced value.
     /// </summary>
     public partial class BoundCopyValue : BoundExpression
     {
@@ -994,6 +974,8 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         public BoundExpression Expression { get; }
+
+        public override bool RequiresContext => this.Expression.RequiresContext;
 
         public override OperationKind Kind => OperationKind.None;
 
@@ -1005,7 +987,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal BoundCopyValue Update(BoundExpression expression)
         {
-            return expression == Expression ? this : new BoundCopyValue(expression);
+            return expression == Expression ? this : new BoundCopyValue(expression).WithAccess(this.Access);
         }
     }
 

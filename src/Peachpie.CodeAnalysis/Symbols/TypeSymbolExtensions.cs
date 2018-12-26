@@ -167,6 +167,20 @@ namespace Pchp.CodeAnalysis.Symbols
             return original.SpecialType == SpecialType.System_Nullable_T;
         }
 
+        public static bool IsNullableType(this TypeSymbol type, out TypeSymbol tType)
+        {
+            if (IsNullableType(type))
+            {
+                tType = ((NamedTypeSymbol)type).TypeArguments[0];
+                return true;
+            }
+            else
+            {
+                tType = null;
+                return false;
+            }
+        }
+
         //public static TypeSymbol GetNullableUnderlyingType(this TypeSymbol type)
         //{
         //    Debug.Assert((object)type != null);

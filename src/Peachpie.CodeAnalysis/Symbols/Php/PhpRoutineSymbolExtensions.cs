@@ -153,7 +153,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var mask = TypeRefFactory.CreateMask(ctx, t);
 
             // [CastToFalse]
-            if (symbol is IPhpRoutineSymbol && ((IPhpRoutineSymbol)symbol).CastToFalse)
+            if (symbol is IPhpRoutineSymbol phpr && phpr.CastToFalse)
             {
                 mask |= ctx.GetBooleanTypeMask();    // the function may return FALSE
 

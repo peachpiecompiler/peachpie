@@ -764,10 +764,10 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
                         if (t.Name == "PhpResource") return WithNullableMask(ctx.GetResourceTypeMask(), ctx);
                     }
 
-                    if (t.IsNullableType())
+                    if (t.IsNullableType(out var ttype))
                     {
                         // <T> | NULL
-                        return BoundTypeRefFactory.Create(((NamedTypeSymbol)t).TypeArguments[0]).GetTypeRefMask(ctx) | ctx.GetNullTypeMask();
+                        return TypeRefFactory.CreateMask(ctx, ttype) | ctx.GetNullTypeMask();
                     }
 
                     break;

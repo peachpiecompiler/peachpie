@@ -48,7 +48,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         [Flags]
         private enum MaskFlags : ulong
         {
+            /// <summary>
+            /// Denotates a value that might be referenced.
+            /// </summary>
             IsRef = (ulong)1 << (BitsCount - 1),
+
+            /// <summary>
+            /// Denotates a type that might include its subtypes as well.
+            /// </summary>
             IncludesSubclasses = (ulong)1 << (BitsCount - 2),
 
             /// <summary>
@@ -105,6 +112,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// Gets copy of this type mask with the reference flag.
         /// </summary>
         public TypeRefMask WithRefFlag => _mask | (ulong)MaskFlags.IsRef;
+
+        /// <summary>
+        /// Gets copy of this type mask without the reference flag.
+        /// </summary>
+        public TypeRefMask WithoutRefFlag => _mask & ~(ulong)MaskFlags.IsRef;
 
         /// <summary>
         /// Gets copy of this type mask with the including subclasses flag.

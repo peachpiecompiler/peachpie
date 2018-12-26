@@ -812,54 +812,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return cg.Emit_PhpValue_MakeAlias();
                 }
             }
+            // Read
             else
             {
-                // Read Copy
-                if (_access.IsReadValueCopy)
-                {
-                    if (type == cg.CoreTypes.PhpValue && _place.HasAddress)
-                    {
-                        _place.EmitLoadAddress(cg.Builder);
-
-                        if (_thint.IsRef)
-                        {
-                            // Template: <place>.GetValue().DeepCopy()
-                            return cg.EmitDeepCopy(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.GetValue));
-                        }
-                        else
-                        {
-                            // Template: <place>.DeepCopy()
-                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.DeepCopy);
-                        }
-                    }
-
-                    // 
-                    var t = _place.EmitLoad(cg.Builder);
-                    if (_thint.IsRef)
-                    {
-                        t = cg.EmitDereference(t);
-                    }
-
-                    //
-                    return cg.EmitDeepCopy(t);
-                }
-                else if (_access.IsReadValue && _thint.IsRef)
-                {
-                    // Read Value
-                    if (type == cg.CoreTypes.PhpValue && _place.HasAddress)
-                    {
-                        // Template: <ref place>.GetValue()
-                        _place.EmitLoadAddress(cg.Builder);
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.GetValue);
-                    }
-
-                    return cg.EmitDereference(_place.EmitLoad(cg.Builder));
-                }
-                else
-                {
-                    // Read
-                    return _place.EmitLoad(cg.Builder);
-                }
+                return _place.EmitLoad(cg.Builder);
             }
         }
 
@@ -1074,12 +1030,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                 var p = ResolveSuperglobalProperty(cg);
                 cg.EmitLoadContext();
                 result = cg.EmitCall(p.GetMethod.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, p.GetMethod);
-
-                //
-                if (_access.IsReadValueCopy)
-                {
-                    result = cg.EmitDeepCopy(result, false);
-                }
             }
 
             return result;
@@ -1199,23 +1149,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 // <array>.GetItemValue(<Index>)
                 Debug.Assert(_access.IsRead);
-                var result = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetItemValue_IntStringKey);
-
-                // 
-                if (_access.IsReadValueCopy)
-                {
-                    // .GetValue()
-                    result = cg.EmitDereference(result);
-
-                    // .DeepCopy()
-                    if (_access.TargetType == null || cg.IsCopiable(_access.TargetType))
-                    {
-                        result = cg.EmitDeepCopy(result);
-                    }
-                }
-
-                //
-                return result;
+                return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetItemValue_IntStringKey);
             }
         }
 
@@ -1650,32 +1584,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return cg.Emit_PhpValue_MakeAlias();
                 }
             }
-            // Read by value copy (copy value if applicable)
-            else if (Access.IsReadValueCopy)
-            {
-                // dereference & copy
-
-                // if target type is not a copiable type, we don't have to perform deep copy since the result will be converted to a value anyway
-                bool deepcopy = Access.TargetType == null || cg.IsCopiable(Access.TargetType);
-
-                if (type == cg.CoreTypes.PhpValue)
-                {
-                    // ref.GetValue().DeepCopy()
-                    EmitOpCode_LoadAddress(cg);
-                    var t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.GetValue);
-                    return deepcopy ? cg.EmitDeepCopy(t) : t;
-                }
-                else if (type == cg.CoreTypes.PhpAlias)
-                {
-                    // ref.Value.DeepCopy()
-                    EmitOpCode_Load(cg);
-                    cg.Emit_PhpAlias_GetValueAddr();
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.DeepCopy);
-                }
-
-                EmitOpCode_Load(cg);
-                return deepcopy ? cg.EmitDeepCopy(type) : type;
-            }
             else
             {
                 // read directly PhpValue into the target type (skips eventual dereferencing and copying)
@@ -1707,25 +1615,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                                 return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.GetArray);
                             }
                             break;
-                    }
-                }
-
-                // 
-
-                if (Access.IsReadValue)
-                {
-                    // dereference
-
-                    if (type == cg.CoreTypes.PhpAlias)
-                    {
-                        EmitOpCode_Load(cg);
-                        return cg.Emit_PhpAlias_GetValue();
-                    }
-                    else if (type == cg.CoreTypes.PhpValue)
-                    {
-                        // Template (ref PhpValue).GetValue()
-                        EmitOpCode_LoadAddress(cg);
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.GetValue);
                     }
                 }
 

@@ -2179,7 +2179,22 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            return cg.EmitDeepCopy(cg.Emit(this.Expression), this.Expression.TypeRefMask);
+            var t = cg.Emit(this.Expression);
+
+            if (!this.Expression.IsConstant())
+            {
+                // dereference
+                if (this.Expression.TypeRefMask.IsRef)
+                {
+                    t = cg.EmitDereference(t);
+                }
+
+                // copy
+                t = cg.EmitDeepCopy(t, this.Expression.TypeRefMask);
+            }
+
+            //
+            return t;
         }
     }
 
@@ -2789,7 +2804,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 cg.Builder.EmitStringConstant(string.Empty);
                 return cg.CoreTypes.String;
             }
-            
+
             // Template: new PhpString( new PhpString.Blob() { a1, a2, ..., aN } )
 
             // new PhpString.Blob()
@@ -3212,13 +3227,8 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else if (Access.IsRead)
             {
+                Debug.Assert(tmp != null);
                 cg.Builder.EmitLocalLoad(tmp);
-
-                if (Access.IsReadValueCopy)
-                {
-                    // DeepCopy(<tmp>)
-                    t_value = cg.EmitDeepCopy(t_value, Value.TypeRefMask);
-                }
             }
 
             if (tmp != null)
@@ -3964,15 +3974,6 @@ namespace Pchp.CodeAnalysis.Semantics
                         t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.IPhpArray.GetItemValue_PhpValue);
                     }
 
-                    if (Access.IsReadValueCopy)
-                    {
-                        t = cg.EmitReadCopy(Access.TargetType, t);
-                    }
-                    else if (Access.IsReadValue) // read by value, dereference
-                    {
-                        t = cg.EmitDereference(t);
-                    }
-
                     return t;
                 }
             }
@@ -4019,23 +4020,12 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.Builder.EmitBoolConstant(Access.IsQuiet);
                     return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureItemAlias_PhpValue_PhpValue_Bool);
                 }
-                else
+                else // IsRead
                 {
                     Debug.Assert(Access.IsRead);
                     // PhpValue.GetItemValue(index, bool)
                     cg.Builder.EmitBoolConstant(Access.IsQuiet);
-                    var t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetItemValue_PhpValue_PhpValue_Bool);
-
-                    if (Access.IsReadValueCopy)
-                    {
-                        t = cg.EmitReadCopy(Access.TargetType, t);
-                    }
-                    else if (Access.IsReadValue) // read by value, dereference
-                    {
-                        t = cg.EmitDereference(t);
-                    }
-
-                    return t;
+                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetItemValue_PhpValue_PhpValue_Bool);
                 }
             }
             else if (stack.tArray.IsOfType(cg.CoreTypes.ArrayAccess))
@@ -4051,11 +4041,6 @@ namespace Pchp.CodeAnalysis.Semantics
                     // Template: (ref PhpValue).EnsureArray()
                     cg.EmitPhpValueAddr();
                     t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureArray);
-                }
-
-                if (Access.IsReadValueCopy)
-                {
-                    t = cg.EmitReadCopy(Access.TargetType, t);
                 }
 
                 return t;
