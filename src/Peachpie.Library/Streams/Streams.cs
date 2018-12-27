@@ -252,22 +252,37 @@ namespace Pchp.Library.Streams
             /// <summary>
             /// Error in data stream (1).
             /// </summary>
-            FatalError,
+            FatalError = 0,
 
             /// <summary>
             /// Filter needs more data; stop processing chain until more is available (2).
             /// </summary>
-            MoreData,
+            MoreData = 1,
 
             /// <summary>
             /// Filter generated output buckets; pass them on to next in chain (3).
             /// </summary>
-            OK
+            OK = 2,
         }
 
         public const int PSFS_ERR_FATAL = (int)FilterStatus.FatalError;
         public const int PSFS_FEED_ME = (int)FilterStatus.MoreData;
         public const int PSFS_PASS_ON = (int)FilterStatus.OK;
+
+        /// <summary>
+        /// Regular read/write.
+        /// </summary>
+        public const int PSFS_FLAG_NORMAL = 0;
+
+        /// <summary>
+        /// An incremental flush.
+        /// </summary>
+        public const int PSFS_FLAG_FLUSH_INC = 1;
+
+        /// <summary>
+        /// Final flush prior to closing.
+        /// </summary>
+        public const int PSFS_FLAG_FLUSH_CLOSE = 2;
 
         /// <summary>
         /// Indicates whether the filter is to be attached to the
