@@ -193,7 +193,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             Accept(x.Expression);
 
-            x.TypeRefMask = x.Expression.TypeRefMask.WithoutRefFlag;
+            var tmask = x.Expression.TypeRefMask;
+
+            if (tmask.IsRef)
+            {
+                // copied value is possible a reference,
+                // might be anything:
+                tmask = TypeRefMask.AnyType;
+            }
+
+            // the result is not a reference for sure:
+            Debug.Assert(!tmask.IsRef);
+
+            x.TypeRefMask = tmask;
 
             return default;
         }
