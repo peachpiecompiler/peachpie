@@ -160,9 +160,15 @@ namespace Pchp.CodeAnalysis.Symbols
         public static MethodSymbol ResolveMethodImplementation(MethodSymbol method, NamedTypeSymbol type)
         {
             // ignoring System.Object (we don't override its methods from PHP)
+            bool ignoreSystemObject = method.ContainingType.IsPhpType() || type.IsPhpType();
 
-            for (; type != null && type.SpecialType != SpecialType.System_Object; type = type.BaseType)
+            for (; type != null; type = type.BaseType)
             {
+                if (ignoreSystemObject && type.SpecialType == SpecialType.System_Object)
+                {
+                    break;
+                }
+
                 var members = type.GetMembersByPhpName(method.RoutineName).OfType<MethodSymbol>().Where(CanOverride);
                 if (method.ContainingType.IsInterface)
                 {
