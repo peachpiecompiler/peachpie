@@ -19,9 +19,23 @@ namespace Pchp.CodeAnalysis.CodeGen
 {
     internal sealed class MethodGenerator
     {
-        private static Cci.DebugSourceDocument CreateDebugDocumentForFile(string normalizedPath)
+        static Cci.DebugSourceDocument CreateDebugSourceDocument(string normalizedPath, MethodSymbol method)
         {
-            return new Cci.DebugSourceDocument(normalizedPath, Constants.CorSymLanguageTypePeachpie);
+            // TODO: method might be synthesized and we create an incomplete DebugSourceDocument
+
+            var srcf = method is SourceRoutineSymbol srcr ? srcr.ContainingFile : null;
+            if (srcf != null)
+            {
+                var srctext = srcf.SyntaxTree.GetText();
+
+                return new Cci.DebugSourceDocument(
+                    normalizedPath, Constants.CorSymLanguageTypePeachpie,
+                    srctext.GetChecksum(), Cci.DebugSourceDocument.GetAlgorithmGuid(srctext.ChecksumAlgorithm));
+            }
+            else
+            {
+                return new Cci.DebugSourceDocument(normalizedPath, Constants.CorSymLanguageTypePeachpie);
+            }
         }
 
         internal static MethodBody GenerateMethodBody(
@@ -88,7 +102,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (emittingPdb)
             {
-                debugDocumentProvider = (path, basePath) => moduleBuilder.GetOrAddDebugDocument(path, basePath, CreateDebugDocumentForFile);
+                debugDocumentProvider = (path, basePath) => moduleBuilder.GetOrAddDebugDocument(path, basePath, normalizedPath => CreateDebugSourceDocument(normalizedPath, routine));
             }
 
             ILBuilder il = new ILBuilder(moduleBuilder, localSlotManager, optimizations);
