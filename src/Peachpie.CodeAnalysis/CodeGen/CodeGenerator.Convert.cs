@@ -46,122 +46,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitConvertToBool(TypeSymbol from, TypeRefMask fromHint, bool negation = false)
         {
-            // TODO: use {fromHint} to emit casting in compile time
-
-            // dereference
-            if (from == CoreTypes.PhpAlias)
-            {
-                // <PhpAlias>.Value.ToBoolean()
-                Emit_PhpAlias_GetValueAddr();
-                EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToBoolean);
-
-                // !
-                if (negation)
-                {
-                    EmitLogicNegation();
-                }
-
-                //
-                return;
-            }
-
-            //
-            from = EmitSpecialize(from, fromHint);
-
-            //
-            switch (from.SpecialType)
-            {
-                case SpecialType.System_Void:
-                    _il.EmitBoolConstant(negation ? true : false);  // (bool)void == false
-                    return;
-
-                case SpecialType.System_Boolean:
-                case SpecialType.System_Int32:
-                    break; // nop
-
-                case SpecialType.System_Int64:
-                    _il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
-                    _il.EmitOpCode(ILOpCode.Conv_i8, 0);
-                    _il.EmitOpCode(negation ? ILOpCode.Ceq : ILOpCode.Cgt_un);
-                    return;
-
-                case SpecialType.System_Double:
-
-                    // r8 == 0.0
-                    _il.EmitDoubleConstant(0.0);
-                    _il.EmitOpCode(ILOpCode.Ceq);
-
-                    if (!negation)
-                    {
-                        // !<i4>
-                        EmitLogicNegation();
-                    }
-
-                    return;
-
-                case SpecialType.System_String:
-                    // Convert.ToBoolean(string)
-                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToBoolean_String);
-                    break;
-
-                case SpecialType.System_Object:
-                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToBoolean_Object);
-                    break;
-
-                case SpecialType.None:
-                    if (from == CoreTypes.PhpValue)
-                    {
-                        // (bool)value
-                        EmitCall(ILOpCode.Call, CoreMethods.Operators.ToBoolean_PhpValue);
-                        break;
-                    }
-                    else if (from == CoreTypes.PhpNumber)
-                    {
-                        EmitPhpNumberAddr();
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToBoolean);
-                        break;
-                    }
-                    else if (from.IsOfType(CoreTypes.IPhpConvertible) && from.IsReferenceType)
-                    {
-                        // (IPhpConvertible).ToBoolean()
-                        if (CanBeNull(fromHint))
-                        {
-                            // Template: <value> != null && <value>.ToBoolean()
-                            EmitCall(ILOpCode.Call, CoreMethods.Operators.ToBoolean_IPhpConvertible);
-                        }
-                        else
-                        {
-                            // Template: <value>.ToBoolean()
-                            EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpConvertible.ToBoolean)
-                                .Expect(SpecialType.System_Boolean);
-                        }
-                        break;
-                    }
-                    else if (from == CoreTypes.PhpString)
-                    {
-                        EmitPhpStringAddr();
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToBoolean);
-                        break;
-                    }
-                    //else if (from.IsOfType(CoreTypes.IPhpArray))
-                    //{
-                    //    // TODO: != null && .Count != 0
-                    //    // IPhpArray.Count != 0
-                    //    EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpArray.get_Count);
-                    //    _il.EmitOpCode(ILOpCode.Ldc_i4_0, 1);
-                    //    _il.EmitOpCode(negation ? ILOpCode.Ceq : ILOpCode.Cgt_un);
-                    //    return; // negation handled
-                    //}
-                    else if (from.IsReferenceType)
-                    {
-                        goto case SpecialType.System_Object;
-                    }
-
-                    goto default;
-
-                default:
-                    throw this.NotImplementedException($"(bool){from.Name}");
-            }
+            this.EmitImplicitConversion(from, CoreTypes.Boolean);
 
             // !<i4>
             if (negation)
@@ -195,14 +80,14 @@ namespace Pchp.CodeAnalysis.CodeGen
                         if (negation) this.EmitLogicNegation();
                         return;
                     }
-                    else if (place.TypeOpt == CoreTypes.PhpValue)
-                    {
-                        // < place >.ToBoolean()
-                        place.EmitLoadAddress(_il);
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToBoolean);
-                        if (negation) this.EmitLogicNegation();
-                        return;
-                    }
+                    //else if (place.TypeOpt == CoreTypes.PhpValue)
+                    //{
+                    //    // < place >.ToBoolean()
+                    //    place.EmitLoadAddress(_il);
+                    //    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToBoolean);
+                    //    if (negation) this.EmitLogicNegation();
+                    //    return;
+                    //}
                 }
 
                 //
@@ -1206,13 +1091,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                             EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToDouble);
                             return;
                         }
-                        if (to.SpecialType == SpecialType.System_Boolean)
-                        {
-                            // <place>.ToBoolean()
-                            place.EmitLoadAddress(_il);
-                            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToBoolean);
-                            return;
-                        }
+                        //if (to.SpecialType == SpecialType.System_Boolean)
+                        //{
+                        //    // <place>.ToBoolean()
+                        //    place.EmitLoadAddress(_il);
+                        //    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToBoolean);
+                        //    return;
+                        //}
                         if (to.SpecialType == SpecialType.System_String)
                         {
                             // <place>.ToString(<ctx>)
@@ -1313,7 +1198,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             //
-            from = EmitSpecialize(from, fromHint);
+            //from = EmitSpecialize(from, fromHint);
 
             // conversion is not needed:
             if (from.SpecialType == to.SpecialType &&

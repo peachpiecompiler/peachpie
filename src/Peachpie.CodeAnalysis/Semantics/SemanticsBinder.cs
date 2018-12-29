@@ -445,7 +445,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             if (expr is AST.BinaryEx) return BindBinaryEx((AST.BinaryEx)expr).WithAccess(access);
             if (expr is AST.AssignEx) return BindAssignEx((AST.AssignEx)expr, access);
-            if (expr is AST.UnaryEx) return BindUnaryEx((AST.UnaryEx)expr, access);
+            if (expr is AST.UnaryEx) return BindUnaryEx((AST.UnaryEx)expr, access).WithAccess(access);
             if (expr is AST.IncDecEx) return BindIncDec((AST.IncDecEx)expr).WithAccess(access);
             if (expr is AST.ConditionalEx) return BindConditionalEx((AST.ConditionalEx)expr, access).WithAccess(access);
             if (expr is AST.ConcatEx) return BindConcatEx((AST.ConcatEx)expr).WithAccess(access);
@@ -704,7 +704,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
                 else
                 {
-                    result = new BoundInstanceFunctionCall(boundTarget, new BoundUnaryEx(nameExpr, AST.Operations.StringCast), BindArguments(x.CallSignature.Parameters));
+                    result = new BoundInstanceFunctionCall(boundTarget, new BoundConversionEx(nameExpr, BoundTypeRefFactory.StringTypeRef), BindArguments(x.CallSignature.Parameters));
                 }
             }
             else if (x is AST.StaticMtdCall staticMtdCall)
@@ -713,9 +713,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 Debug.Assert(boundTarget == null);
 
-                var boundname = (staticMtdCall is AST.DirectStMtdCall)
-                    ? new BoundRoutineName(new QualifiedName(((AST.DirectStMtdCall)staticMtdCall).MethodName))
-                    : new BoundRoutineName(new BoundUnaryEx(BindExpression(((AST.IndirectStMtdCall)staticMtdCall).MethodNameExpression), AST.Operations.StringCast));
+                var boundname = (staticMtdCall is AST.DirectStMtdCall dm)
+                    ? new BoundRoutineName(new QualifiedName(dm.MethodName))
+                    : new BoundRoutineName(new BoundConversionEx(BindExpression(((AST.IndirectStMtdCall)staticMtdCall).MethodNameExpression), BoundTypeRefFactory.StringTypeRef));
 
                 result = new BoundStaticFunctionCall(BindTypeRef(staticMtdCall.TargetType, objectTypeInfoSemantic: true), boundname, BindArguments(x.CallSignature.Parameters));
             }
@@ -1000,15 +1000,54 @@ namespace Pchp.CodeAnalysis.Semantics
             switch (expr.Operation)
             {
                 case AST.Operations.AtSign:
-                    operandAccess = access;
+                    operandAccess = access; // TODO: | Quiet
                     break;
                 case AST.Operations.UnsetCast:
                     operandAccess = BoundAccess.None;
                     break;
             }
 
-            return new BoundUnaryEx(BindExpression(expr.Expr, operandAccess), expr.Operation)
-                .WithAccess(access);
+            var boundOperation = BindExpression(expr.Expr, operandAccess);
+
+            switch (expr.Operation)
+            {
+                case AST.Operations.BoolCast:
+                    return new BoundConversionEx(boundOperation, BoundTypeRefFactory.BoolTypeRef);
+
+                case AST.Operations.Int8Cast:
+                case AST.Operations.Int16Cast:
+                case AST.Operations.Int32Cast:
+                case AST.Operations.UInt8Cast:
+                case AST.Operations.UInt16Cast:
+                // -->
+                case AST.Operations.UInt64Cast:
+                case AST.Operations.UInt32Cast:
+                case AST.Operations.Int64Cast:
+                    return new BoundConversionEx(boundOperation, BoundTypeRefFactory.LongTypeRef);
+
+                case AST.Operations.DecimalCast:
+                case AST.Operations.DoubleCast:
+                case AST.Operations.FloatCast:
+                    return new BoundConversionEx(boundOperation, BoundTypeRefFactory.DoubleTypeRef);
+
+                case AST.Operations.UnicodeCast:
+                    return new BoundConversionEx(boundOperation, BoundTypeRefFactory.StringTypeRef);
+
+                case AST.Operations.StringCast:
+                    return new BoundConversionEx(boundOperation, BoundTypeRefFactory.StringTypeRef); // TODO // CONSIDER: should be WritableString and analysis should rewrite it to String if possible
+
+                case AST.Operations.BinaryCast:
+                    return new BoundConversionEx(boundOperation, BoundTypeRefFactory.WritableStringRef);
+
+                case AST.Operations.ArrayCast:
+                    return new BoundConversionEx(boundOperation, BoundTypeRefFactory.ArrayTypeRef);
+
+                case AST.Operations.ObjectCast:
+                    return new BoundConversionEx(boundOperation, BoundTypeRefFactory.ObjectTypeRef);
+
+                default:
+                    return new BoundUnaryEx(BindExpression(expr.Expr, operandAccess), expr.Operation);
+            }
         }
 
         protected BoundExpression BindAssignEx(AST.AssignEx expr, BoundAccess access)

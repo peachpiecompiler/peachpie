@@ -159,6 +159,7 @@ namespace Pchp.CodeAnalysis
             _coreTypes = new CoreTypes(this);
             _coreMethods = new CoreMethods(_coreTypes);
             _anonymousTypeManager = new AnonymousTypeManager(this);
+            _conversions = new Semantics.Conversions(this);
 
             _referenceManager = (reuseReferenceManager && referenceManager != null)
                 ? referenceManager

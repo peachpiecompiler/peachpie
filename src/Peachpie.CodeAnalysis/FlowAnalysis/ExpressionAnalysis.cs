@@ -996,11 +996,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         return TypeCtx.GetNumberTypeMask();     // TODO: long in case operand is not a number
                     }
 
-                case Operations.ObjectCast:
-                    if (IsClassOnly(x.Operand.TypeRefMask))
-                        return x.Operand.TypeRefMask;   // (object)<object>
-
-                    return TypeCtx.GetSystemObjectTypeMask();   // TODO: return the exact type in case we know, return stdClass in case of a scalar
+                case Operations.UnsetCast:
+                    return TypeCtx.GetNullTypeMask();   // null
 
                 case Operations.Plus:
                     if (IsNumberOnly(x.Operand.TypeRefMask))
@@ -1009,54 +1006,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 case Operations.Print:
                     return TypeCtx.GetLongTypeMask();
-
-                case Operations.BoolCast:
-                    {
-                        if (x.Operand.ConstantValue.TryConvertToBool(out bool constBool))
-                        {
-                            x.ConstantValue = ConstantValueExtensions.AsOptional(constBool);
-                        }
-                        return TypeCtx.GetBooleanTypeMask();
-                    }
-
-                case Operations.Int8Cast:
-                case Operations.Int16Cast:
-                case Operations.Int32Cast:
-                case Operations.UInt8Cast:
-                case Operations.UInt16Cast:
-                // -->
-                case Operations.UInt64Cast:
-                case Operations.UInt32Cast:
-                case Operations.Int64Cast:
-                    {
-                        if (x.Operand.ConstantValue.TryConvertToLong(out long l))
-                        {
-                            x.ConstantValue = new Optional<object>(l);
-                        }
-                        return TypeCtx.GetLongTypeMask();
-                    }
-
-                case Operations.DecimalCast:
-                case Operations.DoubleCast:
-                case Operations.FloatCast:
-                    return TypeCtx.GetDoubleTypeMask();
-
-                case Operations.UnicodeCast: // TODO
-                case Operations.StringCast:
-                    if (x.Operand.ConstantValue.TryConvertToString(out string str))
-                    {
-                        x.ConstantValue = new Optional<object>(str);
-                    }
-                    return TypeCtx.GetStringTypeMask(); // binary | unicode | both
-
-                case Operations.BinaryCast:
-                    return TypeCtx.GetWritableStringTypeMask(); // binary string builder
-
-                case Operations.ArrayCast:
-                    return TypeCtx.GetArrayTypeMask();  // TODO: can we be more specific?
-
-                case Operations.UnsetCast:
-                    return TypeCtx.GetNullTypeMask();   // null
 
                 default:
                     throw ExceptionUtilities.Unreachable;
@@ -1087,6 +1036,63 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             return null;
+        }
+
+        #endregion
+
+        #region Visit Conversion
+
+        public override T VisitConversion(BoundConversionEx x)
+        {
+            base.VisitConversion(x);
+
+            // evaluate if possible
+
+            if (x.TargetType is BoundPrimitiveTypeRef pt)
+            {
+                switch (pt.TypeCode)
+                {
+                    case PhpTypeCode.Boolean:
+                        if (x.Operand.ConstantValue.TryConvertToBool(out bool constBool))
+                        {
+                            x.ConstantValue = ConstantValueExtensions.AsOptional(constBool);
+                        }
+                        break;
+
+                    case PhpTypeCode.Long:
+                        if (x.Operand.ConstantValue.TryConvertToLong(out long l))
+                        {
+                            x.ConstantValue = new Optional<object>(l);
+                        }
+                        break;
+
+                    case PhpTypeCode.Double:
+                        break;
+
+                    case PhpTypeCode.String:
+                    case PhpTypeCode.WritableString:
+                        if (x.Operand.ConstantValue.TryConvertToString(out string str))
+                        {
+                            x.ConstantValue = new Optional<object>(str);
+                        }
+                        break;
+
+                    case PhpTypeCode.Object:
+                        if (IsClassOnly(x.Operand.TypeRefMask))
+                        {
+                            // it is object already, keep its specific type
+                            x.TypeRefMask = x.Operand.TypeRefMask;   // (object)<object>
+                            return default;
+                        }
+                        break;
+                }
+            }
+
+            //
+
+            x.TypeRefMask = x.TargetType.GetTypeRefMask(TypeCtx);
+
+            return default;
         }
 
         #endregion

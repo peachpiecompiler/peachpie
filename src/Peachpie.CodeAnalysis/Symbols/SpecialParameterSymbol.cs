@@ -88,7 +88,12 @@ namespace Pchp.CodeAnalysis.Symbols
         /// which is always first and of type <c>Pchp.Core.Context</c>.
         /// </summary>
         public static bool IsContextParameter(ParameterSymbol p)
-            => p != null && p.Ordinal == 0 && p.Type != null && p.Type.MetadataName == "Context"; // TODO: && namespace == Pchp.Core.
+            => p != null &&
+                p.DeclaringCompilation != null
+                ? p.Type == p.DeclaringCompilation.CoreTypes.Context.Symbol
+                : p.Type != null
+                    ? (p.Type.Name == "Context" && p.Type.ContainingAssembly.IsPeachpieCorLibrary)
+                    : false;
 
         /// <summary>
         /// Determines whether given parameter is treated as a special implicitly provided, by the compiler or the runtime.

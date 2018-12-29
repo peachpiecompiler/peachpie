@@ -316,6 +316,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
+        public override T VisitConversion(BoundConversionEx x)
+        {
+            Accept(x.Operand);
+            Accept(x.TargetType);
+
+            return default;
+        }
+
         public override T VisitIncDec(BoundIncDecEx x)
         {
             Accept(x.Target);

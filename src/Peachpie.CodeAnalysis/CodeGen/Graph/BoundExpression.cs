@@ -1912,17 +1912,8 @@ namespace Pchp.CodeAnalysis.Semantics
                     break;
 
                 case Operations.LogicNegation:
-                    if (Operand is BoundUnaryEx op_un && op_un.Operation == Operations.LogicNegation)
-                    {
-                        // double negation !(!x), just convert to (bool)x:
-                        //Template: (bool)(x);
-                        cg.EmitConvertToBool(op_un.Operand, negation: false);
-                    }
-                    else
-                    {
-                        //Template: !(bool)(x);
-                        cg.EmitConvertToBool(this.Operand, negation: true);
-                    }
+                    //Template: !(bool)(x);
+                    cg.EmitConvertToBool(this.Operand, negation: true);
                     returned_type = cg.CoreTypes.Boolean;
                     break;
 
@@ -1955,58 +1946,6 @@ namespace Pchp.CodeAnalysis.Semantics
                         // nobody reads the result anyway
                         returned_type = cg.CoreTypes.Void;
                     }
-                    break;
-
-                case Operations.BoolCast:
-                    //Template: "(bool)x"
-                    cg.EmitConvert(this.Operand, cg.CoreTypes.Boolean);
-                    returned_type = cg.CoreTypes.Boolean;
-                    break;
-
-                case Operations.Int8Cast:
-                case Operations.Int16Cast:
-                case Operations.Int32Cast:
-                case Operations.UInt8Cast:
-                case Operations.UInt16Cast:
-
-                case Operations.UInt64Cast:
-                case Operations.UInt32Cast:
-                case Operations.Int64Cast:
-
-                    cg.EmitConvert(this.Operand, cg.CoreTypes.Long);
-                    returned_type = cg.CoreTypes.Long;
-                    break;
-
-                case Operations.DecimalCast:
-                case Operations.DoubleCast:
-                case Operations.FloatCast:
-
-                    cg.EmitConvert(this.Operand, cg.CoreTypes.Double);
-                    returned_type = cg.CoreTypes.Double;
-                    break;
-
-                case Operations.UnicodeCast: // TODO
-                case Operations.StringCast:
-                    // (string)x ?? String.Empty
-                    cg.EmitConvert(this.Operand, cg.CoreTypes.String);  // TODO: to String or PhpString ? to not corrupt single-byte string
-                    cg.EmitNullCoalescing(_cg => cg.Builder.EmitStringConstant(string.Empty));
-                    return cg.CoreTypes.String;
-
-                case Operations.BinaryCast:
-                    //if ((returned_typecode = node.Expr.Emit(codeGenerator)) != PhpTypeCode.PhpBytes)
-                    //{
-                    //    codeGenerator.EmitBoxing(returned_typecode);
-                    //    //codeGenerator.EmitLoadClassContext();
-                    //    il.Emit(OpCodes.Call, Methods.Convert.ObjectToPhpBytes);
-                    //    returned_typecode = PhpTypeCode.PhpBytes;
-                    //}
-                    //break;
-                    throw new NotImplementedException();
-
-                case Operations.ArrayCast:
-                    // Template: "(array)x"
-                    // Conversion of anything to array:
-                    returned_type = cg.EmitCastToArray(this.Operand);
                     break;
 
                 case Operations.UnsetCast:
@@ -2153,6 +2092,40 @@ namespace Pchp.CodeAnalysis.Semantics
 
             //
             return t;
+        }
+    }
+
+    partial class BoundConversionEx
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            // emit explicit 'cast' operation
+
+            var t = cg.Emit(this.Operand);
+
+            var target = (TypeSymbol)this.TargetType.ResolveTypeSymbol(cg.DeclaringCompilation);
+            if (target.IsErrorTypeOrNull())
+            {
+                throw cg.NotImplementedException(op: this);
+            }
+
+            var conv = cg.DeclaringCompilation.ClassifyExplicitConversion(t, target);
+            if (conv.Exists == false)
+            {
+
+            }
+
+            cg.EmitConversion(conv, t, target);
+
+            //
+
+            if (Access.IsNone)
+            {
+                cg.EmitPop(target);
+                return cg.CoreTypes.Void;
+            }
+
+            return target;
         }
     }
 

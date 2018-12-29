@@ -3489,7 +3489,14 @@ namespace Pchp.CodeAnalysis.CodeGen
             var stack = method.GetCallStackBehavior();
 
             if (code == ILOpCode.Newobj)
+            {
                 stack += 1 + 1;    // there is no <this>, + it pushes <newinst> on stack
+            }
+
+            if (code == ILOpCode.Callvirt && (!method.IsVirtual || method.IsSealed || method.ContainingType.IsSealed))
+            {
+                code = ILOpCode.Call; // virtual dispatch is unnecessary
+            }
 
             il.EmitOpCode(code, stack);
             il.EmitToken(module.Translate(method, diagnostics, false), null, diagnostics);

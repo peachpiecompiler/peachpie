@@ -10,7 +10,7 @@ namespace Pchp.Core
     /// <summary>
     /// Represents an aliased value.
     /// </summary>
-    [DebuggerDisplay("{Value.DisplayString,nq}, Refs#{_refcount}", Type= "&{Value.DebugTypeName,nq}")]
+    [DebuggerDisplay("{Value.DisplayString,nq}, Refs#{_refcount}", Type = "&{Value.DebugTypeName,nq}")]
     public class PhpAlias : IPhpConvertible
     {
         #region Fields
@@ -101,6 +101,12 @@ namespace Pchp.Core
         public object ToClass() => Value.ToClass();
 
         public PhpArray ToArray() => Value.ToArray();
+
+        #endregion
+
+        #region Operations
+
+        public static explicit operator PhpArray(PhpAlias alias) => alias.ToArray();
 
         #endregion
     }

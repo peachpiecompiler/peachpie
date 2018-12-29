@@ -387,6 +387,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 x.Operation);
         }
 
+        public override object VisitConversion(BoundConversionEx x)
+        {
+            return x.Update(
+                (BoundExpression)Accept(x.Operand),
+                (BoundTypeRef)Accept(x.TargetType));
+        }
+
         public override object VisitIncDec(BoundIncDecEx x)
         {
             return x.Update(

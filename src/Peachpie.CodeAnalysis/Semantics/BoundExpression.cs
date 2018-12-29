@@ -496,7 +496,7 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         private BoundGlobalFunctionCall(BoundRoutineName name, QualifiedName? nameOpt, ImmutableArray<BoundArgument> arguments)
-            : base (arguments)
+            : base(arguments)
         {
             Debug.Assert(nameOpt == null || name.IsDirect);
             _name = name;
@@ -511,7 +511,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                return new BoundGlobalFunctionCall(name, nameOpt, arguments){ TypeArguments = typeArguments }.WithContext(this);
+                return new BoundGlobalFunctionCall(name, nameOpt, arguments) { TypeArguments = typeArguments }.WithContext(this);
             }
         }
 
@@ -598,7 +598,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                return new BoundStaticFunctionCall(typeRef, name, arguments){ TypeArguments = typeArguments }.WithContext(this);
+                return new BoundStaticFunctionCall(typeRef, name, arguments) { TypeArguments = typeArguments }.WithContext(this);
             }
         }
 
@@ -696,7 +696,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                return new BoundNewEx(tref, arguments){ TypeArguments = typeArguments }.WithContext(this);
+                return new BoundNewEx(tref, arguments) { TypeArguments = typeArguments }.WithContext(this);
             }
         }
 
@@ -1068,7 +1068,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override OperationKind Kind => OperationKind.UnaryOperator;
 
-        public override bool RequiresContext => Operation == Ast.Operations.StringCast || Operation == Ast.Operations.Print || Operand.RequiresContext;
+        public override bool RequiresContext => Operation == Ast.Operations.Print || Operand.RequiresContext;
 
         IOperation IUnaryOperation.Operand => Operand;
 
@@ -1111,6 +1111,58 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitUnaryExpression(this);
+    }
+
+    #endregion
+
+    #region BoundConvertEx
+
+    /// <summary>
+    /// Explicit conversion operation (cast operation).
+    /// </summary>
+    public sealed partial class BoundConversionEx : BoundExpression, IConversionOperation
+    {
+        public override OperationKind Kind => OperationKind.Conversion;
+
+        IOperation IConversionOperation.Operand => Operand;
+
+        IMethodSymbol IConversionOperation.OperatorMethod => Conversion.MethodSymbol;
+
+        public override bool RequiresContext => Operand.RequiresContext || (TargetType is TypeRef.BoundPrimitiveTypeRef pt && pt.TypeCode == PhpTypeCode.String);
+
+        public CommonConversion Conversion { get; set; }
+
+        bool IConversionOperation.IsTryCast => false;
+
+        public bool IsChecked { get; set; }
+
+        public BoundExpression Operand { get; private set; }
+
+        internal BoundTypeRef TargetType { get; private set; }
+
+        internal BoundConversionEx(BoundExpression operand, BoundTypeRef targetType)
+        {
+            this.Operand = operand ?? throw new ArgumentNullException(nameof(operand));
+            this.TargetType = targetType ?? throw new ArgumentNullException(nameof(targetType));
+        }
+
+        internal BoundConversionEx Update(BoundExpression operand, BoundTypeRef targetType)
+        {
+            if (operand == this.Operand && targetType == this.TargetType)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundConversionEx(operand, targetType).WithContext(this);
+            }
+        }
+
+        public override void Accept(OperationVisitor visitor) => visitor.VisitConversion(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument) => visitor.VisitConversion(this, argument);
+
+        public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitConversion(this);
     }
 
     #endregion

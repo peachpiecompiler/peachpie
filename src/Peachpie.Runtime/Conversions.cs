@@ -98,14 +98,18 @@ namespace Pchp.Core
         /// </summary>
         public static string ToString(double value, Context ctx) => value.ToString("G", ctx.NumberFormat);
 
+        public static string ToString(object value, Context ctx) => ToStringOrThrow(value, ctx);
+
+        public static string ToString(IPhpConvertible value, Context ctx) => value.ToStringOrThrow(ctx);
+
         /// <summary>
         /// Converts class instance to a string.
         /// </summary>
         public static string ToStringOrThrow(object value, Context ctx)
         {
-            if (value is IPhpConvertible)   // TODO: should be sufficient to call just ToString(), implementations of IPhpConvertible override ToString always
+            if (value is IPhpConvertible conv)   // TODO: should be sufficient to call just ToString(), implementations of IPhpConvertible override ToString always
             {
-                return ((IPhpConvertible)value).ToStringOrThrow(ctx);
+                return ToString(conv, ctx);
             }
             else
             {
@@ -258,6 +262,8 @@ namespace Pchp.Core
         /// Converts value to an array.
         /// </summary>
         public static PhpArray ToArray(PhpValue value) => value.ToArray();
+
+        public static PhpArray ToArray(object obj) => ClassToArray(obj);
 
         /// <summary>
         /// Casts value to <see cref="PhpArray"/> or <c>null</c>.

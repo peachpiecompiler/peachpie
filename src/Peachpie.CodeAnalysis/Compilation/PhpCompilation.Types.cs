@@ -37,6 +37,8 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         private Symbol[] _lazyWellKnownTypeMembers;
 
+        readonly Conversions/*!*/_conversions;
+
         #region CoreTypes, CoreMethods
 
         /// <summary>
@@ -624,13 +626,58 @@ namespace Pchp.CodeAnalysis
             return this.GetTypeFromTypeRef(routine.TypeRefContext, typeMask);
         }
 
+        /// <summary>
+        /// PHP has a different semantic of explicit conversions,
+        /// try to resolve explicit conversion first.
+        /// </summary>
+        public CommonConversion ClassifyExplicitConversion(ITypeSymbol source, ITypeSymbol destination)
+        {
+            var conv = _conversions.ClassifyConversion((TypeSymbol)source, (TypeSymbol)destination, checkimplicit: false);
+            if (conv.Exists == false)
+            {
+                // try regular implicit conversion instead
+                conv = ClassifyCommonConversion(source, destination);
+            }
+
+            return conv;
+        }
+
         public override CommonConversion ClassifyCommonConversion(ITypeSymbol source, ITypeSymbol destination)
         {
-            throw new NotImplementedException();
+            return _conversions.ClassifyConversion((TypeSymbol)source, (TypeSymbol)destination);
         }
 
         internal override IConvertibleConversion ClassifyConvertibleConversion(IOperation source, ITypeSymbol destination, out Optional<object> constantValue)
         {
+            //constantValue = default;
+
+            //if (destination is null)
+            //{
+            //    return Conversions.NoConversion;
+            //}
+
+            //ITypeSymbol sourceType = source.Type;
+
+            //if (sourceType is null)
+            //{
+            //    if (source.ConstantValue.HasValue && source.ConstantValue.Value is null && destination.IsReferenceType)
+            //    {
+            //        constantValue = source.ConstantValue;
+            //        return Conversions.DefaultOrNullLiteral;
+            //    }
+
+            //    return Conversion.NoConversion;
+            //}
+
+            //var result = Conversions.ClassifyConversion(this, sourceType, destination);
+
+            //if (result.IsReference && source.ConstantValue.HasValue && source.ConstantValue.Value is null)
+            //{
+            //    constantValue = source.ConstantValue;
+            //}
+
+            //return result;
+
             throw new NotImplementedException();
         }
 
