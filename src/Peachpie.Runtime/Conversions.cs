@@ -265,10 +265,17 @@ namespace Pchp.Core
 
         public static PhpArray ToArray(object obj) => ClassToArray(obj);
 
+        public static PhpArray ToArray(long value) => PhpArray.New(value);
+
+        public static PhpArray ToArray(double value) => PhpArray.New(value);
+
+        public static PhpArray ToArray(bool value) => PhpArray.New(value);
+
         /// <summary>
         /// Casts value to <see cref="PhpArray"/> or <c>null</c>.
         /// </summary>
         public static PhpArray AsArray(PhpValue value) => value.AsArray();
+
         /// <summary>
         /// Creates <see cref="PhpArray"/> from object's properties.
         /// </summary>
@@ -934,7 +941,7 @@ namespace Pchp.Core
 
             //
             result |= NumberInfo.LongInteger;
-            
+
             // double parsing states
             if (state >= 3 && state <= 6)
             {
