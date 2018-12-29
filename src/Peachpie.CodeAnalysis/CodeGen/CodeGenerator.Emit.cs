@@ -230,25 +230,25 @@ namespace Pchp.CodeAnalysis.CodeGen
                         if (IsDoubleOnly(tmask))
                         {
                             place.EmitLoadAddress(_il);
-                            return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_Double)
+                            return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Double.Getter)
                                 .Expect(SpecialType.System_Double);
                         }
                         else if (IsLongOnly(tmask))
                         {
                             place.EmitLoadAddress(_il);
-                            return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_Long)
+                            return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Long.Getter)
                                 .Expect(SpecialType.System_Int64);
                         }
                         else if (IsBooleanOnly(tmask))
                         {
                             place.EmitLoadAddress(_il);
-                            return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_Boolean)
+                            return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Boolean.Getter)
                                 .Expect(SpecialType.System_Boolean);
                         }
                         else if (IsReadonlyStringOnly(tmask))
                         {
                             place.EmitLoadAddress(_il);
-                            return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_String)
+                            return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.String.Getter)
                                 .Expect(SpecialType.System_String);
                         }
                         //else if (IsArrayOnly(tmask))
@@ -350,25 +350,25 @@ namespace Pchp.CodeAnalysis.CodeGen
                     if (IsDoubleOnly(tmask))
                     {
                         EmitPhpValueAddr();
-                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_Double)
+                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Double.Getter)
                             .Expect(SpecialType.System_Double);
                     }
                     else if (IsLongOnly(tmask))
                     {
                         EmitPhpValueAddr();
-                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_Long)
+                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Long.Getter)
                             .Expect(SpecialType.System_Int64);
                     }
                     else if (IsBooleanOnly(tmask))
                     {
                         EmitPhpValueAddr();
-                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_Boolean)
+                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Boolean.Getter)
                             .Expect(SpecialType.System_Boolean);
                     }
                     else if (IsReadonlyStringOnly(tmask))
                     {
                         EmitPhpValueAddr();
-                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.get_String)
+                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.String.Getter)
                             .Expect(SpecialType.System_String);
                     }
                 }

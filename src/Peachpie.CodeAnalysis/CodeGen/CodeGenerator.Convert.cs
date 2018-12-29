@@ -69,28 +69,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
-                // avoiding of load of full value
-                if (place != null && place.HasAddress)
-                {
-                    if (place.TypeOpt == CoreTypes.PhpNumber)
-                    {
-                        // < place >.ToBoolean()
-                        place.EmitLoadAddress(_il);
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToBoolean);
-                        if (negation) this.EmitLogicNegation();
-                        return;
-                    }
-                    //else if (place.TypeOpt == CoreTypes.PhpValue)
-                    //{
-                    //    // < place >.ToBoolean()
-                    //    place.EmitLoadAddress(_il);
-                    //    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToBoolean);
-                    //    if (negation) this.EmitLogicNegation();
-                    //    return;
-                    //}
-                }
-
-                //
                 EmitConvertToBool(Emit(expr), expr.TypeRefMask, negation);
             }
         }
@@ -1053,13 +1031,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                             EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToDouble);
                             return;
                         }
-                        if (to.SpecialType == SpecialType.System_Boolean)
-                        {
-                            // <place>.ToBoolean()
-                            place.EmitLoadAddress(_il);
-                            EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToBoolean);
-                            return;
-                        }
+                        //if (to.SpecialType == SpecialType.System_Boolean)
+                        //{
+                        //    // <place>.ToBoolean()
+                        //    place.EmitLoadAddress(_il);
+                        //    EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToBoolean);
+                        //    return;
+                        //}
                         if (to.SpecialType == SpecialType.System_String)
                         {
                             // <place>.ToString(<ctx>)

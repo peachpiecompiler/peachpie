@@ -142,7 +142,6 @@ namespace Pchp.CodeAnalysis.Semantics
                                             continue;
                                         }
                                     }
-                                    cost++;
                                     pconsumed++;
                                 }
 

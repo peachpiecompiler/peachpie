@@ -4497,27 +4497,11 @@ namespace Pchp.CodeAnalysis.Semantics
                     return cg.CoreTypes.Boolean;
 
                 case SpecialType.System_Double:
-                    // r8 == 0
-                    il.EmitDoubleConstant(0.0);
-                    il.EmitOpCode(ILOpCode.Ceq);
-                    return cg.CoreTypes.Boolean;
-
                 case SpecialType.System_Boolean:
                 case SpecialType.System_Int32:
-                    // i4 == 0
-                    cg.EmitLogicNegation();
-                    return cg.CoreTypes.Boolean;
-
                 case SpecialType.System_Int64:
-                    // i8 == 0
-                    il.EmitLongConstant(0);
-                    il.EmitOpCode(ILOpCode.Ceq);
-                    return cg.CoreTypes.Boolean;
-
                 case SpecialType.System_String:
-                    // !ToBoolean(string)
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.ToBoolean_String);
-                    cg.EmitLogicNegation();
+                    cg.EmitConvertToBool(t, default, negation: true);
                     return cg.CoreTypes.Boolean;
 
                 default:

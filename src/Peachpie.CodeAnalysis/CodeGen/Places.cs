@@ -739,7 +739,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         // uses typehint and accesses .Array directly if possible
                         // <place>.Array
                         _place.EmitLoadAddress(cg.Builder);
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.get_Array)
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Array.Getter)
                             .Expect(cg.CoreTypes.PhpArray);
                     }
                     else
@@ -1598,9 +1598,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                         case SpecialType.System_Int64:
                             EmitOpCode_LoadAddress(cg); // &PhpValue.ToLong()
                             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToLong);
-                        case SpecialType.System_Boolean:
-                            EmitOpCode_LoadAddress(cg); // &PhpValue.ToBoolean()
-                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.ToBoolean);
                         case SpecialType.System_String:
                             EmitOpCode_LoadAddress(cg); // &PhpValue.ToString(ctx)
                             cg.EmitLoadContext();
