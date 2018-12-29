@@ -342,13 +342,12 @@ namespace Pchp.Core
         /// <summary>
         /// Creates <see cref="stdClass"/> with runtime instance fields copied from entries of this array.
         /// </summary>
-        public object ToClass()
+        public object ToClass() => ToObject();
+
+        public stdClass ToObject() => new stdClass()
         {
-            return new stdClass()
-            {
-                __peach__runtimeFields = this.DeepCopy()
-            };
-        }
+            __peach__runtimeFields = this.DeepCopy()
+        };
 
         public PhpArray ToArray() => this;
 

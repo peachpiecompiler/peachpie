@@ -230,13 +230,13 @@ namespace Pchp.CodeAnalysis.Semantics
                 case SpecialType.System_Int64: return new[] { WellKnownMemberNames.ExplicitConversionName, "ToLong" };
                 case SpecialType.System_Double: return new[] { WellKnownMemberNames.ExplicitConversionName, "ToDouble" };
                 case SpecialType.System_String: return new[] { WellKnownMemberNames.ExplicitConversionName, "ToString" };
+                case SpecialType.System_Object: return new[] { "ToObject" };
                 default:
 
                     // ToArray
                     if (target == _compilation.CoreTypes.PhpArray.Symbol) return new[] { WellKnownMemberNames.ExplicitConversionName, "ToArray" };
 
                     // ToWritableString
-                    // ToObject
                     // ToPhpValue
                     // ToPhpAlias
 
