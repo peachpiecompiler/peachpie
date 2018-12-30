@@ -71,6 +71,11 @@ namespace Pchp.Library
                 {
                     if (last != '.')
                     {
+                        if (sb.Length == 0)
+                        {
+                            sb.Append('0'); // prepend leading '.' with '0' // TODO: test case and rewrite 'version_compare()'
+                        }
+
                         sb.Append(last = '.');
                     }
                 }
