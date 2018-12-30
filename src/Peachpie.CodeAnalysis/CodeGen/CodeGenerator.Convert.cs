@@ -250,64 +250,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        public TypeSymbol EmitConvertToDouble(TypeSymbol from, TypeRefMask fromHint)
-        {
-            Contract.ThrowIfNull(from);
-
-            from = EmitSpecialize(from, fromHint);
-
-            // dereference
-            if (from == CoreTypes.PhpAlias)
-            {
-                Emit_PhpAlias_GetValue();
-                from = CoreTypes.PhpValue;
-            }
-
-            var dtype = CoreTypes.Double.Symbol;
-
-            switch (from.SpecialType)
-            {
-                case SpecialType.System_Int32:
-                case SpecialType.System_Int64:
-                case SpecialType.System_Single:
-                case SpecialType.System_Double:
-                case SpecialType.System_String:
-                    this.EmitImplicitConversion(from, CoreTypes.Double);
-                    return dtype;
-
-                default:
-                    if (from == CoreTypes.PhpNumber)
-                    {
-                        EmitPhpNumberAddr();
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToDouble);
-                        return dtype;
-                    }
-                    else if (from == CoreTypes.PhpString)
-                    {
-                        Debug.Assert(from.IsValueType);
-                        // (ref <PhpString>).ToDouble()
-                        EmitPhpStringAddr();
-                        return EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToDouble)
-                            .Expect(SpecialType.System_Double);
-                    }
-                    else if (from.IsOfType(CoreTypes.IPhpArray))
-                    {
-                        // (double)IPhpArray.Count
-                        EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpArray.Count.Getter);
-                        _il.EmitOpCode(ILOpCode.Conv_r8);   // Int32 -> Double
-                        return dtype;
-                    }
-                    else if (from == CoreTypes.PhpValue)
-                    {
-                        return EmitCall(ILOpCode.Call, CoreMethods.Operators.ToDouble_PhpValue);
-                    }
-                    else
-                    {
-                        throw new NotImplementedException();
-                    }
-            }
-        }
-
         /// <summary>
         /// In case there is <c>Int32</c> or <c>bool</c> on the top of evaluation stack,
         /// converts it to <c>Int64</c>.
@@ -939,20 +881,20 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
                     else if (place.TypeOpt == CoreTypes.PhpValue)
                     {
-                        if (to.SpecialType == SpecialType.System_Int64)
-                        {
-                            // <place>.ToLong()
-                            place.EmitLoadAddress(_il);
-                            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToLong);
-                            return;
-                        }
-                        if (to.SpecialType == SpecialType.System_Double)
-                        {
-                            // <place>.ToDouble()
-                            place.EmitLoadAddress(_il);
-                            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToDouble);
-                            return;
-                        }
+                        //if (to.SpecialType == SpecialType.System_Int64)
+                        //{
+                        //    // <place>.ToLong()
+                        //    place.EmitLoadAddress(_il);
+                        //    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToLong);
+                        //    return;
+                        //}
+                        //if (to.SpecialType == SpecialType.System_Double)
+                        //{
+                        //    // <place>.ToDouble()
+                        //    place.EmitLoadAddress(_il);
+                        //    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToDouble);
+                        //    return;
+                        //}
                         //if (to.SpecialType == SpecialType.System_Boolean)
                         //{
                         //    // <place>.ToBoolean()
@@ -1079,14 +1021,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                 case SpecialType.System_Int32:
                 case SpecialType.System_UInt32:
                 case SpecialType.System_Int64:
-                    this.EmitImplicitConversion(from, to);
-                    return;
                 case SpecialType.System_Single:
-                    EmitConvertToDouble(from, fromHint);
-                    _il.EmitOpCode(ILOpCode.Conv_r4);
-                    return;
                 case SpecialType.System_Double:
-                    EmitConvertToDouble(from, fromHint);
+                    this.EmitImplicitConversion(from, to);
                     return;
                 case SpecialType.System_String:
                     EmitConvertToString(from, fromHint);

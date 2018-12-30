@@ -11,7 +11,7 @@ using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
-    class Conversions
+    sealed class Conversions
     {
         readonly PhpCompilation _compilation;
 
