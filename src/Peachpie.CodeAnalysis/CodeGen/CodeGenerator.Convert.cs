@@ -254,6 +254,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(from);
 
+            from = EmitSpecialize(from, fromHint);
+
             // dereference
             if (from == CoreTypes.PhpAlias)
             {
@@ -261,30 +263,17 @@ namespace Pchp.CodeAnalysis.CodeGen
                 from = CoreTypes.PhpValue;
             }
 
-            from = EmitSpecialize(from, fromHint);
             var dtype = CoreTypes.Double.Symbol;
 
             switch (from.SpecialType)
             {
                 case SpecialType.System_Int32:
-                    _il.EmitOpCode(ILOpCode.Conv_r8);   // Int32 -> Double
-                    return dtype;
-
                 case SpecialType.System_Int64:
-                    _il.EmitOpCode(ILOpCode.Conv_r8);   // Int64 -> Double
-                    return dtype;
-
                 case SpecialType.System_Single:
-                    _il.EmitOpCode(ILOpCode.Conv_r8);   // float -> Double
-                    return dtype;
-
                 case SpecialType.System_Double:
-                    // nop
-                    return dtype;
-
                 case SpecialType.System_String:
-                    return EmitCall(ILOpCode.Call, CoreMethods.Operators.ToDouble_String)
-                        .Expect(SpecialType.System_Double);
+                    this.EmitImplicitConversion(from, CoreTypes.Double);
+                    return dtype;
 
                 default:
                     if (from == CoreTypes.PhpNumber)

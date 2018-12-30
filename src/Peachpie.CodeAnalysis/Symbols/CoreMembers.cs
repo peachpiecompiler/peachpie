@@ -268,7 +268,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToDouble_PhpValue = new CoreCast(ct.PhpValue, ct.Double, explicit_cast: true);
                 ToNumber_PhpValue = ct.Convert.Method("ToNumber", ct.PhpValue);
                 ToNumber_String = ct.Convert.Method("ToNumber", ct.String);
-                ToDouble_String = ct.Convert.Method("ToDouble", ct.String);
 
                 AsObject_PhpValue = ct.Convert.Method("AsObject", ct.PhpValue);
                 AsArray_PhpValue = ct.Convert.Method("AsArray", ct.PhpValue);
@@ -383,7 +382,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 IsSet_PhpValue, IsEmpty_PhpValue, IsNullOrEmpty_String, Concat_String_String,
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
                 ToChar_String,
-                ToDouble_PhpValue, ToDouble_String,
+                ToDouble_PhpValue,
                 ToNumber_PhpValue, ToNumber_String,
                 AsObject_PhpValue, AsArray_PhpValue, ToArray_PhpValue, GetArrayAccess_PhpValue, ToPhpString_PhpValue_Context, ToClass_PhpValue, ToClass_IPhpArray, AsCallable_PhpValue_RuntimeTypeHandle, AsCallable_String_RuntimeTypeHandle,
                 IsInstanceOf_Object_PhpTypeInfo,

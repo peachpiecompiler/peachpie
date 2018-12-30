@@ -249,6 +249,11 @@ namespace Pchp.Core
         /// throws if conversion is not possible.</summary>
         public string AsString(Context ctx) => _type.AsString(ref this, ctx);
 
+        /// <summary>
+        /// Conversion to <see cref="int"/>.
+        /// </summary>
+        public int ToInt() => (int)this;
+
         #endregion
 
         #region Operators

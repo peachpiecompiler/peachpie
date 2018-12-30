@@ -27,9 +27,9 @@ namespace Pchp.CodeAnalysis.Semantics
         static CommonConversion ImplicitNumeric => new CommonConversion(true, false, true, false, true, null);
         static CommonConversion ExplicitNumeric => new CommonConversion(true, false, true, false, false, null);
 
-        static int ConvCost(CommonConversion conv)
+        static int ConvCost(CommonConversion conv, bool returning)
         {
-            return conv.IsIdentity ? 0 : conv.IsImplicit ? 1 : 3;
+            return conv.IsIdentity ? 0 : (conv.IsImplicit ^ returning) ? 1 : 3;
         }
 
         static (bool floating, bool signed, int size) ClassifyNumericType(TypeSymbol type)
@@ -113,7 +113,7 @@ namespace Pchp.CodeAnalysis.Semantics
                                     var conv = ClassifyConversion(method.ReturnType, target, checkimplicit: false, checkexplicit: false);
                                     if (conv.Exists)    // TODO: chain the conversion, sum the cost
                                     {
-                                        cost += ConvCost(conv);
+                                        cost += ConvCost(conv, true);
                                     }
                                     else
                                     {
@@ -135,7 +135,7 @@ namespace Pchp.CodeAnalysis.Semantics
                                         var conv = ClassifyConversion(receiver, ps[pconsumed].Type, checkexplicit: false, checkimplicit: false);
                                         if (conv.Exists && ps[pconsumed].RefKind == RefKind.None)   // TODO: chain the conversion
                                         {
-                                            cost += ConvCost(conv);
+                                            cost += ConvCost(conv, false);
                                         }
                                         else
                                         {
@@ -160,7 +160,7 @@ namespace Pchp.CodeAnalysis.Semantics
                                         var conv = ClassifyConversion(operand, ps[pconsumed].Type, checkexplicit: false);
                                         if (conv.Exists)    // TODO: chain the conversion
                                         {
-                                            cost += ConvCost(conv);
+                                            cost += ConvCost(conv, false);
                                         }
                                         else
                                         {

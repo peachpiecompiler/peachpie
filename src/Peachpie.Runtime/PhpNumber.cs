@@ -1300,6 +1300,11 @@ namespace Pchp.Core
         /// </summary>
         public static implicit operator long(PhpNumber value) => value.ToLong();
 
+        /// <summary>
+        /// Converts given number to <see cref="double"/>.
+        /// </summary>
+        public static implicit operator double(PhpNumber value) => value.ToDouble();
+
         #endregion
 
         #endregion
