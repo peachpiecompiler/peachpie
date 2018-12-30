@@ -347,6 +347,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     {
                         // in global code, treat the variable as initialized always:
                         State.SetVarInitialized(local);
+                        vartype.IsRef = true;   // variable might be a reference
                     }
                 }
 
@@ -460,7 +461,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (x.Access.IsRead)
                 {
                     State.FlowContext.SetAllUsed();
-                    x.TypeRefMask = TypeRefMask.AnyType;
+                    x.TypeRefMask = TypeRefMask.AnyType.WithRefFlag;
                 }
 
                 if (x.Access.IsWrite || x.Access.IsEnsure)
