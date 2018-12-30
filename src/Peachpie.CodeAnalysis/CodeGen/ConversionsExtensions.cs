@@ -12,14 +12,16 @@ namespace Pchp.CodeAnalysis.CodeGen
 {
     static class ConversionsExtensions
     {
-        public static void EmitImplicitConversion(this CodeGenerator cg, TypeSymbol from, TypeSymbol to)
+        // TODO: EmitImplicitConversion(BoundExpression from, ...) // allows to use receiver by ref in case of a value type (PhpValue)
+
+        public static void EmitImplicitConversion(this CodeGenerator cg, TypeSymbol from, TypeSymbol to, bool @checked = false)
         {
             if (from != to)
             {
                 var conv = cg.DeclaringCompilation.ClassifyCommonConversion(from, to);
                 if (conv.IsImplicit || conv.IsNumeric)
                 {
-                    EmitConversion(cg, conv, from, to);
+                    EmitConversion(cg, conv, from, to, @checked: @checked);
                 }
                 else
                 {
@@ -68,7 +70,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits the given conversion. 'from' and 'to' matches the classified conversion.
         /// </summary>
-        public static void EmitConversion(this CodeGenerator cg, CommonConversion conversion, TypeSymbol from, TypeSymbol to)
+        public static void EmitConversion(this CodeGenerator cg, CommonConversion conversion, TypeSymbol from, TypeSymbol to, bool @checked = false)
         {
             // {from} is loaded on stack
 
@@ -91,7 +93,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else if (conversion.IsNumeric)
             {
-                EmitNumericConversion(cg, from, to, false);
+                EmitNumericConversion(cg, from, to, @checked: @checked);
             }
             else if (conversion.IsReference)
             {
@@ -111,7 +113,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 else
                 {
                     if (ps[0].RefKind != RefKind.None) throw new InvalidOperationException();
-                    EmitImplicitConversion(cg, from, ps[0].Type);
+                    EmitImplicitConversion(cg, from, ps[0].Type, @checked: @checked);
                     pconsumed++;
                 }
 
@@ -124,7 +126,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (ps.Length != pconsumed) throw new InvalidOperationException();
 
-                EmitImplicitConversion(cg, cg.EmitCall(ILOpCode.Call, method), to);
+                EmitImplicitConversion(cg, cg.EmitCall(ILOpCode.Call, method), to, @checked: true);
             }
             else
             {

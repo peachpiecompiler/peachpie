@@ -75,9 +75,18 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public TypeSymbol EmitConvertToPhpValue(BoundExpression expr)
         {
-            return (expr != null && !expr.ConstantValue.IsNull())
-                ? EmitConvertToPhpValue(Emit(expr), expr.TypeRefMask)
-                : Emit_PhpValue_Null();
+            if (expr == null || expr.ConstantValue.IsNull())
+            {
+                return Emit_PhpValue_Null();
+            }
+            else if (expr.ConstantValue.IsBool(out var b))
+            {
+                return b ? Emit_PhpValue_True() : Emit_PhpValue_False();
+            }
+            else
+            {
+                return EmitConvertToPhpValue(Emit(expr), expr.TypeRefMask);
+            }
         }
 
         public TypeSymbol EmitConvertToPhpValue(TypeSymbol from, TypeRefMask fromHint)
@@ -237,120 +246,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                     else
                     {
                         throw this.NotImplementedException($"{from} -> PhpNumber");
-                    }
-            }
-        }
-
-        public void EmitConvertToInt(TypeSymbol from, TypeRefMask fromHint)
-        {
-            Contract.ThrowIfNull(from);
-
-            // dereference
-            if (from == CoreTypes.PhpAlias)
-            {
-                Emit_PhpAlias_GetValue();
-                from = CoreTypes.PhpValue;
-            }
-
-            //
-            from = EmitSpecialize(from, fromHint);
-
-            switch (from.SpecialType)
-            {
-                case SpecialType.System_Int32:
-                    return;
-
-                default:
-
-                    if (from.IsOfType(CoreTypes.IPhpArray))
-                    {
-                        // IPhpArray.Count
-                        EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpArray.Count.Getter);
-                    }
-                    else
-                    {
-                        EmitConvertToLong(from, 0);
-                        _il.EmitOpCode(ILOpCode.Conv_i4);   // Int64 -> Int32
-                    }
-                    return;
-            }
-        }
-
-        public void EmitConvertToUint(TypeSymbol from, TypeRefMask fromHint)
-        {
-            EmitConvertToLong(from, 0);
-            _il.EmitOpCode(ILOpCode.Conv_u4);   // Int64 -> Uint32
-        }
-
-        public void EmitConvertToLong(TypeSymbol from, TypeRefMask fromHint)
-        {
-            Contract.ThrowIfNull(from);
-
-            // dereference
-            if (from == CoreTypes.PhpAlias)
-            {
-                Emit_PhpAlias_GetValue();
-                from = CoreTypes.PhpValue;
-            }
-
-            //
-            from = EmitSpecialize(from, fromHint);
-
-            switch (from.SpecialType)
-            {
-                case SpecialType.System_Boolean:
-                case SpecialType.System_Double:
-                case SpecialType.System_Int32:
-                    // i4|r4 : i8
-                    _il.EmitOpCode(ILOpCode.Conv_i8);
-                    return;
-
-                case SpecialType.System_Int64:
-                    // nop
-                    return;
-
-                case SpecialType.System_String:
-                    // ToLong( <string> ) : long
-                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToLong_String)
-                        .Expect(SpecialType.System_Int64);
-                    break;
-
-                default:
-                    if (from == CoreTypes.PhpNumber)
-                    {
-                        EmitPhpNumberAddr();
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToLong);
-                        return;
-                    }
-                    else if (from.IsOfType(CoreTypes.IPhpArray))
-                    {
-                        // (long)IPhpArray.Count
-                        EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpArray.Count.Getter);
-                        _il.EmitOpCode(ILOpCode.Conv_i8);   // Int32 -> Int64
-                        return;
-                    }
-                    else if (from.IsOfType(CoreTypes.IPhpConvertible) && from.IsReferenceType)
-                    {
-                        // <stack>.ToLong()
-                        EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpConvertible.ToLong)
-                            .Expect(SpecialType.System_Int64);
-                        return;
-                    }
-                    else if (from == CoreTypes.PhpString)
-                    {
-                        Debug.Assert(from.IsValueType);
-                        // (ref <PhpString>).ToLong()
-                        EmitPhpStringAddr();
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToLong)
-                            .Expect(SpecialType.System_Int64);
-                        return;
-                    }
-                    else
-                    {
-                        // ToLong( <PhpValue> ) : i8
-                        EmitConvertToPhpValue(from, fromHint);
-                        EmitCall(ILOpCode.Call, CoreMethods.Operators.ToLong_PhpValue);
-                        return;
                     }
             }
         }
@@ -1176,7 +1071,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             //
-            //from = EmitSpecialize(from, fromHint);
+            from = EmitSpecialize(from, fromHint);
 
             // conversion is not needed:
             if (from.SpecialType == to.SpecialType &&
@@ -1192,16 +1087,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                     EmitPop(from);
                     return;
                 case SpecialType.System_Boolean:
-                    EmitConvertToBool(from, fromHint);
-                    return;
                 case SpecialType.System_Int32:
-                    EmitConvertToInt(from, fromHint);
-                    return;
                 case SpecialType.System_UInt32:
-                    EmitConvertToUint(from, fromHint);
-                    return;
                 case SpecialType.System_Int64:
-                    EmitConvertToLong(from, fromHint);
+                    this.EmitImplicitConversion(from, to);
                     return;
                 case SpecialType.System_Single:
                     EmitConvertToDouble(from, fromHint);

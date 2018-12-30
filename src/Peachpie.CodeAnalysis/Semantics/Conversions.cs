@@ -203,13 +203,17 @@ namespace Pchp.CodeAnalysis.Semantics
             switch (target.SpecialType)
             {
                 case SpecialType.System_Boolean: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsBoolean", "ToBoolean" };
-                case SpecialType.System_Int32: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsInt" };
-                case SpecialType.System_Int64: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsLong" };
-                case SpecialType.System_Double: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsDouble" };
+                case SpecialType.System_Int32: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsInt", "ToInt" };
+                case SpecialType.System_Int64: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsLong", "ToLong" };
+                case SpecialType.System_Double: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsDouble", "ToDouble" };
                 case SpecialType.System_String: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsString", "ToString" };
                 default:
 
                     // AsArray
+
+                    // ToNumber
+                    if (target == _compilation.CoreTypes.PhpNumber.Symbol) return new[] { WellKnownMemberNames.ImplicitConversionName, "ToNumber" };
+
                     // AsWritableString
                     // AsResource
                     // AsObject
@@ -234,6 +238,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
                     // ToArray
                     if (target == _compilation.CoreTypes.PhpArray.Symbol) return new[] { WellKnownMemberNames.ExplicitConversionName, "ToArray" };
+
+                    // ToNumber
+                    if (target == _compilation.CoreTypes.PhpNumber.Symbol) return new[] { WellKnownMemberNames.ExplicitConversionName, "ToNumber" };
 
                     // ToWritableString
                     // ToPhpValue

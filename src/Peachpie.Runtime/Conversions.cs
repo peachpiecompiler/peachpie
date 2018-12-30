@@ -438,6 +438,20 @@ namespace Pchp.Core
 
         #endregion
 
+        #region ToInt, ToLong, ToDouble
+
+        public static long ToLong(string value) => StringToLongInteger(value);
+
+        public static double ToDouble(string value) => StringToDouble(value);
+
+        public static int ToInt(this IPhpArray value) => value.Count;
+
+        public static int ToLong(this IPhpArray value) => ToInt(value);
+
+        public static int ToDouble(this IPhpArray value) => ToInt(value);
+
+        #endregion
+
         #region ToIntStringKey
 
         /// <summary>
@@ -1004,8 +1018,7 @@ namespace Pchp.Core
 		/// <exception cref="ArgumentNullException"><paramref name="str"/> is a <B>null</B> reference.</exception>
 		public static NumberInfo StringToNumber(string str, out long longValue, out double doubleValue)
         {
-            int l, d;
-            return IsNumber(str, (str != null) ? str.Length : 0, 0, out l, out d, out longValue, out doubleValue);
+            return IsNumber(str, (str != null) ? str.Length : 0, 0, out var l, out var d, out longValue, out doubleValue);
         }
 
         /// <summary>
@@ -1015,11 +1028,7 @@ namespace Pchp.Core
         /// <returns>The result of conversion.</returns>
         public static long StringToLongInteger(string str)
         {
-            int l, d;
-            double dval;
-            long lval;
-            IsNumber(str, (str != null) ? str.Length : 0, 0, out l, out d, out lval, out dval);
-
+            IsNumber(str, (str != null) ? str.Length : 0, 0, out var l, out var d, out var lval, out var dval);
             return lval;
         }
 
@@ -1030,11 +1039,7 @@ namespace Pchp.Core
         /// <returns>The result of conversion.</returns>
         public static double StringToDouble(string str)
         {
-            int l, d;
-            double dval;
-            long lval;
-            IsNumber(str, (str != null) ? str.Length : 0, 0, out l, out d, out lval, out dval);
-
+            IsNumber(str, (str != null) ? str.Length : 0, 0, out var l, out var d, out var lval, out var dval);
             return dval;
         }
 

@@ -1293,6 +1293,15 @@ namespace Pchp.Core
 
         #endregion
 
+        #region Conversion
+
+        /// <summary>
+        /// Converts given number to <see cref="long"/>.
+        /// </summary>
+        public static implicit operator long(PhpNumber value) => value.ToLong();
+
+        #endregion
+
         #endregion
 
         #region Construction
