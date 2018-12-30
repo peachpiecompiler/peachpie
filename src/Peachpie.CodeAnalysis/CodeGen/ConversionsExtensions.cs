@@ -33,9 +33,33 @@ namespace Pchp.CodeAnalysis.CodeGen
             var fromcode = from.PrimitiveTypeCode;
             var tocode = to.PrimitiveTypeCode;
 
-            // treat bool as int32: // NOTE: we should do the proper conversion here
-            if (tocode == Microsoft.Cci.PrimitiveTypeCode.Boolean) tocode = Microsoft.Cci.PrimitiveTypeCode.Int32;
-            if (fromcode == Microsoft.Cci.PrimitiveTypeCode.Boolean) fromcode = Microsoft.Cci.PrimitiveTypeCode.Int32;
+            if (tocode == Microsoft.Cci.PrimitiveTypeCode.Boolean)
+            {
+                switch (fromcode)
+                {
+                    case Microsoft.Cci.PrimitiveTypeCode.Float32:
+                        // Template: !(STACK == 0.0f)
+                        cg.Builder.EmitSingleConstant(0.0f);
+                        cg.Builder.EmitOpCode(ILOpCode.Ceq);
+                        cg.EmitLogicNegation();
+                        return;
+                    case Microsoft.Cci.PrimitiveTypeCode.Float64:
+                        // Template: !(STACK == 0.0)
+                        cg.Builder.EmitDoubleConstant(0.0);
+                        cg.Builder.EmitOpCode(ILOpCode.Ceq);
+                        cg.EmitLogicNegation();
+                        return;
+                }
+
+                // otherwise,
+                // treat boolean as to int32 conversion
+                tocode = Microsoft.Cci.PrimitiveTypeCode.Int32;
+            }
+
+            if (fromcode == Microsoft.Cci.PrimitiveTypeCode.Boolean)
+            {
+                fromcode = Microsoft.Cci.PrimitiveTypeCode.Int32;
+            }
 
             //
             cg.Builder.EmitNumericConversion(fromcode, tocode, @checked);
