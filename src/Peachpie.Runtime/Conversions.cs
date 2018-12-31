@@ -256,7 +256,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets underlaying class instance or <c>null</c>.
         /// </summary>
-        public static object AsObject(PhpValue value) => value.AsObject();
+        public static object AsObject(PhpValue value) => value.AsObject(); // TOOD: ?? throw new InvalidCastException();
 
         /// <summary>
         /// Converts value to an array.
@@ -270,6 +270,8 @@ namespace Pchp.Core
         public static PhpArray ToArray(double value) => PhpArray.New(value);
 
         public static PhpArray ToArray(bool value) => PhpArray.New(value);
+
+        public static PhpArray ToArray(IPhpConvertible value) => value.ToArray();
 
         /// <summary>
         /// Casts value to <see cref="PhpArray"/> or <c>null</c>.
@@ -298,7 +300,7 @@ namespace Pchp.Core
             {
                 if (obj is IPhpConvertible conv)
                 {
-                    return conv.ToArray();
+                    return ToArray(conv);
                 }
                 else if (obj is Array)
                 {
@@ -347,7 +349,11 @@ namespace Pchp.Core
 
         public static stdClass ToObject(string value) => new stdClass(value);
 
+        public static stdClass ToObject(byte[] value) => new stdClass(new PhpString(value));
+
         public static stdClass ToObject(PhpString value) => new stdClass(PhpValue.Create(value.DeepCopy()));
+
+        public static object ToObject(IPhpConvertible value) => value.ToClass();
 
         /// <summary>
         /// Converts given value to a class object.

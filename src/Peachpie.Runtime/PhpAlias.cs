@@ -108,6 +108,16 @@ namespace Pchp.Core
 
         public static explicit operator PhpArray(PhpAlias alias) => alias.ToArray();
 
+        public static implicit operator PhpValue(PhpAlias alias) => PhpValue.Create(alias);
+
+        /// <summary>
+        /// Casts the value to object instance.
+        /// Non-object values are wrapped to <see cref="stdClass"/>.
+        /// </summary>
+        public object ToObject() => this.ToClass();
+
+        public object AsObject() => this.Value.AsObject();
+
         #endregion
     }
 }

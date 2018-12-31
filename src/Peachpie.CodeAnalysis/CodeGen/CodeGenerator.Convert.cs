@@ -94,101 +94,40 @@ namespace Pchp.CodeAnalysis.CodeGen
             // Nullable<T> -> HasValue ? T : NULL
             if (from.IsNullableType())
             {
-                from = EmitNullableCastToNull(from, false);
+                from = EmitNullableCastToNull(from, false); // (HasValue ? Value : NULL)
             }
 
-            // Already PhpValue?
-            if (from == CoreTypes.PhpValue)
+            var conv = DeclaringCompilation.ClassifyCommonConversion(from, CoreTypes.PhpValue.Symbol);
+            if (conv.IsImplicit)
             {
-                return from;
+                this.EmitConversion(conv, from, CoreTypes.PhpValue.Symbol);
             }
-
-            // conversion
-            return EmitConvertToPhpValue(from, fromHint, _il, _moduleBuilder, _diagnostics);
-        }
-
-        public static TypeSymbol EmitConvertToPhpValue(TypeSymbol from, TypeRefMask fromHint, ILBuilder il, Emit.PEModuleBuilder module, DiagnosticBag diagnostic)
-        {
-            Contract.ThrowIfNull(from);
-
-            var compilation = module.Compilation;
-
-            switch (from.SpecialType)
+            else
             {
-                case SpecialType.System_Boolean:
-                    il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_Boolean);
-                    break;
-                case SpecialType.System_Int32:
-                    il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_Int);
-                    break;
-                case SpecialType.System_Int64:
-                    il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_Long);
-                    break;
-                case SpecialType.System_Double:
-                    il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_Double);
-                    break;
-                case SpecialType.System_Void:
-                    Emit_PhpValue_Void(il, module, diagnostic);
-                    break;
-                case SpecialType.System_String:
-                    il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_String)
-                        .Expect(compilation.CoreTypes.PhpValue);
-                    break;
-                default:
-                    if (from == compilation.CoreTypes.PhpAlias)
-                    {
-                        il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_PhpAlias)
-                            .Expect(compilation.CoreTypes.PhpValue);
-                        break;
-                    }
-                    else if (from == compilation.CoreTypes.PhpValue)
-                    {
-                        // nop
-                        break;
-                    }
-                    else if (from == compilation.CoreTypes.PhpString)
-                    {
-                        il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_PhpString)
-                            .Expect(compilation.CoreTypes.PhpValue);
-                        break;
-                    }
-                    else if (from == compilation.CoreTypes.PhpNumber)
-                    {
-                        il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_PhpNumber)
-                            .Expect(compilation.CoreTypes.PhpValue);
-                        break;
-                    }
-                    else if (from.IsOfType(compilation.CoreTypes.PhpArray))
-                    {
-                        il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_PhpArray)
-                            .Expect(compilation.CoreTypes.PhpValue);
-                        break;
-                    }
-                    else if (from == compilation.CoreTypes.IntStringKey)
-                    {
-                        il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.Create_IntStringKey)
-                            .Expect(compilation.CoreTypes.PhpValue);
-                        break;
-                    }
-                    else if (from.IsReferenceType)
-                    {
-                        il.EmitCall(module, diagnostic, ILOpCode.Call, compilation.CoreMethods.PhpValue.FromClass_Object)
-                            .Expect(compilation.CoreTypes.PhpValue);
-                        break;
-                    }
-                    else if (from.IsNullableType())
-                    {
-                        // Template: CodeGenerator.EmitNullableCastToNull(from, false);
-                        throw ExceptionUtilities.UnexpectedValue(from);
-                    }
-                    else
-                    {
-                        throw ExceptionUtilities.NotImplementedException(il, $"{from.Name}");
-                    }
-            }
+                // some conversion we did not implement as operator yet:
 
+                if (from.IsReferenceType)
+                {
+                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.FromClass_Object)
+                        .Expect(CoreTypes.PhpValue);
+                }
+                else if (from.IsNullableType())
+                {
+                    // Template: CodeGenerator.EmitNullableCastToNull(from, false);
+                    throw ExceptionUtilities.UnexpectedValue(from);
+                }
+                else if (from.SpecialType == SpecialType.System_Void)
+                {
+                    // PhpValue.Void
+                    Emit_PhpValue_Void();
+                }
+                else
+                {
+                    throw ExceptionUtilities.NotImplementedException(this, $"{from.Name} -> PhpValue");
+                }
+            }
             //
-            return compilation.CoreTypes.PhpValue;
+            return CoreTypes.PhpValue;
         }
 
         public void EmitConvertToIntStringKey(TypeSymbol from, TypeRefMask fromHint)
@@ -268,7 +207,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             return stack;
         }
 
-        internal TypeSymbol EmitConvertAliasToValue(ref TypeSymbol stack)
+        internal TypeSymbol EmitPhpAliasDereference(ref TypeSymbol stack)
         {
             if (stack == CoreTypes.PhpAlias)
             {
@@ -507,7 +446,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 this.Emit_PhpAlias_GetValueAddr();
                 return this.EmitCall(ILOpCode.Call, CoreMethods.PhpValue.GetArray);
             }
-            
+
             if ((from.SpecialType != SpecialType.None && from.SpecialType != SpecialType.System_Object) ||
                 (from.IsValueType && from != CoreTypes.PhpValue) ||
                 from.IsOfType(CoreTypes.PhpResource))
@@ -1104,73 +1043,6 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             //
             throw this.NotImplementedException($"{to}");
-        }
-
-        /// <summary>
-        /// Converts PHP value to an object in PHP manner.
-        /// Implements PHP object cast operator.
-        /// </summary>
-        public TypeSymbol EmitCastToObject(BoundExpression expr)
-        {
-            Contract.ThrowIfNull(expr);
-
-            var from = Emit(expr);
-
-            switch (from.SpecialType)
-            {
-                case SpecialType.System_Void:
-                case SpecialType.System_Int32:
-                case SpecialType.System_Int64:
-                case SpecialType.System_Boolean:
-                case SpecialType.System_Double:
-                case SpecialType.System_String:
-                    from = EmitConvertToPhpValue(from, expr.TypeRefMask);
-                    goto default;
-
-                default:
-                    if (from == CoreTypes.PhpNumber)
-                    {
-                        // Object
-                        EmitPhpNumberAddr();
-                        return EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToClass)
-                            .Expect(SpecialType.System_Object);
-                    }
-
-                    if (from == CoreTypes.PhpAlias)
-                    {
-                        // Template: <alias>.Value.ToClass()
-                        Emit_PhpAlias_GetValueAddr();
-                        return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToClass)
-                            .Expect(SpecialType.System_Object);
-                    }
-
-                    if (from.IsOfType(CoreTypes.PhpArray))
-                    {
-                        // PhpArray.ToClass();
-                        return EmitCall(ILOpCode.Call, CoreMethods.PhpArray.ToClass);
-                    }
-
-                    if (from.IsOfType(CoreTypes.IPhpArray))
-                    {
-                        // Convert.ToClass(IPhpArray)
-                        return EmitCall(ILOpCode.Call, CoreMethods.Operators.ToClass_IPhpArray);
-                    }
-
-                    if (from.IsReferenceType &&
-                        !from.IsOfType(CoreTypes.PhpResource))
-                    {
-                        Debug.Assert(from != CoreTypes.PhpAlias);
-                        return from;
-                    }
-
-                    // <PhpValue>.ToClass()
-
-                    EmitConvertToPhpValue(from, expr.TypeRefMask);
-
-                    // Convert.ToClass( value )
-                    return EmitCall(ILOpCode.Call, CoreMethods.Operators.ToClass_PhpValue)
-                        .Expect(SpecialType.System_Object);
-            }
         }
     }
 }

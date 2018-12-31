@@ -221,20 +221,22 @@ namespace Pchp.CodeAnalysis.Emit
             var body = MethodGenerator.GenerateMethodBody(this, wrapper,
                 (il) =>
                 {
-                    // TODO: CodeGenerator.EmitConvertToPhpValue(cg.EmitCall(main))
-
-                    // load arguments
-                    foreach (var p in main.Parameters)
+                    using (var cg = new CodeGenerator(il, this, diagnostic, this.Compilation.Options.OptimizationLevel, false, main.ContainingType, null, null))
                     {
-                        il.EmitLoadArgumentOpcode(p.Ordinal);
+                        // load arguments
+                        foreach (var p in main.Parameters)
+                        {
+                            il.EmitLoadArgumentOpcode(p.Ordinal);
+                        }
+
+                        // call <Main>
+                        var result = il.EmitCall(this, diagnostic, ILOpCode.Call, main);
+
+                        // convert result to PhpValue
+                        cg.EmitConvertToPhpValue(result, 0);
+
+                        il.EmitRet(false);
                     }
-
-                    // call <Main>
-                    var result = il.EmitCall(this, diagnostic, ILOpCode.Call, main);
-
-                    // convert result to PhpValue
-                    CodeGenerator.EmitConvertToPhpValue(result, 0, il, this, diagnostic);
-                    il.EmitRet(false);
                 },
                 null, diagnostic, false);
 

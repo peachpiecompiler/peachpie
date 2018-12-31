@@ -207,6 +207,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 case SpecialType.System_Int64: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsLong", "ToLong" };
                 case SpecialType.System_Double: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsDouble", "ToDouble" };
                 case SpecialType.System_String: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsString", "ToString" };
+                case SpecialType.System_Object: return new[] { "AsObject" }; // implicit conversion to object is not possible
                 default:
 
                     // AsArray
@@ -218,6 +219,8 @@ namespace Pchp.CodeAnalysis.Semantics
                     // AsResource
                     // AsObject
                     // AsPhpValue
+                    if (target == _compilation.CoreTypes.PhpValue.Symbol) return new[] { WellKnownMemberNames.ImplicitConversionName};
+
                     // AsPhpAlias
 
                     return new[] { WellKnownMemberNames.ImplicitConversionName };
@@ -233,7 +236,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 case SpecialType.System_Int64: return new[] { WellKnownMemberNames.ExplicitConversionName, "ToLong" };
                 case SpecialType.System_Double: return new[] { WellKnownMemberNames.ExplicitConversionName, "ToDouble" };
                 case SpecialType.System_String: return new[] { WellKnownMemberNames.ExplicitConversionName, "ToString" };
-                case SpecialType.System_Object: return new[] { "ToObject" };
+                case SpecialType.System_Object: return new[] { "ToObject" };    // implicit conversion to object is not possible
                 default:
 
                     // ToArray

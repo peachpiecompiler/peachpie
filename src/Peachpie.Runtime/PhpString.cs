@@ -1589,6 +1589,11 @@ namespace Pchp.Core
             }
         }
 
+        /// <summary>
+        /// Gets the value as <see cref="PhpValue"/>.
+        /// </summary>
+        public static implicit operator PhpValue(PhpString value) => AsPhpValue(value);
+
         #endregion
 
         /// <summary>
