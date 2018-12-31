@@ -899,6 +899,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     EmitPop(from);
                     return;
                 case SpecialType.System_Boolean:
+                case SpecialType.System_Char:
                 case SpecialType.System_Int32:
                 case SpecialType.System_UInt32:
                 case SpecialType.System_Int64:
@@ -908,12 +909,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return;
                 case SpecialType.System_String:
                     EmitConvertToString(from, fromHint);
-                    return;
-
-                case SpecialType.System_Char:
-                    // Template: Convert.ToChar( (string)from )
-                    EmitConvertToString(from, fromHint);
-                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToChar_String);
                     return;
 
                 default:

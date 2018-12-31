@@ -202,6 +202,7 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             switch (target.SpecialType)
             {
+                case SpecialType.System_Char: return new[] { "AsChar", "ToChar" };
                 case SpecialType.System_Boolean: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsBoolean", "ToBoolean" };
                 case SpecialType.System_Int32: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsInt", "ToInt", "ToLong" };
                 case SpecialType.System_Int64: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsLong", "ToLong" };

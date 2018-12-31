@@ -171,16 +171,20 @@ namespace Pchp.Core
                     return value.MutableStringBlob[0].AsChar();
 
                 case PhpTypeCode.Double:
-                    return (char)value.Double;
+                    return ToChar(value.Double);
 
                 case PhpTypeCode.Long:
-                    return (char)value.Long;
+                    return ToChar(value.Long);
 
                 default:
                     PhpException.Throw(PhpError.Warning, Resources.ErrResources.string_should_be_single_character);
                     return default; // '\0'
             }
         }
+
+        public static char ToChar(long value) => (char)value;
+
+        public static char ToChar(double value) => (char)value;
 
         #endregion
 
