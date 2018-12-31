@@ -339,6 +339,16 @@ namespace Pchp.Core
             }
         }
 
+        public static stdClass ToObject(bool value) => new stdClass(value);
+
+        public static stdClass ToObject(long value) => new stdClass(value);
+
+        public static stdClass ToObject(double value) => new stdClass(value);
+
+        public static stdClass ToObject(string value) => new stdClass(value);
+
+        public static stdClass ToObject(PhpString value) => new stdClass(PhpValue.Create(value.DeepCopy()));
+
         /// <summary>
         /// Converts given value to a class object.
         /// </summary>

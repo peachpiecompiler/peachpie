@@ -254,6 +254,30 @@ namespace Pchp.Core
         /// </summary>
         public int ToInt() => (int)this;
 
+        /// <summary>
+        /// Gets underlaying class instance or <c>null</c>.
+        /// </summary>
+        public object AsObject() => _type.AsObject(ref this);
+
+        /// <summary>
+        /// Casts the value to object instance.
+        /// Non-object values are wrapped to <see cref="stdClass"/>.
+        /// </summary>
+        public object ToObject() => _type.ToClass(ref this);
+
+        /// <summary>
+        /// Converts value to <see cref="PhpArray"/>.
+        /// 
+        /// Value is converted according to PHP semantic:
+        /// - array is returned as it is.
+        /// - null is converted to an empty array.
+        /// - scalars are converted to a new array containing a single item.
+        /// - object is converted to a new array containing the object's properties.
+        /// 
+        /// This method cannot return a <c>null</c> reference.
+        /// </summary>
+        public PhpArray/*!*/ToArray() => _type.ToArray(ref this);
+
         #endregion
 
         #region Operators
@@ -362,24 +386,6 @@ namespace Pchp.Core
         /// <param name="right">The right operand.</param>
         /// <returns>The value determining operands are strictly equal.</returns>
         public bool StrictEquals(PhpValue right) => _type.StrictEquals(ref this, right);
-
-        /// <summary>
-        /// Gets underlaying class instance or <c>null</c>.
-        /// </summary>
-        public object AsObject() => _type.AsObject(ref this);
-
-        /// <summary>
-        /// Converts value to <see cref="PhpArray"/>.
-        /// 
-        /// Value is converted according to PHP semantic:
-        /// - array is returned as it is.
-        /// - null is converted to an empty array.
-        /// - scalars are converted to a new array containing a single item.
-        /// - object is converted to a new array containing the object's properties.
-        /// 
-        /// This method cannot return a <c>null</c> reference.
-        /// </summary>
-        public PhpArray/*!*/ToArray() => _type.ToArray(ref this);
 
         /// <summary>
         /// Passes the value as strictly typed <c>array</c>.
