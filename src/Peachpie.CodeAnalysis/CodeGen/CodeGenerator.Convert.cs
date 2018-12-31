@@ -152,41 +152,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitConvertToPhpNumber(TypeSymbol from, TypeRefMask fromHint)
         {
-            // dereference
-            if (from == CoreTypes.PhpAlias)
-            {
-                Emit_PhpAlias_GetValue();
-                from = CoreTypes.PhpValue;
-            }
-
-            switch (from.SpecialType)
-            {
-                case SpecialType.System_Boolean:
-                case SpecialType.System_Int32:
-                    _il.EmitOpCode(ILOpCode.Conv_i8);   // Int32 -> Int64
-                    goto case SpecialType.System_Int64; // PhpValue.Create((long)<stack>)
-                case SpecialType.System_Int64:
-                    EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.Create_Long);
-                    break;
-                case SpecialType.System_Double:
-                    EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.Create_Double);
-                    break;
-                default:
-                    if (from == CoreTypes.PhpNumber)
-                    {
-                        // nop
-                        return;
-                    }
-                    else if (from == CoreTypes.PhpValue)
-                    {
-                        EmitCall(ILOpCode.Call, CoreMethods.Operators.ToNumber_PhpValue);
-                        break;
-                    }
-                    else
-                    {
-                        throw this.NotImplementedException($"{from} -> PhpNumber");
-                    }
-            }
+            this.EmitImplicitConversion(from, CoreTypes.PhpNumber);
         }
 
         /// <summary>
@@ -197,11 +163,16 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns></returns>
         internal TypeSymbol EmitConvertIntToLong(TypeSymbol stack)
         {
-            if (stack.SpecialType == SpecialType.System_Int32 ||
-                stack.SpecialType == SpecialType.System_Boolean)
+            if (stack.SpecialType == SpecialType.System_Boolean ||
+                stack.SpecialType == SpecialType.System_Byte ||
+                stack.SpecialType == SpecialType.System_Int16 ||
+                stack.SpecialType == SpecialType.System_UInt16 ||
+                stack.SpecialType == SpecialType.System_Int32 ||
+                stack.SpecialType == SpecialType.System_UInt32)
             {
-                _il.EmitOpCode(ILOpCode.Conv_i8);    // int|bool -> long
-                stack = this.CoreTypes.Long;
+                var int64 = CoreTypes.Long.Symbol;
+                this.EmitImplicitConversion(stack, int64);
+                stack = int64;
             }
 
             return stack;
@@ -224,17 +195,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns>New type on top of stack.</returns>
         internal TypeSymbol EmitConvertStringToNumber(TypeSymbol stack)
         {
-            if (stack.SpecialType == SpecialType.System_String)
+            if (stack.SpecialType == SpecialType.System_String ||
+                stack == CoreTypes.PhpString)
             {
-                return EmitCall(ILOpCode.Call, CoreMethods.Operators.ToNumber_String)
-                    .Expect(CoreTypes.PhpNumber);
-            }
-
-            if (stack == CoreTypes.PhpString)
-            {
-                EmitPhpStringAddr();
-                return EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToNumber)
-                    .Expect(CoreTypes.PhpNumber);
+                this.EmitImplicitConversion(stack, CoreTypes.PhpNumber);
+                return CoreTypes.PhpNumber;
             }
 
             return stack;
@@ -895,29 +860,6 @@ namespace Pchp.CodeAnalysis.CodeGen
         //    }
         //}
 
-        void EmitConvertToEnum(TypeSymbol from, NamedTypeSymbol to)
-        {
-            Debug.Assert(to.IsEnumType());
-
-            switch (from.SpecialType)
-            {
-                case SpecialType.System_Int16:
-                case SpecialType.System_Int32:
-                case SpecialType.System_Int64:
-                case SpecialType.System_Byte:
-                case SpecialType.System_SByte:
-                case SpecialType.System_UInt16:
-                case SpecialType.System_UInt32:
-                case SpecialType.System_UInt64:
-                    break;
-                default:
-                    EmitConvert(from, 0, from = CoreTypes.Long);
-                    break;
-            }
-
-            _il.EmitNumericConversion(from.PrimitiveTypeCode, to.EnumUnderlyingType.PrimitiveTypeCode, false);
-        }
-
         /// <summary>
         /// Emits conversion from one CLR type to another using PHP conventions.
         /// </summary>
@@ -975,7 +917,16 @@ namespace Pchp.CodeAnalysis.CodeGen
                     return;
 
                 default:
-                    if (to == CoreTypes.PhpValue)
+
+                    // already implemented implicit conversions:
+                    if (to == CoreTypes.PhpNumber ||
+                        to.IsEnumType())
+                    {
+                        this.EmitImplicitConversion(from, to);
+                    }
+
+                    // not yet implemented as operator:
+                    else if (to == CoreTypes.PhpValue)
                     {
                         EmitConvertToPhpValue(from, fromHint);
                     }
@@ -997,10 +948,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                             EmitCall(ILOpCode.Call, CoreMethods.PhpValue.EnsureAlias);
                         }
                     }
-                    else if (to == CoreTypes.PhpNumber)
-                    {
-                        EmitConvertToPhpNumber(from, fromHint);
-                    }
                     else if (to == CoreTypes.PhpString)
                     {
                         // -> PhpString
@@ -1019,10 +966,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                             // -> Object, PhpResource
                             EmitConvertToClass(from, fromHint, to);
                         }
-                    }
-                    else if (to.IsEnumType())
-                    {
-                        EmitConvertToEnum(from, (NamedTypeSymbol)to);
                     }
                     else if (to == CoreTypes.IntStringKey)
                     {

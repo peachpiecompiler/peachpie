@@ -118,6 +118,8 @@ namespace Pchp.Core
 
         public object AsObject() => this.Value.AsObject();
 
+        public PhpNumber ToNumber() => Convert.ToNumber(Value);
+
         #endregion
     }
 }

@@ -203,7 +203,7 @@ namespace Pchp.CodeAnalysis.Semantics
             switch (target.SpecialType)
             {
                 case SpecialType.System_Boolean: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsBoolean", "ToBoolean" };
-                case SpecialType.System_Int32: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsInt", "ToInt" };
+                case SpecialType.System_Int32: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsInt", "ToInt", "ToLong" };
                 case SpecialType.System_Int64: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsLong", "ToLong" };
                 case SpecialType.System_Double: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsDouble", "ToDouble" };
                 case SpecialType.System_String: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsString", "ToString" };
@@ -223,6 +223,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
                     // AsPhpAlias
 
+                    // enum
+                    if (target.IsEnumType()) return ImplicitConversionOpNames(target.GetEnumUnderlyingType());
+
+                    //
                     return new[] { WellKnownMemberNames.ImplicitConversionName };
             }
         }
@@ -232,7 +236,7 @@ namespace Pchp.CodeAnalysis.Semantics
             switch (target.SpecialType)
             {
                 case SpecialType.System_Boolean: return new[] { WellKnownMemberNames.ExplicitConversionName, "ToBoolean" };
-                case SpecialType.System_Int32: return new[] { WellKnownMemberNames.ExplicitConversionName, "ToInt" };
+                case SpecialType.System_Int32: return new[] { WellKnownMemberNames.ExplicitConversionName, "ToInt", "ToLong" };
                 case SpecialType.System_Int64: return new[] { WellKnownMemberNames.ExplicitConversionName, "ToLong" };
                 case SpecialType.System_Double: return new[] { WellKnownMemberNames.ExplicitConversionName, "ToDouble" };
                 case SpecialType.System_String: return new[] { WellKnownMemberNames.ExplicitConversionName, "ToString" };

@@ -700,7 +700,7 @@ namespace Pchp.Core
                 if (value.GetType() == typeof(int)) return Create((int)value);
                 if (value.GetType() == typeof(long)) return Create((long)value);
                 if (value.GetType() == typeof(double)) return Create((double)value);
-                if (value.GetType() == typeof(float)) return Create((float)value);
+                if (value.GetType() == typeof(float)) return Create((double)(float)value);
                 if (value.GetType() == typeof(bool)) return Create((bool)value);
                 if (value.GetType() == typeof(string)) return Create((string)value);
                 if (value.GetType() == typeof(PhpString)) return Create((PhpString)value);
@@ -708,7 +708,7 @@ namespace Pchp.Core
                 if (value.GetType() == typeof(PhpArray)) return Create((PhpArray)value);
                 if (value.GetType() == typeof(PhpValue)) return (PhpValue)value;
                 if (value.GetType() == typeof(PhpNumber)) return Create((PhpNumber)value);
-                if (value.GetType() == typeof(uint)) return Create((uint)value);
+                if (value.GetType() == typeof(uint)) return Create((long)(uint)value);
                 if (value.GetType() == typeof(byte[])) return Create(new PhpString((byte[])value));
 
                 // object        

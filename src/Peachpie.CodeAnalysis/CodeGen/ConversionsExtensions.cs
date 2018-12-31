@@ -32,6 +32,16 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public static void EmitNumericConversion(this CodeGenerator cg, TypeSymbol from, TypeSymbol to, bool @checked = false)
         {
+            if (to.IsEnumType())
+            {
+                to = to.GetEnumUnderlyingType();
+            }
+
+            if (from.IsEnumType())
+            {
+                from = from.GetEnumUnderlyingType();
+            }
+
             var fromcode = from.PrimitiveTypeCode;
             var tocode = to.PrimitiveTypeCode;
 

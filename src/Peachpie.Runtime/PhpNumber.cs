@@ -1305,6 +1305,10 @@ namespace Pchp.Core
         /// </summary>
         public static implicit operator double(PhpNumber value) => value.ToDouble();
 
+        public static implicit operator PhpNumber(long value) => Create(value);
+
+        public static implicit operator PhpNumber(double value) => Create(value);
+
         #endregion
 
         #endregion
