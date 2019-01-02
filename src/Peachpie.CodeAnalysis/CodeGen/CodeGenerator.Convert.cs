@@ -587,20 +587,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             EmitConvert(expr.Emit(this), expr.TypeRefMask, to);
         }
 
-        //public TypeSymbol EmitLiteral(object value, TypeSymbol astype)
-        //{
-        //    Contract.ThrowIfNull(astype);
-
-        //    if (value == null)
-        //    {
-        //        EmitLoadDefaultValue(astype, 0);
-        //    }
-        //    else
-        //    {
-        //        // TODO
-        //    }
-        //}
-
         /// <summary>
         /// Emits conversion from one CLR type to another using PHP conventions.
         /// </summary>

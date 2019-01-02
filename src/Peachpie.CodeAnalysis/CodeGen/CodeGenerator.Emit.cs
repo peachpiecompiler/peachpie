@@ -3034,13 +3034,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                                 _il.EmitStringConstant(value.ToString());
                                 return targetOpt;
                             default:
-                                if (targetOpt == CoreTypes.PhpValue && l <= int.MaxValue && l >= int.MinValue)
-                                {
-                                    // Template: PhpValue.Create( int )
-                                    _il.EmitIntConstant((int)l);
-                                    EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Create_Int);
-                                    return targetOpt;
-                                }
                                 break;
                         }
                     }
@@ -3082,9 +3075,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                             default:
                                 if (targetOpt == CoreTypes.PhpValue)
                                 {
-                                    if (b) Emit_PhpValue_True();    // LOAD PhpValue.True
-                                    else Emit_PhpValue_False();     // LOAD PhpValue.False
-                                    return targetOpt;
+                                    return b ? Emit_PhpValue_True() : Emit_PhpValue_False();
                                 }
                                 break;
                         }
