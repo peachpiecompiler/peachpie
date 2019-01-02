@@ -294,36 +294,27 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(from);
 
-            // dereference
-            if (from == CoreTypes.PhpAlias)
-            {
-                Emit_PhpAlias_GetValue();
-                from = CoreTypes.PhpValue;
-            }
-
             from = EmitSpecialize(from, fromHint);
 
-            if (from == CoreTypes.PhpString)
+            var conv = this.DeclaringCompilation.ClassifyCommonConversion(from, this.CoreTypes.PhpString.Symbol);
+            if (conv.IsImplicit == false)
             {
-                return;
-            }
-            else if (from.SpecialType == SpecialType.System_Void)
-            {
-                // Template: new PhpString("")
-                _il.EmitStringConstant(string.Empty);
-                EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString_string);
-            }
-            else if (from == CoreTypes.PhpValue)
-            {
-                EmitLoadContext();  // Context
-                EmitCall(ILOpCode.Call, CoreMethods.Operators.ToPhpString_PhpValue_Context)
-                    .Expect(CoreTypes.PhpString);
+                if (from.SpecialType == SpecialType.System_Void)
+                {
+                    // Template: new PhpString("")
+                    _il.EmitStringConstant(string.Empty);
+                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString_string);
+                }
+                else
+                {
+                    // new PhpString(string)
+                    EmitConvertToString(from, fromHint);
+                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString_string);
+                }
             }
             else
             {
-                // new PhpString(string)
-                EmitConvertToString(from, fromHint);
-                EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString_string);
+                this.EmitConversion(conv, from, CoreTypes.PhpString.Symbol);
             }
         }
 
@@ -365,82 +356,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                 EmitPhpValueAddr();
                 return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.GetArray);
             }
-        }
-
-        /// <summary>
-        /// Converts anything to PHP array.
-        /// Does not result in a <c>null</c> reference.
-        /// </summary>
-        /// <returns>Type symbol of <c>PhpArray</c>.</returns>
-        public TypeSymbol EmitCastToArray(BoundExpression expr)
-        {
-            var from = Emit(expr);
-
-            if (from.IsOfType(CoreTypes.PhpArray))
-            {
-                return from;
-            }
-
-            if (from == CoreTypes.PhpAlias)
-            {
-                // Template: <PhpAlias>.Value.ToArray()
-                this.Emit_PhpAlias_GetValueAddr();
-                return this.EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToArray);
-            }
-
-            if (from.IsReferenceType && from.IsOfType(CoreTypes.IPhpConvertible))
-            {
-                // Template: <STACK>.ToArray()
-                // TODO: handle null if value can be null // null ? EmptyArray : <STACK>.ToArray()
-                return EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpConvertible.ToArray);
-            }
-            else
-            {
-                // Template: ToArray((PhpValue)<from>)
-                EmitConvertToPhpValue(from, expr.TypeRefMask);
-                EmitPhpValueAddr();
-                return EmitCall(ILOpCode.Call, CoreMethods.PhpValue.ToArray);
-            }
-        }
-
-        /// <summary>
-        /// Emits conversion "As PhpArray", resulting in instance of <c>PhpArray</c> or <c>NULL</c> on stack.
-        /// </summary>
-        public TypeSymbol EmitAsPhpArray(TypeSymbol from)
-        {
-            if (from == CoreTypes.PhpAlias)
-            {
-                // <alias>.Value.Object
-                Emit_PhpAlias_GetValueAddr();
-                from = EmitCall(ILOpCode.Call, CoreMethods.PhpValue.Object.Getter);
-            }
-            else if (from == CoreTypes.PhpValue)
-            {
-                // AsArray(<value>)
-                return EmitCall(ILOpCode.Call, CoreMethods.Operators.AsArray_PhpValue);
-            }
-
-            //
-
-            if (from.IsOfType(CoreTypes.PhpArray))
-            {
-                // nothing
-            }
-            else if (from.IsReferenceType)
-            {
-                // <stack> as PhpArray
-                _il.EmitOpCode(ILOpCode.Isinst);
-                EmitSymbolToken(CoreTypes.PhpArray, null);
-            }
-            else
-            {
-                EmitPop(from);
-                _il.EmitNullConstant();
-            }
-
-            //
-
-            return CoreTypes.PhpArray;
         }
 
         /// <summary>

@@ -120,6 +120,8 @@ namespace Pchp.Core
 
         public PhpNumber ToNumber() => Convert.ToNumber(Value);
 
+        public PhpString ToPhpString(Context ctx) => Convert.ToPhpString(Value, ctx);
+
         #endregion
     }
 }

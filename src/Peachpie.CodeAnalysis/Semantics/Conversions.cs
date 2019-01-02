@@ -229,7 +229,9 @@ namespace Pchp.CodeAnalysis.Semantics
                     // ToNumber
                     if (target == _compilation.CoreTypes.PhpNumber.Symbol) return new[] { WellKnownMemberNames.ImplicitConversionName, "ToNumber" };
 
-                    // AsWritableString
+                    // ToPhpString
+                    if (target == _compilation.CoreTypes.PhpString.Symbol) return new[] { WellKnownMemberNames.ImplicitConversionName, "ToPhpString" };
+
                     // AsResource
                     // AsObject
                     // AsPhpValue
@@ -263,7 +265,9 @@ namespace Pchp.CodeAnalysis.Semantics
                     // ToNumber
                     if (target == _compilation.CoreTypes.PhpNumber.Symbol) return new[] { WellKnownMemberNames.ExplicitConversionName, "ToNumber" };
 
-                    // ToWritableString
+                    // ToPhpString
+                    if (target == _compilation.CoreTypes.PhpString.Symbol) return new[] { WellKnownMemberNames.ExplicitConversionName, "ToPhpString" };
+
                     // ToPhpValue
                     // ToPhpAlias
 
