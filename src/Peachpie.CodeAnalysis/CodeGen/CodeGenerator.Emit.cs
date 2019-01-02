@@ -1276,12 +1276,21 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (targetType.SpecialType != SpecialType.System_Void)
                 {
-                    // <thisExpr> -> <TObject>
-                    EmitConvert(thisExpr, targetType);
-
-                    if (targetType.IsValueType)
+                    var receiverPlace = PlaceOrNull(thisExpr);
+                    if (receiverPlace != null && targetType.IsValueType)
                     {
-                        EmitStructAddr(targetType);   // value -> valueaddr
+                        // load addr of the receiver directly:
+                        receiverPlace.EmitLoadAddress(_il);
+                    }
+                    else
+                    {
+                        // <thisExpr> -> <TObject>
+                        EmitConvert(thisExpr, targetType);
+
+                        if (targetType.IsValueType)
+                        {
+                            EmitStructAddr(targetType);   // value -> valueaddr
+                        }
                     }
 
                     //

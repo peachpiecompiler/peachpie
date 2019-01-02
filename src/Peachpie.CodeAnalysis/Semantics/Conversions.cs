@@ -132,13 +132,16 @@ namespace Pchp.CodeAnalysis.Semantics
                                 if (method.IsStatic)
                                 {
                                     if (ps.Length <= pconsumed) continue;
-                                    if (ps[pconsumed].RefKind == RefKind.Ref && hasref == false) continue;
+                                    bool isbyref = ps[pconsumed].RefKind != RefKind.None;
+                                    if (isbyref && hasref == false) continue;
                                     // if (container != receiver && ps[pconsumed].HasThisAttribute == false) continue; // [ThisAttribute] // proper extension method
                                     var pstype = ps[pconsumed].Type;
                                     if (pstype != receiver)
                                     {
+                                        if (isbyref) continue; // cannot convert addr
+
                                         var conv = ClassifyConversion(receiver, pstype, checkexplicit: false, checkimplicit: false);
-                                        if (conv.Exists && ps[pconsumed].RefKind == RefKind.None)   // TODO: chain the conversion
+                                        if (conv.Exists)   // TODO: chain the conversion
                                         {
                                             cost += ConvCost(conv, false);
                                         }
