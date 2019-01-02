@@ -81,22 +81,25 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         // resolve operator method
-        public CommonConversion ClassifyOperator(TypeSymbol receiver, bool hasref, string[] opnames, TypeSymbol[] extensions, bool isImplicit, TypeSymbol operand = null, TypeSymbol target = null)
+        public MethodSymbol ResolveOperator(TypeSymbol receiver, bool hasref, string[] opnames, TypeSymbol[] extensions, TypeSymbol operand = null, TypeSymbol target = null)
         {
             Debug.Assert(receiver != null);
             Debug.Assert(opnames != null && opnames.Length != 0);
 
             MethodSymbol candidate = null;
-            int candidatecost = int.MaxValue;
+            int candidatecost = int.MaxValue;   // candidate cost
+            int candidatecost_minor = 0;        // second cost
 
-            for (int ext = -1; ext < extensions.Length && candidatecost > 0; ext++)
+            for (int ext = -1; ext < extensions.Length; ext++)
             {
-                for (var container = ext < 0 ? receiver : extensions[ext]; container != null; container = container.BaseType)
+                for (var container = ext < 0 ? receiver : extensions[ext]; container != null; container = container.IsStatic ? null : container.BaseType)
                 {
-                    for (int i = 0; i < opnames.Length && candidatecost > 0; i++)
+                    if (container.SpecialType == SpecialType.System_ValueType) continue; //
+
+                    for (int i = 0; i < opnames.Length; i++)
                     {
                         var members = container.GetMembers(opnames[i]);
-                        for (int m = 0; m < members.Length && candidatecost > 0; m++)
+                        for (int m = 0; m < members.Length; m++)
                         {
                             if (members[m] is MethodSymbol method)
                             {
@@ -107,6 +110,7 @@ namespace Pchp.CodeAnalysis.Semantics
                                 // TODO: replace with overload resolution
 
                                 int cost = 0;
+                                int cost_minor = 0;
 
                                 if (target != null && method.ReturnType != target)
                                 {
@@ -130,9 +134,10 @@ namespace Pchp.CodeAnalysis.Semantics
                                     if (ps.Length <= pconsumed) continue;
                                     if (ps[pconsumed].RefKind == RefKind.Ref && hasref == false) continue;
                                     // if (container != receiver && ps[pconsumed].HasThisAttribute == false) continue; // [ThisAttribute] // proper extension method
-                                    if (ps[pconsumed].Type != receiver)
+                                    var pstype = ps[pconsumed].Type;
+                                    if (pstype != receiver)
                                     {
-                                        var conv = ClassifyConversion(receiver, ps[pconsumed].Type, checkexplicit: false, checkimplicit: false);
+                                        var conv = ClassifyConversion(receiver, pstype, checkexplicit: false, checkimplicit: false);
                                         if (conv.Exists && ps[pconsumed].RefKind == RefKind.None)   // TODO: chain the conversion
                                         {
                                             cost += ConvCost(conv, false);
@@ -149,6 +154,7 @@ namespace Pchp.CodeAnalysis.Semantics
                                 if (pconsumed < ps.Length && SpecialParameterSymbol.IsContextParameter(ps[pconsumed]))
                                 {
                                     pconsumed++;
+                                    cost_minor--; // specialized operator - prefered
                                 }
 
                                 // TOperand,
@@ -174,15 +180,24 @@ namespace Pchp.CodeAnalysis.Semantics
                                 if (pconsumed < ps.Length && SpecialParameterSymbol.IsContextParameter(ps[pconsumed]))
                                 {
                                     pconsumed++;
+                                    cost_minor--;   // specialized operator - prefered
                                 }
 
                                 if (ps.Length != pconsumed) continue;
 
+                                if (container.SpecialType == SpecialType.System_Object ||
+                                    container.IsValueType)
+                                {
+                                    //cost++; // should be enabled
+                                    cost_minor++;   // implicit conversion
+                                }
+
                                 //
-                                if (cost < candidatecost)
+                                if (cost < candidatecost || (cost == candidatecost && cost_minor < candidatecost_minor))
                                 {
                                     candidate = method;
                                     candidatecost = cost;
+                                    candidatecost_minor = cost_minor;
                                 }
                             }
                         }
@@ -192,9 +207,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             //
 
-            return candidate != null
-                ? new CommonConversion(true, false, false, false, isImplicit, methodSymbol: candidate)
-                : NoConversion;
+            return candidate;
         }
 
         // resolve implicit conversion
@@ -207,7 +220,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 case SpecialType.System_Int32: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsInt", "ToInt", "ToLong" };
                 case SpecialType.System_Int64: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsLong", "ToLong" };
                 case SpecialType.System_Double: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsDouble", "ToDouble" };
-                case SpecialType.System_String: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsString", "ToString" };
+                case SpecialType.System_String: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsString", WellKnownMemberNames.ObjectToString };
                 case SpecialType.System_Object: return new[] { "AsObject" }; // implicit conversion to object is not possible
                 default:
 
@@ -220,7 +233,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     // AsResource
                     // AsObject
                     // AsPhpValue
-                    if (target == _compilation.CoreTypes.PhpValue.Symbol) return new[] { WellKnownMemberNames.ImplicitConversionName};
+                    if (target == _compilation.CoreTypes.PhpValue.Symbol) return new[] { WellKnownMemberNames.ImplicitConversionName };
 
                     // AsPhpAlias
 
@@ -240,7 +253,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 case SpecialType.System_Int32: return new[] { WellKnownMemberNames.ExplicitConversionName, "ToInt", "ToLong" };
                 case SpecialType.System_Int64: return new[] { WellKnownMemberNames.ExplicitConversionName, "ToLong" };
                 case SpecialType.System_Double: return new[] { WellKnownMemberNames.ExplicitConversionName, "ToDouble" };
-                case SpecialType.System_String: return new[] { WellKnownMemberNames.ExplicitConversionName, "ToString" };
+                case SpecialType.System_String: return new[] { WellKnownMemberNames.ExplicitConversionName, WellKnownMemberNames.ObjectToString };
                 case SpecialType.System_Object: return new[] { "ToObject" };    // implicit conversion to object is not possible
                 default:
 
@@ -323,14 +336,22 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 // TODO: cache result
 
-                conv = checkimplicit ? ClassifyOperator(from, false, ImplicitConversionOpNames(to), new[] { to, _compilation.CoreTypes.Convert.Symbol }, true, target: to) : NoConversion;
+                var op = checkimplicit ? ResolveOperator(from, false, ImplicitConversionOpNames(to), new[] { to, _compilation.CoreTypes.Convert.Symbol }, target: to) : null;
 
-                if (!conv.Exists && checkexplicit)
+                if (op != null)
                 {
-                    conv = ClassifyOperator(from, false, ExplicitConversionOpNames(to), new[] { to, _compilation.CoreTypes.Convert.Symbol }, false, target: to);
+                    conv = new CommonConversion(true, false, false, false, true, op);
+                }
+                else if (checkexplicit)
+                {
+                    op = ResolveOperator(from, false, ExplicitConversionOpNames(to), new[] { to, _compilation.CoreTypes.Convert.Symbol }, target: to);
 
+                    if (op != null)
+                    {
+                        conv = new CommonConversion(true, false, false, false, false, op);
+                    }
                     // explicit reference conversion (reference type -> reference type)
-                    if (!conv.Exists &&
+                    else if (
                         from.IsReferenceType && to.IsReferenceType &&
                         !IsSpecialReferenceType(from) && !IsSpecialReferenceType(to) &&
                         !from.IsArray() && !to.IsArray())

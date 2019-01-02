@@ -152,6 +152,11 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitConvertToPhpNumber(TypeSymbol from, TypeRefMask fromHint)
         {
+            if (from != CoreTypes.PhpNumber)
+            {
+                from = EmitSpecialize(from, fromHint);
+            }
+
             this.EmitImplicitConversion(from, CoreTypes.PhpNumber);
         }
 
@@ -277,81 +282,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(from);
 
-            // dereference
-            if (from == CoreTypes.PhpAlias)
-            {
-                Emit_PhpAlias_GetValue();
-                from = CoreTypes.PhpValue;
-            }
-
             from = EmitSpecialize(from, fromHint);
 
-            //
-            switch (from.SpecialType)
-            {
-                case SpecialType.System_String:
-                    // nop
-                    break;
-                case SpecialType.System_Void:
-                    Builder.EmitStringConstant(string.Empty);
-                    break;
-                case SpecialType.System_Boolean:
-                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToString_Bool);
-                    break;
-                case SpecialType.System_Int32:
-                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToString_Int32);
-                    break;
-                case SpecialType.System_Int64:
-                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToString_Long);
-                    break;
-                case SpecialType.System_Double:
-                    EmitLoadContext();
-                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToString_Double_Context);
-                    break;
-                default:
-                    if (from == CoreTypes.PhpNumber)
-                    {
-                        EmitPhpNumberAddr(); // PhpNumber -> PhpNumber addr
-                        EmitLoadContext();  // Context
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToString_Context)
-                            .Expect(SpecialType.System_String);
-                        break;
-                    }
-                    else if (from == CoreTypes.PhpString)
-                    {
-                        EmitPhpStringAddr();
-                        EmitLoadContext();  // Context
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpString.ToString_Context)
-                            .Expect(SpecialType.System_String);
-                        break;
-                    }
-                    else if (from == CoreTypes.PhpValue)
-                    {
-                        EmitPhpValueAddr(); // PhpValue -> PhpValue addr
-                        EmitLoadContext();  // Context
-                        EmitCall(ILOpCode.Call, CoreMethods.PhpValue.AsString_Context)
-                            .Expect(SpecialType.System_String);
-                        break;
-                    }
-                    //else if (from.IsOfType(CoreTypes.IPhpConvertible))
-                    //{
-                    //    // Template: ((IPhpConvertible)STACK).ToStringOrThrow(ctx)
-                    //    EmitCastClass(from, CoreTypes.IPhpConvertible);
-                    //    EmitLoadContext();
-                    //    EmitCall(ILOpCode.Callvirt, CoreMethods.IPhpConvertible.ToStringOrThrow_Context)
-                    //        .Expect(SpecialType.System_String);
-                    //    break;
-                    //}
-                    else if (from.IsReferenceType)
-                    {
-                        // Template: STACK.ToString()
-                        EmitCall(ILOpCode.Callvirt, (MethodSymbol)DeclaringCompilation.GetSpecialTypeMember(SpecialMember.System_Object__ToString))
-                            .Expect(SpecialType.System_String);
-                        break;
-                    }
-
-                    throw this.NotImplementedException($"(string){from}");
-            }
+            this.EmitImplicitConversion(from, CoreTypes.String);
         }
 
         /// <summary>
@@ -905,10 +838,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 case SpecialType.System_Int64:
                 case SpecialType.System_Single:
                 case SpecialType.System_Double:
-                    this.EmitImplicitConversion(from, to);
-                    return;
                 case SpecialType.System_String:
-                    EmitConvertToString(from, fromHint);
+                    this.EmitImplicitConversion(from, to);
                     return;
 
                 default:
