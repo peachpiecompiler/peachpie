@@ -680,6 +680,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 metadataOnly: false,
                 debugInformationFormat: debugInformationFormat,
                 pdbFilePath: null, // to be determined later
+                pdbChecksumAlgorithm: System.Security.Cryptography.HashAlgorithmName.SHA1,
                 outputNameOverride: null, // to be determined later
                 //baseAddress: baseAddress,
                 //highEntropyVirtualAddressSpace: highEntropyVA,
