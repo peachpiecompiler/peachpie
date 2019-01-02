@@ -130,26 +130,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             return CoreTypes.PhpValue;
         }
 
-        public void EmitConvertToIntStringKey(TypeSymbol from, TypeRefMask fromHint)
-        {
-            switch (from.SpecialType)
-            {
-                case SpecialType.System_Int64:
-                    _il.EmitOpCode(ILOpCode.Conv_i4);   // i8 -> i4
-                    goto case SpecialType.System_Int32;
-                case SpecialType.System_Int32:
-                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_int);
-                    break;
-                case SpecialType.System_String:
-                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_string);
-                    break;
-                default:
-                    EmitConvertToPhpValue(from, 0);
-                    EmitCall(ILOpCode.Call, CoreMethods.Operators.ToIntStringKey_PhpValue);
-                    break;
-            }
-        }
-
         public void EmitConvertToPhpNumber(TypeSymbol from, TypeRefMask fromHint)
         {
             if (from != CoreTypes.PhpNumber)
@@ -761,6 +741,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                     // already implemented implicit conversions:
                     if (to == CoreTypes.PhpNumber ||
+                        to == CoreTypes.IntStringKey ||
                         to.IsEnumType())
                     {
                         this.EmitImplicitConversion(from, to);
@@ -807,10 +788,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                             // -> Object, PhpResource
                             EmitConvertToClass(from, fromHint, to);
                         }
-                    }
-                    else if (to == CoreTypes.IntStringKey)
-                    {
-                        EmitConvertToIntStringKey(from, fromHint);
                     }
                     else if (to.IsNullableType(out var ttype))
                     {

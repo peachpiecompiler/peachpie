@@ -2640,8 +2640,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 return;
             }
 
-            var t = Emit(expr); // TODO: ConvertToArrayKey
-            EmitConvertToIntStringKey(t, 0);
+            //
+            this.EmitImplicitConversion(Emit(expr), this.CoreTypes.IntStringKey); // TODO: ConvertToArrayKey
         }
 
         /// <summary>

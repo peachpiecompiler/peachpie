@@ -338,7 +338,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 // LOAD <locals>, <name>
                 cg.LocalsPlaceOpt.EmitLoad(cg.Builder);             // <locals>
-                cg.EmitIntStringKey(new BoundLiteral(_localname));  // [key]
+                cg.EmitIntStringKey(_localname);  // [key]
             }
 
             public void Store(CodeGenerator cg, TypeSymbol valuetype)

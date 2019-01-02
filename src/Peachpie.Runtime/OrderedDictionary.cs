@@ -85,6 +85,8 @@ namespace Pchp.Core
 
         public static implicit operator IntStringKey(string value) => new IntStringKey(value ?? throw new ArgumentNullException());
 
+        public static implicit operator IntStringKey(PhpString value) => new IntStringKey(value.ToString());
+
         internal static IntStringKey FromObject(object key)
         {
             Debug.Assert(key is string || key is int);
