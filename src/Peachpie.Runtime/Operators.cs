@@ -266,6 +266,10 @@ namespace Pchp.Core
         /// </summary>
         public static PhpAlias EnsureAlias(ref PhpValue valueref) => valueref.EnsureAlias();
 
+        #endregion
+
+        #region IsSet, IsEmpty
+
         /// <summary>
         /// Implementation of PHP <c>isset</c> operator.
         /// </summary>
@@ -276,6 +280,11 @@ namespace Pchp.Core
         /// Implements <c>empty</c> operator.
         /// </summary>
         public static bool IsEmpty(PhpValue value) => value.IsDefault || value.IsEmpty;
+
+        /// <summary>
+        /// Implements <c>empty</c> operator on objects.
+        /// </summary>
+        public static bool IsEmpty(object value) => value != null;
 
         #endregion
 

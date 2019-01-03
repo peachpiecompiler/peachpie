@@ -11,7 +11,7 @@ namespace Pchp.Core
     [DebuggerDisplay("{GetDebuggerValue,nq}", Type = "{GetDebuggerType,nq}")]
     [DebuggerNonUserCode, DebuggerStepThrough]
     [StructLayout(LayoutKind.Explicit)]
-    public struct PhpNumber : IComparable<PhpNumber>, IPhpConvertible
+    public struct PhpNumber : IComparable<PhpNumber>, IComparable<long>, IComparable<double>, IEquatable<PhpNumber>, IPhpConvertible
     {
         #region Fields
 
@@ -88,6 +88,11 @@ namespace Pchp.Core
         #region Operators
 
         #region Equality, Comparison
+
+        /// <summary>
+        /// Value equality comparison, operand must contain the same value as this.
+        /// </summary>
+        public bool Equals(PhpNumber other) => other._typeCode == _typeCode && other._long == _long;    // <=> tmp.Double == Double
 
         /// <summary>
         /// Gets non strict comparison with another number.
@@ -1315,6 +1320,8 @@ namespace Pchp.Core
 
         public bool IsEmpty() => /*this == default;*/ _long == 0L; // => _double == 0
 
+        public stdClass ToObject() => new stdClass(PhpValue.Create(this));
+
         #endregion
 
         #endregion
@@ -1346,34 +1353,13 @@ namespace Pchp.Core
 
         #region Object
 
-        public override int GetHashCode()
-        {
-            return unchecked((int)_long);
-        }
+        public override int GetHashCode() => unchecked((int)_long);
 
-        public override bool Equals(object obj)
-        {
-            PhpNumber tmp;
-            return obj is PhpNumber
-                && (tmp = (PhpNumber)obj).TypeCode == TypeCode
-                && tmp._long == _long;    // <=> tmp.Double == Double
-        }
+        public override bool Equals(object obj) => obj is PhpNumber num && Equals(num);
 
         #endregion
 
         #region IPhpConvertible
-
-        /// <summary>
-        /// The PHP value type.
-        /// </summary>
-        public PhpTypeCode TypeCode
-        {
-            get
-            {
-                AssertTypeCode();
-                return _typeCode;
-            }
-        }
 
         public double ToDouble()
         {
@@ -1417,15 +1403,9 @@ namespace Pchp.Core
             return IsLong ? _long.ToString() : Convert.ToString(_double, ctx);
         }
 
-        public string ToStringOrThrow(Context ctx)
-        {
-            return ToString(ctx);
-        }
+        public string ToStringOrThrow(Context ctx) => ToString(ctx);
 
-        public object ToClass()
-        {
-            return new stdClass(PhpValue.Create(this));
-        }
+        public object ToClass() => ToObject();
 
         public PhpArray ToArray() => PhpArray.New(PhpValue.Create(this));
 

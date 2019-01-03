@@ -854,12 +854,12 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         internal static TypeSymbol EmitEquality(CodeGenerator cg, BoundExpression left, BoundExpression right)
         {
-            if (left.ConstantValue.HasValue && left.ConstantValue.Value == null)
+            if (left.ConstantValue.IsNull())
             {
                 // null == right
                 return EmitEqualityToNull(cg, right);
             }
-            else if (right.ConstantValue.HasValue && right.ConstantValue.Value == null)
+            else if (right.ConstantValue.IsNull())
             {
                 // left == null
                 return EmitEqualityToNull(cg, left);
@@ -4482,6 +4482,8 @@ namespace Pchp.CodeAnalysis.Semantics
             var op = cg.Conversions.ResolveOperator(t, false, new[] { "IsEmpty" }, new[] { cg.CoreTypes.Operators.Symbol }, target: cg.CoreTypes.Boolean);
             if (op != null)
             {
+                // TODO: instance method call and possibly NULL => check (VALUE == NULL) || ...
+
                 cg.EmitConversion(new CommonConversion(true, false, false, false, false, op), t, cg.CoreTypes.Boolean);
             }
             else

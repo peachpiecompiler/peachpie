@@ -226,7 +226,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         /// <summary>
         /// The type analysis result.
-        /// Provides possible combination of types that this expression might result in.
+        /// Gets possible combination of the value type after evaluation.
         /// </summary>
         public TypeRefMask TypeRefMask { get; set; } = default(TypeRefMask);
 
@@ -235,6 +235,12 @@ namespace Pchp.CodeAnalysis.Semantics
         /// specifies how the expression is being accessed.
         /// </summary>
         public BoundAccess Access { get; internal set; }
+
+        /// <summary>
+        /// Lazily resolved conversion used to access the value.
+        /// Emitted and the result always implicitly converted to <see cref="Type"/>.
+        /// </summary>
+        public CommonConversion BoundConversion { get; internal set; }
 
         /// <summary>
         /// Lazily resolved type of the expression,
