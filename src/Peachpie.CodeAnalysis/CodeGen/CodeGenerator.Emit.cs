@@ -2267,7 +2267,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 var refexpr = expr as BoundReferenceExpression;
                 if (refexpr != null)
                 {
-                    var place = refexpr.Place(_il);
+                    var place = refexpr.Place();
                     if (place != null && place.HasAddress && place.TypeOpt == targetp.Type)
                     {
                         // ref place directly

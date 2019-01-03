@@ -128,6 +128,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #endregion
 
+        /// <summary>
+        /// Gets human readable access flags.
+        /// </summary>
+        public override string ToString() => _flags.ToString();
+
         #region Construction
 
         private BoundAccess(AccessMask flags, TypeSymbol targetType, TypeRefMask writeTypeMask)
@@ -240,7 +245,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Lazily resolved conversion used to access the value.
         /// Emitted and the result always implicitly converted to <see cref="Type"/>.
         /// </summary>
-        public CommonConversion BoundConversion { get; internal set; }
+        public CommonConversion BoundConversion { get; internal set; } // TODO: make it nullable
 
         /// <summary>
         /// Lazily resolved type of the expression,

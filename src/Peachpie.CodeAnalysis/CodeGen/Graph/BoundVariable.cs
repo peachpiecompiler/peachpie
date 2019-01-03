@@ -34,12 +34,14 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Gets <see cref="IPlace"/> of the variable.
         /// </summary>
-        internal abstract IPlace Place(ILBuilder il);
+        internal abstract IPlace Place();
     }
 
     partial class BoundLocal
     {
         internal IPlace _place;
+
+        public override ITypeSymbol Type => _symbol.Type;
 
         internal override void EmitInit(CodeGenerator cg)
         {
@@ -94,9 +96,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        internal override IPlace Place(ILBuilder il) => LocalPlace(il);
-
-        private IPlace LocalPlace(ILBuilder il) => _place;
+        internal override IPlace Place() => _place;
 
         /// <summary>
         /// Creates local bound to a place.
@@ -115,7 +115,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundIndirectVariablePlace(_nameExpr, access);
         }
 
-        internal override IPlace Place(ILBuilder il) => null;
+        internal override IPlace Place() => null;
     }
 
     partial class BoundParameter
@@ -473,11 +473,11 @@ namespace Pchp.CodeAnalysis.Semantics
             else
             {
                 //
-                return new BoundLocalPlace(Place(il), access, thint);
+                return new BoundLocalPlace(Place(), access, thint);
             }
         }
 
-        internal override IPlace Place(ILBuilder il)
+        internal override IPlace Place()
         {
             if (_lazyplace != null)
             {
@@ -504,10 +504,10 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override IBoundReference BindPlace(ILBuilder il, BoundAccess access, TypeRefMask thint)
         {
-            return new BoundLocalPlace(Place(il), access, thint);
+            return new BoundLocalPlace(Place(), access, thint);
         }
 
-        internal override IPlace Place(ILBuilder il)
+        internal override IPlace Place()
         {
             // Get place of PHP $this variable in the routine.
             // This may vary in different symbols like global code, generator sm method, etc.
@@ -530,7 +530,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return new BoundSuperglobalPlace(_name, access);
         }
 
-        internal override IPlace Place(ILBuilder il)
+        internal override IPlace Place()
         {
             // TODO: place of superglobal variable
 

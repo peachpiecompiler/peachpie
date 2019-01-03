@@ -294,6 +294,29 @@ namespace Pchp.CodeAnalysis
         #endregion
 
         /// <summary>
+        /// Resolves the value's type.
+        /// </summary>
+        internal TypeSymbol GetConstantValueType(object value)
+        {
+            if (ReferenceEquals(value, null)) return CoreTypes.Object;
+
+            if (value is bool) return CoreTypes.Boolean;
+            if (value is int) return CoreTypes.Int32;
+            if (value is long) return CoreTypes.Long;
+            if (value is double) return CoreTypes.Double;
+            if (value is string) return CoreTypes.String;
+
+            if (value is byte) return GetSpecialType(SpecialType.System_Byte);
+            if (value is uint) return GetSpecialType(SpecialType.System_UInt32);
+            if (value is ulong) return GetSpecialType(SpecialType.System_UInt64);
+            if (value is float) return GetSpecialType(SpecialType.System_Single);
+            if (value is char) return GetSpecialType(SpecialType.System_Char);
+            
+            //
+            throw ExceptionUtilities.UnexpectedValue(value);
+        }
+
+        /// <summary>
         /// Lookup member declaration in well known type used by this Compilation.
         /// </summary>
         /// <remarks>

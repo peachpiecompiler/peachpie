@@ -210,7 +210,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         }
                         else
                         {
-                            var place = varref.Place(_cg.Builder);
+                            var place = varref.Place();
                             if (place != null && place.HasAddress && place.TypeOpt == _cg.CoreTypes.PhpValue)
                             {
                                 place.EmitLoadAddress(_cg.Builder);

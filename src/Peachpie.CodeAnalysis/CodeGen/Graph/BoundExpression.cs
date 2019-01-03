@@ -2174,7 +2174,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         internal abstract IBoundReference BindPlace(CodeGenerator cg);
 
-        internal abstract IPlace Place(ILBuilder il);
+        internal abstract IPlace Place();
 
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
@@ -2234,14 +2234,14 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override IBoundReference BindPlace(CodeGenerator cg) => this.Variable.BindPlace(cg.Builder, this.Access, this.BeforeTypeRef);
 
-        internal override IPlace Place(ILBuilder il) => this.Variable.Place(il);
+        internal override IPlace Place() => this.Variable.Place();
     }
 
     partial class BoundListEx : IBoundReference
     {
         internal override IBoundReference BindPlace(CodeGenerator cg) => this;
 
-        internal override IPlace Place(ILBuilder il) => null;
+        internal override IPlace Place() => null;
 
         /// <summary>
         /// Emits conversion to <c>IPhpArray</c>.
@@ -2359,18 +2359,21 @@ namespace Pchp.CodeAnalysis.Semantics
             return BoundReference;
         }
 
-        internal override IPlace Place(ILBuilder il)
+        internal override IPlace Place()
         {
             var fldplace = BoundReference as BoundFieldPlace;
             if (fldplace != null)
             {
                 Debug.Assert(fldplace.Field != null);
 
-                var instanceplace = (fldplace.Instance as BoundReferenceExpression)?.Place(il);
-                if ((fldplace.Field.IsStatic) ||
-                    (instanceplace != null && instanceplace.TypeOpt != null && instanceplace.TypeOpt.IsOfType(fldplace.Field.ContainingType)))
+                if (fldplace.Field.IsStatic) return new FieldPlace(null, fldplace.Field);
+                if (fldplace.Instance is BoundReferenceExpression bref)
                 {
-                    return new FieldPlace(instanceplace, fldplace.Field);
+                    var instanceplace = bref.Place();
+                    if (instanceplace != null && instanceplace.TypeOpt != null && instanceplace.TypeOpt.IsOfType(fldplace.Field.ContainingType))
+                    {
+                        return new FieldPlace(instanceplace, fldplace.Field);
+                    }
                 }
             }
 
@@ -3624,7 +3627,7 @@ namespace Pchp.CodeAnalysis.Semantics
             return this;
         }
 
-        internal override IPlace Place(ILBuilder il)
+        internal override IPlace Place()
         {
             // TODO: simple array access in case Array is System.Array and Key is int|long
 
@@ -4510,7 +4513,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         break;
 
                     default:
-                        
+
                         // (value).IsEmpty
                         cg.EmitConvert(t, this.Operand.TypeRefMask, cg.CoreTypes.PhpValue);
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.IsEmpty_PhpValue)

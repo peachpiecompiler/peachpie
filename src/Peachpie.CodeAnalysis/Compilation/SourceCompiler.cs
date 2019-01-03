@@ -137,7 +137,7 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         void EnqueueFieldsInitializer(SourceTypeSymbol type)
         {
-            type.GetDeclaredMembers().OfType<SourceFieldSymbol>().Foreach(f =>
+            type.GetDeclaredMembers().OfType<SourceFieldSymbol>().ForEach(f =>
             {
                 if (f.Initializer != null)
                 {
@@ -177,6 +177,32 @@ namespace Pchp.CodeAnalysis
         GraphVisitor<VoidStruct> AnalysisFactory(FlowState state)
         {
             return new ExpressionAnalysis<VoidStruct>(_worklist, _compilation.GlobalSemantics);
+        }
+
+        /// <summary>
+        /// Walks all expressions and resolves their access, operator method, and result CLR type.
+        /// </summary>
+        void BindTypes()
+        {
+            var binder = new ResultTypeBinder(_compilation);
+
+            // method bodies
+            this.WalkMethods(routine =>
+            {
+                // body
+                binder.Bind(routine);
+
+                // parameter initializers
+                routine.SourceParameters.ForEach(binder.Bind);
+
+            }, allowParallel: ConcurrentBuild);
+
+            // field initializers
+            WalkTypes(type =>
+            {
+                type.GetDeclaredMembers().OfType<SourceFieldSymbol>().ForEach(binder.Bind);
+
+            }, allowParallel: ConcurrentBuild);
         }
 
         internal void DiagnoseMethods()
@@ -305,22 +331,18 @@ namespace Pchp.CodeAnalysis
             _moduleBuilder.CreateEnumerateConstantsSymbol(_diagnostics);
         }
 
-        /// <summary>
-        /// Performs 
-        /// </summary>
-        /// <returns></returns>
-        bool TryLowering(bool allowParallel)
+        bool RewriteMethods()
         {
             using (_compilation.StartMetric("transform"))
             {
-                if (TransformMethods(allowParallel))
+                if (TransformMethods(ConcurrentBuild))
                 {
                     WalkMethods(m =>
                         {
                             m.ControlFlowGraph?.FlowContext?.InvalidateAnalysis();
                             EnqueueRoutine(m);
                         },
-                        allowParallel: allowParallel);
+                        allowParallel: true);
                 }
                 else
                 {
@@ -361,11 +383,14 @@ namespace Pchp.CodeAnalysis
                     compiler.AnalyzeMethods();
                 }
 
-                // 3. Transform Semantic Trees for Runtime Optimization
+                // 3. Resolve operators and types
+                compiler.BindTypes();
+
+                // 4. Transform Semantic Trees for Runtime Optimization
             } while (
                 transformation++ < compiler.MaxTransformCount   // limit number of lowering cycles
                 && !cancellationToken.IsCancellationRequested   // user canceled ?
-                && compiler.TryLowering(allowParallel: true));  // try lower the semantics
+                && compiler.RewriteMethods());  // try lower the semantics
 
             compilation.TrackMetric("transformations", transformation);
 

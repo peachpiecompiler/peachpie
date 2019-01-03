@@ -215,7 +215,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             if (expr is BoundReferenceExpression boundref)
             {
-                return boundref.Place(_il);
+                return boundref.Place();
             }
 
             return null;
