@@ -421,14 +421,14 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         //Gets appropriate locals place and whether it's inicialized externally or not.
-        IPlace GetLocalsPlace(SourceRoutineSymbol routine, out bool localsAlredyInicialized)
+        IPlace GetLocalsPlace(SourceRoutineSymbol routine, out bool localsAlreadyInitialized)
         {
             if (routine is SourceGlobalMethodSymbol)
             {
                 // second parameter
                 Debug.Assert(routine.ParameterCount >= 2 && routine.Parameters[1].Name == SpecialParameterSymbol.LocalsName);
 
-                localsAlredyInicialized = true;
+                localsAlreadyInitialized = true;
                 return new ParamPlace(routine.Parameters[1]);
             }
             else if ((routine.Flags & RoutineFlags.RequiresLocalsArray) != 0)
@@ -437,12 +437,12 @@ namespace Pchp.CodeAnalysis.CodeGen
                 var symbol = new SynthesizedLocalSymbol(Routine, "<locals>", CoreTypes.PhpArray);
                 var localsDef = this.Builder.LocalSlotManager.DeclareLocal((Cci.ITypeReference)symbol.Type, symbol, symbol.Name, SynthesizedLocalKind.OptimizerTemp, LocalDebugId.None, 0, LocalSlotConstraints.None, ImmutableArray<bool>.Empty, ImmutableArray<string>.Empty, false);
 
-                localsAlredyInicialized = false;
+                localsAlreadyInitialized = false;
                 return new LocalPlace(localsDef);
             }
 
             //
-            localsAlredyInicialized = false;
+            localsAlreadyInitialized = false;
             return null;
         }
 
