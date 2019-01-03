@@ -1504,7 +1504,7 @@ namespace Pchp.Core
 
         #endregion
 
-        #region _findEntry, _tryGetValue, _get, _contains
+        #region _findEntry, _tryGetValue, _get, _getref, _contains
 
         private int _findEntry(ref IntStringKey key)
         {
@@ -2161,11 +2161,14 @@ namespace Pchp.Core
                             // we have to unshare this, so we can modify the content:
                             array.EnsureWritable();
                             // IMPORTANT: "this" != "array.table" anymore!
-                            return array.table.entries[p]._value.EnsureAlias(); // C# 7.3: pentry = ref array.table.entries[p];
+                            pentry = ref array.table.entries[p];
                         }
 
                         // wrap _entries[p].Value into PhpAlias
-                        return pentry._value.EnsureAlias();
+                        alias = new PhpAlias(pentry._value);
+                        pentry._value = alias;
+
+                        return alias;
                     }
                 }
 
