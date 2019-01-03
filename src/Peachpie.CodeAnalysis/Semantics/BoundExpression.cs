@@ -224,18 +224,29 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public abstract partial class BoundExpression : BoundOperation, IPhpExpression
     {
+        /// <summary>
+        /// The type analysis result.
+        /// Provides possible combination of types that this expression might result in.
+        /// </summary>
         public TypeRefMask TypeRefMask { get; set; } = default(TypeRefMask);
 
+        /// <summary>
+        /// Additional expression access,
+        /// specifies how the expression is being accessed.
+        /// </summary>
         public BoundAccess Access { get; internal set; }
 
         /// <summary>
-        /// The expression result type.
-        /// Can be <c>null</c> until emit.
+        /// Lazily resolved type of the expression,
+        /// after applying the <see cref="Access"/>.
         /// </summary>
         internal TypeSymbol ResultType { get; set; }
 
         public Ast.LangElement PhpSyntax { get; set; }
 
+        /// <summary>
+        /// Lazily resolved type of the expression result.
+        /// </summary>
         public sealed override ITypeSymbol Type => ResultType;
 
         /// <summary>
@@ -243,7 +254,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Otherwise, the expression can be evaluated in app context or in compile time.
         /// </summary>
         /// <remarks>
-        /// If the expression is a literal, a resolved constant or immutable, it does not require the Context.
+        /// E.g. If the expression is a literal, a resolved constant or immutable, it does not require the Context.
         /// </remarks>
         public virtual bool RequiresContext => !this.ConstantValue.HasValue;
 

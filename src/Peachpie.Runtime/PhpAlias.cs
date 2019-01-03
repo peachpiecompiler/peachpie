@@ -122,6 +122,8 @@ namespace Pchp.Core
 
         public PhpString ToPhpString(Context ctx) => Convert.ToPhpString(Value, ctx);
 
+        public bool IsEmpty() => Value.IsEmpty;
+
         #endregion
     }
 }

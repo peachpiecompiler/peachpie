@@ -1913,7 +1913,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 case Operations.LogicNegation:
                     //Template: !(bool)(x);
-                    cg.EmitConvertToBool(this.Operand, negation: true);
+                    cg.EmitConvertToBool(this.Operand);
+                    cg.EmitLogicNegation();
                     returned_type = cg.CoreTypes.Boolean;
                     break;
 
@@ -3442,7 +3443,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (this.IfTrue != null)
             {
                 // Cond ? True : False
-                cg.EmitConvertToBool(this.Condition, negation: false);   // i4
+                cg.EmitConvertToBool(this.Condition);   // i4
                 cg.Builder.EmitBranch(ILOpCode.Brtrue, trueLbl);
 
                 // false:
@@ -4475,51 +4476,48 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            return Emit(cg, cg.Emit(this.Operand));
-        }
+            var t = cg.Emit(this.Operand);
 
-        private static TypeSymbol Emit(CodeGenerator cg, TypeSymbol t)
-        {
-            var il = cg.Builder;
+            // resolve IsEmpty() operator
+            var op = cg.Conversions.ResolveOperator(t, false, new[] { "IsEmpty" }, new[] { cg.CoreTypes.Operators.Symbol }, target: cg.CoreTypes.Boolean);
+            if (op != null)
+            {
+                cg.EmitConversion(new CommonConversion(true, false, false, false, false, op), t, cg.CoreTypes.Boolean);
+            }
+            else
+            {
+                var il = cg.Builder;
+
+                //
+                switch (t.SpecialType)
+                {
+                    case SpecialType.System_Object:
+                        // object == null
+                        il.EmitNullConstant();
+                        il.EmitOpCode(ILOpCode.Ceq);
+                        break;
+
+                    case SpecialType.System_Double:
+                    case SpecialType.System_Boolean:
+                    case SpecialType.System_Int32:
+                    case SpecialType.System_Int64:
+                    case SpecialType.System_String:
+                        // Template: !(bool)value
+                        cg.EmitConvertToBool(t, default);
+                        cg.EmitLogicNegation();
+                        break;
+
+                    default:
+                        
+                        // (value).IsEmpty
+                        cg.EmitConvert(t, this.Operand.TypeRefMask, cg.CoreTypes.PhpValue);
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.IsEmpty_PhpValue)
+                            .Expect(SpecialType.System_Boolean);
+                }
+            }
 
             //
-            switch (t.SpecialType)
-            {
-                case SpecialType.System_Object:
-                    // object == null
-                    il.EmitNullConstant();
-                    il.EmitOpCode(ILOpCode.Ceq);
-                    return cg.CoreTypes.Boolean;
-
-                case SpecialType.System_Double:
-                case SpecialType.System_Boolean:
-                case SpecialType.System_Int32:
-                case SpecialType.System_Int64:
-                case SpecialType.System_String:
-                    cg.EmitConvertToBool(t, default, negation: true);
-                    return cg.CoreTypes.Boolean;
-
-                default:
-                    if (t == cg.CoreTypes.PhpNumber)
-                    {
-                        // number == 0L
-                        il.EmitLongConstant(0);
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Eq_number_long)
-                            .Expect(SpecialType.System_Boolean);
-                    }
-                    else if (t == cg.CoreTypes.PhpAlias)
-                    {
-                        // <PhpAlias>.Value.get_IsEmpty()
-                        cg.Emit_PhpAlias_GetValueAddr();
-                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.IsEmpty.Getter)
-                            .Expect(SpecialType.System_Boolean);
-                    }
-
-                    // (value).IsEmpty
-                    cg.EmitConvert(t, 0, cg.CoreTypes.PhpValue);
-                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.IsEmpty_PhpValue)
-                        .Expect(SpecialType.System_Boolean);
-            }
+            return cg.CoreTypes.Boolean;
         }
     }
 

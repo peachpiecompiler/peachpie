@@ -1311,6 +1311,12 @@ namespace Pchp.Core
 
         #endregion
 
+        #region Operators
+
+        public bool IsEmpty() => /*this == default;*/ _long == 0L; // => _double == 0
+
+        #endregion
+
         #endregion
 
         #region Construction

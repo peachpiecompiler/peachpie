@@ -310,6 +310,11 @@ namespace Pchp.Core
         /// </summary>
         public ref PhpValue GetItemRef(IntStringKey key) => ref table._getref(key);
 
+        /// <summary>
+        /// Gets value indicating the PHP variable is empty (empty array).
+        /// </summary>
+        public bool IsEmpty() => Count == 0;
+
         #endregion
 
         #region IPhpConvertible

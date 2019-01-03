@@ -44,18 +44,12 @@ namespace Pchp.CodeAnalysis.CodeGen
             _il.EmitLocalAddress(tmp);
         }
 
-        public void EmitConvertToBool(TypeSymbol from, TypeRefMask fromHint, bool negation = false)
+        public void EmitConvertToBool(TypeSymbol from, TypeRefMask fromHint)
         {
             this.EmitImplicitConversion(from, CoreTypes.Boolean);
-
-            // !<i4>
-            if (negation)
-            {
-                EmitLogicNegation();
-            }
         }
 
-        public void EmitConvertToBool(BoundExpression expr, bool negation = false)
+        public void EmitConvertToBool(BoundExpression expr)
         {
             Contract.ThrowIfNull(expr);
 
@@ -65,11 +59,11 @@ namespace Pchp.CodeAnalysis.CodeGen
             var type = TryEmitVariableSpecialize(place, expr.TypeRefMask);
             if (type != null)
             {
-                EmitConvertToBool(type, 0, negation);
+                EmitConvertToBool(type, 0);
             }
             else
             {
-                EmitConvertToBool(Emit(expr), expr.TypeRefMask, negation);
+                EmitConvertToBool(Emit(expr), expr.TypeRefMask);
             }
         }
 

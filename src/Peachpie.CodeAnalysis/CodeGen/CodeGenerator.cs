@@ -281,6 +281,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         public PhpCompilation DeclaringCompilation => _moduleBuilder.Compilation;
 
         /// <summary>
+        /// Gets conversions helper class.
+        /// </summary>
+        public Conversions Conversions => DeclaringCompilation.Conversions;
+
+        /// <summary>
         /// Well known types.
         /// </summary>
         public CoreTypes CoreTypes => DeclaringCompilation.CoreTypes;

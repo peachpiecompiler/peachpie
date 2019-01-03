@@ -620,7 +620,7 @@ namespace Pchp.Core
         sealed class ArrayTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.PhpArray;
-            public override bool IsEmpty(ref PhpValue me) => me.Array.Count == 0;
+            public override bool IsEmpty(ref PhpValue me) => me.Array.IsEmpty();
             public override object ToClass(ref PhpValue me) => me.Array.ToClass();
             public override string ToStringQuiet(ref PhpValue me) => PhpArray.PrintablePhpTypeName;
             public override string ToString(ref PhpValue me, Context ctx) => me.Array.ToStringOrThrow(ctx);

@@ -37,8 +37,8 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         private Symbol[] _lazyWellKnownTypeMembers;
 
-        readonly Conversions/*!*/_conversions;
-
+        internal Conversions/*!*/Conversions { get; }
+        
         #region CoreTypes, CoreMethods
 
         /// <summary>
@@ -632,7 +632,7 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public CommonConversion ClassifyExplicitConversion(ITypeSymbol source, ITypeSymbol destination)
         {
-            var conv = _conversions.ClassifyConversion((TypeSymbol)source, (TypeSymbol)destination, checkimplicit: false);
+            var conv = Conversions.ClassifyConversion((TypeSymbol)source, (TypeSymbol)destination, checkimplicit: false);
             if (conv.Exists == false)
             {
                 // try regular implicit conversion instead
@@ -644,7 +644,7 @@ namespace Pchp.CodeAnalysis
 
         public override CommonConversion ClassifyCommonConversion(ITypeSymbol source, ITypeSymbol destination)
         {
-            return _conversions.ClassifyConversion((TypeSymbol)source, (TypeSymbol)destination);
+            return Conversions.ClassifyConversion((TypeSymbol)source, (TypeSymbol)destination);
         }
 
         internal override IConvertibleConversion ClassifyConvertibleConversion(IOperation source, ITypeSymbol destination, out Optional<object> constantValue)

@@ -442,8 +442,6 @@ namespace Pchp.CodeAnalysis.Symbols
                 Eq_PhpValue_PhpValue = ct.PhpValue.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpValue, ct.PhpValue);
                 Eq_PhpValue_String = ct.PhpValue.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpValue, ct.String);
 
-                IsEmpty = ct.PhpValue.Property("IsEmpty");
-
                 DeepCopy = ct.PhpValue.Method("DeepCopy");
                 GetValue = ct.PhpValue.Method("GetValue");
                 PassValue = ct.PhpValue.Method("PassValue");
@@ -491,7 +489,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Void, Null, True, False;
 
             public readonly CoreProperty
-                IsEmpty, Object, Long, Double, Boolean, String, Array;
+                Object, Long, Double, Boolean, String, Array;
 
         }
 
