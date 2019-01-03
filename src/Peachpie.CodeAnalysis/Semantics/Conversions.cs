@@ -227,7 +227,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 case SpecialType.System_Object: return new[] { "AsObject" }; // implicit conversion to object is not possible
                 default:
 
-                    // AsArray
+                    // AsPhpArray
 
                     // ToNumber
                     if (target == _compilation.CoreTypes.PhpNumber.Symbol) return new[] { WellKnownMemberNames.ImplicitConversionName, "ToNumber" };
@@ -241,6 +241,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     if (target == _compilation.CoreTypes.PhpValue.Symbol) return new[] { WellKnownMemberNames.ImplicitConversionName };
 
                     // AsPhpAlias
+                    if (target == _compilation.CoreTypes.PhpAlias.Symbol) return new[] { WellKnownMemberNames.ImplicitConversionName, "AsPhpAlias" };
 
                     // enum
                     if (target.IsEnumType()) return ImplicitConversionOpNames(target.GetEnumUnderlyingType());
@@ -262,7 +263,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 case SpecialType.System_Object: return new[] { "ToObject" };    // implicit conversion to object is not possible
                 default:
 
-                    // ToArray
+                    // AsPhpArray
                     if (target == _compilation.CoreTypes.PhpArray.Symbol) return new[] { WellKnownMemberNames.ExplicitConversionName, "ToArray" };
 
                     // ToNumber

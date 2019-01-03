@@ -280,6 +280,12 @@ namespace Pchp.Core
         /// </summary>
         public PhpArray/*!*/ToArray() => _type.ToArray(ref this);
 
+        /// <summary>
+        /// Wraps the value into <see cref="PhpAlias"/>,
+        /// if value already contains the aliased value, it is returned as it is.
+        /// </summary>
+        public PhpAlias/*!*/AsPhpAlias() => _obj as PhpAlias ?? new PhpAlias(this);
+
         #endregion
 
         #region Operators

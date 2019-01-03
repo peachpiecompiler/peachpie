@@ -111,11 +111,6 @@ namespace Pchp.CodeAnalysis.CodeGen
                     EmitCall(ILOpCode.Call, CoreMethods.PhpValue.FromClass_Object)
                         .Expect(CoreTypes.PhpValue);
                 }
-                else if (from.IsNullableType())
-                {
-                    // Template: CodeGenerator.EmitNullableCastToNull(from, false);
-                    throw ExceptionUtilities.UnexpectedValue(from);
-                }
                 else if (from.SpecialType == SpecialType.System_Void)
                 {
                     // PhpValue.Void
@@ -612,97 +607,48 @@ namespace Pchp.CodeAnalysis.CodeGen
             //
             from = EmitSpecialize(from, fromHint);
 
-            // conversion is not needed:
-            if (from.SpecialType == to.SpecialType &&
-                (from == to || (to.SpecialType != SpecialType.System_Object && from.IsOfType(to))))
+            if (!this.TryEmitImplicitConversion(from, to))
             {
-                return;
-            }
-
-            // specialized conversions:
-            switch (to.SpecialType)
-            {
-                case SpecialType.System_Void:
-                    EmitPop(from);
-                    return;
-                case SpecialType.System_Boolean:
-                case SpecialType.System_Char:
-                case SpecialType.System_Int32:
-                case SpecialType.System_UInt32:
-                case SpecialType.System_Int64:
-                case SpecialType.System_Single:
-                case SpecialType.System_Double:
-                case SpecialType.System_String:
-                    this.EmitImplicitConversion(from, to);
-                    return;
-
-                default:
-
-                    // already implemented implicit conversions:
-                    if (to == CoreTypes.PhpNumber ||
-                        to == CoreTypes.IntStringKey ||
-                        to.IsEnumType())
+                // specialized conversions:
+                if (to == CoreTypes.PhpValue)
+                {
+                    EmitConvertToPhpValue(from, fromHint);
+                }
+                else if (to == CoreTypes.PhpString)
+                {
+                    // -> PhpString
+                    EmitConvertToPhpString(from, fromHint);
+                }
+                else if (to == CoreTypes.PhpAlias)
+                {
+                    EmitConvertToPhpValue(from, fromHint);
+                    Emit_PhpValue_MakeAlias();
+                }
+                else if (to.IsReferenceType)
+                {
+                    if (to == CoreTypes.PhpArray || to == CoreTypes.IPhpArray || to == CoreTypes.IPhpEnumerable || to == CoreTypes.PhpHashtable)
                     {
-                        this.EmitImplicitConversion(from, to);
-                    }
-
-                    // not yet implemented as operator:
-                    else if (to == CoreTypes.PhpValue)
-                    {
-                        EmitConvertToPhpValue(from, fromHint);
-                    }
-                    else if (to == CoreTypes.PhpAlias)
-                    {
-                        if (from != CoreTypes.PhpValue)
-                        {
-                            if (from != CoreTypes.PhpAlias)
-                            {
-                                // Template: new PhpAlias((PhpValue))
-                                EmitConvertToPhpValue(from, fromHint);
-                                Emit_PhpValue_MakeAlias();
-                            }
-                        }
-                        else
-                        {
-                            // Template: <STACK>.EnsureAlias()    // keeps already aliased value
-                            EmitPhpValueAddr();
-                            EmitCall(ILOpCode.Call, CoreMethods.PhpValue.EnsureAlias);
-                        }
-                    }
-                    else if (to == CoreTypes.PhpString)
-                    {
-                        // -> PhpString
-                        EmitConvertToPhpString(from, fromHint);
-                    }
-                    else if (to.IsReferenceType)
-                    {
-                        if (to == CoreTypes.PhpArray || to == CoreTypes.IPhpArray || to == CoreTypes.IPhpEnumerable || to == CoreTypes.PhpHashtable)
-                        {
-                            // -> PhpArray
-                            // TODO: try unwrap "value.Object as T"
-                            EmitConvertToPhpArray(from, fromHint);
-                        }
-                        else
-                        {
-                            // -> Object, PhpResource
-                            EmitConvertToClass(from, fromHint, to);
-                        }
-                    }
-                    else if (to.IsNullableType(out var ttype))
-                    {
-                        // Template: new Nullable<T>( (T)from )
-                        EmitConvert(from, fromHint, ttype);
-                        EmitCall(ILOpCode.Newobj, ((NamedTypeSymbol)to).InstanceConstructors[0]);
+                        // -> PhpArray
+                        // TODO: try unwrap "value.Object as T"
+                        EmitConvertToPhpArray(from, fromHint);
                     }
                     else
                     {
-                        break;  // NotImplementedException
+                        // -> Object, PhpResource
+                        EmitConvertToClass(from, fromHint, to);
                     }
-                    return; // Handled
+                }
+                else if (to.IsNullableType(out var ttype))
+                {
+                    // Template: new Nullable<T>( (T)from )
+                    EmitConvert(from, fromHint, ttype);
+                    EmitCall(ILOpCode.Newobj, ((NamedTypeSymbol)to).InstanceConstructors[0]);
+                }
+                else
+                {
+                    throw this.NotImplementedException($"Conversion from '{from}' to '{to}'.");
+                }
             }
-
-            //
-            throw this.NotImplementedException($"{to}");
         }
     }
 }

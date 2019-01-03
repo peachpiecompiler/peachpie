@@ -14,7 +14,7 @@ namespace Pchp.CodeAnalysis.CodeGen
     {
         // TODO: EmitImplicitConversion(BoundExpression from, ...) // allows to use receiver by ref in case of a value type (PhpValue)
 
-        public static void EmitImplicitConversion(this CodeGenerator cg, TypeSymbol from, TypeSymbol to, bool @checked = false)
+        public static bool TryEmitImplicitConversion(this CodeGenerator cg, TypeSymbol from, TypeSymbol to, bool @checked = false)
         {
             if (from != to)
             {
@@ -25,8 +25,19 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else
                 {
-                    throw new InvalidOperationException($"Cannot implicitly convert '{from}' to '{to}'.");
+                    return false;
                 }
+            }
+
+            //
+            return true;
+        }
+
+        public static void EmitImplicitConversion(this CodeGenerator cg, TypeSymbol from, TypeSymbol to, bool @checked = false)
+        {
+            if (!TryEmitImplicitConversion(cg, from, to, @checked))
+            {
+                throw new InvalidOperationException($"Cannot implicitly convert '{from}' to '{to}'.");
             }
         }
 

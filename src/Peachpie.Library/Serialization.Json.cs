@@ -445,7 +445,7 @@ namespace Pchp.Library
                     }
                 }
 
-                void WriteArray(PhpHashtable array)
+                void WriteArray(PhpArray array)
                 {
                     // [
                     Write(Tokens.ArrayOpen);

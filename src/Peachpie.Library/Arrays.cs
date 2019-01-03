@@ -2968,7 +2968,7 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Prepares a walk for <see cref="array_walk(Context, PhpHashtable, IPhpCallable, PhpValue)"/> and <see cref="array_walk_recursive(Context, PhpHashtable, IPhpCallable, PhpValue)"/> methods.
+        /// Prepares a walk for <see cref="array_walk(Context, PhpArray, IPhpCallable, PhpValue)"/> and <see cref="array_walk_recursive(Context, PhpArray, IPhpCallable, PhpValue)"/> methods.
         /// </summary>
         /// <exception cref="PhpException"><paramref name="callback"/> or <paramref name="array"/> are <B>null</B> references.</exception>
         private static PhpValue[] PrepareWalk(IDictionary array, IPhpCallable callback, PhpValue data = default)
@@ -2994,7 +2994,7 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Visits an entry of array which <see cref="array_walk(Context, PhpHashtable, IPhpCallable, PhpValue)"/> or <see cref="array_walk_recursive(Context, PhpHashtable, IPhpCallable, PhpValue)"/> is walking through.
+        /// Visits an entry of array which <see cref="array_walk(Context, PhpArray, IPhpCallable, PhpValue)"/> or <see cref="array_walk_recursive(Context, PhpArray, IPhpCallable, PhpValue)"/> is walking through.
         /// </summary>
         private static void VisitEntryOnWalk(Context ctx,
             KeyValuePair<IntStringKey, PhpValue> entry,
