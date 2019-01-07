@@ -1422,6 +1422,11 @@ namespace Pchp.Core
 
         public static object This(this Closure closure) => closure._this;
 
+        /// <summary>
+        /// Gets internal <see cref="IPhpCallable"/> object invoked by the closure.
+        /// </summary>
+        public static IPhpCallable Callable(this Closure closure) => closure._callable;
+
         #endregion
 
         #region Generator

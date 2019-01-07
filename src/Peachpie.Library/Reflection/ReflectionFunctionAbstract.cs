@@ -39,8 +39,8 @@ namespace Pchp.Library.Reflection
         #endregion
 
         //private void __clone(void ) { throw new NotImplementedException(); }
-        public ReflectionClass getClosureScopeClass() { throw new NotImplementedException(); }
-        public object getClosureThis() { throw new NotImplementedException(); }
+        public virtual ReflectionClass getClosureScopeClass() { throw new NotImplementedException(); }
+        public virtual object getClosureThis() { throw new NotImplementedException(); }
         [return: CastToFalse]
         public string getDocComment() => null;
         public long getEndLine() { throw new NotImplementedException(); }
@@ -88,8 +88,8 @@ namespace Pchp.Library.Reflection
         public PhpArray getStaticVariables() { throw new NotImplementedException(); }
         public bool hasReturnType() { throw new NotImplementedException(); }
         public bool inNamespace() => name.IndexOf(ReflectionUtils.NameSeparator) > 0;
-        public bool isClosure() { throw new NotImplementedException(); }
-        public bool isDeprecated() { throw new NotImplementedException(); }
+        public virtual bool isClosure() { throw new NotImplementedException(); }
+        public virtual bool isDeprecated() { throw new NotImplementedException(); }
         public bool isGenerator() { throw new NotImplementedException(); }
         public bool isInternal() => !isUserDefined();
         public bool isUserDefined() => _routine.IsUserFunction;
