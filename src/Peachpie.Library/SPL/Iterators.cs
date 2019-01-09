@@ -1167,7 +1167,7 @@ namespace Pchp.Library.Spl
             }
         }
 
-        protected virtual void NextImpl()
+        protected private virtual void NextImpl()
         {
             var innerIterator = getInnerIterator();
             _valid = innerIterator.valid();
@@ -1289,7 +1289,7 @@ namespace Pchp.Library.Spl
             __construct(iterator, flags);
         }
 
-        public override void __construct(Iterator iterator, int flags = 1)
+        public override void __construct(Iterator iterator, int flags = CALL_TOSTRING)
         {
             if (!(iterator is RecursiveIterator))
             {
@@ -1299,7 +1299,7 @@ namespace Pchp.Library.Spl
             base.__construct(iterator, flags);
         }
 
-        protected override void NextImpl()
+        protected private override void NextImpl()
         {
             var innerIterator = (RecursiveIterator)_iterator;
             if (innerIterator.hasChildren())
@@ -1326,5 +1326,207 @@ namespace Pchp.Library.Spl
         /// Check whether the current element of the inner iterator has children.
         /// </summary>
         public bool hasChildren() => _children != null;
+    }
+
+    /// <summary>
+    /// This iterator can be used to filter another iterator based on a regular expression.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class RegexIterator : FilterIterator
+    {
+        #region Constants
+
+        /// <summary>
+        /// Only execute match (filter) for the current entry (see <see cref="PCRE.preg_match(Context, string, string)"/>).
+        /// </summary>
+        public const int MATCH = 0;
+
+        /// <summary>
+        /// Return the first match for the current entry (see <see cref="PCRE.preg_match(Context, string, string)"/>).
+        /// </summary>
+        public const int GET_MATCH = 1;
+
+        /// <summary>
+        /// Return all matches for the current entry (see <see cref="PCRE.preg_match_all(Context, string, string)"/>).
+        /// </summary>
+        public const int ALL_MATCHES = 2;
+
+        /// <summary>
+        /// Returns the split values for the current entry (see <see cref="PCRE.preg_split(string, string, int, int)"/>).
+        /// </summary>
+        public const int SPLIT = 3;
+
+        /// <summary>
+        /// Replace the current entry (see <see cref="PCRE.preg_replace(Context, PhpValue, PhpValue, PhpValue, long)"/>).
+        /// Use <see cref="replacement"/> to specify the replacement pattern.
+        /// </summary>
+        public const int REPLACE = 4;
+
+        /// <summary>
+        /// Special flag: Match the entry key instead of the entry value.
+        /// </summary>
+        public const int USE_KEY = 1;
+
+        #endregion
+
+        #region Fields and properties
+
+        private Context _ctx;
+
+        private PhpValue _currentVal;
+        private PhpValue _currentKey;
+
+        private string _regex;
+        private int _mode;
+        private int _flags;
+        private int _pregFlags;
+
+        public string replacement;
+
+        private bool IsKeyUsed => (_flags & USE_KEY) != 0;
+
+        #endregion
+
+        #region Construction
+
+        [PhpFieldsOnlyCtor]
+        protected RegexIterator(Context ctx)
+        {
+            _ctx = ctx;
+        }
+
+        public RegexIterator(Context ctx, Iterator iterator, string regex, int mode = MATCH, int flags = 0, int preg_flags = 0) : this(ctx)
+        {
+            __construct(iterator, regex, mode, flags, preg_flags);
+        }
+
+        public sealed override void __construct(Traversable iterator, string classname = null) => base.__construct(iterator, classname);
+
+        public void __construct(Iterator iterator, string regex, int mode, int flags, int preg_flags)
+        {
+            base.__construct(iterator);
+
+            _regex = regex;
+            _mode = mode;
+            _flags = flags;
+            _pregFlags = preg_flags;
+            replacement = "";
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Returns the set flags.
+        /// </summary>
+        public virtual int getFlags() => _flags;
+
+        /// <summary>
+        /// Returns the operation mode.
+        /// </summary>
+        public virtual int getMode() => _mode;
+
+        /// <summary>
+        /// Returns a bitmask of the regular expression flags.
+        /// </summary>
+        public virtual int getPregFlags() => _pregFlags;
+
+        /// <summary>
+        /// Returns current regular expression.
+        /// </summary>
+        public virtual string getRegex() => _regex;
+
+        /// <summary>
+        /// Sets the flags.
+        /// </summary>
+        /// <param name="flags"><see cref="USE_KEY"/> is supported.</param>
+        public virtual void setFlags(int flags) => _flags = flags;
+
+        /// <summary>
+        /// Sets the operation mode.
+        /// </summary>
+        public virtual void setMode(int mode)
+        {
+            if (mode < MATCH || mode > REPLACE)
+            {
+                PhpException.InvalidArgument(nameof(mode));
+            }
+
+            _mode = mode;
+        }
+
+        /// <summary>
+        /// Sets the regular expression flags.
+        /// </summary>
+        public virtual void setPregFlags(int preg_flags) => _pregFlags = preg_flags;
+
+        /// <summary>
+        /// Matches (string) <see cref="current"/> (or <see cref="key"/> if the <see cref="USE_KEY"/> flag is set)
+        /// against the regular expression. 
+        public override bool accept()
+        {
+            var key = base.key();
+            var val = base.current();
+
+            if (key.IsDefault || val.IsDefault)
+            {
+                return false;
+            }
+
+            _currentKey = key;
+            _currentVal = val;
+
+            string subject = IsKeyUsed ? _currentKey.ToString(_ctx) : _currentVal.ToString(_ctx);
+            PhpArray matches;
+            bool result;
+            switch (_mode)
+            {
+                case MATCH:
+                    result = (PCRE.preg_match(_ctx, _regex, subject) > 0);
+                    break;
+                case GET_MATCH:
+                    result = (PCRE.preg_match(_ctx, _regex, subject, out matches, _pregFlags) > 0);
+                    _currentVal = matches;
+                    break;
+                case ALL_MATCHES:
+                    result = (PCRE.preg_match_all(_ctx, _regex, subject, out matches, _pregFlags) > 0);
+                    _currentVal = matches;
+                    break;
+                case SPLIT:
+                    matches = PCRE.preg_split(_regex, subject, flags: _pregFlags);
+                    result = matches?.Count > 1;
+                    _currentVal = matches;
+                    break;
+                case REPLACE:
+                    long replaceCount = 0;
+                    var replaceResult = PCRE.preg_replace(_ctx, _regex, replacement, subject, -1, out replaceCount);
+                    
+                    if (replaceResult.IsNull || replaceCount == 0)
+                    {
+                        result = false;
+                        break;
+                    }
+
+                    if (IsKeyUsed)
+                    {
+                        _currentKey = replaceResult;
+                    }
+                    else
+                    {
+                        _currentVal = replaceResult;
+                    }
+
+                    result = true;
+                    break;
+                default:
+                    result = false;
+                    break;
+            }
+
+            return result;
+        }
+
+        public override PhpValue current() => _currentVal;
+
+        public override PhpValue key() => _currentKey;
     }
 }
