@@ -1371,7 +1371,7 @@ namespace Pchp.Library.Spl
 
         #region Fields and properties
 
-        private Context _ctx;
+        protected private Context _ctx;
 
         private PhpValue _currentVal;
         private PhpValue _currentKey;
@@ -1402,7 +1402,7 @@ namespace Pchp.Library.Spl
 
         public sealed override void __construct(Traversable iterator, string classname = null) => base.__construct(iterator, classname);
 
-        public void __construct(Iterator iterator, string regex, int mode, int flags, int preg_flags)
+        public virtual void __construct(Iterator iterator, string regex, int mode, int flags, int preg_flags)
         {
             base.__construct(iterator);
 
@@ -1528,5 +1528,55 @@ namespace Pchp.Library.Spl
         public override PhpValue current() => _currentVal;
 
         public override PhpValue key() => _currentKey;
+    }
+
+    /// <summary>
+    /// This recursive iterator can filter another recursive iterator via a regular expression.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class RecursiveRegexIterator : RegexIterator, RecursiveIterator
+    {
+        [PhpFieldsOnlyCtor]
+        protected RecursiveRegexIterator(Context ctx) : base(ctx)
+        { }
+
+        public RecursiveRegexIterator(Context ctx, RecursiveIterator iterator, string regex, int mode = MATCH, int flags = 0, int preg_flags = 0) : this(ctx)
+        {
+            __construct(iterator, regex, mode, flags, preg_flags);
+        }
+
+        public sealed override void __construct(Iterator iterator, string regex, int mode, int flags, int preg_flags)
+        {
+            base.__construct(iterator, regex, mode, flags, preg_flags);
+        }
+
+        public virtual void __construct(RecursiveIterator iterator, string regex, int mode = MATCH, int flags = 0, int preg_flags = 0)
+        {
+            __construct((Iterator)iterator, regex, mode, flags, preg_flags);
+        }
+
+        public override bool accept() => base.accept() || hasChildren();
+
+        /// <summary>
+        /// Returns an iterator for the current iterator entry.
+        /// </summary>
+        public virtual RecursiveIterator getChildren()
+        {
+            var inner = (RecursiveIterator)_iterator;
+            return new RecursiveRegexIterator(
+                _ctx,
+                inner.hasChildren() ? inner.getChildren() : null,
+                getRegex(),
+                getMode(),
+                getFlags(),
+                getPregFlags()
+            );
+        }
+
+        /// <summary>
+        /// Returns whether an iterator can be obtained for the current entry.
+        /// </summary>
+        /// <returns></returns>
+        public virtual bool hasChildren() => ((RecursiveIterator)_iterator).hasChildren();
     }
 }
