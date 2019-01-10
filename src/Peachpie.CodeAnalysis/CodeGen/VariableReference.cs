@@ -1013,7 +1013,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override void EmitInit(CodeGenerator cg)
         {
-            //
+            if (cg.InitializedLocals)
+            {
+                return;
+            }
 
             var srcparam = Symbol as SourceParameterSymbol;
             if (srcparam == null)
