@@ -979,6 +979,26 @@ namespace Pchp.Library.Spl
     }
 
     /// <summary>
+    /// This extended <see cref="FilterIterator"/> allows a recursive iteration using <see cref="RecursiveIteratorIterator"/>
+    /// that only shows those elements which have children.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class ParentIterator : RecursiveFilterIterator, OuterIterator
+    {
+        [PhpFieldsOnlyCtor]
+        protected ParentIterator(Context ctx) : base(ctx)
+        { }
+
+        public ParentIterator(Context ctx, RecursiveIterator iterator) : base(ctx, iterator)
+        { }
+
+        /// <summary>
+        /// Determines if the current element has children.
+        /// </summary>
+        public override bool accept() => ((RecursiveIterator)getInnerIterator()).hasChildren();
+    }
+
+    /// <summary>
     /// This object supports cached iteration over another iterator.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
