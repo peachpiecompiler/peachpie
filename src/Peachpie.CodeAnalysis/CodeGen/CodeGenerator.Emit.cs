@@ -208,7 +208,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (place.HasAddress)
                 {
-                    if (place.TypeOpt == CoreTypes.PhpNumber)
+                    if (place.Type == CoreTypes.PhpNumber)
                     {
                         // access directly without type checking
                         if (IsDoubleOnly(tmask))
@@ -224,7 +224,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                                 .Expect(SpecialType.System_Int64);
                         }
                     }
-                    else if (place.TypeOpt == CoreTypes.PhpValue)
+                    else if (place.Type == CoreTypes.PhpValue)
                     {
                         // access directly without type checking
                         if (IsDoubleOnly(tmask))
@@ -569,6 +569,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             if (_emitPdbSequencePoints && span.Length > 0)
             {
+                _il.EmitOpCode(ILOpCode.Nop);
                 _il.DefineSequencePoint(ContainingFile.SyntaxTree, span);
             }
         }
@@ -1199,9 +1200,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Gets source element index and delegate that emits the LOAD of source element.</param>
         public void EmitEnumerateArray(IPlace arrplace, int startindex, Action<LocalDefinition, Func<TypeSymbol>> bodyemit)
         {
-            Debug.Assert(arrplace.TypeOpt.IsSZArray());
+            Debug.Assert(arrplace.Type.IsSZArray());
 
-            var arr_element = ((ArrayTypeSymbol)arrplace.TypeOpt).ElementType;
+            var arr_element = ((ArrayTypeSymbol)arrplace.Type).ElementType;
 
             // Template: for (i = 0; i < params.Length; i++) <phparr>.Add(arrplace[i])
 
@@ -1299,8 +1300,8 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (targetType.SpecialType != SpecialType.System_Void)
                 {
-                    if (ThisPlaceOpt != null && ThisPlaceOpt.TypeOpt != null &&
-                        ThisPlaceOpt.TypeOpt.IsEqualToOrDerivedFrom(targetType))
+                    if (ThisPlaceOpt != null && ThisPlaceOpt.Type != null &&
+                        ThisPlaceOpt.Type.IsEqualToOrDerivedFrom(targetType))
                     {
                         // implicit $this instance
                         return EmitThis();
@@ -1583,7 +1584,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             int arg_params_index = (arguments.Length != 0 && arguments[arguments.Length - 1].IsUnpacking) ? arguments.Length - 1 : -1; // index of params argument, otherwise -1
             int arg_params_consumed = 0; // count of items consumed from arg_params if any
 
-            Debug.Assert(arg_params_index < 0 || (arguments[arg_params_index].Value is BoundVariableRef v && v.Variable.Symbol.GetTypeOrReturnType().IsSZArray()));
+            Debug.Assert(arg_params_index < 0 || (arguments[arg_params_index].Value is BoundVariableRef v && v.Variable.Type.IsSZArray()));
 
             for (; param_index < parameters.Length; param_index++)
             {
@@ -1747,7 +1748,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 thisExpr = new BoundVariableRef(new BoundVariableName(VariableName.ThisVariableName))
                 {
-                    Variable = BoundLocal.CreateFromPlace(thisPlaceExplicit ?? this.ThisPlaceOpt),
+                    Variable = PlaceReference.Create(thisPlaceExplicit ?? this.ThisPlaceOpt),
                     Access = BoundAccess.Read
                 };
             }
@@ -1775,7 +1776,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 var expr = new BoundVariableRef(new BoundVariableName(new VariableName(p.MetadataName)))
                 {
-                    Variable = new BoundParameter(p, null),
+                    Variable = new PlaceReference(new ParamPlace(p)), // new ParameterReference(p, Routine),
                     Access = BoundAccess.Read
                 };
 
@@ -2046,7 +2047,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         internal void EmitInitializePlace(IPlace place)
         {
             Contract.ThrowIfNull(place);
-            var t = place.TypeOpt;
+            var t = place.Type;
             Contract.ThrowIfNull(t);
 
             switch (t.SpecialType)
@@ -2089,7 +2090,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 public IPlace arrplace;
                 public int argindex;
 
-                TypeSymbol arr_element => ((ArrayTypeSymbol)arrplace.TypeOpt).ElementType;
+                TypeSymbol arr_element => ((ArrayTypeSymbol)arrplace.Type).ElementType;
 
                 protected override void EmitLoadTarget(CodeGenerator cg, TypeSymbol type)
                 {
@@ -2108,7 +2109,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     // Template: Operators.SetValue(ref arr[argindex], <TmpLocal>)
 
-                    var arr_element = ((ArrayTypeSymbol)arrplace.TypeOpt).ElementType;
+                    var arr_element = ((ArrayTypeSymbol)arrplace.Type).ElementType;
                     Debug.Assert(arr_element == cg.CoreTypes.PhpValue);
 
                     // ref arr[argindex] : &PhpValue
@@ -2216,10 +2217,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             protected virtual void WriteBackAndFree(CodeGenerator cg)
             {
                 // Template: <Target> = <TmpLocal>;
-                var place = Target.BindPlace(cg);
-                place.EmitStorePrepare(cg, null);
-                cg.Builder.EmitLocalLoad(TmpLocal);
-                place.EmitStore(cg, (TypeSymbol)TmpLocal.Type);
+                Target.BindPlace(cg).EmitStore(cg, TmpLocal, BoundAccess.Write);
 
                 //
                 Dispose(cg);
@@ -2259,7 +2257,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 if (refexpr != null)
                 {
                     var place = refexpr.Place(_il);
-                    if (place != null && place.HasAddress && place.TypeOpt == targetp.Type)
+                    if (place != null && place.HasAddress && place.Type == targetp.Type)
                     {
                         // ref place directly
                         place.EmitLoadAddress(_il);
@@ -2284,9 +2282,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             // assert arrplace is of type PhpValue[]
             Debug.Assert(arrplace != null);
-            Debug.Assert(arrplace.TypeOpt.IsSZArray());
+            Debug.Assert(arrplace.Type.IsSZArray());
 
-            var arr_element = ((ArrayTypeSymbol)arrplace.TypeOpt).ElementType;
+            var arr_element = ((ArrayTypeSymbol)arrplace.Type).ElementType;
             Debug.Assert(arr_element == CoreTypes.PhpValue);
 
             //
@@ -2377,8 +2375,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (holder != null && !getter.IsStatic)
             {
-                Debug.Assert(holder.TypeOpt != null);
-                if (holder.TypeOpt.IsValueType)
+                Debug.Assert(holder.Type != null);
+                if (holder.Type.IsValueType)
                 {
                     holder.EmitLoadAddress(_il);
                 }
@@ -3135,7 +3133,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        public TypeSymbol EmitLoadDefault(TypeSymbol type, TypeRefMask typemask)
+        public TypeSymbol EmitLoadDefault(TypeSymbol type, TypeRefMask typemask = default)
         {
             Debug.Assert(type != null);
 
@@ -3279,7 +3277,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             if (body.IsValid && EmitPdbSequencePoints)
             {
                 EmitSequencePoint(new Span(body.End - 1, 1));
-                EmitOpCode(ILOpCode.Nop);
             }
 
             //
@@ -3299,7 +3296,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         public void EmitNotNull(IPlace place)
         {
             Debug.Assert(place != null);
-            Debug.Assert(place.TypeOpt.IsReferenceType);
+            Debug.Assert(place.Type.IsReferenceType);
 
             // {place} != null : boolean
             place.EmitLoad(_il);

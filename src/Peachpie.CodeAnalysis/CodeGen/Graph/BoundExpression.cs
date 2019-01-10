@@ -2201,9 +2201,9 @@ namespace Pchp.CodeAnalysis.Semantics
     partial class BoundReferenceExpression
     {
         /// <summary>
-        /// Gets <see cref="IBoundReference"/> providing load and store operations.
+        /// Gets <see cref="IVariableReference"/> providing load and store operations.
         /// </summary>
-        internal abstract IBoundReference BindPlace(CodeGenerator cg);
+        internal abstract IVariableReference BindPlace(CodeGenerator cg);
 
         internal abstract IPlace Place(ILBuilder il);
 
@@ -2222,9 +2222,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.EmitLoadConstant(ConstantValue.Value, this.Access.TargetType);
             }
 
-            var place = this.BindPlace(cg);
-            place.EmitLoadPrepare(cg);
-            return place.EmitLoad(cg);
+            return this.BindPlace(cg).EmitLoadValue(cg, Access);
         }
     }
 
@@ -2263,14 +2261,14 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundVariableRef
     {
-        internal override IBoundReference BindPlace(CodeGenerator cg) => this.Variable.BindPlace(cg.Builder, this.Access, this.BeforeTypeRef);
+        internal override IVariableReference BindPlace(CodeGenerator cg) => this.Variable; // .BindPlace(cg.Builder, this.Access, this.BeforeTypeRef);
 
-        internal override IPlace Place(ILBuilder il) => this.Variable.Place(il);
+        internal override IPlace Place(ILBuilder il) => this.Variable.Place;
     }
 
-    partial class BoundListEx : IBoundReference
+    partial class BoundListEx : IVariableReference
     {
-        internal override IBoundReference BindPlace(CodeGenerator cg) => this;
+        internal override IVariableReference BindPlace(CodeGenerator cg) => this;
 
         internal override IPlace Place(ILBuilder il) => null;
 
@@ -2312,7 +2310,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // Template: <vars[i]> = <tmp>[i]
 
             var boundtarget = target.Value.BindPlace(cg);
-            boundtarget.EmitStorePrepare(cg);
+            var lhs = boundtarget.EmitStorePreamble(cg, target.Value.Access);
 
             // LOAD IPhpArray.GetItemValue(IntStringKey{i})
             arrplace.EmitLoad(cg.Builder);
@@ -2327,36 +2325,29 @@ namespace Pchp.CodeAnalysis.Semantics
             var itemtype = cg.EmitDereference(cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.GetItemValue_IntStringKey));
 
             // STORE vars[i]
-            boundtarget.EmitStore(cg, itemtype);
+            boundtarget.EmitStore(cg, ref lhs, itemtype, target.Value.Access);
+            lhs.Dispose();
         }
 
-        #region IBoundReference
+        #region IVariableReference
 
-        TypeSymbol IBoundReference.TypeOpt => null;
+        Symbol IVariableReference.Symbol => null;
 
-        void IBoundReference.EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
+        TypeSymbol IVariableReference.Type => null; // throw new NotImplementedException();
+
+        bool IVariableReference.HasAddress => false;
+
+        IPlace IVariableReference.Place => null;
+
+        LhsStack IVariableReference.EmitStorePreamble(CodeGenerator cg, BoundAccess access)
         {
-            throw new InvalidOperationException();
+            // nada
+            return default;
         }
 
-        TypeSymbol IBoundReference.EmitLoad(CodeGenerator cg)
+        void IVariableReference.EmitStore(CodeGenerator cg, ref LhsStack lhs, TypeSymbol stack, BoundAccess access)
         {
-            throw new InvalidOperationException();
-        }
-
-        TypeSymbol IBoundReference.EmitLoadAddress(CodeGenerator cg)
-        {
-            throw new InvalidOperationException();
-        }
-
-        void IBoundReference.EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
-        {
-            // nop
-        }
-
-        void IBoundReference.EmitStore(CodeGenerator cg, TypeSymbol valueType)
-        {
-            var rtype = EmitListAccess(cg, valueType);
+            var rtype = EmitListAccess(cg, stack);
 
             var tmp = cg.GetTemporaryLocal(rtype);
             cg.Builder.EmitLocalStore(tmp);
@@ -2374,39 +2365,26 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.ReturnTemporaryLocal(tmp);
         }
 
+        TypeSymbol IVariableReference.EmitLoadValue(CodeGenerator cg, ref LhsStack lhsStack, BoundAccess access)
+        {
+            throw new InvalidOperationException();
+        }
+
+        TypeSymbol IVariableReference.EmitLoadAddress(CodeGenerator cg, ref LhsStack lhsStack)
+        {
+            throw new InvalidOperationException();
+        }
+
         #endregion
     }
 
     partial class BoundFieldRef
     {
-        internal IBoundReference BoundReference { get; set; }
+        internal IVariableReference BoundReference { get; set; }
 
-        IFieldSymbol FieldSymbolOpt => (BoundReference as BoundFieldPlace)?.Field;
+        internal override IVariableReference BindPlace(CodeGenerator cg) => BoundReference;
 
-        internal override IBoundReference BindPlace(CodeGenerator cg)
-        {
-            // TODO: constant bound reference
-            Debug.Assert(BoundReference != null, "BoundReference was not set!");
-            return BoundReference;
-        }
-
-        internal override IPlace Place(ILBuilder il)
-        {
-            var fldplace = BoundReference as BoundFieldPlace;
-            if (fldplace != null)
-            {
-                Debug.Assert(fldplace.Field != null);
-
-                var instanceplace = (fldplace.Instance as BoundReferenceExpression)?.Place(il);
-                if ((fldplace.Field.IsStatic) ||
-                    (instanceplace != null && instanceplace.TypeOpt != null && instanceplace.TypeOpt.IsOfType(fldplace.Field.ContainingType)))
-                {
-                    return new FieldPlace(instanceplace, fldplace.Field);
-                }
-            }
-
-            return null;
-        }
+        internal override IPlace Place(ILBuilder il) => BoundReference?.Place;
     }
 
     partial class BoundRoutineCall
@@ -3172,15 +3150,15 @@ namespace Pchp.CodeAnalysis.Semantics
             var target_place = this.Target.BindPlace(cg);
 
             Debug.Assert(target_place != null);
-            Debug.Assert(target_place.TypeOpt == null || target_place.TypeOpt.SpecialType != SpecialType.System_Void);
+            Debug.Assert(target_place.Type == null || target_place.Type.SpecialType != SpecialType.System_Void);
 
             // T tmp; // in case access is Read
             LocalDefinition tmp = null;
 
             // <target> = <value>
-            target_place.EmitStorePrepare(cg);
+            var lhs = target_place.EmitStorePreamble(cg, Target.Access);
 
-            TypeSymbol t_value = target_place.TypeOpt;
+            var t_value = target_place.Type;
             if (t_value != null &&
                 t_value != cg.CoreTypes.PhpValue &&
                 t_value != cg.CoreTypes.PhpAlias &&
@@ -3198,7 +3176,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (t_value.SpecialType == SpecialType.System_Void)
             {
                 // default<T>
-                t_value = target_place.TypeOpt ?? cg.CoreTypes.PhpValue; // T of PhpValue
+                t_value = target_place.Type ?? cg.CoreTypes.PhpValue; // T of PhpValue
                 cg.EmitLoadDefault(t_value, 0);
             }
 
@@ -3218,7 +3196,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 throw ExceptionUtilities.UnexpectedValue(Access);
             }
 
-            target_place.EmitStore(cg, t_value);
+            target_place.EmitStore(cg, ref lhs, t_value, Target.Access);
+
+            lhs.Dispose();
 
             //
             if (Access.IsNone)
@@ -3253,26 +3233,18 @@ namespace Pchp.CodeAnalysis.Semantics
 
             var target_place = this.Target.BindPlace(cg);
             Debug.Assert(target_place != null);
-            Debug.Assert(target_place.TypeOpt == null || target_place.TypeOpt.SpecialType != SpecialType.System_Void);
+            Debug.Assert(target_place.Type == null || target_place.Type.SpecialType != SpecialType.System_Void);
 
-            // helper class maintaining reference to already evaluated instance of the eventual chain
-            using (var instance_holder = new InstanceCacheHolder())
-            {
-                // <target> = <target> X <value>
-                target_place.EmitStorePrepare(cg, instance_holder);
-
-                //
-                target_place.EmitLoadPrepare(cg, instance_holder);
-            }
-
-            var xtype = target_place.EmitLoad(cg);  // type of left value operand
+            // <target> = <target> X <value>
+            var lhs = target_place.EmitStorePreamble(cg, Target.Access);
+            var xtype = target_place.EmitLoadValue(cg, ref lhs, Target.Access);
 
             TypeSymbol result_type;
 
             switch (this.Operation)
             {
                 case Operations.AssignAdd:
-                    result_type = BoundBinaryEx.EmitAdd(cg, xtype, Value, target_place.TypeOpt);
+                    result_type = BoundBinaryEx.EmitAdd(cg, xtype, Value, target_place.Type);
                     break;
                 case Operations.AssignAppend:
                     result_type = EmitAppend(cg, xtype, Value);
@@ -3280,13 +3252,13 @@ namespace Pchp.CodeAnalysis.Semantics
                 ////case Operations.AssignPrepend:
                 ////    break;
                 case Operations.AssignDiv:
-                    result_type = BoundBinaryEx.EmitDiv(cg, xtype, Value, target_place.TypeOpt);
+                    result_type = BoundBinaryEx.EmitDiv(cg, xtype, Value, target_place.Type);
                     break;
                 case Operations.AssignMod:
                     result_type = BoundBinaryEx.EmitRemainder(cg, xtype, Value);
                     break;
                 case Operations.AssignMul:
-                    result_type = BoundBinaryEx.EmitMul(cg, xtype, Value, target_place.TypeOpt);
+                    result_type = BoundBinaryEx.EmitMul(cg, xtype, Value, target_place.Type);
                     break;
                 case Operations.AssignAnd:
                     result_type = BoundBinaryEx.EmitBitAnd(cg, xtype, Value);
@@ -3305,7 +3277,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     result_type = BoundBinaryEx.EmitShift(cg, xtype, Value, this.Operation == Operations.AssignShiftLeft ? ILOpCode.Shl : ILOpCode.Shr);
                     break;
                 case Operations.AssignSub:
-                    result_type = BoundBinaryEx.EmitSub(cg, xtype, Value, target_place.TypeOpt);
+                    result_type = BoundBinaryEx.EmitSub(cg, xtype, Value, target_place.Type);
                     break;
                 default:
                     throw ExceptionUtilities.UnexpectedValue(this.Operation);
@@ -3320,7 +3292,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 cg.Builder.EmitLocalStore(tmp);
             }
 
-            target_place.EmitStore(cg, result_type);
+            target_place.EmitStore(cg, ref lhs, result_type, Target.Access);
+            lhs.Dispose();
 
             //
             if (Access.IsRead)
@@ -3392,16 +3365,11 @@ namespace Pchp.CodeAnalysis.Semantics
             var target_place = this.Target.BindPlace(cg);
             Debug.Assert(target_place != null);
 
-            using (var instance_holder = new InstanceCacheHolder())
-            {
-                // prepare target for store operation
-                target_place.EmitStorePrepare(cg, instance_holder);
+            // prepare target for store operation
+            var lhs = target_place.EmitStorePreamble(cg, Target.Access);
 
-                // load target value
-                target_place.EmitLoadPrepare(cg, instance_holder);
-            }
-
-            var target_load_type = target_place.EmitLoad(cg);
+            // load target value
+            var target_load_type = target_place.EmitLoadValue(cg, ref lhs, Target.Access);
 
             TypeSymbol op_type;
 
@@ -3416,12 +3384,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (IsIncrement)
             {
-                op_type = BoundBinaryEx.EmitAdd(cg, target_load_type, this.Value, target_place.TypeOpt);
+                op_type = BoundBinaryEx.EmitAdd(cg, target_load_type, this.Value, target_place.Type);
             }
             else
             {
                 Debug.Assert(IsDecrement);
-                op_type = BoundBinaryEx.EmitSub(cg, target_load_type, this.Value, target_place.TypeOpt);
+                op_type = BoundBinaryEx.EmitSub(cg, target_load_type, this.Value, target_place.Type);
             }
 
             if (read && IsPrefix)
@@ -3434,7 +3402,9 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             //
-            target_place.EmitStore(cg, op_type);
+            target_place.EmitStore(cg, ref lhs, op_type, Target.Access);
+
+            lhs.Dispose();
 
             if (read)
             {
@@ -3642,35 +3612,26 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
-    partial class BoundArrayItemEx : IBoundReference
+    partial class BoundArrayItemEx : IVariableReference
     {
-        internal override IBoundReference BindPlace(CodeGenerator cg)
-        {
-            // resolve result type of place
-            _type = Access.IsReadRef
-                ? cg.CoreTypes.PhpAlias
-                : cg.CoreTypes.PhpValue;
+        internal override IVariableReference BindPlace(CodeGenerator cg) => this;
 
-            //
-            return this;
-        }
-
-        internal override IPlace Place(ILBuilder il)
-        {
-            // TODO: simple array access in case Array is System.Array and Key is int|long
-
-            return null;
-        }
+        internal override IPlace Place(ILBuilder il) => ((IVariableReference)this).Place;
 
         #region IBoundReference
 
-        TypeSymbol IBoundReference.TypeOpt => _type;
-        TypeSymbol _type;
+        Symbol IVariableReference.Symbol => null;
+
+        TypeSymbol IVariableReference.Type => DeclaringCompilation.CoreTypes.PhpValue;
+
+        bool IVariableReference.HasAddress => true;
+
+        IPlace IVariableReference.Place => null;    // TODO: simple array access in case Array is System.Array and Key is int|long
 
         #region Emitted Array Stack
 
         /// <summary>
-        /// Stack of type of {array,index} emitted by <see cref="IBoundReference.EmitLoadPrepare"/> and <see cref="IBoundReference.EmitStorePrepare"/>.
+        /// Stack of type of {array,index} emitted by <see cref="IVariableReference.EmitLoadValue"/> and <see cref="IVariableReference.EmitStorePreamble"/>.
         /// </summary>
         Stack<EmittedArrayInfo> _emittedArrays;
 
@@ -3680,8 +3641,8 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         /// <summary>
-        /// <see cref="IBoundReference.EmitLoadPrepare"/> and <see cref="IBoundReference.EmitStorePrepare"/> remembers what was the array type it emitted.
-        /// Used by <see cref="PopEmittedArray"/> and <see cref="IBoundReference.EmitLoad"/> or <see cref="IBoundReference.EmitStore"/> to emit specific operator.
+        /// <see cref="IVariableReference.EmitStorePreamble"/> and <see cref="IVariableReference.EmitStorePreamble"/> remembers what was the array type it emitted.
+        /// Used by <see cref="PopEmittedArray"/> and <see cref="IVariableReference.EmitLoadValue"/> or <see cref="IVariableReference.EmitStore"/> to emit specific operator.
         /// </summary>
         void PushEmittedArray(TypeSymbol tArray, TypeSymbol tIndex)
         {
@@ -3696,7 +3657,7 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         /// <summary>
-        /// Used by <see cref="IBoundReference.EmitLoad"/> and <see cref="IBoundReference.EmitStore"/> to emit specific operator
+        /// Used by <see cref="IVariableReference.EmitLoadValue"/> and <see cref="IVariableReference.EmitStore"/> to emit specific operator
         /// on a previously emitted array (<see cref="PushEmittedArray"/>).
         /// </summary>
         EmittedArrayInfo PopEmittedArray()
@@ -3729,7 +3690,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Emits <see cref="Index"/> either as <c>PhpValue</c> or <c>IntStringKey</c> if possible safely.
         /// If <see cref="Index"/> is a <c>null</c> reference, nothing is emitted and <c>null</c> is returned by the function.
         /// </summary>
-        TypeSymbol EmitLoadIndex(CodeGenerator cg, InstanceCacheHolder instanceOpt, bool safeToUseIntStringKey)
+        TypeSymbol EmitLoadIndex(CodeGenerator cg, ref LhsStack lhs, bool safeToUseIntStringKey)
         {
             TypeSymbol tIndex;
 
@@ -3757,7 +3718,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #endregion
 
-        void IBoundReference.EmitLoadPrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
+        void EmitLoadPrepare(CodeGenerator cg, ref LhsStack lhs)
         {
             // Template: array[index]
 
@@ -3768,7 +3729,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // LOAD Array
             //
 
-            var tArray = InstanceCacheHolder.EmitInstance(instanceOpt, cg, Array);
+            var tArray = lhs.EmitReceiver(cg, Array);
 
             // convert {t} to IPhpArray, string, System.Array
 
@@ -3840,14 +3801,16 @@ namespace Pchp.CodeAnalysis.Semantics
 
             Debug.Assert(this.Index != null || this.Access.IsEnsure, "Index is required when reading the array item.");
 
-            var tIndex = EmitLoadIndex(cg, instanceOpt, safeToUseIntStringKey);
+            var tIndex = EmitLoadIndex(cg, ref lhs, safeToUseIntStringKey);
 
             // remember for EmitLoad
             PushEmittedArray(tArray, tIndex);
         }
 
-        TypeSymbol IBoundReference.EmitLoad(CodeGenerator cg)
+        TypeSymbol IVariableReference.EmitLoadValue(CodeGenerator cg, ref LhsStack lhs, BoundAccess access)
         {
+            EmitLoadPrepare(cg, ref lhs);
+
             // Template: array[index]
 
             var stack = PopEmittedArray();
@@ -4058,8 +4021,10 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        TypeSymbol IBoundReference.EmitLoadAddress(CodeGenerator cg)
+        TypeSymbol IVariableReference.EmitLoadAddress(CodeGenerator cg, ref LhsStack lhs)
         {
+            EmitLoadPrepare(cg, ref lhs);
+
             var stack = PopEmittedArray();
             if (stack.tArray == cg.CoreTypes.PhpArray && stack.tIndex == cg.CoreTypes.IntStringKey)
             {
@@ -4076,8 +4041,10 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        void IBoundReference.EmitStorePrepare(CodeGenerator cg, InstanceCacheHolder instanceOpt)
+        LhsStack IVariableReference.EmitStorePreamble(CodeGenerator cg, BoundAccess access)
         {
+            var lhs = new LhsStack { CodeGenerator = cg, IsEnabled = access.IsRead, };
+
             //Debug.Assert(this.Array.Access.EnsureArray || this.Array.Access.IsQuiet);
 
             // Template: array[index]
@@ -4088,7 +4055,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // ENSURE Array
             //
 
-            var tArray = InstanceCacheHolder.EmitInstance(instanceOpt, cg, Array);
+            var tArray = lhs.EmitReceiver(cg, Array);
             if (tArray.IsOfType(cg.CoreTypes.IPhpArray))    // PhpArray, PhpString
             {
                 // ok
@@ -4183,7 +4150,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // LOAD [Index]
             //
 
-            var tIndex = EmitLoadIndex(cg, instanceOpt, safeToUseIntStringKey);
+            var tIndex = EmitLoadIndex(cg, ref lhs, safeToUseIntStringKey);
 
             if (tIndex == null && tArray.IsOfType(cg.CoreTypes.ArrayAccess))
             {
@@ -4194,9 +4161,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // remember for EmitLoad
             PushEmittedArray(tArray, tIndex);
+
+            //
+            return lhs;
         }
 
-        void IBoundReference.EmitStore(CodeGenerator cg, TypeSymbol valueType)
+        void IVariableReference.EmitStore(CodeGenerator cg, ref LhsStack lhs, TypeSymbol valueType, BoundAccess access)
         {
             // Template: array[index]
 
@@ -4470,8 +4440,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // resolved constant symbol
             if (_boundExpressionOpt != null)
             {
-                _boundExpressionOpt.EmitLoadPrepare(cg);
-                return _boundExpressionOpt.EmitLoad(cg);
+                return _boundExpressionOpt.EmitLoadValue(cg, BoundAccess.Read);
             }
 
             // the constant has to be resolved in runtime,
@@ -4605,13 +4574,12 @@ namespace Pchp.CodeAnalysis.Semantics
             else
             {
                 // clean this up ...
-                // OPTIMIZATION: emitting VarReference sometimes checks for 'isset' already!
+                // NOTICE: "IndirectProperty" performs `isset` by itself and returns the result as boolean
                 if (t.SpecialType == SpecialType.System_Boolean)
                 {
                     if (VarReference is BoundFieldRef boundfld)
                     {
-                        if (boundfld.BoundReference is BoundIndirectFieldPlace ||
-                            boundfld.BoundReference is BoundIndirectStFieldPlace)
+                        if (boundfld.BoundReference is IndirectProperty)
                         {
                             // isset already checked by callsite:
                             return t;

@@ -496,7 +496,7 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         private BoundGlobalFunctionCall(BoundRoutineName name, QualifiedName? nameOpt, ImmutableArray<BoundArgument> arguments)
-            : base (arguments)
+            : base(arguments)
         {
             Debug.Assert(nameOpt == null || name.IsDirect);
             _name = name;
@@ -511,7 +511,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                return new BoundGlobalFunctionCall(name, nameOpt, arguments){ TypeArguments = typeArguments }.WithContext(this);
+                return new BoundGlobalFunctionCall(name, nameOpt, arguments) { TypeArguments = typeArguments }.WithContext(this);
             }
         }
 
@@ -598,7 +598,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                return new BoundStaticFunctionCall(typeRef, name, arguments){ TypeArguments = typeArguments }.WithContext(this);
+                return new BoundStaticFunctionCall(typeRef, name, arguments) { TypeArguments = typeArguments }.WithContext(this);
             }
         }
 
@@ -696,7 +696,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                return new BoundNewEx(tref, arguments){ TypeArguments = typeArguments }.WithContext(this);
+                return new BoundNewEx(tref, arguments) { TypeArguments = typeArguments }.WithContext(this);
             }
         }
 
@@ -1327,6 +1327,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public abstract partial class BoundReferenceExpression : BoundExpression
     {
+        // internal IVariableReference Reference { get; } // TODO
+
         /// <summary>
         /// Gets or sets value indicating the variable is used while it was not initialized in all code paths.
         /// </summary>
@@ -1349,11 +1351,28 @@ namespace Pchp.CodeAnalysis.Semantics
         public BoundExpression NameExpression => _nameExpression;
         readonly BoundExpression _nameExpression;
 
+        public static bool operator ==(BoundVariableName lname, BoundVariableName rname)
+        {
+            if (ReferenceEquals(lname, rname)) return true;
+            if (ReferenceEquals(lname, null) || ReferenceEquals(rname, null)) return false;
+
+            return lname.NameExpression == rname.NameExpression && lname.NameValue.Equals(rname.NameValue);
+        }
+
+        public static bool operator !=(BoundVariableName lname, BoundVariableName rname)
+        {
+            return !(lname == rname);
+        }
+
+        public override bool Equals(object obj) => obj is BoundVariableName bname && this == bname;
+
+        public override int GetHashCode() => _nameValue.GetHashCode() ^ (_nameExpression != null ? _nameExpression.GetHashCode() : 0);
+
         string DebugView
         {
             get
             {
-                return IsDirect ? _nameValue.ToString() : _nameExpression.ToString();
+                return IsDirect ? _nameValue.ToString() : "{indirect}";
             }
         }
 
@@ -1365,6 +1384,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public BoundVariableName(VariableName name)
             : this(name, null)
+        {
+        }
+
+        public BoundVariableName(string name)
+            : this(new VariableName(name))
         {
         }
 
@@ -1417,7 +1441,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Resolved variable source.
         /// </summary>
-        public BoundVariable Variable { get; set; }
+        internal IVariableReference Variable { get; set; }
 
         public override OperationKind Kind => OperationKind.LocalReference;
 
@@ -1560,9 +1584,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public partial class BoundFieldRef : BoundReferenceExpression, IFieldReferenceOperation
     {
-        ISymbol IMemberReferenceOperation.Member => FieldSymbolOpt;
+        ISymbol IMemberReferenceOperation.Member => BoundReference?.Symbol;
 
-        IFieldSymbol IFieldReferenceOperation.Field => FieldSymbolOpt;
+        IFieldSymbol IFieldReferenceOperation.Field => BoundReference?.Symbol as IFieldSymbol;
 
         IOperation IMemberReferenceOperation.Instance => Instance;
 
@@ -1743,6 +1767,8 @@ namespace Pchp.CodeAnalysis.Semantics
     /// </summary>
     public partial class BoundArrayItemEx : BoundReferenceExpression, IArrayElementReferenceOperation
     {
+        internal PhpCompilation DeclaringCompilation { get; }
+
         public BoundExpression Array
         {
             get { return _array; }
@@ -1764,9 +1790,11 @@ namespace Pchp.CodeAnalysis.Semantics
         ImmutableArray<IOperation> IArrayElementReferenceOperation.Indices
             => (_index != null) ? ImmutableArray.Create((IOperation)_index) : ImmutableArray<IOperation>.Empty;
 
-        public BoundArrayItemEx(BoundExpression array, BoundExpression index)
+        public BoundArrayItemEx(PhpCompilation compilation, BoundExpression array, BoundExpression index)
         {
             Contract.ThrowIfNull(array);
+
+            DeclaringCompilation = compilation ?? throw ExceptionUtilities.ArgumentNull(nameof(compilation));
 
             _array = array;
             _index = index;
@@ -1780,7 +1808,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                return new BoundArrayItemEx(array, index).WithContext(this);
+                return new BoundArrayItemEx(DeclaringCompilation, array, index).WithContext(this);
             }
         }
 
@@ -1895,7 +1923,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// In case the constant is resolved to a place.
         /// </summary>
-        internal IBoundReference _boundExpressionOpt;
+        internal IVariableReference _boundExpressionOpt;
 
         public override void Accept(OperationVisitor visitor)
             => visitor.DefaultVisit(this);

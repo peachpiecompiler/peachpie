@@ -442,15 +442,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        private static bool TryGetVariableHandle(BoundVariable boundvar, FlowState state, out VariableHandle varHandle)
+        private static bool TryGetVariableHandle(IVariableReference boundvar, FlowState state, out VariableHandle varHandle)
         {
-            if (boundvar.Name != null)  // direct variable name
+            if (boundvar is LocalVariableReference local && local.BoundName.IsDirect)  // direct variable name
             {
-                if (boundvar.VariableKind == VariableKind.LocalVariable ||
-                    boundvar.VariableKind == VariableKind.Parameter ||
-                    boundvar.VariableKind == VariableKind.LocalTemporalVariable)
+                if (local.VariableKind == VariableKind.LocalVariable ||
+                    local.VariableKind == VariableKind.Parameter ||
+                    local.VariableKind == VariableKind.LocalTemporalVariable)
                 {
-                    varHandle = state.GetLocalHandle(new VariableName(boundvar.Name));
+                    varHandle = state.GetLocalHandle(local.BoundName.NameValue);
                     return true;
                 }
             }

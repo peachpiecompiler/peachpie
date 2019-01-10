@@ -568,7 +568,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
             {
                 if (_objectTypeInfoSemantic && _typeExpression is BoundVariableRef varref)
                 {
-                    return varref.Variable is BoundThisParameter;
+                    return varref.Variable is ThisVariableReference;
                 }
 
                 return false;
@@ -791,7 +791,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
         public BoundTypeRefFromPlace(IPlace place)
         {
             Debug.Assert(place != null);
-            Debug.Assert(place.TypeOpt == null);
+            Debug.Assert(place.Type == null);
 
             _place = place ?? throw ExceptionUtilities.ArgumentNull(nameof(place));
         }

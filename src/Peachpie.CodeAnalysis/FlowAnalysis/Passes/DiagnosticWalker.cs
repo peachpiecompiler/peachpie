@@ -252,9 +252,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         public override T VisitAssign(BoundAssignEx x)
         {
             // Template: <x> = <x>
-            if (x.Target is BoundVariableRef lvar && lvar.Variable is BoundLocal lloc &&
-                x.Value is BoundVariableRef rvar && rvar.Variable is BoundLocal rloc &&
-                lloc.Name == rloc.Name && !string.IsNullOrEmpty(lloc.Name) && x.PhpSyntax != null)
+            if (x.Target is BoundVariableRef lvar && lvar.Variable is LocalVariableReference lloc &&
+                x.Value is BoundVariableRef rvar && rvar.Variable is LocalVariableReference rloc &&
+                lloc.BoundName == rloc.BoundName && x.PhpSyntax != null)
             {
                 // Assignment made to same variable
                 _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_AssigningSameVariable);

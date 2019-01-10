@@ -52,7 +52,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (this.IsGeneratorMethod())
                 {
                     // $this ~ arg1
-                    thisPlace = new ArgPlace(thisPlace.TypeOpt, 1);
+                    thisPlace = new ArgPlace(thisPlace.Type, 1);
                 }
                 else if (this.ContainingType.IsTraitType())
                 {

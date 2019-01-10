@@ -369,15 +369,15 @@ namespace Pchp.CodeAnalysis.Semantics
 
     public sealed partial class BoundStaticVariableStatement : BoundStatement, IVariableDeclarationOperation
     {
-        public struct StaticVarDecl : IEquatable<StaticVarDecl>
+        internal struct StaticVarDecl : IEquatable<StaticVarDecl>
         {
-            public BoundVariable Variable;
+            public IVariableReference Variable;
             public BoundExpression InitialValue;
 
             /// <summary>
             /// Variable name.
             /// </summary>
-            public string Name => Variable.Name;
+            public string Name => ((LocalVariableReference)Variable).Name;
 
             public bool Equals(StaticVarDecl other) =>
                 Variable == other.Variable &&
@@ -399,15 +399,15 @@ namespace Pchp.CodeAnalysis.Semantics
 
         IVariableInitializerOperation IVariableDeclarationOperation.Initializer => null;
 
-        public StaticVarDecl Declaration => _variable;
+        internal StaticVarDecl Declaration => _variable;
         readonly StaticVarDecl _variable;
 
-        public BoundStaticVariableStatement(StaticVarDecl variable)
+        internal BoundStaticVariableStatement(StaticVarDecl variable)
         {
             _variable = variable;
         }
 
-        public BoundStaticVariableStatement Update(StaticVarDecl variable)
+        internal BoundStaticVariableStatement Update(StaticVarDecl variable)
         {
             if (variable == _variable)
             {

@@ -187,7 +187,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // avoiding of load of full value
                 if (place != null && place.HasAddress)
                 {
-                    if (place.TypeOpt == CoreTypes.PhpNumber)
+                    if (place.Type == CoreTypes.PhpNumber)
                     {
                         // < place >.ToBoolean()
                         place.EmitLoadAddress(_il);
@@ -195,7 +195,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         if (negation) this.EmitLogicNegation();
                         return;
                     }
-                    else if (place.TypeOpt == CoreTypes.PhpValue)
+                    else if (place.Type == CoreTypes.PhpValue)
                     {
                         // < place >.ToBoolean()
                         place.EmitLoadAddress(_il);
@@ -646,7 +646,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (place != null && place.HasAddress)
                 {
-                    if (place.TypeOpt == CoreTypes.PhpNumber)
+                    if (place.Type == CoreTypes.PhpNumber)
                     {
                         place.EmitLoadAddress(_il);
                         return EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToDouble)
@@ -1139,7 +1139,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 // loads value from place most effectively without runtime type checking
                 var place = PlaceOrNull(expr);
-                if (place != null && place.TypeOpt != to)
+                if (place != null && place.Type != to)
                 {
                     var type = TryEmitVariableSpecialize(place, expr.TypeRefMask);
                     if (type != null)
@@ -1152,7 +1152,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 // avoiding of load of full value
                 if (place != null && place.HasAddress)
                 {
-                    if (place.TypeOpt == CoreTypes.PhpNumber)
+                    if (place.Type == CoreTypes.PhpNumber)
                     {
                         if (to.SpecialType == SpecialType.System_Int64)
                         {
@@ -1190,7 +1190,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                         // TODO: Object, Array
                     }
-                    else if (place.TypeOpt == CoreTypes.PhpValue)
+                    else if (place.Type == CoreTypes.PhpValue)
                     {
                         if (to.SpecialType == SpecialType.System_Int64)
                         {
@@ -1236,7 +1236,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         //    return;
                         //}
                     }
-                    else if (place.TypeOpt == CoreTypes.Long)
+                    else if (place.Type == CoreTypes.Long)
                     {
                         if (to.SpecialType == SpecialType.System_String)
                         {

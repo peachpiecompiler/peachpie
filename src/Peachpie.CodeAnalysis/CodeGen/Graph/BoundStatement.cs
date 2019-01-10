@@ -34,7 +34,6 @@ namespace Pchp.CodeAnalysis.Semantics
                 if (!span.IsEmpty)
                 {
                     cg.EmitSequencePoint(_span);
-                    cg.Builder.EmitOpCode(ILOpCode.Nop);
                 }
             }
         }
@@ -156,8 +155,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // Template: <local> = $GLOBALS.EnsureItemAlias("name")
 
+            var access = BoundAccess.Write.WithWriteRef(default);
             var local = this.Variable.BindPlace(cg);
-            local.EmitStorePrepare(cg);
+            var lhs = local.EmitStorePreamble(cg, access);
 
             // <ctx>.Globals : PhpArray
             cg.EmitLoadContext();
@@ -169,7 +169,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 .Expect(cg.CoreTypes.PhpAlias);
 
             //
-            local.EmitStore(cg, t);
+            local.EmitStore(cg, ref lhs, t, access);
+
+            lhs.Dispose();
         }
     }
 
@@ -181,20 +183,22 @@ namespace Pchp.CodeAnalysis.Semantics
 
             // synthesize the holder class H { PhpAlias value }
             var holder = cg.Factory.DeclareStaticLocalHolder(this.Declaration.Name, cg.CoreTypes.PhpAlias); // (TypeSymbol)((ILocalSymbol)this.Declaration.Variable.Symbol).Type);
-
+            
             // Context.GetStatic<H>()
             var getmethod = cg.CoreMethods.Context.GetStatic_T.Symbol.Construct(holder);
 
             // Template: <local> = &Context.GetStatic<H>().value
-            var local = this.Declaration.Variable.BindPlace(cg.Builder, BoundAccess.Write.WithWriteRef(TypeRefMask.AnyType), 0);
-            local.EmitStorePrepare(cg);
-
+            var local = this.Declaration.Variable; // .BindPlace(cg.Builder, BoundAccess.Write.WithWriteRef(TypeRefMask.AnyType), 0);
+            var access = BoundAccess.Write.WithWriteRef(default);
+            var lhs = local.EmitStorePreamble(cg, access);
+            
             cg.EmitLoadContext();   // <ctx>
             cg.EmitCall(ILOpCode.Callvirt, getmethod);  // .GetStatic<H>()
             cg.Builder.EmitOpCode(ILOpCode.Ldfld);  // .value
             cg.EmitSymbolToken(holder.ValueField, null);
 
-            local.EmitStore(cg, holder.ValueField.Type);
+            local.EmitStore(cg, ref lhs, holder.ValueField.Type, access);
+            lhs.Dispose();
 
             // holder initialization routine
             EmitInit(cg.Module, cg.Diagnostics, cg.DeclaringCompilation, holder, Declaration.InitialValue);
@@ -218,7 +222,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     // Template: this.value = <initilizer>;
 
                     valuePlace.EmitStorePrepare(il);
-                    cg.EmitConvert(initializer, valuePlace.TypeOpt);
+                    cg.EmitConvert(initializer, valuePlace.Type);
                     valuePlace.EmitStore(il);
 
                     //
@@ -248,11 +252,11 @@ namespace Pchp.CodeAnalysis.Semantics
                     valuePlace.EmitStorePrepare(il);
                     if (initializer != null)
                     {
-                        cg.EmitConvert(initializer, valuePlace.TypeOpt);
+                        cg.EmitConvert(initializer, valuePlace.Type);
                     }
                     else
                     {
-                        cg.EmitLoadDefault(valuePlace.TypeOpt, 0);
+                        cg.EmitLoadDefault(valuePlace.Type, 0);
                     }
                     valuePlace.EmitStore(il);
                 }
@@ -296,8 +300,8 @@ namespace Pchp.CodeAnalysis.Semantics
             var place = expr.BindPlace(cg);
             Debug.Assert(place != null);
 
-            place.EmitStorePrepare(cg);
-            place.EmitStore(cg, null);
+            var lhs = place.EmitStorePreamble(cg, BoundAccess.Unset);
+            place.EmitStore(cg, ref lhs, null, BoundAccess.Unset); // null type -> no value
         }
     }
 
