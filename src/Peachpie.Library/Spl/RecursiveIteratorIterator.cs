@@ -247,4 +247,166 @@ namespace Pchp.Library.Spl
 
         #endregion
     }
+
+    /// <summary>
+    /// Allows iterating over a <see cref="RecursiveIterator"/> to generate an ASCII graphic tree.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class RecursiveTreeIterator : RecursiveIteratorIterator, OuterIterator
+    {
+        #region Constants
+
+        public const int BYPASS_CURRENT = 4;
+        public const int BYPASS_KEY = 8;
+        public const int PREFIX_LEFT = 0;
+        public const int PREFIX_MID_HAS_NEXT = 1;
+        public const int PREFIX_MID_LAST = 2;
+        public const int PREFIX_END_HAS_NEXT = 3;
+        public const int PREFIX_END_LAST = 4;
+        public const int PREFIX_RIGHT = 5;
+
+        private const int PREFIX_MAX = PREFIX_RIGHT;
+
+        #endregion
+
+        #region Fields
+
+        private int _flags;
+        private Context _ctx;
+
+        private string[] _prefix =
+        {
+            "",     // PREFIX_LEFT
+            "| ",   // PREFIX_MID_HAS_NEXT
+            "  ",   // PREFIX_MID_LAST
+            "|-",   // PREFIX_END_HAS_NEXT
+            "\\-",  // PREFIX_END_LAST
+            ""      // PREFIX_RIGHT
+        };
+        private string _postfix = "";
+
+        #endregion
+
+        #region Construction
+
+        [PhpFieldsOnlyCtor]
+        protected RecursiveTreeIterator(Context ctx)
+        {
+            _ctx = ctx;
+        }
+
+        public RecursiveTreeIterator(Context ctx, Traversable it, int flags = BYPASS_KEY, int cit_flags = CachingIterator.CATCH_GET_CHILD, int mode = SELF_FIRST) :
+            this(ctx)
+        {
+            __construct(it, flags, cit_flags, mode);
+        }
+
+        public sealed override void __construct(Traversable iterator, int mode = 0, int flags = 0)
+        {
+            __construct(iterator, BYPASS_KEY, CATCH_GET_CHILD, mode);
+        }
+
+        public virtual void __construct(Traversable it, int flags = BYPASS_KEY, int cit_flags = CachingIterator.CATCH_GET_CHILD, int mode = SELF_FIRST)
+        {
+            if (it is IteratorAggregate ia)
+            {
+                it = ia.getIterator();
+            }
+
+            if (!(it is Iterator))
+            {
+                PhpException.InvalidArgument(nameof(it));
+            }
+
+            _flags = flags;
+
+            var cachingIt = new RecursiveCachingIterator(_ctx, (Iterator)it, cit_flags);
+            base.__construct(cachingIt, mode);
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Sets a part of the prefix used in the graphic tree.
+        /// </summary>
+        /// <param name="part">One of the RecursiveTreeIterator::PREFIX_* constants.</param>
+        /// <param name="prefix">The value to assign to the part of the prefix specified in <paramref name="part"/>.</param>
+        public virtual void setPrefixPart(int part, string prefix)
+        {
+            if (part < 0 || part > PREFIX_MAX)
+            {
+                throw new OutOfRangeException();
+            }
+
+            _prefix[part] = prefix;
+        }
+
+        /// <summary>
+        /// Gets the string to place in front of current element.
+        /// </summary>
+        public virtual string getPrefix()
+        {
+            var result = new StringBuilder(_prefix[PREFIX_LEFT]);
+
+            int depth = getDepth();
+            bool hasNext;
+            for (int i = 0; i < depth; ++i)
+            {
+                hasNext = ((CachingIterator)getSubIterator(i)).hasNext();
+                result.Append(_prefix[hasNext ? PREFIX_MID_HAS_NEXT : PREFIX_MID_LAST]);
+            }
+
+            hasNext = ((CachingIterator)getSubIterator(depth)).hasNext();
+            result.Append(_prefix[hasNext ? PREFIX_END_HAS_NEXT : PREFIX_END_LAST]);
+
+            result.Append(_prefix[PREFIX_RIGHT]);
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// Sets postfix as used in <see cref="getPostfix"/>.
+        /// </summary>
+        public virtual void setPostfix(string postfix) => _postfix = postfix;
+
+        /// <summary>
+        /// Gets the string to place after the current element.
+        /// </summary>
+        public virtual string getPostfix() => _postfix;
+
+        /// <summary>
+        /// Gets the part of the tree built for the current element.
+        /// </summary>
+        public virtual string getEntry()
+        {
+            var current = getInnerIterator().current();
+            return current.IsArray ? "Array" : current.ToString(_ctx);
+        }
+
+        /// <summary>
+        /// Gets the current element prefixed and postfixed.
+        /// </summary>
+        public override PhpValue current()
+        {
+            if ((_flags & BYPASS_CURRENT) != 0)
+            {
+                return getSubIterator(getDepth()).current();
+            }
+
+            return getPrefix() + getEntry() + _postfix;
+        }
+
+        /// <summary>
+        /// Gets the current key prefixed and postfixed.
+        /// </summary>
+        public override PhpValue key()
+        {
+            var key = getSubIterator(getDepth()).key();
+            if ((_flags & BYPASS_KEY) != 0)
+            {
+                return key;
+            }
+
+            return getPrefix() + key.ToString(_ctx) + _postfix;
+        }
+    }
 }

@@ -464,6 +464,10 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             switch (member.Kind)
             {
+                case SymbolKind.Local:
+                    returnType = (TypeSymbol)((ILocalSymbol)member).Type;
+                    returnTypeCustomModifiers = ImmutableArray<CustomModifier>.Empty;
+                    break;
                 case SymbolKind.Field:
                     FieldSymbol field = (FieldSymbol)member;
                     returnType = field.Type;

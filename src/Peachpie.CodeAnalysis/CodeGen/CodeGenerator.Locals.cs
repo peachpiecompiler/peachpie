@@ -84,8 +84,6 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             public TypeSymbol Type => _type;
 
-            public TypeSymbol TypeOpt => Type;
-
             public bool HasAddress => _loc != null;
 
             public void Dispose()
@@ -213,12 +211,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <returns>Place or <c>null</c>.</returns>
         internal IPlace PlaceOrNull(BoundExpression expr)
         {
-            if (expr is BoundReferenceExpression boundref)
-            {
-                return boundref.Place();
-            }
-
-            return null;
+            return expr is BoundReferenceExpression bref ? bref.Place() : null;
         }
     }
 }

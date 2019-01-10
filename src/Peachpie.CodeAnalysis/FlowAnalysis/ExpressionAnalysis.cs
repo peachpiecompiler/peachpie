@@ -63,13 +63,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         VariableName AsVariableName(BoundReferenceExpression r)
         {
-            var vr = r as BoundVariableRef;
-            if (vr != null && (vr.Variable is BoundLocal || vr.Variable is BoundParameter))
+            if (r is BoundVariableRef vr)
             {
-                return new VariableName(vr.Variable.Name);
+                return vr.Name.NameValue;
             }
 
-            return default(VariableName);
+            return default;
         }
 
         bool IsLongConstant(BoundExpression expr, long value)
@@ -142,7 +141,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override T VisitStaticStatement(BoundStaticVariableStatement x)
         {
             var v = x.Declaration;
-            var local = State.GetLocalHandle(new VariableName(v.Variable.Name));
+            var local = State.GetLocalHandle(new VariableName(v.Name));
 
             State.SetVarKind(local, VariableKind.StaticVariable);
 
@@ -342,6 +341,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     // assume the type is mixed (unspecified).
                     // In global code, the type of variable cannot be determined by type analysis, it can change between every two operations (this may be improved by better flow analysis).
                     vartype = TypeRefMask.AnyType;
+                    vartype.IsRef = previoustype.IsRef;
 
                     if (Routine.IsGlobalScope)
                     {
@@ -454,7 +454,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // bind variable place
                 if (x.Variable == null)
                 {
-                    x.Variable = new BoundIndirectLocal(x.Name.NameExpression);
+                    x.Variable = new LocalVariableReference(VariableKind.LocalVariable, Routine, null, x.Name);
                 }
 
                 // update state
@@ -1708,8 +1708,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                                 if (overridenf == null || overridenf.IsAccessible(this.TypeCtx.SelfType))
                                 {
-                                    x.BoundReference = new BoundFieldPlace(x.Instance, overridenf ?? field, x);
-                                    x.TypeRefMask = field.GetResultType(TypeCtx);
+                                    x.BoundReference = new FieldReference(x.Instance, overridenf ?? field);
+                                    x.TypeRefMask = field.GetResultType(TypeCtx).WithRefFlag;
                                     x.ResultType = field.Type;
                                     return default;
                                 }
@@ -1728,7 +1728,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             if (member is PropertySymbol)
                             {
                                 var prop = (PropertySymbol)member;
-                                x.BoundReference = new BoundPropertyPlace(x.Instance, prop);
+                                x.BoundReference = new PropertyReference(x.Instance, prop);
                                 x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, prop.Type);
                                 x.ResultType = prop.Type;
                                 return default;
@@ -1751,8 +1751,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // dynamic behavior
                 // indirect field access ...
 
-                x.BoundReference = new BoundIndirectFieldPlace(x);
-                x.TypeRefMask = TypeRefMask.AnyType;
+                x.BoundReference = new IndirectProperty(x); // ~ dynamic // new BoundIndirectFieldPlace(x);
+                x.TypeRefMask = TypeRefMask.AnyType.WithRefFlag;
                 return default;
             }
 
@@ -1784,10 +1784,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         {
                             // real.NET static member (CLR static fields) or
                             // the field may be contained in special __statics container (fields & constants)
-                            x.BoundReference = new BoundFieldPlace(null, field, x);
+                            x.BoundReference = new FieldReference(null, field);
                         }
 
-                        x.TypeRefMask = field.GetResultType(TypeCtx);
+                        x.TypeRefMask = field.GetResultType(TypeCtx).WithRefFlag;
                         return default;
                     }
                     else if (x.IsStaticField)
@@ -1796,8 +1796,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         var prop = containingType.LookupMember<PropertySymbol>(fldname);
                         if (prop != null && prop.IsStatic)
                         {
-                            x.BoundReference = new BoundPropertyPlace(null, prop);
-                            x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, prop.Type);
+                            x.BoundReference = new PropertyReference(null, prop);
+                            x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, prop.Type).WithRefFlag;
                             return default;
                         }
                     }
@@ -1807,8 +1807,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 // indirect field access:
                 // indirect field access with known class name:
-                x.BoundReference = new BoundIndirectStFieldPlace((BoundTypeRef)x.ContainingType, x.FieldName, x);
-                x.TypeRefMask = TypeRefMask.AnyType;
+                x.BoundReference = new IndirectProperty(x); // ~ dynamic // new BoundIndirectStFieldPlace((BoundTypeRef)x.ContainingType, x.FieldName, x);
+                x.TypeRefMask = TypeRefMask.AnyType.WithRefFlag;
             }
 
             return default;
@@ -2104,12 +2104,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 if (field != null && field.IsStatic)
                 {
-                    x._boundExpressionOpt = new BoundFieldPlace(null, field, x);
+                    x._boundExpressionOpt = new FieldReference(null, field);
                     x.TypeRefMask = field.GetResultType(TypeCtx);
                 }
                 else if (symbol is PEPropertySymbol prop && prop.IsStatic)
                 {
-                    x._boundExpressionOpt = new BoundPropertyPlace(null, prop);
+                    x._boundExpressionOpt = new PropertyReference(null, prop);
                     x.TypeRefMask = prop.GetResultType(TypeCtx);
                 }
                 else

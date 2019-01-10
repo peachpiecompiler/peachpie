@@ -110,8 +110,12 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Bag with semantic diagnostics.
         /// </summary>
-        public DiagnosticBag Diagnostics => _diagnostics;
-        protected readonly DiagnosticBag _diagnostics;
+        public DiagnosticBag Diagnostics => DeclaringCompilation.DeclarationDiagnostics;
+        
+        /// <summary>
+        /// Compilation.
+        /// </summary>
+        internal PhpCompilation DeclaringCompilation { get; }
 
         /// <summary>
         /// Gets value determining whether to compile <c>assert</c>. otherwise the expression is ignored.
@@ -125,8 +129,8 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         /// <param name="locals">Table of local variables within routine.</param>
         /// <param name="self">Current self context.</param>
-        /// <param name="diagnostics">Optional. Diagnostics.</param>
-        public static SemanticsBinder Create(LocalsTable locals, SourceTypeSymbol self = null, DiagnosticBag diagnostics = null)
+        /// <param name="compilation">Declaring compilation.</param>
+        public static SemanticsBinder Create(PhpCompilation compilation, LocalsTable locals, SourceTypeSymbol self = null)
         {
             Debug.Assert(locals != null);
 
@@ -140,16 +144,17 @@ namespace Pchp.CodeAnalysis.Semantics
 
             //
             return (isGeneratorMethod)
-                ? new GeneratorSemanticsBinder(yields, locals, routine, self, diagnostics)
-                : new SemanticsBinder(locals, routine, self, diagnostics);
+                ? new GeneratorSemanticsBinder(compilation, yields, locals, routine, self)
+                : new SemanticsBinder(compilation, locals, routine, self);
         }
 
-        public SemanticsBinder(LocalsTable locals = null, SourceRoutineSymbol routine = null, SourceTypeSymbol self = null, DiagnosticBag diagnostics = null)
+        public SemanticsBinder(PhpCompilation compilation, LocalsTable locals = null, SourceRoutineSymbol routine = null, SourceTypeSymbol self = null)
         {
+            DeclaringCompilation = compilation;
+
             _locals = locals;
             _routine = routine;
             _self = self;
-            _diagnostics = diagnostics ?? DiagnosticBag.GetInstance();
         }
 
         /// <summary>
@@ -250,7 +255,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     if (unpacking)
                     {
                         // https://wiki.php.net/rfc/argument_unpacking
-                        _diagnostics.Add(this.Routine, p, Errors.ErrorCode.ERR_PositionalArgAfterUnpacking);
+                        Diagnostics.Add(this.Routine, p, Errors.ErrorCode.ERR_PositionalArgAfterUnpacking);
                     }
                 }
             }
@@ -293,7 +298,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (stmt is AST.DeclareStmt declareStm) return new BoundDeclareStatement();
 
             //
-            _diagnostics.Add(_locals.Routine, stmt, Errors.ErrorCode.ERR_NotYetImplemented, $"Statement of type '{stmt.GetType().Name}'");
+            Diagnostics.Add(_locals.Routine, stmt, Errors.ErrorCode.ERR_NotYetImplemented, $"Statement of type '{stmt.GetType().Name}'");
             return new BoundEmptyStatement(stmt.Span.ToTextSpan());
         }
 
@@ -462,7 +467,7 @@ namespace Pchp.CodeAnalysis.Semantics
             if (expr is AST.ShellEx) return BindShellEx((AST.ShellEx)expr).WithAccess(access);
 
             //
-            _diagnostics.Add(_locals.Routine, expr, Errors.ErrorCode.ERR_NotYetImplemented, $"Expression of type '{expr.GetType().Name}'");
+            Diagnostics.Add(_locals.Routine, expr, Errors.ErrorCode.ERR_NotYetImplemented, $"Expression of type '{expr.GetType().Name}'");
             return new BoundLiteral(null);
         }
 
@@ -887,6 +892,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // boundArray.Access = boundArray.Access.WithRead(typeof(PhpArray))
 
             return new BoundArrayItemEx(
+                DeclaringCompilation,
                 boundArray, (x.Index != null) ? BindExpression(x.Index, BoundAccess.Read) : null)
                 .WithAccess(access);
         }
@@ -1233,8 +1239,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #region Construction
 
-        public GeneratorSemanticsBinder(ImmutableArray<AST.IYieldLikeEx> yields, LocalsTable locals, SourceRoutineSymbol routine, SourceTypeSymbol self, DiagnosticBag diagnostics)
-            : base(locals, routine, self, diagnostics)
+        public GeneratorSemanticsBinder(PhpCompilation compilation, ImmutableArray<AST.IYieldLikeEx> yields, LocalsTable locals, SourceRoutineSymbol routine, SourceTypeSymbol self)
+            : base(compilation, locals, routine, self)
         {
             Debug.Assert(Routine != null);
 

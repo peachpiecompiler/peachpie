@@ -32,7 +32,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             if (cg.IsDebug && this.PhpSyntax != null)
             {
                 cg.EmitSequencePoint(this.PhpSyntax);
-                cg.Builder.EmitOpCode(ILOpCode.Nop);
             }
             cg.Scope.ContinueWith(NextBlock);
         }
@@ -299,9 +298,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             Debug.Assert(varplace != null);
 
             // $x = <tmp>
-            varplace.EmitStorePrepare(cg);
-            il.EmitLocalLoad(tmploc);
-            varplace.EmitStore(cg, (TypeSymbol)tmploc.Type);
+            varplace.EmitStore(cg, tmploc, BoundAccess.Write);
 
             //
             cg.ReturnTemporaryLocal(tmploc);
@@ -358,16 +355,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // special PhpArray enumerator
 
                 cg.EmitSequencePoint(valueVar.PhpSyntax);
-                var valueTarget = valueVar.BindPlace(cg);
-                valueTarget.EmitStorePrepare(cg);
-                valueTarget.EmitStore(cg, cg.EmitGetProperty(_enumeratorLoc, _currentValue));
+                valueVar.BindPlace(cg).EmitStore(cg, new PropertyPlace(_enumeratorLoc, _currentValue), valueVar.Access);
 
                 if (keyVar != null)
                 {
                     cg.EmitSequencePoint(keyVar.PhpSyntax);
-                    var keyTarget = keyVar.BindPlace(cg);
-                    keyTarget.EmitStorePrepare(cg);
-                    keyTarget.EmitStore(cg, cg.EmitGetProperty(_enumeratorLoc, _currentKey));
+                    keyVar.BindPlace(cg).EmitStore(cg, new PropertyPlace(_enumeratorLoc, _currentKey), keyVar.Access);
                 }
             }
             else
@@ -395,17 +388,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
                     // value = tmp.Item2;
                     cg.EmitSequencePoint(valueVar.PhpSyntax);
-                    var valueTarget = valueVar.BindPlace(cg);
-                    valueTarget.EmitStorePrepare(cg);
-                    valueTarget.EmitStore(cg, item2place.EmitLoad(cg.Builder));
+                    valueVar.BindPlace(cg).EmitStore(cg, item2place, valueVar.Access);
 
                     // key = tmp.Item1;
                     if (keyVar != null)
                     {
                         cg.EmitSequencePoint(keyVar.PhpSyntax);
-                        var keyTarget = keyVar.BindPlace(cg);
-                        keyTarget.EmitStorePrepare(cg);
-                        keyTarget.EmitStore(cg, item1place.EmitLoad(cg.Builder));
+                        keyVar.BindPlace(cg).EmitStore(cg, item1place, keyVar.Access);
                     }
 
                     //
@@ -415,10 +404,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 else
                 {
                     cg.EmitSequencePoint(valueVar.PhpSyntax);
-                    var valueTarget = valueVar.BindPlace(cg);
-                    valueTarget.EmitStorePrepare(cg);
-                    var t = cg.EmitGetProperty(_enumeratorLoc, _current);  // TOOD: PhpValue.FromClr
-                    valueTarget.EmitStore(cg, t);
+                    valueVar.BindPlace(cg).EmitStore(cg, new PropertyPlace(_enumeratorLoc, _current), valueVar.Access);  // TOOD: PhpValue.FromClr
 
                     if (keyVar != null)
                     {

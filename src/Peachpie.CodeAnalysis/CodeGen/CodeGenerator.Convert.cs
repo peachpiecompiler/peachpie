@@ -213,7 +213,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (place != null && place.HasAddress)
                 {
-                    if (place.TypeOpt == CoreTypes.PhpNumber)
+                    if (place.Type == CoreTypes.PhpNumber)
                     {
                         place.EmitLoadAddress(_il);
                         return EmitCall(ILOpCode.Call, CoreMethods.PhpNumber.ToDouble)
@@ -549,7 +549,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 // loads value from place most effectively without runtime type checking
                 var place = PlaceOrNull(expr);
-                if (place != null && place.TypeOpt != to)
+                if (place != null && place.Type != to)
                 {
                     var type = TryEmitVariableSpecialize(place, expr.TypeRefMask);
                     if (type != null)
@@ -560,9 +560,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
 
                 // avoiding of load of full value
-                if (place != null && place.HasAddress && place.TypeOpt != null && place.TypeOpt.IsValueType)
+                if (place != null && place.HasAddress && place.Type != null && place.Type.IsValueType)
                 {
-                    var conv = DeclaringCompilation.ClassifyCommonConversion(place.TypeOpt, to);
+                    var conv = DeclaringCompilation.ClassifyCommonConversion(place.Type, to);
                     if (conv.Exists && conv.IsUserDefined && !conv.MethodSymbol.IsStatic)
                     {
                         // (ADDR expr).Method()

@@ -916,6 +916,42 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Info must be NULL, integer or string.
+        /// </summary>
+        public static string iterator_multiple_info_invalid_type {
+            get {
+                return ResourceManager.GetString("iterator_multiple_info_invalid_type", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Called {0}() with non valid sub iterator.
+        /// </summary>
+        public static string iterator_multiple_invalid_subiterator {
+            get {
+                return ResourceManager.GetString("iterator_multiple_invalid_subiterator", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Key duplication error.
+        /// </summary>
+        public static string iterator_multiple_key_duplication {
+            get {
+                return ResourceManager.GetString("iterator_multiple_key_duplication", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Sub-Iterator is associated with NULL.
+        /// </summary>
+        public static string iterator_multiple_subiterator_null {
+            get {
+                return ResourceManager.GetString("iterator_multiple_subiterator_null", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Limit is less than 1.
         /// </summary>
         public static string limit_less_than_one {

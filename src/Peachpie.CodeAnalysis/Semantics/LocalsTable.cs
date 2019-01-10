@@ -17,12 +17,12 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         #region Fields & Properties
 
-        readonly Dictionary<VariableName, BoundVariable>/*!*/_dict = new Dictionary<VariableName, BoundVariable>();
+        readonly Dictionary<VariableName, LocalVariableReference>/*!*/_dict = new Dictionary<VariableName, LocalVariableReference>();
 
         /// <summary>
         /// Enumeration of direct local variables.
         /// </summary>
-        public IEnumerable<BoundVariable> Variables => _dict.Values;
+        public IEnumerable<LocalVariableReference> Variables => _dict.Values;
 
         /// <summary>
         /// Count of local variables.
@@ -59,63 +59,41 @@ namespace Pchp.CodeAnalysis.Semantics
             // parameters
             foreach (var p in _routine.SourceParameters)
             {
-                _dict[new VariableName(p.Name)] = new BoundParameter(p, p.Initializer);
+                _dict[new VariableName(p.Name)] = new ParameterReference(p, Routine);
             }
 
             // $this
             if (_routine.GetPhpThisVariablePlace() != null) // NOTE: even global code has $this  => routine.HasThis may be false
             {
-                _dict[VariableName.ThisVariableName] = new BoundThisParameter(_routine);
+                _dict[VariableName.ThisVariableName] = new ThisVariableReference(_routine);
             }
         }
 
-        BoundVariable CreateAutoGlobal(VariableName name, TextSpan span)
+        LocalVariableReference CreateAutoGlobal(VariableName name, TextSpan span)
         {
-            Debug.Assert(name.IsAutoGlobal);
-            return new BoundSuperGlobalVariable(name);
+            return new SuperglobalVariableReference(name, Routine);
         }
 
-        BoundVariable CreateLocal(VariableName name, TextSpan span)
+        LocalVariableReference CreateLocal(VariableName name, TextSpan span)
         {
             Debug.Assert(!name.IsAutoGlobal);
-            return new BoundLocal(new SourceLocalSymbol(_routine, name.Value, span));
+            return new LocalVariableReference(VariableKind.LocalVariable, Routine, new SourceLocalSymbol(Routine, name.Value, span), new BoundVariableName(name));
         }
 
-        BoundVariable CreateTemporal(VariableName name, TextSpan span)
+        LocalVariableReference CreateTemporal(VariableName name, TextSpan span)
         {
-            return new BoundLocal(new SourceLocalSymbol(_routine, name.Value, span), VariableKind.LocalTemporalVariable);
+            return new LocalVariableReference(
+                VariableKind.LocalTemporalVariable,
+                Routine,
+                new SourceLocalSymbol(Routine, name.Value, span),
+                new BoundVariableName(name));
         }
 
         #region Public methods
 
-        /// <summary>
-        /// Gets variables with given name.
-        /// There might be more variables with same name of a different kind.
-        /// </summary>
-        public IEnumerable<BoundVariable> GetVariables(VariableName name)
+        IVariableReference BindVariable(VariableName varname, TextSpan span, Func<VariableName, TextSpan, LocalVariableReference> factory)
         {
-            foreach (var v in Variables)
-            {
-                if (v.Name != null && new VariableName(v.Name).Equals(name))
-                {
-                    yield return v;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Gets enumeration of local variables.
-        /// </summary>
-        public IEnumerable<BoundVariable> GetVariables()
-        {
-            return Variables;
-        }
-
-        BoundVariable BindVariable(VariableName varname, TextSpan span, Func<VariableName, TextSpan, BoundVariable> factory)
-        {
-            BoundVariable value;
-
-            if (!_dict.TryGetValue(varname, out value))
+            if (!_dict.TryGetValue(varname, out var value))
             {
                 _dict[varname] = value = factory(varname, span);
             }
@@ -128,11 +106,11 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Gets local variable or create local if not yet.
         /// </summary>
-        public BoundVariable BindLocalVariable(VariableName varname, TextSpan span) => BindVariable(varname, span, CreateLocal);
+        public IVariableReference BindLocalVariable(VariableName varname, TextSpan span) => BindVariable(varname, span, CreateLocal);
 
-        public BoundVariable BindTemporalVariable(VariableName varname) => BindVariable(varname, default(TextSpan), CreateTemporal);
+        public IVariableReference BindTemporalVariable(VariableName varname) => BindVariable(varname, default, CreateTemporal);
 
-        public BoundVariable BindAutoGlobalVariable(VariableName varname) => BindVariable(varname, default(TextSpan), CreateAutoGlobal);
+        public IVariableReference BindAutoGlobalVariable(VariableName varname) => BindVariable(varname, default, CreateAutoGlobal);
 
         #endregion
     }

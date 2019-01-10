@@ -159,22 +159,25 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             public TypeSymbol EmitTargetInstance(Func<CodeGenerator, TypeSymbol>/*!*/emitter)
             {
-                Debug.Assert(emitter != null);
-                var t = emitter(_cg);
-                if (t != null)
+                return EmitTargetInstance(emitter(_cg));
+            }
+
+            public TypeSymbol EmitTargetInstance(TypeSymbol receiverType)
+            {
+                if (receiverType != null)
                 {
-                    if (t.SpecialType == SpecialType.System_Void)
+                    if (receiverType.SpecialType == SpecialType.System_Void)
                     {
                         // void: invalid code, should be reported in DiagnosingVisitor
                         _cg.Builder.EmitNullConstant();
-                        t = _cg.CoreTypes.Object;
+                        receiverType = _cg.CoreTypes.Object;
                     }
 
-                    AddArg(t, byref: false);
+                    AddArg(receiverType, byref: false);
                 }
 
                 //
-                return t;
+                return receiverType;
             }
 
             /// <summary>Emits arguments to be passed to callsite.</summary>
@@ -204,32 +207,23 @@ namespace Pchp.CodeAnalysis.CodeGen
                         // we might need the value ref in the callsite:
 
                         var bound = varref.BindPlace(_cg);
-                        if (bound is BoundIndirectVariablePlace iplace)
+                        if (bound is LocalVariableReference loc && !loc.IsOptimized)
                         {
-                            t = iplace.LoadIndirectLocal(_cg); // IndirectLocal wrapper
+                            t = loc.LoadIndirectLocal(_cg); // IndirectLocal wrapper
                         }
                         else
                         {
                             var place = varref.Place();
-                            if (place != null && place.HasAddress && place.TypeOpt == _cg.CoreTypes.PhpValue)
+                            if (place != null && place.HasAddress && place.Type == _cg.CoreTypes.PhpValue)
                             {
                                 place.EmitLoadAddress(_cg.Builder);
 
-                                t = place.TypeOpt;
+                                t = place.Type;
                                 byref = true;
                             }
                             else
                             {                                
-                                bound.EmitLoadPrepare(_cg);
-                                if ((bound.TypeOpt == null || bound.TypeOpt == _cg.CoreTypes.PhpValue) && // makes sense only if type is PhpValue (or unknown)
-                                    (t = bound.EmitLoadAddress(_cg)) != null) // try to load address
-                                {
-                                    byref = true;
-                                }
-                                else
-                                {
-                                    t = bound.EmitLoad(_cg); // just load by value if address cannot be loaded
-                                }
+                                t = bound.EmitLoadValue(_cg, BoundAccess.Read); // just load by value if address cannot be loaded
                             }
                         }
                     }

@@ -979,6 +979,26 @@ namespace Pchp.Library.Spl
     }
 
     /// <summary>
+    /// This extended <see cref="FilterIterator"/> allows a recursive iteration using <see cref="RecursiveIteratorIterator"/>
+    /// that only shows those elements which have children.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class ParentIterator : RecursiveFilterIterator, OuterIterator
+    {
+        [PhpFieldsOnlyCtor]
+        protected ParentIterator(Context ctx) : base(ctx)
+        { }
+
+        public ParentIterator(Context ctx, RecursiveIterator iterator) : base(ctx, iterator)
+        { }
+
+        /// <summary>
+        /// Determines if the current element has children.
+        /// </summary>
+        public override bool accept() => ((RecursiveIterator)getInnerIterator()).hasChildren();
+    }
+
+    /// <summary>
     /// This object supports cached iteration over another iterator.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
@@ -1167,7 +1187,7 @@ namespace Pchp.Library.Spl
             }
         }
 
-        protected virtual void NextImpl()
+        protected private virtual void NextImpl()
         {
             var innerIterator = getInnerIterator();
             _valid = innerIterator.valid();
@@ -1289,7 +1309,7 @@ namespace Pchp.Library.Spl
             __construct(iterator, flags);
         }
 
-        public override void __construct(Iterator iterator, int flags = 1)
+        public override void __construct(Iterator iterator, int flags = CALL_TOSTRING)
         {
             if (!(iterator is RecursiveIterator))
             {
@@ -1299,7 +1319,7 @@ namespace Pchp.Library.Spl
             base.__construct(iterator, flags);
         }
 
-        protected override void NextImpl()
+        protected private override void NextImpl()
         {
             var innerIterator = (RecursiveIterator)_iterator;
             if (innerIterator.hasChildren())
@@ -1326,5 +1346,478 @@ namespace Pchp.Library.Spl
         /// Check whether the current element of the inner iterator has children.
         /// </summary>
         public bool hasChildren() => _children != null;
+    }
+
+    /// <summary>
+    /// This iterator can be used to filter another iterator based on a regular expression.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class RegexIterator : FilterIterator
+    {
+        #region Constants
+
+        /// <summary>
+        /// Only execute match (filter) for the current entry (see <see cref="PCRE.preg_match(Context, string, string)"/>).
+        /// </summary>
+        public const int MATCH = 0;
+
+        /// <summary>
+        /// Return the first match for the current entry (see <see cref="PCRE.preg_match(Context, string, string)"/>).
+        /// </summary>
+        public const int GET_MATCH = 1;
+
+        /// <summary>
+        /// Return all matches for the current entry (see <see cref="PCRE.preg_match_all(Context, string, string)"/>).
+        /// </summary>
+        public const int ALL_MATCHES = 2;
+
+        /// <summary>
+        /// Returns the split values for the current entry (see <see cref="PCRE.preg_split(string, string, int, int)"/>).
+        /// </summary>
+        public const int SPLIT = 3;
+
+        /// <summary>
+        /// Replace the current entry (see <see cref="PCRE.preg_replace(Context, PhpValue, PhpValue, PhpValue, long)"/>).
+        /// Use <see cref="replacement"/> to specify the replacement pattern.
+        /// </summary>
+        public const int REPLACE = 4;
+
+        /// <summary>
+        /// Special flag: Match the entry key instead of the entry value.
+        /// </summary>
+        public const int USE_KEY = 1;
+
+        #endregion
+
+        #region Fields and properties
+
+        protected private Context _ctx;
+
+        private PhpValue _currentVal;
+        private PhpValue _currentKey;
+
+        private string _regex;
+        private int _mode;
+        private int _flags;
+        private int _pregFlags;
+
+        public string replacement;
+
+        private bool IsKeyUsed => (_flags & USE_KEY) != 0;
+
+        #endregion
+
+        #region Construction
+
+        [PhpFieldsOnlyCtor]
+        protected RegexIterator(Context ctx)
+        {
+            _ctx = ctx;
+        }
+
+        public RegexIterator(Context ctx, Iterator iterator, string regex, int mode = MATCH, int flags = 0, int preg_flags = 0) : this(ctx)
+        {
+            __construct(iterator, regex, mode, flags, preg_flags);
+        }
+
+        public sealed override void __construct(Traversable iterator, string classname = null) => base.__construct(iterator, classname);
+
+        public virtual void __construct(Iterator iterator, string regex, int mode, int flags, int preg_flags)
+        {
+            base.__construct(iterator);
+
+            _regex = regex;
+            _mode = mode;
+            _flags = flags;
+            _pregFlags = preg_flags;
+            replacement = "";
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Returns the set flags.
+        /// </summary>
+        public virtual int getFlags() => _flags;
+
+        /// <summary>
+        /// Returns the operation mode.
+        /// </summary>
+        public virtual int getMode() => _mode;
+
+        /// <summary>
+        /// Returns a bitmask of the regular expression flags.
+        /// </summary>
+        public virtual int getPregFlags() => _pregFlags;
+
+        /// <summary>
+        /// Returns current regular expression.
+        /// </summary>
+        public virtual string getRegex() => _regex;
+
+        /// <summary>
+        /// Sets the flags.
+        /// </summary>
+        /// <param name="flags"><see cref="USE_KEY"/> is supported.</param>
+        public virtual void setFlags(int flags) => _flags = flags;
+
+        /// <summary>
+        /// Sets the operation mode.
+        /// </summary>
+        public virtual void setMode(int mode)
+        {
+            if (mode < MATCH || mode > REPLACE)
+            {
+                PhpException.InvalidArgument(nameof(mode));
+            }
+
+            _mode = mode;
+        }
+
+        /// <summary>
+        /// Sets the regular expression flags.
+        /// </summary>
+        public virtual void setPregFlags(int preg_flags) => _pregFlags = preg_flags;
+
+        /// <summary>
+        /// Matches (string) <see cref="current"/> (or <see cref="key"/> if the <see cref="USE_KEY"/> flag is set)
+        /// against the regular expression. 
+        public override bool accept()
+        {
+            var key = base.key();
+            var val = base.current();
+
+            if (key.IsDefault || val.IsDefault)
+            {
+                return false;
+            }
+
+            _currentKey = key;
+            _currentVal = val;
+
+            string subject = IsKeyUsed ? _currentKey.ToString(_ctx) : _currentVal.ToString(_ctx);
+            PhpArray matches;
+            bool result;
+            switch (_mode)
+            {
+                case MATCH:
+                    result = (PCRE.preg_match(_ctx, _regex, subject) > 0);
+                    break;
+                case GET_MATCH:
+                    result = (PCRE.preg_match(_ctx, _regex, subject, out matches, _pregFlags) > 0);
+                    _currentVal = matches;
+                    break;
+                case ALL_MATCHES:
+                    result = (PCRE.preg_match_all(_ctx, _regex, subject, out matches, _pregFlags) > 0);
+                    _currentVal = matches;
+                    break;
+                case SPLIT:
+                    matches = PCRE.preg_split(_regex, subject, flags: _pregFlags);
+                    result = matches?.Count > 1;
+                    _currentVal = matches;
+                    break;
+                case REPLACE:
+                    long replaceCount = 0;
+                    var replaceResult = PCRE.preg_replace(_ctx, _regex, replacement, subject, -1, out replaceCount);
+                    
+                    if (replaceResult.IsNull || replaceCount == 0)
+                    {
+                        result = false;
+                        break;
+                    }
+
+                    if (IsKeyUsed)
+                    {
+                        _currentKey = replaceResult;
+                    }
+                    else
+                    {
+                        _currentVal = replaceResult;
+                    }
+
+                    result = true;
+                    break;
+                default:
+                    result = false;
+                    break;
+            }
+
+            return result;
+        }
+
+        public override PhpValue current() => _currentVal;
+
+        public override PhpValue key() => _currentKey;
+    }
+
+    /// <summary>
+    /// This recursive iterator can filter another recursive iterator via a regular expression.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class RecursiveRegexIterator : RegexIterator, RecursiveIterator
+    {
+        [PhpFieldsOnlyCtor]
+        protected RecursiveRegexIterator(Context ctx) : base(ctx)
+        { }
+
+        public RecursiveRegexIterator(Context ctx, RecursiveIterator iterator, string regex, int mode = MATCH, int flags = 0, int preg_flags = 0) : this(ctx)
+        {
+            __construct(iterator, regex, mode, flags, preg_flags);
+        }
+
+        public sealed override void __construct(Iterator iterator, string regex, int mode, int flags, int preg_flags)
+        {
+            base.__construct(iterator, regex, mode, flags, preg_flags);
+        }
+
+        public virtual void __construct(RecursiveIterator iterator, string regex, int mode = MATCH, int flags = 0, int preg_flags = 0)
+        {
+            __construct((Iterator)iterator, regex, mode, flags, preg_flags);
+        }
+
+        public override bool accept() => base.accept() || hasChildren();
+
+        /// <summary>
+        /// Returns an iterator for the current iterator entry.
+        /// </summary>
+        public virtual RecursiveIterator getChildren()
+        {
+            var inner = (RecursiveIterator)_iterator;
+            return new RecursiveRegexIterator(
+                _ctx,
+                inner.hasChildren() ? inner.getChildren() : null,
+                getRegex(),
+                getMode(),
+                getFlags(),
+                getPregFlags()
+            );
+        }
+
+        /// <summary>
+        /// Returns whether an iterator can be obtained for the current entry.
+        /// </summary>
+        /// <returns></returns>
+        public virtual bool hasChildren() => ((RecursiveIterator)_iterator).hasChildren();
+    }
+
+    /// <summary>
+    /// An Iterator that sequentially iterates over all attached iterators.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class MultipleIterator : Iterator
+    {
+        #region Constants
+
+        /// <summary>
+        /// Do not require all sub iterators to be valid in iteration.
+        /// </summary>
+        public const int MIT_NEED_ANY = 0;
+
+        /// <summary>
+        /// Require all sub iterators to be valid in iteration.
+        /// </summary>
+        public const int MIT_NEED_ALL = 1;
+
+        /// <summary>
+        /// Keys are created from the sub iterators position.
+        /// </summary>
+        public const int MIT_KEYS_NUMERIC = 0;
+
+        /// <summary>
+        /// Keys are created from sub iterators associated information.
+        /// </summary>
+        public const int MIT_KEYS_ASSOC = 2;
+
+        #endregion
+
+        #region Fields
+
+        private List<(Iterator Iterator, IntStringKey? Info)> _iterators;
+
+        private int _flags;
+
+        #endregion
+
+        #region Construction
+
+        [PhpFieldsOnlyCtor]
+        protected MultipleIterator()
+        { }
+
+        public MultipleIterator(Context ctx, int flags = MIT_NEED_ALL | MIT_KEYS_NUMERIC)
+        {
+            __construct(ctx, flags);
+        }
+
+        public virtual void __construct(Context ctx, int flags = MIT_NEED_ALL | MIT_KEYS_NUMERIC)
+        {
+            _iterators = new List<(Iterator, IntStringKey?)>();
+            _flags = flags;
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Gets information about the flags.
+        /// </summary>
+        public virtual int getFlags() => _flags;
+
+        /// <summary>
+        /// Sets flags.
+        /// </summary>
+        public virtual void setFlags(int flags) => _flags = flags;
+
+        /// <summary>
+        /// Attaches iterator information.
+        /// </summary>
+        /// <param name="iter">The new iterator to attach.</param>
+        public void attachIterator(Iterator iter) => attachIterator(iter, PhpValue.Null);
+
+        /// <summary>
+        /// Attaches iterator information.
+        /// </summary>
+        /// <param name="iter">The new iterator to attach.</param>
+        /// <param name="info">The associative information for the Iterator, which must be an integer, a string, or NULL.</param>
+        public virtual void attachIterator(Iterator iter, PhpValue info)
+        {
+            IntStringKey? resultInfo;
+            if (info.IsNull)
+            {
+                resultInfo = null;
+            }
+            else
+            {
+                if (info.TryToIntStringKey(out var key))
+                {
+                    resultInfo = key;
+
+                    if (_iterators.Any(item => item.Info?.Equals(key) == true))
+                    {
+                        throw new InvalidArgumentException(Resources.Resources.iterator_multiple_info_invalid_type);
+                    }
+                }
+                else
+                {
+                    throw new InvalidArgumentException(Resources.Resources.iterator_multiple_key_duplication);
+                }
+            }
+
+            _iterators.Add((iter, resultInfo));
+        }
+
+        /// <summary>
+        /// Detaches an iterator.
+        /// </summary>
+        public virtual void detachIterator(Iterator iter) => _iterators.RemoveAll(item => item.Iterator == iter);
+
+        /// <summary>
+        /// Checks if an iterator is attached or not.
+        /// </summary>
+        public virtual bool containsIterator(Iterator iter) => _iterators.Any(item => item.Iterator == iter);
+
+        /// <summary>
+        /// Gets the number of attached iterator instances.
+        /// </summary>
+        public virtual int countIterators() => _iterators.Count;
+
+        /// <summary>
+        /// Rewinds all attached iterator instances.
+        /// </summary>
+        public virtual void rewind()
+        {
+            foreach (var item in _iterators)
+            {
+                item.Iterator.rewind();
+            }
+        }
+
+        /// <summary>
+        /// Checks the validity of sub iterators.
+        /// </summary>
+        public virtual bool valid()
+        {
+            if (_iterators.Count == 0)
+            {
+                return false;
+            }
+
+            if ((_flags & MIT_NEED_ALL) != 0)
+            {
+                return _iterators.All(item => item.Iterator.valid());
+            }
+            else
+            {
+                return _iterators.Any(item => item.Iterator.valid());
+            }
+        }
+
+        /// <summary>
+        /// Moves all attached iterator instances forward.
+        /// </summary>
+        public virtual void next()
+        {
+            foreach (var item in _iterators)
+            {
+                item.Iterator.next();
+            }
+        }
+
+        /// <summary>
+        /// Get the registered iterator instances <see cref="Iterator.key"/> result.
+        /// </summary>
+        /// <returns>An array of all registered iterator instances, or FALSE if no sub iterator is attached.</returns>
+        public virtual PhpValue key() => GetCurrentAggregatedItem(true);
+
+        /// <summary>
+        /// Get the registered iterator instances <see cref="Iterator.current"/> result.
+        /// </summary>
+        /// <returns>An array containing the current values of each attached iterator, or FALSE if no iterators are attached.</returns>
+        public virtual PhpValue current() => GetCurrentAggregatedItem(false);
+
+        private PhpValue GetCurrentAggregatedItem(bool isKey)
+        {
+            if (_iterators.Count == 0)
+            {
+                return false;
+            }
+
+            var result = new PhpArray(_iterators.Count);
+            foreach (var item in _iterators)
+            {
+                var it = item.Iterator;
+                PhpValue val;
+                if (it.valid())
+                {
+                    val = isKey ? it.key() : it.current();
+                }
+                else if ((_flags & MIT_NEED_ALL) != 0)
+                {
+                    string msg = string.Format(
+                        Resources.Resources.iterator_multiple_invalid_subiterator,
+                        isKey ? nameof(key) : nameof(current));
+                    throw new RuntimeException(msg);
+                }
+                else
+                {
+                    val = PhpValue.Null;
+                }
+
+                if ((_flags & MIT_KEYS_ASSOC) != 0)
+                {
+                    if (item.Info == null)
+                    {
+                        throw new InvalidArgumentException(Resources.Resources.iterator_multiple_subiterator_null);
+                    }
+
+                    result.Add(item.Info.Value, val);
+                }
+                else
+                {
+                    result.Add(val);
+                }
+            }
+
+            return result;
+        }
     }
 }

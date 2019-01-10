@@ -64,7 +64,7 @@ namespace Pchp.CodeAnalysis.Emit
                         Debug.Assert(create_method != null);
                         Debug.Assert(create_method.ParameterCount == 2);
                         Debug.Assert(create_method.Parameters[0].Type == types.String);
-                        Debug.Assert(create_method.Parameters[1].Type == args_place.TypeOpt);
+                        Debug.Assert(create_method.Parameters[1].Type == args_place.Type);
 
                         il.EmitStringConstant(EntryPointScriptName(method));    // mainscript
                         args_place.EmitLoad(il);                                // args
@@ -78,7 +78,7 @@ namespace Pchp.CodeAnalysis.Emit
                         MethodSymbol create_method = types.Context.Symbol.LookupMember<MethodSymbol>("CreateEmpty");
                         Debug.Assert(create_method != null);
                         Debug.Assert(create_method.ParameterCount == 1);
-                        Debug.Assert(create_method.Parameters[0].Type == args_place.TypeOpt);
+                        Debug.Assert(create_method.Parameters[0].Type == args_place.Type);
                         args_place.EmitLoad(il);    // args
                         il.EmitOpCode(ILOpCode.Call, +1);
                         il.EmitToken(create_method, null, diagnostic);

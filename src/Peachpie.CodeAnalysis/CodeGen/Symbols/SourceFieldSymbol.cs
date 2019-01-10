@@ -79,7 +79,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
 
                 // 
-                BoundFieldPlace.EmitLoadTarget(cg, f, instanceType);
+                VariableReferenceExtensions.EmitReceiver(cg, f, instanceType);
 
                 // LOAD {FIELD}
                 cg.Builder.EmitOpCode(ILOpCode.Ldfld);

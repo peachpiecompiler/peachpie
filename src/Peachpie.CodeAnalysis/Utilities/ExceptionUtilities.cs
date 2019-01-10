@@ -17,7 +17,7 @@ namespace Peachpie.CodeAnalysis.Utilities
         /// <summary>
         /// Gets <see cref="System.NotImplementedException"/> with aproximate location of the error.
         /// </summary>
-        public static Exception NotImplementedException(this CodeGenerator cg, string message = null, IPhpOperation op = null)
+        public static NotImplementedException NotImplementedException(this CodeGenerator cg, string message = null, IPhpOperation op = null)
         {
             return NotImplementedException(cg.Builder, message, op: op, routine: cg.Routine, debugroutine: cg.DebugRoutine);
         }
@@ -25,7 +25,7 @@ namespace Peachpie.CodeAnalysis.Utilities
         /// <summary>
         /// Gets <see cref="System.NotImplementedException"/> with aproximate location of the error.
         /// </summary>
-        public static Exception NotImplementedException(ILBuilder il, string message = null, IPhpOperation op = null, SourceRoutineSymbol routine = null, MethodSymbol debugroutine = null)
+        public static NotImplementedException NotImplementedException(ILBuilder il, string message = null, IPhpOperation op = null, SourceRoutineSymbol routine = null, MethodSymbol debugroutine = null)
         {
             string location = null;
 
@@ -66,17 +66,17 @@ namespace Peachpie.CodeAnalysis.Utilities
             return new NotImplementedException($"{message} not implemented at {location}");
         }
 
-        public static Exception ArgumentNull(string argName)
+        public static ArgumentNullException ArgumentNull(string argName)
         {
             return new ArgumentNullException(argName);
         }
 
-        public static Exception ArgumentNull()
+        public static ArgumentNullException ArgumentNull()
         {
             return new ArgumentNullException();
         }
 
-        public static Exception UnexpectedValue(object o)
+        public static InvalidOperationException UnexpectedValue(object o)
         {
             string output = string.Format("Unexpected value '{0}' of type '{1}'", o, (o != null) ? o.GetType().FullName : "<unknown>");
             Debug.Assert(false, output);
@@ -85,7 +85,7 @@ namespace Peachpie.CodeAnalysis.Utilities
             return new InvalidOperationException(output);
         }
 
-        internal static Exception Unreachable
+        internal static InvalidOperationException Unreachable
         {
             get { return new InvalidOperationException("This program location is thought to be unreachable."); }
         }

@@ -71,11 +71,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
 
             //
+            var locals = cg.Routine.LocalsTable;
 
             if (!cg.InitializedLocals)
             {
-                var locals = cg.Routine.LocalsTable;
-
                 // If it has unoptimized locals and they're not initilized externally -> need to initialize them
                 if (cg.HasUnoptimizedLocals)
                 {
@@ -85,12 +84,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                     cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpArray_int);
                     cg.LocalsPlaceOpt.EmitStore(cg.Builder);
                 }
+            }
 
-                // variables/parameters initialization
-                foreach (var loc in locals.Variables)
-                {
-                    loc.EmitInit(cg);
-                }
+            // variables/parameters initialization
+            foreach (var loc in locals.Variables)
+            {
+                loc.EmitInit(cg);
             }
 
             // emit dummy locals showing indirect (unoptimized) locals in debugger's Watch and Locals window
@@ -104,7 +103,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             if (body.IsValid && cg.IsDebug)
             {
                 cg.EmitSequencePoint(new Span(body.Start, 1));
-                cg.EmitOpCode(ILOpCode.Nop);
             }
 
             // if generator method: emit switch table for continuation & change state to -1 (running)
@@ -130,35 +128,32 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             {
                 if (loc.VariableKind == VariableKind.LocalTemporalVariable ||
                     loc.VariableKind == VariableKind.ThisParameter ||
-                    loc is BoundSuperGlobalVariable || // VariableKind.GlobalVariable ?
-                    string.IsNullOrEmpty(loc.Name) ||
+                    loc is SuperglobalVariableReference || // VariableKind.GlobalVariable ?
+                    string.IsNullOrEmpty(loc.Name) || // indirect variable
                     loc.Symbol as ILocalSymbolInternal == null)
                 {
                     continue;
                 }
 
-                if (loc.BindPlace(cg.Builder, BoundAccess.ReadAndWrite, 0) is BoundIndirectVariablePlace srcplace)
-                {
-                    // Template: var {name} = new IndirectLocal(<locals>, name)
+                // TODO: //// Template: var {name} = new IndirectLocal(<locals>, name)
 
-                    // declare variable
-                    var def = cg.Builder.LocalSlotManager.DeclareLocal(
-                            cg.CoreTypes.IndirectLocal.Symbol, loc.Symbol as ILocalSymbolInternal,
-                            loc.Name, SynthesizedLocalKind.UserDefined,
-                            Microsoft.CodeAnalysis.CodeGen.LocalDebugId.None, 0, LocalSlotConstraints.None, ImmutableArray<bool>.Empty, ImmutableArray<string>.Empty, false);
+                //// declare variable
+                //var def = cg.Builder.LocalSlotManager.DeclareLocal(
+                //        cg.CoreTypes.IndirectLocal.Symbol, loc.Symbol as ILocalSymbolInternal,
+                //        loc.Name, SynthesizedLocalKind.UserDefined,
+                //        Microsoft.CodeAnalysis.CodeGen.LocalDebugId.None, 0, LocalSlotConstraints.None, ImmutableArray<bool>.Empty, ImmutableArray<string>.Empty, false);
 
-                    cg.Builder.AddLocalToScope(def);
+                //cg.Builder.AddLocalToScope(def);
 
-                    var place = new LocalPlace(def);
+                //var place = new LocalPlace(def);
 
-                    place.EmitStorePrepare(cg.Builder);
+                //place.EmitStorePrepare(cg.Builder);
 
-                    // new IndirectLocal(locals : PhpArray, name : IntStringKey)
-                    srcplace.LoadIndirectLocal(cg);
+                //// new IndirectLocal(locals : PhpArray, name : IntStringKey)
+                //srcplace.LoadIndirectLocal(cg);
 
-                    // store
-                    place.EmitStore(cg.Builder);
-                }
+                //// store
+                //place.EmitStore(cg.Builder);
             }
         }
 
