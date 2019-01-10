@@ -1599,4 +1599,225 @@ namespace Pchp.Library.Spl
         /// <returns></returns>
         public virtual bool hasChildren() => ((RecursiveIterator)_iterator).hasChildren();
     }
+
+    /// <summary>
+    /// An Iterator that sequentially iterates over all attached iterators.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class MultipleIterator : Iterator
+    {
+        #region Constants
+
+        /// <summary>
+        /// Do not require all sub iterators to be valid in iteration.
+        /// </summary>
+        public const int MIT_NEED_ANY = 0;
+
+        /// <summary>
+        /// Require all sub iterators to be valid in iteration.
+        /// </summary>
+        public const int MIT_NEED_ALL = 1;
+
+        /// <summary>
+        /// Keys are created from the sub iterators position.
+        /// </summary>
+        public const int MIT_KEYS_NUMERIC = 0;
+
+        /// <summary>
+        /// Keys are created from sub iterators associated information.
+        /// </summary>
+        public const int MIT_KEYS_ASSOC = 2;
+
+        #endregion
+
+        #region Fields
+
+        private List<(Iterator Iterator, IntStringKey? Info)> _iterators;
+
+        private int _flags;
+
+        #endregion
+
+        #region Construction
+
+        [PhpFieldsOnlyCtor]
+        protected MultipleIterator()
+        { }
+
+        public MultipleIterator(Context ctx, int flags = MIT_NEED_ALL | MIT_KEYS_NUMERIC)
+        {
+            __construct(ctx, flags);
+        }
+
+        public virtual void __construct(Context ctx, int flags = MIT_NEED_ALL | MIT_KEYS_NUMERIC)
+        {
+            _iterators = new List<(Iterator, IntStringKey?)>();
+            _flags = flags;
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Gets information about the flags.
+        /// </summary>
+        public virtual int getFlags() => _flags;
+
+        /// <summary>
+        /// Sets flags.
+        /// </summary>
+        public virtual void setFlags(int flags) => _flags = flags;
+
+        /// <summary>
+        /// Attaches iterator information.
+        /// </summary>
+        /// <param name="iter">The new iterator to attach.</param>
+        public void attachIterator(Iterator iter) => attachIterator(iter, PhpValue.Null);
+
+        /// <summary>
+        /// Attaches iterator information.
+        /// </summary>
+        /// <param name="iter">The new iterator to attach.</param>
+        /// <param name="info">The associative information for the Iterator, which must be an integer, a string, or NULL.</param>
+        public virtual void attachIterator(Iterator iter, PhpValue info)
+        {
+            IntStringKey? resultInfo;
+            if (info.IsNull)
+            {
+                resultInfo = null;
+            }
+            else
+            {
+                if (info.TryToIntStringKey(out var key))
+                {
+                    resultInfo = key;
+
+                    if (_iterators.Any(item => item.Info?.Equals(key) == true))
+                    {
+                        throw new InvalidArgumentException(Resources.Resources.iterator_multiple_info_invalid_type);
+                    }
+                }
+                else
+                {
+                    throw new InvalidArgumentException(Resources.Resources.iterator_multiple_key_duplication);
+                }
+            }
+
+            _iterators.Add((iter, resultInfo));
+        }
+
+        /// <summary>
+        /// Detaches an iterator.
+        /// </summary>
+        public virtual void detachIterator(Iterator iter) => _iterators.RemoveAll(item => item.Iterator == iter);
+
+        /// <summary>
+        /// Checks if an iterator is attached or not.
+        /// </summary>
+        public virtual bool containsIterator(Iterator iter) => _iterators.Any(item => item.Iterator == iter);
+
+        /// <summary>
+        /// Gets the number of attached iterator instances.
+        /// </summary>
+        public virtual int countIterators() => _iterators.Count;
+
+        /// <summary>
+        /// Rewinds all attached iterator instances.
+        /// </summary>
+        public virtual void rewind()
+        {
+            foreach (var item in _iterators)
+            {
+                item.Iterator.rewind();
+            }
+        }
+
+        /// <summary>
+        /// Checks the validity of sub iterators.
+        /// </summary>
+        public virtual bool valid()
+        {
+            if (_iterators.Count == 0)
+            {
+                return false;
+            }
+
+            if ((_flags & MIT_NEED_ALL) != 0)
+            {
+                return _iterators.All(item => item.Iterator.valid());
+            }
+            else
+            {
+                return _iterators.Any(item => item.Iterator.valid());
+            }
+        }
+
+        /// <summary>
+        /// Moves all attached iterator instances forward.
+        /// </summary>
+        public virtual void next()
+        {
+            foreach (var item in _iterators)
+            {
+                item.Iterator.next();
+            }
+        }
+
+        /// <summary>
+        /// Get the registered iterator instances <see cref="Iterator.key"/> result.
+        /// </summary>
+        /// <returns>An array of all registered iterator instances, or FALSE if no sub iterator is attached.</returns>
+        public virtual PhpValue key() => GetCurrentAggregatedItem(true);
+
+        /// <summary>
+        /// Get the registered iterator instances <see cref="Iterator.current"/> result.
+        /// </summary>
+        /// <returns>An array containing the current values of each attached iterator, or FALSE if no iterators are attached.</returns>
+        public virtual PhpValue current() => GetCurrentAggregatedItem(false);
+
+        private PhpValue GetCurrentAggregatedItem(bool isKey)
+        {
+            if (_iterators.Count == 0)
+            {
+                return false;
+            }
+
+            var result = new PhpArray(_iterators.Count);
+            foreach (var item in _iterators)
+            {
+                var it = item.Iterator;
+                PhpValue val;
+                if (it.valid())
+                {
+                    val = isKey ? it.key() : it.current();
+                }
+                else if ((_flags & MIT_NEED_ALL) != 0)
+                {
+                    string msg = string.Format(
+                        Resources.Resources.iterator_multiple_invalid_subiterator,
+                        isKey ? nameof(key) : nameof(current));
+                    throw new RuntimeException(msg);
+                }
+                else
+                {
+                    val = PhpValue.Null;
+                }
+
+                if ((_flags & MIT_KEYS_ASSOC) != 0)
+                {
+                    if (item.Info == null)
+                    {
+                        throw new InvalidArgumentException(Resources.Resources.iterator_multiple_subiterator_null);
+                    }
+
+                    result.Add(item.Info.Value, val);
+                }
+                else
+                {
+                    result.Add(val);
+                }
+            }
+
+            return result;
+        }
+    }
 }

@@ -645,4 +645,16 @@
   <data name="iterator_caching_string_flag_unset_impossible" xml:space="preserve">
     <value>Unsetting flag {0} is not possible</value>
   </data>
+  <data name="iterator_multiple_info_invalid_type" xml:space="preserve">
+    <value>Info must be NULL, integer or string</value>
+  </data>
+  <data name="iterator_multiple_invalid_subiterator" xml:space="preserve">
+    <value>Called {0}() with non valid sub iterator</value>
+  </data>
+  <data name="iterator_multiple_key_duplication" xml:space="preserve">
+    <value>Key duplication error</value>
+  </data>
+  <data name="iterator_multiple_subiterator_null" xml:space="preserve">
+    <value>Sub-Iterator is associated with NULL</value>
+  </data>
 </root>
