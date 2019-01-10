@@ -170,14 +170,14 @@ namespace Pchp.CodeAnalysis.Semantics
                 {
                     if (type.IsReferenceType)
                     {
-                        //if (type == cg.CoreTypes.Object && cg.TypeRefContext.IsNull(_thint) && _place.HasAddress)
-                        //{
-                        //    // Operators.EnsureObject(ref <place>)
-                        //    _place.EmitLoadAddress(cg.Builder);
-                        //    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureObject_ObjectRef)
-                        //        .Expect(SpecialType.System_Object);
-                        //}
-                        //else
+                        if (type == cg.CoreTypes.Object && /*cg.TypeRefContext.IsNull(_thint) &&*/ place.HasAddress) // TODO: only if place can be NULL
+                        {
+                            // Operators.EnsureObject(ref <place>)
+                            place.EmitLoadAddress(cg.Builder);
+                            return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureObject_ObjectRef)
+                                .Expect(SpecialType.System_Object);
+                        }
+                        else
                         {
                             // <place>
                             return place.EmitLoad(cg.Builder);
@@ -454,6 +454,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
+    #region IVariableReference
+
     /// <summary>
     /// An object specifying a reference to a variable, a field, a property, an array item (a value in general).
     /// Used by <see cref="BoundReferenceExpression"/>.
@@ -512,6 +514,8 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <returns>Loaded value (by ref).</returns>
         TypeSymbol EmitLoadAddress(CodeGenerator cg, ref LhsStack lhs);
     }
+
+    #endregion
 
     #region Locals (local variables)
 
@@ -1009,7 +1013,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override void EmitInit(CodeGenerator cg)
         {
-            //
+            if (cg.InitializedLocals)
+            {
+                return;
+            }
 
             var srcparam = Symbol as SourceParameterSymbol;
             if (srcparam == null)
