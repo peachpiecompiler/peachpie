@@ -135,25 +135,25 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                     continue;
                 }
 
-                // TODO: //// Template: var {name} = new IndirectLocal(<locals>, name)
+                // Template: var {name} = new IndirectLocal(<locals>, name)
 
-                //// declare variable
-                //var def = cg.Builder.LocalSlotManager.DeclareLocal(
-                //        cg.CoreTypes.IndirectLocal.Symbol, loc.Symbol as ILocalSymbolInternal,
-                //        loc.Name, SynthesizedLocalKind.UserDefined,
-                //        Microsoft.CodeAnalysis.CodeGen.LocalDebugId.None, 0, LocalSlotConstraints.None, ImmutableArray<bool>.Empty, ImmutableArray<string>.Empty, false);
+                // declare variable
+                var def = cg.Builder.LocalSlotManager.DeclareLocal(
+                        cg.CoreTypes.IndirectLocal.Symbol, loc.Symbol as ILocalSymbolInternal,
+                        loc.Name, SynthesizedLocalKind.UserDefined,
+                        Microsoft.CodeAnalysis.CodeGen.LocalDebugId.None, 0, LocalSlotConstraints.None, ImmutableArray<bool>.Empty, ImmutableArray<string>.Empty, false);
 
-                //cg.Builder.AddLocalToScope(def);
+                cg.Builder.AddLocalToScope(def);
 
-                //var place = new LocalPlace(def);
+                var place = new LocalPlace(def);
 
-                //place.EmitStorePrepare(cg.Builder);
+                place.EmitStorePrepare(cg.Builder);
 
-                //// new IndirectLocal(locals : PhpArray, name : IntStringKey)
-                //srcplace.LoadIndirectLocal(cg);
+                // new IndirectLocal(locals : PhpArray, name : IntStringKey)
+                loc.LoadIndirectLocal(cg);
 
-                //// store
-                //place.EmitStore(cg.Builder);
+                // store
+                place.EmitStore(cg.Builder);
             }
         }
 
