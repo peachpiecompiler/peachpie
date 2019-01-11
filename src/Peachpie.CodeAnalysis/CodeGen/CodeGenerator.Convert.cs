@@ -167,7 +167,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// converts it to <c>PhpNumber</c>.
         /// </summary>
         /// <returns>New type on top of stack.</returns>
-        internal TypeSymbol EmitConvertStringToNumber(TypeSymbol stack)
+        internal TypeSymbol EmitConvertStringToPhpNumber(TypeSymbol stack)
         {
             if (stack.SpecialType == SpecialType.System_String ||
                 stack == CoreTypes.PhpString)
