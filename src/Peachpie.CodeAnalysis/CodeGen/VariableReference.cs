@@ -1262,11 +1262,21 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public void EmitStore(CodeGenerator cg, ref LhsStack lhs, TypeSymbol stack, BoundAccess access)
         {
+            if (Field.IsConst)
+            {
+                throw ExceptionUtilities.Unreachable; // cannot assign to const and analysis should report it already
+            }
+
             new FieldPlace_Raw(Field, cg.Module).EmitStore(cg, ref lhs, stack, access);
         }
 
         public TypeSymbol EmitLoadValue(CodeGenerator cg, ref LhsStack lhs, BoundAccess access)
         {
+            if (Field.IsConst)
+            {
+                return cg.EmitLoadConstant(Field.ConstantValue);
+            }
+
             VariableReferenceExtensions.EmitReceiver(cg, ref lhs, Field, Receiver);
             return new FieldPlace_Raw(Field, cg.Module).EmitLoadValue(cg, ref lhs, access);
         }
