@@ -317,7 +317,7 @@ namespace Peachpie.Library.PDO
             this.m_attributes[PDO_ATTR.ATTR_FETCH_TABLE_NAMES] = PhpValue.Null;
             this.m_attributes[PDO_ATTR.ATTR_STRINGIFY_FETCHES] = PhpValue.Null;
             this.m_attributes[PDO_ATTR.ATTR_MAX_COLUMN_LEN] = PhpValue.Null;
-            this.m_attributes[PDO_ATTR.ATTR_DEFAULT_FETCH_MODE] = (PhpValue)(int)PDO_FETCH.FETCH_USE_DEFAULT;
+            //this.m_attributes[PDO_ATTR.ATTR_DEFAULT_FETCH_MODE] = 0;
             this.m_attributes[PDO_ATTR.ATTR_EMULATE_PREPARES] = PhpValue.False;
         }
 

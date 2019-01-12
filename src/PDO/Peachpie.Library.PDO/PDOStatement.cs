@@ -825,7 +825,7 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public PhpValue fetch(PDO.PDO_FETCH fetch_style = PDO.PDO_FETCH.FETCH_USE_DEFAULT, int cursor_orientation = default(int), int cursor_offet = 0)
+        public PhpValue fetch(PDO.PDO_FETCH fetch_style = default, int cursor_orientation = default(int), int cursor_offet = 0)
         {
             this.m_pdo.ClearError();
 
@@ -838,12 +838,8 @@ namespace Peachpie.Library.PDO
 
                 try
                 {
-                    PDO.PDO_FETCH style = this.m_fetchStyle;
+                    var style = fetch_style > 0 ? fetch_style : m_fetchStyle;
 
-                    if ((int)fetch_style != -1 && Enum.IsDefined(typeof(PDO.PDO_FETCH), fetch_style))
-                    {
-                        style = (PDO.PDO_FETCH)fetch_style;
-                    }
                     PDO.PDO_FETCH_ORI ori = PDO.PDO_FETCH_ORI.FETCH_ORI_NEXT;
                     if (Enum.IsDefined(typeof(PDO.PDO_FETCH_ORI), cursor_orientation))
                     {
@@ -867,17 +863,21 @@ namespace Peachpie.Library.PDO
                         initializeColumnNames();
                     }
 
-                    switch (style)
+                    switch (style & ~PDO_FETCH.Flags)
                     {
                         case PDO.PDO_FETCH.FETCH_OBJ:
                             return this.ReadObj();
+
                         case PDO.PDO_FETCH.FETCH_ASSOC:
-                            return PhpValue.Create(this.ReadArray(true, false));
+                            return this.ReadArray(true, false);
+
                         case PDO.PDO_FETCH.FETCH_BOTH:
-                        case PDO.PDO_FETCH.FETCH_USE_DEFAULT:
-                            return PhpValue.Create(this.ReadArray(true, true));
+                        case PDO.PDO_FETCH.Default:
+                            return this.ReadArray(true, true);
+
                         case PDO.PDO_FETCH.FETCH_NUM:
-                            return PhpValue.Create(this.ReadArray(false, true));
+                            return this.ReadArray(false, true);
+
                         case PDO.PDO_FETCH.FETCH_COLUMN:
                             if (!FetchColNo.HasValue)
                             {
@@ -885,7 +885,8 @@ namespace Peachpie.Library.PDO
                                 return PhpValue.False;
                             }
 
-                            return this.ReadArray(false, true)[FetchColNo.Value].GetValue();
+                            return this.ReadColumn(FetchColNo.Value);
+
                         case PDO.PDO_FETCH.FETCH_CLASS:
                             if (FetchClassName == null)
                             {
@@ -895,6 +896,15 @@ namespace Peachpie.Library.PDO
 
                             var obj = _ctx.Create(FetchClassName, FetchClassCtorArgs ?? Array.Empty<PhpValue>());
                             return PhpValue.FromClass(obj);
+
+                        //case PDO_FETCH.FETCH_INTO:
+
+                        //case PDO_FETCH.FETCH_FUNC:
+
+                        //case PDO_FETCH.FETCH_NAMED:
+
+                        //case PDO_FETCH.FETCH_KEY_PAIR:
+
                         default:
                             throw new NotImplementedException();
                     }
@@ -912,34 +922,28 @@ namespace Peachpie.Library.PDO
             return PhpValue.FromClass(this.ReadArray(true, false).ToClass());
         }
 
-
-        private PhpArray ReadArray(bool assoc, bool num)
+        private PhpValue ReadColumn(int column)
         {
-            PhpArray arr = new PhpArray();
-            for (int i = 0; i < this.m_dr.FieldCount; i++)
+            return this.m_dr.IsDBNull(column) ? PhpValue.Null : PhpValue.FromClr(this.m_dr.GetValue(column));
+        }
+
+        private PhpArray ReadArray(bool assoc, bool num, int from = 0)
+        {
+            var arr = new PhpArray(m_dr.FieldCount);
+
+            for (int i = from; i < this.m_dr.FieldCount; i++)
             {
-                if (this.m_dr.IsDBNull(i))
-                {
-                    if (assoc)
-                        arr.Add(this.m_dr_names[i], PhpValue.Null);
-                    if (num)
-                        arr.Add(i, PhpValue.Null);
-                }
-                else
-                {
-                    var value = PhpValue.FromClr(this.m_dr.GetValue(i));
-                    if (assoc)
-                        arr.Add(this.m_dr_names[i], value);
-                    if (num)
-                        arr.Add(i, value);
-                }
+                var value = ReadColumn(i);
+
+                if (assoc) arr.Add(this.m_dr_names[i], value);
+                if (num) arr.Add(i, value);
             }
             return arr;
         }
 
         /// <inheritDoc />
         [return: CastToFalse]
-        public PhpArray fetchAll(PDO.PDO_FETCH fetch_style = FETCH_USE_DEFAULT, PhpValue fetch_argument = default, PhpArray ctor_args = null)
+        public PhpArray fetchAll(PDO.PDO_FETCH fetch_style = default, PhpValue fetch_argument = default, PhpArray ctor_args = null)
         {
             if (m_dr == null)
             {
@@ -960,19 +964,45 @@ namespace Peachpie.Library.PDO
                 }
             }
 
-            var returnArray = new PhpArray();
+            var result = new PhpArray();
+            var style = (fetch_style > 0 ? fetch_style : m_fetchStyle) & ~PDO_FETCH.Flags;
 
-            while (m_dr.HasRows)
+            switch (style)
             {
-                var value = fetch(fetch_style);
+                case PDO_FETCH.FETCH_KEY_PAIR:
 
-                if (value == PhpValue.False)
+                    Debug.Assert(m_dr.FieldCount == 2);
+                    while (m_dr.HasRows)
+                    {
+                        // 1st col => 2nd col
+                        result.Add(ReadColumn(0).ToIntStringKey(), ReadColumn(1));
+                    }
                     break;
 
-                returnArray.Add(value);
+                case PDO_FETCH.FETCH_UNIQUE:
+
+                    Debug.Assert(m_dr.FieldCount >= 1);
+                    while (m_dr.HasRows)
+                    {
+                        // 1st col => [ 2nd col, 3rd col, ... ]
+                        result.Add(ReadColumn(0).ToIntStringKey(), ReadArray(true, false, from: 1));
+                    }
+                    break;
+
+                default:
+
+                    while (m_dr.HasRows)
+                    {
+                        var value = fetch(fetch_style);
+                        if (value == PhpValue.False)
+                            break;
+
+                        result.Add(value);
+                    }
+                    break;
             }
 
-            return returnArray;
+            return result;
         }
 
         /// <inheritDoc />
@@ -1096,7 +1126,7 @@ namespace Peachpie.Library.PDO
         /// <inheritDoc />
         public bool setFetchMode(params PhpValue[] args)
         {
-            PDO_FETCH fetch = PDO_FETCH.FETCH_USE_DEFAULT;
+            PDO_FETCH fetch = default;
 
             if (args.Length > 0)
             {

@@ -85,7 +85,7 @@ namespace Peachpie.Library.PDO
         /// <param name="cursor_orientation">This value determines which row will be returned to the caller.</param>
         /// <param name="cursor_offet">Relative or absolute position move for the cursor.</param>
         /// <returns>The return value of this function on success depends on the fetch type. In all cases, FALSE is returned on failure.</returns>
-        PhpValue fetch(PDO.PDO_FETCH fetch_style = PDO.PDO_FETCH.FETCH_USE_DEFAULT, int cursor_orientation = PDO.FETCH_ORI_NEXT, int cursor_offet = 0);
+        PhpValue fetch(PDO.PDO_FETCH fetch_style = default, int cursor_orientation = PDO.FETCH_ORI_NEXT, int cursor_offet = 0);
 
         /// <summary>
         /// Controls the contents of the returned array as documented in PDOStatement::fetch()
@@ -94,7 +94,7 @@ namespace Peachpie.Library.PDO
         /// <param name="fetch_argument">This argument has a different meaning depending on the value of the fetch_style parameter.</param>
         /// <param name="ctor_args">Arguments of custom class constructor when the fetch_style parameter is PDO::FETCH_CLASS.</param>
         /// <returns>An array containing all of the remaining rows in the result set</returns>
-        PhpArray fetchAll(PDO.PDO_FETCH fetch_style = PDO.PDO_FETCH.FETCH_USE_DEFAULT, PhpValue fetch_argument = default(PhpValue), PhpArray ctor_args = null);
+        PhpArray fetchAll(PDO.PDO_FETCH fetch_style = default, PhpValue fetch_argument = default, PhpArray ctor_args = null);
 
         /// <summary>
         /// Returns a single column from the next row of a result set.

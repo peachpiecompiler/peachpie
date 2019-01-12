@@ -128,7 +128,7 @@ namespace Peachpie.Library.PDO
                         }
                         return false;
                     case PDO_ATTR.ATTR_DEFAULT_FETCH_MODE:
-                        int fetchValue = (int)value.ToLong();
+                        int fetchValue = value.ToInt();
                         if (Enum.IsDefined(typeof(PDO_FETCH), fetchValue))
                         {
                             this.m_attributes[attribute] = (PhpValue)fetchValue;
