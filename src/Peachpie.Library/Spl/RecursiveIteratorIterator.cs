@@ -271,8 +271,7 @@ namespace Pchp.Library.Spl
 
         #region Fields
 
-        private int _flags;
-        private Context _ctx;
+        protected Context _ctx; // NOTE: well-known field pattern, ignored by runtime and used by compiler if needed
 
         private string[] _prefix =
         {
