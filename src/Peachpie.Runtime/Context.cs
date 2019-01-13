@@ -198,7 +198,7 @@ namespace Pchp.Core
                 // perform regular load with autoload
                 if (tinfo != GetDeclaredTypeOrThrow(tinfo.Name, true))
                 {
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException(string.Format(Resources.ErrResources.class_not_found, tinfo.Name));
                 }
             }
 
