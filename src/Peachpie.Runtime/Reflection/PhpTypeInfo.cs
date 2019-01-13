@@ -482,6 +482,11 @@ namespace Pchp.Core.Reflection
                 }
             }
         }
+
+        /// <summary>
+        /// Gets value indicating the type has been declared in the context.
+        /// </summary>
+        public static bool IsDeclared(this PhpTypeInfo phptype, Context ctx) => (phptype.IsUserType && ctx.IsUserTypeDeclared(phptype)) || phptype.Index < 0/*app-type*/;
     }
 
     /// <summary>

@@ -202,7 +202,9 @@ namespace Pchp.Core
                 }
             }
 
-            if (!_types.IsDeclared(TypeInfoHolder<T>.TypeInfo))
+            // NOTE: app-types should not be checked using ExpectTypeDeclared<T> method, compiler knows that
+
+            if (!IsUserTypeDeclared(TypeInfoHolder<T>.TypeInfo))
             {
                 EnsureTypeDeclared();
             }
@@ -270,6 +272,13 @@ namespace Pchp.Core
         /// Gets enumeration of all types declared in current context.
         /// </summary>
         public IEnumerable<PhpTypeInfo> GetDeclaredTypes() => _types.GetDeclaredTypes();
+
+        /// <summary>
+        /// Checks the user type is declared in the current state of <see cref="Context"/>.
+        /// </summary>
+        /// <param name="phptype">PHP type runtime information. Must not be <c>null</c>.</param>
+        /// <returns>True if the type has been declared on the current <see cref="Context"/>.</returns>
+        internal bool IsUserTypeDeclared(PhpTypeInfo phptype) => _types.IsDeclared(phptype);
 
         void FunctionRedeclared(RoutineInfo routine)
         {

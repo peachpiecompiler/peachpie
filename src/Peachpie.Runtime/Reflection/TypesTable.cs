@@ -176,13 +176,13 @@ namespace Pchp.Core.Reflection
 
         void DeclareType(ref PhpTypeInfo slot, PhpTypeInfo type)
         {
-            if (object.ReferenceEquals(slot, null))
+            if (ReferenceEquals(slot, null))
             {
                 slot = type;
             }
             else
             {
-                if (!object.ReferenceEquals(slot, type))
+                if (!ReferenceEquals(slot, type))
                 {
                     _redeclarationCallback(type);
                 }
@@ -233,13 +233,20 @@ namespace Pchp.Core.Reflection
         }
 
         /// <summary>
-        /// Gets enumeration of types wisible in current context.
+        /// Gets enumeration of types visible in current context.
         /// </summary>
         public IEnumerable<PhpTypeInfo> GetDeclaredTypes() => _appTypes.Concat(_contextTypes.WhereNotNull());
 
-        internal bool IsDeclared(PhpTypeInfo type)
+        /// <summary>
+        /// Checkd the given user type is declared in the current state.
+        /// </summary>
+        internal bool IsDeclared(PhpTypeInfo/*!*/type)
         {
-            return (type.Index > 0 && type.Index <= _contextTypes.Length && _contextTypes[type.Index - 1] == type);
+            Debug.Assert(type != null);
+            Debug.Assert(type.IsUserType/*user type*/ || type.Index == 0 /*not declared yet*/, "Only handles user types.");
+
+            var slot = type.Index - 1;
+            return slot >= 0 && slot < _contextTypes.Length && ReferenceEquals(_contextTypes[slot], type);
         }
     }
 }
