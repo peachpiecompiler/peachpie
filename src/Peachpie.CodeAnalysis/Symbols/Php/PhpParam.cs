@@ -24,13 +24,19 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public bool IsByRef;
 
-        public PhpParam(int index, TypeRefMask tmask, bool isByRef, bool isVariadic, BoundExpression defaultValue)
+        /// <summary>
+        /// Whether the parameter is annotated with <c>PhpRwAttribute</c>.
+        /// </summary>
+        public bool IsPhpRw;
+
+        public PhpParam(int index, TypeRefMask tmask, bool isByRef, bool isVariadic, bool isPhpRw, BoundExpression defaultValue)
         {
             this.Index = index;
             this.Type = tmask;
             this.IsVariadic = isVariadic;
             this.DefaultValue = defaultValue;
             this.IsByRef = isByRef;
+            this.IsPhpRw = isPhpRw;
         }
     }
 }

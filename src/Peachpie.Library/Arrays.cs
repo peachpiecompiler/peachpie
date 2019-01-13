@@ -291,7 +291,7 @@ namespace Pchp.Library
         /// <param name="array">The array whcih item to pop.</param>
         /// <returns>The last item of <paramref name="array"/> or a <b>null</b> reference if it is empty.</returns>
         /// <remarks>Resets intrinsic enumerator.</remarks>
-        public static PhpValue array_pop(PhpArray array)
+        public static PhpValue array_pop([PhpRw] PhpArray array)
         {
             if (array == null)
             {
@@ -316,7 +316,7 @@ namespace Pchp.Library
         /// <param name="array">The array where to add values.</param>
         /// <param name="vars">The array of values to add.</param>
         /// <returns>The number of items in array after all items was added.</returns>
-        public static int array_push(PhpArray array, params PhpValue[] vars)
+        public static int array_push([PhpRw] PhpArray array, params PhpValue[] vars)
         {
             if (array == null)
             {
@@ -340,7 +340,7 @@ namespace Pchp.Library
         /// <param name="array">The array to be shifted.</param>
         /// <returns>The removed object.</returns>
         /// <remarks>Resets intrinsic enumerator.</remarks>
-        public static PhpValue array_shift(PhpArray array)
+        public static PhpValue array_shift([PhpRw] PhpArray array)
         {
             if (array == null)
             {
@@ -367,7 +367,7 @@ namespace Pchp.Library
         /// <param name="array">The array to be unshifted.</param>
         /// <param name="vars">Variables to be inserted.</param>
         /// <returns>The number of items in resulting array.</returns>
-        public static int array_unshift(PhpArray array, params PhpValue[] vars)
+        public static int array_unshift([PhpRw] PhpArray array, params PhpValue[] vars)
         {
             if (array == null)
             {
@@ -395,7 +395,7 @@ namespace Pchp.Library
         /// <param name="preserveKeys">Whether keys should be left untouched. 
         /// If set to <b>false</b> then integer keys are reindexed starting from zero.</param>
         /// <returns>The array <paramref name="array"/> with items in reversed order.</returns>
-        public static PhpArray array_reverse(PhpArray array, bool preserveKeys = false)
+        public static PhpArray array_reverse([PhpRw] PhpArray array, bool preserveKeys = false)
         {
             if (array == null)
             {
@@ -564,7 +564,7 @@ namespace Pchp.Library
         /// <exception cref="PhpException">Thrown if the <paramref name="array"/> argument is null.</exception>
         /// <remarks>Reindexes all keys in the resulting array.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool shuffle(PhpArray array)
+        public static bool shuffle([PhpRw] PhpArray array)
         {
             if (array == null)
             {
@@ -1184,7 +1184,7 @@ namespace Pchp.Library
         /// <param name="comparisonMethod">The method to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool sort(Context ctx, [In, Out]PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
+        public static bool sort(Context ctx, [In, Out, PhpRw] PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
         {
             if (array == null)
             {
@@ -1208,7 +1208,7 @@ namespace Pchp.Library
         /// <param name="comparisonMethod">The method to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool asort(Context ctx, [In, Out]PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
+        public static bool asort(Context ctx, [In, Out, PhpRw] PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
         {
             if (array == null)
             {
@@ -1231,7 +1231,7 @@ namespace Pchp.Library
         /// <param name="comparisonMethod">The method to be used for comparison of keys.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool ksort(Context ctx, [In, Out]PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
+        public static bool ksort(Context ctx, [In, Out, PhpRw] PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
         {
             if (array == null)
             {
@@ -1254,7 +1254,7 @@ namespace Pchp.Library
         /// <param name="comparisonMethod">The method to be used for comparison of keys.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool rsort(Context ctx, [In, Out]PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
+        public static bool rsort(Context ctx, [In, Out, PhpRw] PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
         {
             if (array == null)
             {
@@ -1279,7 +1279,7 @@ namespace Pchp.Library
         /// <param name="comparisonMethod">The method to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool arsort(Context ctx, [In, Out]PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
+        public static bool arsort(Context ctx, [In, Out, PhpRw] PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
         {
             if (array == null)
             {
@@ -1302,7 +1302,7 @@ namespace Pchp.Library
         /// <param name="comparisonMethod">The method to be used for comparison of keys.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool krsort(Context ctx, [In, Out] PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
+        public static bool krsort(Context ctx, [In, Out, PhpRw] PhpArray array, ComparisonMethod comparisonMethod = ComparisonMethod.Regular)
         {
             if (array == null)
             {
@@ -1329,7 +1329,7 @@ namespace Pchp.Library
         /// <param name="compare">The user callback to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool usort(Context ctx /*, caller*/, [In, Out] PhpArray array, IPhpCallable compare)
+        public static bool usort(Context ctx /*, caller*/, [In, Out, PhpRw] PhpArray array, IPhpCallable compare)
         {
             if (array == null)
             {
@@ -1356,7 +1356,7 @@ namespace Pchp.Library
         /// <param name="compare">The user callback to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool uasort(Context ctx /*, caller*/, [In, Out] PhpArray array, IPhpCallable compare)
+        public static bool uasort(Context ctx /*, caller*/, [In, Out, PhpRw] PhpArray array, IPhpCallable compare)
         {
             if (array == null)
             {
@@ -1380,7 +1380,7 @@ namespace Pchp.Library
         /// <param name="compare">The user callback to be used for comparison of values.</param>
         /// <remarks>Resets <paramref name="array"/>'s intrinsic enumerator.</remarks>
         /// <returns>True on success, False on failure.</returns>
-        public static bool uksort(Context ctx /*, caller*/, [In, Out] PhpArray array, IPhpCallable compare)
+        public static bool uksort(Context ctx /*, caller*/, [In, Out, PhpRw] PhpArray array, IPhpCallable compare)
         {
             if (array == null)
             {
@@ -1575,7 +1575,7 @@ namespace Pchp.Library
         /// <exception cref="PhpException">Arrays has different lengths (Warning).</exception>
         /// <exception cref="PhpException">Invalid sorting flags (Warning).</exception>
         /// <exception cref="PhpException">Multiple sorting flags applied on single array (Warning).</exception>
-        public static bool array_multisort(Context ctx, [In, Out] PhpArray first, params PhpValue[] args)
+        public static bool array_multisort(Context ctx, [In, Out, PhpRw] PhpArray first, params PhpValue[] args)
         {
             // some "args" are also [PhpRw] but which ones is compile time unknown
             // but it is not neccessary to mark them since this attribute has no important effect

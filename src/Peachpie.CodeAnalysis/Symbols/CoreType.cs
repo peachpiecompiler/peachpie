@@ -93,6 +93,11 @@ namespace Pchp.CodeAnalysis.Symbols
         public const string PhpExtensionAttributeFullName = "Pchp.Core.PhpExtensionAttribute";
 
         /// <summary>
+        /// Name of attribute <c>PhpRwAttribute</c> class.
+        /// </summary>
+        public const string PhpRwAttributeFullName = "Pchp.Core.PhpRwAttribute";
+
+        /// <summary>
         /// Name of attribute class representing a PHP type descriptor.
         /// </summary>
         public const string PhpTypeAttributeFullName = "Pchp.Core.PhpTypeAttribute";

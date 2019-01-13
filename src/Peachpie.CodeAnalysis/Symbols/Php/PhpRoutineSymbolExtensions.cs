@@ -202,7 +202,8 @@ namespace Pchp.CodeAnalysis.Symbols
                     TypeRefFactory.CreateMask(ctx, p.Type),
                     p.RefKind != RefKind.None,
                     p.IsParams,
-                    defaultexpr);
+                    isPhpRw: p.GetPhpRwAttribute() != null,
+                    defaultValue: defaultexpr);
 
                 result.Add(phpparam);
             }

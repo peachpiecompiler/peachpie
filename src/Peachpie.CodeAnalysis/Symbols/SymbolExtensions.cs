@@ -164,29 +164,15 @@ namespace Pchp.CodeAnalysis.Symbols
             return false;
         }
 
-        public static AttributeData GetPhpExtensionAttribute(this Symbol symbol)
-        {
-            var attrs = symbol.GetAttributes();
-            foreach (var a in attrs)
-            {
-                var fullname = MetadataHelpers.BuildQualifiedName((a.AttributeClass as NamedTypeSymbol)?.NamespaceName, a.AttributeClass.Name);
-                if (fullname == CoreTypes.PhpExtensionAttributeFullName)
-                {
-                    return a;
-                }
-            }
-
-            return null;
-        }
-
-        public static AttributeData GetPhpScriptAttribute(this TypeSymbol symbol)
+        public static AttributeData GetAttribute(this Symbol symbol, string clrname)
         {
             var attrs = symbol.GetAttributes();
             for (int i = 0; i < attrs.Length; i++)
             {
                 var a = attrs[i];
+
                 var fullname = MetadataHelpers.BuildQualifiedName((a.AttributeClass as NamedTypeSymbol)?.NamespaceName, a.AttributeClass.Name);
-                if (fullname == CoreTypes.PhpScriptAttributeFullName)
+                if (fullname == clrname)
                 {
                     return a;
                 }
@@ -195,6 +181,12 @@ namespace Pchp.CodeAnalysis.Symbols
             return null;
         }
 
+        public static AttributeData GetPhpExtensionAttribute(this Symbol symbol) => GetAttribute(symbol, CoreTypes.PhpExtensionAttributeFullName);
+
+        public static AttributeData GetPhpRwAttribute(this ParameterSymbol symbol) => GetAttribute(symbol, CoreTypes.PhpRwAttributeFullName);
+
+        public static AttributeData GetPhpScriptAttribute(this TypeSymbol symbol) => GetAttribute(symbol, CoreTypes.PhpScriptAttributeFullName);
+        
         public static string[] PhpExtensionAttributeValues(this AttributeData phpextensionattribute)
         {
             if (phpextensionattribute != null && phpextensionattribute.CommonConstructorArguments.Length >= 1)

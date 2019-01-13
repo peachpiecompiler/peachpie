@@ -286,4 +286,12 @@ namespace Pchp.Core
     {
 
     }
+
+    /// <summary>
+	/// Marks arguments having by-value argument pass semantics and data of the value can be changed by a callee.
+	/// </summary>
+	[AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]
+    public sealed class PhpRwAttribute : Attribute
+    {
+    }
 }

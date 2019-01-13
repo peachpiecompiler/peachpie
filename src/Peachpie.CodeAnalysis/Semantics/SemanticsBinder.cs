@@ -1159,11 +1159,22 @@ namespace Pchp.CodeAnalysis.Semantics
             BindEnsureAccess(expr); // parent expression chain has to be updated as well
         }
 
+        /// <summary>
+        /// Updates <paramref name="expr"/>'s <see cref="BoundAccess"/> to <see cref="BoundAccess.Write"/>.
+        /// </summary>
+        /// <param name="expr">Expression which access has to be updated.</param>
+        public static void BindEnsureArrayAccess(BoundReferenceExpression expr)
+        {
+            if (expr == null || expr.Access.IsWrite) return;
+
+            expr.Access = expr.Access.WithEnsureArray();
+            BindEnsureAccess(expr); // parent expression chain has to be updated as well
+        }
+
         protected static void BindEnsureAccess(BoundExpression expr)
         {
-            if (expr is BoundArrayItemEx)
+            if (expr is BoundArrayItemEx arritem)
             {
-                var arritem = (BoundArrayItemEx)expr;
                 arritem.Array.Access = arritem.Array.Access.WithEnsureArray();
                 BindEnsureAccess(arritem.Array);
             }

@@ -1250,6 +1250,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         void BindParam(PhpParam expected, BoundArgument givenarg)
         {
+            if (expected.IsPhpRw)
+            {
+                if (givenarg.Value is BoundReferenceExpression refexpr)
+                {
+                    if (TypeCtx.IsArray(expected.Type) && !givenarg.Value.Access.EnsureArray)   // [PhpRw]PhpArray
+                    {
+                        SemanticsBinder.BindEnsureArrayAccess(givenarg.Value as BoundReferenceExpression);
+                        Worklist.Enqueue(CurrentBlock);
+                    }
+                }
+            }
+
             // bind ref parameters to variables:
             if (expected.IsAlias || expected.IsByRef)  // => args[i] must be a variable
             {
