@@ -168,6 +168,8 @@ namespace Pchp.Core
         /// </summary>
         private readonly static int[] emptyBuckets = new int[] { -1 };
 
+        const int _minCapacity = 8;
+
         // TODO: int flags = 0; // heuristics
         /* e.g.:
          * DeletionPerformed (whether nextNewIndex has to be recomputed when DeepCopied)
@@ -258,17 +260,17 @@ namespace Pchp.Core
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int CalculatetableSize(int size)
         {
-            if (size < (1 << 30))
-            {
-                int i = (1 << 2);   // how big is our smallest possible array? "1" is min, do not put "0" here! Smaller number makes initialization faster, but slows down expanding. However the size is known mostly ...
-                while (i < size)
-                    i <<= 1;
+            if (size <= _minCapacity) return _minCapacity;
 
-                return i;
-            }
+            var mask = size - 1;
 
-            /* prevent overflow */
-            return (1 << 30);
+            mask |= mask >> 1;
+            mask |= mask >> 2;
+            mask |= mask >> 4;
+            mask |= mask >> 8;
+            mask |= mask >> 16;
+
+            return mask + 1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
