@@ -1481,7 +1481,8 @@ namespace Pchp.Library.Spl
 
         /// <summary>
         /// Matches (string) <see cref="current"/> (or <see cref="key"/> if the <see cref="USE_KEY"/> flag is set)
-        /// against the regular expression. 
+        /// against the regular expression.
+        /// </summary>
         public override bool accept()
         {
             var key = base.key();
