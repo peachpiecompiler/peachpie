@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Pchp.Core;
 using Pchp.Core.Utilities;
@@ -99,17 +100,17 @@ namespace Pchp.Library.Spl
             }
         }
 
-        private protected void __construct(DirectoryInfo entry)
+        private protected void __construct(DirectoryInfo entry, FileSystemInfo[] children = null)
         {
             _entry = entry;
             _original = entry ?? throw new ArgumentNullException();
-            
+
             if (!_original.Exists)
             {
                 throw new UnexpectedValueException();
             }
 
-            _children = _original.GetFileSystemInfos();
+            _children = children ?? _original.GetFileSystemInfos();
 
             //
             Position = 0;
@@ -234,7 +235,7 @@ namespace Pchp.Library.Spl
         {
             _flags = flags;
             _fullpath = entry.FullName;
-            
+
             __construct(entry);
         }
 
@@ -342,5 +343,42 @@ namespace Pchp.Library.Spl
         public virtual string getSubPath() => subPath;
 
         public virtual string getSubPathname() => string.IsNullOrEmpty(subPath) ? string.Empty : Path.GetFileName(subPath);
+    }
+
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class GlobIterator : FilesystemIterator, SeekableIterator, Countable
+    {
+        #region Construction
+
+        public GlobIterator(Context ctx, string file_name, int flags = KEY_AS_PATHNAME | CURRENT_AS_FILEINFO)
+            : base(ctx, file_name, flags)
+        {
+        }
+
+        [PhpFieldsOnlyCtor]
+        protected GlobIterator()
+        {
+        }
+
+        public override void __construct(Context ctx, string path, int flags = KEY_AS_PATHNAME | CURRENT_AS_FILEINFO)
+        {
+            var children =
+                PhpPath.GetMatches(ctx, path, PhpPath.GlobOptions.None)
+                .Select(f => new FileInfo(f))
+                .ToArray();
+
+            string dir = children.FirstOrDefault()?.DirectoryName ?? ctx.WorkingDirectory;
+            var dirInfo = new DirectoryInfo(dir);
+
+            _fullpath = dir;
+            __construct(dirInfo, children);
+            _flags = flags | SKIP_DOTS;
+
+            Position = 0;
+        }
+
+        #endregion
+
+        public long count() => _children.LongLength;
     }
 }

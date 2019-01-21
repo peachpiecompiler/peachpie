@@ -778,7 +778,7 @@ namespace Pchp.Library
             return ungrouper.Flatten();
         }
 
-        static IEnumerable<string>/*!*/ GetMatches(Context ctx, string/*!*/pattern, GlobOptions flags)
+        internal static IEnumerable<string>/*!*/ GetMatches(Context ctx, string/*!*/pattern, GlobOptions flags)
         {
             if (pattern.Length == 0)
             {
