@@ -16,24 +16,19 @@ namespace Pchp.Core
     public partial class PhpArray : PhpHashtable, IPhpConvertible, IPhpArray, IPhpComparable, IPhpEnumerable
     {
         /// <summary>
-        /// Used in all PHP functions determining the type name. (var_dump, ...)
+        /// Used in all PHP functions determining the type name. (<c>var_dump</c>, ...)
         /// </summary>
         public const string PhpTypeName = "array";
 
         /// <summary>
-        /// Used in print_r function.
+        /// Used in <c>print_r</c> function.
         /// </summary>
         public const string PrintablePhpTypeName = "Array";
-
-        ///// <summary>
-        ///// If this flag is <B>true</B> the array will be copied inplace by the immediate <see cref="Copy"/> call.
-        ///// </summary>
-        //public bool InplaceCopyOnReturn { get { return this.table.InplaceCopyOnReturn; } set { this.table.InplaceCopyOnReturn = value; } }
 
         /// <summary>
         /// Intrinsic enumerator associated with the array. Initialized lazily.
         /// </summary>
-        protected OrderedDictionary.Enumerator _intrinsicEnumerator;
+        protected IPhpEnumerator _intrinsicEnumerator;
 
         /// <summary>
         /// Empty array singleton.
@@ -68,6 +63,11 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="capacity"></param>
         public PhpArray(int capacity) : base(capacity) { }
+
+        /// <summary>
+        /// Creates new instance with given table data.
+        /// </summary>
+        public PhpArray(OrderedDictionary table) : base(table) { }
 
         /// <summary>
         /// Creates a new instance of <see cref="PhpArray"/> initialized with all values from <see cref="System.Array"/>.
@@ -177,8 +177,8 @@ namespace Pchp.Core
         public PhpArray(PhpArray/*!*/array)
             : base(array)
         {
-            // preserve intrinsic enumerator state
-            _intrinsicEnumerator = array._intrinsicEnumerator?.WithTable(this); // copies state of intrinsic enumerator or null
+            //// preserve intrinsic enumerator state
+            //_intrinsicEnumerator = array._intrinsicEnumerator?.WithTable(this); // copies state of intrinsic enumerator or null
         }
 
         /// <summary>
@@ -293,11 +293,6 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Gets PHP enumerator for this array.
-        /// </summary>
-        public new OrderedDictionary.Enumerator GetEnumerator() => new OrderedDictionary.Enumerator(this);
-
-        /// <summary>
         /// Adds a variable into the array while keeping duplicit keys in sub-arrays of indexed items.
         /// </summary>
         /// <param name="name">Key, respecting <c>[subkey]</c> notation.</param>
@@ -308,7 +303,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets reference (<c>ref</c> <see cref="PhpValue"/>) to the item at given index.
         /// </summary>
-        public ref PhpValue GetItemRef(IntStringKey key) => ref table._getref(key);
+        public ref PhpValue GetItemRef(IntStringKey key) => ref table.EnsureValue(key);
 
         /// <summary>
         /// Gets value indicating the PHP variable is empty (empty array).
@@ -608,14 +603,14 @@ namespace Pchp.Core
         /// The enumerator points to the first item of the array immediately after the initialization if exists,
         /// otherwise it points to an invalid item and <see cref="IPhpEnumerator.AtEnd"/> is <B>true</B>.
         /// </summary>
-        public IPhpEnumerator/*!*/ IntrinsicEnumerator
+        public IPhpEnumerator/*!*/IntrinsicEnumerator
         {
             get
             {
                 // initializes enumerator:
                 if (_intrinsicEnumerator == null)
                 {
-                    _intrinsicEnumerator = this.GetPhpEnumerator();
+                    _intrinsicEnumerator = (IPhpEnumerator)((IEnumerable)this).GetEnumerator();
                     _intrinsicEnumerator.MoveNext();
                 }
                 return _intrinsicEnumerator;
@@ -638,20 +633,22 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="aliasedValues">Whether the values returned by enumerator are assigned by reference.</param>
         /// <returns>The dictionary enumerator.</returns>
-        public IPhpEnumerator GetForeachEnumerator(bool aliasedValues)
+        public IPhpEnumerator/*!*/GetForeachEnumerator(bool aliasedValues)
         {
             if (aliasedValues)
             {
                 EnsureWritable();
 
                 // when enumerating aliases, changes are reflected to the enumerator;
-                return new OrderedDictionary.Enumerator(this);
+                //return new OrderedDictionary.Enumerator(this);
             }
             else
             {
                 // when enumerating values, any upcoming changes to the array do not take effect to the enumerator
-                return new OrderedDictionary.ReadonlyEnumerator(this);
+                //return new OrderedDictionary.ReadonlyEnumerator(this);
             }
+
+            return (IPhpEnumerator)((IEnumerable)this).GetEnumerator();
         }
 
         /// <summary>
@@ -667,7 +664,7 @@ namespace Pchp.Core
 
         #region IPhpArray
 
-        public PhpValue GetItemValue(IntStringKey key) => table._get(ref key);
+        public PhpValue GetItemValue(IntStringKey key) => table[key];
 
         public PhpValue GetItemValue(PhpValue index)
             => index.TryToIntStringKey(out IntStringKey key)
@@ -677,10 +674,7 @@ namespace Pchp.Core
         public void SetItemValue(IntStringKey key, PhpValue value)
         {
             this.EnsureWritable();
-            if (table._add_or_update_preserve_ref(ref key, value))
-            {
-                this.KeyAdded(ref key);
-            }
+            table.AssignValue(key, value);
         }
 
         public void SetItemValue(PhpValue index, PhpValue value)
@@ -698,10 +692,7 @@ namespace Pchp.Core
         public void SetItemAlias(IntStringKey key, PhpAlias alias)
         {
             this.EnsureWritable();
-            if (table._add_or_update(ref key, PhpValue.Create(alias)))
-            {
-                this.KeyAdded(ref key);
-            }
+            table[key] = PhpValue.Create(alias);
         }
 
         public void SetItemAlias(PhpValue index, PhpAlias alias)
@@ -718,11 +709,11 @@ namespace Pchp.Core
 
         public void AddValue(PhpValue value) => Add(value);
 
-        public PhpAlias EnsureItemAlias(IntStringKey key) => table._ensure_item_alias(ref key, this);
+        public PhpAlias EnsureItemAlias(IntStringKey key) => table.EnsureValue(key).EnsureAlias();
 
-        public object EnsureItemObject(IntStringKey key) => table._ensure_item_object(ref key, this);
+        public object EnsureItemObject(IntStringKey key) => table.EnsureValue(key).EnsureObject();
 
-        public IPhpArray EnsureItemArray(IntStringKey key) => table._ensure_item_array(ref key, this);
+        public IPhpArray EnsureItemArray(IntStringKey key) => table.EnsureValue(key).EnsureArray();
 
         public void RemoveKey(IntStringKey key) => this.Remove(key);
 

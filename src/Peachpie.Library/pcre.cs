@@ -183,12 +183,12 @@ namespace Pchp.Library
                 // array  pattern
                 // string replacement
 
-                using (var pattern_enumerator = pattern_array.GetFastEnumerator())
-                    while (pattern_enumerator.MoveNext())
-                    {
-                        subject = PregReplaceInternal(ctx, pattern_enumerator.CurrentValue.ToStringOrThrow(ctx), replacement.ToStringOrThrow(ctx),
-                            null, subject, (int)limit, ref count);
-                    }
+                var pattern_enumerator = pattern_array.GetFastEnumerator();
+                while (pattern_enumerator.MoveNext())
+                {
+                    subject = PregReplaceInternal(ctx, pattern_enumerator.CurrentValue.ToStringOrThrow(ctx), replacement.ToStringOrThrow(ctx),
+                        null, subject, (int)limit, ref count);
+                }
 
                 //
                 return subject;
@@ -203,23 +203,23 @@ namespace Pchp.Library
                 bool replacement_valid = true;
                 string replacement_string;
 
-                using (var pattern_enumerator = pattern_array.GetFastEnumerator())
-                    while (pattern_enumerator.MoveNext())
+                var pattern_enumerator = pattern_array.GetFastEnumerator();
+                while (pattern_enumerator.MoveNext())
+                {
+                    // replacements are in array, move to next item and take it if possible, in other case take empty string:
+                    if (replacement_valid && replacement_enumerator.MoveNext())
                     {
-                        // replacements are in array, move to next item and take it if possible, in other case take empty string:
-                        if (replacement_valid && replacement_enumerator.MoveNext())
-                        {
-                            replacement_string = replacement_enumerator.CurrentValue.ToStringOrThrow(ctx);
-                        }
-                        else
-                        {
-                            replacement_string = string.Empty;
-                            replacement_valid = false;  // end of replacement_enumerator, do not call MoveNext again!
-                        }
-
-                        subject = PregReplaceInternal(ctx, pattern_enumerator.CurrentValue.ToStringOrThrow(ctx), replacement_string,
-                            null, subject, (int)limit, ref count);
+                        replacement_string = replacement_enumerator.CurrentValue.ToStringOrThrow(ctx);
                     }
+                    else
+                    {
+                        replacement_string = string.Empty;
+                        replacement_valid = false;  // end of replacement_enumerator, do not call MoveNext again!
+                    }
+
+                    subject = PregReplaceInternal(ctx, pattern_enumerator.CurrentValue.ToStringOrThrow(ctx), replacement_string,
+                        null, subject, (int)limit, ref count);
+                }
 
                 //
                 return subject;

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -168,4 +169,56 @@ namespace Pchp.Core.Utilities
         }
     }
 
+    /// <summary>
+    /// Helper class that implements empty collection and empty enumerator, GC friendly.
+    /// </summary>
+    public sealed class EmptyCollection<T> : IEnumerable<T>, ICollection<T>
+    {
+        public static readonly EmptyCollection<T> Instance = new EmptyCollection<T>();
+
+        private EmptyCollection() { }
+
+        #region ICollection
+
+        public int Count => 0;
+
+        public bool IsReadOnly => true;
+
+        public void Add(T item) => throw new NotSupportedException();
+
+        public void Clear() => throw new NotSupportedException();
+
+        public bool Contains(T item) => false;
+
+        public void CopyTo(T[] array, int arrayIndex) { }
+
+        public bool Remove(T item) => throw new NotSupportedException();
+
+        #endregion
+
+        public IEnumerator<T> GetEnumerator() => EmptyEnumerator<T>.Instance;
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    /// <summary>
+    /// Helper class implementing empty <see cref="IEnumerator{T}"/>, GC friendly.
+    /// </summary>
+    /// <remarks>Usage: <code>return EmptyEnumerator{T}.Instance;</code></remarks>
+    public sealed class EmptyEnumerator<T> : IEnumerator<T>
+    {
+        public static readonly EmptyEnumerator<T> Instance = new EmptyEnumerator<T>();
+
+        private EmptyEnumerator() { }
+
+        public T Current => default;
+
+        object IEnumerator.Current => default;
+
+        public void Dispose() { }
+
+        public bool MoveNext() => false;
+
+        public void Reset() { }
+    }
 }

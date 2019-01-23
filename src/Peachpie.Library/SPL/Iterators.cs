@@ -67,7 +67,7 @@ namespace Pchp.Library.Spl
         readonly protected Context _ctx;
 
         PhpArray _array;// PHP compatibility: private PhpArray storage;
-        internal protected OrderedDictionary.Enumerator _arrayEnumerator;    // lazily instantiated so we can rewind() once when needed
+        internal protected IPhpEnumerator _arrayEnumerator;    // lazily instantiated so we can rewind() once when needed
         bool isArrayIterator => _array != null;
 
         object _dobj = null;
@@ -84,7 +84,7 @@ namespace Pchp.Library.Spl
         {
             Debug.Assert(_array != null);
 
-            _arrayEnumerator = new OrderedDictionary.Enumerator(_array);
+            _arrayEnumerator = _array.GetForeachEnumerator(false);
             _isValid = _arrayEnumerator.MoveFirst();
         }
 

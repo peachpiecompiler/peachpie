@@ -740,25 +740,25 @@ namespace Pchp.Library
             // using operator ===:
             if (strict)
             {
-                using (var enumerator = haystack.GetFastEnumerator())
-                    while (enumerator.MoveNext())
-                    {
-                        // TODO: dereferences value (because of StrictEquality operator):
-                        if (needle.StrictEquals(enumerator.CurrentValue))
-                            return PhpValue.Create(enumerator.CurrentKey);
-                    }
+                var enumerator = haystack.GetFastEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    // TODO: dereferences value (because of StrictEquality operator):
+                    if (needle.StrictEquals(enumerator.CurrentValue))
+                        return PhpValue.Create(enumerator.CurrentKey);
+                }
             }
             else
             {
                 // using operator ==:
 
-                using (var enumerator = haystack.GetFastEnumerator())
-                    while (enumerator.MoveNext())
-                    {
-                        // note: comparator manages references well:
-                        if (needle.Equals(enumerator.CurrentValue))
-                            return PhpValue.Create(enumerator.CurrentKey);
-                    }
+                var enumerator = haystack.GetFastEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    // note: comparator manages references well:
+                    if (needle.Equals(enumerator.CurrentValue))
+                        return PhpValue.Create(enumerator.CurrentKey);
+                }
             }
 
             // not found:
@@ -1643,12 +1643,10 @@ namespace Pchp.Library
 
             Debug.Assert(comparer != null);
 
-            PhpArray result = new PhpArray();
-            array.SetOperation(op, arrays, comparer, result);
+            return array.SetOperation(op, arrays, comparer);
 
             // the result is inplace deeply copied on return to PHP code:
             //result.InplaceCopyOnReturn = true;
-            return result;
         }
 
         // TODO: specific parameters instead of 'params PhpValue[] arraysAndComparer'
@@ -2002,16 +2000,16 @@ namespace Pchp.Library
             {
                 if (arrays[i] != null)
                 {
-                    using (var enumerator = arrays[i].GetFastEnumerator())
-                        while (enumerator.MoveNext())
-                        {
-                            var value = enumerator.CurrentValue.DeepCopy();
+                    var enumerator = arrays[i].GetFastEnumerator();
+                    while (enumerator.MoveNext())
+                    {
+                        var value = enumerator.CurrentValue.DeepCopy();
 
-                            if (enumerator.CurrentKey.IsString)
-                                result[enumerator.CurrentKey] = value;
-                            else
-                                result.Add(value);
-                        }
+                        if (enumerator.CurrentKey.IsString)
+                            result[enumerator.CurrentKey] = value;
+                        else
+                            result.Add(value);
+                    }
                 }
             }
 
@@ -2094,76 +2092,76 @@ namespace Pchp.Library
         {
             var visited = new HashSet<object>();    // marks arrays that are being visited
 
-            using (var iterator = array.GetFastEnumerator())
-                while (iterator.MoveNext())
+            var iterator = array.GetFastEnumerator();
+            while (iterator.MoveNext())
+            {
+                var entry = iterator.Current;
+                if (entry.Key.IsString)
                 {
-                    var entry = iterator.Current;
-                    if (entry.Key.IsString)
+                    if (result.ContainsKey(entry.Key))
                     {
-                        if (result.ContainsKey(entry.Key))
+                        // the result array already contains the item => merging take place
+                        var xv = result[entry.Key];
+                        var y = entry.Value.GetValue();
+
+                        // source item:
+                        PhpValue x = xv.GetValue();
+
+                        // if x is not a reference then we can reuse the ax array for the result
+                        // since it has been deeply copied when added to the resulting array:
+                        PhpArray item_result = (deepCopy && x.IsArray && !xv.IsAlias) ? x.Array : new PhpArray();
+
+                        if (x.IsArray && y.IsArray)
                         {
-                            // the result array already contains the item => merging take place
-                            var xv = result[entry.Key];
-                            var y = entry.Value.GetValue();
+                            var ax = x.Array;
+                            var ay = y.Array;
 
-                            // source item:
-                            PhpValue x = xv.GetValue();
+                            if (ax != item_result)
+                                ax.AddTo(item_result, deepCopy);
 
-                            // if x is not a reference then we can reuse the ax array for the result
-                            // since it has been deeply copied when added to the resulting array:
-                            PhpArray item_result = (deepCopy && x.IsArray && !xv.IsAlias) ? x.Array : new PhpArray();
+                            if (visited.Add(ax) == false && visited.Add(ay) == false)
+                                return false;
 
-                            if (x.IsArray && y.IsArray)
-                            {
-                                var ax = x.Array;
-                                var ay = y.Array;
+                            // merges ay to the item result (may lead to stack overflow, 
+                            // but only with both arrays recursively referencing themselves - who cares?):
+                            bool finite = MergeRecursiveInternal(item_result, ay, deepCopy);
 
-                                if (ax != item_result)
-                                    ax.AddTo(item_result, deepCopy);
+                            visited.Remove(ax);
+                            visited.Remove(ay);
 
-                                if (visited.Add(ax) == false && visited.Add(ay) == false)
-                                    return false;
-
-                                // merges ay to the item result (may lead to stack overflow, 
-                                // but only with both arrays recursively referencing themselves - who cares?):
-                                bool finite = MergeRecursiveInternal(item_result, ay, deepCopy);
-
-                                visited.Remove(ax);
-                                visited.Remove(ay);
-
-                                if (!finite) return false;
-                            }
-                            else
-                            {
-                                if (x.IsArray)
-                                {
-                                    if (x.Array != item_result)
-                                        x.Array.AddTo(item_result, deepCopy);
-                                }
-                                else
-                                {
-                                    /*if (x != null)*/
-                                    item_result.Add(deepCopy ? x.DeepCopy() : x);
-                                }
-
-                                if (y.IsArray) y.Array.AddTo(item_result, deepCopy);
-                                else /*if (y != null)*/ item_result.Add(deepCopy ? y.DeepCopy() : y);
-                            }
-
-                            result[entry.Key] = PhpValue.Create(item_result);
+                            if (!finite) return false;
                         }
                         else
                         {
-                            // PHP does no dereferencing when items are not merged:
-                            result.Add(entry.Key, (deepCopy) ? entry.Value.DeepCopy() : entry.Value);
+                            if (x.IsArray)
+                            {
+                                if (x.Array != item_result)
+                                    x.Array.AddTo(item_result, deepCopy);
+                            }
+                            else
+                            {
+                                /*if (x != null)*/
+                                item_result.Add(deepCopy ? x.DeepCopy() : x);
+                            }
+
+                            if (y.IsArray) y.Array.AddTo(item_result, deepCopy);
+                            else /*if (y != null)*/ item_result.Add(deepCopy ? y.DeepCopy() : y);
                         }
+
+                        result[entry.Key] = PhpValue.Create(item_result);
                     }
                     else
                     {
                         // PHP does no dereferencing when items are not merged:
-                        result.Add((deepCopy) ? entry.Value.DeepCopy() : entry.Value);
+                        result.Add(entry.Key, (deepCopy) ? entry.Value.DeepCopy() : entry.Value);
                     }
                 }
+                else
+                {
+                    // PHP does no dereferencing when items are not merged:
+                    result.Add((deepCopy) ? entry.Value.DeepCopy() : entry.Value);
+                }
+            }
 
             return true;
         }
@@ -2191,17 +2189,17 @@ namespace Pchp.Library
 
             var textInfo = System.Globalization.CultureInfo.CurrentCulture.TextInfo; // cache current culture to avoid repetitious CurrentCulture.get
 
-            using (var iterator = array.GetFastEnumerator())
-                while (iterator.MoveNext())
+            var iterator = array.GetFastEnumerator();
+            while (iterator.MoveNext())
+            {
+                var entry = iterator.Current;
+                if (entry.Key.IsString)
                 {
-                    var entry = iterator.Current;
-                    if (entry.Key.IsString)
-                    {
-                        result[textInfo.ToLower(entry.Key.String)] = entry.Value;
-                    }
-                    else
-                        result[entry.Key] = entry.Value;
+                    result[textInfo.ToLower(entry.Key.String)] = entry.Value;
                 }
+                else
+                    result[entry.Key] = entry.Value;
+            }
             return result;
         }
 
@@ -2222,16 +2220,16 @@ namespace Pchp.Library
 
             var textInfo = System.Globalization.CultureInfo.CurrentCulture.TextInfo; // cache current culture to avoid repetitious CurrentCulture.get
 
-            PhpArray result = new PhpArray(array.Count);
-            using (var iterator = array.GetFastEnumerator())
-                while (iterator.MoveNext())
-                {
-                    var entry = iterator.Current;
-                    if (entry.Key.IsString)
-                        result[textInfo.ToUpper(entry.Key.String)] = entry.Value;
-                    else
-                        result[entry.Key] = entry.Value;
-                }
+            var result = new PhpArray(array.Count);
+            var iterator = array.GetFastEnumerator();
+            while (iterator.MoveNext())
+            {
+                var entry = iterator.Current;
+                if (entry.Key.IsString)
+                    result[textInfo.ToUpper(entry.Key.String)] = entry.Value;
+                else
+                    result[entry.Key] = entry.Value;
+            }
             return result;
         }
 
@@ -2465,14 +2463,14 @@ namespace Pchp.Library
             var/*!*/identitySet = new HashSet<object>();
 
             // get only unique values - first found
-            using (var enumerator = array.GetFastEnumerator())
-                while (enumerator.MoveNext())
+            var enumerator = array.GetFastEnumerator();
+            while (enumerator.MoveNext())
+            {
+                if (identitySet.Add(enumerator.CurrentValue.GetValue()))
                 {
-                    if (identitySet.Add(enumerator.CurrentValue.GetValue()))
-                    {
-                        result.Add(enumerator.Current);
-                    }
+                    result.Add(enumerator.Current);
                 }
+            }
 
             //result.InplaceCopyOnReturn = true;
             return result;

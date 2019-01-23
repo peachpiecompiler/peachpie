@@ -64,16 +64,16 @@ namespace Pchp.Library.Streams
         static bool CheckContextData(PhpArray data)
         {
             // Check if the supplied data are correctly formed.
-            using (var enumerator = data.GetFastEnumerator())
-                while (enumerator.MoveNext())
+            var enumerator = data.GetFastEnumerator();
+            while (enumerator.MoveNext())
+            {
+                if (enumerator.CurrentValue.AsArray() == null)
                 {
-                    if (enumerator.CurrentValue.AsArray() == null)
-                    {
-                        return false;
-                    }
-
-                    // Invalid resource - not an array of arrays
+                    return false;
                 }
+
+                // Invalid resource - not an array of arrays
+            }
             return true;
         }
 

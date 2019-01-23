@@ -508,12 +508,10 @@ namespace Pchp.Core.Reflection
             var runtimefields = tinfo.GetRuntimeFields(instance);
             if (runtimefields != null && runtimefields.Count != 0)
             {
-                using (var enumerator = runtimefields.GetFastEnumerator())
+                var enumerator = runtimefields.GetFastEnumerator();
+                while (enumerator.MoveNext())
                 {
-                    while (enumerator.MoveNext())
-                    {
-                        yield return new PhpPropertyInfo.RuntimeProperty(tinfo, enumerator.CurrentKey);
-                    }
+                    yield return new PhpPropertyInfo.RuntimeProperty(tinfo, enumerator.CurrentKey);
                 }
             }
         }

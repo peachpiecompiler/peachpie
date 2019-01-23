@@ -26,12 +26,12 @@ namespace Pchp.Core
         //[DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
         public PhpValue Value
         {
-            get => _locals._get(ref _name);
+            get => _locals.TryGetValue(_name, out var value) ? value : PhpValue.Null;
             set => _locals[_name] = value;
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        ref PhpValue ValueRef => ref _locals._getref(_name);
+        ref PhpValue ValueRef => ref _locals.EnsureValue(_name);
 
         /// <summary>
         /// Gets underlaying value as <see cref="PhpAlias"/>.

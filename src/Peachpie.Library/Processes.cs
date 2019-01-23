@@ -306,92 +306,92 @@ namespace Pchp.Library
 
         private static bool RedirectStreams(Context ctx, Process/*!*/ process, PhpArray/*!*/ descriptors, PhpArray/*!*/ pipes)
         {
-            using (var descriptors_enum = descriptors.GetFastEnumerator())
-                while (descriptors_enum.MoveNext())
+            var descriptors_enum = descriptors.GetFastEnumerator();
+            while (descriptors_enum.MoveNext())
+            {
+                int desc_no = descriptors_enum.CurrentKey.Integer;
+
+                StreamAccessOptions access;
+                Stream stream;
+                switch (desc_no)
                 {
-                    int desc_no = descriptors_enum.CurrentKey.Integer;
+                    case 0: stream = process.StandardInput.BaseStream; access = StreamAccessOptions.Write; break;
+                    case 1: stream = process.StandardOutput.BaseStream; access = StreamAccessOptions.Read; break;
+                    case 2: stream = process.StandardError.BaseStream; access = StreamAccessOptions.Read; break;
+                    default: Debug.Fail(null); return false;
+                }
 
-                    StreamAccessOptions access;
-                    Stream stream;
-                    switch (desc_no)
-                    {
-                        case 0: stream = process.StandardInput.BaseStream; access = StreamAccessOptions.Write; break;
-                        case 1: stream = process.StandardOutput.BaseStream; access = StreamAccessOptions.Read; break;
-                        case 2: stream = process.StandardError.BaseStream; access = StreamAccessOptions.Read; break;
-                        default: Debug.Fail(null); return false;
-                    }
+                var value = descriptors_enum.CurrentValue;
+                PhpResource resource;
+                PhpArray array;
 
-                    var value = descriptors_enum.CurrentValue;
-                    PhpResource resource;
-                    PhpArray array;
-
-                    if ((array = value.AsArray()) != null)
-                    {
-                        if (!array.Contains(0))
-                        {
-                            // value must be either a resource or an array:
-                            PhpException.Throw(PhpError.Warning, Resources.LibResources.descriptor_item_missing_qualifier, desc_no.ToString());
-                            return false;
-                        }
-
-                        string qualifier = array[0].ToString(ctx);
-
-                        switch (qualifier)
-                        {
-                            case "pipe":
-                                {
-                                    // mode is ignored (it's determined by the stream):
-                                    PhpStream php_stream = new NativeStream(ctx, stream, null, access, String.Empty, StreamContext.Default);
-                                    pipes.Add(desc_no, php_stream);
-                                    break;
-                                }
-
-                            case "file":
-                                {
-                                    if (!array.Contains(1))
-                                    {
-                                        PhpException.Throw(PhpError.Warning, Resources.LibResources.descriptor_item_missing_file_name, desc_no.ToString());
-                                        return false;
-                                    }
-
-                                    if (!array.Contains(2))
-                                    {
-                                        PhpException.Throw(PhpError.Warning, Resources.LibResources.descriptor_item_missing_mode, desc_no.ToString());
-                                        return false;
-                                    }
-
-                                    string path = array[1].ToString(ctx);
-                                    string mode = array[2].ToString(ctx);
-
-                                    PhpStream php_stream = PhpStream.Open(ctx, path, mode, StreamOpenOptions.Empty, StreamContext.Default);
-                                    if (php_stream == null)
-                                        return false;
-
-                                    //if (!ActivePipe.BeginIO(stream, php_stream, access, desc_no)) return false;
-                                    //break;
-                                    throw new NotImplementedException();
-                                }
-
-                            default:
-                                PhpException.Throw(PhpError.Warning, Resources.LibResources.invalid_handle_qualifier, qualifier);
-                                return false;
-                        }
-                    }
-                    else if ((resource = value.AsResource()) != null)
-                    {
-                        PhpStream php_stream = PhpStream.GetValid(resource);
-                        if (php_stream == null) return false;
-
-                        //if (!ActivePipe.BeginIO(stream, php_stream, access, desc_no)) return false;
-                        throw new NotImplementedException();
-                    }
-                    else
+                if ((array = value.AsArray()) != null)
+                {
+                    if (!array.Contains(0))
                     {
                         // value must be either a resource or an array:
-                        PhpException.Throw(PhpError.Warning, Resources.LibResources.descriptor_item_not_array_nor_resource, desc_no.ToString());
+                        PhpException.Throw(PhpError.Warning, Resources.LibResources.descriptor_item_missing_qualifier, desc_no.ToString());
                         return false;
                     }
+
+                    string qualifier = array[0].ToString(ctx);
+
+                    switch (qualifier)
+                    {
+                        case "pipe":
+                            {
+                                // mode is ignored (it's determined by the stream):
+                                PhpStream php_stream = new NativeStream(ctx, stream, null, access, String.Empty, StreamContext.Default);
+                                pipes.Add(desc_no, php_stream);
+                                break;
+                            }
+
+                        case "file":
+                            {
+                                if (!array.Contains(1))
+                                {
+                                    PhpException.Throw(PhpError.Warning, Resources.LibResources.descriptor_item_missing_file_name, desc_no.ToString());
+                                    return false;
+                                }
+
+                                if (!array.Contains(2))
+                                {
+                                    PhpException.Throw(PhpError.Warning, Resources.LibResources.descriptor_item_missing_mode, desc_no.ToString());
+                                    return false;
+                                }
+
+                                string path = array[1].ToString(ctx);
+                                string mode = array[2].ToString(ctx);
+
+                                PhpStream php_stream = PhpStream.Open(ctx, path, mode, StreamOpenOptions.Empty, StreamContext.Default);
+                                if (php_stream == null)
+                                    return false;
+
+                                //if (!ActivePipe.BeginIO(stream, php_stream, access, desc_no)) return false;
+                                //break;
+                                throw new NotImplementedException();
+                            }
+
+                        default:
+                            PhpException.Throw(PhpError.Warning, Resources.LibResources.invalid_handle_qualifier, qualifier);
+                            return false;
+                    }
                 }
+                else if ((resource = value.AsResource()) != null)
+                {
+                    PhpStream php_stream = PhpStream.GetValid(resource);
+                    if (php_stream == null) return false;
+
+                    //if (!ActivePipe.BeginIO(stream, php_stream, access, desc_no)) return false;
+                    throw new NotImplementedException();
+                }
+                else
+                {
+                    // value must be either a resource or an array:
+                    PhpException.Throw(PhpError.Warning, Resources.LibResources.descriptor_item_not_array_nor_resource, desc_no.ToString());
+                    return false;
+                }
+            }
 
             return true;
         }

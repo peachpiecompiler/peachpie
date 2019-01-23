@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Core
 {
@@ -13,7 +14,7 @@ namespace Pchp.Core
 	/// The hashtable storing entries with <see cref="string"/> and <see cref="int"/> keys in a manner of PHP.
 	/// </summary>
 	[DebuggerNonUserCode]
-    public class PhpHashtable : IDictionary<IntStringKey, PhpValue>, IList, IList<PhpValue>, IDictionary // , ICloneable
+    public class PhpHashtable : IDictionary<IntStringKey, PhpValue>, IList, IList<PhpValue> // , IDictionary // , ICloneable
     {
         #region Fields and Properties
 
@@ -25,59 +26,6 @@ namespace Pchp.Core
         /// </remarks>
         internal OrderedDictionary/*!*/ table;
 
-        /// <summary>
-        /// Index for next new element when key is not specified.
-        /// </summary>
-        private int nextNewIndex = 0;
-
-        #region active enumerators
-
-        /// <summary>
-        /// Callback methods for entry deletion event.
-        /// </summary>
-        //[NonSerialized]
-        internal OrderedDictionary.Enumerator activeEnumerators = null;
-
-        /// <summary>
-        /// Add given <paramref name="enumerator"/> into <see cref="activeEnumerators"/> list.
-        /// </summary>
-        /// <param name="enumerator">New enumerator.</param>
-        internal void RegisterEnumerator(OrderedDictionary.Enumerator/*!*/enumerator)
-        {
-            Debug.Assert(enumerator != null, "Argument null!");
-            Debug.Assert(enumerator._next == null, "Enumerator already enlisted somewhere!");
-            Debug.Assert(enumerator._table == this.table, "Enumerator was not associated with this PhpHashtable!");
-
-            enumerator._next = this.activeEnumerators;
-            this.activeEnumerators = enumerator;
-        }
-
-        /// <summary>
-        /// Remove given <paramref name="enumerator"/> from <see cref="activeEnumerators"/> list.
-        /// </summary>
-        /// <param name="enumerator"><see cref="OrderedDictionary.Enumerator"/> to be removed from the list of active enumerators.</param>
-        internal void UnregisterEnumerator(OrderedDictionary.Enumerator/*!*/enumerator)
-        {
-            Debug.Assert(enumerator != null, "Argument null!");
-            Debug.Assert(enumerator._table == this.table, "Enumerator was not associated with this PhpHashtable!");
-
-            if (this.activeEnumerators == enumerator)
-            {
-                this.activeEnumerators = enumerator._next; // remove the first item from the list, most recent case
-            }
-            else
-            {
-                for (var e = this.activeEnumerators; e != null; e = e._next)
-                    if (e._next == enumerator)
-                    {
-                        e._next = enumerator._next;
-                        break;
-                    }
-            }
-        }
-
-        #endregion
-
         #endregion
 
         #region EnsureWritable
@@ -85,7 +33,6 @@ namespace Pchp.Core
         /// <summary>
         /// Ensures the internal <see cref="OrderedDictionary"/> will be writable (not shared).
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void EnsureWritable()
         {
             if (table.IsShared)
@@ -97,18 +44,7 @@ namespace Pchp.Core
         private void Unshare()
         {
             Debug.Assert(table.IsShared);
-
-            this.table.Unshare();
-
-            var oldowner = this.table.owner as PhpArray;
-
-            this.table = new OrderedDictionary(this, table);
-            this.table._deep_copy_inplace(oldowner, this as PhpArray);   // deep copy values, replace references to original array into this
-
-            for (var e = this.activeEnumerators; e != null; e = e._next)
-            {
-                e.TableChanged();
-            }
+            this.table = this.table.ReleaseRef();
         }
 
         #endregion
@@ -118,15 +54,23 @@ namespace Pchp.Core
         /// <summary>
         /// Initializes a new instance of the <c>PhpHashtable</c> class.
         /// </summary>
-        public PhpHashtable() : this(0) { }
+        public PhpHashtable()
+            : this(new OrderedDictionary())
+        {
+        }
 
         /// <summary>
         /// Initializes a new instance of the <c>PhpHashtable</c> class.
         /// </summary>
         /// <param name="capacity">Initial capacity.</param>
         public PhpHashtable(int capacity)
+            : this(new OrderedDictionary((uint)capacity))
         {
-            table = new OrderedDictionary(this, capacity);
+        }
+
+        internal PhpHashtable(OrderedDictionary table)
+        {
+            this.table = table;
         }
 
         /// <summary>
@@ -137,7 +81,10 @@ namespace Pchp.Core
         /// Adds all pairs key-value where the value is an item of <v>values</v> array 
         /// and the key is its index in the array.
         /// </remarks>
-        public PhpHashtable(Array values) : this(values, 0, values.Length) { }
+        public PhpHashtable(Array values)
+            : this(values, 0, values.Length)
+        {
+        }
 
         /// <summary>
         /// Initializes a new instance of the <c>PhpHashtable</c> class filled by values from specified array. 
@@ -193,9 +140,8 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="array">The table to be shared.</param>
         public PhpHashtable(PhpHashtable/*!*/array)
+            : this(array.table.AddRef())
         {
-            this.table = array.table.Share();
-            this.nextNewIndex = array.nextNewIndex;
         }
 
         #endregion
@@ -216,53 +162,27 @@ namespace Pchp.Core
             throw new NotImplementedException();
         }
 
-        public OrderedDictionary.Enumerator/*!*/ GetPhpEnumerator()
-        {
-            ThrowIfNotPhpArrayHelper();
-            return new OrderedDictionary.Enumerator(this); //(IPhpEnumerator)table.GetEnumerator();
-        }
-
         /// <summary>
         /// Get fast enumerator structure to be used internally.
         /// </summary>
-        /// <returns></returns>
-        public OrderedDictionary.FastEnumerator GetFastEnumerator()
-        {
-            ThrowIfNotPhpArrayHelper();
-            return table.GetFastEnumerator();
-        }
+        public OrderedDictionary.FastEnumerator GetFastEnumerator() => table.GetEnumerator();
 
         #endregion
 
         #region IEnumerable<KeyValuePair<IntStringKey, object>> Members
 
-        public virtual IEnumerator<KeyValuePair<IntStringKey, PhpValue>>/*!*/ GetEnumerator()
+        public IEnumerator<KeyValuePair<IntStringKey, PhpValue>>/*!*/ GetEnumerator()
         {
-            if (this.Count == 0)
-                return OrderedDictionary.EmptyEnumerator.SingletonInstance;
-
-            return new OrderedDictionary.Enumerator(this); //table.GetEnumerator();
+            return ((IEnumerable<KeyValuePair<IntStringKey, PhpValue>>)table).GetEnumerator();
         }
 
         #endregion
 
         #region IEnumerable Members
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            if (this.Count == 0)
-                return OrderedDictionary.EmptyEnumerator.SingletonInstance;
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)table).GetEnumerator();
 
-            return new OrderedDictionary.Enumerator(this);
-        }
-
-        IEnumerator<PhpValue> IEnumerable<PhpValue>.GetEnumerator()
-        {
-            if (this.Count == 0)
-                return OrderedDictionary.EmptyEnumerator.SingletonInstance;
-
-            return new OrderedDictionary.Enumerator(this);
-        }
+        IEnumerator<PhpValue> IEnumerable<PhpValue>.GetEnumerator() => ((IEnumerable<PhpValue>)table).GetEnumerator();
 
         #endregion
 
@@ -275,14 +195,20 @@ namespace Pchp.Core
         public bool IsSynchronized { get { return false; } }
 
         /// <summary>This property always refers to this instance.</summary>
-        public object SyncRoot { get { return table.SyncRoot; } }
+        public object SyncRoot { get { return this; } }
 
         /// <summary>
         /// Copies the <see cref="PhpHashtable"/> or a portion of it to a one-dimensional array.
         /// </summary>
         /// <param name="array">The one-dimensional array.</param>
         /// <param name="index">The zero-based index in array at which copying begins.</param>
-        public void CopyTo(Array/*!*/ array, int index) => table.CopyTo(array, index);
+        public void CopyTo(Array/*!*/ array, int index)
+        {
+            foreach (var pair in table)
+            {
+                array.SetValue(pair.Value.ToClr(), index++);
+            }
+        }
 
         void ICollection<PhpValue>.CopyTo(PhpValue[] array, int arrayIndex) => table.CopyTo(array, arrayIndex);
 
@@ -290,14 +216,12 @@ namespace Pchp.Core
 
         bool ICollection<PhpValue>.Contains(PhpValue item)
         {
-            using (var e = GetFastEnumerator())
+            var e = GetFastEnumerator();
+            while (e.MoveNext())
             {
-                while (e.MoveNext())
+                if (e.CurrentValue == item)
                 {
-                    if (e.CurrentValue == item)
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
 
@@ -311,15 +235,13 @@ namespace Pchp.Core
         {
             bool found = false;
 
-            using (var e = GetFastEnumerator())
+            var e = GetFastEnumerator();
+            while (e.MoveNext())
             {
-                while (e.MoveNext())
+                if (e.CurrentValue.Equals(item))
                 {
-                    if (e.CurrentValue == item)
-                    {
-                        e.DeleteCurrentEntryAndMove(this.activeEnumerators);
-                        found = true;
-                    }
+                    e.DeleteCurrent(); // NOTE: enumerator is in invalid state, expecting to call "MoveNext()"
+                    found = true;
                 }
             }
 
@@ -407,17 +329,17 @@ namespace Pchp.Core
         /// <summary>This property is always false.</summary>
 		public bool IsReadOnly { get { return false; } }
 
-        /// <summary>
-        /// Returns an enumerator which iterates through values in this instance in order as they were added in it.
-        /// </summary>
-        /// <returns>The enumerator.</returns>
-        IDictionaryEnumerator/*!*/ IDictionary.GetEnumerator()
-        {
-            if (this.Count == 0)
-                return OrderedDictionary.EmptyEnumerator.SingletonInstance;
+        ///// <summary>
+        ///// Returns an enumerator which iterates through values in this instance in order as they were added in it.
+        ///// </summary>
+        ///// <returns>The enumerator.</returns>
+        //IDictionaryEnumerator/*!*/ IDictionary.GetEnumerator()
+        //{
+        //    if (this.Count == 0)
+        //        return OrderedDictionary.EmptyEnumerator.SingletonInstance;
 
-            return new IDictionaryAdapter(this); // new GenericDictionaryAdapter<object, object>(GetDictionaryEnumerator(), false);
-        }
+        //    return new IDictionaryAdapter(this); // new GenericDictionaryAdapter<object, object>(GetDictionaryEnumerator(), false);
+        //}
 
         //private IEnumerator<KeyValuePair<object, object>>/*!*/ GetDictionaryEnumerator()
         //{
@@ -493,72 +415,26 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="key">The key.</param>
         /// <exception cref="InvalidCastException">The <paramref name="key"/> is neither <see cref="int"/> nor not null <see cref="string"/>.</exception>
-        public void Remove(object key)
-        {
-            Remove(IntStringKey.FromObject(key));
-        }
+        public void Remove(object key) => Remove(IntStringKey.FromObject(key));
 
-        ICollection/*!*/ IDictionary.Keys
-        {
-            get
-            {
-                if (_keys == null) _keys = new KeyCollection(this);
-                return _keys;
-            }
-        }
-        //[NonSerialized]
-        private KeyCollection _keys;
+        //ICollection/*!*/ IDictionary.Keys
+        //{
+        //    get
+        //    {
+        //        if (_keys == null) _keys = new KeyCollection(this);
+        //        return _keys;
+        //    }
+        //}
+        ////[NonSerialized]
+        //private KeyCollection _keys;
 
-        ICollection/*!*/ IDictionary.Values
-        {
-            get
-            {
-                return (ICollection)table.Values;
-            }
-        }
-
-        #region Inner class: KeyCollection
-
-        //[Serializable]
-        public class KeyCollection : ICollection
-        {
-            private readonly PhpHashtable/*!*/ hashtable;
-
-            internal KeyCollection(PhpHashtable/*!*/ hashtable)
-            {
-                this.hashtable = hashtable;
-            }
-
-            #region ICollection Members
-
-            public int Count { get { return hashtable.Count; } }
-
-            public bool IsSynchronized { get { return false; } }
-
-            public object SyncRoot { get { return this; } }
-
-            void ICollection.CopyTo(Array/*!*/ array, int index)
-            {
-                //ArrayUtils.CheckCopyTo(array, index, hashtable.Count);
-
-                foreach (KeyValuePair<IntStringKey, PhpValue> entry in hashtable)
-                    array.SetValue(entry.Key.Object, index++);
-            }
-
-            #endregion
-
-            #region IEnumerable Members
-
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                foreach (KeyValuePair<IntStringKey, PhpValue> pair in hashtable)
-                    yield return pair.Key.Object;
-            }
-
-            #endregion
-        }
-
-        #endregion
+        //ICollection/*!*/ IDictionary.Values
+        //{
+        //    get
+        //    {
+        //        return (ICollection)table.Values;
+        //    }
+        //}
 
         #endregion
 
@@ -589,34 +465,35 @@ namespace Pchp.Core
 
         public int Add(PhpValue value)
         {
-            //if (MaxIntegerKey < int.MaxValue)
-            {
-                this.EnsureWritable();
+            this.EnsureWritable();
 
-                AddToEnd(value);
-                return this.nextNewIndex;
-            }
-            //return 0;
+            table.Add(value);
+
+            return this.Count;
         }
 
         void IList.RemoveAt(int index)
         {
-            throw new NotImplementedException();
+            EnsureWritable();
+            table.Remove(index);
         }
 
         void IList<PhpValue>.RemoveAt(int index)
         {
-            throw new NotImplementedException();
+            EnsureWritable();
+            table.Remove(index);
         }
 
         void IList.Insert(int index, object value)
         {
-            throw new NotImplementedException();
+            EnsureWritable();
+            table[index] = PhpValue.FromClr(value);
         }
 
         void IList<PhpValue>.Insert(int index, PhpValue value)
         {
-            throw new NotImplementedException();
+            EnsureWritable();
+            table[index] = value;
         }
 
         int IList.IndexOf(object value)
@@ -643,38 +520,19 @@ namespace Pchp.Core
 
         public void Add(IntStringKey key, PhpValue value) => this[key] = value;
 
-        public bool ContainsKey(IntStringKey key)
-        {
-            ThrowIfNotPhpArrayHelper();
-            return table.ContainsKey(key);
-        }
+        public bool ContainsKey(IntStringKey key) => table.ContainsKey(key);
 
         public virtual bool Remove(IntStringKey key)
         {
-            //if (key.Integer == this.nextNewIndex - 1)
-            //{
-            //    // copy of this array has to find new max int
-            //}
-
             this.EnsureWritable();
-            return this.table._del_key_or_index(ref key, this.activeEnumerators);
+            return this.table.Remove(key);
         }
 
-        public bool TryGetValue(IntStringKey key, out PhpValue value)
-        {
-            ThrowIfNotPhpArrayHelper();
-            return table.TryGetValue(key, out value);
-        }
+        public bool TryGetValue(IntStringKey key, out PhpValue value) => table.TryGetValue(key, out value);
 
-        public ICollection<IntStringKey>/*!*/ Keys
-        {
-            get { ThrowIfNotPhpArrayHelper(); return table.Keys; }
-        }
+        public ICollection<IntStringKey>/*!*/ Keys => table.Keys;
 
-        public ICollection<PhpValue>/*!*/ Values
-        {
-            get { ThrowIfNotPhpArrayHelper(); return table.Values; }
-        }
+        public ICollection<PhpValue>/*!*/ Values => table.Values;
 
         #endregion
 
@@ -691,35 +549,21 @@ namespace Pchp.Core
 
         public bool Remove(KeyValuePair<IntStringKey, PhpValue> item)
         {
-            ThrowIfNotPhpArrayHelper();
-
-            this.EnsureWritable();
-
-            return table.Remove(item);
+            if (table.TryGetValue(item.Key, out var value) && value.Equals(item.Value))
+            {
+                this.EnsureWritable();
+                table.Remove(item.Key); // PERF: double lookup!
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         #endregion
 
         #region Specific Members: Add, AddRange, Prepend, this[], Remove, RemoveLast, RemoveFirst, AddRange
-
-        /// <summary>
-        /// Simple wrapper to allow call KeyAdded without ref.
-        /// </summary>
-        private void KeyAdded(IntStringKey key)
-        {
-            KeyAdded(ref key);
-        }
-
-        protected void KeyAdded(ref IntStringKey key)
-        {
-            if (key.IsInteger)
-                KeyAdded(key.Integer);
-        }
-
-        private void KeyAdded(int key)
-        {
-            if (key >= nextNewIndex) nextNewIndex = key + 1;
-        }
 
         #region Contains
 
@@ -729,10 +573,7 @@ namespace Pchp.Core
         /// <param name="key">The key.</param>
         /// <returns>Whether an element with the <paramref name="key"/> key is in the table.</returns>
         /// <exception cref="ArgumentNullException">The <paramref name="key"/> is a <B>null</B> reference.</exception>
-        public bool ContainsKey(string key)
-        {
-            return table.ContainsKey(new IntStringKey(key));
-        }
+        public bool ContainsKey(string key) => table.ContainsKey(key);
 
         /// <summary>
         /// Determines whether an element with the specified key is in this instance.
@@ -740,10 +581,7 @@ namespace Pchp.Core
         /// <param name="key">The key.</param>
         /// <returns>Whether an element with the <paramref name="key"/> key is in the table.</returns>
         /// <exception cref="ArgumentNullException">The <paramref name="key"/> is a <B>null</B> reference.</exception>
-        public bool ContainsKey(int key)
-        {
-            return table.ContainsKey(new IntStringKey(key));
-        }
+        public bool ContainsKey(int key) => table.ContainsKey(key);
 
         #endregion
 
@@ -756,12 +594,10 @@ namespace Pchp.Core
         /// <remarks>This method is supposed to be called on newly created arrays. Several checks are not performed to enhance performance of arrays initialization.</remarks>
         protected void AddToEnd(PhpValue value)
         {
-            Debug.Assert(nextNewIndex >= 0, "This method is supposed to be called on newly created arrays which have [nextNewIndex] field initialized!");
             Debug.Assert(!this.table.IsShared, "This method is supposed to be called on newly created arrays which cannot be shared!");
             Debug.Assert(this.GetType() == typeof(PhpArray), "This method is not supposed to be called on PHpArray's inherited class!");
 
-            var key = new IntStringKey(nextNewIndex++);
-            table._add_last(ref key, value);
+            table.Add(value);
         }
 
         /// <summary>
@@ -828,10 +664,7 @@ namespace Pchp.Core
         public void Prepend(string key, PhpValue value)
         {
             this.EnsureWritable();
-
-            var iskey = new IntStringKey(key);
-            this.table._add_first(ref iskey, value);
-            KeyAdded(key);
+            this.table.AddFirst(new IntStringKey(key), value);
         }
 
         /// <summary>
@@ -843,10 +676,7 @@ namespace Pchp.Core
         public void Prepend(int key, PhpValue value)
         {
             this.EnsureWritable();
-
-            var iskey = new IntStringKey(key);
-            this.table._add_first(ref iskey, value);
-            KeyAdded(key);
+            this.table.AddFirst(new IntStringKey(key), value);
         }
 
         /// <summary>
@@ -858,9 +688,7 @@ namespace Pchp.Core
         public void Prepend(IntStringKey key, PhpValue value)
         {
             this.EnsureWritable();
-
-            this.table._add_first(ref key, value);
-            KeyAdded(ref key);
+            this.table.AddFirst(key, value);
         }
 
         #endregion
@@ -905,15 +733,21 @@ namespace Pchp.Core
             // array_pop
 
             this.EnsureWritable();
-            var p = table._remove_last(this.activeEnumerators);
 
-            // array_pop decreases next free index if appropriate:
-            if (p.Key.IsInteger && p.Key.Integer >= nextNewIndex - 1)
+            if (table.TryRemoveLast(out var pair))
             {
-                --nextNewIndex;
-            }
+                // array_pop decreases next free index if appropriate:
+                //if (pair.Key.IsInteger && pair.Key.Integer >= table.nNextFreeIndex)
+                {
+                    // TODO: ??? decrease the index ?
+                }
 
-            return p;
+                return pair;
+            }
+            else
+            {
+                return default;
+            }
         }
 
         /// <summary>
@@ -924,7 +758,8 @@ namespace Pchp.Core
         public KeyValuePair<IntStringKey, PhpValue> RemoveFirst()
         {
             this.EnsureWritable();
-            return table._remove_first(this.activeEnumerators);
+            table.TryRemoveFirst(out var pair);
+            return pair;
         }
 
         #endregion
@@ -939,16 +774,11 @@ namespace Pchp.Core
         /// <remarks>If the key doesn't exist in table the new entry is added.</remarks>
         public PhpValue this[string skey]
         {
-            get => table[new IntStringKey(skey)];
+            get => table[skey];
             set
             {
                 this.EnsureWritable();
-
-                var key = new IntStringKey(skey);
-                if (table._add_or_update(ref key, value))
-                {
-                    KeyAdded(skey);
-                }
+                table[skey] = value;
             }
         }
 
@@ -959,20 +789,11 @@ namespace Pchp.Core
         /// <remarks>If the key doesn't exist in table the new entry is added.</remarks>
         public PhpValue this[int ikey]
         {
-            get
-            {
-                table.TryGetValue(ikey, out var value);
-                return value;
-            }
+            get => table[ikey];
             set
             {
                 this.EnsureWritable();
-
-                var key = new IntStringKey(ikey);
-                if (table._add_or_update(ref key, value))
-                {
-                    KeyAdded(ikey);
-                }
+                table[ikey] = value;
             }
         }
 
@@ -983,30 +804,17 @@ namespace Pchp.Core
         /// <remarks>If the key doesn't exist in table the new entry is added.</remarks>
         public PhpValue this[IntStringKey key]
         {
-            get
-            {
-                return table._get(ref key);
-            }
+            get => table[key];
             set
             {
                 this.EnsureWritable();
-
-                if (table._add_or_update(ref key, value))
-                {
-                    KeyAdded(ref key);
-                }
+                table[key] = value;
             }
         }
 
-        public bool TryGetValue(string key, out PhpValue value)
-        {
-            return table.TryGetValue(new IntStringKey(key), out value);
-        }
+        public bool TryGetValue(string key, out PhpValue value) => table.TryGetValue(key, out value);
 
-        public bool TryGetValue(int key, out PhpValue value)
-        {
-            return table.TryGetValue(new IntStringKey(key), out value);
-        }
+        public bool TryGetValue(int key, out PhpValue value) => table.TryGetValue(key, out value);
 
         #endregion
 
@@ -1026,16 +834,6 @@ namespace Pchp.Core
         }
 
         /// <summary>
-		/// Replaces values in the table with their deep copies.
-		/// </summary>
-        public void InplaceDeepCopy()
-        {
-            ThrowIfNotPhpArrayHelper();
-            Debug.Assert(!this.table.IsShared);
-            this.table._deep_copy_inplace();
-        }
-
-        /// <summary>
         /// Adds items of this instance to a specified instance resetting integer keys.
         /// </summary>
         /// <param name="dst">Destination table.</param>
@@ -1048,16 +846,16 @@ namespace Pchp.Core
             if (dst == null)
                 throw new ArgumentNullException("dst");
 
-            using (var enumerator = this.GetFastEnumerator())
-                while (enumerator.MoveNext())
-                {
-                    var val = deepCopy ? enumerator.CurrentValue.DeepCopy() : enumerator.CurrentValue;
-                    var key = enumerator.CurrentKey;
-                    if (key.IsInteger)
-                        dst.Add(val);
-                    else
-                        dst.Add(key, val);
-                }
+            var enumerator = this.GetFastEnumerator();
+            while (enumerator.MoveNext())
+            {
+                var val = deepCopy ? enumerator.CurrentValue.DeepCopy() : enumerator.CurrentValue;
+                var key = enumerator.CurrentKey;
+                if (key.IsInteger)
+                    dst.Add(val);
+                else
+                    dst.Add(key, val);
+            }
         }
 
         /// <summary>
@@ -1095,10 +893,10 @@ namespace Pchp.Core
         public void Sort(IComparer<KeyValuePair<IntStringKey, PhpValue>>/*!*/ comparer)
         {
             if (comparer == null)
-                throw new ArgumentNullException("comparer");
+                throw new ArgumentNullException(nameof(comparer));
 
             this.EnsureWritable();
-            OrderedDictionary.sortops._sort(this.table, comparer);
+            table.Sort(comparer);
         }
 
         /// <summary>
@@ -1117,7 +915,8 @@ namespace Pchp.Core
         /// <paramref name="comparers"/> successively. Changes only order of entries in <paramref name="hashtables"/>.
         /// </remarks>
         /// <exception cref="ArgumentNullException"><paramref name="hashtables"/> or <paramref name="comparers"/> is a <B>null</B>reference.</exception>
-        public static void Sort(PhpHashtable[]/*!*/ hashtables,
+        public static void Sort(
+            PhpHashtable[]/*!*/ hashtables,
             IComparer<KeyValuePair<IntStringKey, PhpValue>>[]/*!*/ comparers)
         {
             #region requires (hashtables && comparer && comparers.Length==hashtables.Length)
@@ -1146,7 +945,8 @@ namespace Pchp.Core
                 hashtables[i].EnsureWritable();
             }
 
-            OrderedDictionary.sortops._multisort(count, hashtables, comparers);
+            //OrderedDictionary.sortops._multisort(count, hashtables, comparers);
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -1155,33 +955,23 @@ namespace Pchp.Core
         /// <param name="op">The operation.</param>
         /// <param name="hashtables">The <see cref="ICollection"/> of <see cref="PhpHashtable"/>s.</param>
         /// <param name="comparer">The dictionary entry comparer used to compare entries of <paramref name="hashtables"/>.</param>
-        /// <param name="result">The <see cref="IDictionary"/> where to add remaining elements.</param>
-        /// <remarks>
-        /// Entries that will remain in this instance if a difference was made are stored into 
-        /// the <paramref name="result"/> in the same order they are stored in this instance. 
-        /// </remarks>
-        /// <exception cref="ArgumentNullException"><paramref name="hashtables"/> or <paramref name="comparer"/> or <paramref name="result"/> is a <B>null</B> reference.</exception>
-        /// <exception cref="ArgumentException"><paramref name="result"/> references this instance.</exception>
-        public void SetOperation(SetOperations op, PhpHashtable[]/*!*/ hashtables,
-            IComparer<KeyValuePair<IntStringKey, PhpValue>>/*!*/ comparer, /*IDictionary<IntStringKey, object>*/PhpHashtable/*!*/ result)
+        /// <exception cref="ArgumentNullException"><paramref name="hashtables"/> or <paramref name="comparer"/> is a <B>null</B> reference.</exception>
+        public PhpArray SetOperation(SetOperations op,
+            PhpArray[]/*!*/ hashtables,
+            IComparer<KeyValuePair<IntStringKey, PhpValue>>/*!*/ comparer)
         {
-            #region Requires (hashtables && comparer && result && result!=this)
-
             if (hashtables == null)
                 throw new ArgumentNullException("hashtables");
+
             if (comparer == null)
                 throw new ArgumentNullException("comparers");
-            if (result == null)
-                throw new ArgumentNullException("result");
-            if (result == this)
-                throw new ArgumentException(/*CoreResources.GetString("argument_equals", "result", "this")*/);
 
-            #endregion
-
-            if (hashtables.Length == 0) return;
+            if (hashtables.Length == 0)
+                return (PhpArray)this;
 
             this.EnsureWritable();
-            this.table._set_operation(op, hashtables, comparer, result);
+
+            return new PhpArray(table.SetOperation(op, hashtables, comparer));
         }
 
         //private IEnumerable<OrderedHashtable<IntStringKey>.Element>/*!*/ EnumerateHeads(IEnumerable<PhpHashtable>/*!*/ hashtables)
@@ -1196,7 +986,7 @@ namespace Pchp.Core
         public void Reverse()
         {
             this.EnsureWritable();
-            this.table._reverse();
+            this.table.Reverse();
         }
 
         /// <summary>
@@ -1206,7 +996,7 @@ namespace Pchp.Core
         public void Shuffle(Random generator)
         {
             this.EnsureWritable();
-            table._shuffle_data(generator);
+            table.Shuffle(generator);
         }
 
         /// <summary>
@@ -1223,12 +1013,12 @@ namespace Pchp.Core
             if (array == null) throw new ArgumentNullException("array");
             if (array.table == this.table) return this;
 
-            using (var enumerator = array.GetFastEnumerator())
-                while (enumerator.MoveNext())
-                {
-                    if (!this.table.ContainsKey(enumerator.CurrentKey))
-                        this[enumerator.CurrentKey] = enumerator.CurrentValue;  // TODO: DeepCopy value ?
-                }
+            var enumerator = array.GetFastEnumerator();
+            while (enumerator.MoveNext())
+            {
+                if (!this.table.ContainsKey(enumerator.CurrentKey))
+                    this[enumerator.CurrentKey] = enumerator.CurrentValue;  // TODO: DeepCopy value ?
+            }
 
             return this;
         }
@@ -1243,21 +1033,7 @@ namespace Pchp.Core
         public void ReindexAll()
         {
             this.EnsureWritable();
-
-            // updates the list:
-            int i = 0;
-
-            using (var enumerator = this.table.GetFastEnumerator())
-                while (enumerator.MoveNext())
-                {
-                    enumerator.ModifyCurrentEntryKey(new IntStringKey(i++));
-                }
-
-            //
-            this.nextNewIndex = i;
-
-            //
-            this.table._rehash();
+            this.table.ReindexAll();
         }
 
         /// <summary>
@@ -1268,27 +1044,7 @@ namespace Pchp.Core
         public void ReindexIntegers(int startIndex)
         {
             this.EnsureWritable();
-
-            // updates the list:
-            int i = startIndex;
-
-            var enumerator = this.table.GetFastEnumerator();
-            while (enumerator.MoveNext())
-            {
-                if (enumerator.CurrentKey.IsInteger)
-                {
-                    enumerator.ModifyCurrentEntryKey(new IntStringKey(i++));
-                }
-            }
-
-            //
-            this.nextNewIndex = i;
-
-            //
-            if (i > startIndex)
-            {
-                this.table._rehash();
-            }
+            this.table.ReindexIntegers(startIndex);
         }
 
         /// <summary>
@@ -1313,77 +1069,76 @@ namespace Pchp.Core
         /// <exception cref="ArgumentNullException"><paramref name="replaced"/> is a <b>null</b> reference.</exception>
         public void ReindexAndReplace(int offset, int length, IEnumerable<PhpValue> replacementValues, PhpHashtable/*!*/ replaced)
         {
-            int count = this.Count;
+            //int count = this.Count;
 
-            if (offset < 0 || offset > count)
-                throw new ArgumentOutOfRangeException("first");
-            if (length < 0 || offset + length > count)
-                throw new ArgumentOutOfRangeException("length");
-            if (replaced == null)
-                throw new ArgumentNullException("replaced");
+            //if (offset < 0 || offset > count)
+            //    throw new ArgumentOutOfRangeException("first");
+            //if (length < 0 || offset + length > count)
+            //    throw new ArgumentOutOfRangeException("length");
+            //if (replaced == null)
+            //    throw new ArgumentNullException("replaced");
 
-            this.EnsureWritable();  // ensure values are deeply copied
+            //this.EnsureWritable();  // ensure values are deeply copied
 
-            int ikey = 0;
+            //int ikey = 0;
 
-            // reindexes integer keys of elements before the first replaced item:
-            int i = 0;
-            using (var enumerator = this.GetFastEnumerator())
-            {
-                // reindex first [offset] entries (whose key is integer):
-                while (i++ < offset && enumerator.MoveNext())
-                {
-                    if (enumerator.CurrentKey.IsInteger)
-                        enumerator.ModifyCurrentEntryKey(new IntStringKey(ikey++));
-                }
+            //// reindexes integer keys of elements before the first replaced item:
+            //int i = 0;
+            //var enumerator = this.GetFastEnumerator();
+            //// reindex first [offset] entries (whose key is integer):
+            //while (i++ < offset && enumerator.MoveNext())
+            //{
+            //    if (enumerator.CurrentKey.IsInteger)
+            //        enumerator.ModifyCurrentEntryKey(new IntStringKey(ikey++));
+            //}
 
-                // [enumerator] points to last reindexed entry, have to be advanced to the next
-                enumerator.MoveNext();
+            //// [enumerator] points to last reindexed entry, have to be advanced to the next
+            //enumerator.MoveNext();
 
-                // removes items with ordinal number in interval [first,last]:
-                int jkey = 0;
-                i = 0;
-                while (i++ < length/* && enumerator.MoveNext()*/)
-                {
-                    Debug.Assert(enumerator.IsValid);
+            //// removes items with ordinal number in interval [first,last]:
+            //int jkey = 0;
+            //i = 0;
+            //while (i++ < length/* && enumerator.MoveNext()*/)
+            //{
+            //    Debug.Assert(enumerator.IsValid);
 
-                    if (enumerator.CurrentKey.IsInteger)
-                    {
-                        replaced.Add(jkey++, enumerator.CurrentValue);
-                    }
-                    else
-                    {
-                        replaced.Add(enumerator.CurrentKey, enumerator.CurrentValue);
-                    }
+            //    if (enumerator.CurrentKey.IsInteger)
+            //    {
+            //        replaced.Add(jkey++, enumerator.CurrentValue);
+            //    }
+            //    else
+            //    {
+            //        replaced.Add(enumerator.CurrentKey, enumerator.CurrentValue);
+            //    }
 
-                    // remove item from the list:
-                    enumerator.DeleteCurrentEntryAndMove(this.activeEnumerators);
-                }
+            //    // remove item from the list:
+            //    enumerator.DeleteCurrentEntryAndMove();
+            //}
 
-                // adds new elements before "enumerator" element:
-                if (replacementValues != null)
-                {
-                    foreach (var value in replacementValues)
-                        enumerator.InsertBeforeCurrentEntry(new IntStringKey(ikey++), value);
-                }
+            //// adds new elements before "enumerator" element:
+            //if (replacementValues != null)
+            //{
+            //    foreach (var value in replacementValues)
+            //        enumerator.InsertBeforeCurrentEntry(new IntStringKey(ikey++), value);
+            //}
 
-                // reindexes integer keys of the rest elements:
-                if (enumerator.IsValid)
-                {
-                    do
-                    {
-                        if (enumerator.CurrentKey.IsInteger)
-                            enumerator.ModifyCurrentEntryKey(new IntStringKey(ikey++));
+            //// reindexes integer keys of the rest elements:
+            //if (enumerator.IsValid)
+            //{
+            //    do
+            //    {
+            //        if (enumerator.CurrentKey.IsInteger)
+            //            enumerator.ModifyCurrentEntryKey(new IntStringKey(ikey++));
 
-                    } while (enumerator.MoveNext());
-                }
-            }
+            //    } while (enumerator.MoveNext());
+            //}
 
-            // rehashes the table (updates bucket lists)
-            this.table._rehash();
+            //// rehashes the table (updates bucket lists)
+            //this.table._rehash();
 
-            // updates max integer value in table:
-            this.nextNewIndex = ikey;
+            //// updates max integer value in table:
+            //this.nextNewIndex = ikey;
+            throw new NotImplementedException();
         }
 
         #endregion
