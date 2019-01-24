@@ -127,14 +127,32 @@ namespace Pchp.Library.Spl
         public const long SKIP_EMPTY = 4;
         public const long READ_CSV = 8;
 
-        public SplFileObject(Context ctx, string file_name) : base(ctx, file_name)
+        protected Context _ctx;
+
+        private protected PhpStream _stream;
+
+        public SplFileObject(Context ctx, string file_name, string open_mode = "r", bool use_include_path = false, PhpResource context = null)
         {
+            __construct(ctx, file_name, open_mode, use_include_path, context);
         }
 
-        public override void __construct(Context ctx, string file_name)
+        public sealed override void __construct(Context ctx, string file_name)
         {
+            __construct(ctx, file_name);
+        }
+
+        public virtual void __construct(Context ctx, string file_name, string open_mode = "r", bool use_include_path = false, PhpResource context = null)
+        {
+            _ctx = ctx;
             base.__construct(ctx, file_name);
             _entry = new FileInfo(_fullpath);
+
+            var openFlags = use_include_path ? PhpPath.FileOpenOptions.UseIncludePath : PhpPath.FileOpenOptions.Empty;
+            _stream = (PhpStream)PhpPath.fopen(ctx, file_name, open_mode, openFlags, context);
+            if (_stream == null)
+            {
+                throw new RuntimeException(string.Format(Resources.Resources.file_cannot_open, file_name));
+            }
         }
 
         [PhpFieldsOnlyCtor]
@@ -186,22 +204,50 @@ namespace Pchp.Library.Spl
 
         #endregion
 
-        public virtual bool eof() { throw new NotImplementedException(); }
-        public virtual bool fflush() { throw new NotImplementedException(); }
-        public virtual string fgetc() { throw new NotImplementedException(); }
-        public virtual PhpArray fgetcsv(string delimiter = ",", string enclosure = "\"", string escape = "\\") { throw new NotImplementedException(); }
-        public virtual string fgets() { throw new NotImplementedException(); }
-        public virtual string fgetss(string allowable_tags = null) { throw new NotImplementedException(); }
-        public virtual bool flock(int operation, ref int wouldblock) { throw new NotImplementedException(); }
-        public virtual int fpassthru() { throw new NotImplementedException(); }
-        public virtual int fputcsv(PhpArray fields, string delimiter = ",", string enclosure = "\"", string escape = "\\") { throw new NotImplementedException(); }
-        public virtual string fread(int length) { throw new NotImplementedException(); }
-        public virtual PhpValue fscanf(string format, params PhpValue[] args) { throw new NotImplementedException(); }
-        public virtual int fseek(int offset, int whence = PhpStreams.SEEK_SET) { throw new NotImplementedException(); }
-        public virtual PhpArray fstat() { throw new NotImplementedException(); }
-        public virtual int ftell() { throw new NotImplementedException(); }
-        public virtual bool ftruncate(int size) { throw new NotImplementedException(); }
-        public virtual int fwrite(string str, int length = -1) { throw new NotImplementedException(); }
+        public virtual bool eof() => PhpPath.feof(_stream);
+
+        public virtual bool fflush() => PhpPath.fflush(_stream);
+
+        [return: CastToFalse]
+        public virtual PhpString fgetc() => PhpPath.fgetc(_ctx, _stream);
+
+        [return: CastToFalse]
+        public virtual PhpArray fgetcsv(char delimiter = ',', char enclosure = '"', char escape = '\\') => PhpPath.fgetcsv(_stream, 0, delimiter, enclosure, escape).AsArray();
+
+        [return: CastToFalse]
+        public virtual PhpString fgets() => PhpPath.fgets(_stream);
+
+        [return: CastToFalse]
+        public virtual string fgetss(string allowable_tags = null) => PhpPath.fgetss(_stream, -1, allowable_tags);
+
+        public virtual bool flock(int operation, ref int wouldblock) => PhpPath.flock(_stream, operation, ref wouldblock);
+
+        [return: CastToFalse]
+        public virtual int fpassthru() => PhpPath.fpassthru(_ctx, _stream);
+
+        public virtual int fputcsv(PhpArray fields, char delimiter = ',', char enclosure = '"') => PhpPath.fputcsv(_ctx, _stream, fields, delimiter, enclosure);
+
+        [return: CastToFalse]
+        public virtual PhpString fread(int length) => PhpPath.fread(_ctx, _stream, length);
+
+        [return: CastToFalse]
+        public virtual PhpValue fscanf(string format) => PhpPath.fscanf(_stream, format);
+
+        [return: CastToFalse]
+        public virtual PhpValue fscanf(string format, PhpAlias arg, params PhpAlias[] args) => PhpPath.fscanf(_stream, format, arg, args);
+
+        public virtual int fseek(int offset, int whence = PhpStreams.SEEK_SET) => PhpPath.fseek(_stream, offset, whence);
+
+        public virtual PhpArray fstat() => PhpPath.fstat(_stream);
+
+        [return: CastToFalse]
+        public virtual int ftell() => PhpPath.ftell(_stream);
+
+        public virtual bool ftruncate(int size) => PhpPath.ftruncate(_stream, size);
+
+        [return: CastToFalse]
+        public virtual int fwrite(PhpString data, int length = -1) => PhpPath.fwrite(_ctx, _stream, data, length);
+
         public virtual PhpArray getCsvControl() { throw new NotImplementedException(); }
         public virtual int getFlags() { throw new NotImplementedException(); }
         public virtual int getMaxLineLen() { throw new NotImplementedException(); }
