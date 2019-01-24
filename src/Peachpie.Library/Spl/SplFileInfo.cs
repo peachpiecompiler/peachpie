@@ -103,7 +103,10 @@ namespace Pchp.Library.Spl
         public virtual SplFileInfo getPathInfo(Context ctx, string class_name = null) => CreateFileInfo(ctx, class_name ?? _info_class, PhpPath.dirname(_fullpath));
         public virtual string getPathname() => _fullpath;
         public virtual long getPerms() { throw new NotImplementedException(); }
+
+        [return:CastToFalse]
         public virtual string getRealPath(Context ctx) => ResolvedInfo.FullName;
+
         public virtual long getSize() { throw new NotImplementedException(); }
         public virtual string getType() { throw new NotImplementedException(); }
         public virtual bool isDir() => ResolvedInfo.Exists && ResolvedInfo is DirectoryInfo;
@@ -256,12 +259,148 @@ namespace Pchp.Library.Spl
         public virtual void setMaxLineLen(int max_len) { throw new NotImplementedException(); }
     }
 
+    /// <summary>
+    /// The SplTempFileObject class offers an object oriented interface for a temporary file.
+    /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplTempFileObject : SplFileObject
     {
-        public SplTempFileObject(long max_memory = 2 * 1024 * 1024 /*2MB*/)
+        /// <summary>
+        /// Helper class to lazily transfer stream contents from memory to a temporary file once the memory limit is reached.
+        /// </summary>
+        private class MemoryTempFileStream : NativeStream
         {
-            throw new NotImplementedException();
+            public enum State
+            {
+                AlwaysMemory,
+                FileWhenExceeded,
+                File
+            }
+
+            private string _tmpFilePath;
+            private State _state;
+            private long _maxMemory;
+
+            public MemoryTempFileStream(Context ctx, State state, long maxMemory, string tmpFilePath) :
+                base(ctx, CreateNativeStream(state, maxMemory, tmpFilePath), null, StreamAccessOptions.Read | StreamAccessOptions.Write, string.Empty, StreamContext.Default)
+            {
+                _tmpFilePath = tmpFilePath;
+                _state = state;
+                _maxMemory = maxMemory;
+            }
+
+            private static Stream CreateNativeStream(State variant, long maxMemory, string tmpFilePath)
+            {
+                if (variant == State.AlwaysMemory)
+                {
+                    return new MemoryStream();
+                }
+                else if (variant == State.FileWhenExceeded)
+                {
+                    return new MemoryStream(new byte[maxMemory]);
+                }
+                else
+                {
+                    Debug.Assert(variant == State.File);
+                    return CreateTmpFileStream(tmpFilePath);
+                }
+            }
+
+            private static Stream CreateTmpFileStream(string tmpFilePath) => File.Open(tmpFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+
+            protected override int RawWrite(byte[] buffer, int offset, int count)
+            {
+                if (_state == State.FileWhenExceeded)
+                {
+                    // If exceeding the max memory, write all the current data to a temporary file instead
+                    if (this.stream.Position + count > _maxMemory)
+                    {
+                        var ms = (MemoryStream)this.stream;
+                        long position = ms.Position;
+
+                        this.stream = CreateTmpFileStream(_tmpFilePath);
+                        ms.Position = 0;
+                        ms.WriteTo(this.stream);
+                        this.stream.Position = position;
+
+                        _state = State.File;
+                    }
+                }
+
+                return base.RawWrite(buffer, offset, count);
+            }
+
+            protected override void FreeUnmanaged()
+            {
+                base.FreeUnmanaged();
+
+                try
+                {
+                    if (File.Exists(_tmpFilePath))
+                    {
+                        File.Delete(_tmpFilePath);
+                    }
+                }
+                catch (Exception)
+                {
+                    PhpException.Throw(PhpError.Warning, Resources.Resources.file_cannot_delete, _tmpFilePath);
+                }
+            }
         }
+
+        [PhpFieldsOnlyCtor]
+        protected SplTempFileObject()
+        {
+        }
+
+        /// <summary>
+        /// Construct a new temporary file object.
+        /// </summary>
+        /// <param name="ctx">The current runtime context.</param>
+        /// <param name="max_memory">The maximum amount of memory (in bytes, default is 2 MB) for the temporary file to use.
+        /// If the temporary file exceeds this size, it will be moved to a file in the system's temp directory.
+        /// If max_memory is negative, only memory will be used. If max_memory is zero, no memory will be used.</param>
+        public SplTempFileObject(Context ctx, long max_memory = 2 * 1024 * 1024 /*2MB*/)
+        {
+            __construct(ctx, max_memory);
+        }
+
+        public sealed override void __construct(Context ctx, string file_name, string open_mode = "r", bool use_include_path = false, PhpResource context = null)
+        {
+            __construct(ctx);
+        }
+
+        /// <summary>
+        /// Construct a new temporary file object.
+        /// </summary>
+        /// <param name="ctx">The current runtime context.</param>
+        /// <param name="max_memory">The maximum amount of memory (in bytes, default is 2 MB) for the temporary file to use.
+        /// If the temporary file exceeds this size, it will be moved to a file in the system's temp directory.
+        /// If max_memory is negative, only memory will be used. If max_memory is zero, no memory will be used.</param>
+        public virtual void __construct(Context ctx, long max_memory = 2 * 1024 * 1024 /*2MB*/)
+        {
+            _ctx = ctx;
+            _fullpath = max_memory >= 0 ? $"php://temp/maxmemory:{max_memory}" : "php://memory";
+
+            var streamState =
+                max_memory > 0 ? MemoryTempFileStream.State.FileWhenExceeded :
+                max_memory == 0 ? MemoryTempFileStream.State.File :
+                MemoryTempFileStream.State.AlwaysMemory;
+            _stream = new MemoryTempFileStream(ctx, streamState, max_memory, Path.GetTempFileName());
+            _ctx.RegisterDisposable(_stream);
+        }
+
+        public override string getExtension() => string.Empty;
+
+        public override string getFilename() => _fullpath;
+
+        public override string getPath() => string.Empty;
+
+        [return: CastToFalse]
+        public override string getRealPath(Context ctx) => null;
+
+        public override bool isDir() => false;
+
+        public override bool isFile() => false;
     }
 }

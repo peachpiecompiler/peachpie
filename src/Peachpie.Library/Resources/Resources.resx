@@ -657,4 +657,10 @@
   <data name="iterator_multiple_subiterator_null" xml:space="preserve">
     <value>Sub-Iterator is associated with NULL</value>
   </data>
+  <data name="file_cannot_open" xml:space="preserve">
+    <value>Cannot open file '{0}'</value>
+  </data>
+  <data name="file_cannot_delete" xml:space="preserve">
+    <value>Cannot delete file '{0}'</value>
+  </data>
 </root>
