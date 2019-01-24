@@ -613,9 +613,9 @@ namespace Pchp.Core
             return EnsureIntrinsicEnumerator();
         }
 
-        bool IPhpEnumerator.MovePrevious() => OrderedDictionary.FastEnumerator.MovePrevious(table, ref _intrinsicEnumerator);
+        bool IPhpEnumerator.MovePrevious() => EnsureIntrinsicEnumerator() && OrderedDictionary.FastEnumerator.MovePrevious(table, ref _intrinsicEnumerator);
 
-        bool IPhpEnumerator.AtEnd => !EnsureIntrinsicEnumerator() || new OrderedDictionary.FastEnumerator(table, _intrinsicEnumerator).AtEnd;
+        bool IPhpEnumerator.AtEnd => !EnsureIntrinsicEnumerator();
 
         PhpValue IPhpEnumerator.CurrentValue
         {
