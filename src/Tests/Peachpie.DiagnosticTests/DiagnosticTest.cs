@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 using Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis;
@@ -27,7 +28,7 @@ namespace Peachpie.DiagnosticTests
         private static readonly Regex DiagnosticAnnotationRegex = new Regex(@"/\*!([A-Z]*[0-9]*)!\*/");
         private static readonly Regex TypeAnnotationRegex = new Regex(@"/\*\|([^/]*)\|\*/");
         private static readonly Regex RoutinePropertiesRegex = new Regex(@"/\*{version:([0-9]+)}\*/");
-        
+
         /// <summary>
         /// Init test class.
         /// </summary>
@@ -48,8 +49,8 @@ namespace Peachpie.DiagnosticTests
 
             _output.WriteLine("Analysing {0} ...", path);
 
-            string code = File.ReadAllText(path);
-            var syntaxTree = PhpSyntaxTree.ParseCode(code, PhpParseOptions.Default, PhpParseOptions.Default, path);
+            var code = File.ReadAllText(path);
+            var syntaxTree = PhpSyntaxTree.ParseCode(SourceText.From(code, Encoding.UTF8), PhpParseOptions.Default, PhpParseOptions.Default, path);
             var compilation = (PhpCompilation)_emptyCompilation.AddSyntaxTrees(syntaxTree);
 
             bool isCorrect = true;
@@ -241,7 +242,7 @@ namespace Peachpie.DiagnosticTests
                 return symbolStat.TypeCtx.ToString(typeMask);
             }
             else
-	        {
+            {
                 return null;
             }
         }

@@ -196,7 +196,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 var phar = Devsense.PHP.Phar.PharFile.OpenPharFile(file.Path); // TODO: report exception
 
                 // treat the stub as a regular source code:
-                var stub = PhpSyntaxTree.ParseCode(GetPharStub(phar), parseOptions, scriptParseOptions, file.Path);
+                var stub = PhpSyntaxTree.ParseCode(SourceText.From(GetPharStub(phar), Encoding.UTF8), parseOptions, scriptParseOptions, file.Path);
 
                 // TODO: ConcurrentBuild -> Parallel
 
@@ -209,7 +209,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                     if (entry.IsCompileEntry())
                     {
-                        var tree = PhpSyntaxTree.ParseCode(entry.Code, parseOptions, scriptParseOptions, prefix + "/" + entryName);
+                        var tree = PhpSyntaxTree.ParseCode(SourceText.From(entry.Code, Encoding.UTF8), parseOptions, scriptParseOptions, prefix + "/" + entryName);
                         tree.PharStubFile = stub;
                         trees.Add(tree);
                     }
@@ -253,7 +253,7 @@ namespace Pchp.CodeAnalysis.CommandLine
 
                 if (content != null)
                 {
-                    result = PhpSyntaxTree.ParseCode(content.ToString(), parseOptions, scriptParseOptions, file.Path);
+                    result = PhpSyntaxTree.ParseCode(content, parseOptions, scriptParseOptions, file.Path);
                 }
 
                 if (result != null && result.Diagnostics.HasAnyErrors())

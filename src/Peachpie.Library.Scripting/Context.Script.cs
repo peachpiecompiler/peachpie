@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Emit;
+using Microsoft.CodeAnalysis.Text;
 using Pchp.CodeAnalysis;
 using Pchp.Core;
 
@@ -181,7 +182,8 @@ namespace Peachpie.Library.Scripting
             }
 
             // parse the source code
-            var tree = PhpSyntaxTree.ParseCode(code,
+            var tree = PhpSyntaxTree.ParseCode(
+                SourceText.From(code, Encoding.UTF8),
                 new PhpParseOptions(
                     kind: options.IsSubmission ? SourceCodeKind.Script : SourceCodeKind.Regular,
                     languageVersion: languageVersion,

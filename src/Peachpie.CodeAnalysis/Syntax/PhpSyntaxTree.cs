@@ -125,7 +125,7 @@ namespace Pchp.CodeAnalysis
         }
 
         public static PhpSyntaxTree ParseCode(
-            string content,
+            SourceText sourceText,
             PhpParseOptions parseOptions,
             PhpParseOptions scriptParseOptions,
             string fname)
@@ -138,10 +138,7 @@ namespace Pchp.CodeAnalysis
             // TODO: new parser implementation based on Roslyn
 
             // TODO: file.IsScript ? scriptParseOptions : parseOptions
-            var unit = new PhpSourceUnit(
-                fname,
-                SourceText.From(content, Encoding.UTF8),
-                encoding: Encoding.UTF8);
+            var unit = new PhpSourceUnit(fname, sourceText, encoding: Encoding.UTF8);
 
             var result = new PhpSyntaxTree(unit);
 
@@ -175,7 +172,7 @@ namespace Pchp.CodeAnalysis
             else
             {
                 // Parser leaves factory.Root to null in the case of syntax errors -> create a proxy syntax node
-                var fullSpan = new Devsense.PHP.Text.Span(0, content.Length);
+                var fullSpan = new Devsense.PHP.Text.Span(0, sourceText.Length);
                 result.Root = new GlobalCode(fullSpan, ImmutableArray<Statement>.Empty, unit);
             }
 
