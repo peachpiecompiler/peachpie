@@ -1223,6 +1223,16 @@ namespace Pchp.Core
                         result_i++;
                     }
                 }
+
+                if (op == SetOperations.Intersection) // delete remaining not matched elements
+                {
+                    while (result_i < result._dataUsed)
+                    {
+                        resultData[result_i].Value = default;
+                        result._dataDeleted++;
+                        result_i++;
+                    }
+                }
             }
 
             // trim _dataUsed:
