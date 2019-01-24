@@ -29,8 +29,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                 var srctext = srcf.SyntaxTree.GetText();
 
                 return new Cci.DebugSourceDocument(
-                    normalizedPath, Constants.CorSymLanguageTypePeachpie,
-                    srctext.GetChecksum(), Cci.DebugSourceDocument.GetAlgorithmGuid(srctext.ChecksumAlgorithm));
+                    normalizedPath,
+                    Constants.CorSymLanguageTypePeachpie,
+                    srctext.GetChecksum(),
+                    Cci.DebugSourceDocument.GetAlgorithmGuid(srctext.ChecksumAlgorithm));
             }
             else
             {
