@@ -1128,6 +1128,108 @@ namespace Pchp.Core
             }
         }
 
+        /// <summary>
+        /// Helper comparer for array of indices into array of hash tables. Used for <c>multisort</c>.
+        /// </summary>
+        sealed class MultisortComparer : IComparer<Bucket[]>
+        {
+            readonly IComparer<KeyValuePair<IntStringKey, TValue>>[]/*!*/ comparers;
+
+            public MultisortComparer(IComparer<KeyValuePair<IntStringKey, TValue>>[]/*!*/ comparers)
+            {
+                this.comparers = comparers;
+            }
+
+            public int Compare(Bucket[] x, Bucket[] y)
+            {
+                Debug.Assert(x != null && y != null);
+                Debug.Assert(x.Length == y.Length);
+
+                for (int i = 0; i < x.Length; i++)
+                {
+                    var cmp = comparers[i].Compare(x[i].AsKeyValuePair(), y[i].AsKeyValuePair());
+                    if (cmp != 0)
+                    {
+                        return cmp;
+                    }
+                }
+
+                return 0;
+            }
+        }
+
+        public static void Sort(
+            int count,
+            PhpArray[]/*!*/ hashtables,
+            IComparer<KeyValuePair<IntStringKey, TValue>>[]/*!*/ comparers)
+        {
+            Debug.Assert(hashtables != null);
+
+            // create matrix Count*N with indices to hashtables
+            var idx = new Bucket[count][]; // rows of our sort algorithm, we will be swapping entire rows
+
+            for (int i = 0; i < idx.Length; i++)
+            {
+                idx[i] = new Bucket[hashtables.Length];
+            }
+
+            for (int h = 0; h < hashtables.Length; h++)
+            {
+                var table = hashtables[h].table;
+
+                Debug.Assert(table.Count == count);
+
+                var data = table._data;
+                var ndata = table._dataUsed;
+                int n = 0;
+
+                for (int i = 0; i < ndata && n < count; i++)
+                {
+                    ref var bucket = ref data[i];
+                    if (bucket.IsDeleted == false)
+                    {
+                        idx[n++][h] = bucket;
+                    }
+                }
+            }
+
+            // sort indices
+            Array.Sort(idx, comparer: new MultisortComparer(comparers));
+
+            //
+            for (int h = 0; h < hashtables.Length; h++)
+            {
+                var table = hashtables[h].table;
+                hashtables[h].RestartIntrinsicEnumerator();
+
+                int ikey = 0;
+                for (int i = 0; i < count; i++)
+                {
+                    ref var bucket = ref idx[i][h];
+                    if (bucket.Key.IsInteger)
+                    {
+                        bucket.Key = ikey++;
+                    }
+
+                    table._data[i] = bucket;
+                }
+
+                table._dataUsed = count;
+                table._dataDeleted = 0;
+                table._nextFreeKey = ikey;
+
+                if (ikey == count)
+                {
+                    table._hash = null; // packed now for sure
+                }
+                else
+                {
+                    Debug.Assert(table._hash != null);
+                    table._rehash();
+                }
+            }
+        }
+
         public OrderedDictionary/*<TValue>*//*!*/SetOperation(SetOperations op, PhpArray/*<TValue>*/[]/*!!*/others, IComparer<KeyValuePair<IntStringKey, TValue>>/*!*/comparer)
         {
             Debug.Assert(op == SetOperations.Difference || op == SetOperations.Intersection);
@@ -1312,6 +1414,11 @@ namespace Pchp.Core
         /// <remarks>If indexing overflows a capacity of integer type it continues with <see cref="int.MinValue"/>.</remarks>
         public void ReindexIntegers(int startIndex)
         {
+            if (IsPacked)
+            {
+                return;
+            }
+
             var data = this._data;
             var key = startIndex;
 

@@ -1588,13 +1588,7 @@ namespace Pchp.Library
             arrays = new PhpArray[length];
             comparers = new IComparer<KeyValuePair<IntStringKey, PhpValue>>[length];
             MultiSortResolveArgs(ctx, first, args, arrays, comparers);
-            PhpHashtable.Sort(arrays, comparers);
-
-            for (int i = 0; i < length; i++)
-            {
-                arrays[i].ReindexIntegers(0);
-                arrays[i].RestartIntrinsicEnumerator();
-            }
+            PhpHashtable.Sort(arrays, comparers); // + reindex + restart intrinsic
 
             return true;
         }

@@ -149,20 +149,6 @@ namespace Pchp.Core
         #region PHP Enumeration
 
         /// <summary>
-        /// Throw an exception if this instance is not <see cref="PhpArray"/> or <see cref="PhpHashtable"/>.
-        /// This should avoid using features that are not available in special derived arrays yet.
-        /// </summary>
-        /// <exception cref="NotImplementedException">This instance does not support the operation yet. Method has to be marked as virtual, and functionality has to be implemented in derived type.</exception>
-        [Conditional("DEBUG")]
-        protected void ThrowIfNotPhpArrayHelper()
-        {
-            if (this.GetType() == typeof(PhpHashtable) || this.GetType() == typeof(PhpArray))
-                return;
-
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
         /// Get fast enumerator structure to be used internally.
         /// </summary>
         public OrderedDictionary.FastEnumerator GetFastEnumerator() => table.GetEnumerator();
@@ -379,7 +365,6 @@ namespace Pchp.Core
         /// <exception cref="InvalidCastException">The <paramref name="key"/> is neither <see cref="int"/> nor not null <see cref="string"/>.</exception>
         public void Add(object key, object value)
         {
-            ThrowIfNotPhpArrayHelper();
             this.Add(IntStringKey.FromObject(key), PhpValue.FromClr(value));
         }
 
@@ -841,8 +826,6 @@ namespace Pchp.Core
         /// <exception cref="ArgumentNullException"><paramref name="dst"/> is a <B>null</B> reference.</exception>
         public void AddTo(PhpHashtable/*!*/dst, bool deepCopy)
         {
-            ThrowIfNotPhpArrayHelper();
-
             if (dst == null)
                 throw new ArgumentNullException("dst");
 
@@ -916,7 +899,7 @@ namespace Pchp.Core
         /// </remarks>
         /// <exception cref="ArgumentNullException"><paramref name="hashtables"/> or <paramref name="comparers"/> is a <B>null</B>reference.</exception>
         public static void Sort(
-            PhpHashtable[]/*!*/ hashtables,
+            PhpArray[]/*!*/ hashtables,
             IComparer<KeyValuePair<IntStringKey, PhpValue>>[]/*!*/ comparers)
         {
             #region requires (hashtables && comparer && comparers.Length==hashtables.Length)
@@ -945,8 +928,7 @@ namespace Pchp.Core
                 hashtables[i].EnsureWritable();
             }
 
-            //OrderedDictionary.sortops._multisort(count, hashtables, comparers);
-            throw new NotImplementedException();
+            OrderedDictionary.Sort(count, hashtables, comparers);
         }
 
         /// <summary>
