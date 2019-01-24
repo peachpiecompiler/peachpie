@@ -92,7 +92,7 @@ namespace Pchp.Library
         /// <returns><b>False</b>, if the intrinsic enumerator is behind the last item of <paramref name="array"/>, 
         /// otherwise the value being pointed by the enumerator (beware of values which are <b>false</b>!).</returns>
         /// <remarks>The value returned is dereferenced.</remarks>
-        public static PhpValue current(IPhpEnumerable array)
+        public static PhpValue current(PhpArray array)
         {
             if (array == null)
             {
@@ -101,11 +101,7 @@ namespace Pchp.Library
                 throw new ArgumentNullException();
             }
 
-            if (array.IntrinsicEnumerator.AtEnd)
-                return PhpValue.False;
-
-            //
-            return array.IntrinsicEnumerator.CurrentValue.GetValue();
+            return array.IntrinsicEnumerator.CurrentValue.GetValue(); // NOTE: gets FALSE if at end
         }
 
         /// <summary>
@@ -119,7 +115,7 @@ namespace Pchp.Library
         /// <remarks>
         /// Alias of <see cref="current"/>. The value returned is dereferenced.
         /// </remarks>
-        public static object pos(IPhpEnumerable array) => current(array);
+        public static object pos(PhpArray array) => current(array);
 
         /// <summary>
         /// Retrieves a key being pointed by an array intrinsic enumerator.
@@ -129,7 +125,7 @@ namespace Pchp.Library
         /// <b>Null</b>, if the intrinsic enumerator is behind the last item of <paramref name="array"/>, 
         /// otherwise the key being pointed by the enumerator.
         /// </returns>
-        public static PhpValue key(IPhpEnumerable array)
+        public static PhpValue key(PhpArray array)
         {
             if (array == null)
             {
@@ -154,7 +150,7 @@ namespace Pchp.Library
         /// or <b>false</b> if the enumerator has moved behind the last item of <paramref name="array"/>.
         /// </returns>
         /// <remarks>The value returned is dereferenced.</remarks>
-        public static PhpValue next(IPhpEnumerable array)
+        public static PhpValue next(PhpArray array)
         {
             if (array == null)
             {
@@ -179,7 +175,7 @@ namespace Pchp.Library
         /// or <b>false</b> if the enumerator has moved before the first item of <paramref name="array"/>.
         /// </returns>
         /// <remarks>The value returned is dereferenced.</remarks>
-        public static PhpValue prev(IPhpEnumerable array)
+        public static PhpValue prev(PhpArray array)
         {
             if (array == null)
             {
@@ -201,7 +197,7 @@ namespace Pchp.Library
         /// <returns>The last value in the <paramref name="array"/> or <b>false</b> if <paramref name="array"/> 
         /// is empty.</returns>
         /// <remarks>The value returned is dereferenced.</remarks>
-        public static PhpValue end(IPhpEnumerable array)
+        public static PhpValue end(PhpArray array)
         {
             if (array == null)
             {
@@ -223,7 +219,7 @@ namespace Pchp.Library
         /// <returns>The first value in the <paramref name="array"/> or <b>false</b> if <paramref name="array"/> 
         /// is empty.</returns>
         /// <remarks>The value returned is dereferenced.</remarks>
-        public static PhpValue reset(IPhpEnumerable array)
+        public static PhpValue reset(PhpArray array)
         {
             if (array == null)
             {
@@ -249,7 +245,7 @@ namespace Pchp.Library
         /// </returns>
         [Obsolete]
         [return: CastToFalse]
-        public static PhpArray each(IPhpEnumerable array)
+        public static PhpArray each(PhpArray array)
         {
             if (array == null)
             {

@@ -1470,7 +1470,7 @@ namespace Pchp.Core
             /// <summary>
             /// Gets current key-value pair.
             /// </summary>
-            public KeyValuePair<IntStringKey, TValue> Current => _array._data[_i].AsKeyValuePair();
+            public KeyValuePair<IntStringKey, TValue> Current => Bucket.AsKeyValuePair();
 
             /// <summary>
             /// Gets current key.
@@ -1484,9 +1484,9 @@ namespace Pchp.Core
             /// <summary>
             /// Gets ref to current value.
             /// </summary>
-            public ref TValue CurrentValue => ref _array._data[_i].Value;
+            public ref TValue CurrentValue => ref Bucket.Value;
 
-            public PhpAlias CurrentValueAliased => CurrentValue.EnsureAlias();
+            public PhpAlias CurrentValueAliased => Bucket.Value.EnsureAlias();
 
             /// <summary>
             /// Nothing. Does not have to be called.
@@ -1499,28 +1499,12 @@ namespace Pchp.Core
             /// <summary>
             /// Move to the next item.
             /// </summary>
-            public bool MoveNext()
-            {
-                do
-                {
-                    if (++_i >= _array._dataUsed) return false;
-                } while (_array._data[_i].IsDeleted);
-
-                return true;
-            }
+            public bool MoveNext() => MoveNext(_array, ref _i);
 
             /// <summary>
             /// Tries to move to a previous item.
             /// </summary>
-            public bool MovePrevious()
-            {
-                do
-                {
-                    if (--_i < 0) { _i = _invalidIndex; return false; }
-                } while (_array._data[_i].IsDeleted);
-
-                return true;
-            }
+            public bool MovePrevious() => MovePrevious(_array, ref _i);
 
             /// <summary>
             /// Moves to the last item.
@@ -1538,6 +1522,48 @@ namespace Pchp.Core
             {
                 _i = _invalidIndex;
             }
+
+            internal static bool MoveNext(OrderedDictionary array, ref int i)
+            {
+                i++;
+                return EnsureValid(array, ref i);
+            }
+
+            internal static bool MovePrevious(OrderedDictionary array, ref int i)
+            {
+                do
+                {
+                    if (--i < 0) { i = _invalidIndex; return false; }
+                } while (array._data[i].IsDeleted);
+
+                return true;
+            }
+
+            internal static bool MoveLast(OrderedDictionary array, ref int i)
+            {
+                i = array._dataUsed;
+                return MovePrevious(array, ref i);
+            }
+
+            internal static bool EnsureValid(OrderedDictionary array, ref int i)
+            {
+                // skips deleted entries if any
+                while (i < array._dataUsed)
+                {
+                    if (array._data[i].IsDeleted)
+                    {
+                        i++;
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            ref Bucket Bucket => ref _array._data[_i];
 
             /// <summary>
             /// Gets value indicating the value is not initialized.

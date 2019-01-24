@@ -13,7 +13,7 @@ namespace Pchp.Core
     /// <summary>
     /// Implements ordered keyed array of <see cref="PhpValue"/> with PHP semantics.
     /// </summary>
-    public partial class PhpArray : PhpHashtable, IPhpConvertible, IPhpArray, IPhpComparable, IPhpEnumerable
+    public partial class PhpArray : PhpHashtable, IPhpConvertible, IPhpArray, IPhpComparable, IPhpEnumerable, IPhpEnumerator
     {
         /// <summary>
         /// Used in all PHP functions determining the type name. (<c>var_dump</c>, ...)
@@ -26,9 +26,9 @@ namespace Pchp.Core
         public const string PrintablePhpTypeName = "Array";
 
         /// <summary>
-        /// Intrinsic enumerator associated with the array. Initialized lazily.
+        /// Intrinsic enumerator associated with the array.
         /// </summary>
-        protected IPhpEnumerator _intrinsicEnumerator;
+        private int _intrinsicEnumerator;
 
         /// <summary>
         /// Empty array singleton.
@@ -309,6 +309,11 @@ namespace Pchp.Core
         /// Gets value indicating the PHP variable is empty (empty array).
         /// </summary>
         public bool IsEmpty() => Count == 0;
+
+        /// <summary>
+        /// Not used.
+        /// </summary>
+        public void Dispose() { }
 
         #endregion
 
@@ -596,26 +601,64 @@ namespace Pchp.Core
 
         #endregion
 
-        #region IPhpEnumerable Members
+        #region IPhpEnumerator (IntrinsicEnumerator)
 
-        /// <summary>
-        /// Intrinsic enumerator associated with the array. Initialized lazily when read for the first time.
-        /// The enumerator points to the first item of the array immediately after the initialization if exists,
-        /// otherwise it points to an invalid item and <see cref="IPhpEnumerator.AtEnd"/> is <B>true</B>.
-        /// </summary>
-        public IPhpEnumerator/*!*/IntrinsicEnumerator
+        private bool EnsureIntrinsicEnumerator() => OrderedDictionary.FastEnumerator.EnsureValid(table, ref _intrinsicEnumerator);
+
+        bool IPhpEnumerator.MoveLast() => OrderedDictionary.FastEnumerator.MoveLast(table, ref _intrinsicEnumerator);
+
+        bool IPhpEnumerator.MoveFirst()
+        {
+            _intrinsicEnumerator = 0;
+            return EnsureIntrinsicEnumerator();
+        }
+
+        bool IPhpEnumerator.MovePrevious() => OrderedDictionary.FastEnumerator.MovePrevious(table, ref _intrinsicEnumerator);
+
+        bool IPhpEnumerator.AtEnd => !EnsureIntrinsicEnumerator() || new OrderedDictionary.FastEnumerator(table, _intrinsicEnumerator).AtEnd;
+
+        PhpValue IPhpEnumerator.CurrentValue
         {
             get
             {
-                // initializes enumerator:
-                if (_intrinsicEnumerator == null)
-                {
-                    _intrinsicEnumerator = new OrderedDictionary.Enumerator(table);
-                    _intrinsicEnumerator.MoveNext();
-                }
-                return _intrinsicEnumerator;
+                if (EnsureIntrinsicEnumerator())
+                    return new OrderedDictionary.FastEnumerator(table, _intrinsicEnumerator).CurrentValue;
+                else
+                    return PhpValue.False;
             }
         }
+
+        PhpAlias IPhpEnumerator.CurrentValueAliased
+        {
+            get
+            {
+                if (EnsureIntrinsicEnumerator())
+                    return new OrderedDictionary.FastEnumerator(table, _intrinsicEnumerator).CurrentValueAliased;
+                else
+                    return default;
+            }
+        }
+
+        PhpValue IPhpEnumerator.CurrentKey => EnsureIntrinsicEnumerator() ? new OrderedDictionary.FastEnumerator(table, _intrinsicEnumerator).CurrentKey : default;
+
+        void IEnumerator.Reset() => ((IPhpEnumerator)this).MoveFirst();
+
+        bool IEnumerator.MoveNext() => OrderedDictionary.FastEnumerator.MoveNext(table, ref _intrinsicEnumerator);
+
+        object IEnumerator.Current => ((IPhpEnumerator)this).CurrentValue.ToClr();
+
+        KeyValuePair<PhpValue, PhpValue> IEnumerator<KeyValuePair<PhpValue, PhpValue>>.Current => throw new NotImplementedException();
+
+        #endregion
+
+        #region IPhpEnumerable Members
+
+        /// <summary>
+        /// Intrinsic enumerator associated with the array.
+        /// The enumerator points to the first item of the array immediately after the initialization if exists,
+        /// otherwise it points to an invalid item and <see cref="IPhpEnumerator.AtEnd"/> is <B>true</B>.
+        /// </summary>
+        public IPhpEnumerator/*!*/IntrinsicEnumerator => this;
 
         /// <summary>
         /// Restarts intrinsic enumerator - moves it to the first item.
@@ -623,10 +666,7 @@ namespace Pchp.Core
         /// <remarks>
         /// If the intrinsic enumerator has never been used on this instance nothing happens.
         /// </remarks>
-        public void RestartIntrinsicEnumerator()
-        {
-            _intrinsicEnumerator?.MoveFirst();
-        }
+        public void RestartIntrinsicEnumerator() => ((IEnumerator)this).Reset();
 
         /// <summary>
         /// Creates an enumerator used in foreach statement.
