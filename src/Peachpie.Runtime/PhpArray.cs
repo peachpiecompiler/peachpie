@@ -645,15 +645,13 @@ namespace Pchp.Core
                 EnsureWritable();
 
                 // when enumerating aliases, changes are reflected to the enumerator;
-                //return new OrderedDictionary.Enumerator(this);
+                return new OrderedDictionary.Enumerator(table);
             }
             else
             {
                 // when enumerating values, any upcoming changes to the array do not take effect to the enumerator
-                //return new OrderedDictionary.ReadonlyEnumerator(this);
+                return new OrderedDictionary.ReadonlyEnumerator(table);
             }
-
-            return new OrderedDictionary.Enumerator(table);
         }
 
         /// <summary>

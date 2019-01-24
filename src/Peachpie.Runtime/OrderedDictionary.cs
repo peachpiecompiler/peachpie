@@ -276,6 +276,11 @@ namespace Pchp.Core
             return this;
         }
 
+        private void _decRef()
+        {
+            Interlocked.Decrement(ref _refs);
+        }
+
         /// <summary>
         /// Releases one <see cref="_refs"/> and creates new deeply copied instance of <see cref="OrderedDictionary"/>.
         /// </summary>
@@ -284,7 +289,7 @@ namespace Pchp.Core
             var clone = new OrderedDictionary(this);
             clone._inplace_clone(this);
 
-            Interlocked.Decrement(ref _refs);
+            _decRef();
 
             Debug.Assert(_refs >= 0);
 
@@ -563,13 +568,13 @@ namespace Pchp.Core
         {
             int index;
 
-            if (this._hash == null)
+            if (IsPacked)
             {
                 // packed array
 
                 index = key.Integer;
 
-                if (index < 0 || index >= this._dataUsed || key.IsString)
+                if (index < 0 || index >= _dataUsed || key.IsString)
                 {
                     index = _invalidIndex;
                 }
@@ -582,11 +587,11 @@ namespace Pchp.Core
             {
                 // indexed array
 
-                index = this._hash[_index(key)];
+                index = _hash[_index(key)];
 
                 while (index >= 0)
                 {
-                    ref var bucket = ref this._data[index];
+                    ref var bucket = ref _data[index];
                     if (key.Equals(ref bucket.Key))
                     {
                         break;
@@ -601,6 +606,12 @@ namespace Pchp.Core
             return index;
         }
 
+        /// <summary>
+        /// Tries to get value at specified key.
+        /// </summary>
+        /// <param name="key">Key to lookup.</param>
+        /// <param name="value">If key is in the collection, gets the associated value. Otherwise gets <c>default</c>.</param>
+        /// <returns>True if the item was found in the collection.</returns>
         public bool TryGetValue(IntStringKey key, out TValue value)
         {
             var i = FindIndex(key);
@@ -611,11 +622,16 @@ namespace Pchp.Core
             }
             else
             {
-                value = default;
+                value = default; // we might return TValue.Null as well but then we cannot check it for value.IsDefault
                 return false;
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
         public TValue GetValueOrNull(IntStringKey key)
         {
             var i = FindIndex(key);
@@ -1308,9 +1324,11 @@ namespace Pchp.Core
         /// <summary>
         /// Enumerator object.
         /// </summary>
-        internal sealed class Enumerator : IEnumerator<KeyValuePair<IntStringKey, TValue>>, IEnumerator<TValue>, IEnumerator<IntStringKey>, IPhpEnumerator
+        internal class Enumerator : IEnumerator<KeyValuePair<IntStringKey, TValue>>, IEnumerator<TValue>, IEnumerator<IntStringKey>, IPhpEnumerator
         {
             FastEnumerator/*!*/_enumerator;
+
+            internal OrderedDictionary UnderlayingArray => _enumerator.UnderlayingArray;
 
             public Enumerator(OrderedDictionary/*<TValue>*/ array)
             {
@@ -1321,7 +1339,10 @@ namespace Pchp.Core
 
             public bool AtEnd => _enumerator.AtEnd;
 
-            public TValue CurrentValue => _enumerator.CurrentValue;
+            /// <summary>
+            /// Current dereferenced value.
+            /// </summary>
+            public virtual TValue CurrentValue => _enumerator.CurrentValue.GetValue();
 
             public PhpAlias CurrentValueAliased => _enumerator.CurrentValueAliased;
 
@@ -1335,7 +1356,7 @@ namespace Pchp.Core
 
             KeyValuePair<TValue, TValue> IEnumerator<KeyValuePair<TValue, TValue>>.Current => new KeyValuePair<TValue, TValue>(CurrentKey, CurrentValue);
 
-            public void Dispose()
+            public virtual void Dispose()
             {
                 _enumerator = default;
             }
@@ -1353,6 +1374,27 @@ namespace Pchp.Core
             public bool MovePrevious() => _enumerator.MovePrevious();
 
             public void Reset() => _enumerator.Reset();
+        }
+
+        /// <summary>
+        /// Performs enumeration on the current state of the array.
+        /// Array can be changed during the enumeration with no effect to this enumerator.
+        /// </summary>
+        internal sealed class ReadonlyEnumerator : Enumerator
+        {
+            public ReadonlyEnumerator(OrderedDictionary/*!*/array)
+                : base(array.AddRef()) // enumerates over readonly copy of given array
+            {
+
+            }
+
+            public override TValue CurrentValue => base.CurrentValue.DeepCopy();
+
+            public override void Dispose()
+            {
+                UnderlayingArray._decRef();
+                base.Dispose();
+            }
         }
 
         /// <summary>
@@ -1401,6 +1443,8 @@ namespace Pchp.Core
         {
             readonly OrderedDictionary/*<TValue>*/ _array;
             int _i;
+
+            internal OrderedDictionary UnderlayingArray => _array;
 
             public FastEnumerator(OrderedDictionary/*<TValue>*/ array)
                 : this(array, _invalidIndex)
