@@ -152,7 +152,7 @@ namespace Pchp.Core
     public sealed class OrderedDictionary/*<TValue>*/ : IEnumerable<KeyValuePair<IntStringKey, TValue>>, IEnumerable<TValue>
     {
         [DebuggerDisplay("{DebugDisplay,nq}")]
-        struct Bucket
+        internal struct Bucket
         {
             string DebugDisplay => IsDeleted ? "undefined" : $"[{Key}] = {Value}";
 
@@ -345,9 +345,10 @@ namespace Pchp.Core
             _nextFreeKey = 0;
         }
 
-        private void _resize()
+        private void _resize(uint size)
         {
-            var size = checked(_size * 2);
+            Debug.Assert(size > _size);
+            Debug.Assert(_isPowerOfTwo(size));
 
             //Array.Resize(ref this.arData, (int)size); // slower
 
@@ -363,6 +364,8 @@ namespace Pchp.Core
                 _createhash();
             }
         }
+
+        private void _resize() => _resize(checked(_size * 2));
 
         private void _rehash()
         {
@@ -1269,7 +1272,7 @@ namespace Pchp.Core
 
         #endregion
 
-        #region ReindexAll
+        #region ReindexAll, ReindexAndReplace
 
         /// <summary>
         /// Sets all keys to increasing integers according to their respective order in the list.
@@ -1327,6 +1330,120 @@ namespace Pchp.Core
                 this._nextFreeKey = key;
                 this._rehash();
             }
+        }
+
+        /// <summary>
+        /// Replaces a part of the hashtable with specified item(s) and reindexes all integer keys in result.
+        /// </summary>
+        /// <param name="offset">
+        /// The ordinary number of the first item to be replaced. 
+        /// <paramref name="offset"/> should be at least zero and at most equal as the number of items in the array.
+        /// </param>
+        /// <param name="length">
+        /// The number of items to be replaced. Should be at least zero and at most equal 
+        /// to the number of items in the array.
+        /// </param>
+        /// <param name="replacementValues">
+        /// The enumerable collection of values by which items in the range specified by
+        /// <paramref name="offset"/> and <paramref name="length"/> is replaced.
+        /// </param>
+        /// <exception cref="ArgumentOutOfRangeException"><pararef name="offset"/> or <paramref name="length"/> has invalid value.</exception>
+        public OrderedDictionary ReindexAndReplace(int offset, int length, ICollection<TValue> replacementValues)
+        {
+            int count = this.Count;
+
+            if (offset < 0 || offset > count)
+                throw new ArgumentOutOfRangeException("first");
+            if (length < 0 || offset + length > count)
+                throw new ArgumentOutOfRangeException("length");
+
+            var replaced = new OrderedDictionary((uint)length);
+
+            var newcapacity = (uint)(_dataUsed + (replacementValues != null ? replacementValues.Count : 0) - length);
+            var newself = new OrderedDictionary(newcapacity);
+
+            int ikey = 0; // next integer key
+            int n = 0;
+
+            var enumerator = GetEnumerator();
+
+            // reindex [0..offset)
+            while (n < offset && enumerator.MoveNext())
+            {
+                ref var bucket = ref enumerator.Bucket;
+
+                // reindexes integer keys of elements before the first replaced item:
+                if (bucket.Key.IsInteger)
+                {
+                    bucket.Key = ikey++;
+                }
+
+                newself._data[n++] = bucket;
+            }
+
+            // remove [offset..offset+length)
+
+            int removed = 0;
+            int rkey = 0;
+            while (removed++ < length && enumerator.MoveNext())
+            {
+                ref var bucket = ref enumerator.Bucket;
+                if (bucket.Key.IsInteger)
+                {
+                    replaced.Add_NoCheck(rkey++, bucket.Value);
+                }
+                else
+                {
+                    replaced.Add_NoCheck(bucket.Key, bucket.Value);
+                }
+            }
+
+            replaced._nextFreeKey = rkey;
+
+            // adds new elements at newtarget:
+            if (replacementValues != null && replacementValues.Count != 0)
+            {
+                foreach (var value in replacementValues)
+                {
+                    newself._data[n++] = new Bucket { Key = ikey++, Value = value.DeepCopy(), Next = _invalidIndex, };
+                }
+            }
+
+            // reindex [offset+length..)
+            while (enumerator.MoveNext())
+            {
+                ref var bucket = ref enumerator.Bucket;
+
+                // reindexes integer keys of elements before the first replaced item:
+                if (bucket.Key.IsInteger)
+                {
+                    bucket.Key = ikey++;
+                }
+
+                newself._data[n++] = bucket;
+            }
+
+            //
+
+            newself._nextFreeKey = ikey;
+            newself._dataUsed = n;
+            newself._dataDeleted = 0;
+            newself._createhash();
+            newself._debug_check();
+
+            _size = newself._size;
+            _mask = newself._mask;
+            _data = newself._data;
+            _hash = newself._hash;
+            _dataUsed = newself._dataUsed;
+            _dataDeleted = newself._dataDeleted; // 0
+            _nextFreeKey = newself._nextFreeKey; // ikey
+
+            _debug_check();
+
+            //
+
+            return replaced;
         }
 
         #endregion
@@ -1570,7 +1687,7 @@ namespace Pchp.Core
                 return false;
             }
 
-            ref Bucket Bucket => ref _array._data[_i];
+            internal ref Bucket Bucket => ref _array._data[_i];
 
             #endregion
 

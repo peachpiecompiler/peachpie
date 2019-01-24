@@ -1062,83 +1062,11 @@ namespace Pchp.Core
         /// The enumerable collection of values by which items in the range specified by
         /// <paramref name="offset"/> and <paramref name="length"/> is replaced.
         /// </param>
-        /// <param name="replaced">
-        /// The hashtable where removed values will be placed. Keys are successive integers starting from zero.
-        /// </param>
         /// <exception cref="ArgumentOutOfRangeException"><pararef name="offset"/> or <paramref name="length"/> has invalid value.</exception>
-        /// <exception cref="ArgumentNullException"><paramref name="replaced"/> is a <b>null</b> reference.</exception>
-        public void ReindexAndReplace(int offset, int length, IEnumerable<PhpValue> replacementValues, PhpHashtable/*!*/ replaced)
+        public OrderedDictionary ReindexAndReplace(int offset, int length, ICollection<PhpValue> replacementValues)
         {
-            //int count = this.Count;
-
-            //if (offset < 0 || offset > count)
-            //    throw new ArgumentOutOfRangeException("first");
-            //if (length < 0 || offset + length > count)
-            //    throw new ArgumentOutOfRangeException("length");
-            //if (replaced == null)
-            //    throw new ArgumentNullException("replaced");
-
-            //this.EnsureWritable();  // ensure values are deeply copied
-
-            //int ikey = 0;
-
-            //// reindexes integer keys of elements before the first replaced item:
-            //int i = 0;
-            //var enumerator = this.GetFastEnumerator();
-            //// reindex first [offset] entries (whose key is integer):
-            //while (i++ < offset && enumerator.MoveNext())
-            //{
-            //    if (enumerator.CurrentKey.IsInteger)
-            //        enumerator.ModifyCurrentEntryKey(new IntStringKey(ikey++));
-            //}
-
-            //// [enumerator] points to last reindexed entry, have to be advanced to the next
-            //enumerator.MoveNext();
-
-            //// removes items with ordinal number in interval [first,last]:
-            //int jkey = 0;
-            //i = 0;
-            //while (i++ < length/* && enumerator.MoveNext()*/)
-            //{
-            //    Debug.Assert(enumerator.IsValid);
-
-            //    if (enumerator.CurrentKey.IsInteger)
-            //    {
-            //        replaced.Add(jkey++, enumerator.CurrentValue);
-            //    }
-            //    else
-            //    {
-            //        replaced.Add(enumerator.CurrentKey, enumerator.CurrentValue);
-            //    }
-
-            //    // remove item from the list:
-            //    enumerator.DeleteCurrentEntryAndMove();
-            //}
-
-            //// adds new elements before "enumerator" element:
-            //if (replacementValues != null)
-            //{
-            //    foreach (var value in replacementValues)
-            //        enumerator.InsertBeforeCurrentEntry(new IntStringKey(ikey++), value);
-            //}
-
-            //// reindexes integer keys of the rest elements:
-            //if (enumerator.IsValid)
-            //{
-            //    do
-            //    {
-            //        if (enumerator.CurrentKey.IsInteger)
-            //            enumerator.ModifyCurrentEntryKey(new IntStringKey(ikey++));
-
-            //    } while (enumerator.MoveNext());
-            //}
-
-            //// rehashes the table (updates bucket lists)
-            //this.table._rehash();
-
-            //// updates max integer value in table:
-            //this.nextNewIndex = ikey;
-            throw new NotImplementedException();
+            EnsureWritable();
+            return table.ReindexAndReplace(offset, length, replacementValues);
         }
 
         #endregion

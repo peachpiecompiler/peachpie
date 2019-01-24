@@ -505,36 +505,34 @@ namespace Pchp.Library
             // converts offset and length to interval [first,last]:
             PhpMath.AbsolutizeRange(ref offset, ref length, count);
 
-            PhpArray result = new PhpArray(length);
+            OrderedDictionary result;
             PhpArray arrtmp;
 
             if (Operators.IsEmpty(replacement)) // => not set or empty()
             {
                 // replacement is null or empty:
 
-                array.ReindexAndReplace(offset, length, null, result);
+                result = array.ReindexAndReplace(offset, length, null);
             }
             else if ((arrtmp = replacement.AsArray()) != null)
             {
                 // replacement is an array:
 
                 // provides deep copies:
-                IEnumerable<PhpValue> e = arrtmp.Values;
-
-                e = e.Select(Operators.DeepCopy);
+                ICollection<PhpValue> e = arrtmp.Values;
 
                 // does replacement:
-                array.ReindexAndReplace(offset, length, e, result);
+                result = array.ReindexAndReplace(offset, length, e);
             }
             else
             {
                 // replacement is another type //
 
                 // does replacement:
-                array.ReindexAndReplace(offset, length, new[] { replacement.DeepCopy() }, result);
+                result = array.ReindexAndReplace(offset, length, new[] { replacement });
             }
 
-            return result;
+            return new PhpArray(result);
         }
 
         #endregion
