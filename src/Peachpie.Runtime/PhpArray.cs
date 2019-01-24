@@ -645,7 +645,7 @@ namespace Pchp.Core
 
         void IEnumerator.Reset() => ((IPhpEnumerator)this).MoveFirst();
 
-        bool IEnumerator.MoveNext() => OrderedDictionary.FastEnumerator.MoveNext(table, ref _intrinsicEnumerator);
+        bool IEnumerator.MoveNext() => EnsureIntrinsicEnumerator() && OrderedDictionary.FastEnumerator.MoveNext(table, ref _intrinsicEnumerator);
 
         object IEnumerator.Current => ((IPhpEnumerator)this).CurrentValue.ToClr();
 
