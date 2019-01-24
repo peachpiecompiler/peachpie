@@ -134,11 +134,8 @@ namespace Pchp.Library
                 throw new ArgumentNullException();
             }
 
-            if (array.IntrinsicEnumerator.AtEnd)
-                return PhpValue.Null;
-
-            // note, key can't be of type PhpReference, hence no dereferencing follows:
-            return array.IntrinsicEnumerator.CurrentKey.GetValue();
+            // note, key can't be of type PhpAlias, hence no dereferencing follows:
+            return array.IntrinsicEnumerator.CurrentKey; // NOTE: gets NULL if not valid
         }
 
         /// <summary>
@@ -160,10 +157,9 @@ namespace Pchp.Library
             }
 
             // moves to the next item and returns false if there is no such item:
-            if (!array.IntrinsicEnumerator.MoveNext()) return PhpValue.False;
-
-            //
-            return array.IntrinsicEnumerator.CurrentValue.GetValue();
+            return array.IntrinsicEnumerator.MoveNext()
+                ? array.IntrinsicEnumerator.CurrentValue.GetValue()
+                : PhpValue.False;
         }
 
         /// <summary>

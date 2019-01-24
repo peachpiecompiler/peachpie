@@ -639,7 +639,9 @@ namespace Pchp.Core
             }
         }
 
-        PhpValue IPhpEnumerator.CurrentKey => EnsureIntrinsicEnumerator() ? new OrderedDictionary.FastEnumerator(table, _intrinsicEnumerator).CurrentKey : default;
+        PhpValue IPhpEnumerator.CurrentKey => EnsureIntrinsicEnumerator()
+            ? (PhpValue)new OrderedDictionary.FastEnumerator(table, _intrinsicEnumerator).CurrentKey
+            : PhpValue.Null;
 
         void IEnumerator.Reset() => ((IPhpEnumerator)this).MoveFirst();
 
@@ -647,7 +649,18 @@ namespace Pchp.Core
 
         object IEnumerator.Current => ((IPhpEnumerator)this).CurrentValue.ToClr();
 
-        KeyValuePair<PhpValue, PhpValue> IEnumerator<KeyValuePair<PhpValue, PhpValue>>.Current => throw new NotImplementedException();
+        KeyValuePair<PhpValue, PhpValue> IEnumerator<KeyValuePair<PhpValue, PhpValue>>.Current
+        {
+            get
+            {
+                if (EnsureIntrinsicEnumerator())
+                {
+                    var pair = new OrderedDictionary.FastEnumerator(table, _intrinsicEnumerator).Current;
+                    return new KeyValuePair<PhpValue, PhpValue>(pair.Key, pair.Value);
+                }
+                return default;
+            }
+        }
 
         #endregion
 

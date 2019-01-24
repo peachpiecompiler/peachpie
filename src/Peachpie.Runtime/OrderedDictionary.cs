@@ -1463,7 +1463,9 @@ namespace Pchp.Core
 
             public FastEnumerator(OrderedDictionary/*<TValue>*/ array, int i)
             {
-                _array = array ?? throw new ArgumentNullException();
+                Debug.Assert(array != null);
+
+                _array = array;
                 _i = i;
             }
 
@@ -1478,7 +1480,7 @@ namespace Pchp.Core
             public IntStringKey CurrentKey
             {
                 get => _array._data[_i].Key;
-                internal set => _array._data[_i].Key = value;
+                internal set => _array._data[_i].Key = value; // NOTE: array must be rehashed
             }
 
             /// <summary>
@@ -1487,14 +1489,6 @@ namespace Pchp.Core
             public ref TValue CurrentValue => ref Bucket.Value;
 
             public PhpAlias CurrentValueAliased => Bucket.Value.EnsureAlias();
-
-            /// <summary>
-            /// Nothing. Does not have to be called.
-            /// </summary>
-            public void Dispose()
-            {
-                // nada // _array = null
-            }
 
             /// <summary>
             /// Move to the next item.
@@ -1523,10 +1517,18 @@ namespace Pchp.Core
                 _i = _invalidIndex;
             }
 
+            #region Helpers
+
             internal static bool MoveNext(OrderedDictionary array, ref int i)
             {
-                i++;
-                return EnsureValid(array, ref i);
+                Debug.Assert(i >= -1);
+
+                do
+                {
+                    if (++i >= array._dataUsed) return false;
+                } while (array._data[i].IsDeleted);
+
+                return true;
             }
 
             internal static bool MovePrevious(OrderedDictionary array, ref int i)
@@ -1547,16 +1549,19 @@ namespace Pchp.Core
 
             internal static bool EnsureValid(OrderedDictionary array, ref int i)
             {
-                // skips deleted entries if any
-                while (i < array._dataUsed)
+                if (i >= 0)
                 {
-                    if (array._data[i].IsDeleted)
+                    // skips deleted entries if any
+                    while (i < array._dataUsed)
                     {
-                        i++;
-                    }
-                    else
-                    {
-                        return true;
+                        if (array._data[i].IsDeleted)
+                        {
+                            i++;
+                        }
+                        else
+                        {
+                            return true;
+                        }
                     }
                 }
 
@@ -1564,6 +1569,8 @@ namespace Pchp.Core
             }
 
             ref Bucket Bucket => ref _array._data[_i];
+
+            #endregion
 
             /// <summary>
             /// Gets value indicating the value is not initialized.
@@ -1583,7 +1590,7 @@ namespace Pchp.Core
             /// <summary>
             /// Deletes current entry. Does not move the internal enumerator.
             /// </summary>
-            /// <remarks>Call <see cref="MoveNext"/> or <see cref="MovePrevious"/> manually.</remarks>
+            /// <remarks>Call <see cref="MoveNext()"/> or <see cref="MovePrevious()"/> manually.</remarks>
             public void DeleteCurrent()
             {
                 if (IsValid)
