@@ -616,6 +616,20 @@ namespace Pchp.Core
             }
         }
 
+        public TValue GetValueOrNull(IntStringKey key)
+        {
+            var i = FindIndex(key);
+            if (i >= 0)
+            {
+                return _data[i].Value; // PERF: double array lookup
+            }
+            else
+            {
+                // TODO: warning
+                return TValue.Null;
+            }
+        }
+
         /// <summary>
         /// Ensures the item is present in the collection and gets a reference to it.
         /// </summary>
@@ -1234,6 +1248,13 @@ namespace Pchp.Core
         /// </summary>
         public void ReindexAll()
         {
+            if (IsPacked) // only if dictionary was not packed, otherwise it does not make sense
+            {
+                return;
+            }
+
+            Debug.Assert(_hash != null);
+
             var data = this._data;
             var key = 0;
 
@@ -1287,7 +1308,7 @@ namespace Pchp.Core
         /// <summary>
         /// Enumerator object.
         /// </summary>
-        sealed class Enumerator : IEnumerator<KeyValuePair<IntStringKey, TValue>>, IEnumerator<TValue>, IEnumerator<IntStringKey>, IPhpEnumerator
+        internal sealed class Enumerator : IEnumerator<KeyValuePair<IntStringKey, TValue>>, IEnumerator<TValue>, IEnumerator<IntStringKey>, IPhpEnumerator
         {
             FastEnumerator/*!*/_enumerator;
 
@@ -1472,7 +1493,7 @@ namespace Pchp.Core
             /// <summary>
             /// Gets value indicating the internal pointer is in bounds.
             /// </summary>
-            public bool IsValid => _i >= 0 && _i < _array._dataUsed;
+            public bool IsValid => !IsDefault && _i >= 0 && _i < _array._dataUsed;
 
             /// <summary>
             /// Gets value indicating the enumerator reached the end of array.

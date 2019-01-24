@@ -610,7 +610,7 @@ namespace Pchp.Core
                 // initializes enumerator:
                 if (_intrinsicEnumerator == null)
                 {
-                    _intrinsicEnumerator = (IPhpEnumerator)((IEnumerable)this).GetEnumerator();
+                    _intrinsicEnumerator = new OrderedDictionary.Enumerator(table);
                     _intrinsicEnumerator.MoveNext();
                 }
                 return _intrinsicEnumerator;
@@ -635,6 +635,11 @@ namespace Pchp.Core
         /// <returns>The dictionary enumerator.</returns>
         public IPhpEnumerator/*!*/GetForeachEnumerator(bool aliasedValues)
         {
+            if (Count == 0)
+            {
+                return EmptyPhpEnumerator.Instance;
+            }
+
             if (aliasedValues)
             {
                 EnsureWritable();
@@ -648,7 +653,7 @@ namespace Pchp.Core
                 //return new OrderedDictionary.ReadonlyEnumerator(this);
             }
 
-            return (IPhpEnumerator)((IEnumerable)this).GetEnumerator();
+            return new OrderedDictionary.Enumerator(table);
         }
 
         /// <summary>
@@ -664,12 +669,19 @@ namespace Pchp.Core
 
         #region IPhpArray
 
-        public PhpValue GetItemValue(IntStringKey key) => table[key];
+        public PhpValue GetItemValue(IntStringKey key) => table.GetValueOrNull(key);
 
         public PhpValue GetItemValue(PhpValue index)
-            => index.TryToIntStringKey(out IntStringKey key)
-                ? GetItemValue(key)
-                : throw new ArgumentException(nameof(index));
+        {
+            if (index.TryToIntStringKey(out var key))
+            {
+                return GetItemValue(key);
+            }
+            else
+            {
+                throw new ArgumentException(nameof(index));
+            }
+        }
 
         public void SetItemValue(IntStringKey key, PhpValue value)
         {

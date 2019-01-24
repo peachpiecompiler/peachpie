@@ -3243,7 +3243,7 @@ namespace Pchp.Library
                         else
                         {
                             args[i] = PhpValue.Null;
-                            iterators[i] = default(OrderedDictionary.FastEnumerator);   // IsDefault
+                            iterators[i] = default;   // IsDefault, !IsValid
                         }
                     }
                 }

@@ -54,7 +54,7 @@ namespace Pchp.Core.Utilities
                 return false;
             }
 
-            for (int i = 0; i < first.Length; i ++)
+            for (int i = 0; i < first.Length; i++)
             {
                 if (comparer.Equals(first[i], second[i]) == false)
                 {
@@ -218,6 +218,39 @@ namespace Pchp.Core.Utilities
         public void Dispose() { }
 
         public bool MoveNext() => false;
+
+        public void Reset() { }
+    }
+
+    /// <summary>
+    /// Helper class implementing empty <see cref="IEnumerator{T}"/>, GC friendly.
+    /// </summary>
+    /// <remarks>Usage: <code>return EmptyEnumerator{T}.Instance;</code></remarks>
+    public sealed class EmptyPhpEnumerator : IPhpEnumerator
+    {
+        public static readonly EmptyPhpEnumerator Instance = new EmptyPhpEnumerator();
+
+        public bool AtEnd => true;
+
+        public PhpValue CurrentValue => default;
+
+        public PhpAlias CurrentValueAliased => default;
+
+        public PhpValue CurrentKey => default;
+
+        public KeyValuePair<PhpValue, PhpValue> Current => default;
+
+        object IEnumerator.Current => default;
+
+        public void Dispose() { }
+
+        public bool MoveFirst() => false;
+
+        public bool MoveLast() => false;
+
+        public bool MoveNext() => false;
+
+        public bool MovePrevious() => false;
 
         public void Reset() { }
     }
