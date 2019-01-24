@@ -829,7 +829,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static string fgetss(PhpResource handle, int length, string allowableTags = null)
         {
-            if (length <= 0)
+            if (length <= 0 && length != -1)
             {
                 //PhpException.Throw(PhpError.Warning, LibResources.GetString("arg_negative", "Length"));
                 //return null;

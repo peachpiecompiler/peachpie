@@ -538,6 +538,24 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot delete file &apos;{0}&apos;.
+        /// </summary>
+        public static string file_cannot_delete {
+            get {
+                return ResourceManager.GetString("file_cannot_delete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot open file &apos;{0}&apos;.
+        /// </summary>
+        public static string file_cannot_open {
+            get {
+                return ResourceManager.GetString("file_cannot_open", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to File &apos;{0}&apos; already exists.
         /// </summary>
         public static string file_exists {

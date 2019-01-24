@@ -103,7 +103,10 @@ namespace Pchp.Library.Spl
         public virtual SplFileInfo getPathInfo(Context ctx, string class_name = null) => CreateFileInfo(ctx, class_name ?? _info_class, PhpPath.dirname(_fullpath));
         public virtual string getPathname() => _fullpath;
         public virtual long getPerms() { throw new NotImplementedException(); }
+
+        [return:CastToFalse]
         public virtual string getRealPath(Context ctx) => ResolvedInfo.FullName;
+
         public virtual long getSize() { throw new NotImplementedException(); }
         public virtual string getType() { throw new NotImplementedException(); }
         public virtual bool isDir() => ResolvedInfo.Exists && ResolvedInfo is DirectoryInfo;
@@ -127,14 +130,32 @@ namespace Pchp.Library.Spl
         public const long SKIP_EMPTY = 4;
         public const long READ_CSV = 8;
 
-        public SplFileObject(Context ctx, string file_name) : base(ctx, file_name)
+        protected Context _ctx;
+
+        private protected PhpStream _stream;
+
+        public SplFileObject(Context ctx, string file_name, string open_mode = "r", bool use_include_path = false, PhpResource context = null)
         {
+            __construct(ctx, file_name, open_mode, use_include_path, context);
         }
 
-        public override void __construct(Context ctx, string file_name)
+        public sealed override void __construct(Context ctx, string file_name)
         {
+            __construct(ctx, file_name);
+        }
+
+        public virtual void __construct(Context ctx, string file_name, string open_mode = "r", bool use_include_path = false, PhpResource context = null)
+        {
+            _ctx = ctx;
             base.__construct(ctx, file_name);
             _entry = new FileInfo(_fullpath);
+
+            var openFlags = use_include_path ? PhpPath.FileOpenOptions.UseIncludePath : PhpPath.FileOpenOptions.Empty;
+            _stream = (PhpStream)PhpPath.fopen(ctx, file_name, open_mode, openFlags, context);
+            if (_stream == null)
+            {
+                throw new RuntimeException(string.Format(Resources.Resources.file_cannot_open, file_name));
+            }
         }
 
         [PhpFieldsOnlyCtor]
@@ -186,22 +207,50 @@ namespace Pchp.Library.Spl
 
         #endregion
 
-        public virtual bool eof() { throw new NotImplementedException(); }
-        public virtual bool fflush() { throw new NotImplementedException(); }
-        public virtual string fgetc() { throw new NotImplementedException(); }
-        public virtual PhpArray fgetcsv(string delimiter = ",", string enclosure = "\"", string escape = "\\") { throw new NotImplementedException(); }
-        public virtual string fgets() { throw new NotImplementedException(); }
-        public virtual string fgetss(string allowable_tags = null) { throw new NotImplementedException(); }
-        public virtual bool flock(int operation, ref int wouldblock) { throw new NotImplementedException(); }
-        public virtual int fpassthru() { throw new NotImplementedException(); }
-        public virtual int fputcsv(PhpArray fields, string delimiter = ",", string enclosure = "\"", string escape = "\\") { throw new NotImplementedException(); }
-        public virtual string fread(int length) { throw new NotImplementedException(); }
-        public virtual PhpValue fscanf(string format, params PhpValue[] args) { throw new NotImplementedException(); }
-        public virtual int fseek(int offset, int whence = PhpStreams.SEEK_SET) { throw new NotImplementedException(); }
-        public virtual PhpArray fstat() { throw new NotImplementedException(); }
-        public virtual int ftell() { throw new NotImplementedException(); }
-        public virtual bool ftruncate(int size) { throw new NotImplementedException(); }
-        public virtual int fwrite(string str, int length = -1) { throw new NotImplementedException(); }
+        public virtual bool eof() => PhpPath.feof(_stream);
+
+        public virtual bool fflush() => PhpPath.fflush(_stream);
+
+        [return: CastToFalse]
+        public virtual PhpString fgetc() => PhpPath.fgetc(_ctx, _stream);
+
+        [return: CastToFalse]
+        public virtual PhpArray fgetcsv(char delimiter = ',', char enclosure = '"', char escape = '\\') => PhpPath.fgetcsv(_stream, 0, delimiter, enclosure, escape).AsArray();
+
+        [return: CastToFalse]
+        public virtual PhpString fgets() => PhpPath.fgets(_stream);
+
+        [return: CastToFalse]
+        public virtual string fgetss(string allowable_tags = null) => PhpPath.fgetss(_stream, -1, allowable_tags);
+
+        public virtual bool flock(int operation, ref int wouldblock) => PhpPath.flock(_stream, operation, ref wouldblock);
+
+        [return: CastToFalse]
+        public virtual int fpassthru() => PhpPath.fpassthru(_ctx, _stream);
+
+        public virtual int fputcsv(PhpArray fields, char delimiter = ',', char enclosure = '"') => PhpPath.fputcsv(_ctx, _stream, fields, delimiter, enclosure);
+
+        [return: CastToFalse]
+        public virtual PhpString fread(int length) => PhpPath.fread(_ctx, _stream, length);
+
+        [return: CastToFalse]
+        public virtual PhpValue fscanf(string format) => PhpPath.fscanf(_stream, format);
+
+        [return: CastToFalse]
+        public virtual PhpValue fscanf(string format, PhpAlias arg, params PhpAlias[] args) => PhpPath.fscanf(_stream, format, arg, args);
+
+        public virtual int fseek(int offset, int whence = PhpStreams.SEEK_SET) => PhpPath.fseek(_stream, offset, whence);
+
+        public virtual PhpArray fstat() => PhpPath.fstat(_stream);
+
+        [return: CastToFalse]
+        public virtual int ftell() => PhpPath.ftell(_stream);
+
+        public virtual bool ftruncate(int size) => PhpPath.ftruncate(_stream, size);
+
+        [return: CastToFalse]
+        public virtual int fwrite(PhpString data, int length = -1) => PhpPath.fwrite(_ctx, _stream, data, length);
+
         public virtual PhpArray getCsvControl() { throw new NotImplementedException(); }
         public virtual int getFlags() { throw new NotImplementedException(); }
         public virtual int getMaxLineLen() { throw new NotImplementedException(); }
@@ -210,12 +259,148 @@ namespace Pchp.Library.Spl
         public virtual void setMaxLineLen(int max_len) { throw new NotImplementedException(); }
     }
 
+    /// <summary>
+    /// The SplTempFileObject class offers an object oriented interface for a temporary file.
+    /// </summary>
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplTempFileObject : SplFileObject
     {
-        public SplTempFileObject(long max_memory = 2 * 1024 * 1024 /*2MB*/)
+        /// <summary>
+        /// Helper class to lazily transfer stream contents from memory to a temporary file once the memory limit is reached.
+        /// </summary>
+        private class MemoryTempFileStream : NativeStream
         {
-            throw new NotImplementedException();
+            public enum State
+            {
+                AlwaysMemory,
+                FileWhenExceeded,
+                File
+            }
+
+            private string _tmpFilePath;
+            private State _state;
+            private long _maxMemory;
+
+            public MemoryTempFileStream(Context ctx, State state, long maxMemory, string tmpFilePath) :
+                base(ctx, CreateNativeStream(state, maxMemory, tmpFilePath), null, StreamAccessOptions.Read | StreamAccessOptions.Write, string.Empty, StreamContext.Default)
+            {
+                _tmpFilePath = tmpFilePath;
+                _state = state;
+                _maxMemory = maxMemory;
+            }
+
+            private static Stream CreateNativeStream(State variant, long maxMemory, string tmpFilePath)
+            {
+                if (variant == State.AlwaysMemory)
+                {
+                    return new MemoryStream();
+                }
+                else if (variant == State.FileWhenExceeded)
+                {
+                    return new MemoryStream(new byte[maxMemory]);
+                }
+                else
+                {
+                    Debug.Assert(variant == State.File);
+                    return CreateTmpFileStream(tmpFilePath);
+                }
+            }
+
+            private static Stream CreateTmpFileStream(string tmpFilePath) => File.Open(tmpFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+
+            protected override int RawWrite(byte[] buffer, int offset, int count)
+            {
+                if (_state == State.FileWhenExceeded)
+                {
+                    // If exceeding the max memory, write all the current data to a temporary file instead
+                    if (this.stream.Position + count > _maxMemory)
+                    {
+                        var ms = (MemoryStream)this.stream;
+                        long position = ms.Position;
+
+                        this.stream = CreateTmpFileStream(_tmpFilePath);
+                        ms.Position = 0;
+                        ms.WriteTo(this.stream);
+                        this.stream.Position = position;
+
+                        _state = State.File;
+                    }
+                }
+
+                return base.RawWrite(buffer, offset, count);
+            }
+
+            protected override void FreeUnmanaged()
+            {
+                base.FreeUnmanaged();
+
+                try
+                {
+                    if (File.Exists(_tmpFilePath))
+                    {
+                        File.Delete(_tmpFilePath);
+                    }
+                }
+                catch (Exception)
+                {
+                    PhpException.Throw(PhpError.Warning, Resources.Resources.file_cannot_delete, _tmpFilePath);
+                }
+            }
         }
+
+        [PhpFieldsOnlyCtor]
+        protected SplTempFileObject()
+        {
+        }
+
+        /// <summary>
+        /// Construct a new temporary file object.
+        /// </summary>
+        /// <param name="ctx">The current runtime context.</param>
+        /// <param name="max_memory">The maximum amount of memory (in bytes, default is 2 MB) for the temporary file to use.
+        /// If the temporary file exceeds this size, it will be moved to a file in the system's temp directory.
+        /// If max_memory is negative, only memory will be used. If max_memory is zero, no memory will be used.</param>
+        public SplTempFileObject(Context ctx, long max_memory = 2 * 1024 * 1024 /*2MB*/)
+        {
+            __construct(ctx, max_memory);
+        }
+
+        public sealed override void __construct(Context ctx, string file_name, string open_mode = "r", bool use_include_path = false, PhpResource context = null)
+        {
+            __construct(ctx);
+        }
+
+        /// <summary>
+        /// Construct a new temporary file object.
+        /// </summary>
+        /// <param name="ctx">The current runtime context.</param>
+        /// <param name="max_memory">The maximum amount of memory (in bytes, default is 2 MB) for the temporary file to use.
+        /// If the temporary file exceeds this size, it will be moved to a file in the system's temp directory.
+        /// If max_memory is negative, only memory will be used. If max_memory is zero, no memory will be used.</param>
+        public virtual void __construct(Context ctx, long max_memory = 2 * 1024 * 1024 /*2MB*/)
+        {
+            _ctx = ctx;
+            _fullpath = max_memory >= 0 ? $"php://temp/maxmemory:{max_memory}" : "php://memory";
+
+            var streamState =
+                max_memory > 0 ? MemoryTempFileStream.State.FileWhenExceeded :
+                max_memory == 0 ? MemoryTempFileStream.State.File :
+                MemoryTempFileStream.State.AlwaysMemory;
+            _stream = new MemoryTempFileStream(ctx, streamState, max_memory, Path.GetTempFileName());
+            _ctx.RegisterDisposable(_stream);
+        }
+
+        public override string getExtension() => string.Empty;
+
+        public override string getFilename() => _fullpath;
+
+        public override string getPath() => string.Empty;
+
+        [return: CastToFalse]
+        public override string getRealPath(Context ctx) => null;
+
+        public override bool isDir() => false;
+
+        public override bool isFile() => false;
     }
 }
