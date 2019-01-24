@@ -453,19 +453,10 @@ namespace Pchp.Library
             var iterator = array.GetFastEnumerator();
 
             // moves iterator to the first item of the slice;
-            // starts either from beginning or from the end (which one is more efficient):
-            if (offset < array.Count - offset)
-            {
-                for (int i = -1; i < offset; i++)
-                    if (iterator.MoveNext() == false)
-                        break;
-            }
-            else
-            {
-                for (int i = array.Count; i > offset; i--)
-                    if (iterator.MovePrevious() == false)
-                        break;
-            }
+            // PERF: find offset in O(1) in arrays without holes
+            for (int i = -1; i < offset; i++)
+                if (iterator.MoveNext() == false)
+                    break;
 
             // copies the slice:
             PhpArray result = new PhpArray(ilength);
