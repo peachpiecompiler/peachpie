@@ -647,6 +647,34 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _current = WithNewOrdinal(end);
         }
 
+        private void BuildDoLoop(Expression condExpr, Statement/*!*/bodyStmt)
+        {
+            var end = NewBlock();
+
+            var body = NewBlock();
+            var cond = NewBlock();
+
+            OpenBreakScope(end, cond);
+
+            // do { ...
+            _current = WithNewOrdinal(Connect(_current, body));
+
+            // x.Body
+            OpenScope(_current);
+            VisitElement(bodyStmt);
+            CloseScope();
+
+            // } while ( COND )
+            _current = WithNewOrdinal(Connect(_current, cond));
+            _current = WithNewOrdinal(Connect(_current, body, end, condExpr, true));
+
+            //
+            CloseBreakScope();
+
+            //
+            _current = WithNewOrdinal(end);
+        }
+
         public override void VisitForStmt(ForStmt x)
         {
             BuildForLoop(x.InitExList, x.CondExList, x.ActionExList, x.Body);
@@ -914,22 +942,16 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             if (x.LoopType == WhileStmt.Type.Do)
             {
-                var end = NewBlock();
-                var body = NewBlock();
-                OpenBreakScope(end, body);
-                _current = WithOpenScope(Connect(_current, body));
-                // do {
-                VisitElement(x.Body);
-                Connect(_current, body, end, x.CondExpr);
-                // } while (x.CondExpr)
-                CloseScope();
-                CloseBreakScope();
+                Debug.Assert(x.CondExpr != null);
 
-                _current = WithNewOrdinal(end);
+                // do { BODY } while (COND)
+                BuildDoLoop(x.CondExpr, x.Body);
             }
             else if (x.LoopType == WhileStmt.Type.While)
             {
                 Debug.Assert(x.CondExpr != null);
+
+                // while (COND) { BODY }
                 BuildForLoop(null, new List<Expression>(1) { x.CondExpr }, null, x.Body);
             }
         }
