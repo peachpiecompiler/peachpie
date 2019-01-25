@@ -56,10 +56,10 @@ namespace Pchp.Core
     /// </summary>
     public interface IPhpEnumerable
     {
-        /// <summary>
-        /// Implementor's intrinsic enumerator which will be advanced during enumeration.
-        /// </summary>
-        IPhpEnumerator IntrinsicEnumerator { get; }
+        ///// <summary>
+        ///// Implementor's intrinsic enumerator which will be advanced during enumeration.
+        ///// </summary>
+        //IPhpEnumerator IntrinsicEnumerator { get; }
 
         /// <summary>
         /// Creates an enumerator used in foreach statement.

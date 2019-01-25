@@ -56,11 +56,11 @@ namespace Pchp.Library.Spl
         /// </summary>
         public virtual void addAll(SplObjectStorage storage)
         {
-            using (var e = storage.storage.GetFastEnumerator())
-                while (e.MoveNext())
-                {
-                    this.storage[e.CurrentKey] = e.CurrentValue.DeepCopy();
-                }
+            var e = storage.storage.GetFastEnumerator();
+            while (e.MoveNext())
+            {
+                this.storage[e.CurrentKey] = e.CurrentValue.DeepCopy();
+            }
         }
 
         /// <summary>
@@ -119,11 +119,11 @@ namespace Pchp.Library.Spl
         /// </summary>
         public virtual void removeAll(SplObjectStorage storage)
         {
-            using (var e = storage.storage.GetFastEnumerator())
-                while (e.MoveNext())
-                {
-                    this.storage.RemoveKey(e.CurrentKey);
-                }
+            var e = storage.storage.GetFastEnumerator();
+            while (e.MoveNext())
+            {
+                this.storage.RemoveKey(e.CurrentKey);
+            }
         }
 
         /// <summary>
@@ -131,15 +131,15 @@ namespace Pchp.Library.Spl
         /// </summary>
         public virtual void removeAllExcept(SplObjectStorage storage)
         {
-            using (var e = this.storage.GetFastEnumerator())
-                while (e.MoveNext())
+            var e = this.storage.GetFastEnumerator();
+            while (e.MoveNext())
+            {
+                if (!storage.storage.ContainsKey(e.CurrentKey))
                 {
-                    if (!storage.storage.ContainsKey(e.CurrentKey))
-                    {
-                        // NOTE: deleting element under the enumerator current entry, FastEnumerator survives
-                        this.storage.RemoveKey(e.CurrentKey);
-                    }
+                    // NOTE: deleting element under the enumerator current entry, FastEnumerator survives
+                    this.storage.RemoveKey(e.CurrentKey);
                 }
+            }
         }
 
         #region Countable
@@ -267,14 +267,14 @@ namespace Pchp.Library.Spl
             result.Append(serializer.Serialize(_ctx, storage.Count, default));
 
             // {item},{value};
-            using (var e = storage.GetFastEnumerator())
-                while (e.MoveNext())
-                {
-                    result.Append(serializer.Serialize(_ctx, e.CurrentValue.Array[Keys.Object], default));
-                    result.Append(",");
-                    result.Append(serializer.Serialize(_ctx, e.CurrentValue.Array[Keys.Info], default));
-                    result.Append(";");
-                }
+            var e = storage.GetFastEnumerator();
+            while (e.MoveNext())
+            {
+                result.Append(serializer.Serialize(_ctx, e.CurrentValue.Array[Keys.Object], default));
+                result.Append(",");
+                result.Append(serializer.Serialize(_ctx, e.CurrentValue.Array[Keys.Info], default));
+                result.Append(";");
+            }
 
             // m:{array of runtime members}
             result.Append("m:");

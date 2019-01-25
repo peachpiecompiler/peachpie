@@ -846,21 +846,21 @@ namespace Pchp.Library
             var glue_element = Streams.TextElement.FromValue(ctx, glue);    // convert it once
             var result = new PhpString.Blob();
 
-            using (var x = pieces.GetFastEnumerator())
-                while (x.MoveNext())
+            var x = pieces.GetFastEnumerator();
+            while (x.MoveNext())
+            {
+                if (not_first)
                 {
-                    if (not_first)
-                    {
-                        if (glue_element.IsText) result.Add(glue_element.GetText());
-                        else result.Add(glue_element.GetBytes());
-                    }
-                    else
-                    {
-                        not_first = true;
-                    }
-
-                    result.Add(x.CurrentValue, ctx);
+                    if (glue_element.IsText) result.Add(glue_element.GetText());
+                    else result.Add(glue_element.GetBytes());
                 }
+                else
+                {
+                    not_first = true;
+                }
+
+                result.Add(x.CurrentValue, ctx);
+            }
 
             return new PhpString(result);
         }
@@ -1339,22 +1339,21 @@ namespace Pchp.Library
             {
                 var result_array = new PhpArray(subject_array.Count);
 
-                using (var subjects = subject_array.GetFastEnumerator())
+                int i = 0;
+
+                var subjects = subject_array.GetFastEnumerator();
+                while (subjects.MoveNext())
                 {
-                    int i = 0;
-                    while (subjects.MoveNext())
-                    {
-                        var subject_string = subjects.CurrentValue.ToStringOrThrow(ctx);
+                    var subject_string = subjects.CurrentValue.ToStringOrThrow(ctx);
 
-                        if (offset_list != null) int_offset = (i < offsets.Length) ? offsets[i] : 0;
-                        if (length_list != null) int_length = (i < lengths.Length) ? lengths[i] : subject_string.Length;
-                        if (replacement_list != null) str_replacement = (i < replacements.Length) ? replacements[i] : string.Empty;
+                    if (offset_list != null) int_offset = (i < offsets.Length) ? offsets[i] : 0;
+                    if (length_list != null) int_length = (i < lengths.Length) ? lengths[i] : subject_string.Length;
+                    if (replacement_list != null) str_replacement = (i < replacements.Length) ? replacements[i] : string.Empty;
 
-                        result_array.SetItemValue(subjects.CurrentKey, (PhpValue)SubstringReplace(subject_string, str_replacement, int_offset, int_length));
+                    result_array.SetItemValue(subjects.CurrentKey, (PhpValue)SubstringReplace(subject_string, str_replacement, int_offset, int_length));
 
-                        //
-                        i++;
-                    }
+                    //
+                    i++;
                 }
 
                 return (PhpValue)result_array;
@@ -1472,7 +1471,7 @@ namespace Pchp.Library
                 if (replaceArr != null)
                 {
                     // array -> array
-                    var replaceEnum = replaceArr.GetFastEnumerator().WithStop();
+                    var replaceEnum = replaceArr.GetFastEnumerator();
                     while (searchEnum.MoveNext())
                     {
                         var searchStr = searchEnum.CurrentValue.ToStringOrThrow(ctx);
@@ -3713,7 +3712,7 @@ namespace Pchp.Library
             {
                 char c = format[i];
 
-            Lambda:
+                Lambda:
                 switch (state)
                 {
                     case 0: // the initial state
@@ -5046,7 +5045,7 @@ namespace Pchp.Library
         /// </summary>
         public static PhpValue str_word_count(string str, WordCountResult format = WordCountResult.WordCount, string addWordChars = null)
         {
-            PhpArray words = (format != WordCountResult.WordCount) ? new PhpArray() : null;
+            var words = (format != WordCountResult.WordCount) ? new PhpArray() : null;
 
             int count = CountWords(str, format, addWordChars, words);
 
@@ -5054,7 +5053,9 @@ namespace Pchp.Library
                 return PhpValue.False;
 
             if (format == WordCountResult.WordCount)
+            {
                 return PhpValue.Create(count);
+            }
             else
             {
                 if (words != null)
@@ -5069,7 +5070,7 @@ namespace Pchp.Library
             return char.IsLetter(c) || map != null && map.Contains(c);
         }
 
-        internal static int CountWords(string str, WordCountResult format, string addWordChars, IDictionary words)
+        internal static int CountWords(string str, WordCountResult format, string addWordChars, PhpArray words)
         {
             if (str == null)
                 return 0;

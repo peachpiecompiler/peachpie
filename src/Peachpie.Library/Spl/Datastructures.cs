@@ -115,30 +115,29 @@ namespace Pchp.Library.Spl
 
             var result = new SplFixedArray(array.Count);
 
-            using (var enumerator = array.GetFastEnumerator())
+            var enumerator = array.GetFastEnumerator();
+
+            if (save_indexes)
             {
-                if (save_indexes)
+                while (enumerator.MoveNext())
                 {
-                    while (enumerator.MoveNext())
+                    var key = enumerator.CurrentKey;
+                    if (key.IsString) throw new ArgumentException();
+
+                    if (key.Integer >= result.SizeInternal())
                     {
-                        var key = enumerator.CurrentKey;
-                        if (key.IsString) throw new ArgumentException();
-
-                        if (key.Integer >= result.SizeInternal())
-                        {
-                            result.ReallocArray(key.Integer);
-                        }
-
-                        result._array[key.Integer] = enumerator.CurrentValue.DeepCopy();
+                        result.ReallocArray(key.Integer);
                     }
+
+                    result._array[key.Integer] = enumerator.CurrentValue.DeepCopy();
                 }
-                else
+            }
+            else
+            {
+                int i = 0;
+                while (enumerator.MoveNext())
                 {
-                    int i = 0;
-                    while (enumerator.MoveNext())
-                    {
-                        result._array[i++] = enumerator.CurrentValue.DeepCopy();
-                    }
+                    result._array[i++] = enumerator.CurrentValue.DeepCopy();
                 }
             }
 

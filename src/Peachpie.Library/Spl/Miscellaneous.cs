@@ -251,13 +251,13 @@ namespace Pchp.Library.Spl
 
         #region IPhpEnumerable
 
-        IPhpEnumerator IPhpEnumerable.IntrinsicEnumerator
-        {
-            get
-            {
-                throw new NotImplementedException();
-            }
-        }
+        //IPhpEnumerator IPhpEnumerable.IntrinsicEnumerator
+        //{
+        //    get
+        //    {
+        //        throw new NotImplementedException();
+        //    }
+        //}
 
         IPhpEnumerator IPhpEnumerable.GetForeachEnumerator(bool aliasedValues, RuntimeTypeHandle caller)
         {

@@ -740,94 +740,94 @@ namespace Pchp.Library
             //
             //
             int extracted_count = 0;
-            using (var enumerator = vars.GetFastEnumerator())
-                while (enumerator.MoveNext())
+            var enumerator = vars.GetFastEnumerator();
+            while (enumerator.MoveNext())
+            {
+                var name = enumerator.CurrentKey.ToString();
+                if (string.IsNullOrEmpty(name) && type != ExtractType.PrefixInvalid)
                 {
-                    var name = enumerator.CurrentKey.ToString();
-                    if (string.IsNullOrEmpty(name) && type != ExtractType.PrefixInvalid)
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-                    switch (type)
-                    {
-                        case ExtractType.Overwrite:
+                switch (type)
+                {
+                    case ExtractType.Overwrite:
 
-                            // anything is overwritten:
+                        // anything is overwritten:
 
-                            break;
+                        break;
 
-                        case ExtractType.Skip:
+                    case ExtractType.Skip:
 
-                            // skips existing name:
-                            if (locals.ContainsKey(name)) continue;
+                        // skips existing name:
+                        if (locals.ContainsKey(name)) continue;
 
-                            break;
+                        break;
 
-                        case ExtractType.IfExists:
+                    case ExtractType.IfExists:
 
-                            // skips nonexistent name:
-                            if (!locals.ContainsKey(name)) continue;
+                        // skips nonexistent name:
+                        if (!locals.ContainsKey(name)) continue;
 
-                            break;
+                        break;
 
-                        case ExtractType.PrefixAll:
+                    case ExtractType.PrefixAll:
 
-                            // prefix anything:
+                        // prefix anything:
+                        name = string.Concat(prefix, "_", name);
+
+                        break;
+
+                    case ExtractType.PrefixInvalid:
+
+                        // prefixes invalid, others are overwritten:
+                        if (!PhpVariable.IsValidName(name))
                             name = string.Concat(prefix, "_", name);
 
-                            break;
+                        break;
 
-                        case ExtractType.PrefixInvalid:
+                    case ExtractType.PrefixSame:
 
-                            // prefixes invalid, others are overwritten:
-                            if (!PhpVariable.IsValidName(name))
-                                name = string.Concat(prefix, "_", name);
+                        // prefixes existing, others are overwritten:
+                        if (locals.ContainsKey(name))
+                            name = string.Concat(prefix, "_", name);
 
-                            break;
+                        break;
 
-                        case ExtractType.PrefixSame:
+                    case ExtractType.PrefixIfExists:
 
-                            // prefixes existing, others are overwritten:
-                            if (locals.ContainsKey(name))
-                                name = string.Concat(prefix, "_", name);
-
-                            break;
-
-                        case ExtractType.PrefixIfExists:
-
-                            // prefixes existing, others are skipped:
-                            if (locals.ContainsKey(name))
-                                name = string.Concat(prefix, "_", name);
-                            else
-                                continue;
-
-                            break;
-
-                        default:
-                            throw new ArgumentException(nameof(type));
-                            //PhpException.InvalidArgument("type", LibResources.GetString("arg_invalid_value"));
-                            //return 0;
-                    }
-
-                    // invalid names are skipped:
-                    if (PhpVariable.IsValidName(name))
-                    {
-                        // write the value to locals:
-                        if (refs)
-                        {
-                            // makes a reference and writes it back (deep copy is not necessary, "no duplicate pointers" rule preserved):
-                            locals.SetItemAlias(new IntStringKey(name), enumerator.CurrentValueAliased);
-                        }
+                        // prefixes existing, others are skipped:
+                        if (locals.ContainsKey(name))
+                            name = string.Concat(prefix, "_", name);
                         else
-                        {
-                            // deep copy the value and write into locals
-                            locals.SetItemValue(new IntStringKey(name), enumerator.CurrentValue.GetValue().DeepCopy());
-                        }
+                            continue;
 
-                        extracted_count++;
-                    }
+                        break;
+
+                    default:
+                        throw new ArgumentException(nameof(type));
+                        //PhpException.InvalidArgument("type", LibResources.GetString("arg_invalid_value"));
+                        //return 0;
                 }
+
+                // invalid names are skipped:
+                if (PhpVariable.IsValidName(name))
+                {
+                    // write the value to locals:
+                    if (refs)
+                    {
+                        // makes a reference and writes it back (deep copy is not necessary, "no duplicate pointers" rule preserved):
+                        locals.SetItemAlias(new IntStringKey(name), enumerator.CurrentValueAliased);
+                    }
+                    else
+                    {
+                        // deep copy the value and write into locals
+                        locals.SetItemValue(new IntStringKey(name), enumerator.CurrentValue.GetValue().DeepCopy());
+                    }
+
+                    extracted_count++;
+                }
+            }
 
             //
             return extracted_count;

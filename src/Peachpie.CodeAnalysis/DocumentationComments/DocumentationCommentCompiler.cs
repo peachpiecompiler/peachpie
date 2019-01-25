@@ -137,12 +137,11 @@ namespace Pchp.CodeAnalysis.DocumentationComments
             _writer.WriteLine("</param>");
         }
 
-        void WriteRoutine(SourceRoutineSymbol routine)
+        void WriteRoutine(string id, SourceRoutineSymbol routine)
         {
-            var ps = routine.Parameters;
+            _writer.WriteLine($"<member name=\"{id}\">");
 
-            //
-            _writer.WriteLine($"<member name=\"{CommentIdResolver.GetId(routine)}\">");
+            //var ps = routine.Parameters;
 
             // PHPDoc
             var phpdoc = routine.PHPDocBlock;
@@ -186,8 +185,9 @@ namespace Pchp.CodeAnalysis.DocumentationComments
             //}
 
             _writer.WriteLine("</member>");
-
         }
+
+        void WriteRoutine(SourceRoutineSymbol routine) => WriteRoutine(CommentIdResolver.GetId(routine), routine);
 
         void WriteType(SourceTypeSymbol type)
         {
@@ -198,6 +198,10 @@ namespace Pchp.CodeAnalysis.DocumentationComments
                 WriteSummary(phpdoc.Summary);
             }
             _writer.WriteLine("</member>");
+
+            //
+            // fields
+            //
 
             foreach (var field in type.GetMembers().OfType<SourceFieldSymbol>())
             {
@@ -227,6 +231,17 @@ namespace Pchp.CodeAnalysis.DocumentationComments
                         _writer.WriteLine(value);
                         _writer.WriteLine("</member>");
                     }
+                }
+            }
+
+            //
+            // .ctor
+            //
+            foreach (var ctor in type.InstanceConstructors)
+            {
+                if (ctor is SynthesizedPhpCtorSymbol synctor && synctor.PhpConstructor is SourceRoutineSymbol phpctor)
+                {
+                    WriteRoutine(CommentIdResolver.GetId(synctor), phpctor);
                 }
             }
         }
