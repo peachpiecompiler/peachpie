@@ -656,6 +656,8 @@ namespace Pchp.Core
         /// </summary>
         internal ref TValue EnsureValue(IntStringKey key)
         {
+            Debug.Assert(!IsShared);
+
             int i = FindIndex(key);
 
             if (i >= 0)
@@ -681,6 +683,8 @@ namespace Pchp.Core
         /// <param name="value">Non-aliased value to be assigned.</param>
         public void AssignValue(IntStringKey key, TValue value)
         {
+            Debug.Assert(!IsShared);
+
             var i = FindIndex(key);
             if (i < 0)
             {
@@ -698,6 +702,8 @@ namespace Pchp.Core
         /// </summary>
         private void SetValue(IntStringKey key, TValue value)
         {
+            Debug.Assert(!IsShared);
+
             var i = FindIndex(key);
             if (i < 0)
             {
@@ -743,6 +749,7 @@ namespace Pchp.Core
         private ref Bucket Add_NoCheck(IntStringKey key, TValue value)
         {
             Debug.Assert(FindIndex(key) < 0);
+            Debug.Assert(!IsShared);
 
             var i = this._dataUsed;
             if (i >= this._size)
@@ -786,6 +793,8 @@ namespace Pchp.Core
         /// <returns><c>true</c> if the item was found and removed, otherwise <c>false</c>.</returns>
         public bool Remove(IntStringKey key)
         {
+            Debug.Assert(!IsShared);
+
             //var i = FindEntry(key);
             //if (i >= 0)
             //{
@@ -867,6 +876,8 @@ namespace Pchp.Core
         /// <remarks>Used mostly by <c>array_unshift</c>.</remarks>
         public void AddFirst(IntStringKey key, TValue value)
         {
+            Debug.Assert(!IsShared);
+
             if (FindIndex(key) >= 0)
             {
                 throw new ArgumentException();
@@ -925,6 +936,8 @@ namespace Pchp.Core
         /// </summary>
         public void Clear()
         {
+            Debug.Assert(!IsShared);
+
             // just drop everything:
             _initialize(_minTableMask);
         }

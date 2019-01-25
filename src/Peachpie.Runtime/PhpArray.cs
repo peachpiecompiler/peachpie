@@ -279,7 +279,7 @@ namespace Pchp.Core
         /// <summary>
         /// Creates copy of this instance using shared underlaying hashtable.
         /// </summary>
-        public PhpArray DeepCopy() => new PhpArray(this);
+        public PhpArray DeepCopy() => new PhpArray(table.AddRef());
 
         /// <summary>
         /// Makes clone of this array with deeply copied values.
@@ -772,11 +772,23 @@ namespace Pchp.Core
 
         public void AddValue(PhpValue value) => Add(value);
 
-        public PhpAlias EnsureItemAlias(IntStringKey key) => table.EnsureValue(key).EnsureAlias();
+        public PhpAlias EnsureItemAlias(IntStringKey key)
+        {
+            this.EnsureWritable();
+            return table.EnsureValue(key).EnsureAlias();
+        }
 
-        public object EnsureItemObject(IntStringKey key) => table.EnsureValue(key).EnsureObject();
+        public object EnsureItemObject(IntStringKey key)
+        {
+            this.EnsureWritable();
+            return table.EnsureValue(key).EnsureObject();
+        }
 
-        public IPhpArray EnsureItemArray(IntStringKey key) => table.EnsureValue(key).EnsureArray();
+        public IPhpArray EnsureItemArray(IntStringKey key)
+        {
+            this.EnsureWritable();
+            return table.EnsureValue(key).EnsureArray();
+        }
 
         public void RemoveKey(IntStringKey key) => this.Remove(key);
 
