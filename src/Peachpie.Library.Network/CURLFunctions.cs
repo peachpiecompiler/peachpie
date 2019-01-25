@@ -461,22 +461,25 @@ namespace Peachpie.Library.Network
             // handle headers
             if (!ch.ProcessingHeaders.IsEmpty)
             {
+                var statusHeaders = HttpHeaders.StatusHeader(response) + HttpHeaders.HeaderSeparator; // HTTP/1.1 xxx xxx\r\n
+                Stream outputHeadersStream = null;
+
                 switch (ch.ProcessingHeaders.Method)
                 {
                     case ProcessMethodEnum.RETURN:
                     case ProcessMethodEnum.STDOUT:
-                        (returnstream ?? ctx.OutputStream).Write(response.Headers.ToByteArray());
-                        break;
+                        outputHeadersStream = (returnstream ?? ctx.OutputStream);
+                        goto default;
                     case ProcessMethodEnum.FILE:
-                        ch.ProcessingHeaders.Stream.RawStream.Write(response.Headers.ToByteArray());
-                        break;
+                        outputHeadersStream = ch.ProcessingHeaders.Stream.RawStream;
+                        goto default;
                     case ProcessMethodEnum.USER:
                         // pass headers one by one,
                         // in original implementation we should pass them as they are read from socket:
 
                         ch.ProcessingHeaders.User.Invoke(ctx, new[] {
                             PhpValue.FromClr(ch),
-                            PhpValue.Create(HttpHeaders.StatusHeader(response) + HttpHeaders.HeaderSeparator)
+                            PhpValue.Create(statusHeaders)
                         });
 
                         for (int i = 0; i < response.Headers.Count; i++)
@@ -496,7 +499,15 @@ namespace Peachpie.Library.Network
 
                         break;
                     default:
-                        Debug.Fail("Unexpected ProcessingHeaders " + ch.ProcessingHeaders.Method);
+                        if (outputHeadersStream != null)
+                        {
+                            outputHeadersStream.Write(Encoding.ASCII.GetBytes(statusHeaders));
+                            outputHeadersStream.Write(response.Headers.ToByteArray());
+                        }
+                        else
+                        {
+                            Debug.Fail("Unexpected ProcessingHeaders " + ch.ProcessingHeaders.Method);
+                        }
                         break;
                 }
             }
