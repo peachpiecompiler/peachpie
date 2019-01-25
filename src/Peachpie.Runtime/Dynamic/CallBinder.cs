@@ -226,7 +226,7 @@ namespace Pchp.Core.Dynamic
 
             // candidates:
             return bound.TargetType
-                .SelectRuntimeMethods(bound.Name)
+                .SelectRuntimeMethods(bound.Name, bound.ClassContext)
                 .SelectVisible(bound.ClassContext)
                 .Construct(bound.TypeArguments)
                 .ToArray();
@@ -321,7 +321,7 @@ namespace Pchp.Core.Dynamic
                 // candidates:
                 IEnumerable<MethodBase> candidates =
                     bound.TargetType
-                    .SelectRuntimeMethods(bound.Name)
+                    .SelectRuntimeMethods(bound.Name, bound.ClassContext)
                     .SelectVisible(bound.ClassContext);
 
                 if (bound.TargetInstance == null)

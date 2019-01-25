@@ -335,7 +335,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 var vartype = previoustype;
 
-                if (vartype.IsVoid || Routine.IsGlobalScope)
+                if (x.Variable is ThisVariableReference)
+                {
+                    // optimization; we know the exact type here or at least we know it is `Object` (instead of AnyType)
+                    // if vartype is resolved to a single instance it was probably done by some operand like 'instanceof' already and better
+
+                    if (vartype.IsSingleType == false || Routine.IsGlobalScope)
+                    {
+                        vartype = TypeCtx.GetThisTypeMask(); // : System.Object or exact type, with subclasses if applicable
+                    }
+                }
+                else if (vartype.IsVoid || Routine.IsGlobalScope)
                 {
                     // in global code or in case of undefined variable,
                     // assume the type is mixed (unspecified).
@@ -349,6 +359,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         State.SetVarInitialized(local);
                         vartype.IsRef = true;   // variable might be a reference
                     }
+                }
+                else
+                {
+                    //// if there are multiple types possible
+                    //// find the common base (this allows for better methods resolution)
+                    //if (!vartype.IsAnyType && !vartype.IsRef && vartype.IncludesSubclasses && !vartype.IsSingleType && TypeCtx.IsObject(vartype))
+                    //{
+                    //    // ...
+                    //}
                 }
 
                 if (x.Access.IsEnsure)
@@ -1111,10 +1130,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 x.ConstantValue = ConstantValueExtensions.AsOptional(false);
             }
-            else if (branch == ConditionBranch.ToTrue && x.Operand is BoundVariableRef)
+            else if (x.Operand is BoundVariableRef vref && vref.Name.IsDirect)
             {
-                var vref = (BoundVariableRef)x.Operand;
-                if (vref.Name.IsDirect)
+                if (branch == ConditionBranch.ToTrue)
                 {
                     // if (Variable is T) => variable is T in True branch state
                     var vartype = x.AsType.GetTypeRefMask(TypeCtx);

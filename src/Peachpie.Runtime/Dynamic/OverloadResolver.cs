@@ -20,12 +20,23 @@ namespace Pchp.Core.Dynamic
         /// <summary>
         /// Selects only candidates of given name.
         /// </summary>
-        public static MethodInfo[] SelectRuntimeMethods(this PhpTypeInfo tinfo, string name)
+        public static MethodInfo[] SelectRuntimeMethods(this PhpTypeInfo tinfo, string name, Type classCtx)
         {
             var routine = (PhpMethodInfo)tinfo?.RuntimeMethods[name];
-            return (routine != null)
-                ? routine.Methods
-                : Array.Empty<MethodInfo>();
+            if (routine != null)
+            {
+                return routine.Methods;
+            }
+            else
+            {
+                if (classCtx != null && tinfo.Type.IsSubclassOf(classCtx))
+                {
+                    // {tinfo} extends {classCtx} // we might have to look for private methods on {classCtx}
+                    return SelectRuntimeMethods(classCtx.GetPhpTypeInfo(), name, null);
+                }
+
+                return Array.Empty<MethodInfo>();
+            }
         }
 
         public static IEnumerable<MethodInfo> SelectVisible(this MethodInfo[] methods, Type classCtx)
