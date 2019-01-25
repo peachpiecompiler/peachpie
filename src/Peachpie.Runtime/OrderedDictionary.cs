@@ -432,7 +432,7 @@ namespace Pchp.Core
             get
             {
                 int i = FindIndex(key);
-                return (i >= 0) ? _data[i].Value : throw new KeyNotFoundException(); // PERF: double array lookup
+                return (i >= 0) ? _data[i].Value : TValue.Void; // PERF: double array lookup
             }
             set
             {

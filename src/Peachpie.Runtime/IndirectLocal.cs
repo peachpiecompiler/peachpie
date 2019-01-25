@@ -26,7 +26,7 @@ namespace Pchp.Core
         //[DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
         public PhpValue Value
         {
-            get => _locals.TryGetValue(_name, out var value) ? value : PhpValue.Null;
+            get => _locals.GetValueOrNull(_name);
             set => _locals[_name] = value;
         }
 
