@@ -138,7 +138,7 @@ namespace Pchp.CodeAnalysis
             // TODO: new parser implementation based on Roslyn
 
             // TODO: file.IsScript ? scriptParseOptions : parseOptions
-            var unit = new PhpSourceUnit(fname, sourceText, encoding: Encoding.UTF8);
+            var unit = new PhpSourceUnit(fname, sourceText, encoding: sourceText.Encoding ?? Encoding.UTF8);
 
             var result = new PhpSyntaxTree(unit);
 
@@ -182,7 +182,7 @@ namespace Pchp.CodeAnalysis
 
         public ImmutableArray<Diagnostic> Diagnostics { get; private set; }
 
-        public override Encoding Encoding => Encoding.UTF8;
+        public override Encoding Encoding => _source.Encoding ?? Encoding.UTF8;
 
         public override string FilePath => _source.FilePath;
 
