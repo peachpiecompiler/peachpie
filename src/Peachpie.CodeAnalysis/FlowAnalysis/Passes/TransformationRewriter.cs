@@ -75,7 +75,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     {
                         // A ? true : false => (bool)A
                         TransformationCount++;
-                        return new BoundUnaryEx(x.Condition, Ast.Operations.BoolCast).WithAccess(x);
+                        return new BoundConversionEx(x.Condition, BoundTypeRefFactory.BoolTypeRef).WithAccess(x);
                     }
                     else if (!trueVal && falseVal)
                     {
