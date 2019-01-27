@@ -598,6 +598,13 @@ namespace Pchp.CodeAnalysis.CodeGen
                 return;
             }
 
+            if (from.SpecialType == SpecialType.System_Void)
+            {
+                // void -> T
+                EmitLoadDefault(to);
+                return;
+            }
+
             //
             from = EmitSpecialize(from, fromHint);
 
