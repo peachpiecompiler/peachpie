@@ -79,7 +79,7 @@ namespace Pchp.Core
 
         public static implicit operator IntStringKey(int value) => new IntStringKey(value);
 
-        public static implicit operator IntStringKey(string value) => new IntStringKey(value ?? throw new ArgumentNullException());
+        public static implicit operator IntStringKey(string value) => value != null ? Convert.StringToArrayKey(value) : EmptyStringKey;
 
         public static implicit operator IntStringKey(PhpString value) => new IntStringKey(value.ToString());
 
