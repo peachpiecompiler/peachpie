@@ -63,6 +63,12 @@ namespace Pchp.Core
         /// </summary>
         public object Object => _skey ?? (object)_ikey;
 
+        /// <summary>
+        /// Gets value indicating the key is an empty string.
+        /// Equivalent to <see cref="EmptyStringKey"/> which is <c>""</c>.
+        /// </summary>
+        public bool IsEmpty => Equals(EmptyStringKey);
+
         public IntStringKey(int key)
         {
             _ikey = key;
@@ -106,17 +112,11 @@ namespace Pchp.Core
 
         public override int GetHashCode() => _ikey;
 
-        public bool Equals(IntStringKey other) => Equals(ref other);
+        public bool Equals(IntStringKey other) => _ikey == other._ikey && _skey == other._skey;
 
-        public bool Equals(ref IntStringKey other)
-        {
-            return _ikey == other._ikey && _skey == other._skey;
-        }
+        public bool Equals(ref IntStringKey other) => _ikey == other._ikey && _skey == other._skey;
 
-        public bool Equals(int ikey)
-        {
-            return _ikey == ikey && _skey == null;
-        }
+        public bool Equals(int ikey) => _ikey == ikey && ReferenceEquals(_skey, null);
 
         public override string ToString() => _skey ?? _ikey.ToString();
 
@@ -597,7 +597,7 @@ namespace Pchp.Core
                 while (index >= 0)
                 {
                     ref var bucket = ref _data[index];
-                    if (key.Equals(ref bucket.Key))
+                    if (key.Equals(bucket.Key))
                     {
                         break;
                     }
@@ -844,7 +844,7 @@ namespace Pchp.Core
                 while (i >= 0)
                 {
                     ref var bucket = ref this._data[i];
-                    if (key.Equals(ref bucket.Key))
+                    if (key.Equals(bucket.Key))
                     {
                         bucket.Key = default;
                         bucket.Value = default;

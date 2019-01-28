@@ -38,7 +38,7 @@ namespace Pchp.Core
             /// <param name="name">A unparsed name of variable.</param>
             /// <param name="value">A value to be added.</param>
             /// <param name="subname">A name of intermediate array inserted before the value.</param>
-            public static void AddVariable(IPhpArray/*!*/ array, string name, string value, string subname = null)
+            public static void AddVariable(PhpArray/*!*/ array, string name, string value, string subname = null)
             {
                 NameValueCollectionUtils.AddVariable(array, name, value, subname);
             }

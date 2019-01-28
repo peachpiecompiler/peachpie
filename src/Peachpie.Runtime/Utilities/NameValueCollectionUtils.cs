@@ -18,18 +18,27 @@ namespace Pchp.Core.Utilities
             return name.Replace('.', '_').Replace(' ', '_');
         }
 
-        static IPhpArray EnsureItemArray(IPhpArray array, IntStringKey key)
+        static PhpArray EnsureItemArray(PhpArray array, IntStringKey key)
         {
-            if (key.Equals(IntStringKey.EmptyStringKey))
+            PhpArray result;
+
+            if (key.IsEmpty)
             {
-                var newarr = new PhpArray();
-                array.AddValue(PhpValue.Create(newarr));
-                return newarr;
+                result = new PhpArray();
+                array.AddValue(result);
             }
             else
             {
-                return array.EnsureItemArray(key);
+                if (!array.TryGetValue(key, out var value) || (result = value.AsArray()) == null)
+                {
+                    result = new PhpArray();
+                    array.SetItemValue(key, result);
+                }
             }
+
+            //
+
+            return result;
         }
 
         /// <summary>
@@ -41,7 +50,7 @@ namespace Pchp.Core.Utilities
         /// <param name="name">A unparsed name of variable.</param>
         /// <param name="value">A value to be added.</param>
         /// <param name="subname">A name of intermediate array inserted before the value.</param>
-        public static void AddVariable(this IPhpArray/*!*/ array, string name, string value, string subname = null)
+        public static void AddVariable(this PhpArray/*!*/ array, string name, string value, string subname = null)
         {
             Debug.Assert(array != null);
             Debug.Assert(name != null);
