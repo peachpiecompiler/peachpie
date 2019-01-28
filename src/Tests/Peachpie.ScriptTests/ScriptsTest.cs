@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -11,6 +12,11 @@ namespace ScriptsTest
 {
     public class ScriptsTest
     {
+        /// <summary>
+        /// Environment variable, if set to "0" then we do not compare results with current `php` installed on the machine.
+        /// </summary>
+        const string PEACHPIE_TEST_PHP = "PEACHPIE_TEST_PHP";
+
         static readonly Context.IScriptingProvider _provider = Context.GlobalServices.GetService<Context.IScriptingProvider>(); // use IScriptingProvider singleton 
 
         private readonly ITestOutputHelper _output;
@@ -35,20 +41,24 @@ namespace ScriptsTest
             var result = CompileAndRun(path);
 
             // invoke php.exe if possible and compare results
-            var phpresult = result;
 
-            try
+            if (Environment.GetEnvironmentVariable(PEACHPIE_TEST_PHP) != "0")
             {
-                phpresult = Interpret(path);
-            }
-            catch
-            {
-                _output.WriteLine("Running PHP failed.");
-                return;
-            }
+                var phpresult = result;
 
-            //
-            Assert.Equal(phpresult, result);
+                try
+                {
+                    phpresult = Interpret(path);
+                }
+                catch
+                {
+                    _output.WriteLine("Running PHP failed.");
+                    return;
+                }
+
+                //
+                Assert.Equal(phpresult, result);
+            }
         }
 
 
