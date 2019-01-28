@@ -56,6 +56,7 @@ function list_entries($filename) {
 function clear_stats($stats) {
   // Currently not supported
   unset($stats['crc']);
+  unset($stats['encryption_method']);
 
   // .NET ZipArchive always uses deflating, even if it's inefficient and no compression would be better
   // (if not specified manually, but it is hard to guess beforehand)
