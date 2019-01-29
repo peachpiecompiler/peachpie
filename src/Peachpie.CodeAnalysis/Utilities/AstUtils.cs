@@ -38,6 +38,27 @@ namespace Pchp.CodeAnalysis
             }
         }
 
+        internal static Operations BinaryToCompoundOp(Operations op)
+        {
+            switch (op)
+            {
+                case Operations.Add: return Operations.AssignAdd;
+                case Operations.BitAnd: return Operations.AssignAnd;
+                case Operations.Concat: return Operations.AssignAppend;
+                case Operations.Div: return Operations.AssignDiv;
+                case Operations.Mod: return Operations.AssignMod;
+                case Operations.Mul: return Operations.AssignMul;
+                case Operations.BitOr: return Operations.AssignOr;
+                case Operations.Pow: return Operations.AssignPow;
+                case Operations.ShiftLeft: return Operations.AssignShiftLeft;
+                case Operations.ShiftRight: return Operations.AssignShiftRight;
+                case Operations.Sub: return Operations.AssignSub;
+                case Operations.BitXor: return Operations.AssignXor;
+                default:
+                    throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(op);
+            }
+        }
+
         /// <summary>
         /// Fixes <see cref="ItemUse"/> so it propagates correctly through our visitor.
         /// </summary>

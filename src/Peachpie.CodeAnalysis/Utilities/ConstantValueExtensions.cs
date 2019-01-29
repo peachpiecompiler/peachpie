@@ -222,5 +222,22 @@ namespace Pchp.CodeAnalysis
                 return false;
             }
         }
+
+        /// <summary>
+        /// Checks if <paramref name="optional"/> contains a long or int value. If so, it retrieves it as long
+        /// (possibly converting from int) in <paramref name="value"/> and returns TRUE. Otherwise, returns FALSE.
+        /// </summary>
+        public static bool IsInteger(this Optional<object> optional, out long value)
+        {
+            if (optional.HasValue)
+            {
+                var obj = optional.Value;
+                if (obj is long l) { value = l; return true; }
+                if (obj is int i) { value = i; return true; }
+            }
+
+            value = default;
+            return false;
+        }
     }
 }
