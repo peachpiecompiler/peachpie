@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Operations;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
@@ -131,6 +133,52 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             //
             return base.VisitBinaryExpression(x);
+        }
+
+        public override object VisitAssign(BoundAssignEx x)
+        {
+            // A = A <binOp> <right>
+            if (x.Target is BoundVariableRef trg
+                && x.Value is BoundCopyValue copyVal
+                && copyVal.Expression is BoundBinaryEx binOp
+                && binOp.Left is BoundVariableRef valLeft
+                && trg.Variable == valLeft.Variable)
+            {
+                var newTrg =
+                    new BoundVariableRef(trg.Name)
+                    .WithAccess(trg.Access.WithRead())
+                    .WithSyntax(trg.PhpSyntax);
+
+                // A = A +/- 1; => ++A; / --A;
+                if ((binOp.Operation == Ast.Operations.Add || binOp.Operation == Ast.Operations.Sub)
+                    && binOp.Right.ConstantValue.IsInteger(out long rightVal) && rightVal == 1)
+                {
+                    TransformationCount++;
+                    return new BoundIncDecEx(newTrg, binOp.Operation == Ast.Operations.Add, false).WithAccess(x);
+                }
+
+                // A = A & B => A &= B; // &, |, ^, <<, >>, +, -, *, /, %, **, .
+                switch (binOp.Operation)
+                {
+                    case Ast.Operations.BitAnd:
+                    case Ast.Operations.BitOr:
+                    case Ast.Operations.BitXor:
+                    case Ast.Operations.ShiftLeft:
+                    case Ast.Operations.ShiftRight:
+                    case Ast.Operations.Add:
+                    case Ast.Operations.Sub:
+                    case Ast.Operations.Mul:
+                    case Ast.Operations.Div:
+                    case Ast.Operations.Mod:
+                    case Ast.Operations.Pow:
+                    case Ast.Operations.Concat:
+                        TransformationCount++;
+                        var compoundOp = AstUtils.BinaryToCompoundOp(binOp.Operation);
+                        return new BoundCompoundAssignEx(newTrg, binOp.Right, compoundOp).WithAccess(x);
+                }
+            }
+
+            return base.VisitAssign(x);
         }
 
         public override object VisitCFGConditionalEdge(ConditionalEdge x)
