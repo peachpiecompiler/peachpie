@@ -1,6 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using System.ComponentModel;
 using Pchp.Core;
+using System.Diagnostics;
 
 /// <summary>
 /// Generic empty class.
@@ -17,6 +18,7 @@ public class stdClass
     /// The field is recognized by runtime and is not intended for direct use.
     /// </remarks>
     [CompilerGenerated]
+    [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
     internal PhpArray __peach__runtimeFields;
 
     /// <summary>

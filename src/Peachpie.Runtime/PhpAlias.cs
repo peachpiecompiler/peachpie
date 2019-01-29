@@ -11,6 +11,7 @@ namespace Pchp.Core
     /// Represents an aliased value.
     /// </summary>
     [DebuggerDisplay("{Value.DisplayString,nq}, Refs#{_refcount}", Type = "&{Value.DebugTypeName,nq}")]
+    [DebuggerNonUserCode]
     public class PhpAlias : IPhpConvertible
     {
         #region Fields
@@ -19,12 +20,8 @@ namespace Pchp.Core
         /// Gets or sets the underlaying value.
         /// </summary>
         /// <remarks>The field is not wrapped into a property, some internals need to access the raw field.</remarks>
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
         public PhpValue Value;
-
-        /// <summary>
-        /// References count.
-        /// </summary>
-        int _refcount;
 
         #endregion
 
@@ -33,7 +30,8 @@ namespace Pchp.Core
         /// <summary>
         /// Gets references count.
         /// </summary>
-        public int ReferenceCount => _refcount;
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        public int ReferenceCount { get; private set; }
 
         #endregion
 
@@ -48,7 +46,7 @@ namespace Pchp.Core
             Debug.Assert(value.TypeCode != PhpTypeCode.Alias);
 
             Value = value;
-            _refcount = refcount;
+            ReferenceCount = refcount;
         }
 
         #endregion
@@ -57,12 +55,12 @@ namespace Pchp.Core
 
         public void AddRef()
         {
-            _refcount++;
+            ReferenceCount++;
         }
 
         public void ReleaseRef()
         {
-            if (--_refcount == 0)
+            if (--ReferenceCount == 0)
             {
                 // TODO: dispose implicitly
             }
@@ -84,6 +82,7 @@ namespace Pchp.Core
 
         #region IPhpConvertible
 
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         public PhpTypeCode TypeCode => Value.TypeCode;
 
         public double ToDouble() => Value.ToDouble();
