@@ -139,7 +139,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         {
             // A = A <binOp> <right>
             if (x.Target is BoundVariableRef trg
-                && x.Value.MatchTypeSkipCopy(out BoundBinaryEx binOp, isCopied: out _)
+                && MatchExprSkipCopy(x.Value, out BoundBinaryEx binOp, isCopied: out _)
                 && binOp.Left is BoundVariableRef valLeft
                 && trg.Variable == valLeft.Variable)
             {
@@ -207,6 +207,32 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             //
             return base.VisitGlobalFunctionCall(x);
+        }
+
+        /// <summary>
+        /// If <paramref name="expr"/> is of type <typeparamref name="T"/> or it is a <see cref="BoundCopyValue" /> enclosing an
+        /// expression of type <typeparamref name="T"/>, store the expression to <paramref name="typedExpr"/> and return true;
+        /// otherwise, return false. Store to <paramref name="isCopied"/> whether <paramref name="typedExpr"/> was enclosed in
+        /// <see cref="BoundCopyValue"/>.
+        /// </summary>
+        private static bool MatchExprSkipCopy<T>(BoundExpression expr, out T typedExpr, out bool isCopied) where T : BoundExpression
+        {
+            if (expr is T res)
+            {
+                typedExpr = res;
+                isCopied = false;
+                return true;
+            }
+            else if (expr is BoundCopyValue copyVal && copyVal.Expression is T copiedRes)
+            {
+                typedExpr = copiedRes;
+                isCopied = true;
+                return true;
+            }
+
+            typedExpr = default;
+            isCopied = default;
+            return false;
         }
     }
 }
