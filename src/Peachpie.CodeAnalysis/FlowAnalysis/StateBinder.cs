@@ -45,6 +45,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     // it cannot be null
                     ptype = typeCtx.WithoutNull(ptype);
                 }
+                else if (p.Type.IsReferenceType)    // a reference type that can be null
+                {
+                    ptype |= typeCtx.GetNullTypeMask();
+                }
 
                 state.SetLocalType(local, ptype);
 

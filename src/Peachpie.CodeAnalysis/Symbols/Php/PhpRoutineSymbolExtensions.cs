@@ -133,9 +133,8 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 t = ((PropertySymbol)symbol).Type;
             }
-            else if (symbol is ParameterSymbol)
+            else if (symbol is ParameterSymbol ps)
             {
-                var ps = (ParameterSymbol)symbol;
                 t = ps.Type;
 
                 if (ps.IsParams)
