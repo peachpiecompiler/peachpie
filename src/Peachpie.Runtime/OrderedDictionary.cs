@@ -1427,8 +1427,9 @@ namespace Pchp.Core
         /// <remarks>If indexing overflows a capacity of integer type it continues with <see cref="int.MinValue"/>.</remarks>
         public void ReindexIntegers(int startIndex)
         {
-            if (IsPacked)
+            if (IsPacked && startIndex == 0)
             {
+                // no need for reindexing and rehashing
                 return;
             }
 
@@ -1448,7 +1449,9 @@ namespace Pchp.Core
             if (key > startIndex) // only if there were any integer keys
             {
                 this._nextFreeKey = key;
-                this._rehash();
+
+                if (_hash == null) this._createhash();
+                else this._rehash();
             }
         }
 
