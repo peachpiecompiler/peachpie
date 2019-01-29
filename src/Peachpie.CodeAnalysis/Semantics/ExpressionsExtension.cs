@@ -9,6 +9,32 @@ namespace Pchp.CodeAnalysis.Semantics
 {
     static class ExpressionsExtension
     {
+        /// <summary>
+        /// If expr is of type <typeparamref name="T"/> or it is a <see cref="BoundCopyValue" /> enclosing an expression
+        /// of type <typeparamref name="T"/>, store the expression to <paramref name="valueExpr"/> and return true; otherwise,
+        /// return false. Store to <paramref name="isCopied"/> whether <paramref name="valueExpr"/> was enclosed in
+        /// <see cref="BoundCopyValue"/>.
+        /// </summary>
+        public static bool MatchTypeSkipCopy<T>(this BoundExpression expr, out T valueExpr, out bool isCopied) where T : BoundExpression
+        {
+            if (expr is T res)
+            {
+                valueExpr = res;
+                isCopied = false;
+                return true;
+            }
+            else if (expr is BoundCopyValue copyVal && copyVal.Expression is T copiedRes)
+            {
+                valueExpr = copiedRes;
+                isCopied = true;
+                return true;
+            }
+
+            valueExpr = default;
+            isCopied = default;
+            return false;
+        }
+
         public static T WithAccess<T>(this T expr, BoundAccess access) where T : BoundExpression
         {
             expr.Access = access;

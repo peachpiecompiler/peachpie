@@ -139,8 +139,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         {
             // A = A <binOp> <right>
             if (x.Target is BoundVariableRef trg
-                && x.Value is BoundCopyValue copyVal
-                && copyVal.Expression is BoundBinaryEx binOp
+                && x.Value.MatchTypeSkipCopy(out BoundBinaryEx binOp, isCopied: out _)
                 && binOp.Left is BoundVariableRef valLeft
                 && trg.Variable == valLeft.Variable)
             {
