@@ -526,8 +526,7 @@ namespace Pchp.Library
 
                 case PhpTypeCode.String:
                 case PhpTypeCode.MutableString:
-                    PhpNumber tmp;
-                    return (variable.ToNumber(out tmp) & Core.Convert.NumberInfo.IsNumber) != 0;
+                    return (variable.ToNumber(out var tmp) & Core.Convert.NumberInfo.IsNumber) != 0;
 
                 default:
                     return false;

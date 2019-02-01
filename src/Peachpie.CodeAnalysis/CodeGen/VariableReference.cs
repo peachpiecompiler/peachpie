@@ -1238,10 +1238,21 @@ namespace Pchp.CodeAnalysis.Semantics
             get
             {
                 if (Receiver == null)
+                {
+                    // _statics holder ?
+                    if (!Field.IsStatic)
+                    {
+                        Debug.Assert(Field.ContainingStaticsHolder() != null, "Field is non-static and does not have the receiver instance!");
+                        return null;    // new FieldPlace ( Receiver: Context.GetStatics<Holder>(), Field );
+                    }
+
                     return new FieldPlace(null, Field);
+                }
 
                 if (Receiver is BoundReferenceExpression bref && bref.Place() is IPlace receiver_place && receiver_place.Type.IsOfType(Field.ContainingType))
+                {
                     return new FieldPlace(receiver_place, Field);
+                }
 
                 return null;
             }

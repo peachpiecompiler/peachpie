@@ -7,6 +7,7 @@ using Pchp.CodeAnalysis.Symbols;
 using System.Reflection.Metadata;
 using System.Diagnostics;
 using Microsoft.CodeAnalysis;
+using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.CodeGen
 {
@@ -37,7 +38,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             if (!TryEmitImplicitConversion(cg, from, to, @checked))
             {
-                throw new InvalidOperationException($"Cannot implicitly convert '{from}' to '{to}'.");
+                throw cg.NotImplementedException($"Cannot implicitly convert '{from}' to '{to}'.");
             }
         }
 
@@ -99,7 +100,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (conversion.Exists == false)
             {
-                throw new ArgumentException($"Conversion from '{from}' to '{to}' does not exist.");
+                throw cg.NotImplementedException($"Conversion from '{from}' to '{to}' does not exist.");
             }
 
             if (conversion.IsIdentity)

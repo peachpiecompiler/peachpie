@@ -170,6 +170,12 @@ namespace Pchp.Core
             }
         }
 
+        public static explicit operator PhpArray(string value) => New(value);
+        public static explicit operator PhpArray(PhpString value) => New(value);
+        public static explicit operator PhpArray(long value) => New(value);
+        public static explicit operator PhpArray(double value) => New(value);
+        public static explicit operator PhpArray(bool value) => New(value);
+
         /// <summary>
         /// Copy constructor. Creates <see cref="PhpArray"/> that shares internal data table with another <see cref="PhpArray"/>.
         /// </summary>
@@ -297,7 +303,7 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="name">Key, respecting <c>[subkey]</c> notation.</param>
         /// <param name="value">The value.</param>
-        /// <remarks>See <see cref="NameValueCollectionUtils.AddVariable(IPhpArray, string, string, string)"/> for details.</remarks>
+        /// <remarks>See <see cref="NameValueCollectionUtils.AddVariable(PhpArray, string, string, string)"/> for details.</remarks>
         public void AddVariable(string name, string value) => NameValueCollectionUtils.AddVariable(this, name, value);
 
         /// <summary>
