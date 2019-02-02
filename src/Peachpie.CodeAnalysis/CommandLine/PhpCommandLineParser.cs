@@ -156,6 +156,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             bool optionsEnded = false;
             bool displayHelp = false, displayLogo = true;
             bool emitPdb = true, debugPlus = false;
+            string sourceLink = null;
             string mainTypeName = null, pdbPath = null;
             Version languageVersion = null;
             bool? delaySignSetting = null;
@@ -197,6 +198,19 @@ namespace Pchp.CodeAnalysis.CommandLine
                     case "r":
                     case "reference":
                         metadataReferences.AddRange(ParseAssemblyReferences(arg, value, diagnostics, embedInteropTypes: false));
+                        continue;
+
+                    case "sourcelink":
+                        value = RemoveQuotesAndSlashes(value);
+                        if (string.IsNullOrEmpty(value))
+                        {
+                            //diagnostics.Add(Errors.MessageProvider.Instance.CreateDiagnostic(Errors.ErrorCode.no
+                            //AddDiagnostic(diagnostics, ErrorCode.ERR_NoFileSpec, arg);
+                        }
+                        else
+                        {
+                            sourceLink = ParseGenericPathToFile(value, diagnostics, baseDirectory);
+                        }
                         continue;
 
                     case "debug":
@@ -612,6 +626,11 @@ namespace Pchp.CodeAnalysis.CommandLine
                 keyFileSetting = ParseGenericPathToFile(keyFileSetting, diagnostics, baseDirectory);
             }
 
+            if (sourceLink != null && !emitPdb)
+            {
+                //AddDiagnostic(diagnostics, ErrorCode.ERR_SourceLinkRequiresPdb);
+            }
+
             if (embedAllSourceFiles)
             {
                 embeddedFiles.AddRange(sourceFiles);
@@ -702,6 +721,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 OutputFileName = outputFileName,
                 PdbPath = pdbPath,
                 EmitPdb = emitPdb,
+                SourceLink = sourceLink,
                 OutputDirectory = outputDirectory,
                 DocumentationPath = documentationPath,
                 //ErrorLogPath = errorLogPath,
