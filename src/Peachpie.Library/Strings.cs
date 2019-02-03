@@ -2242,9 +2242,12 @@ namespace Pchp.Library
         /// <param name="charSet">The character set used in conversion. This parameter is ignored.</param>
         /// <param name="doubleEncode">When double_encode is turned off PHP will not encode existing html entities, the default is to convert everything.</param>
         /// <returns>The converted string.</returns>
-        public static string htmlspecialchars(string str, QuoteStyle quoteStyle = QuoteStyle.Compatible, string charSet = "ISO-8859-1", bool doubleEncode = true)
+        [return: NotNull]
+        public static string/*!*/htmlspecialchars(string str, QuoteStyle quoteStyle = QuoteStyle.Compatible, string charSet = "ISO-8859-1", bool doubleEncode = true)
         {
-            return HtmlSpecialCharsEncode(str, 0, str.Length, quoteStyle, charSet, !doubleEncode);
+            return string.IsNullOrEmpty(str)
+                ? string.Empty
+                : HtmlSpecialCharsEncode(str, 0, str.Length, quoteStyle, charSet, !doubleEncode);
         }
 
         /// <summary>
@@ -2264,8 +2267,6 @@ namespace Pchp.Library
         /// <returns>The converted substring.</returns>
         static string HtmlSpecialCharsEncode(string str, int index, int length, QuoteStyle quoteStyle, string charSet, bool keepExisting)
         {
-            if (str == null) return String.Empty;
-
             int maxi = index + length;
             Debug.Assert(maxi <= str.Length);
 
