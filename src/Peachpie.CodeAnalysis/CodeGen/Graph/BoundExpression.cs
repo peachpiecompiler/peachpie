@@ -1886,7 +1886,7 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            Debug.Assert(Access.IsRead || Access.IsNone);
+            Debug.Assert(Access.IsRead || Access.IsNone, "Access cannot be " + Access.ToString());
 
             TypeSymbol returned_type;
 
@@ -1973,7 +1973,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else if (Access.IsRead)
             {
-                Debug.Assert(returned_type.SpecialType != SpecialType.System_Void);
+                // Debug.Assert(returned_type.SpecialType != SpecialType.System_Void, "returns void, operation: " + this.Operation.ToString() + ", file: " + cg.ContainingFile.RelativeFilePath);
             }
             else
             {

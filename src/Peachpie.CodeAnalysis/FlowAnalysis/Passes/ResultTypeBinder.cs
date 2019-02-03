@@ -98,14 +98,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return expression.ResultType = type;
         }
 
-        public override TypeSymbol VisitLiteral(BoundLiteral x)
-        {
-            Debug.Assert(x.ConstantValue.HasValue);
+        //public override TypeSymbol VisitLiteral(BoundLiteral x)
+        //{
+        //    Debug.Assert(x.ConstantValue.HasValue);
 
-            var type = DeclaringCompilation.GetConstantValueType(x.ConstantValue.Value);
+        //    var type = DeclaringCompilation.GetConstantValueType(x.ConstantValue.Value);
 
-            return BindAccess(x, type, hasref: false);
-        }
+        //    return BindAccess(x, type, hasref: false);
+        //}
 
         //public override TypeSymbol VisitFieldRef(BoundFieldRef x)
         //{
