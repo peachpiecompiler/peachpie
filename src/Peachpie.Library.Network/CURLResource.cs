@@ -270,7 +270,9 @@ namespace Peachpie.Library.Network
 
         public string ContentType => (Headers != null) ? Headers[HttpRequestHeader.ContentType] : string.Empty;
 
-        public int HeaderSize => (Headers != null) ? Headers.ToByteArray().Length : 0;
+        public string StatusHeader { get; set; } = string.Empty;
+
+        public int HeaderSize => StatusHeader.Length + HttpHeaders.HeaderSeparator.Length + ((Headers != null) ? Headers.ToByteArray().Length : 0);
 
         public WebHeaderCollection Headers { get; }
 
@@ -298,6 +300,7 @@ namespace Peachpie.Library.Network
                 this.ResponseUri = response.ResponseUri;
                 this.StatusCode = response.StatusCode;
                 this.Headers = response.Headers;
+                this.StatusHeader = HttpHeaders.StatusHeader(response);
                 this.Cookies = response.Cookies;
             }
 

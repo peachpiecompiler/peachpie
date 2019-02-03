@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Security;
@@ -514,6 +515,12 @@ namespace Peachpie.Library.Network
 
             var stream = response.GetResponseStream();
 
+            // gzip decode if necessary
+            if (response.ContentEncoding == "gzip")
+            {
+                stream = new GZipStream(stream, CompressionMode.Decompress, leaveOpen: false);
+            }
+
             // read into output stream:
             switch (ch.ProcessingResponse.Method)
             {
@@ -540,6 +547,10 @@ namespace Peachpie.Library.Network
                     break;
                 case ProcessMethodEnum.IGNORE: break;
             }
+
+            //
+            stream.Dispose();
+            stream = null;
 
             //
 

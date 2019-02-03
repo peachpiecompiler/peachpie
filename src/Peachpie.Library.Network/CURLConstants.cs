@@ -20,7 +20,7 @@ namespace Peachpie.Library.Network
 
         internal const string CurlMultiResourceName = "curl_multi";
 
-        internal static Version FakeCurlVersion => new Version(7, 10, 1);
+        internal static Version FakeCurlVersion => new Version(7, 10, 8);
 
         #region Constants
 
@@ -700,7 +700,12 @@ namespace Peachpie.Library.Network
 
     internal static class HttpHeaders
     {
+        /// <summary>
+        /// Gets response status header (the first line),
+        /// ASCII only, in form of <c>HTTP/X.X CODE DESCRIPTION</c>.
+        /// </summary>
         public static string StatusHeader(HttpWebResponse response) => $"HTTP/{response.ProtocolVersion.ToString(2)} {(int)response.StatusCode} {response.StatusDescription}";
+
         public const string HeaderSeparator = "\r\n";
 
         public static string HeaderString(HttpWebRequest req)
