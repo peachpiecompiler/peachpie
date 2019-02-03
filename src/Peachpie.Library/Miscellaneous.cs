@@ -428,9 +428,11 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
         /// <param name="seconds">The time-out setting for request.</param>
-        public static void set_time_limit(Context ctx, int seconds)
+        public static bool set_time_limit(Context ctx, int seconds)
         {
             //ctx.ApplyExecutionTimeout(seconds);
+
+            return false;
         }
 
         /// <summary>
