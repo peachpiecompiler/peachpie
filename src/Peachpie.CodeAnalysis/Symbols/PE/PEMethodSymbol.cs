@@ -14,6 +14,7 @@ using Microsoft.Cci;
 using System.Globalization;
 using System.Threading;
 using Pchp.CodeAnalysis.DocumentationComments;
+using Peachpie.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -167,6 +168,32 @@ namespace Pchp.CodeAnalysis.Symbols
 
         #endregion
 
+        #region UncommonFields
+
+        /// <summary>
+        /// Holds infrequently accessed fields. See <seealso cref="_uncommonFields"/> for an explanation.
+        /// </summary>
+        private sealed class UncommonFields
+        {
+            //public ParameterSymbol _lazyThisParameter;
+            //public OverriddenOrHiddenMembersResult _lazyOverriddenOrHiddenMembersResult;
+            public ImmutableArray<AttributeData> _lazyCustomAttributes;
+            //public ImmutableArray<string> _lazyConditionalAttributeSymbols;
+            public ObsoleteAttributeData _lazyObsoleteAttributeData = ObsoleteAttributeData.Uninitialized;
+            //public DiagnosticInfo _lazyUseSiteDiagnostic;
+        }
+
+        /// <summary>
+        /// Ensures <see cref="_uncommonFields"/> are created.
+        /// </summary>
+        UncommonFields AccessUncommonFields()
+        {
+            var retVal = _uncommonFields;
+            return retVal ?? InterlockedOperations.Initialize(ref _uncommonFields, new UncommonFields());
+        }
+
+        #endregion
+
         #region Fields
 
         readonly MethodDefinitionHandle _handle;
@@ -176,11 +203,20 @@ namespace Pchp.CodeAnalysis.Symbols
         private PackedFlags _packedFlags;
         private readonly ushort _flags;     // MethodAttributes
         private readonly ushort _implFlags; // MethodImplAttributes
-        private ImmutableArray<TypeParameterSymbol> _lazyTypeParameters;
         private SignatureData _lazySignature;
         private ImmutableArray<MethodSymbol> _lazyExplicitMethodImplementations;
+        private ImmutableArray<TypeParameterSymbol> _lazyTypeParameters;
         private KeyValuePair<CultureInfo, string> _lazyDocComment;
-        private ImmutableArray<AttributeData> _lazyCustomAttributes;
+
+        /// <summary>
+        /// A single field to hold optional auxiliary data.
+        /// In many scenarios it is possible to avoid allocating this, thus saving total space in <see cref="PEModuleSymbol"/>.
+        /// Even for lazily-computed values, it may be possible to avoid allocating <see cref="_uncommonFields"/> if
+        /// the computed value is a well-known "empty" value. In this case, bits in <see cref="_packedFlags"/> are used
+        /// to indicate that the lazy values have been computed and, if <see cref="_uncommonFields"/> is null, then
+        /// the "empty" value should be inferred.
+        /// </summary>
+        private UncommonFields _uncommonFields;
 
         #endregion
 
@@ -326,7 +362,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Debug.Assert(!attributeData.IsDefault);
                 if (!attributeData.IsEmpty)
                 {
-                    attributeData = InterlockedOperations.Initialize(ref _lazyCustomAttributes, attributeData);
+                    attributeData = InterlockedOperations.Initialize(ref AccessUncommonFields()._lazyCustomAttributes, attributeData);
                 }
 
                 _packedFlags.SetIsCustomAttributesPopulated();
@@ -335,10 +371,15 @@ namespace Pchp.CodeAnalysis.Symbols
             else
             {
                 // Retrieve cached or inferred value.
-                var attributeData = _lazyCustomAttributes;
-                return attributeData.IsDefault
-                    ? InterlockedOperations.Initialize(ref _lazyCustomAttributes, ImmutableArray<AttributeData>.Empty)
-                    : attributeData;
+                if (_uncommonFields != null)
+                {
+                    var attributeData = _uncommonFields._lazyCustomAttributes;
+                    if (attributeData.IsDefault == false)
+                    {
+                        return attributeData;
+                    }
+                }
+                return ImmutableArray<AttributeData>.Empty;
             }
         }
 
@@ -842,32 +883,30 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                //if (!_packedFlags.IsObsoleteAttributePopulated)
-                //{
-                //    var result = ObsoleteAttributeHelpers.GetObsoleteDataFromMetadata(_handle, (PEModuleSymbol)ContainingModule);
-                //    if (result != null)
-                //    {
-                //        result = InterlockedOperations.Initialize(ref AccessUncommonFields()._lazyObsoleteAttributeData, result, ObsoleteAttributeData.Uninitialized);
-                //    }
+                if (!_packedFlags.IsObsoleteAttributePopulated)
+                {
+                    var result = ObsoleteAttributeHelpers.GetObsoleteDataFromMetadata(_handle, (PEModuleSymbol)ContainingModule, ignoreByRefLikeMarker: false);
+                    if (result != null)
+                    {
+                        result = InterlockedOperations.Initialize(ref AccessUncommonFields()._lazyObsoleteAttributeData, result, ObsoleteAttributeData.Uninitialized);
+                    }
 
-                //    _packedFlags.SetIsObsoleteAttributePopulated();
-                //    return result;
-                //}
+                    _packedFlags.SetIsObsoleteAttributePopulated();
+                    return result;
+                }
 
-                //var uncommonFields = _uncommonFields;
-                //if (uncommonFields == null)
-                //{
-                //    return null;
-                //}
-                //else
-                //{
-                //    var result = uncommonFields._lazyObsoleteAttributeData;
-                //    return ReferenceEquals(result, ObsoleteAttributeData.Uninitialized)
-                //        ? InterlockedOperations.Initialize(ref uncommonFields._lazyObsoleteAttributeData, null, ObsoleteAttributeData.Uninitialized)
-                //        : result;
-                //}
-
-                return null;
+                var uncommonFields = _uncommonFields;
+                if (uncommonFields == null)
+                {
+                    return null;
+                }
+                else
+                {
+                    var result = uncommonFields._lazyObsoleteAttributeData;
+                    return ReferenceEquals(result, ObsoleteAttributeData.Uninitialized)
+                        ? InterlockedOperations.Initialize(ref uncommonFields._lazyObsoleteAttributeData, null, ObsoleteAttributeData.Uninitialized)
+                        : result;
+                }
             }
         }
 

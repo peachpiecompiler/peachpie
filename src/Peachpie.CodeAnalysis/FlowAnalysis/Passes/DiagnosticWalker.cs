@@ -327,8 +327,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             CheckUndefinedFunctionCall(x);
 
             // calling indirectly:
-            if (x.Name.NameExpression != null)
+            if (x.Name.IsDirect)
             {
+                CheckObsoleteSymbol(x.PhpSyntax, x.TargetMethod);
+            }
+            else
+            {
+                Debug.Assert(x.Name.NameExpression != null);
                 // check whether expression can be used as a function callback (must be callable - string, array, object ...)
                 if (!TypeHelpers.IsCallable(TypeCtx, x.Name.NameExpression.TypeRefMask))
                 {
