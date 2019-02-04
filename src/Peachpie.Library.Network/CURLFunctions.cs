@@ -516,7 +516,7 @@ namespace Peachpie.Library.Network
             var stream = response.GetResponseStream();
 
             // gzip decode if necessary
-            if (response.ContentEncoding == "gzip")
+            if (response.ContentEncoding == "gzip") // TODO: // && ch.AcceptEncoding.Contains("gzip") ??
             {
                 stream = new GZipStream(stream, CompressionMode.Decompress, leaveOpen: false);
             }

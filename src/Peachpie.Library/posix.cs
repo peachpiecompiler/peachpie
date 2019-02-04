@@ -24,6 +24,7 @@ namespace Pchp.Library
         /// <param name="str">String to split according to regular expression.</param>
         /// <param name="limit">Max number of elements in returned array.</param>
         /// <returns>Array of substrings.</returns>
+        [Obsolete]
         public static PhpArray split(Context ctx, string pattern, string str, int limit = -1)
         {
             PhpException.FunctionDeprecated("split");
@@ -50,6 +51,7 @@ namespace Pchp.Library
         /// <param name="str">String to split according to regular expression.</param>
         /// <param name="limit">Max number of elements in returned array.</param>
         /// <returns>Array of substrings.</returns>
+        [Obsolete]
         public static PhpArray spliti(Context ctx, string pattern, string str, int limit = -1)
         {
             PhpException.FunctionDeprecated("spliti");

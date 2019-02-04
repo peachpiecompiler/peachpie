@@ -690,6 +690,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="value">Ignored.</param>
         /// <returns>Always <c>false</c>.</returns>
+        [Obsolete]
         public static bool set_magic_quotes_runtime(bool value)
         {
             PhpException.FunctionDeprecated("set_magic_quotes_runtime");
