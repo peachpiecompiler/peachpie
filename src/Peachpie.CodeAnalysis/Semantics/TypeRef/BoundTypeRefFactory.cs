@@ -115,7 +115,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 return new BoundClassTypeRef(named.ClassName, binder?.Routine, self ?? binder?.Self);
             }
-            else if (tref is Ast.ReservedTypeRef reserved) return new BoundReservedTypeRef(reserved.Type);
+            else if (tref is Ast.ReservedTypeRef reserved) return new BoundReservedTypeRef(reserved.Type, self);
             else if (tref is Ast.AnonymousTypeRef at) return new BoundTypeRefFromSymbol(at.TypeDeclaration.GetProperty<SourceTypeSymbol>());
             else if (tref is Ast.MultipleTypeRef mt)
             {
