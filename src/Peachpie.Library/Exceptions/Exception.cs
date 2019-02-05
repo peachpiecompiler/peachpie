@@ -40,7 +40,7 @@ namespace Pchp.Library.Spl
         /// </summary>
         public override string Message => this.message ?? string.Empty;
 
-        public virtual void __construct(string message = "", long code = 0, Throwable previous = null)
+        public void __construct(string message = "", long code = 0, Throwable previous = null)
         {
             this.message = message;
             this.code = code;
@@ -83,10 +83,12 @@ namespace Pchp.Library.Spl
             __construct(message, code, severity, filename, lineno, previous);
         }
 
-        public sealed override void __construct(string message = "", long code = 0, Throwable previous = null)
-            => __construct(message, code, -1, null, -1, (Exception)previous);
+        //public sealed override void __construct(string message = "", long code = 0, Throwable previous = null)
+        //{
+        //    __construct(message, code, -1, null, -1, (Exception)previous);
+        //}
 
-        public virtual void __construct(string message = "", long code = 0, int severity = (int)PhpError.E_ERROR, string filename = null, int lineno = -1, Exception previous = null)
+        public void __construct(string message = "", long code = 0, int severity = (int)PhpError.E_ERROR, string filename = null, int lineno = -1, Exception previous = null)
         {
             this.message = message;
             this.code = code;
