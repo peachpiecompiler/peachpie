@@ -61,6 +61,19 @@ namespace Peachpie.Library.PDO
         /// </summary>
         PhpValue[] FetchClassCtorArgs { get; set; } = null;
 
+        private bool CheckDataReader()
+        {
+            if (m_dr == null)
+            {
+                m_pdo.HandleError(new PDOException("The data reader cannot be null."));
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="PDOStatement" /> class.
         /// </summary>
@@ -625,12 +638,15 @@ namespace Peachpie.Library.PDO
         /// <inheritDoc />
         public int columnCount()
         {
-            if (this.m_dr == null)
+            if (CheckDataReader())
+            {
+                return this.m_dr.FieldCount;
+            }
+            else
             {
                 return 0;
             }
 
-            return this.m_dr.FieldCount;
         }
 
         /// <inheritDoc />
@@ -945,9 +961,8 @@ namespace Peachpie.Library.PDO
         [return: CastToFalse]
         public PhpArray fetchAll(PDO.PDO_FETCH fetch_style = default, PhpValue fetch_argument = default, PhpArray ctor_args = null)
         {
-            if (m_dr == null)
+            if (!CheckDataReader())
             {
-                m_pdo.HandleError(new PDOException("The data reader can not be null."));
                 return null;
             }
 
@@ -964,8 +979,8 @@ namespace Peachpie.Library.PDO
                 }
             }
 
+            var style = fetch_style != default ? fetch_style : m_fetchStyle;
             var result = new PhpArray();
-            var style = (fetch_style > 0 ? fetch_style : m_fetchStyle) & ~PDO_FETCH.Flags;
 
             switch (style)
             {
@@ -993,7 +1008,7 @@ namespace Peachpie.Library.PDO
 
                     while (m_dr.HasRows)
                     {
-                        var value = fetch(fetch_style);
+                        var value = fetch(style);
                         if (value == PhpValue.False)
                             break;
 
@@ -1008,33 +1023,34 @@ namespace Peachpie.Library.PDO
         /// <inheritDoc />
         public PhpValue fetchColumn(int column_number = 0)
         {
-            if (m_dr == null)
+            if (!CheckDataReader())
             {
-                m_pdo.HandleError(new PDOException("The data reader can not be null."));
                 return PhpValue.False;
             }
 
             return this.ReadArray(false, true)[column_number].GetValue();
         }
 
-        /// <inheritDoc />cp
+        /// <inheritDoc />
         [return: CastToFalse]
-        public object fetchObject(string class_name = "stdClass", PhpArray ctor_args = null)
+        public object fetchObject(string class_name = nameof(stdClass), PhpArray ctor_args = null)
         {
-            if (m_dr == null)
+            if (!CheckDataReader())
             {
-                m_pdo.HandleError(new PDOException("The data reader can not be null."));
                 return null;
             }
 
-            if (class_name == "stdClass")
+            if (string.IsNullOrEmpty(class_name) || class_name == nameof(stdClass))
             {
                 return this.ReadObj();
             }
             else
             {
-                object obj = _ctx.Create(class_name, ctor_args?.GetValues() ?? Array.Empty<PhpValue>());
-                return obj;
+                var args = ctor_args != null ? ctor_args.GetValues() : Array.Empty<PhpValue>();
+                var obj = _ctx.Create(class_name, args);
+                // TODO: set properties
+                throw new NotImplementedException();
+                //return obj;
             }
         }
 
@@ -1048,8 +1064,14 @@ namespace Peachpie.Library.PDO
         [return: CastToFalse]
         public PhpArray getColumnMeta(int column)
         {
-            if (m_dr == null || column < 0 || column >= m_dr.FieldCount)
+            if (!CheckDataReader())
             {
+                return null;
+            }
+
+            if (column < 0 || column >= m_dr.FieldCount)
+            {
+                // TODO: invalid arg warning
                 return null;
             }
 
@@ -1074,11 +1096,7 @@ namespace Peachpie.Library.PDO
         /// <inheritDoc />
         public bool nextRowset()
         {
-            if (this.m_dr == null)
-            {
-                return false;
-            }
-            if (this.m_dr.NextResult())
+            if (CheckDataReader() && this.m_dr.NextResult())
             {
                 initializeColumnNames();
                 return true;
