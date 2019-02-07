@@ -40,7 +40,7 @@ namespace Peachpie.Library.PDO
         private List<String> m_positionalPlaceholders;
 
         private Dictionary<string, PhpAlias> m_boundParams;
-        private PDO.PDO_FETCH m_fetchStyle = PDO.PDO_FETCH.FETCH_BOTH;
+        private PDO.PDO_FETCH m_fetchStyle = PDO.PDO_FETCH.Default;
 
         private PhpArray storedQueryResult = null;
         private int storedResultPosition = 0;
@@ -131,7 +131,6 @@ namespace Peachpie.Library.PDO
 
         private static readonly Regex regName = new Regex(@"[\w_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-        [return: CastToFalse]
         private PhpValue FetchFromStored()
         {
             if (storedQueryResult != null)
@@ -140,9 +139,9 @@ namespace Peachpie.Library.PDO
                 {
                     return storedQueryResult[storedResultPosition++];
                 }
-                return PhpValue.Null;
+                return PhpValue.False;
             }
-            return PhpValue.Null;
+            return PhpValue.False;
         }
 
         /// <summary>
@@ -852,7 +851,7 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public PhpValue fetch(PDO.PDO_FETCH fetch_style = default, int cursor_orientation = default(int), int cursor_offet = 0)
+        public PhpValue fetch(PDO.PDO_FETCH fetch_style = PDO_FETCH.Default/*0*/, PDO_FETCH_ORI cursor_orientation = PDO_FETCH_ORI.FETCH_ORI_NEXT/*0*/, int cursor_offet = 0)
         {
             this.m_pdo.ClearError();
 
@@ -862,78 +861,82 @@ namespace Peachpie.Library.PDO
             }
             else
             {
+                if (cursor_orientation != PDO_FETCH_ORI.FETCH_ORI_NEXT) // 0
+                {
+                    throw new NotSupportedException(nameof(cursor_orientation));
+                }
 
                 try
                 {
-                    var style = fetch_style > 0 ? fetch_style : m_fetchStyle;
-
-                    PDO.PDO_FETCH_ORI ori = PDO.PDO_FETCH_ORI.FETCH_ORI_NEXT;
-                    if (Enum.IsDefined(typeof(PDO.PDO_FETCH_ORI), cursor_orientation))
-                    {
-                        ori = (PDO.PDO_FETCH_ORI)cursor_orientation;
-                    }
-
-                    switch (ori)
-                    {
-                        case PDO.PDO_FETCH_ORI.FETCH_ORI_NEXT:
-                            break;
-                        default:
-                            throw new NotSupportedException();
-                    }
-
+                    // read next row
                     if (!this.m_dr.Read())
+                    {
                         return PhpValue.False;
+                    }
 
-                    // Get the column schema, if possible, for the associative fetch
                     if (m_dr_names == null)
                     {
+                        // Get the column schema, if possible,
+                        // for the associative fetch
                         initializeColumnNames();
                     }
 
+                    var style = fetch_style != PDO_FETCH.Default ? fetch_style : m_fetchStyle;
+                    var flags = style & PDO_FETCH.Flags;
+
                     switch (style & ~PDO_FETCH.Flags)
                     {
-                        case PDO.PDO_FETCH.FETCH_OBJ:
-                            return this.ReadObj();
-
-                        case PDO.PDO_FETCH.FETCH_ASSOC:
+                        case PDO_FETCH.FETCH_ASSOC:
                             return this.ReadArray(true, false);
 
-                        case PDO.PDO_FETCH.FETCH_BOTH:
-                        case PDO.PDO_FETCH.Default:
-                            return this.ReadArray(true, true);
-
-                        case PDO.PDO_FETCH.FETCH_NUM:
+                        case PDO_FETCH.FETCH_NUM:
                             return this.ReadArray(false, true);
 
-                        case PDO.PDO_FETCH.FETCH_COLUMN:
-                            if (!FetchColNo.HasValue)
+                        case PDO_FETCH.Default:
+                        case PDO_FETCH.FETCH_BOTH:
+                            return this.ReadArray(true, true);
+
+                        case PDO_FETCH.FETCH_OBJ:
+                            return this.ReadObj();
+
+                        case PDO_FETCH.FETCH_COLUMN:
+                            if (FetchColNo.HasValue)
+                            {
+                                return this.ReadColumn(FetchColNo.Value);
+                            }
+                            else
                             {
                                 m_pdo.HandleError(new PDOException("The column number for FETCH_COLUMN mode is not set."));
                                 return PhpValue.False;
                             }
 
-                            return this.ReadColumn(FetchColNo.Value);
+                        //case PDO.PDO_FETCH.FETCH_CLASS:
+                        //    if (FetchClassName != null)
+                        //    {
+                        //        var obj = FetchClassName.Creator(_ctx, FetchClassCtorArgs ?? Array.Empty<PhpValue>());
+                        //        // TODO: set properties
+                        //        return PhpValue.FromClass(obj);
+                        //    }
+                        //    else
+                        //    {
+                        //        m_pdo.HandleError(new PDOException("The className for FETCH_CLASS mode is not set."));
+                        //        return PhpValue.False;
+                        //    }
 
-                        case PDO.PDO_FETCH.FETCH_CLASS:
-                            if (FetchClassName == null)
-                            {
-                                m_pdo.HandleError(new PDOException("The className for FETCH_CLASS mode is not set."));
-                                return PhpValue.False;
-                            }
+                        case PDO_FETCH.FETCH_NAMED:
+                            return this.ReadNamed();
 
-                            var obj = FetchClassName.Creator(_ctx, FetchClassCtorArgs ?? Array.Empty<PhpValue>());
-                            return PhpValue.FromClass(obj);
+                        //case PDO_FETCH.FETCH_LAZY:
+                        //    return new PDORow( ... ) reads columns lazily
 
                         //case PDO_FETCH.FETCH_INTO:
 
                         //case PDO_FETCH.FETCH_FUNC:
 
-                        //case PDO_FETCH.FETCH_NAMED:
-
                         //case PDO_FETCH.FETCH_KEY_PAIR:
 
                         default:
-                            throw new NotImplementedException();
+                            throw new NotImplementedException($"fetch {style}");
                     }
                 }
                 catch (System.Exception ex)
@@ -968,6 +971,36 @@ namespace Peachpie.Library.PDO
             return arr;
         }
 
+        private PhpArray ReadNamed(int from = 0)
+        {
+            var arr = new PhpArray(m_dr.FieldCount);
+
+            for (int i = from; i < this.m_dr.FieldCount; i++)
+            {
+                var key = new IntStringKey(this.m_dr_names[i]);
+                var value = ReadColumn(i);
+                ref var bucket = ref arr.GetItemRef(key);
+
+                if (bucket.IsSet)
+                {
+                    var nested = bucket.AsArray();
+                    if (nested != null)
+                    {
+                        nested.Add(value);
+                    }
+                    else
+                    {
+                        bucket = new PhpArray(2) { bucket, value };
+                    }
+                }
+                else
+                {
+                    bucket = value;
+                }
+            }
+            return arr;
+        }
+
         /// <inheritDoc />
         [return: CastToFalse]
         public PhpArray fetchAll(PDO.PDO_FETCH fetch_style = default, PhpValue fetch_argument = default, PhpArray ctor_args = null)
@@ -990,7 +1023,9 @@ namespace Peachpie.Library.PDO
                 }
             }
 
-            var style = fetch_style != default ? fetch_style : m_fetchStyle;
+            var style = fetch_style != PDO_FETCH.Default ? fetch_style : m_fetchStyle;
+            var flags = style & PDO_FETCH.Flags;
+
             var result = new PhpArray();
 
             switch (style)
@@ -1296,14 +1331,14 @@ namespace Peachpie.Library.PDO
             {
                 var columnSchema = m_dr.GetColumnSchema();
 
-                for (var i = 0; i < m_dr.FieldCount; i++)
+                for (var i = 0; i < m_dr_names.Length; i++)
                 {
                     m_dr_names[i] = columnSchema[i].ColumnName;
                 }
             }
             else
             {
-                for (var i = 0; i < m_dr.FieldCount; i++)
+                for (var i = 0; i < m_dr_names.Length; i++)
                 {
                     m_dr_names[i] = m_dr.GetName(i);
                 }

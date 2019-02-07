@@ -15,7 +15,7 @@ namespace Peachpie.Library.PDO
         /// Clears the error.
         /// </summary>
         [PhpHidden]
-        public void ClearError()
+        internal void ClearError()
         {
             this.m_errorCode = PhpValue.Null;
             this.m_errorInfo = PhpValue.Null;
@@ -28,7 +28,7 @@ namespace Peachpie.Library.PDO
         /// <exception cref="Peachpie.Library.PDO.PDOException">
         /// </exception>
         [PhpHidden]
-        public void HandleError(System.Exception ex)
+        internal void HandleError(System.Exception ex)
         {
             PDO_ERRMODE mode = (PDO_ERRMODE)this.m_attributes[PDO_ATTR.ATTR_ERRMODE].ToLong();
             //TODO : fill errorCode and errorInfo
