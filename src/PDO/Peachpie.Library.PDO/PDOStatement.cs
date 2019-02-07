@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Pchp.Core;
 using static Peachpie.Library.PDO.PDO;
 using static Pchp.Library.Objects;
+using Pchp.Core.Reflection;
 
 namespace Peachpie.Library.PDO
 {
@@ -55,23 +56,33 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// Class Name property for FETCH_CLASS fetching mode.
         /// </summary>
-        string FetchClassName { get; set; } = null;
+        PhpTypeInfo FetchClassName { get; set; }
         /// <summary>
         /// Class Constructor Args for FETCH_CLASS fetching mode.
         /// </summary>
-        PhpValue[] FetchClassCtorArgs { get; set; } = null;
+        PhpValue[] FetchClassCtorArgs { get; set; }
+
+        /// <summary>
+        /// Class instance to results be fetched into (FETCH_INTO).
+        /// </summary>
+        object FetchClassInto { get; set; }
 
         private bool CheckDataReader()
         {
             if (m_dr == null)
             {
-                m_pdo.HandleError(new PDOException("The data reader cannot be null."));
+                RaiseError("The data reader cannot be null.");
                 return false;
             }
             else
             {
                 return true;
             }
+        }
+
+        private void RaiseError(string message)
+        {
+            m_pdo.HandleError(new PDOException(message));
         }
 
         /// <summary>
@@ -910,7 +921,7 @@ namespace Peachpie.Library.PDO
                                 return PhpValue.False;
                             }
 
-                            var obj = _ctx.Create(FetchClassName, FetchClassCtorArgs ?? Array.Empty<PhpValue>());
+                            var obj = FetchClassName.Creator(_ctx, FetchClassCtorArgs ?? Array.Empty<PhpValue>());
                             return PhpValue.FromClass(obj);
 
                         //case PDO_FETCH.FETCH_INTO:
@@ -1142,72 +1153,138 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public bool setFetchMode(params PhpValue[] args)
+        public bool setFetchMode(PDO_FETCH mode, params PhpValue[] args) => setFetchMode(mode, args.AsSpan());
+
+        internal bool setFetchMode(PDO_FETCH mode, ReadOnlySpan<PhpValue> args)
         {
-            PDO_FETCH fetch = default;
-
-            if (args.Length > 0)
+            switch (mode & ~PDO_FETCH.Flags)
             {
-                PhpValue fetchMode = args[0];
-
-                if (fetchMode.IsInteger())
-                {
-                    int value = (int)fetchMode.Long;
-                    if (Enum.IsDefined(typeof(PDO_FETCH), value))
+                case PDO_FETCH.Default:
+                case PDO_FETCH.FETCH_LAZY:
+                case PDO_FETCH.FETCH_ASSOC:
+                case PDO_FETCH.FETCH_NUM:
+                case PDO_FETCH.FETCH_BOTH:
+                case PDO_FETCH.FETCH_OBJ:
+                case PDO_FETCH.FETCH_BOUND:
+                case PDO_FETCH.FETCH_NAMED:
+                case PDO_FETCH.FETCH_KEY_PAIR:
+                    if (args.Length != 0)
                     {
-                        fetch = (PDO_FETCH)value;
-
-                        this.m_fetchStyle = fetch;
+                        RaiseError("fetch mode doesn't allow any extra arguments");
+                        return false;
                     }
                     else
                     {
-                        m_pdo.HandleError(new PDOException("Given PDO_FETCH constant is not implemented."));
+                        m_fetchStyle = mode;
+                        return true;
                     }
-                }
-            }
 
-            if (fetch == PDO_FETCH.FETCH_COLUMN)
-            {
-                if (args.Length > 1)
-                {
-                    if (args[1].IsLong(out var l))
+                case PDO_FETCH.FETCH_COLUMN:
+                    if (args.Length != 1)
                     {
-                        this.FetchColNo = (int)l;
+                        RaiseError("fetch mode requires the colno argument");
+                        return false;
+                    }
+                    else if (args[0].IsLong(out var l))
+                    {
+                        m_fetchStyle = mode;
+                        FetchColNo = (int)l;
+                        return true;
                     }
                     else
                     {
-                        m_pdo.HandleError(new PDOException("General error: colno must be an integer"));
+                        RaiseError("colno must be an integer");
+                        return false;
                     }
-                }
-                else
-                {
-                    m_pdo.HandleError(new PDOException("General error: fetch mode requires the colno argument"));
 
-                    //TODO what to do if missing parameter ?
-                    //fetch = PDO_FETCH.FETCH_USE_DEFAULT;
-                }
-            }
-            string className = null;
+                case PDO_FETCH.FETCH_CLASS:
 
-            if (fetch == PDO_FETCH.FETCH_CLASS)
-            {
-                if (args.Length > 1)
-                {
-                    className = args[1].ToStringOrNull();
-                    this.FetchClassName = className;
+                    FetchClassCtorArgs = default;
 
-                    if (args.Length > 2)
+                    if ((mode & PDO_FETCH.FETCH_CLASSTYPE) != 0)
                     {
-                        this.FetchClassCtorArgs = args[2].AsArray()?.GetValues();
+                        // will be getting its class name from 1st column
+                        if (args.Length != 0)
+                        {
+                            RaiseError("fetch mode doesn't allow any extra arguments");
+                            return false;
+                        }
+                        else
+                        {
+                            m_fetchStyle = mode;
+                            FetchClassName = null;
+                            return true;
+                        }
                     }
-                }
-                else
-                {
-                    throw new PDOException("General error: fetch mode requires the classname argument.");
-                }
-            }
+                    else
+                    {
+                        if (args.Length == 0)
+                        {
+                            RaiseError("fetch mode requires the classname argument");
+                            return false;
+                        }
+                        else if (args.Length > 2)
+                        {
+                            RaiseError("too many arguments");
+                            return false;
+                        }
+                        else if (args[0].IsString(out var name))
+                        {
+                            FetchClassName = _ctx.GetDeclaredTypeOrThrow(name, autoload: true);
+                            if (FetchClassName != null)
+                            {
+                                if (args.Length > 1)
+                                {
+                                    var ctorargs = args[1].AsArray();
+                                    if (ctorargs == null && !args[1].IsNull)
+                                    {
+                                        RaiseError("ctor_args must be either NULL or an array");
+                                        return false;
+                                    }
+                                    else if (ctorargs != null && ctorargs.Count != 0)
+                                    {
+                                        FetchClassCtorArgs = ctorargs.GetValues(); // TODO: deep copy
+                                    }
+                                }
 
-            return true;
+                                m_fetchStyle = mode;
+                                return true;
+                            }
+                            else
+                            {
+                                return false;
+                            }
+                        }
+                        else
+                        {
+                            RaiseError("classname must be a string");
+                            return false;
+                        }
+                    }
+
+                case PDO_FETCH.FETCH_INTO:
+                    if (args.Length != 1)
+                    {
+                        RaiseError("fetch mode requires the object parameter");
+                        return false;
+                    }
+                    else
+                    {
+                        FetchClassInto = args[0].AsObject();
+                        if (FetchClassInto == null)
+                        {
+                            RaiseError("object must be an object");
+                            return false;
+                        }
+
+                        m_fetchStyle = mode;
+                        return true;
+                    }
+
+                default:
+                    RaiseError("Invalid fetch mode specified");
+                    return false;
+            }
         }
 
         // Initializes the column names by looping through the data reads columns or using the schema if it is available

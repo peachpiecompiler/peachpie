@@ -528,6 +528,24 @@ namespace Pchp.Core
             return (value.Object is PhpAlias alias ? alias.Value.Object : value.Object) as PhpArray;
         }
 
+        public static bool IsString(this PhpValue value, out string @string)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.String:
+                    @string = value.String;
+                    return true;
+                case PhpTypeCode.MutableString:
+                    @string = value.MutableStringBlob.ToString();
+                    return true;
+                case PhpTypeCode.Alias:
+                    return IsString(value.Alias.Value, out @string);
+                default:
+                    @string = null;
+                    return false;
+            }
+        }
+
         public static bool IsLong(this PhpValue value, out long l)
         {
             switch (value.TypeCode)

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static Peachpie.Library.PDO.PDO;
 
 namespace Peachpie.Library.PDO
 {
@@ -149,12 +150,12 @@ namespace Peachpie.Library.PDO
         /// Set the default fetch mode for this statement
         /// 
         /// </summary>
+        /// <param name="mode">The fetch mode.</param>
         /// <param name="args">
-        /// args[0] The fetch mode must be one of the PDO::FETCH_* constants.
-        /// args[1] For FETCH_COLUMN : column number. For FETCH_CLASS : the class name. For FETCH_INTO, the object.
-        /// args[2] For FETCH_CLASS : the constructor arguments.
+        /// args[0] For FETCH_COLUMN : column number. For FETCH_CLASS : the class name. For FETCH_INTO, the object.
+        /// args[1] For FETCH_CLASS : the constructor arguments.
         /// </param>
         /// <returns>Returns TRUE on success or FALSE on failure</returns>
-        bool setFetchMode(params PhpValue[] args);
+        bool setFetchMode(PDO_FETCH mode, params PhpValue[] args);
     }
 }

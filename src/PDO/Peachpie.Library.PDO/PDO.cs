@@ -25,7 +25,7 @@ namespace Peachpie.Library.PDO
         private DbConnection m_con;
         private DbTransaction m_tx;
         private readonly Dictionary<PDO_ATTR, PhpValue> m_attributes = new Dictionary<PDO_ATTR, PhpValue>();
-        
+
         internal DbTransaction CurrentTransaction { get { return this.m_tx; } }
         internal IPDODriver Driver { get { return this.m_driver; } }
         internal DbCommand CurrentCommand { get; private set; }
@@ -115,7 +115,8 @@ namespace Peachpie.Library.PDO
             try
             {
                 this.m_con = this.m_driver.OpenConnection(connstring, username, password, options);
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 throw new PDOException(e.Message);
             }
@@ -231,10 +232,10 @@ namespace Peachpie.Library.PDO
         /// <returns>true on success, false otherwise</returns>
         internal bool StoreLastExecutedQuery()
         {
-            if(lastExecutedStatement != null)
+            if (lastExecutedStatement != null)
             {
                 var res = lastExecutedStatement.StoreQueryResult();
-                if(res)
+                if (res)
                 {
                     lastExecutedStatement.CloseReader();
                 }
@@ -265,13 +266,19 @@ namespace Peachpie.Library.PDO
         [return: CastToFalse]
         public PDOStatement query(string statement, params PhpValue[] args)
         {
-            PDOStatement stmt = new PDOStatement(_ctx, this, statement, null);
-            lastExecutedStatement = stmt;
+            var stmt = lastExecutedStatement = new PDOStatement(_ctx, this, statement, null);
 
             if (args.Length > 0)
             {
                 // Set the fetch mode, logic inside PDOStatement
-                stmt.setFetchMode(args);
+                if (args[0].IsLong(out var mode) && stmt.setFetchMode((PDO_FETCH)mode, args.AsSpan(1)))
+                {
+                    // ok
+                }
+                else
+                {
+                    return null;
+                }
             }
 
             if (stmt.execute())
