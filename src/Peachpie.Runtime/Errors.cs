@@ -151,6 +151,18 @@ namespace Pchp.Core
             throw new ArgumentNullException(argument);
         }
 
+        internal static Exception ClassNotFoundException(string classname)
+        {
+            return new InvalidOperationException(string.Format(Resources.ErrResources.class_not_found, classname));
+        }
+
+        public static void ClassNotFound(string classname)
+        {
+            // PhpException.Throw(PhpError.Error, Resources.ErrResources.class_not_found, classname);
+
+            throw ClassNotFoundException(classname);
+        }
+
         /// <summary>
         /// The value of an argument is not invalid but unsupported.
         /// </summary>

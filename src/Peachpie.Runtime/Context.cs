@@ -198,7 +198,7 @@ namespace Pchp.Core
                 // perform regular load with autoload
                 if (tinfo != GetDeclaredTypeOrThrow(tinfo.Name, true))
                 {
-                    throw new InvalidOperationException(string.Format(Resources.ErrResources.class_not_found, tinfo.Name));
+                    throw PhpException.ClassNotFoundException(tinfo.Name);
                 }
             }
 
@@ -224,7 +224,7 @@ namespace Pchp.Core
             var tinfo = GetDeclaredType(name, autoload);
             if (tinfo == null)
             {
-                PhpException.Throw(PhpError.Error, Resources.ErrResources.class_not_found, name);
+                PhpException.ClassNotFound(name);
             }
 
             return tinfo;
@@ -252,7 +252,7 @@ namespace Pchp.Core
                 }
                 else if (name.EqualsOrdinalIgnoreCase("static"))
                 {
-                    throw new NotImplementedException();
+                    throw new NotSupportedException();
                 }
             }
             else if (name.Length == 4 && name.EqualsOrdinalIgnoreCase("self"))
