@@ -67,6 +67,7 @@ namespace Pchp.Core
         /// <summary>
         /// Creates an instance of a type dynamically.
         /// </summary>
+        /// <exception cref="InvalidOperationException">If the class is not declared.</exception>
         public object Create(string classname) => Create(classname, Array.Empty<PhpValue>());
 
         /// <summary>
@@ -74,7 +75,8 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="classname">Full name of the class to instantiate. The name uses PHP syntax of name separators (<c>\</c>) and is case insensitive.</param>
         /// <param name="arguments">Arguments to be passed to the constructor.</param>
-        /// <returns>Object instance or <c>null</c> if class is not declared.</returns>
+        /// <returns>The object instance.</returns>
+        /// <exception cref="InvalidOperationException">If the class is not declared.</exception>
         public object Create(string classname, params object[] arguments) => Create(classname, PhpValue.FromClr(arguments));
 
         /// <summary>
@@ -82,7 +84,8 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="classname">Full name of the class to instantiate. The name uses PHP syntax of name separators (<c>\</c>) and is case insensitive.</param>
         /// <param name="arguments">Arguments to be passed to the constructor.</param>
-        /// <returns>Object instance or <c>null</c> if class is not declared.</returns>
+        /// <returns>The object instance.</returns>
+        /// <exception cref="InvalidOperationException">If the class is not declared.</exception>
         public object Create(string classname, params PhpValue[] arguments) => Create(default(RuntimeTypeHandle), classname, arguments);
 
         /// <summary>
@@ -93,7 +96,8 @@ namespace Pchp.Core
         /// Can be <c>default(<see cref="RuntimeTypeHandle"/>)</c> to resolve public constructors only.</param>
         /// <param name="classname">Full name of the class to instantiate. The name uses PHP syntax of name separators (<c>\</c>) and is case insensitive.</param>
         /// <param name="arguments">Arguments to be passed to the constructor.</param>
-        /// <returns>Object instance or <c>null</c> if class is not declared.</returns>
+        /// <returns>The object instance.</returns>
+        /// <exception cref="InvalidOperationException">If the class is not declared.</exception>
         public object Create([ImportCallerClass]RuntimeTypeHandle caller, string classname, params PhpValue[] arguments)
         {
             var tinfo = this.GetDeclaredType(classname, true) ?? throw PhpException.ClassNotFoundException(classname);
@@ -108,7 +112,8 @@ namespace Pchp.Core
         /// Can be <c>default(<see cref="RuntimeTypeHandle"/>)</c> to resolve public constructors only.</param>
         /// <param name="tinfo">Type to be instantiated.</param>
         /// <param name="arguments">Arguments to be passed to the constructor.</param>
-        /// <returns>Object instance or <c>null</c> if class is not declared.</returns>
+        /// <returns>The object instance.</returns>
+        /// <exception cref="ArgumentNullException">If provided <paramref name="tinfo"/> is <c>null</c>.</exception>
         public object Create([ImportCallerClass]RuntimeTypeHandle caller, PhpTypeInfo tinfo, params PhpValue[] arguments)
         {
             if (tinfo != null)
