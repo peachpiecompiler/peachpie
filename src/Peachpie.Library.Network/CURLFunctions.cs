@@ -287,6 +287,7 @@ namespace Peachpie.Library.Network
             req.Timeout = ch.Timeout;
             req.ContinueTimeout = ch.ContinueTimeout;
             req.MaximumAutomaticRedirections = ch.MaxRedirects;
+            //req.AutomaticDecompression = (DecompressionMethods)~0; // NOTICE: this nullify response Content-Length and Content-Encoding
             if (ch.UserAgent != null) req.UserAgent = ch.UserAgent;
             if (ch.ProtocolVersion != null) req.ProtocolVersion = ch.ProtocolVersion;
             if (ch.Referer != null) req.Referer = ch.Referer;

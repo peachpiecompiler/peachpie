@@ -207,6 +207,10 @@ namespace Peachpie.Library.Network
         public const int CURLINFO_PRIVATE = 1048597;
         public const int CURLINFO_REDIRECT_COUNT = 2097172;
         public const int CURLINFO_REDIRECT_TIME = 3145747;
+
+        /// <summary>
+        /// Total size of issued requests.
+        /// </summary>
         public const int CURLINFO_REQUEST_SIZE = 2097164;
         public const int CURLINFO_SIZE_DOWNLOAD = 3145736;
         public const int CURLINFO_SIZE_UPLOAD = 3145735;
