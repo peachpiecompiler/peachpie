@@ -64,6 +64,13 @@ namespace Peachpie.Library.Network
         public PhpStream VerboseOutput { get; set; }
 
         /// <summary>
+        /// <c>TRUE</c> to fail verbosely if the HTTP code returned is greater than or equal to 400.
+        /// The default behavior is to return the page normally, ignoring the code.	
+        /// <see cref="CURLConstants.CURLOPT_FAILONERROR"/> flag.
+        /// </summary>
+        public bool FailOnError { get; set; }
+
+        /// <summary>
         /// The contents of the "User-Agent: " header to be used in a HTTP request.
         /// </summary>
         public string UserAgent { get; set; }

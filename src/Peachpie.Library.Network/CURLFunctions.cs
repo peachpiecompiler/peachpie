@@ -242,11 +242,14 @@ namespace Peachpie.Library.Network
             }
             catch (AggregateException agEx)
             {
-                ch.VerboseOutput("Exception " + agEx.InnerException.ToString());
-
                 var ex = agEx.InnerException;
+
+                ch.VerboseOutput(ex.ToString());
+
                 if (ex is WebException webEx)
                 {
+                    // TODO: ch.FailOnError ?
+
                     switch (webEx.Status)
                     {
                         case WebExceptionStatus.ProtocolError:

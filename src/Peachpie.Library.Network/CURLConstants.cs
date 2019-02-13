@@ -662,6 +662,7 @@ namespace Peachpie.Library.Network
                 case CURLINFO_HEADER_OUT: ch.StoreRequestHeaders = value.ToBoolean(); break;
                 case CURLOPT_VERBOSE: ch.Verbose = value.ToBoolean(); break;
                 case CURLOPT_STDERR: ch.VerboseOutput = TryProcessMethodFromStream(value); return ch.VerboseOutput != null || Operators.IsEmpty(value);
+                case CURLOPT_FAILONERROR: ch.FailOnError = value.ToBoolean(); break;
 
                 //
                 default:
