@@ -663,7 +663,9 @@ namespace Peachpie.Library.Network
                 case CURLOPT_VERBOSE: ch.Verbose = value.ToBoolean(); break;
                 case CURLOPT_STDERR: ch.VerboseOutput = TryProcessMethodFromStream(value); return ch.VerboseOutput != null || Operators.IsEmpty(value);
                 case CURLOPT_FAILONERROR: ch.FailOnError = value.ToBoolean(); break;
+
                 case CURLOPT_FRESH_CONNECT: break; // ignored, let the system decide
+                case CURLOPT_FORBID_REUSE: break; // ignored for now, Dispose() always
 
                 //
                 default:
