@@ -242,6 +242,8 @@ namespace Peachpie.Library.Network
             }
             catch (AggregateException agEx)
             {
+                ch.VerboseOutput("Exception " + agEx.InnerException.ToString());
+
                 var ex = agEx.InnerException;
                 if (ex is WebException webEx)
                 {
@@ -519,6 +521,7 @@ namespace Peachpie.Library.Network
             // gzip decode if necessary
             if (response.ContentEncoding == "gzip") // TODO: // && ch.AcceptEncoding.Contains("gzip") ??
             {
+                ch.VerboseOutput("Decompressing the output stream using GZipStream.");
                 stream = new GZipStream(stream, CompressionMode.Decompress, leaveOpen: false);
             }
 
@@ -574,17 +577,22 @@ namespace Peachpie.Library.Network
             var uri = TryCreateUri(ch);
             if (uri == null)
             {
+                ch.VerboseOutput("Cannot create URI for '" + ch.Url + "'.");
                 ch.Result = CURLResponse.CreateError(CurlErrors.CURLE_URL_MALFORMAT);
             }
             else if (
                 IsProtocol(ch, uri, "http", CURLConstants.CURLPROTO_HTTP) ||
                 IsProtocol(ch, uri, "https", CURLConstants.CURLPROTO_HTTPS))
             {
+                ch.VerboseOutput("Initiating HTTP(S) request.");
+
                 ch.Result = null;
                 ch.ResponseTask = ExecHttpRequestInternalAsync(ctx, ch, uri);
             }
             else
             {
+                ch.VerboseOutput("The protocol '" + uri.Scheme + "' is not supported.");
+
                 ch.Result = CURLResponse.CreateError(CurlErrors.CURLE_UNSUPPORTED_PROTOCOL);
             }
         }

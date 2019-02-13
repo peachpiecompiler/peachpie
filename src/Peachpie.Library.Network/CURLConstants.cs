@@ -519,8 +519,8 @@ namespace Peachpie.Library.Network
         {
             if (Operators.IsSet(value))
             {
-                var stream = value.AsObject() as PhpStream;
-                if (stream != null && (readable ? stream.CanRead : stream.CanWrite))
+                var stream = TryProcessMethodFromStream(value, readable);
+                if (stream != null)
                 {
                     processing = new ProcessMethod(stream);
                 }
@@ -535,6 +535,24 @@ namespace Peachpie.Library.Network
             }
 
             return true;
+        }
+
+        static PhpStream TryProcessMethodFromStream(PhpValue value, bool readable = false)
+        {
+            if (Operators.IsSet(value))
+            {
+                var stream = value.AsObject() as PhpStream;
+                if (stream != null && (readable ? stream.CanRead : stream.CanWrite))
+                {
+                    return stream;
+                }
+                else
+                {
+                    return null; // failure
+                }
+            }
+
+            return null;
         }
 
         static bool TryProcessMethodFromCallable(PhpValue value, ProcessMethod @default, ref ProcessMethod processing)
@@ -643,6 +661,7 @@ namespace Peachpie.Library.Network
 
                 case CURLINFO_HEADER_OUT: ch.StoreRequestHeaders = value.ToBoolean(); break;
                 case CURLOPT_VERBOSE: ch.Verbose = value.ToBoolean(); break;
+                case CURLOPT_STDERR: ch.VerboseOutput = TryProcessMethodFromStream(value); return ch.VerboseOutput != null || Operators.IsEmpty(value);
 
                 //
                 default:
@@ -699,6 +718,27 @@ namespace Peachpie.Library.Network
 
         /// <summary>Empty string is converted to <c>null</c>.</summary>
         static string EmptyToNull(this string str) => string.IsNullOrEmpty(str) ? null : str;
+
+        /// <summary>
+        /// Writes message to the verbose output, if verboseis enabled.
+        /// </summary>
+        /// <param name="ch"></param>
+        /// <param name="message"></param>
+        internal static void VerboseOutput(this CURLResource ch, string message)
+        {
+            if (ch.Verbose)
+            {
+                if (ch.VerboseOutput != null)
+                {
+                    ch.VerboseOutput.WriteString(message);
+                    ch.VerboseOutput.WriteString(Environment.NewLine);
+                }
+                else
+                {
+                    System.Diagnostics.Trace.WriteLine("cURL: " + message);
+                }
+            }
+        }
 
         #endregion
     }

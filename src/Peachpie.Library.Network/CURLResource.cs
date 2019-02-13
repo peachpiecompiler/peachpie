@@ -59,6 +59,11 @@ namespace Peachpie.Library.Network
         public bool Verbose { get; set; }
 
         /// <summary>
+        /// Alternative output for <see cref="Verbose"/>.
+        /// </summary>
+        public PhpStream VerboseOutput { get; set; }
+
+        /// <summary>
         /// The contents of the "User-Agent: " header to be used in a HTTP request.
         /// </summary>
         public string UserAgent { get; set; }
@@ -165,6 +170,7 @@ namespace Peachpie.Library.Network
             this.ProcessingRequest = new ProcessMethod() { Method = ProcessMethodEnum.FILE };
             this.Headers = null;
             this.PostFields = PhpValue.Void;
+            this.VerboseOutput = null;
 
             //
             base.FreeManaged();
