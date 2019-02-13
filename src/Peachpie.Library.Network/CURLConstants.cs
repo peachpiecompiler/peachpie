@@ -622,8 +622,8 @@ namespace Peachpie.Library.Network
                 case CURLOPT_PRIVATE: ch.Private = value.GetValue().DeepCopy(); break;
                 case CURLOPT_TIMEOUT: { if (value.IsLong(out long l)) ch.Timeout = (int)l * 1000; break; }
                 case CURLOPT_TIMEOUT_MS: { if (value.IsLong(out long l)) ch.Timeout = (int)l; break; }
-                case CURLOPT_CONNECTTIMEOUT: return false;      // TODO: is there an alternative in .NET ?
-                case CURLOPT_CONNECTTIMEOUT_MS: return false;   // TODO: is there an alternative in .NET ?
+                case CURLOPT_CONNECTTIMEOUT: break;      // TODO: is there an alternative in .NET ?
+                case CURLOPT_CONNECTTIMEOUT_MS: break;   // TODO: is there an alternative in .NET ?
                 case CURLOPT_BUFFERSIZE:
                     {
                         if (value.IsLong(out long l) && l < int.MaxValue && l >= 0)
