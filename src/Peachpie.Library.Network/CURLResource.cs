@@ -54,6 +54,11 @@ namespace Peachpie.Library.Network
         public int BufferSize { get; set; } = 2048;
 
         /// <summary>
+        /// Whether to enable verbose output to STDERR.
+        /// </summary>
+        public bool Verbose { get; set; }
+
+        /// <summary>
         /// The contents of the "User-Agent: " header to be used in a HTTP request.
         /// </summary>
         public string UserAgent { get; set; }
