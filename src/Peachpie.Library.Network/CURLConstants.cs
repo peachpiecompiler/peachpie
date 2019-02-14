@@ -605,7 +605,7 @@ namespace Peachpie.Library.Network
                         ? ProcessMethod.StdOut // NOTE: if ProcessingResponse is RETURN, RETURN headers as well
                         : ProcessMethod.Ignore;
                     break;
-                case CURLOPT_HTTPHEADER: ch.Headers = value.ToArray().DeepCopy(); break;
+                case CURLOPT_HTTPHEADER: SetOption<CurlOption_Headers, PhpArray>(ch, value.ToArray().DeepCopy()); break;
                 case CURLOPT_ENCODING: ch.AcceptEncoding = value.ToStringOrNull().EmptyToNull(); break;
                 case CURLOPT_COOKIE: return (ch.CookieHeader = value.AsString()) != null;
                 case CURLOPT_COOKIEFILE: ch.CookieFileSet = true; break;
@@ -836,6 +836,26 @@ namespace Peachpie.Library.Network
     {
         public override int OptionId => CURLConstants.CURLOPT_PRIVATE;
         public override void Apply(WebRequest request) { }
+    }
+
+    /// <summary>
+    /// Headers to be send with the request.
+    /// Keys of the array are ignored, values are in form of <c>header-name: value</c>
+    /// </summary>
+    sealed class CurlOption_Headers : CurlOption<HttpWebRequest, PhpArray>
+    {
+        public override int OptionId => CURLConstants.CURLOPT_HTTPHEADER;
+
+        public override void Apply(HttpWebRequest request)
+        {
+            foreach (var value in this.OptionValue)
+            {
+                if (value.Value.IsString(out var header))
+                {
+                    request.Headers.Add(header);
+                }
+            }
+        }
     }
 
     sealed class CurlOption_DisableTcpNagle : CurlOption<HttpWebRequest, bool>

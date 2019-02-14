@@ -293,7 +293,6 @@ namespace Peachpie.Library.Network
             req.ContinueTimeout = ch.ContinueTimeout;
             req.MaximumAutomaticRedirections = ch.MaxRedirects;
             //req.AutomaticDecompression = (DecompressionMethods)~0; // NOTICE: this nullify response Content-Length and Content-Encoding
-            if (ch.Headers != null) AddHeaders(req, ch.Headers);
             if (ch.CookieHeader != null) TryAddCookieHeader(req, ch.CookieHeader);
             if (ch.CookieFileSet) req.CookieContainer = new CookieContainer();
             if (ch.Username != null) req.Credentials = new NetworkCredential(ch.Username, ch.Password ?? string.Empty);
@@ -434,19 +433,6 @@ namespace Peachpie.Library.Network
 
             // Dump the Stream into a byte[]
             return formDataStream.ToArray();
-        }
-
-        static void AddHeaders(HttpWebRequest req, PhpArray headers)
-        {
-            var enumerator = headers.GetFastEnumerator();
-            while (enumerator.MoveNext())
-            {
-                var header = enumerator.CurrentValue.AsString();
-                if (header != null)
-                {
-                    req.Headers.Add(header);
-                }
-            }
         }
 
         /// <summary>

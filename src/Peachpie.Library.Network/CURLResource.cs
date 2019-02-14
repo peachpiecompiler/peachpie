@@ -14,6 +14,23 @@ namespace Peachpie.Library.Network
     /// </summary>
     public sealed class CURLResource : PhpResource
     {
+        #region Flags
+
+        /// <summary>
+        /// Various boolean properties.
+        /// </summary>
+        [Flags]
+        enum Flags
+        {
+            StoreRequestHeaders = 1,
+            Verbose = 2,
+            FailOnError = 4,
+            CookieFileSet = 8,
+            FollowLocation = 16,
+        }
+
+        #endregion
+
         #region Properties
 
         readonly Dictionary<Type, ICurlOption> _options = new Dictionary<Type, ICurlOption>();
@@ -21,16 +38,29 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// Various options whichs value is x^2 can be stored here as a flag.
         /// </summary>
-        int _flags;
+        Flags _flags;
 
         /// <summary><c>CURLINFO_HEADER_OUT</c> option.</summary>
         public bool StoreRequestHeaders
         {
-            get => (_flags & CURLConstants.CURLINFO_HEADER_OUT) != 0;
+            get => (_flags & Flags.StoreRequestHeaders) != 0;
             set
             {
-                if (value) _flags |= CURLConstants.CURLINFO_HEADER_OUT;
-                else _flags &= ~CURLConstants.CURLINFO_HEADER_OUT;
+                if (value) _flags |= Flags.StoreRequestHeaders;
+                else _flags &= ~Flags.StoreRequestHeaders;
+            }
+        }
+
+        /// <summary>
+        /// Whether to enable verbose output to STDERR (or <see cref="VerboseOutput"/>).
+        /// </summary>
+        public bool Verbose
+        {
+            get => (_flags & Flags.Verbose) != 0;
+            set
+            {
+                if (value) _flags |= Flags.Verbose;
+                else _flags &= ~Flags.Verbose;
             }
         }
 
@@ -38,7 +68,15 @@ namespace Peachpie.Library.Network
 
         public string DefaultSheme { get; set; } = "http";
 
-        public bool FollowLocation { get; set; } = false;
+        public bool FollowLocation
+        {
+            get => (_flags & Flags.FollowLocation) != 0;
+            set
+            {
+                if (value) _flags |= Flags.FollowLocation;
+                else _flags &= ~Flags.FollowLocation;
+            }
+        }
 
         public int MaxRedirects { get; set; } = 50;
 
@@ -56,11 +94,6 @@ namespace Peachpie.Library.Network
         public int BufferSize { get; set; } = 2048;
 
         /// <summary>
-        /// Whether to enable verbose output to STDERR.
-        /// </summary>
-        public bool Verbose { get; set; }
-
-        /// <summary>
         /// Alternative output for <see cref="Verbose"/>.
         /// </summary>
         public PhpStream VerboseOutput { get; set; }
@@ -70,7 +103,15 @@ namespace Peachpie.Library.Network
         /// The default behavior is to return the page normally, ignoring the code.	
         /// <see cref="CURLConstants.CURLOPT_FAILONERROR"/> flag.
         /// </summary>
-        public bool FailOnError { get; set; }
+        public bool FailOnError
+        {
+            get => (_flags & Flags.FailOnError) != 0;
+            set
+            {
+                if (value) _flags |= Flags.FailOnError;
+                else _flags &= ~Flags.FailOnError;
+            }
+        }
 
         /// <summary>
         /// The contents of the <c>Accept-Encoding</c> header.
@@ -87,12 +128,6 @@ namespace Peachpie.Library.Network
         public PhpValue PostFields { get; set; } = PhpValue.Void;
 
         /// <summary>
-        /// Headers to be send with the request.
-        /// Keys of the array are ignored, values are in form of <c>header-name: value</c>
-        /// </summary>
-        public PhpArray Headers { get; set; }
-
-        /// <summary>
         /// The value of the Cookie header.
         /// Ignored if already present in <see cref="Headers"/>.
         /// </summary>
@@ -102,7 +137,15 @@ namespace Peachpie.Library.Network
         /// As long as <see cref="CURLConstants.CURLOPT_COOKIEFILE"/> is set (regardless of the value, even
         /// null suffices), the cookies retrieved from the server are recorded.
         /// </summary>
-        public bool CookieFileSet { get; set; } = false;
+        public bool CookieFileSet
+        {
+            get => (_flags & Flags.CookieFileSet) != 0;
+            set
+            {
+                if (value) _flags |= Flags.CookieFileSet;
+                else _flags &= ~Flags.CookieFileSet;
+            }
+        }
 
         public string Username { get; set; }
 
@@ -160,7 +203,6 @@ namespace Peachpie.Library.Network
             this.ProcessingHeaders = ProcessMethod.Ignore;
             this.ProcessingResponse = ProcessMethod.StdOut;
             this.ProcessingRequest = new ProcessMethod() { Method = ProcessMethodEnum.FILE };
-            this.Headers = null;
             this.PostFields = PhpValue.Void;
             this.VerboseOutput = null;
 
