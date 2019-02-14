@@ -179,7 +179,7 @@ namespace Peachpie.Library.Network
                     case CURLConstants.CURLINFO_TOTAL_TIME:
                         return r.TotalTime.TotalSeconds;
                     case CURLConstants.CURLINFO_PRIVATE:
-                        return r.Private.IsSet ? r.Private : PhpValue.False;
+                        return r.Private.IsSet ? r.Private.DeepCopy() : PhpValue.False;
                     case CURLConstants.CURLINFO_COOKIELIST:
                         return ((ch.CookieFileSet && ch.Result != null) ? CreateCookieArray(ch.Result.Cookies) : PhpArray.Empty);
                     case CURLConstants.CURLINFO_HEADER_SIZE:
@@ -293,9 +293,6 @@ namespace Peachpie.Library.Network
             req.ContinueTimeout = ch.ContinueTimeout;
             req.MaximumAutomaticRedirections = ch.MaxRedirects;
             //req.AutomaticDecompression = (DecompressionMethods)~0; // NOTICE: this nullify response Content-Length and Content-Encoding
-            if (ch.UserAgent != null) req.UserAgent = ch.UserAgent;
-            if (ch.ProtocolVersion != null) req.ProtocolVersion = ch.ProtocolVersion;
-            if (ch.Referer != null) req.Referer = ch.Referer;
             if (ch.Headers != null) AddHeaders(req, ch.Headers);
             if (ch.CookieHeader != null) TryAddCookieHeader(req, ch.CookieHeader);
             if (ch.CookieFileSet) req.CookieContainer = new CookieContainer();
@@ -303,6 +300,11 @@ namespace Peachpie.Library.Network
             if (ch.AcceptEncoding != null) req.Accept = ch.AcceptEncoding;
             // TODO: certificate
             // TODO: proxy
+
+            foreach (var option in ch.Options)
+            {
+                option.Apply(req);
+            }
 
             // make request:
 
@@ -609,7 +611,11 @@ namespace Peachpie.Library.Network
             }
 
             ch.Result.TotalTime = (DateTime.UtcNow - ch.StartTime);
-            ch.Result.Private = ch.Private;
+
+            if (ch.TryGetOption<CurlOption_Private>(out var opt_private))
+            {
+                ch.Result.Private = opt_private.OptionValue;
+            }
         }
 
         /// <summary>

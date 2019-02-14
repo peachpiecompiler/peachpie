@@ -20,7 +20,7 @@ namespace Peachpie.Library.Network
 
         internal const string CurlMultiResourceName = "curl_multi";
 
-        internal static Version FakeCurlVersion => new Version(7, 10, 8);
+        internal static Version FakeCurlVersion => new Version(7, 11, 2);
 
         #region Constants
 
@@ -287,6 +287,9 @@ namespace Peachpie.Library.Network
         public const int CURLFTPAUTH_TLS = 2;
         public const int CURLOPT_FTPSSLAUTH = 129;
         public const int CURLOPT_FTP_ACCOUNT = 10134;
+        /// <summary>
+        /// TRUE to disable TCP's Nagle algorithm, which tries to minimize the number of small packets on the network.
+        /// </summary>
         public const int CURLOPT_TCP_NODELAY = 121;
         public const int CURLINFO_OS_ERRNO = 2097177;
         public const int CURLINFO_NUM_CONNECTS = 2097178;
@@ -591,7 +594,7 @@ namespace Peachpie.Library.Network
                 case CURLOPT_POSTFIELDS: ch.PostFields = value.GetValue().DeepCopy(); break;
                 case CURLOPT_FOLLOWLOCATION: ch.FollowLocation = value.ToBoolean(); break;
                 case CURLOPT_MAXREDIRS: ch.MaxRedirects = (int)value.ToLong(); break;
-                case CURLOPT_REFERER: return (ch.Referer = value.AsString()) != null;
+                case CURLOPT_REFERER: return SetOption<CurlOption_Referer, string>(ch, value.AsString());
                 case CURLOPT_RETURNTRANSFER:
                     ch.ProcessingResponse = value.ToBoolean()
                         ? ProcessMethod.Return
@@ -617,9 +620,10 @@ namespace Peachpie.Library.Network
                 //case CURLOPT_READFUNCTION:
                 //case CURLOPT_PROGRESSFUNCTION:
 
-                case CURLOPT_USERAGENT: return (ch.UserAgent = value.AsString()) != null;
+                case CURLOPT_USERAGENT: return SetOption<CurlOption_UserAgent, string>(ch, value.AsString());
                 case CURLOPT_BINARYTRANSFER: break;   // no effect
-                case CURLOPT_PRIVATE: ch.Private = value.GetValue().DeepCopy(); break;
+                case CURLOPT_TCP_NODELAY: ch.SetOption(new CurlOption_DisableTcpNagle { OptionValue = value.ToBoolean() }); break;
+                case CURLOPT_PRIVATE: ch.SetOption(new CurlOption_Private { OptionValue = value.GetValue().DeepCopy() }); break;
                 case CURLOPT_TIMEOUT: { if (value.IsLong(out long l)) ch.Timeout = (int)l * 1000; break; }
                 case CURLOPT_TIMEOUT_MS: { if (value.IsLong(out long l)) ch.Timeout = (int)l; break; }
                 case CURLOPT_CONNECTTIMEOUT: break;      // TODO: is there an alternative in .NET ?
@@ -635,16 +639,21 @@ namespace Peachpie.Library.Network
                     }
                 case CURLOPT_EXPECT_100_TIMEOUT_MS: { if (value.IsLong(out long l)) ch.ContinueTimeout = (int)l; break; }
                 case CURLOPT_HTTP_VERSION:
-                    switch ((int)value.ToLong())
                     {
-                        case CURL_HTTP_VERSION_NONE: ch.ProtocolVersion = null; break;
-                        case CURL_HTTP_VERSION_1_0: ch.ProtocolVersion = HttpVersion.Version10; break;
-                        case CURL_HTTP_VERSION_1_1: ch.ProtocolVersion = HttpVersion.Version11; break;
-                        case CURL_HTTP_VERSION_2_0: // == CURL_HTTP_VERSION_2:
-                        case CURL_HTTP_VERSION_2TLS: ch.ProtocolVersion = new Version(2, 0); break; // HttpVersion.Version20
-                        default: return false;
+                        Version protocol;
+
+                        switch ((int)value.ToLong())
+                        {
+                            case CURL_HTTP_VERSION_NONE: ch.RemoveOption<CurlOption_ProtocolVersion>(); return true;
+                            case CURL_HTTP_VERSION_1_0: protocol = HttpVersion.Version10; break;
+                            case CURL_HTTP_VERSION_1_1: protocol = HttpVersion.Version11; break;
+                            case CURL_HTTP_VERSION_2_0: // == CURL_HTTP_VERSION_2:
+                            case CURL_HTTP_VERSION_2TLS: protocol = new Version(2, 0); break; // HttpVersion.Version20
+                            default: return false;
+                        }
+
+                        return SetOption<CurlOption_ProtocolVersion, Version>(ch, protocol);
                     }
-                    break;
 
                 case CURLOPT_USERNAME: ch.Username = value.ToString(); break;
                 case CURLOPT_USERPWD: (ch.Username, ch.Password) = SplitUserPwd(value.ToString()); break;
@@ -715,6 +724,21 @@ namespace Peachpie.Library.Network
             }
         }
 
+        /// <summary>
+        /// Sets cURL option.
+        /// </summary>
+        static bool SetOption<TOption, TValue>(CURLResource resource, TValue value) where TOption : CurlOption<HttpWebRequest, TValue>, new()
+        {
+            if (value != default)
+            {
+                resource.SetOption<TOption>(new TOption() { OptionValue = value });
+                return true;
+            }
+
+            //
+            return false;
+        }
+
         internal static string GetErrorString(this CurlMultiErrors err)
         {
             return Resources.ResourceManager.GetString(err.ToString()) ?? Resources.UnknownError;
@@ -747,7 +771,82 @@ namespace Peachpie.Library.Network
         #endregion
     }
 
-    internal static class HttpHeaders
+    #region ICurlOption // cURL option setters
+
+    /// <summary>
+    /// An actual cURL option value.
+    /// </summary>
+    interface ICurlOption : IEquatable<ICurlOption>
+    {
+        int OptionId { get; }
+
+        void Apply(WebRequest request);
+    }
+
+    /// <summary>
+    /// An actual cURL option value for specific <see cref="WebRequest"/> (ftp, http, ...) with a value.
+    /// </summary>
+    /// <typeparam name="TRequest">Type of <see cref="WebRequest"/>.</typeparam>
+    /// <typeparam name="TValue">Option value type.</typeparam>
+    abstract class CurlOption<TRequest, TValue> : ICurlOption where TRequest : WebRequest
+    {
+        public abstract int OptionId { get; }
+
+        public TValue OptionValue { get; set; }
+
+        void ICurlOption.Apply(WebRequest request)
+        {
+            if (request is TRequest r)
+            {
+                Apply(r);
+            }
+            else
+            {
+                throw new ArgumentException();
+            }
+        }
+
+        public abstract void Apply(TRequest request);
+
+        bool IEquatable<ICurlOption>.Equals(ICurlOption other)
+        {
+            return other != null && other.OptionId == OptionId;
+        }
+    }
+
+    sealed class CurlOption_UserAgent : CurlOption<HttpWebRequest, string>
+    {
+        public override int OptionId => CURLConstants.CURLOPT_USERAGENT;
+        public override void Apply(HttpWebRequest request) => request.UserAgent = this.OptionValue;
+    }
+
+    sealed class CurlOption_Referer : CurlOption<HttpWebRequest, string>
+    {
+        public override int OptionId => CURLConstants.CURLOPT_REFERER;
+        public override void Apply(HttpWebRequest request) => request.Referer = this.OptionValue;
+    }
+
+    sealed class CurlOption_ProtocolVersion : CurlOption<HttpWebRequest, Version>
+    {
+        public override int OptionId => CURLConstants.CURLOPT_HTTP_VERSION;
+        public override void Apply(HttpWebRequest request) => request.ProtocolVersion = this.OptionValue;
+    }
+
+    sealed class CurlOption_Private : CurlOption<WebRequest, PhpValue>
+    {
+        public override int OptionId => CURLConstants.CURLOPT_PRIVATE;
+        public override void Apply(WebRequest request) { }
+    }
+
+    sealed class CurlOption_DisableTcpNagle : CurlOption<HttpWebRequest, bool>
+    {
+        public override int OptionId => CURLConstants.CURLOPT_TCP_NODELAY;
+        public override void Apply(HttpWebRequest request) => request.ServicePoint.UseNagleAlgorithm = !OptionValue;
+    }
+
+    #endregion
+
+    static class HttpHeaders
     {
         /// <summary>
         /// Gets response status header (the first line),

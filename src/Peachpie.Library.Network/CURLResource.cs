@@ -16,6 +16,8 @@ namespace Peachpie.Library.Network
     {
         #region Properties
 
+        readonly Dictionary<Type, ICurlOption> _options = new Dictionary<Type, ICurlOption>();
+
         /// <summary>
         /// Various options whichs value is x^2 can be stored here as a flag.
         /// </summary>
@@ -71,23 +73,11 @@ namespace Peachpie.Library.Network
         public bool FailOnError { get; set; }
 
         /// <summary>
-        /// The contents of the "User-Agent: " header to be used in a HTTP request.
-        /// </summary>
-        public string UserAgent { get; set; }
-
-        /// <summary>
         /// The contents of the <c>Accept-Encoding</c> header.
         /// </summary>
         public string AcceptEncoding { get; set; }
 
-        public string Referer { get; set; }
-
         public string Method { get; set; } = WebRequestMethods.Http.Get;
-
-        /// <summary>
-        /// If set, specifies the HTTP protocol version to be used for the request.
-        /// </summary>
-        public Version ProtocolVersion { get; set; }
 
         /// <summary>
         /// The full data to post in a HTTP "POST" operation.
@@ -135,11 +125,6 @@ namespace Peachpie.Library.Network
         public ProcessMethod ProcessingRequest = new ProcessMethod() { Method = ProcessMethodEnum.FILE };
 
         /// <summary>
-        /// Private data set to the handle.
-        /// </summary>
-        internal PhpValue Private { get; set; }
-
-        /// <summary>
         /// Bit mask of enabled protocols. All by default.
         /// </summary>
         internal int Protocols { get; set; } = CURLConstants.CURLPROTO_ALL;
@@ -179,9 +164,44 @@ namespace Peachpie.Library.Network
             this.PostFields = PhpValue.Void;
             this.VerboseOutput = null;
 
+            this._options.Clear();
+
             //
             base.FreeManaged();
         }
+
+        /// <summary>
+        /// Sets cURL option.
+        /// </summary>
+        internal void SetOption<TOption>(TOption option) where TOption : ICurlOption
+        {
+            _options[typeof(TOption)] = option;
+        }
+
+        /// <summary>
+        /// Gets option value.
+        /// </summary>
+        internal bool TryGetOption<TOption>(out TOption option) where TOption : ICurlOption
+        {
+            if (_options.TryGetValue(typeof(TOption), out var x))
+            {
+                option = (TOption)x;
+                return true;
+            }
+
+            option = default;
+            return false;
+        }
+
+        internal bool RemoveOption<TOption>() where TOption : ICurlOption
+        {
+            return _options.Remove(typeof(TOption));
+        }
+
+        /// <summary>
+        /// Gets enumeration of set of additional options.
+        /// </summary>
+        internal IEnumerable<ICurlOption>/*!*/Options => _options.Values;
     }
 
     #region ProcessMethod, ProcessMethodEnum
