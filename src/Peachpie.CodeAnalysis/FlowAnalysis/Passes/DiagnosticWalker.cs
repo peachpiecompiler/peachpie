@@ -481,6 +481,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return default;
         }
 
+        public override T VisitConversion(BoundConversionEx x)
+        {
+            base.VisitConversion(x);
+
+            if (!x.IsImplicit && x.PhpSyntax != null && x.Operand.TypeRefMask.IsSingleType
+                && x.TargetType == _routine.TypeRefContext.GetTypes(x.Operand.TypeRefMask).Single())
+            {
+                _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.INF_RedundantCast);
+            }
+
+            return default;
+        }
+
         void CheckMethodCallTargetInstance(BoundExpression target, string methodName)
         {
             if (target == null)

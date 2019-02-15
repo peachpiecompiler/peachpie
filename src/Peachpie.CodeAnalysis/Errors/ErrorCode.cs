@@ -174,5 +174,6 @@ namespace Pchp.CodeAnalysis.Errors
         //
         INF_UnableToLoadSomeTypesInAnalyzer = 6000,
         INF_EvalDiscouraged,
+        INF_RedundantCast,
     }
 }
