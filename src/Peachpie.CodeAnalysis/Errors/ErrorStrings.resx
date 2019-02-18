@@ -299,4 +299,10 @@
   <data name="INF_RedundantCast" xml:space="preserve">
     <value>Cast is redundant.</value>
   </data>
+  <data name="WRN_DuplicateArrayKey" xml:space="preserve">
+    <value>Duplicate array key: '{0}'.</value>
+  </data>
+  <data name="WRN_InvalidArrayKeyType" xml:space="preserve">
+    <value>Invalid array key type: {0}.</value>
+  </data>
 </root>

@@ -167,6 +167,10 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_ExpressionNotRead,
         /// <summary>Assignment made to same variable; did you mean to assign something else?</summary>
         WRN_AssigningSameVariable,
+        /// <summary>Invalid array key type: {0}.</summary>
+        WRN_InvalidArrayKeyType,
+        /// <summary>Duplicate array key: '{0}'.</summary>
+        WRN_DuplicateArrayKey,
         
 
         //

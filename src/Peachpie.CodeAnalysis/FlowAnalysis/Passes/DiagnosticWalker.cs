@@ -150,7 +150,76 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_ExpressionNotRead);
             }
 
+            // Check valid types and uniqueness of the keys
+            HashSet<string> lazyKeyConstSet = null;             // Stores canonic string representations of the keys to check for duplicates
+            for (int i = 0; i < x.Items.Length; i++)
+            {
+                var item = x.Items[i];
+                if (item.Key == null)
+                    continue;
+
+                if (!item.Key.TypeRefMask.IsAnyType)    // Disallowing 'mixed' for key type would have caused too many false positives
+                {
+                    var keyTypes = _routine.TypeRefContext.GetTypes(item.Key.TypeRefMask);
+                    bool allKeyTypesValid = keyTypes.Count > 0 && keyTypes.All(IsValidKeyType);
+                    if (!allKeyTypesValid)
+                    {
+                        string keyTypeStr = _routine.TypeRefContext.ToString(item.Key.TypeRefMask);
+                        _diagnostics.Add(_routine, item.Key.PhpSyntax, ErrorCode.WRN_InvalidArrayKeyType, keyTypeStr);
+                    }
+                }
+
+                if (TryGetCanonicKeyStringConstant(item.Key.ConstantValue, out string keyConst))
+                {
+                    if (lazyKeyConstSet == null)
+                        lazyKeyConstSet = new HashSet<string>();
+
+                    if (!lazyKeyConstSet.Add(keyConst))
+                    {
+                        _diagnostics.Add(_routine, item.Key.PhpSyntax ?? item.Value.PhpSyntax, ErrorCode.WRN_DuplicateArrayKey, keyConst);
+                    }
+                }
+            }
+
             return base.VisitArray(x);
+        }
+
+        private bool IsValidKeyType(IBoundTypeRef type)
+        {
+            if (type is BoundPrimitiveTypeRef pt)
+            {
+                switch (pt.TypeCode)
+                {
+                    case PhpTypeCode.Boolean:
+                    case PhpTypeCode.Long:
+                    case PhpTypeCode.Double:
+                    case PhpTypeCode.String:
+                    case PhpTypeCode.WritableString:
+                    case PhpTypeCode.Null:
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool TryGetCanonicKeyStringConstant(Optional<object> keyConst, out string keyString)
+        {
+            if (!keyConst.HasValue)
+            {
+                keyString = null;
+                return false;
+            }
+
+            var obj = keyConst.Value;
+
+            if (obj == null) keyString = "";
+            else if (obj is bool b) keyString = b ? "1" : "0";          // Notice the difference from the standard bool -> string conversion
+            else if (obj is float f) keyString = ((long)f).ToString();
+            else if (obj is double d) keyString = ((long)d).ToString();
+            else keyString = obj.ToString();
+
+            return true;
         }
 
         internal override T VisitIndirectTypeRef(BoundIndirectTypeRef x)
