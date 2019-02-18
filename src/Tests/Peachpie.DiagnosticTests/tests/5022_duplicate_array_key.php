@@ -1,6 +1,6 @@
 <?php
 
-function foo(int $unknown) {
+function foo() {
   return array(
     0 => 'Bla',
     1 => 'Bal',

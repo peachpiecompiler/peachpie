@@ -528,6 +528,24 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return default;
         }
 
+        public override T VisitUnaryExpression(BoundUnaryEx x)
+        {
+            base.VisitUnaryExpression(x);
+
+            switch (x.Operation)
+            {
+                case Operations.Clone:
+                    if (!x.Operand.TypeRefMask.IsAnyType && !_routine.TypeRefContext.IsObject(x.Operand.TypeRefMask))
+                    {
+                        // clone called on non-object
+                        _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_CloneNonObject);
+                    }
+                    break;
+            }
+
+            return default;
+        }
+
         public override T VisitBinaryExpression(BoundBinaryEx x)
         {
             base.VisitBinaryExpression(x);

@@ -305,4 +305,7 @@
   <data name="WRN_InvalidArrayKeyType" xml:space="preserve">
     <value>Invalid array key type: {0}.</value>
   </data>
+  <data name="WRN_CloneNonObject" xml:space="preserve">
+    <value>Cloning of non-object.</value>
+  </data>
 </root>
