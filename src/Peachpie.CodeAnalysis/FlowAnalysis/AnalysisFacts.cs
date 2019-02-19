@@ -159,12 +159,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        private static bool HasSimpleName(BoundGlobalFunctionCall call, out string name)
+        public static bool HasSimpleName(BoundGlobalFunctionCall call, out string name)
         {
             if (call.Name.IsDirect)
             {
                 // Take the function name ignoring current namespace resolution, simple names only:
-                var qualifiedName = call.NameOpt.HasValue ? call.NameOpt.Value : call.Name.NameValue;
+                var qualifiedName = call.NameOpt ?? call.Name.NameValue;
                 if (qualifiedName.IsSimpleName)
                 {
                     name = qualifiedName.Name.Value;

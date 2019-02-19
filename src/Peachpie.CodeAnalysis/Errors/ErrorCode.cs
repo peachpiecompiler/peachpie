@@ -175,6 +175,8 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_CloneNonObject,
         /// <summary>Using non-iterable type in foreach: {0}.</summary>
         WRN_ForeachNonIterable,
+        /// <summary>Wrong number of arguments in {0}.</summary>
+        WRN_FormatStringWrongArgCount,
         
 
         //
