@@ -541,7 +541,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         if (!types.All(t => t.IsObject))
                         {
                             // clone called on non-object
-                            _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_CloneNonObject);
+                            string typeString = _routine.TypeRefContext.ToString(x.Operand.TypeRefMask);
+                            _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_CloneNonObject, typeString);
                         }
                     }
                     break;
@@ -751,6 +752,36 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             }
 
             return default;
+        }
+
+        public override T VisitCFGForeachEnumereeEdge(ForeachEnumereeEdge x)
+        {
+            base.VisitCFGForeachEnumereeEdge(x);
+
+            if (!x.Enumeree.TypeRefMask.IsAnyType)
+            {
+                var types = _routine.TypeRefContext.GetTypes(x.Enumeree.TypeRefMask);
+                if (!types.Any(IsIterableType))                                         // Using !All causes too many false positives (due to explode(..) etc.)
+                {
+                    // Using non-iterable type for enumeree
+                    string typeString = _routine.TypeRefContext.ToString(x.Enumeree.TypeRefMask);
+                    _diagnostics.Add(_routine, x.Enumeree.PhpSyntax, ErrorCode.WRN_ForeachNonIterable, typeString);
+                }
+            }
+
+            return default;
+        }
+
+        private bool IsIterableType(IBoundTypeRef type)
+        {
+            if (type.IsArray)
+                return true;
+
+            if (!type.IsObject)
+                return false;
+
+            var symbol = type.ResolveTypeSymbol(DeclaringCompilation);
+            return symbol.AllInterfaces.Contains(DeclaringCompilation.CoreTypes.Traversable.Symbol);
         }
     }
 }

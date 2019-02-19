@@ -171,8 +171,10 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_InvalidArrayKeyType,
         /// <summary>Duplicate array key: '{0}'.</summary>
         WRN_DuplicateArrayKey,
-        /// <summary>Cloning of non-object.</summary>
+        /// <summary>Cloning of non-object: {0}.</summary>
         WRN_CloneNonObject,
+        /// <summary>Using non-iterable type in foreach: {0}.</summary>
+        WRN_ForeachNonIterable,
         
 
         //
