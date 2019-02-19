@@ -308,6 +308,9 @@
   <data name="WRN_CloneNonObject" xml:space="preserve">
     <value>Cloning of non-object: {0}.</value>
   </data>
+  <data name="INF_ClassNameWrongCase" xml:space="preserve">
+    <value>Wrong case in class name '{0}', expected '{1}'.</value>
+  </data>
   <data name="WRN_ForeachNonIterable" xml:space="preserve">
     <value>Using non-iterable type in foreach: {0}.</value>
   </data>

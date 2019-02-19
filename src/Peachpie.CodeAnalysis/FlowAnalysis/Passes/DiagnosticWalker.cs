@@ -230,6 +230,22 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         internal override T VisitTypeRef(BoundTypeRef typeRef)
         {
             CheckUndefinedType(typeRef);
+
+            // Check that the right case of a class name is used
+            if (typeRef.IsObject && typeRef is BoundClassTypeRef ct)
+            {
+                string refName = ct.ClassName.Name.Value;
+
+                var symbol = typeRef.ResolveTypeSymbol(DeclaringCompilation);
+                string symbolName = symbol.Name;
+
+                if (refName != symbolName && refName.Equals(symbolName, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    // Wrong class name case
+                    _diagnostics.Add(_routine, typeRef.PhpSyntax, ErrorCode.INF_ClassNameWrongCase, refName, symbolName);
+                }
+            }
+
             return base.VisitTypeRef(typeRef);
         }
 

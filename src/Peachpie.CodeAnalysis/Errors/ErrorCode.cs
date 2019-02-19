@@ -183,5 +183,7 @@ namespace Pchp.CodeAnalysis.Errors
         INF_UnableToLoadSomeTypesInAnalyzer = 6000,
         INF_EvalDiscouraged,
         INF_RedundantCast,
+        /// <summary>Wrong case in class name '{0}', expected '{1}'.</summary>
+        INF_ClassNameWrongCase,
     }
 }
