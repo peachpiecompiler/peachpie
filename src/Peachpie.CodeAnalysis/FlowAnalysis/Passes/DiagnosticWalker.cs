@@ -535,10 +535,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             switch (x.Operation)
             {
                 case Operations.Clone:
-                    if (!x.Operand.TypeRefMask.IsAnyType && !_routine.TypeRefContext.IsObject(x.Operand.TypeRefMask))
+                    if (!x.Operand.TypeRefMask.IsAnyType)
                     {
-                        // clone called on non-object
-                        _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_CloneNonObject);
+                        var types = _routine.TypeRefContext.GetTypes(x.Operand.TypeRefMask);
+                        if (!types.All(t => t.IsObject))
+                        {
+                            // clone called on non-object
+                            _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_CloneNonObject);
+                        }
                     }
                     break;
             }

@@ -13,5 +13,5 @@ function foo(MyClass $mc, int $i, string $s, float $f, bool $b, $any, $hlp) {
   $is = $hlp ? $i : $s;
   $mci = $hlp ? $mc : $i;
   clone $is/*!PHP5023!*/;
-  clone $mci;
+  clone $mci/*!PHP5023!*/;
 }
