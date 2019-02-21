@@ -177,6 +177,8 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_ForeachNonIterable,
         /// <summary>Wrong number of arguments in {0}.</summary>
         WRN_FormatStringWrongArgCount,
+        /// <summary>Missing the call of parent::__construct from {0}::__construct.</summary>
+        WRN_ParentCtorNotCalled,
         
 
         //

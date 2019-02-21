@@ -25,6 +25,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         private readonly DiagnosticBag _diagnostics;
         private SourceRoutineSymbol _routine;
 
+        private bool _callsParentCtor;
+
         PhpCompilation DeclaringCompilation => _routine.DeclaringCompilation;
 
         TypeRefContext TypeCtx => _routine.TypeRefContext;
@@ -105,6 +107,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             Debug.Assert(x == _routine.ControlFlowGraph);
 
             base.VisitCFGInternal(x);
+
+            if (!_callsParentCtor && _routine.Name == Devsense.PHP.Syntax.Name.SpecialMethodNames.Construct.Value
+                && _routine.ContainingType.BaseType?.ResolvePhpCtor() != null)
+            {
+                // Missing calling parent::__construct
+                _diagnostics.Add(_routine, _routine.SyntaxSignature.Span.ToTextSpan(), ErrorCode.WRN_ParentCtorNotCalled, _routine.ContainingType.Name);
+            }
 
             // analyse missing or redefined labels
             CheckLabels(x.Labels);
@@ -477,6 +486,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             // check deprecated
             CheckObsoleteSymbol(call.PhpSyntax, call.TargetMethod);
+
+            // Mark that parent::__construct was called (to be checked later)
+            if (call.Name.IsDirect && call.Name.NameValue.Name.IsConstructName
+                && call.TypeRef is BoundReservedTypeRef rt && rt.ReservedType == ReservedTypeRef.ReservedType.parent)
+            {
+                _callsParentCtor = true;
+            }
 
             //
             return base.VisitStaticFunctionCall(call);
