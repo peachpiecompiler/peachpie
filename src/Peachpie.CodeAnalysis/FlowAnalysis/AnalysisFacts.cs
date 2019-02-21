@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Devsense.PHP.Syntax;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.Semantics.TypeRef;
 using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
@@ -521,6 +522,53 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             return isFeasible;
+        }
+
+        /// <summary>
+        /// Returns whether the given type can be used as an array key.
+        /// </summary>
+        public static bool IsValidKeyType(IBoundTypeRef type)
+        {
+            if (type is BoundPrimitiveTypeRef pt)
+            {
+                switch (pt.TypeCode)
+                {
+                    case PhpTypeCode.Boolean:
+                    case PhpTypeCode.Long:
+                    case PhpTypeCode.Double:
+                    case PhpTypeCode.String:
+                    case PhpTypeCode.WritableString:
+                    case PhpTypeCode.Null:
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// If present, transforms the given constant value to a string corresponding to the key under which the item is stored in an array.
+        /// </summary>
+        /// <param name="keyConst">Constant value of the key.</param>
+        /// <param name="keyString">If <paramref name="keyConst"/> contains a value, the key as a string.</param>
+        /// <returns>Whether the value was constant at all.</returns>
+        public static bool TryGetCanonicKeyStringConstant(Optional<object> keyConst, out string keyString)
+        {
+            if (!keyConst.HasValue)
+            {
+                keyString = null;
+                return false;
+            }
+
+            var obj = keyConst.Value;
+
+            if (obj == null) keyString = "";
+            else if (obj is bool b) keyString = b ? "1" : "0";          // Notice the difference from the standard bool -> string conversion
+            else if (obj is float f) keyString = ((long)f).ToString();
+            else if (obj is double d) keyString = ((long)d).ToString();
+            else keyString = obj.ToString();
+
+            return true;
         }
     }
 }

@@ -17,7 +17,7 @@ function array_or_false($any) {
 }
 
 function foo(MyClass $mc, MyIterator $mi, MyArrayIterator $mai, int $i, string $s, float $f, bool $b, array $a, Iterable $it, $any) {
-  foreach ($mc/*!PHP5024!*/ as $value) {}
+  foreach ($mc as $value) {}
   foreach ($mi as $value) {}
   foreach ($mai as $value) {}
   foreach ($i/*!PHP5024!*/ as $value) {}

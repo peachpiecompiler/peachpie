@@ -170,68 +170,32 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 if (item.Key == null)
                     continue;
 
-                if (!item.Key.TypeRefMask.IsAnyType)    // Disallowing 'mixed' for key type would have caused too many false positives
+                var keyTypeMask = item.Key.TypeRefMask;
+                if (!keyTypeMask.IsAnyType && !keyTypeMask.IsRef)    // Disallowing 'mixed' for key type would have caused too many false positives
                 {
-                    var keyTypes = _routine.TypeRefContext.GetTypes(item.Key.TypeRefMask);
-                    bool allKeyTypesValid = keyTypes.Count > 0 && keyTypes.All(IsValidKeyType);
+                    var keyTypes = _routine.TypeRefContext.GetTypes(keyTypeMask);
+                    bool allKeyTypesValid = keyTypes.Count > 0 && keyTypes.All(AnalysisFacts.IsValidKeyType);
                     if (!allKeyTypesValid)
                     {
-                        string keyTypeStr = _routine.TypeRefContext.ToString(item.Key.TypeRefMask);
+                        string keyTypeStr = _routine.TypeRefContext.ToString(keyTypeMask);
                         _diagnostics.Add(_routine, item.Key.PhpSyntax, ErrorCode.WRN_InvalidArrayKeyType, keyTypeStr);
                     }
                 }
 
-                if (TryGetCanonicKeyStringConstant(item.Key.ConstantValue, out string keyConst))
+                if (AnalysisFacts.TryGetCanonicKeyStringConstant(item.Key.ConstantValue, out string keyConst))
                 {
                     if (lazyKeyConstSet == null)
                         lazyKeyConstSet = new HashSet<string>();
 
                     if (!lazyKeyConstSet.Add(keyConst))
                     {
+                        // Duplicate array key
                         _diagnostics.Add(_routine, item.Key.PhpSyntax ?? item.Value.PhpSyntax, ErrorCode.WRN_DuplicateArrayKey, keyConst);
                     }
                 }
             }
 
             return base.VisitArray(x);
-        }
-
-        private bool IsValidKeyType(IBoundTypeRef type)
-        {
-            if (type is BoundPrimitiveTypeRef pt)
-            {
-                switch (pt.TypeCode)
-                {
-                    case PhpTypeCode.Boolean:
-                    case PhpTypeCode.Long:
-                    case PhpTypeCode.Double:
-                    case PhpTypeCode.String:
-                    case PhpTypeCode.WritableString:
-                    case PhpTypeCode.Null:
-                        return true;
-                }
-            }
-
-            return false;
-        }
-
-        private bool TryGetCanonicKeyStringConstant(Optional<object> keyConst, out string keyString)
-        {
-            if (!keyConst.HasValue)
-            {
-                keyString = null;
-                return false;
-            }
-
-            var obj = keyConst.Value;
-
-            if (obj == null) keyString = "";
-            else if (obj is bool b) keyString = b ? "1" : "0";          // Notice the difference from the standard bool -> string conversion
-            else if (obj is float f) keyString = ((long)f).ToString();
-            else if (obj is double d) keyString = ((long)d).ToString();
-            else keyString = obj.ToString();
-
-            return true;
         }
 
         internal override T VisitIndirectTypeRef(BoundIndirectTypeRef x)
@@ -249,12 +213,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 string refName = ct.ClassName.Name.Value;
 
                 var symbol = typeRef.ResolveTypeSymbol(DeclaringCompilation);
-                string symbolName = symbol.Name;
-
-                if (refName != symbolName && refName.Equals(symbolName, StringComparison.InvariantCultureIgnoreCase))
+                if (symbol.Kind != SymbolKind.ErrorType)
                 {
-                    // Wrong class name case
-                    _diagnostics.Add(_routine, typeRef.PhpSyntax, ErrorCode.INF_ClassNameWrongCase, refName, symbolName);
+                    string symbolName = symbol.Name;
+
+                    if (refName != symbolName && refName.Equals(symbolName, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        // Wrong class name case
+                        _diagnostics.Add(_routine, typeRef.PhpSyntax, ErrorCode.INF_ClassNameWrongCase, refName, symbolName);
+                    }
                 }
             }
 
@@ -571,13 +538,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             switch (x.Operation)
             {
                 case Operations.Clone:
-                    if (!x.Operand.TypeRefMask.IsAnyType)
+                    var operandTypeMask = x.Operand.TypeRefMask;
+                    if (!operandTypeMask.IsAnyType && !operandTypeMask.IsRef)
                     {
-                        var types = _routine.TypeRefContext.GetTypes(x.Operand.TypeRefMask);
+                        var types = _routine.TypeRefContext.GetTypes(operandTypeMask);
                         if (!types.All(t => t.IsObject))
                         {
                             // clone called on non-object
-                            string typeString = _routine.TypeRefContext.ToString(x.Operand.TypeRefMask);
+                            string typeString = _routine.TypeRefContext.ToString(operandTypeMask);
                             _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_CloneNonObject, typeString);
                         }
                     }
@@ -838,30 +806,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         {
             base.VisitCFGForeachEnumereeEdge(x);
 
-            if (!x.Enumeree.TypeRefMask.IsAnyType)
+            var enumereeTypeMask = x.Enumeree.TypeRefMask;
+            if (!enumereeTypeMask.IsAnyType && !enumereeTypeMask.IsRef)
             {
-                var types = _routine.TypeRefContext.GetTypes(x.Enumeree.TypeRefMask);
-                if (!types.Any(IsIterableType))                                         // Using !All causes too many false positives (due to explode(..) etc.)
+                // Apart from array, any object can possibly implement Traversable, hence no warning for them
+                var types = _routine.TypeRefContext.GetTypes(enumereeTypeMask);
+                if (!types.Any(t => t.IsArray || t.IsObject))                          // Using !All causes too many false positives (due to explode(..) etc.)
                 {
                     // Using non-iterable type for enumeree
-                    string typeString = _routine.TypeRefContext.ToString(x.Enumeree.TypeRefMask);
+                    string typeString = _routine.TypeRefContext.ToString(enumereeTypeMask);
                     _diagnostics.Add(_routine, x.Enumeree.PhpSyntax, ErrorCode.WRN_ForeachNonIterable, typeString);
                 }
             }
 
             return default;
-        }
-
-        private bool IsIterableType(IBoundTypeRef type)
-        {
-            if (type.IsArray)
-                return true;
-
-            if (!type.IsObject)
-                return false;
-
-            var symbol = type.ResolveTypeSymbol(DeclaringCompilation);
-            return symbol.AllInterfaces.Contains(DeclaringCompilation.CoreTypes.Traversable.Symbol);
         }
     }
 }
