@@ -32,3 +32,11 @@ function foo(
   A &$t,
   array $u)
 {}
+
+class Bar extends B {
+  /**
+   * @param A $a Some parameter.
+   * @param self $b Some parameter.
+   */
+  public function boo(self $a/*!PHP5027!*/, A $b) {}
+}

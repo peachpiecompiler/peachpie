@@ -118,6 +118,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 return result;
                         }
 
+                        if (qname.IsSelfClassName)
+                        {
+                            return typeCtx.GetSelfTypeMask();
+                        }
+
                         result = BoundTypeRefFactory.Create(qname, typeCtx.SelfType as SourceTypeSymbol).GetTypeRefMask(typeCtx);
                     }
 
