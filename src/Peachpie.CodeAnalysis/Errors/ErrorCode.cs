@@ -179,6 +179,8 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_FormatStringWrongArgCount,
         /// <summary>Missing the call of parent::__construct from {0}::__construct.</summary>
         WRN_ParentCtorNotCalled,
+        /// <summary>PHPDoc type {0} of parameter ${1} is incompatible with its type hint {2}.</summary>
+        WRN_ParamPhpDocTypeHintIncompatible,
         
 
         //

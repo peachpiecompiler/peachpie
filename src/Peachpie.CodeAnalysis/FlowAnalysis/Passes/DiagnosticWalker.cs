@@ -108,6 +108,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             base.VisitCFGInternal(x);
 
+            CheckParams();
+
             if (!_callsParentCtor && _routine.Name == Devsense.PHP.Syntax.Name.SpecialMethodNames.Construct.Value
                 && _routine.ContainingType.BaseType?.ResolvePhpCtor() != null)
             {
@@ -120,6 +122,40 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             // report unreachable blocks
             CheckUnreachableCode(x);
+        }
+
+        private void CheckParams()
+        {
+            // Check the compatibility of type hints with PhpDoc, if both exist
+            if (_routine.PHPDocBlock != null)
+            {
+                for (int i = 0; i < _routine.SourceParameters.Length; i++)
+                {
+                    var param = _routine.SourceParameters[i];
+
+                    // Consider only parameters passed by value, with both typehints and PHPDoc comments
+                    if (!param.Syntax.IsOut && !param.Syntax.PassedByRef
+                        && param.Syntax.TypeHint != null
+                        && param.PHPDocOpt != null && param.PHPDocOpt.TypeNamesArray.Length != 0)
+                    {
+                        var hintType = param.Type;
+                        TypeSymbol docType = null;
+
+                        var tmask = PHPDoc.GetTypeMask(TypeCtx, param.PHPDocOpt.TypeNamesArray, _routine.GetNamingContext());
+                        if (!tmask.IsVoid && !tmask.IsAnyType)
+                        {
+                            docType = DeclaringCompilation.GetTypeFromTypeRef(TypeCtx, tmask);
+                        }
+
+                        if (!docType?.IsOfType(hintType) ?? false)
+                        {
+                            // PHPDoc type is incompatible with type hint
+                            _diagnostics.Add(_routine, param.Syntax, ErrorCode.WRN_ParamPhpDocTypeHintIncompatible,
+                                param.PHPDocOpt.TypeNames, param.Name, param.Syntax.TypeHint);
+                        }
+                    }
+                }
+            }
         }
 
         void CheckLabels(ImmutableArray<ControlFlowGraph.LabelBlockState> labels)
