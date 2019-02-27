@@ -4568,7 +4568,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     case SpecialType.System_Int64:
                     case SpecialType.System_String:
                         // Template: !(bool)value
-                        cg.EmitConvertToBool(t, default);
+                        cg.EmitConvertToBool(t, this.Operand.TypeRefMask);
                         cg.EmitLogicNegation();
                         break;
 
