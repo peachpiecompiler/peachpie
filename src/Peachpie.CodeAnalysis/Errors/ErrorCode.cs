@@ -181,7 +181,8 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_ParentCtorNotCalled,
         /// <summary>PHPDoc type {0} of parameter ${1} is incompatible with its type hint {2}.</summary>
         WRN_ParamPhpDocTypeHintIncompatible,
-        
+        /// <summary>Value of type {0} assigned to field {1} is incompatible with its PHPDoc type {2}.</summary>
+        WRN_FieldPhpDocAssignIncompatible,
 
         //
         // Visible information

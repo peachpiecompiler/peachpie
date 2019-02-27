@@ -15,6 +15,7 @@ using Devsense.PHP.Syntax.Ast;
 using Peachpie.CodeAnalysis.Utilities;
 using Pchp.CodeAnalysis.Semantics.TypeRef;
 using System.Text.RegularExpressions;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
@@ -358,6 +359,24 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             {
                 // Assignment made to same variable
                 _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_AssigningSameVariable);
+            }
+
+            // Check the type of the value assigned to a field against its PHPDoc
+            var valMask = x.Value.TypeRefMask;
+            if (!valMask.IsAnyType && !valMask.IsRef
+                && x.Target is BoundFieldRef fr && fr.BoundReference.Symbol is SourceFieldSymbol fieldSymbol
+                && fieldSymbol.FindPhpDocVarTag() is PHPDocBlock.TypeVarDescTag fieldDoc
+                && fieldDoc.TypeNamesArray.Length != 0)
+            {
+                var namingCtx = NameUtils.GetNamingContext(fieldSymbol.PhpDocBlock.ContainingType);
+                var fieldMask = PHPDoc.GetTypeMask(TypeCtx, fieldDoc.TypeNamesArray, namingCtx);
+
+                if (!TypeCtx.CanBeSameType(fieldMask, valMask))
+                {
+                    // The value can't be of the type specified in PHPDoc
+                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_FieldPhpDocAssignIncompatible,
+                        TypeCtx.ToString(valMask), fieldSymbol, fieldDoc.TypeNames);
+                }
             }
 
             //
