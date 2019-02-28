@@ -47,9 +47,9 @@ function test(A $a, B $b, FieldClass $fc, string $s, resource $r, $any) {
   $a->fClass = $fc;
   $a->fClass = $any;
   $a->fClass = 42/*!PHP5028!*/;
-  $a->fClass = [ 42 ];
+  $a->fClass = [ 42 ]/*!PHP5028!*/;
 
-  $a->fArray = $fc;
+  $a->fArray = $fc/*!PHP5028!*/;
   $a->fArray = $any;
   $a->fArray = 42/*!PHP5028!*/;
   $a->fArray = [ 42 ];

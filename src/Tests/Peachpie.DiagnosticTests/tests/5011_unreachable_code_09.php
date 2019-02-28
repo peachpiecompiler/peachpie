@@ -11,9 +11,8 @@ function unreachable_type_intersections(bool $b, int $i, float $f, string $s, ob
     echo "unreachable";/*!PHP5011!*/
   }
 
-  // Both may be null
   if ($s === $o) {
-    echo "reachable";
+    echo "unreachable";/*!PHP5011!*/
   } else {
     echo "reachable";
   }

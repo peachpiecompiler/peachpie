@@ -754,11 +754,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public bool CanBeSameType(TypeRefMask a, TypeRefMask b)
         {
             // TODO: Consider adding _isResource mask if needed for efficiency
-            // TODO: Consider traversing the combinations of inheritance tree in the case of objects and resources (skipped for inefficiency)
+            // TODO: Consider traversing the combinations of inheritance tree in the case of objects, arrays and resources (skipped for inefficiency)
             return
                 (a & b & ~TypeRefMask.FlagsMask) != 0   // Either one of them is mixed or there is at least one type present in both
                 || a.IsRef || b.IsRef
-                || (IsNullable(a) && IsNullable(b))     // Any of {null, object, array, string, lambda} on both sides
+                || (IsObject(a) && IsObject(b))
+                || (IsArray(a) && IsArray(b))
+                || (IsAString(a) && IsAString(b))
+                || (IsLambda(a) && IsLambda(b))
                 || (GetTypes(a).Any(t => t == BoundTypeRefFactory.ResourceTypeRef) && IsObject(b))
                 || (IsObject(a) && GetTypes(b).Any(t => t == BoundTypeRefFactory.ResourceTypeRef));
         }
