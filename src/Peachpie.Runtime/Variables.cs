@@ -536,7 +536,7 @@ namespace Pchp.Core
                     @string = value.String;
                     return true;
                 case PhpTypeCode.MutableString:
-                    @string = value.MutableStringBlob.ToString();
+                    @string = value.MutableStringBlob.ToString(Encoding.UTF8);
                     return true;
                 case PhpTypeCode.Alias:
                     return IsString(value.Alias.Value, out @string);
