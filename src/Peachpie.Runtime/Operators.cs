@@ -284,7 +284,7 @@ namespace Pchp.Core
         /// <summary>
         /// Implements <c>empty</c> operator on objects.
         /// </summary>
-        public static bool IsEmpty(object value) => value != null;
+        public static bool IsEmpty(object value) => ReferenceEquals(value, null);
 
         #endregion
 
