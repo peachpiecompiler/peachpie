@@ -1290,7 +1290,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
             VariableReferenceExtensions.EmitReceiver(cg, ref lhs, Field, Receiver);
 
-            if (access.IsQuiet && cg.CanBeNull(Receiver.TypeRefMask))
+            if (access.IsQuiet && Receiver != null && cg.CanBeNull(Receiver.TypeRefMask))
             {
                 // handle nullref in "quiet" mode (e.g. within empty() expression),
                 // emit something like C#'s "?." operator
