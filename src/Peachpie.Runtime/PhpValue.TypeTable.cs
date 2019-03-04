@@ -465,9 +465,9 @@ namespace Pchp.Core
             public override PhpValue DeepCopy(ref PhpValue me) => new PhpValue(me.MutableStringBlob.AddRef());
             public override void PassValue(ref PhpValue me) => me = new PhpValue(me.MutableStringBlob.AddRef());    // ~ DeepCopy
             public override PhpArray ToArray(ref PhpValue me) => me.MutableString.ToArray();
-            public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx) => PhpCallback.Create(me.MutableString.ToString(), callerCtx);
-            public override string DisplayString(ref PhpValue me) => $"'{me.MutableString.ToString()}'";
-            public override void Output(ref PhpValue me, Context ctx) => me.MutableString.Output(ctx);
+            public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx) => PhpCallback.Create(me.MutableStringBlob.ToString(Encoding.UTF8), callerCtx);
+            public override string DisplayString(ref PhpValue me) => $"'{me.MutableStringBlob.ToString(Encoding.UTF8)}'";
+            public override void Output(ref PhpValue me, Context ctx) => me.MutableStringBlob.Output(ctx);
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.MutableString);
         }
 
