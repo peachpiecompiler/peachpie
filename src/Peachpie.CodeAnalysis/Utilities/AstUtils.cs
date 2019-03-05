@@ -167,7 +167,7 @@ namespace Pchp.CodeAnalysis
         public static bool IsCompileEntry(this Devsense.PHP.Phar.Entry entry)
         {
             // TODO: what entries will be compiled?
-            if (!entry.IsFile)
+            if (entry.IsDirectory)
             {
                 return false;
             }
@@ -175,6 +175,11 @@ namespace Pchp.CodeAnalysis
             if (entry.Name.EndsWith(".php"))
             {
                 return true;
+            }
+
+            if (string.IsNullOrEmpty(entry.Code))
+            {
+                return false;
             }
 
             var ext = System.IO.Path.GetExtension(entry.Name);
