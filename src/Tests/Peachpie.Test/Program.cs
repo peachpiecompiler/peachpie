@@ -13,13 +13,12 @@ namespace Peachpie.Test
         {
             // bootstrapper that compiles, loads and runs our script file
 
-            var provider = Context.GlobalServices.GetService<Context.IScriptingProvider>(); // use IScriptingProvider singleton 
             var fullpath = Path.Combine(Directory.GetCurrentDirectory(), ScriptPath);
 
             using (var ctx = Context.CreateConsole(string.Empty, args))
             {
                 //
-                var script = provider.CreateScript(new Context.ScriptOptions()
+                var script = Context.DefaultScriptingProvider.CreateScript(new Context.ScriptOptions()
                 {
                     Context = ctx,
                     Location = new Location(fullpath, 0, 0),
@@ -27,7 +26,7 @@ namespace Peachpie.Test
                     IsSubmission = false,
                     AdditionalReferences = new string[] {
                         typeof(Library.Graphics.PhpImage).Assembly.Location,
-                        typeof(Library.Network.CURLFunctions).Assembly.Location
+                        typeof(Library.Network.CURLFunctions).Assembly.Location,
                     },
                 }, File.ReadAllText(fullpath));
 
