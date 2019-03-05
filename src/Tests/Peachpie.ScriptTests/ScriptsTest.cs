@@ -17,7 +17,7 @@ namespace ScriptsTest
         /// </summary>
         const string PEACHPIE_TEST_PHP = "PEACHPIE_TEST_PHP";
 
-        static readonly Context.IScriptingProvider _provider = Context.GlobalServices.GetService<Context.IScriptingProvider>(); // use IScriptingProvider singleton 
+        static readonly Context.IScriptingProvider _provider = Context.DefaultScriptingProvider; // use IScriptingProvider singleton 
 
         private readonly ITestOutputHelper _output;
 

@@ -10,7 +10,7 @@ using Pchp.Core;
 namespace Peachpie.Library.Scripting
 {
     [Export(typeof(Context.IScriptingProvider))]
-    public class ScriptingProvider : Context.IScriptingProvider
+    public sealed class ScriptingProvider : Context.IScriptingProvider
     {
         readonly Dictionary<string, List<Script>> _scripts = new Dictionary<string, List<Script>>();
         readonly PhpCompilationFactory _builder = new PhpCompilationFactory();

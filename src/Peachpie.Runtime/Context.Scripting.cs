@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Pchp.Core
@@ -84,6 +86,41 @@ namespace Pchp.Core
         /// Gets dynamic scripting provider.
         /// Cannot be <c>null</c>.
         /// </summary>
-        public virtual IScriptingProvider ScriptingProvider => GlobalServices.GetService<IScriptingProvider>();
+        [Obsolete("replaced with static DefaultScriptingProvider")]
+        public virtual IScriptingProvider/*!*/ScriptingProvider => DefaultScriptingProvider;
+
+        /// <summary>
+        /// Gets dynamic scripting provider.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        public static IScriptingProvider/*!*/DefaultScriptingProvider
+        {
+            get
+            {
+                if (s_lazyScriptingProvider == null)
+                {
+                    Type type = null;
+
+                    // together with `eval()` function:
+                    try
+                    {
+                        var ass = Assembly.Load(new AssemblyName("Peachpie.Library.Scripting"));
+                        type = ass.GetType("Peachpie.Library.Scripting.ScriptingProvider", throwOnError: false);
+                    }
+                    catch { }
+
+                    // instantiate the provider singleton
+                    var provider = type != null
+                        ? (IScriptingProvider)Activator.CreateInstance(type)
+                        : new UnsupportedScriptingProvider();
+
+                    Interlocked.CompareExchange(ref s_lazyScriptingProvider, provider, null);
+                }
+
+                return s_lazyScriptingProvider;
+            }
+        }
+
+        static IScriptingProvider s_lazyScriptingProvider;
     }
 }

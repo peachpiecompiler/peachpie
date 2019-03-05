@@ -1524,7 +1524,7 @@ namespace Pchp.Core
                 return PhpValue.Null;
             }
 
-            var script = ctx.ScriptingProvider.CreateScript(
+            var script = Core.Context.DefaultScriptingProvider.CreateScript(
                 new Context.ScriptOptions()
                 {
                     Context = ctx,
