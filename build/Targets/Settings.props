@@ -4,6 +4,7 @@
   <PropertyGroup>
 
     <!-- version -->
+    <Version Condition=" '$(APPVEYOR_BUILD_VERSION)'!='' ">$(APPVEYOR_BUILD_VERSION)</Version>
     <Version Condition=" '$(Version)'=='' ">0.9.9-dev</Version>
     <PackageVersion>$(Version)</PackageVersion>
 
