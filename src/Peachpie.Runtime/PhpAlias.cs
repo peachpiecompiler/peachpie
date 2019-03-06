@@ -109,6 +109,10 @@ namespace Pchp.Core
 
         public static implicit operator PhpValue(PhpAlias alias) => PhpValue.Create(alias);
 
+        public static implicit operator bool(PhpAlias value) => (bool)value.Value;
+
+        public static implicit operator IntStringKey(PhpAlias value) => (IntStringKey)value.Value;
+
         /// <summary>
         /// Casts the value to object instance.
         /// Non-object values are wrapped to <see cref="stdClass"/>.
