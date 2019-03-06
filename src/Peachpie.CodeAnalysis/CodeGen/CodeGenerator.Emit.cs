@@ -1337,7 +1337,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         else
                         {
                             // TODO: empty struct addr
-                            throw new NotImplementedException();
+                            throw this.NotImplementedException();
                         }
 
                         //
