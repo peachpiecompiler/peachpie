@@ -44,30 +44,32 @@ namespace Peachpie.Library.Scripting
 
             Tokens t;
             var lines = LineBreaks.Create(source);
-            var tokenizer = new Lexer(new StringReader(source), Encoding.UTF8);
-            while ((t = tokenizer.GetNextToken()) != Tokens.EOF)
+            using (var tokenizer = new Lexer(new StringReader(source), Encoding.UTF8))
             {
-                if (tokenizer.TokenSpan.Length == 1 && (int)t == tokenizer.TokenText[0])
+                while ((t = tokenizer.GetNextToken()) != Tokens.EOF)
                 {
-                    // single char token
-                    tokens.Add(tokenizer.TokenText);
-                }
-                else
-                {
-                    // other
-                    tokens.Add(new PhpArray(3)
+                    if (tokenizer.TokenSpan.Length == 1 && (int)t == tokenizer.TokenText[0])
+                    {
+                        // single char token
+                        tokens.Add(tokenizer.TokenText);
+                    }
+                    else
+                    {
+                        // other
+                        tokens.Add(new PhpArray(3)
                     {
                         (int)t,
                         tokenizer.TokenText,
                         lines.GetLineFromPosition(tokenizer.TokenSpan.Start) + 1,
                     });
-                }
+                    }
 
-                //
+                    //
 
-                if (t == Tokens.T_ERROR)
-                {
-                    break;
+                    if (t == Tokens.T_ERROR)
+                    {
+                        break;
+                    }
                 }
             }
 
