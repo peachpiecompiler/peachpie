@@ -1310,7 +1310,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 if (targetType.SpecialType != SpecialType.System_Void)
                 {
                     if (ThisPlaceOpt != null && ThisPlaceOpt.Type != null &&
-                        ThisPlaceOpt.Type.IsEqualToOrDerivedFrom(targetType))
+                        ThisPlaceOpt.Type.IsOfType(targetType))
                     {
                         // implicit $this instance
                         return EmitThis();
