@@ -126,6 +126,7 @@ namespace Pchp.CodeAnalysis.Emit
                                         // default(RuntimeTypeHandle)
                                         var runtimetypehandle_loc = il.LocalSlotManager.AllocateSlot(types.RuntimeTypeHandle.Symbol, LocalSlotConstraints.None);
                                         il.EmitValueDefault(this, diagnostic, runtimetypehandle_loc);
+                                        il.LocalSlotManager.FreeSlot(runtimetypehandle_loc);
                                         break;
                                     default:
                                         throw new ArgumentException(p.Name);
