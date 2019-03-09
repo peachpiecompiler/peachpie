@@ -101,6 +101,9 @@ namespace Pchp.Core
                     throw new ArgumentNullException(nameof(assembly));
                 }
 
+                // remember the assembly for class map:
+                s_assClassMap.AddPhpAssembly(assembly);
+
                 // reflect the module for imported symbols:
 
                 var module = assembly.ManifestModule;
