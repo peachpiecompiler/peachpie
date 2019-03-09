@@ -81,8 +81,10 @@ namespace Pchp.Core.Reflection
                 {
                     var tinfo = PhpTypeInfoExtension.GetPhpTypeInfo(t);
                     var rpath = tinfo.RelativePath;
-                    if (rpath != null && !rpath.StartsWith("phar://")) // => PHP user type
+                    if (rpath != null) // => PHP user type
                     {
+                        // TODO: skip types from PHAR archives
+
                         if (_typesMap.TryGetValue(tinfo.Name, out var tinfos))
                         {
                             // very rare case

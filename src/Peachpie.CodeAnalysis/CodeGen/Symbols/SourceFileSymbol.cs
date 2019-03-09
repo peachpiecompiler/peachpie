@@ -9,7 +9,7 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         internal void SynthesizeInit(Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
         {
-            module.EmitBootstrap(this);
+            // module.EmitBootstrap(this); // unnecessary
         }
     }
 }
