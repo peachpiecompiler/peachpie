@@ -362,6 +362,11 @@ namespace Pchp.CodeAnalysis.Emit
         /// <param name="tcontainer">A script file or PHP type.</param>
         public void EmitBootstrap(NamedTypeSymbol tcontainer)
         {
+            EmitBootstrap(this.GetStaticCtorBuilder(tcontainer));
+        }
+
+        internal void EmitBootstrap(ILBuilder il)
+        {
             if (ReferenceEquals(_lazyBootstrapMethod, null))
             {
                 // Context.DllLoader<TScript>
@@ -373,8 +378,6 @@ namespace Pchp.CodeAnalysis.Emit
 
                 Interlocked.CompareExchange(ref _lazyBootstrapMethod, method, null);
             }
-
-            var il = this.GetStaticCtorBuilder(tcontainer);
 
             // .call Context.DllLoader<TScript>.Bootstrap()
             il
