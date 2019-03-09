@@ -16,6 +16,7 @@ using Microsoft.CodeAnalysis.Emit.NoPia;
 using Pchp.CodeAnalysis.Symbols;
 using Pchp.CodeAnalysis.Emitter;
 using Pchp.CodeAnalysis.Utilities;
+using Pchp.CodeAnalysis.CodeGen;
 
 namespace Pchp.CodeAnalysis.Emit
 {
@@ -27,6 +28,11 @@ namespace Pchp.CodeAnalysis.Emit
         //private readonly Cci.ModulePropertiesForSerialization _serializationProperties;
 
         SynthesizedScriptTypeSymbol _lazyScriptType;
+
+        /// <summary>
+        /// Constructed method symbol <c>Context.DllLoader&lt;TScript&gt;.Bootstrap()</c> to be called by every static .cctor.
+        /// </summary>
+        MethodSymbol _lazyBootstrapMethod;
 
         /// <summary>
         /// Manages synthesized methods and fields.
@@ -349,6 +355,32 @@ namespace Pchp.CodeAnalysis.Emit
         }
 
         #endregion
+
+        /// <summary>
+        /// Emits one-time bootstrap for given container (script file, PHP type)
+        /// </summary>
+        /// <param name="tcontainer">A script file or PHP type.</param>
+        public void EmitBootstrap(NamedTypeSymbol tcontainer)
+        {
+            if (ReferenceEquals(_lazyBootstrapMethod, null))
+            {
+                // Context.DllLoader<TScript>
+                var tDllLoader_T = this.Compilation.GetTypeByMetadataName(CoreTypes.Context_DllLoader_T);
+                var tDllLoader = tDllLoader_T.Construct(this.ScriptType);
+
+                // .Bootstrap()
+                var method = (MethodSymbol)tDllLoader.GetMembers("Bootstrap").Single();
+
+                Interlocked.CompareExchange(ref _lazyBootstrapMethod, method, null);
+            }
+
+            var il = this.GetStaticCtorBuilder(tcontainer);
+
+            // .call Context.DllLoader<TScript>.Bootstrap()
+            il
+                .EmitCall(this, DiagnosticBag.GetInstance(), System.Reflection.Metadata.ILOpCode.Call, _lazyBootstrapMethod)
+                .Expect(SpecialType.System_Void);
+        }
 
         internal override Compilation CommonCompilation => _compilation;
 

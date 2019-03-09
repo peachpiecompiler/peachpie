@@ -294,4 +294,55 @@ namespace Pchp.Core
     public sealed class PhpRwAttribute : Attribute
     {
     }
+
+    /// <summary>
+    /// Annotates the DLL uses functions from given static class.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+    public sealed class ImportPhpFunctionsAttribute : Attribute
+    {
+        /// <summary>
+        /// The type containing exported functions.
+        /// </summary>
+        public Type ContainerType { get; private set; }
+
+        public ImportPhpFunctionsAttribute(Type tcontainer)
+        {
+            ContainerType = tcontainer;
+        }
+    }
+
+    /// <summary>
+    /// Annotates the DLL uses constants from given static class.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+    public sealed class ImportPhpConstantsAttribute : Attribute
+    {
+        /// <summary>
+        /// The type containing exported constants.
+        /// </summary>
+        public Type ContainerType { get; private set; }
+
+        public ImportPhpConstantsAttribute(Type tcontainer)
+        {
+            ContainerType = tcontainer;
+        }
+    }
+
+    /// <summary>
+    /// Annotates the DLL imports given type as a PHP type.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+    public sealed class ImportPhpTypeAttribute : Attribute
+    {
+        /// <summary>
+        /// The imported type.
+        /// </summary>
+        public Type ImportedType { get; private set; }
+
+        public ImportPhpTypeAttribute(Type tsymbol)
+        {
+            ImportedType = tsymbol;
+        }
+    }
 }

@@ -19,6 +19,8 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         internal void SynthesizeInit(Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
         {
+            module.EmitBootstrap(this);
+
             // .cctor
             EmitFieldsCctor(module);
 

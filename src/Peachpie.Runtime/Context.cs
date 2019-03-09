@@ -63,6 +63,118 @@ namespace Pchp.Core
         #region Symbols
 
         /// <summary>
+        /// Helper class called one-time from compiled DLL static .cctor.
+        /// </summary>
+        /// <typeparam name="TScript">Type of module's script class.</typeparam>
+        public static class DllLoader<TScript>
+        {
+            /// <summary>
+            /// Called once per DLL (ensured by JIT).
+            /// </summary>
+            static DllLoader()
+            {
+                Trace.WriteLine($"DLL '{typeof(TScript).Assembly.FullName}' being loaded ...");
+
+                if (typeof(TScript).Name == ScriptInfo.ScriptTypeName)
+                {
+                    AddScriptReference(typeof(TScript).Assembly);
+                }
+                else
+                {
+                    Trace.TraceError($"Type '{typeof(TScript).Assembly.FullName}' is not expected! Use '{ScriptInfo.ScriptTypeName}' instead.");
+                }
+            }
+
+            /// <summary>
+            /// Dummy method, nop.
+            /// </summary>
+            public static void Bootstrap()
+            {
+                // do nothing,
+                // the loader is being ensured from a static .cctor of a PHP script or a PHP type
+            }
+
+            static void AddScriptReference(Assembly assembly)
+            {
+                if (assembly == null)
+                {
+                    throw new ArgumentNullException(nameof(assembly));
+                }
+
+                // reflect the module for imported symbols:
+
+                var module = assembly.ManifestModule;
+
+                // ImportPhpTypeAttribute
+                foreach (var t in module.GetCustomAttributes<ImportPhpTypeAttribute>())
+                {
+                    TypesTable.DeclareAppType(PhpTypeInfoExtension.GetPhpTypeInfo(t.ImportedType));
+                }
+
+                // ImportPhpFunctionsAttribute
+                foreach (var t in module.GetCustomAttributes<ImportPhpFunctionsAttribute>())
+                {
+                    // TODO: remember the container, do not reflect repetitiously
+
+                    foreach (var m in t.ContainerType.GetMethods())
+                    {
+                        if (m.IsPublic && m.IsStatic && !m.IsPhpHidden())
+                        {
+                            RoutinesTable.DeclareAppRoutine(m.Name, m.MethodHandle);
+                        }
+                    }
+                }
+
+                // ImportPhpConstantsAttribute
+                foreach (var t in module.GetCustomAttributes<ImportPhpConstantsAttribute>())
+                {
+                    // TODO: remember the container, do not reflect repetitiously
+
+                    foreach (var m in t.ContainerType.GetMembers(BindingFlags.Static | BindingFlags.Public))
+                    {
+                        if (m is FieldInfo fi && !fi.IsPhpHidden())
+                        {
+                            Debug.Assert(fi.IsStatic && fi.IsPublic);
+
+                            if (fi.IsInitOnly || fi.IsLiteral)
+                            {
+                                ConstsMap.DefineAppConstant(fi.Name, PhpValue.FromClr(fi.GetValue(null)));
+                            }
+                            else
+                            {
+                                ConstsMap.DefineAppConstant(fi.Name, new Func<PhpValue>(() => PhpValue.FromClr(fi.GetValue(null))));
+                            }
+                        }
+                        else if (m is PropertyInfo pi && !pi.IsPhpHidden())
+                        {
+                            ConstsMap.DefineAppConstant(pi.Name, new Func<PhpValue>(() => PhpValue.FromClr(pi.GetValue(null))));
+                        }
+                    }
+                }
+
+                // scripts
+                foreach (var t in assembly.GetTypes())
+                {
+                    if (t.IsPublic &&
+                        t.IsAbstract && t.IsSealed)// => static
+                    {
+                        var sattr = ReflectionUtils.GetScriptAttribute(t);
+                        if (sattr != null && sattr.Path != null && t.GetCustomAttribute<PharAttribute>() == null)
+                        {
+                            ScriptsMap.DeclareScript(sattr.Path, ScriptInfo.CreateMain(t));
+                        }
+                    }
+                }
+
+                //
+                if (_targetPhpLanguageAttribute == null)
+                {
+                    _targetPhpLanguageAttribute = assembly.GetCustomAttribute<TargetPhpLanguageAttribute>();
+                }
+            }
+        }
+
+        /// <summary>
         /// Map of global functions.
         /// </summary>
         readonly RoutinesTable _functions;
@@ -83,7 +195,8 @@ namespace Pchp.Core
         /// Internal method to be used by loader to load referenced symbols.
         /// </summary>
         /// <typeparam name="TScript"><c>&lt;Script&gt;</c> type in compiled assembly. The type contains static methods for enumerating referenced symbols.</typeparam>
-        public static void AddScriptReference<TScript>() => AddScriptReference(typeof(TScript));
+        [Obsolete]
+        public static void AddScriptReference<TScript>() => DllLoader<TScript>.Bootstrap();
 
         /// <summary>
         /// Load PHP scripts and referenced symbols from PHP assembly.
@@ -96,46 +209,13 @@ namespace Pchp.Core
                 throw new ArgumentNullException(nameof(assembly));
             }
 
-            var t = assembly.GetType(ScriptInfo.ScriptTypeName);
-            if (t != null)
+            var tscript = assembly.GetType(ScriptInfo.ScriptTypeName);
+            if (tscript != null)
             {
-                AddScriptReference(t);
-            }
-        }
-
-        /// <summary>
-        /// Reflects given <c>&lt;Script&gt;</c> type generated by compiler to load list of its symbols
-        /// and make them available to runtime.
-        /// </summary>
-        /// <param name="tscript"><c>&lt;Script&gt;</c> type from compiled assembly.</param>
-        protected static void AddScriptReference(Type tscript)
-        {
-            Debug.Assert(tscript != null);
-            Debug.Assert(tscript.Name == ScriptInfo.ScriptTypeName);
-
-            tscript.GetMethod("BuiltinFunctions")
-                .Invoke(null, new object[] { new Action<string, RuntimeMethodHandle>(RoutinesTable.DeclareAppRoutine) });
-
-            tscript.GetMethod("BuiltinTypes")
-                .Invoke(null, new object[] { new Action<PhpTypeInfo>(TypesTable.DeclareAppType) });
-
-            tscript.GetMethod("BuiltinConstants")
-                .Invoke(null, new object[] { new AppConstantsComposition() });
-
-            tscript.GetMethod("EnumerateScripts")
-                .Invoke(null, new object[] { new Action<string, MainDelegate>(ScriptsMap.DeclareScript) });
-
-            //
-            ScriptAdded(tscript);
-        }
-
-        static void ScriptAdded(Type tscript)
-        {
-            Debug.Assert(tscript != null);
-
-            if (_targetPhpLanguageAttribute == null)
-            {
-                _targetPhpLanguageAttribute = tscript.Assembly.GetCustomAttribute<TargetPhpLanguageAttribute>();
+                typeof(DllLoader<>)
+                    .MakeGenericType(tscript)   // let JIT to manage .cctor gets called just once
+                    .GetMethod("Bootstrap")
+                    .Invoke(null, Array.Empty<object>());
             }
         }
 

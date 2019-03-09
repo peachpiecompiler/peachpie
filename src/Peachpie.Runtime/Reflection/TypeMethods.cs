@@ -115,7 +115,7 @@ namespace Pchp.Core.Reflection
 
         static readonly Func<MethodInfo, bool> s_notObjectMember = m => m.DeclaringType != typeof(object);
 
-        static readonly Func<MethodInfo, bool> s_notPhpHidden = m => m.GetCustomAttribute<PhpHiddenAttribute>() == null;
+        static readonly Func<MethodInfo, bool> s_notPhpHidden = m => !ReflectionUtils.IsPhpHidden(m);
 
         static void SelectVisibleOverrides(List<MethodInfo> overrides)
         {
