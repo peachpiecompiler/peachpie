@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
+using SimpleJSON;
 
 namespace Peachpie.Compiler.Tools
 {
@@ -87,8 +89,8 @@ namespace Peachpie.Compiler.Tools
         /// <summary>
         /// Outputs list of dependencies.
         /// The item has following properties:
-        /// - package name
-        /// - version range (optional)
+        /// - Name: package name
+        /// - Version: version range (optional)
         /// </summary>
         [Output]
         public ITaskItem[] Dependencies { get; private set; }
@@ -98,15 +100,177 @@ namespace Peachpie.Compiler.Tools
         /// </summary>
         public override bool Execute()
         {
-            Name = "project name";
-            Description = "project description";
-            Tags = "composer;tag";
-            Homepage = "https://www.example.org/";
-            License = "MIT";
+            // parse the input JSON file:
+            JSONNode json;
+            try
+            {
+                json = JSON.Parse(File.ReadAllText(ComposerJsonPath));
+            }
+            catch (Exception ex)
+            {
+                Log.LogErrorFromException(ex);
+                return false;
+            }
 
-            // Log.LogMessage(MessageImportance.High, "ComposerTask finished!");
+            // process the file:
+            foreach (var node in json)
+            {
+                switch (node.Key)
+                {
+                    case "name":
+                        Name = GetName(node.Value);
+                        break;
+
+                    case "description":
+                        Description = GetDescription(node.Value);
+                        break;
+
+                    case "keywords":
+                        Tags = GetTags(node.Value);
+                        break;
+
+                    case "homepage":
+                        Homepage = GetHomepage(node.Value);
+                        break;
+
+                    case "license":
+                        License = GetLicense(node.Value);
+                        break;
+
+                    case "version":
+                        Version = GetVersion(node.Value);
+                        break;
+
+                    case "time":
+                        ReleaseDate = GetReleaseDate(node.Value);
+                        break;
+
+                    case "authors":
+                        Authors = GetAuthors(node.Value.AsArray).ToArray();
+                        break;
+
+                    case "require":
+                        Dependencies = GetDependencies(node.Value).ToArray();
+                        //Log.LogMessage(MessageImportance.High, "Dependencies collected: " + Dependencies.Length);
+                        break;
+
+                        // TODO: autoload { files, classmap, psr-0, psr-4 }
+                }
+            }
 
             return true;
+        }
+
+        string GetName(JSONNode name) => IdToNuGetId(name.Value);
+
+        string GetDescription(JSONNode desc) => desc.Value;
+
+        string GetHomepage(JSONNode url) => new Uri(url.Value, UriKind.Absolute).AbsoluteUri; // validate
+
+        string GetLicense(JSONNode license) => license.Value;
+
+        string GetVersion(JSONNode version) => System.Version.TryParse(version.Value, out var v) ? v.ToString(3) : string.Empty;
+
+        DateTime GetReleaseDate(JSONNode date) => DateTime.Parse(date.Value);
+
+        IEnumerable<ITaskItem> GetAuthors(JSONArray authors)
+        {
+            if (authors == null || authors.Count == 0)
+            {
+                yield break;
+            }
+
+            foreach (var author in authors.Values)
+            {
+                yield return new TaskItem("Author", new Dictionary<string, string>()
+                {
+                    { "Name", author["name"].Value },
+                    { "EMail", author["email"].Value },
+                });
+            }
+        }
+
+        IEnumerable<ITaskItem> GetDependencies(JSONNode require)
+        {
+            if (require == null)
+            {
+                yield break;
+            }
+
+            foreach (var r in require)
+            {
+                if (r.Key.Equals("php", StringComparison.OrdinalIgnoreCase))
+                {
+                    // php version,
+                    // ignore for now
+                    continue;
+                }
+
+                if (r.Key.StartsWith("ext-", StringComparison.OrdinalIgnoreCase))
+                {
+                    // php extension,
+                    continue;   // TODO: translate to PeachPie-like library name
+                }
+
+                // regular dependency,
+                // translate composer-like name to NuGet-like name
+
+                yield return new TaskItem("PackageDependency", new Dictionary<string, string>()
+                {
+                    { "Name", IdToNuGetId(r.Key) },
+                    { "Version", VersionRangeToNuGetVersion(r.Value.Value) },
+                });
+            }
+
+            yield return new TaskItem("PackageReference", new Dictionary<string, string>()
+                {
+                    { "Name", "Devsense.PHP.Parser" },
+                    { "Version", "1.4.82" },
+                });
+            yield return new TaskItem("PackageReference", new Dictionary<string, string>()
+                {
+                    { "Name", "MySql.Data" },
+                    { "Version", "8.0.15" },
+                });
+        }
+
+        string IdToNuGetId(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            return value.Replace('/', '.');
+        }
+
+        string VersionRangeToNuGetVersion(string value)
+        {
+            // TODO see https://getcomposer.org/doc/articles/versions.md
+
+            //*
+            //>= 1.0
+            //>= 1.0 < 2.0
+            //>= 1.0 < 1.1 || >= 1.2
+            //1.0.*
+            //^1.2.3
+            //~1.2.3
+            //1 - 2
+
+            return value;
+        }
+
+        string GetTags(JSONNode keywords)
+        {
+            var arr = keywords.AsArray;
+            if (arr != null && arr.Count != 0)
+            {
+                return string.Join(";", arr.Children.Select(n => n.Value));
+            }
+            else
+            {
+                return string.Empty;
+            }
         }
     }
 }

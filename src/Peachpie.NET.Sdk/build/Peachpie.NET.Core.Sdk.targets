@@ -64,19 +64,42 @@
   </Target>
 
   <!-- processes composer.json file if available -->
-  <Target Name="ComposerCore" BeforeTargets="ResolveReferences" Condition="'$(PeachpieToolFullPath)'!=''">
+  <Target Name="ComposerCore">
     <PropertyGroup>
       <ComposerJsonPath Condition=" '$(ComposerJsonPath)'=='' ">$(MSBuildProjectDirectory)/composer.json</ComposerJsonPath>
     </PropertyGroup>
-    <ComposerTask Condition="Exists('$(ComposerJsonPath)')"
+    <ComposerTask Condition="Exists('$(ComposerJsonPath)') AND '$(SkipComposerJson)'!='true' AND '$(PeachpieToolFullPath)'!=''"
                   ComposerJsonPath="$(ComposerJsonPath)"
                   >
       <Output TaskParameter="Name" PropertyName="_cName" />
-      <Output TaskParameter="Description" PropertyName="_cDecription" />
+      <Output TaskParameter="Description" PropertyName="_cDescription" />
+      <Output TaskParameter="Version" PropertyName="_cVersion" />
       <Output TaskParameter="License" PropertyName="_cLicense" />
+      <Output TaskParameter="Homepage" PropertyName="_cHomepage" />
       <Output TaskParameter="Authors" ItemName="_cAuthors" />
       <Output TaskParameter="Dependencies" ItemName="_cDependencies" />
     </ComposerTask>
+  </Target>
+
+  <Target Name="ComposerResolve" DependsOnTargets="ComposerCore" BeforeTargets="CollectPackageReferences;GenerateNuspec" Outputs="$(ComposerJsonPath)">
+    <PropertyGroup Condition=" '$(_cName)'!='' ">
+      <AssemblyName>$(_cName)</AssemblyName>
+      <PackageId>$(_cName)</PackageId>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <PackageDescription Condition=" '$(_cDescription)'!='' ">$(_cDescription)</PackageDescription>
+      <PackageProjectUrl Condition=" '$(PackageProjectUrl)'=='' AND '$(_cHomepage)'!='' ">$(_cHomepage)</PackageProjectUrl>
+      <Version Condition=" '$(_cVersion)'!='' ">$(_cVersion)</Version>
+      <PackageVersion Condition=" '$(_cVersion)'!='' ">$(_cVersion)</PackageVersion>
+      <PackageLicenseExpression Condition=" '$(PackageLicenseExpression)'=='' AND '$(_cLicense)'!='' ">$(_cLicense)</PackageLicenseExpression>
+      <Authors Condition=" '@(_cAuthors->Count())'!='0' ">@(_cAuthors -> '%(Name);', ';')</Authors>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!--PackageReference Include="@(_cDependencies->'%(Name)')" /-->
+    </ItemGroup>
+
   </Target>
 
   <!-- performs compilation -->
@@ -103,7 +126,7 @@
                 $(NonExistentFile);
                 @(CustomAdditionalCompileOutputs)"
           Returns="@(PeachpieCommandLineArgs)"
-          DependsOnTargets="ComposerCore;$(CoreCompileDependsOn)"
+          DependsOnTargets="ComposerResolve;$(CoreCompileDependsOn)"
     >
 
     <PropertyGroup>
