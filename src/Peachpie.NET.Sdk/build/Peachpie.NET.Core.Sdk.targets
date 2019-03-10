@@ -11,6 +11,8 @@
     <DefineCommonCapabilities Condition=" '$(DefineCommonCapabilities)' == '' ">true</DefineCommonCapabilities>
   </PropertyGroup>
 
+  <UsingTask AssemblyFile="$(PeachpieToolFullPath)" Condition=" '$(PeachpieToolFullPath)'!='' " TaskName="Peachpie.Compiler.Tools.ComposerTask" />
+
   <!-- default Compile and None -->
   <ItemGroup>
     <Compile Include="**/*.phar;**/*.php" Exclude="obj/**;bin/**" Condition=" '$(EnableDefaultPeachpieCompileItems)'=='true' " />
@@ -61,6 +63,23 @@
 
   </Target>
 
+  <!-- processes composer.json file if available -->
+  <Target Name="ComposerCore" BeforeTargets="ResolveReferences" Condition="'$(PeachpieToolFullPath)'!=''">
+    <PropertyGroup>
+      <ComposerJsonPath Condition=" '$(ComposerJsonPath)'=='' ">$(MSBuildProjectDirectory)/composer.json</ComposerJsonPath>
+    </PropertyGroup>
+    <ComposerTask Condition="Exists('$(ComposerJsonPath)')"
+                  ComposerJsonPath="$(ComposerJsonPath)"
+                  >
+      <Output TaskParameter="Name" PropertyName="_cName" />
+      <Output TaskParameter="Description" PropertyName="_cDecription" />
+      <Output TaskParameter="License" PropertyName="_cLicense" />
+      <Output TaskParameter="Authors" ItemName="_cAuthors" />
+      <Output TaskParameter="Dependencies" ItemName="_cDependencies" />
+    </ComposerTask>
+  </Target>
+
+  <!-- performs compilation -->
   <Target
           Name="CoreCompile"
           Inputs="$(MSBuildAllProjects);
@@ -84,7 +103,7 @@
                 $(NonExistentFile);
                 @(CustomAdditionalCompileOutputs)"
           Returns="@(PeachpieCommandLineArgs)"
-          DependsOnTargets="$(CoreCompileDependsOn)"
+          DependsOnTargets="ComposerCore;$(CoreCompileDependsOn)"
     >
 
     <PropertyGroup>
@@ -162,8 +181,8 @@
     </ItemGroup>
 
     <WriteLinesToFile File="$(TempOutputDir)compile-php-args.rsp" Lines="@(RspLine)" Overwrite="true" />
-    
-    <Error Condition=" '$(PeachpieToolFullPath)'=='' " Text="Path to Peachpie.Compiler.Tools was not set." />    
+
+    <Error Condition=" '$(PeachpieToolFullPath)'=='' " Text="Path to Peachpie.Compiler.Tools was not set." />
     <Exec Command="dotnet &quot;$(PeachpieToolFullPath)&quot; @$(TempOutputDir)compile-php-args.rsp" />
 
     <Copy SourceFiles="$(TempOutputDir)$(DocumentationFile)" DestinationFolder="$(OutputPath)" Condition=" '$(GenerateDocumentation)'=='true' " />

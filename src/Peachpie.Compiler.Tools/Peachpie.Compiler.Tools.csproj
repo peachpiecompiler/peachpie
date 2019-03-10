@@ -29,6 +29,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.IO.FileSystem.Primitives" Version="4.3.0" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="[15.8.*,]" />
   </ItemGroup>
 
   <Target Name="PublishAll">
