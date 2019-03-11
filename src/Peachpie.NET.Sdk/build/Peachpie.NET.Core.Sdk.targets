@@ -11,7 +11,7 @@
     <DefineCommonCapabilities Condition=" '$(DefineCommonCapabilities)' == '' ">true</DefineCommonCapabilities>
   </PropertyGroup>
 
-  <UsingTask AssemblyFile="$(PeachpieToolFullPath)" Condition=" '$(PeachpieToolFullPath)'!='' " TaskName="Peachpie.Compiler.Tools.ComposerTask" />
+  <UsingTask AssemblyFile="$(PeachpieToolFullPath)" TaskName="Peachpie.NET.Sdk.Tools.ComposerTask" />
 
   <!-- default Compile and None -->
   <ItemGroup>
@@ -68,7 +68,7 @@
     <PropertyGroup>
       <ComposerJsonPath Condition=" '$(ComposerJsonPath)'=='' ">$(MSBuildProjectDirectory)/composer.json</ComposerJsonPath>
     </PropertyGroup>
-    <ComposerTask Condition="Exists('$(ComposerJsonPath)') AND '$(SkipComposerJson)'!='true' AND '$(PeachpieToolFullPath)'!=''"
+    <ComposerTask Condition=" Exists('$(ComposerJsonPath)') "
                   ComposerJsonPath="$(ComposerJsonPath)"
                   >
       <Output TaskParameter="Name" PropertyName="_cName" />
@@ -81,7 +81,7 @@
     </ComposerTask>
   </Target>
 
-  <Target Name="ComposerResolve" DependsOnTargets="ComposerCore" BeforeTargets="CollectPackageReferences;GenerateNuspec" Outputs="$(ComposerJsonPath)">
+  <Target Name="ComposerResolve" DependsOnTargets="ComposerCore" BeforeTargets="CollectPackageReferences" Outputs="$(ComposerJsonPath)">
     <PropertyGroup Condition=" '$(_cName)'!='' ">
       <AssemblyName>$(_cName)</AssemblyName>
       <PackageId>$(_cName)</PackageId>
@@ -96,8 +96,9 @@
       <Authors Condition=" '@(_cAuthors->Count())'!='0' ">@(_cAuthors -> '%(Name);', ';')</Authors>
     </PropertyGroup>
 
-    <ItemGroup>
-      <!--PackageReference Include="@(_cDependencies->'%(Name)')" /-->
+    <ItemGroup Condition=" '$(ComposerDependencies)'=='true' ">
+      <!-- this will be enabled by default -->
+      <PackageReference Include="@(_cDependencies->'%(Name)')" />
     </ItemGroup>
 
   </Target>
@@ -205,7 +206,7 @@
 
     <WriteLinesToFile File="$(TempOutputDir)compile-php-args.rsp" Lines="@(RspLine)" Overwrite="true" />
 
-    <Error Condition=" '$(PeachpieToolFullPath)'=='' " Text="Path to Peachpie.Compiler.Tools was not set." />
+    <Error Condition=" '$(PeachpieToolFullPath)'=='' " Text="Path to Peachpie.NET.Sdk.dll was not set." />
     <Exec Command="dotnet &quot;$(PeachpieToolFullPath)&quot; @$(TempOutputDir)compile-php-args.rsp" />
 
     <Copy SourceFiles="$(TempOutputDir)$(DocumentationFile)" DestinationFolder="$(OutputPath)" Condition=" '$(GenerateDocumentation)'=='true' " />

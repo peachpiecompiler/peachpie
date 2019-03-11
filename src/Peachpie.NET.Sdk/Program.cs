@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Peachpie.Compiler.Tools
+namespace Peachpie.NET.Sdk.Tools
 {
     /// <summary>
     /// Main class.

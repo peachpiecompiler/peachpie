@@ -7,7 +7,7 @@ using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using SimpleJSON;
 
-namespace Peachpie.Compiler.Tools
+namespace Peachpie.NET.Sdk.Tools
 {
     /// <summary>
     /// Task that processes <c>composer.json</c> file if exists and outputs its properties and dependencies.
@@ -151,7 +151,6 @@ namespace Peachpie.Compiler.Tools
 
                     case "require":
                         Dependencies = GetDependencies(node.Value).ToArray();
-                        //Log.LogMessage(MessageImportance.High, "Dependencies collected: " + Dependencies.Length);
                         break;
 
                         // TODO: autoload { files, classmap, psr-0, psr-4 }
@@ -221,17 +220,6 @@ namespace Peachpie.Compiler.Tools
                     { "Version", VersionRangeToNuGetVersion(r.Value.Value) },
                 });
             }
-
-            yield return new TaskItem("PackageReference", new Dictionary<string, string>()
-                {
-                    { "Name", "Devsense.PHP.Parser" },
-                    { "Version", "1.4.82" },
-                });
-            yield return new TaskItem("PackageReference", new Dictionary<string, string>()
-                {
-                    { "Name", "MySql.Data" },
-                    { "Version", "8.0.15" },
-                });
         }
 
         string IdToNuGetId(string value)

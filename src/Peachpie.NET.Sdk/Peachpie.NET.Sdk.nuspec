@@ -3,21 +3,24 @@
   <metadata>
     <id>$id$</id>
     <version>$version$</version>
-    <title>Peachpie.Compiler.Tools</title>
+    <title>Peachpie.NET.Sdk</title>
     <owners>peachpie</owners>
     <authors>peachpie,jmisek</authors>
     <projectUrl>https://github.com/peachpiecompiler/peachpie</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>
-      Peachpie.Compiler.Tools
-    </description>
+    <description>$description$</description>
     <summary></summary>
-    <tags>php,compile-php,peachpie</tags>
+    <tags>php,compile-php,peachpie,sdk</tags>
+    <dependencies>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Peachpie.App" version="$version$" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
   </metadata>
   <files>
-
     <file src="$packToolsDir$\**" target="tools\" />
-    <file src=".\build\Peachpie.Compiler.Tools.props" target="build\Peachpie.Compiler.Tools.props" />
-
+    <file src=".\build\**" target="build\" />
+    <file src=".\buildCrossTargeting\**" target="buildCrossTargeting\" />
+    <file src=".\Sdk\**" target="Sdk\" />    
   </files>
 </package>
