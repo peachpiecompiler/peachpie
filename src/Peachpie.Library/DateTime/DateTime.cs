@@ -216,6 +216,27 @@ namespace Pchp.Library.DateTime
                 throw new ArgumentNullException();
             }
 
+            DateTime result = null;
+
+            if (format == "U")
+            {
+                long seconds = 0;
+                if (Int64.TryParse(time, out seconds))
+                {
+                    DateTimeOffset offset = DateTimeOffset.FromUnixTimeSeconds(seconds);
+                    result = new DateTime(ctx) {
+                        Time = offset.UtcDateTime,
+                        // TODO should be set as UTC ?
+                        TimeZone = TimeZoneInfo.Utc
+                    };
+                    return result;
+                }
+                else
+                {
+                    throw new ArgumentException("The time argument could not be parsed as an integer.");
+                }
+            }
+
             // create DateTime from format+time
             int i = 0;  // position in <timestr>
             foreach (var c in format)
@@ -262,7 +283,13 @@ namespace Pchp.Library.DateTime
             //     TimeZone = tz,
             //};
 
-            throw new NotImplementedException();
+            if (result == null)
+            {
+                throw new NotImplementedException();
+            } else
+            {
+                return result;
+            }
         }
 
         public virtual DateTime setDate(int year, int month, int day)
