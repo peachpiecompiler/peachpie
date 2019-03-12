@@ -299,8 +299,11 @@ namespace Pchp.Library
         /// </returns>
         public static string realpath(Context ctx, string path)
         {
-            if (string.IsNullOrEmpty(path))
+            if (path == null)
                 return null;
+
+            if (path == "")
+                path = ".";
 
             // string ending slash
             if (path[path.Length - 1].IsDirectorySeparator())
