@@ -313,10 +313,11 @@ namespace Pchp.Library
         /// <param name="directory">The directory specifying the filesystem or disk partition to be examined.</param>
         /// <param name="total"><c>true</c> to return total space available, <c>false</c> to return free space only.</param>
         /// <returns>Nuber of bytes available or <c>FALSE</c> on an error.</returns>
-        private static double GetDiskFreeSpaceInternal(string directory, bool total)
+        private static long GetDiskFreeSpaceInternal(string directory, bool total)
         {
-            // TODO: System.IO.FileSystem.DriveInfo 4.3.0
-            throw new NotImplementedException();
+            var drive = new DriveInfo(directory);
+
+            return total ? drive.TotalSize : drive.AvailableFreeSpace;
         }
 
         #endregion
