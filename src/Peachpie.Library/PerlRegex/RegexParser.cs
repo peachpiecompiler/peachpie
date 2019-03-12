@@ -1255,7 +1255,12 @@ namespace Pchp.Library.PerlRegex
                     cc.AddCategoryFromName(ParseProperty(), (ch != 'p'), UseOptionI(), _pattern);
                     if (UseOptionI())
                         cc.AddLowercase(_culture);
+                    return new RegexNode(RegexNode.Set, _options, cc.ToStringClass());
 
+                case 'R':   // new line separator, Unicode category `Zl`
+                    MoveRight();
+                    cc = new RegexCharClass();
+                    cc.AddCategoryFromName("Zl", false, false, _pattern);
                     return new RegexNode(RegexNode.Set, _options, cc.ToStringClass());
 
                 default:
