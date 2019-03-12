@@ -118,8 +118,7 @@ namespace Pchp.Core.Reflection
 
                 if (_lazyCreatorProtected == null || _lazyCreatorProtected != _lazyCreator) // in case protected creator == public creator, we can skip following checks
                 {
-                    var callerinfo = caller.GetTypeInfo();
-                    if (callerinfo.IsAssignableFrom(_type) || _type.IsAssignableFrom(callerinfo))
+                    if (caller.IsAssignableFrom(_type) || _type.IsAssignableFrom(caller))
                     {
                         // creation including protected|public .ctors
                         return this.Creator_protected;
@@ -229,20 +228,15 @@ namespace Pchp.Core.Reflection
             return _lazyCreatorProtected;
         }
 
-        internal PhpTypeInfo(TypeInfo t)
+        internal PhpTypeInfo(Type/*!*/t)
         {
             Debug.Assert(t != null);
-            _type = t;
+            _type = t.GetTypeInfo();
 
-            Name = ResolvePhpTypeName(_type, GetPhpTypeAttribute());
+            Name = ResolvePhpTypeName(t, GetPhpTypeAttribute());
 
             // register type in extension tables
             ExtensionsAppContext.ExtensionsTable.AddType(this);
-        }
-
-        internal PhpTypeInfo(Type t)
-            : this(t.GetTypeInfo())
-        {
         }
 
         PhpTypeAttribute GetPhpTypeAttribute() => _type.GetCustomAttribute<PhpTypeAttribute>(false);
@@ -250,7 +244,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Resolves PHP-like type name.
         /// </summary>
-        static string ResolvePhpTypeName(TypeInfo tinfo, PhpTypeAttribute attr)
+        static string ResolvePhpTypeName(Type tinfo, PhpTypeAttribute attr)
         {
             string name = null;
 
@@ -385,7 +379,7 @@ namespace Pchp.Core.Reflection
             // invoke GetPhpTypeInfo<TType>() dynamically and cache the result
             if (result == null)
             {
-                if (type.GetTypeInfo().IsGenericTypeDefinition)
+                if (type.IsGenericTypeDefinition)
                 {
                     // generic type definition cannot be used as a type parameter for GetPhpTypeInfo<T>
                     // just instantiate the type info and cache the result
