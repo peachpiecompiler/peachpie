@@ -130,29 +130,19 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Adds routine within its associated extension.
         /// </summary>
+        /// <param name="container">Type containing the routine declaration. Will be reflected for optional <see cref="PhpExtensionAttribute"/>.</param>
         /// <param name="routine">Library routine to be included in the table.</param>
-        public void AddRoutine(ClrRoutineInfo routine)
+        internal void AddRoutine(Type/*!*/container, ClrRoutineInfo/*!*/routine)
         {
-            if (routine == null)
+            var extinfo = container.GetCustomAttribute<PhpExtensionAttribute>();
+            if (extinfo != null)
             {
-                throw new ArgumentNullException(nameof(routine));
+                AddRoutine(extinfo, routine);
+                VisitExtensionAttribute(extinfo);
             }
 
-            foreach (var m in routine.Methods)
-            {
-                var tinfo = m.DeclaringType.GetTypeInfo();
-
-                //
-                var extinfo = tinfo.GetCustomAttribute<PhpExtensionAttribute>();
-                if (extinfo != null)
-                {
-                    AddRoutine(extinfo, routine);
-                    VisitExtensionAttribute(extinfo);
-                }
-
-                //
-                AddAssembly(tinfo.Assembly);
-            }
+            //
+            AddAssembly(container.Assembly);
         }
 
         public void AddType(PhpTypeInfo type)

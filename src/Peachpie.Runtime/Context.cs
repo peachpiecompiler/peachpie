@@ -102,7 +102,7 @@ namespace Pchp.Core
                 }
 
                 // remember the assembly for class map:
-                s_assClassMap.AddPhpAssembly(assembly);
+                s_assClassMap.AddPhpAssemblyNoLock(assembly);
 
                 // reflect the module for imported symbols:
 
@@ -123,7 +123,7 @@ namespace Pchp.Core
                     {
                         if (m.IsPublic && m.IsStatic && !m.IsPhpHidden())
                         {
-                            RoutinesTable.DeclareAppRoutine(m.Name, m.MethodHandle);
+                            RoutinesTable.DeclareAppRoutine(m.Name, m);
                         }
                     }
                 }

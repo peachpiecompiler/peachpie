@@ -20,17 +20,11 @@ namespace Pchp.Core.Reflection
         /// </summary>
         Dictionary<string, PhpTypeInfo[]> _typesMap = new Dictionary<string, PhpTypeInfo[]>(StringComparer.Ordinal);
 
-        public void AddPhpAssembly(Assembly ass)
+        internal void AddPhpAssemblyNoLock(Assembly ass)
         {
-            _rwLock.EnterWriteLock();
-            try
-            {
-                _assemblies.Enqueue(ass);
-            }
-            finally
-            {
-                _rwLock.ExitWriteLock();
-            }
+            // this runs synchronously,
+            // lock is not necessary
+            _assemblies.Enqueue(ass);
         }
 
         public PhpTypeInfo[] LookupTypes(string phpTypeName)
