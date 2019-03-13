@@ -54,7 +54,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
                 .SelectMany(r => r.ExtensionContainers);
         }
 
-        bool IsFunction(MethodSymbol method)
+        internal bool IsFunction(MethodSymbol method)
         {
             return method != null && method.IsStatic && method.DeclaredAccessibility == Accessibility.Public && method.MethodKind == MethodKind.Ordinary && !method.IsPhpHidden(_compilation);
         }
@@ -76,7 +76,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             return false;
         }
 
-        ImmutableArray<NamedTypeSymbol> ExtensionContainers
+        internal ImmutableArray<NamedTypeSymbol> ExtensionContainers
         {
             get
             {

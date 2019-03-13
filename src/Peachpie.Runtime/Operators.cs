@@ -284,7 +284,7 @@ namespace Pchp.Core
         /// <summary>
         /// Implements <c>empty</c> operator on objects.
         /// </summary>
-        public static bool IsEmpty(object value) => value != null;
+        public static bool IsEmpty(object value) => ReferenceEquals(value, null);
 
         #endregion
 
@@ -1524,7 +1524,7 @@ namespace Pchp.Core
                 return PhpValue.Null;
             }
 
-            var script = ctx.ScriptingProvider.CreateScript(
+            var script = Core.Context.DefaultScriptingProvider.CreateScript(
                 new Context.ScriptOptions()
                 {
                     Context = ctx,

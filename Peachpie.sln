@@ -9,6 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{ED9DAD46
 	ProjectSection(SolutionItems) = preProject
 		.travis.yml = .travis.yml
 		build\build.ps1 = build\build.ps1
+		build\Targets\CommonBuild.target = build\Targets\CommonBuild.target
 		MyGet.ps1 = MyGet.ps1
 		build\Targets\Settings.props = build\Targets\Settings.props
 		build\update-cache.ps1 = build\update-cache.ps1
@@ -21,8 +22,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.App", "src\Peachpie.App\Peachpie.App.csproj", "{20059EE9-94A7-4DD6-9715-1865F4349EB4}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Library", "src\Peachpie.Library\Peachpie.Library.csproj", "{6B01EDAF-56BD-4302-98FD-EDD81FA2617E}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Compiler.Tools", "src\Peachpie.Compiler.Tools\Peachpie.Compiler.Tools.csproj", "{F679A98B-01EE-4A7F-8D56-F0DED48450AF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.CodeAnalysis", "src\Peachpie.CodeAnalysis\Peachpie.CodeAnalysis.csproj", "{2B2B4180-5093-4A29-BE59-4D672648988D}"
 EndProject
@@ -150,27 +149,6 @@ Global
 		{6B01EDAF-56BD-4302-98FD-EDD81FA2617E}.Release|x64.Build.0 = Release|Any CPU
 		{6B01EDAF-56BD-4302-98FD-EDD81FA2617E}.Release|x86.ActiveCfg = Release|Any CPU
 		{6B01EDAF-56BD-4302-98FD-EDD81FA2617E}.Release|x86.Build.0 = Release|Any CPU
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF}.Debug|ARM.ActiveCfg = Debug|Any CPU
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF}.Debug|ARM.Build.0 = Debug|Any CPU
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF}.Debug|x64.Build.0 = Debug|Any CPU
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF}.Debug|x86.Build.0 = Debug|Any CPU
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF}.Release|ARM.ActiveCfg = Release|Any CPU
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF}.Release|ARM.Build.0 = Release|Any CPU
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF}.Release|Mixed Platforms.Deploy.0 = Release|Any CPU
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF}.Release|x64.ActiveCfg = Release|Any CPU
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF}.Release|x64.Build.0 = Release|Any CPU
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF}.Release|x86.ActiveCfg = Release|Any CPU
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF}.Release|x86.Build.0 = Release|Any CPU
 		{2B2B4180-5093-4A29-BE59-4D672648988D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2B2B4180-5093-4A29-BE59-4D672648988D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2B2B4180-5093-4A29-BE59-4D672648988D}.Debug|ARM.ActiveCfg = Debug|Any CPU
@@ -635,7 +613,6 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{6B01EDAF-56BD-4302-98FD-EDD81FA2617E} = {30D6D91F-A671-4E73-A571-5614500FDE0B}
-		{F679A98B-01EE-4A7F-8D56-F0DED48450AF} = {0E870B29-09DB-43B4-A1DE-B0754EBED941}
 		{2B2B4180-5093-4A29-BE59-4D672648988D} = {0E870B29-09DB-43B4-A1DE-B0754EBED941}
 		{176EBF02-2238-4056-9422-CFAA46FFED61} = {30D6D91F-A671-4E73-A571-5614500FDE0B}
 		{B16EB9F6-CCA5-4322-8DCF-07706C518600} = {30D6D91F-A671-4E73-A571-5614500FDE0B}

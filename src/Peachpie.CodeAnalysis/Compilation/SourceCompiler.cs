@@ -76,6 +76,20 @@ namespace Pchp.CodeAnalysis
             }
         }
 
+        void WalkSourceFiles(Action<SourceFileSymbol> action, bool allowParallel = false)
+        {
+            var files = _compilation.SourceSymbolCollection.GetFiles();
+
+            if (ConcurrentBuild && allowParallel)
+            {
+                Parallel.ForEach(files, action);
+            }
+            else
+            {
+                files.ForEach(action);
+            }
+        }
+
         void WalkTypes(Action<SourceTypeSymbol> action, bool allowParallel = false)
         {
             var types = _compilation.SourceSymbolCollection.GetTypes();
@@ -278,11 +292,12 @@ namespace Pchp.CodeAnalysis
             // TODO: Visit every symbol with Synthesize() method and call it instead of followin
 
             // ghost stubs, overrides
-            this.WalkMethods(f => f.SynthesizeStubs(_moduleBuilder, _diagnostics));
-            this.WalkTypes(t => t.FinalizeMethodTable(_moduleBuilder, _diagnostics));
+            WalkMethods(f => f.SynthesizeStubs(_moduleBuilder, _diagnostics));
+            WalkTypes(t => t.FinalizeMethodTable(_moduleBuilder, _diagnostics));
 
-            // __statics.Init, .phpnew, .ctor
+            // bootstrap, __statics.Init, .ctor
             WalkTypes(t => t.SynthesizeInit(_moduleBuilder, _diagnostics));
+            WalkSourceFiles(f => f.SynthesizeInit(_moduleBuilder, _diagnostics));
 
             // realize .cctor if any
             _moduleBuilder.RealizeStaticCtors();
@@ -319,16 +334,6 @@ namespace Pchp.CodeAnalysis
                     _moduleBuilder.SetPEEntryPoint(_moduleBuilder.ScriptType.EntryPointSymbol, _diagnostics);
                 }
             }
-        }
-
-        void CompileReflectionEnumerators()
-        {
-            Debug.Assert(_moduleBuilder != null);
-
-            _moduleBuilder.CreateEnumerateReferencedFunctions(_diagnostics);
-            _moduleBuilder.CreateBuiltinTypes(_diagnostics);
-            _moduleBuilder.CreateEnumerateScriptsSymbol(_diagnostics);
-            _moduleBuilder.CreateEnumerateConstantsSymbol(_diagnostics);
         }
 
         bool RewriteMethods()
@@ -441,7 +446,6 @@ namespace Pchp.CodeAnalysis
                 //   b. synthesized symbols
                 compiler.EmitMethodBodies();
                 compiler.EmitSynthesized();
-                compiler.CompileReflectionEnumerators();
 
                 // Entry Point (.exe)
                 compiler.CompileEntryPoint();

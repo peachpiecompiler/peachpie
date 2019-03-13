@@ -791,7 +791,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
         public BoundTypeRefFromPlace(IPlace place)
         {
             Debug.Assert(place != null);
-            Debug.Assert(place.Type == null);
+            Debug.Assert(place.Type == null || place.Type.Name == "PhpTypeInfo");
 
             _place = place ?? throw ExceptionUtilities.ArgumentNull(nameof(place));
         }

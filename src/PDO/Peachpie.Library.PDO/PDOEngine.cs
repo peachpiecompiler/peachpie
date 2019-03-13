@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,6 +15,20 @@ namespace Peachpie.Library.PDO
     [PhpHidden]
     public static class PDOEngine
     {
+        /// <summary>
+        /// List of known assembly names exporting implementations of <see cref="IPDODriver"/> interface.
+        /// CONSIDER: TODO: configuration ? We have the 'Context' so we can read the config there ...
+        /// </summary>
+        static string[] _knownAssemblies => new[]
+        {
+            "Peachpie.Library.PDO.Firebird",
+            "Peachpie.Library.PDO.IBM",
+            "Peachpie.Library.PDO.MySQL",
+            "Peachpie.Library.PDO.PgSQL",
+            "Peachpie.Library.PDO.Sqlite",
+            "Peachpie.Library.PDO.SqlSrv",
+        };
+
         /// <summary>
         /// Gets set of loaded PDO drivers.
         /// </summary>
@@ -30,9 +45,28 @@ namespace Peachpie.Library.PDO
 
         static Dictionary<string, IPDODriver> CollectPdoDrivers()
         {
-            return Context
-                .CompositionContext
-                .GetExports<IPDODriver>()
+            var drivertypes = new List<Type>();
+
+            foreach (var assname in _knownAssemblies)
+            {
+                try
+                {
+                    var ass = Assembly.Load(new AssemblyName(assname));
+
+                    drivertypes.AddRange(ass
+                        .GetTypes()
+                        .Where(t => !t.IsInterface && !t.IsValueType && !t.IsAbstract && typeof(IPDODriver).IsAssignableFrom(t)));
+                }
+                catch
+                {
+                    // ignore
+                }
+            }
+
+            // instantiate drivers:
+
+            return drivertypes
+                .Select(t => (IPDODriver)Activator.CreateInstance(t))
                 .ToDictionary(driver => driver.Name, StringComparer.OrdinalIgnoreCase);
         }
 

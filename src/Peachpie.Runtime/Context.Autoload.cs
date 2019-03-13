@@ -1,6 +1,7 @@
 ﻿using Pchp.Core.Reflection;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -22,9 +23,14 @@ namespace Pchp.Core
     partial class Context : IPhpAutoloadService
     {
         /// <summary>
+        /// Default implementation of PHP autoload.
+        /// </summary>
+        PhpTypeInfo IPhpAutoloadService.AutoloadTypeByName(string fullName) => DefaultAutoloadTypeByName(fullName) ?? ImplicitAutoloadTypeByName(fullName);
+
+        /// <summary>
         /// Default implementation of PHP autoload looks for <c>__autoload</c> global function and calls it.
         /// </summary>
-        PhpTypeInfo IPhpAutoloadService.AutoloadTypeByName(string fullName)
+        PhpTypeInfo DefaultAutoloadTypeByName(string fullName)
         {
             var autoload = _lazyAutoloadRoutine;
             if (autoload == null)
@@ -59,6 +65,53 @@ namespace Pchp.Core
             //
             return null;
         }
+
+        /// <summary>
+        /// Implicit autoload mechanism working through CLR reflection.
+        /// This ensures when even the caller does not define PHP class autoloading, we allows seamless use of PHP classes and PHP program.
+        /// This mechanism gets enabled by default, disabled only when SPL autoload gets initiated (or anything that sets own <see cref="Context.AutoloadService"/>).
+        /// </summary>
+        PhpTypeInfo ImplicitAutoloadTypeByName(string fullName)
+        {
+            var types = s_assClassMap.LookupTypes(fullName);
+            if (types != null)
+            {
+                ScriptInfo script = default;
+
+                for (int i = 0; i < types.Length; i++)
+                {
+                    var rpath = types[i].RelativePath;
+                    if (script.IsValid)
+                    {
+                        if (script.Path != rpath)
+                        {
+                            Trace.WriteLine("Type '" + fullName + "' cannot be autoloaded. Ambiguous declarations in " + script.Path + " and " + rpath);
+                            return null; // ambiguity
+                        }
+                    }
+                    else
+                    {
+                        script = ScriptsMap.GetDeclaredScript(rpath);
+                    }
+                }
+
+                // pretend we are PHP and include the script:
+
+                if (script.IsValid && !_scripts.IsIncluded(script.Index))   // include_once:
+                {
+                    script.Evaluate(this, this.Globals, null, default);
+
+                    return GetDeclaredType(fullName, autoload: false); // TODO: can we return types[0] directly in some cases?
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Helper class containing PHP types declared in PHP assemblies.
+        /// </summary>
+        static readonly AssemblyClassMap s_assClassMap = new AssemblyClassMap();
 
         /// <summary>
         /// Default autoload function in PHP to be used when there is no autoload service.

@@ -217,17 +217,17 @@ namespace Pchp.Library.Streams
         /// <summary>
         /// Open client socket.
         /// </summary>
-        public static PhpResource stream_socket_server(Context ctx, string localSocket, out int errno, out string errstr, double timeout = double.NaN, SocketOptions flags = SocketOptions.None)
+        public static PhpResource stream_socket_server(Context ctx, string localSocket, out int errno, out string errstr, SocketOptions flags = SocketOptions.None)
         {
             int port = 0;
             //SplitSocketAddressPort(ref localSocket, out port);
-            return Connect(ctx, localSocket, port, out errno, out errstr, timeout, flags, StreamContext.Default);
+            return Connect(ctx, localSocket, port, out errno, out errstr, Double.NaN, flags, StreamContext.Default);
         }
 
         /// <summary>
         /// Open client socket.
         /// </summary>
-        public static PhpResource stream_socket_server(Context ctx, string localSocket, out int errno, out string errstr, double timeout, SocketOptions flags, PhpResource context)
+        public static PhpResource stream_socket_server(Context ctx, string localSocket, out int errno, out string errstr, SocketOptions flags, PhpResource context)
         {
             StreamContext sc = StreamContext.GetValid(context);
             if (sc == null)
@@ -239,7 +239,7 @@ namespace Pchp.Library.Streams
 
             int port = 0;
             //SplitSocketAddressPort(ref localSocket, out port);
-            return Connect(ctx, localSocket, port, out errno, out errstr, timeout, flags, sc);
+            return Connect(ctx, localSocket, port, out errno, out errstr, Double.NaN, flags, sc);
         }
 
         #endregion

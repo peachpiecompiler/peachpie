@@ -179,11 +179,13 @@ namespace Pchp.CodeAnalysis.CodeGen
             return stack;
         }
 
+
         /// <summary>
-        /// In case there is <c>Int32</c> or <c>bool</c> or <c>PhpNumber</c> on the top of evaluation stack,
-        /// converts it to <c>double</c>.
+        /// In case expression is of type <c>Int32</c> or <c>bool</c> or <c>PhpNumber</c>,
+        /// converts it to <c>double</c> and leaves the result on evaluation stack. Otherwise
+        /// just emits expression and leaves it on evaluation stack.
         /// </summary>
-        internal TypeSymbol EmitConvertNumberToDouble(BoundExpression expr)
+        internal TypeSymbol EmitExprConvertNumberToDouble(BoundExpression expr)
         {
             // emit number literal directly as double
             var constant = expr.ConstantValue;
@@ -516,6 +518,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             EmitCastClass(from, to);
         }
 
+        /// <summary>
+        /// Emits expression and converts it to required type.
+        /// </summary>
         public void EmitConvert(BoundExpression expr, TypeSymbol to)
         {
             Debug.Assert(expr != null);

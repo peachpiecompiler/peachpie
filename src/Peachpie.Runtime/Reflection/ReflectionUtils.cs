@@ -39,6 +39,11 @@ namespace Pchp.Core.Reflection
         public static bool IsAllowedPhpName(string name) => name != null && name.IndexOfAny(_disallowedNameChars) < 0;
 
         /// <summary>
+        /// Gets value indicating the member has been marked as hidden in PHP context.
+        /// </summary>
+        public static bool IsPhpHidden(this MemberInfo m) => m.GetCustomAttribute<PhpHiddenAttribute>() != null; // TODO: PhpConditional
+
+        /// <summary>
         /// Checks the fields represents special PHP runtime fields.
         /// </summary>
         public static bool IsRuntimeFields(FieldInfo fld)

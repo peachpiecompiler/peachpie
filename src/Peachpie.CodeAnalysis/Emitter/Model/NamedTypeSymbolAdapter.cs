@@ -450,6 +450,13 @@ namespace Pchp.CodeAnalysis.Symbols
                         return false;
                 }
 
+                // do not apply .beforefieldinit on classes,
+                // our synthesized static .cctor needs to be called
+                if (this is SourceTypeSymbol)
+                {
+                    return false;
+                }
+
                 //apply the beforefieldinit attribute unless there is an explicitly specified static constructor
                 foreach (var member in GetMembers(WellKnownMemberNames.StaticConstructorName))
                 {

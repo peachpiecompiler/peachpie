@@ -4,6 +4,7 @@
   <PropertyGroup>
 
     <!-- version -->
+    <Version Condition=" '$(APPVEYOR_BUILD_VERSION)'!='' ">$(APPVEYOR_BUILD_VERSION)</Version>
     <Version Condition=" '$(Version)'=='' ">0.9.9-dev</Version>
     <PackageVersion>$(Version)</PackageVersion>
 
@@ -27,6 +28,14 @@
     <SignAssembly>true</SignAssembly>
     <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
 
+    <!-- SourceLink -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>false</EmbedUntrackedSources>
+
+    <!-- symbols -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
   </PropertyGroup>
 
   <!-- package -->
@@ -40,5 +49,5 @@
 
   <!-- common targets -->
   <Import Project="CommonBuild.target" />
-
+  
 </Project>

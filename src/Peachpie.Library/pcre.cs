@@ -525,6 +525,16 @@ namespace Pchp.Library
             if (limit < -1) // for all other negative values it seems that is as limit == 1
                 limit = 1;
 
+            if (string.IsNullOrEmpty(pattern))
+            {
+                return null; // FALSE
+            }
+
+            if (subject == null)
+            {
+                subject = string.Empty;
+            }
+
             var regex = new PerlRegex.Regex(pattern);
             //if (!regex.IsValid) return null;
 

@@ -1289,7 +1289,39 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             VariableReferenceExtensions.EmitReceiver(cg, ref lhs, Field, Receiver);
-            return new FieldPlace_Raw(Field, cg.Module).EmitLoadValue(cg, ref lhs, access);
+
+            if (access.IsQuiet && Receiver != null && cg.CanBeNull(Receiver.TypeRefMask))
+            {
+                // handle nullref in "quiet" mode (e.g. within empty() expression),
+                // emit something like C#'s "?." operator
+
+                //  .dup ? .ldfld : default
+
+                // cg.EmitNullCoalescing( , ) but we need the resulting type
+
+                var _il = cg.Builder;
+                var lbl_null = new NamedLabel("ReceiverNull");
+                var lbl_end = new object();
+
+                _il.EmitOpCode(ILOpCode.Dup);
+                _il.EmitBranch(ILOpCode.Brfalse, lbl_null);
+                var type = new FieldPlace_Raw(Field, cg.Module).EmitLoadValue(cg, ref lhs, access); // .field
+
+                _il.EmitBranch(ILOpCode.Br, lbl_end);
+
+                _il.MarkLabel(lbl_null);
+                _il.EmitOpCode(ILOpCode.Pop);
+                cg.EmitLoadDefault(type); // default
+
+                _il.MarkLabel(lbl_end);
+
+                //
+                return type;
+            }
+            else
+            {
+                return new FieldPlace_Raw(Field, cg.Module).EmitLoadValue(cg, ref lhs, access);
+            }
         }
 
         public TypeSymbol EmitLoadAddress(CodeGenerator cg, ref LhsStack lhs)

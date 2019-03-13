@@ -1310,7 +1310,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 if (targetType.SpecialType != SpecialType.System_Void)
                 {
                     if (ThisPlaceOpt != null && ThisPlaceOpt.Type != null &&
-                        ThisPlaceOpt.Type.IsEqualToOrDerivedFrom(targetType))
+                        ThisPlaceOpt.Type.IsOfType(targetType))
                     {
                         // implicit $this instance
                         return EmitThis();
@@ -1320,24 +1320,32 @@ namespace Pchp.CodeAnalysis.CodeGen
                         // $this is undefined
                         // PHP would throw a notice when undefined $this is used
 
-                        // create dummy instance
-                        // TODO: when $this is accessed from PHP code, throw error
-                        // NOTE: we can't just pass NULL since the instance holds reference to Context that is needed by API internally
-
-                        var dummyctor =
-                            (MethodSymbol)(targetType as IPhpTypeSymbol)?.InstanceConstructorFieldsOnly ??    // .ctor that only initializes fields with default values
-                            targetType.InstanceConstructors.Where(m => m.Parameters.All(p => p.IsImplicitlyDeclared)).FirstOrDefault();   // implicit ctor
-
-                        if (targetType.IsReferenceType && dummyctor != null)
+                        if (targetType.IsValueType)
                         {
-                            // new T(Context)
-                            EmitCall(ILOpCode.Newobj, dummyctor, null, ImmutableArray<BoundArgument>.Empty, null)
-                                .Expect(targetType);
+                            // Template: ADDR default(VALUE_TYPE)
+                            Builder.EmitValueDefaultAddr(this.Module, this.Diagnostics, this.GetTemporaryLocal(targetType, true));
                         }
                         else
                         {
-                            // TODO: empty struct addr
-                            throw new NotImplementedException();
+                            // create dummy instance
+                            // TODO: when $this is accessed from PHP code, throw error
+                            // NOTE: we can't just pass NULL since the instance holds reference to Context that is needed by emitted code
+
+                            var dummyctor =
+                                (MethodSymbol)(targetType as IPhpTypeSymbol)?.InstanceConstructorFieldsOnly ??    // .ctor that only initializes fields with default values
+                                targetType.InstanceConstructors.Where(m => m.Parameters.All(p => p.IsImplicitlyDeclared)).FirstOrDefault();   // implicit ctor
+
+                            if (dummyctor != null)
+                            {
+                                // new T(Context)
+                                EmitCall(ILOpCode.Newobj, dummyctor, null, ImmutableArray<BoundArgument>.Empty, null)
+                                    .Expect(targetType);
+                            }
+                            else
+                            {
+                                // TODO: empty struct addr
+                                throw this.NotImplementedException();
+                            }
                         }
 
                         //
@@ -3471,6 +3479,19 @@ namespace Pchp.CodeAnalysis.CodeGen
             il.EmitSymbolToken(module, diagnostics, (TypeSymbol)tmp.Type, null);
             // ldloc <loc>
             il.EmitLocalLoad(tmp);
+        }
+
+        /// <summary>
+        /// Gets addr of a default value. Used to call a method on default value.
+        /// </summary>
+        public static void EmitValueDefaultAddr(this ILBuilder il, PEModuleBuilder module, DiagnosticBag diagnostics, LocalDefinition tmp)
+        {
+            Debug.Assert(tmp.Type.IsValueType);
+            il.EmitLocalAddress(tmp);
+            il.EmitOpCode(ILOpCode.Initobj);
+            il.EmitSymbolToken(module, diagnostics, (TypeSymbol)tmp.Type, null);
+            // ldloca <loc>
+            il.EmitLocalAddress(tmp);
         }
 
         /// <summary>

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,8 +33,11 @@ namespace Pchp.Core.Reflection
         /// Adds referenced symbol into the map.
         /// In case of redeclaration, the handle is added to the list.
         /// </summary>
-        public static void DeclareAppRoutine(string name, RuntimeMethodHandle handle)
+        /// <exception cref="InvalidOperationException">The routine is already defined as a user routine.</exception>
+        public static ClrRoutineInfo/*!*/DeclareAppRoutine(string name, MethodInfo method)
         {
+            ClrRoutineInfo routine;
+
             // TODO: W lock
 
             int index;
@@ -46,18 +50,23 @@ namespace Pchp.Core.Reflection
                     throw new InvalidOperationException();
                 }
 
-                ((ClrRoutineInfo)_appRoutines[-index - 1]).AddOverload(handle);
+                (routine = (ClrRoutineInfo)_appRoutines[-index - 1]).AddOverload(method);
             }
             else
             {
                 index = -_appRoutines.Count - 1;
-                var routine = new ClrRoutineInfo(index, name, handle);
+                routine = new ClrRoutineInfo(index, name, method);
                 _appRoutines.Add(routine);
                 _nameToIndex[name] = index;
 
                 // register the routine within the extensions table
-                ExtensionsAppContext.ExtensionsTable.AddRoutine(routine);
+                ExtensionsAppContext.ExtensionsTable.AddRoutine(
+                        container: method.DeclaringType,
+                        routine: routine);
             }
+
+            //
+            return routine;
         }
 
         #endregion

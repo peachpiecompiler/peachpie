@@ -13,19 +13,17 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         readonly SourceAssemblySymbol _sourceAssembly;
         readonly string _name;
-        readonly SourceSymbolCollection _tables;
         readonly NamespaceSymbol _ns;
 
         /// <summary>
         /// Tables of all source symbols to be compiled within the source module.
         /// </summary>
-        public SourceSymbolCollection SymbolCollection => _tables;
+        public SourceSymbolCollection SymbolCollection => DeclaringCompilation.SourceSymbolCollection;
 
-        public SourceModuleSymbol(SourceAssemblySymbol sourceAssembly, SourceSymbolCollection tables, string name)
+        public SourceModuleSymbol(SourceAssemblySymbol sourceAssembly, string name)
         {
             _sourceAssembly = sourceAssembly;
             _name = name;
-            _tables = tables;
             _ns = new SourceGlobalNamespaceSymbol(this);
         }
 
@@ -78,6 +76,70 @@ namespace Pchp.CodeAnalysis.Symbols
 
             Debug.Assert((object)result != null);
             return result;
+        }
+
+        ImmutableArray<AttributeData> _lazyAttributesToEmit;
+
+        internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(CommonModuleCompilationState compilationState)
+        {
+            var attrs = base.GetCustomAttributesToEmit(compilationState);
+
+            if (_lazyAttributesToEmit.IsDefault)
+            {
+                _lazyAttributesToEmit = CreateAttributesToEmit().ToImmutableArray();
+            }
+
+            attrs = attrs.Concat(_lazyAttributesToEmit);
+
+            //
+            return attrs;
+        }
+
+        IEnumerable<AttributeData> CreateAttributesToEmit()
+        {
+            // [ImportPhpType( ... )]
+            var ctor = (MethodSymbol)DeclaringCompilation.GetTypeByMetadataName("Pchp.Core.ImportPhpTypeAttribute").InstanceConstructors.Single();
+            foreach (var t in DeclaringCompilation.GlobalSemantics.GetReferencedTypes())
+            {
+                yield return new SynthesizedAttributeData(ctor,
+                        ImmutableArray.Create(new TypedConstant(DeclaringCompilation.GetWellKnownType(WellKnownType.System_Type), TypedConstantKind.Type, t)),
+                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+            }
+
+            // [ImportPhpFunctions( ... )]
+            ctor = (MethodSymbol)DeclaringCompilation.GetTypeByMetadataName("Pchp.Core.ImportPhpFunctionsAttribute").InstanceConstructors.Single();
+            var tcontainers = DeclaringCompilation.GlobalSemantics.ExtensionContainers.Where(x => !x.IsPhpSourceFile());
+            foreach (var t in tcontainers)
+            {
+                // only if contains functions
+                if (t.GetMembers().OfType<MethodSymbol>().Any(DeclaringCompilation.GlobalSemantics.IsFunction))
+                {
+                    yield return new SynthesizedAttributeData(ctor,
+                            ImmutableArray.Create(new TypedConstant(DeclaringCompilation.GetWellKnownType(WellKnownType.System_Type), TypedConstantKind.Type, t)),
+                            ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                }
+            }
+
+            // [ImportPhpConstants( ... )]
+            ctor = (MethodSymbol)DeclaringCompilation.GetTypeByMetadataName("Pchp.Core.ImportPhpConstantsAttribute").InstanceConstructors.Single();
+            //tcontainers = DeclaringCompilation.GlobalSemantics.ExtensionContainers.Where(x => !x.IsPhpSourceFile());
+            foreach (var t in tcontainers)
+            {
+                // only if contains constants
+                if (t.GetMembers().Any(DeclaringCompilation.GlobalSemantics.IsGlobalConstant))
+                {
+                    yield return new SynthesizedAttributeData(ctor,
+                            ImmutableArray.Create(new TypedConstant(DeclaringCompilation.GetWellKnownType(WellKnownType.System_Type), TypedConstantKind.Type, t)),
+                            ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                }
+            }
+
+            // [ExportPhpScript]
+
+            // [PhpDependency]
+
+            //
+            yield break;
         }
     }
 }

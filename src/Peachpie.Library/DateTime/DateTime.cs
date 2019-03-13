@@ -323,6 +323,15 @@ namespace Pchp.Library.DateTime
         int IPhpComparable.Compare(PhpValue obj) => DateTimeFunctions.CompareTime(this.Time, obj);
 
         #endregion
+
+        #region CLR Conversions
+
+        /// <summary>
+        /// Gets given PHP DateTime as <see cref="System_DateTime"/> (UTC).
+        /// </summary>
+        public static implicit operator System_DateTime(DateTime dt) => dt.Time;
+
+        #endregion
     }
 
     /// <summary>

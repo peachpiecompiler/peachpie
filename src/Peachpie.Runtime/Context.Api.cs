@@ -6,7 +6,7 @@ using Pchp.Core.Utilities;
 
 namespace Pchp.Core
 {
-    partial class Context : Context.IConstantsComposition
+    partial class Context
     {
         #region Functions
 
@@ -259,17 +259,6 @@ namespace Pchp.Core
         /// Gets enumeration of all available constants and their values.
         /// </summary>
         public IEnumerable<KeyValuePair<string, PhpValue>> GetConstants() => _constants;
-
-        #endregion
-
-        #region IConstantsComposition (user constants)
-
-        void IConstantsComposition.Define(string name, PhpValue value) => DefineConstant(name, value, ignorecase: false);
-        void IConstantsComposition.Define(string name, PhpValue value, bool ignoreCase) => DefineConstant(name, value, ignoreCase);
-        void IConstantsComposition.Define(string name, long value) => DefineConstant(name, (PhpValue)value);
-        void IConstantsComposition.Define(string name, double value) => DefineConstant(name, (PhpValue)value);
-        void IConstantsComposition.Define(string name, string value) => DefineConstant(name, (PhpValue)value);
-        void IConstantsComposition.Define(string name, Func<PhpValue> getter) => throw new NotSupportedException();
 
         #endregion
     }
