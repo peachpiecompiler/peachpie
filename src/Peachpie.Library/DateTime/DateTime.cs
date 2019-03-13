@@ -3,6 +3,7 @@ using Pchp.Library;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -216,53 +217,104 @@ namespace Pchp.Library.DateTime
                 throw new ArgumentNullException();
             }
 
-            // create DateTime from format+time
-            int i = 0;  // position in <timestr>
-            foreach (var c in format)
+            if (format == "U")
             {
-                switch (c)
+                long seconds = 0;
+                if (Int64.TryParse(time, out seconds))
                 {
-                    //case 'd':
-                    //case 'j':
-                    //    var day = PHP.Library.StrToTime.DateInfo.ParseUnsignedInt(timestr, ref i, 2);
-                    //    // ... use day
-                    //    break;
-                    //case 'F':
-                    //case 'M':
-                    //    // parse  ...
-                    //    break;
-                    default:
-                        if (i < time.Length && time[i] == c)
-                        {
-                            // match
-                            i++;
-                        }
-                        else
-                        {
-                            // not match
-                            //PhpException.InvalidArgument("time");   // time not matching format
-                            //return false;
-                            throw new ArgumentException();
-                        }
-                        break;
+                    DateTimeOffset offset = DateTimeOffset.FromUnixTimeSeconds(seconds);
+                    return new DateTime(ctx) {
+                        Time = offset.UtcDateTime,
+                        // TODO should be set as UTC ?
+                        TimeZone = TimeZoneInfo.Utc
+                    };
+                }
+                else
+                {
+                    throw new ArgumentException("The time argument could not be parsed as an integer.");
                 }
             }
 
-            if (i < time.Length)
+            var builder = new StringBuilder();
+
+            //A list of so far not implemented datetime format characterd from PHP
+            List<Char> notImplemented = new List<char>() { '?', '/', '*', '+', '#', 'U', 'S', 'z', 'e', 'O', 'P', 'T' };
+
+            //used to replace 24 hour H character with 12 hour format h if needed
+            bool twelveHour = false;
+
+            //flag to reset the datetime to base Unix DateTime (1.1.1970)
+            bool resetUnixDateTime = false;
+
+            // create DateTime from format+time
+            foreach (var c in format)
             {
-                //PhpException.InvalidArgument("time");   // time not matching format
-                //return false;
-                throw new ArgumentException();
+                if(notImplemented.Contains(c))
+                {
+                    throw new NotImplementedException("Given datetime format string is not supported.");
+                }
+
+                switch (c)
+                {
+                    case 'd':
+                    case 'j':
+                        builder.Append("dd");
+                        break;
+                    case 'D':
+                    case 'l':
+                        builder.Append("ddd");
+                        break;
+                    case 'F':
+                    case 'M':
+                        builder.Append("MMM");
+                        break;
+                    case 'm':
+                    case 'n':
+                        builder.Append("MM");
+                        break;
+                    case 'Y':
+                        builder.Append("yyyy");
+                        break;
+                    case 'a':
+                    case 'A':
+                        builder.Append("tt");
+                        twelveHour = true;
+                        break;
+                    case 'g':
+                    case 'G':
+                    case 'h':
+                    case 'H':
+                        builder.Append("HH");
+                        break;
+                    case 'i':
+                        builder.Append("mm");
+                        break;
+                    case 's':
+                        builder.Append("ss");
+                        break;
+                    case '!':
+                        resetUnixDateTime = true;
+                        throw new NotImplementedException("Unix time resetting is not implemented.");
+                        break;
+                    default:
+                        builder.Append(c);
+                        break;
+                }
             }
+            System_DateTime dateTime;
+            String csStyleFormat = builder.ToString();
+            if (twelveHour)
+                csStyleFormat.Replace('H', 'h');
 
-            ////
-            //return new __PHP__DateTime(context, true)
-            //{
-            //     //Time = new DateTime(year, month, day, hour, minute, second, millisecond),
-            //     TimeZone = tz,
-            //};
+            var success = System_DateTime.TryParseExact(time, csStyleFormat, CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeLocal, out dateTime);
 
-            throw new NotImplementedException();
+            if (success)
+            {
+                return new DateTime(ctx) { Time = dateTime };
+            } else
+            {
+                throw new NotImplementedException("Given datetime format string is not supported or it is invalid.");
+            }
         }
 
         public virtual DateTime setDate(int year, int month, int day)
