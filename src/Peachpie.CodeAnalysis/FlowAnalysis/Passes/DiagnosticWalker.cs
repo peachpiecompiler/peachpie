@@ -466,7 +466,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         public override T VisitInstanceFunctionCall(BoundInstanceFunctionCall call)
         {
-            // TODO: Enable the diagnostic when several problems are solved (such as __call())
+            // TODO: Consider checking if there are enough situations where this makes sense
+            //       (it could only work if IncludeSubclasses is false or the class is final)
             //CheckUndefinedMethodCall(call, call.Instance?.ResultType, call.Name);
 
             // check target type
@@ -502,8 +503,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         {
             CheckMissusedPrimitiveType(call.TypeRef);
 
-            // TODO: Enable the diagnostic when the __callStatic() method is properly processed during analysis
-            //CheckUndefinedMethodCall(call, call.TypeRef?.ResolvedType, call.Name);
+            CheckUndefinedMethodCall(call, call.TypeRef.ResolveTypeSymbol(DeclaringCompilation) as TypeSymbol, call.Name);
 
             // check deprecated
             CheckObsoleteSymbol(call.PhpSyntax, call.TargetMethod);
@@ -718,10 +718,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         private void CheckUndefinedMethodCall(BoundRoutineCall x, TypeSymbol type, BoundRoutineName name)
         {
-            if (name.IsDirect && x.TargetMethod.IsErrorMethodOrNull() && type != null && !type.IsErrorType())
+            if (x.TargetMethod is MissingMethodSymbol)
             {
                 var span = x.PhpSyntax is FunctionCall fnc ? fnc.NameSpan : x.PhpSyntax.Span;
-                _diagnostics.Add(_routine, span.ToTextSpan(), ErrorCode.WRN_UndefinedMethodCall, name.NameValue.ToString(), type.Name);
+                _diagnostics.Add(_routine, span.ToTextSpan(), ErrorCode.WRN_UndefinedMethodCall, type.Name, name.NameValue.ToString());
             }
         }
 

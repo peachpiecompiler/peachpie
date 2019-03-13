@@ -1584,7 +1584,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 candidates = Construct(candidates, x);
 
-                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
+                var method = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
+                if ((method is MissingMethodSymbol || method is InaccessibleMethodSymbol)
+                    && type.LookupMember<IMethodSymbol>(Name.SpecialMethodNames.CallStatic.Value) != null)
+                {
+                    // __callStatic at runtime solves both inaccessible and missing method problems
+                    method = null;
+                }
+
+                x.TargetMethod = method;
             }
 
             BindTargetMethod(x);
