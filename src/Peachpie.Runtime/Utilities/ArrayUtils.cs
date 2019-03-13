@@ -167,6 +167,11 @@ namespace Pchp.Core.Utilities
             Array.Copy(array, 0, newarr, 1, array.Length);
             return newarr;
         }
+
+        /// <summary>
+        /// Searches for the specified object and returns the index of its first occurrence in a one-dimensional array.
+        /// </summary>
+        public static int IndexOf<T>(this T[] arr, T value) => Array.IndexOf(arr, value);
     }
 
     /// <summary>

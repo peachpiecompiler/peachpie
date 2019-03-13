@@ -224,22 +224,22 @@ namespace Pchp.Core.Reflection
     {
         PhpCallable _lazyDelegate;
 
-        RuntimeMethodHandle[] _handles;
+        MethodInfo[] _methods;
 
-        public override MethodInfo[] Methods
-        {
-            get
-            {
-                var handles = _handles;
-                var methods = new MethodInfo[handles.Length];
-                for (int i = 0; i < handles.Length; i++)
-                {
-                    methods[i] = (MethodInfo)MethodBase.GetMethodFromHandle(handles[i]);
-                }
-                //
-                return methods;
-            }
-        }
+        public override MethodInfo[] Methods => _methods;
+        //{
+        //    get
+        //    {
+        //        var handles = _handles;
+        //        var methods = new MethodInfo[handles.Length];
+        //        for (int i = 0; i < handles.Length; i++)
+        //        {
+        //            methods[i] = (MethodInfo)MethodBase.GetMethodFromHandle(handles[i]);
+        //        }
+        //        //
+        //        return methods;
+        //    }
+        //}
 
         public override PhpCallable PhpCallable => _lazyDelegate ?? BindDelegate();
 
@@ -248,19 +248,18 @@ namespace Pchp.Core.Reflection
             return _lazyDelegate = Dynamic.BinderHelpers.BindToPhpCallable(Methods);
         }
 
-        public ClrRoutineInfo(int index, string name, RuntimeMethodHandle handle)
+        public ClrRoutineInfo(int index, string name, MethodInfo method)
             : base(index, name)
         {
-            _handles = new RuntimeMethodHandle[] { handle };
+            _methods = new MethodInfo[] { method };
         }
 
-        internal void AddOverload(RuntimeMethodHandle handle)
+        internal void AddOverload(MethodInfo method)
         {
-            if (!_handles.Contains(handle))
+            if (Array.IndexOf(_methods, method) < 0)
             {
-                var length = _handles.Length;
-                Array.Resize(ref _handles, length + 1);
-                _handles[length] = handle;
+                Array.Resize(ref _methods, _methods.Length + 1);
+                _methods[_methods.Length - 1] = method;
 
                 //
                 _lazyDelegate = null;

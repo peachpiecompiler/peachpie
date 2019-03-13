@@ -447,14 +447,36 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is string.</returns>
-        public static bool is_string(PhpValue variable) => variable.TypeCode == PhpTypeCode.String || variable.TypeCode == PhpTypeCode.MutableString || (variable.IsAlias && is_string(variable.Alias.Value));
+        public static bool is_string(PhpValue variable)
+        {
+            switch (variable.TypeCode)
+            {
+                case PhpTypeCode.String:
+                case PhpTypeCode.MutableString:
+                    return true;
+
+                case PhpTypeCode.Alias:
+                    return is_string(variable.Alias.Value);
+
+                default:
+                    return false;
+            }
+        }
 
         /// <summary>
         /// Checks whether a dereferenced variable is an <see cref="PhpArray"/>.
         /// </summary>
         /// <param name="variable">The variable.</param>
         /// <returns>Whether <paramref name="variable"/> is <see cref="PhpArray"/>.</returns>
-        public static bool is_array(PhpValue variable) => variable.IsArray || (variable.IsAlias && variable.Alias.Value.IsArray);
+        public static bool is_array(PhpValue variable)
+        {
+            switch (variable.TypeCode)
+            {
+                case PhpTypeCode.PhpArray: return true;
+                case PhpTypeCode.Alias: return is_array(variable.Alias.Value);
+                default: return false;
+            }
+        }
 
         /// <summary>
         /// Checks whether a dereferenced variable is an instance of class.

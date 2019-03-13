@@ -181,8 +181,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (emittedTypeName.ForcedArity == -1 || emittedTypeName.ForcedArity == emittedTypeName.InferredArity)
                 {
                     // Let's handle mangling case first.
-                    //namespaceOrTypeMembers = scope.GetTypeMembers(emittedTypeName.UnmangledTypeName);
-                    namespaceOrTypeMembers = scope.GetTypeMembers(emittedTypeName.FullName);
+                    namespaceOrTypeMembers = scope.Kind == SymbolKind.NamedType // we don't have proper namese symbols, only global one so FullName it is
+                        ? scope.GetTypeMembers(emittedTypeName.UnmangledTypeName)
+                        : scope.GetTypeMembers(emittedTypeName.FullName);
 
                     foreach (var named in namespaceOrTypeMembers)
                     {

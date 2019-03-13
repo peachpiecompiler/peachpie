@@ -833,7 +833,6 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             public ContextHolder(CoreTypes ct)
             {
-                AddScriptReference_TScript = ct.Context.Method("AddScriptReference");
                 Dispose = ct.Context.Method("Dispose");
 
                 DeclareFunction_RoutineInfo = ct.Context.Method("DeclareFunction", ct.RoutineInfo);
@@ -870,7 +869,6 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             public readonly CoreMethod
-                AddScriptReference_TScript,
                 DeclareFunction_RoutineInfo, DeclareType_T, DeclareType_PhpTypeInfo_String,
                 DisableErrorReporting, EnableErrorReporting,
                 CheckIncludeOnce_TScript, OnInclude_TScript, Include_string_string_PhpArray_object_RuntimeTypeHandle_bool_bool,

@@ -78,12 +78,11 @@ namespace Peachpie.RequestHandler
         static void LoadScriptReferences()
         {
             // try to load DLL files from /Bin folder containing PHP scripts
-            var scriptTypes = Directory.GetFiles(HttpRuntime.BinDirectory, "*.dll", SearchOption.TopDirectoryOnly)
+            var assemblies = Directory.GetFiles(HttpRuntime.BinDirectory, "*.dll", SearchOption.TopDirectoryOnly)
                 .Select(TryLoadAssemblyFromFile)
-                .Select(TryGetScriptType)
                 .WhereNotNull();
 
-            foreach (var t in scriptTypes)
+            foreach (var t in assemblies)
             {
                 AddScriptReference(t);
             }

@@ -23,9 +23,9 @@ namespace Peachpie.Library.XmlDom
 
     public static class XsltConstants
     {
-        public static int XSL_CLONE_AUTO = (int)CloneType.Auto;
-        public static int XSL_CLONE_NEVER = (int)CloneType.Never;
-        public static int XSL_CLONE_ALWAYS = (int)CloneType.Always;
+        public const int XSL_CLONE_AUTO = (int)CloneType.Auto;
+        public const int XSL_CLONE_NEVER = (int)CloneType.Never;
+        public const int XSL_CLONE_ALWAYS = (int)CloneType.Always;
     }
 
     /// <summary>

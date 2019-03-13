@@ -2,8 +2,9 @@
 
   <Import Project="..\..\build\Targets\Settings.props" />
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
     <AssemblyName>Peachpie.NET.Sdk</AssemblyName>
+    <OutputType>Exe</OutputType>
 
     <PackageOnlyBuild>true</PackageOnlyBuild>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
@@ -16,14 +17,11 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PackageOnlyBuild)' == 'true'">
-    <NoBuild>true</NoBuild>
     <NoPackageAnalysis>true</NoPackageAnalysis>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
-    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <PackToolsDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\netcoreapp2.0\publish</PackToolsDir>
+    <NuspecFile>$(MSBuildThisFileDirectory)$(MSbuildProjectName).nuspec</NuspecFile>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(PackageOnlyBuild)' == 'true'">
@@ -46,7 +44,7 @@
     </CoreBuildDependsOn>
   </PropertyGroup>
 
-  <ItemGroup>
+  <!--ItemGroup>
     <Content Include="build/Peachpie.NET.Current.Sdk.targets">
       <PackagePath>build/Peachpie.NET.Current.Sdk.targets</PackagePath>
       <Pack>true</Pack>
@@ -83,18 +81,35 @@
       <PackagePath>Sdk/Sdk.props</PackagePath>
       <Pack>true</Pack>
     </Content>
-  </ItemGroup>
+  </ItemGroup-->
 
   <ItemGroup>
-    <ProjectReference Include="..\Peachpie.App\Peachpie.App.csproj" />
-    <ProjectReference Include="..\Peachpie.Compiler.Tools\Peachpie.Compiler.Tools.csproj" PrivateAssets="Compile" />
+    <ProjectReference Include="..\Peachpie.CodeAnalysis\Peachpie.CodeAnalysis.csproj" />
+    <PackageReference Include="System.IO.FileSystem.Primitives" Version="4.3.0" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="[15.8.*,]" />
   </ItemGroup>
+
+  <Target Name="PublishAll">
+    <ItemGroup>
+      <_TargetFramework Include="$(TargetFramework)" />
+    </ItemGroup>
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Publish" Properties="TargetFramework=%(_TargetFramework.Identity)" />
+  </Target>
+
+  <Target Name="SetPackageDependencies" BeforeTargets="GenerateNuspec" DependsOnTargets="PublishAll">
+    <PropertyGroup>
+      <NuspecProperties>$(NuspecProperties);id=$(PackageId)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);packToolsDir=$(PackToolsDir)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);description=$(Description)</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties);version=$(PackageVersion)</NuspecProperties>
+    </PropertyGroup>
+  </Target>
 
   <Target Name="WritePeachpieVersionProps" BeforeTargets="GenerateNuspec">
     <ItemGroup>
       <_PropsLine Include="&lt;Project xmlns=&quot;http://schemas.microsoft.com/developer/msbuild/2003&quot;&gt;" />
       <_PropsLine Include="&lt;PropertyGroup&gt;" />
-      <_PropsLine Include="  &lt;PeachpieVersion Condition=&quot; '%24(PeachpieVersion)'=='' &quot;&gt;$(PackageVersion)&lt;/PeachpieVersion&gt;" />
+      <_PropsLine Include="    &lt;PeachpieVersion Condition=&quot; '%24(PeachpieVersion)'=='' &quot;&gt;$(PackageVersion)&lt;/PeachpieVersion&gt;" />
       <_PropsLine Include="&lt;/PropertyGroup&gt;" />
       <_PropsLine Include="&lt;/Project&gt;" />
     </ItemGroup>
