@@ -302,8 +302,8 @@ namespace Pchp.Library
             if (path == null)
                 return null;
 
-            if (path == "")
-                path = ".";
+            if (path.Length == 0)
+                return ctx.WorkingDirectory;
 
             // string ending slash
             if (path[path.Length - 1].IsDirectorySeparator())
