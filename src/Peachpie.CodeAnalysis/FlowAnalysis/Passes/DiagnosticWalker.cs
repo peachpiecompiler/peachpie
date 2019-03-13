@@ -139,20 +139,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         && param.Syntax.TypeHint != null
                         && param.PHPDocOpt != null && param.PHPDocOpt.TypeNamesArray.Length != 0)
                     {
-                        var hintType = param.Type;
-                        TypeSymbol docType = null;
-
                         var tmask = PHPDoc.GetTypeMask(TypeCtx, param.PHPDocOpt.TypeNamesArray, _routine.GetNamingContext());
                         if (!tmask.IsVoid && !tmask.IsAnyType)
                         {
-                            docType = DeclaringCompilation.GetTypeFromTypeRef(TypeCtx, tmask);
-                        }
-
-                        if (!docType?.IsOfType(hintType) ?? false)
-                        {
-                            // PHPDoc type is incompatible with type hint
-                            _diagnostics.Add(_routine, param.Syntax, ErrorCode.WRN_ParamPhpDocTypeHintIncompatible,
-                                param.PHPDocOpt.TypeNames, param.Name, param.Syntax.TypeHint);
+                            var hintType = param.Type;
+                            var docType = DeclaringCompilation.GetTypeFromTypeRef(TypeCtx, tmask);
+                            if (!docType.IsOfType(hintType))
+                            {
+                                // PHPDoc type is incompatible with type hint
+                                _diagnostics.Add(_routine, param.Syntax, ErrorCode.WRN_ParamPhpDocTypeHintIncompatible,
+                                    param.PHPDocOpt.TypeNames, param.Name, param.Syntax.TypeHint);
+                            }
                         }
                     }
                 }
@@ -200,7 +197,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             }
 
             // Check valid types and uniqueness of the keys
-            HashSet<string> lazyKeyConstSet = null;             // Stores canonic string representations of the keys to check for duplicates
+            HashSet<(string, long)> lazyKeyConstSet = null;             // Stores canonic string representations of the keys to check for duplicates
             for (int i = 0; i < x.Items.Length; i++)
             {
                 var item = x.Items[i];
@@ -219,10 +216,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     }
                 }
 
-                if (AnalysisFacts.TryGetCanonicKeyStringConstant(item.Key.ConstantValue, out string keyConst))
+                if (AnalysisFacts.TryGetCanonicKeyStringConstant(item.Key.ConstantValue, out (string, long) keyConst))
                 {
                     if (lazyKeyConstSet == null)
-                        lazyKeyConstSet = new HashSet<string>();
+                        lazyKeyConstSet = new HashSet<(string, long)>();
 
                     if (!lazyKeyConstSet.Add(keyConst))
                     {

@@ -1589,6 +1589,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     && type.LookupMember<IMethodSymbol>(Name.SpecialMethodNames.CallStatic.Value) != null)
                 {
                     // __callStatic at runtime solves both inaccessible and missing method problems
+                    // TODO: remember and emit call to __callstatic directly (CallStaticMethodSymbol?)
                     method = null;
                 }
 

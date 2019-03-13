@@ -550,23 +550,36 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// If present, transforms the given constant value to a string corresponding to the key under which the item is stored in an array.
         /// </summary>
         /// <param name="keyConst">Constant value of the key.</param>
-        /// <param name="keyString">If <paramref name="keyConst"/> contains a value, the key as a string.</param>
+        /// <param name="key">If <paramref name="keyConst"/> contains a value, the key as a (string, long) tuple.
+        /// The second item should be taken into account only if the first one is null.</param>
         /// <returns>Whether the value was constant at all.</returns>
-        public static bool TryGetCanonicKeyStringConstant(Optional<object> keyConst, out string keyString)
+        public static bool TryGetCanonicKeyStringConstant(Optional<object> keyConst, out (string, long) key)
         {
             if (!keyConst.HasValue)
             {
-                keyString = null;
+                key = default;
                 return false;
             }
 
             var obj = keyConst.Value;
 
-            if (obj == null) keyString = "";
-            else if (obj is bool b) keyString = b ? "1" : "0";          // Notice the difference from the standard bool -> string conversion
-            else if (obj is float f) keyString = ((long)f).ToString();
-            else if (obj is double d) keyString = ((long)d).ToString();
-            else keyString = obj.ToString();
+            if (obj == null)
+            {
+                key = ("", default);
+            }
+            else if (keyConst.TryConvertToLong(out long l))
+            {
+                key = (null, l);
+            }
+            else if (obj is string s)
+            {
+                key = (s, default);
+            }
+            else
+            {
+                key = default;
+                return false;
+            }
 
             return true;
         }
