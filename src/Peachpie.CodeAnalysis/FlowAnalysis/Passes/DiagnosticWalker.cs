@@ -245,14 +245,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             CheckUndefinedType(typeRef);
 
             // Check that the right case of a class name is used
-            if (typeRef.IsObject && typeRef is BoundClassTypeRef ct)
+            if (typeRef.IsObject && typeRef is BoundClassTypeRef ct && ct.Type != null)
             {
                 string refName = ct.ClassName.Name.Value;
 
-                var symbol = typeRef.ResolveTypeSymbol(DeclaringCompilation);
-                if (symbol.Kind != SymbolKind.ErrorType)
+                if (ct.Type.Kind != SymbolKind.ErrorType)
                 {
-                    string symbolName = symbol.Name;
+                    string symbolName = ct.Type.Name;
 
                     if (refName != symbolName && refName.Equals(symbolName, StringComparison.InvariantCultureIgnoreCase))
                     {
