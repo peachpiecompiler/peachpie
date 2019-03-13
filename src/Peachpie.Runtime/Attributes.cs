@@ -345,4 +345,20 @@ namespace Pchp.Core
             ImportedType = tsymbol;
         }
     }
+
+    /// <summary>
+    /// Reference to another PHP library which scripts and types has to be loaded into the context during runtime.
+    /// </summary>
+    public sealed class PhpPackageReferenceAttribute : Attribute
+    {
+        /// <summary>
+        /// The Script type from the dependent assembly.
+        /// </summary>
+        public Type ScriptType { get; private set; }
+
+        public PhpPackageReferenceAttribute(Type scriptType)
+        {
+            ScriptType = scriptType;
+        }
+    }
 }

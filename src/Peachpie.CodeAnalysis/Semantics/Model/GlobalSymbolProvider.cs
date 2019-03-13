@@ -48,6 +48,17 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             .OfType<PEAssemblySymbol>()
             .Where(s => s.IsExtensionLibrary);
 
+        /// <summary>
+        /// Enumerates referenced assemblies which are extension libraries (has PhpExtensionAttribute).
+        /// </summary>
+        public IEnumerable<PEAssemblySymbol> ReferencedPhpPackageReferences
+        {
+            get
+            {
+                return GetExtensionLibraries(Compilation);//.Where( has scripts );
+            }
+        }
+
         static IEnumerable<NamedTypeSymbol> ResolveExtensionContainers(PhpCompilation compilation)
         {
             return GetExtensionLibraries(compilation)

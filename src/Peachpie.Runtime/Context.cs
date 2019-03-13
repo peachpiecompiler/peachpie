@@ -108,6 +108,12 @@ namespace Pchp.Core
 
                 var module = assembly.ManifestModule;
 
+                // PhpPackageReferenceAttribute
+                foreach (var r in module.GetCustomAttributes<PhpPackageReferenceAttribute>())
+                {
+                    Context.AddScriptReference(r.ScriptType);
+                }
+
                 // ImportPhpTypeAttribute
                 foreach (var t in module.GetCustomAttributes<ImportPhpTypeAttribute>())
                 {
@@ -212,11 +218,16 @@ namespace Pchp.Core
                 throw new ArgumentNullException(nameof(assembly));
             }
 
-            var tscript = assembly.GetType(ScriptInfo.ScriptTypeName);
-            if (tscript != null)
+            AddScriptReference(assembly.GetType(ScriptInfo.ScriptTypeName));
+            
+        }
+
+        static void AddScriptReference(Type scriptType)
+        {
+            if (scriptType != null)
             {
                 typeof(DllLoader<>)
-                    .MakeGenericType(tscript)   // let JIT to manage .cctor gets called just once
+                    .MakeGenericType(scriptType)   // let JIT to manage .cctor gets called just once
                     .GetMethod("Bootstrap")
                     .Invoke(null, Array.Empty<object>());
             }

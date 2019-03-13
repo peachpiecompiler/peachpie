@@ -136,7 +136,18 @@ namespace Pchp.CodeAnalysis.Symbols
 
             // [ExportPhpScript]
 
-            // [PhpDependency]
+            // [PhpPackageReference( ... )]
+            ctor = (MethodSymbol)DeclaringCompilation.GetTypeByMetadataName("Pchp.Core.PhpPackageReferenceAttribute").InstanceConstructors.Single();
+            foreach (var a in DeclaringCompilation.GlobalSemantics.ReferencedPhpPackageReferences)
+            {
+                var scriptType = a.GetTypeByMetadataName(WellKnownPchpNames.DefaultScriptClassName);
+                if (scriptType.IsValidType())
+                {
+                    yield return new SynthesizedAttributeData(ctor,
+                        ImmutableArray.Create(new TypedConstant(DeclaringCompilation.GetWellKnownType(WellKnownType.System_Type), TypedConstantKind.Type, scriptType)),
+                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+                }
+            }
 
             //
             yield break;
