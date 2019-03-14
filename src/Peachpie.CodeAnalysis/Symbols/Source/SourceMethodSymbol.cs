@@ -269,6 +269,10 @@ namespace Pchp.CodeAnalysis.Symbols
                     //{
                     //    return DeclaringCompilation.CoreTypes.Void; // NOTE: in PHP we can return anything but it is reported as warning
                     //}
+                    if (_syntax.Name.Name.IsCloneName) // __clone() : void
+                    {
+                        return DeclaringCompilation.CoreTypes.Void;
+                    }
                 }
 
                 // default:
