@@ -74,7 +74,7 @@ namespace Pchp.Library.Reflection
             __construct(ctx, @class);
         }
 
-        public virtual void __construct(Context ctx, PhpValue @class)
+        public void __construct(Context ctx, PhpValue @class)
         {
             Debug.Assert(_tinfo == null, "Subsequent call not allowed.");
 

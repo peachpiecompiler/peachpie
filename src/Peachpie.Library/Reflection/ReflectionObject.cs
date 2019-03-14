@@ -22,13 +22,13 @@ namespace Pchp.Library.Reflection
             _instance = instance;
         }
 
-        public override void __construct(Context ctx, PhpValue @class)
+        public void __construct(Context ctx, object _instance)
         {
-            _instance = @class.AsObject();
             if (_instance == null)
             {
                 throw new ReflectionException();
             }
+
             _tinfo = _instance.GetPhpTypeInfo();
         }
 
