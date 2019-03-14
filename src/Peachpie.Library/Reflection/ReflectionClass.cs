@@ -317,7 +317,7 @@ namespace Pchp.Library.Reflection
             throw new NotImplementedException();
         }
 
-        public string __toString()
+        public virtual string __toString()
         {
             throw new NotImplementedException();
         }
