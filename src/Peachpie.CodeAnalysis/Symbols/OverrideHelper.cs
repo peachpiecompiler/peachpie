@@ -97,29 +97,40 @@ namespace Pchp.CodeAnalysis.Symbols
 
             foreach (var t in EnumerateOverridableTypes(method.ContainingType))
             {
-                foreach (var m in t.GetMembers(method.Name).OfType<MethodSymbol>().Where(IsOverrideable))
+                foreach (var m in t.GetMembers(method.Name).OfType<MethodSymbol>())
                 {
                     if (overriden.Contains(m))
                     {
                         continue;
                     }
 
-                    var cost = OverrideCost(method, m);
-                    if (cost < bestCost && IsAllowedCost(cost))
+                    if (IsOverrideable(m))
                     {
-                        bestCost = cost;
-                        bestCandidate = m;
-
-                        if (cost == ConversionCost.Pass)
+                        if (t.IsInterface && overriden.Count != 0) // method on interface that might be already implemented
                         {
-                            return bestCandidate;
+                            if (overriden.Any(o => o.SignaturesMatch(m)))
+                            {
+                                continue; // already implemented in a class
+                            }
+                        }
+
+                        var cost = OverrideCost(method, m);
+                        if (cost < bestCost && IsAllowedCost(cost))
+                        {
+                            bestCost = cost;
+                            bestCandidate = m;
+
+                            if (cost == ConversionCost.Pass)
+                            {
+                                return bestCandidate;
+                            }
                         }
                     }
 
                     // already overriden methods cannot be overriden again:
-                    for (var mbase = m.OverriddenMethod; mbase != null; mbase = mbase.OverriddenMethod)
+                    for (var mbase = m; mbase != null; mbase = (MethodSymbol)mbase.OverriddenMethod)
                     {
-                        overriden.Add((MethodSymbol)mbase);
+                        overriden.Add(mbase);
                     }
                 }
             }
@@ -196,15 +207,27 @@ namespace Pchp.CodeAnalysis.Symbols
 
             // ignoring System.Object (we don't override its methods from PHP)
 
+            bool checkInterfaces = true;
+
             for (var t = type.BaseType; t != null && t.SpecialType != SpecialType.System_Object; t = t.BaseType)
             {
+                if (!t.IsAbstract)
+                {
+                    // we don't have to check interfaces,
+                    // all the virtual members from interface were already implemented
+                    checkInterfaces = false;
+                }
+
                 yield return t;
             }
 
             //
-            foreach (var t in type.AllInterfaces)
+            if (checkInterfaces)
             {
-                yield return t;
+                foreach (var t in type.AllInterfaces)
+                {
+                    yield return t;
+                }
             }
         }
 

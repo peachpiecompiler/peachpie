@@ -24,6 +24,15 @@ namespace Pchp.CodeAnalysis.Symbols
     /// </summary>
     internal abstract partial class SourceRoutineSymbol : MethodSymbol
     {
+        [Flags]
+        protected enum CommonFlags
+        {
+            OverriddenMethodResolved = 1,
+        }
+
+        /// <summary>Internal true/false values. Initially all false.</summary>
+        protected CommonFlags _commonflags;
+
         ControlFlowGraph _cfg;
         LocalsTable _locals;
 
@@ -41,12 +50,16 @@ namespace Pchp.CodeAnalysis.Symbols
                     var state = StateBinder.CreateInitialState(this);
 
                     // build control flow graph
-                    _cfg = new ControlFlowGraph(
+                    var cfg = new ControlFlowGraph(
                         this.Statements,
                         SemanticsBinder.Create(DeclaringCompilation, LocalsTable, ContainingType as SourceTypeSymbol));
-                    _cfg.Start.FlowState = state;
+                    cfg.Start.FlowState = state;
+
+                    //
+                    Interlocked.CompareExchange(ref _cfg, cfg, null);
                 }
 
+                //
                 return _cfg;
             }
             internal set

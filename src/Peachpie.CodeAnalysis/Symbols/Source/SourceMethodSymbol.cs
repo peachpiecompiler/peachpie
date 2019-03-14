@@ -44,9 +44,11 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                if (_lazyOverridenMethod == null)
+                if ((_commonflags & CommonFlags.OverriddenMethodResolved) == 0)
                 {
                     Interlocked.CompareExchange(ref _lazyOverridenMethod, this.ResolveOverride(), null);
+
+                    _commonflags |= CommonFlags.OverriddenMethodResolved;
                 }
 
                 return _lazyOverridenMethod;
