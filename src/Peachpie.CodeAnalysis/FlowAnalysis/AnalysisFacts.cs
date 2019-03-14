@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Devsense.PHP.Syntax;
 using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Semantics;
+using Pchp.CodeAnalysis.Semantics.TypeRef;
 using Pchp.CodeAnalysis.Symbols;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
@@ -159,12 +160,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
-        private static bool HasSimpleName(BoundGlobalFunctionCall call, out string name)
+        public static bool HasSimpleName(BoundGlobalFunctionCall call, out string name)
         {
             if (call.Name.IsDirect)
             {
                 // Take the function name ignoring current namespace resolution, simple names only:
-                var qualifiedName = call.NameOpt.HasValue ? call.NameOpt.Value : call.Name.NameValue;
+                var qualifiedName = call.NameOpt ?? call.Name.NameValue;
                 if (qualifiedName.IsSimpleName)
                 {
                     name = qualifiedName.Name.Value;
@@ -521,6 +522,66 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
 
             return isFeasible;
+        }
+
+        /// <summary>
+        /// Returns whether the given type can be used as an array key.
+        /// </summary>
+        public static bool IsValidKeyType(IBoundTypeRef type)
+        {
+            if (type is BoundPrimitiveTypeRef pt)
+            {
+                switch (pt.TypeCode)
+                {
+                    case PhpTypeCode.Boolean:
+                    case PhpTypeCode.Long:
+                    case PhpTypeCode.Double:
+                    case PhpTypeCode.String:
+                    case PhpTypeCode.WritableString:
+                    case PhpTypeCode.Null:
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// If present, transforms the given constant value to a string corresponding to the key under which the item is stored in an array.
+        /// </summary>
+        /// <param name="keyConst">Constant value of the key.</param>
+        /// <param name="key">If <paramref name="keyConst"/> contains a value, the key as a (string, long) tuple.
+        /// The second item should be taken into account only if the first one is null.</param>
+        /// <returns>Whether the value was constant at all.</returns>
+        public static bool TryGetCanonicKeyStringConstant(Optional<object> keyConst, out (string, long) key)
+        {
+            if (!keyConst.HasValue)
+            {
+                key = default;
+                return false;
+            }
+
+            var obj = keyConst.Value;
+
+            if (obj == null)
+            {
+                key = ("", default);
+            }
+            else if (keyConst.TryConvertToLong(out long l))
+            {
+                key = (null, l);
+            }
+            else if (obj is string s)
+            {
+                key = (s, default);
+            }
+            else
+            {
+                key = default;
+                return false;
+            }
+
+            return true;
         }
     }
 }

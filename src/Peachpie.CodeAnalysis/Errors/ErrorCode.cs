@@ -167,12 +167,30 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_ExpressionNotRead,
         /// <summary>Assignment made to same variable; did you mean to assign something else?</summary>
         WRN_AssigningSameVariable,
-        
+        /// <summary>Invalid array key type: {0}.</summary>
+        WRN_InvalidArrayKeyType,
+        /// <summary>Duplicate array key: '{0}'.</summary>
+        WRN_DuplicateArrayKey,
+        /// <summary>Cloning of non-object: {0}.</summary>
+        WRN_CloneNonObject,
+        /// <summary>Using non-iterable type in foreach: {0}.</summary>
+        WRN_ForeachNonIterable,
+        /// <summary>Wrong number of arguments in {0}.</summary>
+        WRN_FormatStringWrongArgCount,
+        /// <summary>Missing the call of parent::__construct from {0}::__construct.</summary>
+        WRN_ParentCtorNotCalled,
+        /// <summary>PHPDoc type {0} of parameter ${1} is incompatible with its type hint {2}.</summary>
+        WRN_ParamPhpDocTypeHintIncompatible,
+        /// <summary>Value of type {0} assigned to field {1} is incompatible with its PHPDoc type {2}.</summary>
+        WRN_FieldPhpDocAssignIncompatible,
 
         //
         // Visible information
         //
         INF_UnableToLoadSomeTypesInAnalyzer = 6000,
         INF_EvalDiscouraged,
+        INF_RedundantCast,
+        /// <summary>Wrong case in class name '{0}', expected '{1}'.</summary>
+        INF_ClassNameWrongCase,
     }
 }

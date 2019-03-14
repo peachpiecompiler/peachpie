@@ -27,6 +27,8 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly int _relindex;
         readonly PHPDocBlock.ParamTag _ptagOpt;
 
+        internal PHPDocBlock.ParamTag PHPDocOpt => _ptagOpt;
+
         TypeSymbol _lazyType;
 
         /// <summary>

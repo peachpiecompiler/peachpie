@@ -825,13 +825,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                     if (branch != ConditionBranch.AnyResult)
                     {
+                        // We must beware not to compute constant value more than once (losing results) -> mark handling of the given expression by this boolean
+                        bool handled = false;
+
                         if (x.Right.ConstantValue.HasValue && x.Left is BoundReferenceExpression boundLeft)
                         {
-                            ResolveEqualityWithConstantValue(x, boundLeft, x.Right.ConstantValue, branch);
+                            handled = ResolveEqualityWithConstantValue(x, boundLeft, x.Right.ConstantValue, branch);
                         }
                         else if (x.Left.ConstantValue.HasValue && x.Right is BoundReferenceExpression boundRight)
                         {
-                            ResolveEqualityWithConstantValue(x, boundRight, x.Left.ConstantValue, branch);
+                            handled = ResolveEqualityWithConstantValue(x, boundRight, x.Left.ConstantValue, branch);
+                        }
+
+                        if (!handled)
+                        {
+                            ResolveEquality(x);
                         }
                     }
 
@@ -910,9 +918,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         /// <summary>
         /// Resolves variable types and potentially assigns a constant boolean value to an expression of a comparison of
-        /// a variable and a constant - operators ==, !=, === and !==.
+        /// a variable and a constant - operators ==, !=, === and !==. Returns true iff this expression was handled and there
+        /// is no need to analyse it any more (adding constant value etc.).
         /// </summary>
-        private void ResolveEqualityWithConstantValue(
+        private bool ResolveEqualityWithConstantValue(
             BoundBinaryEx cmpExpr,
             BoundReferenceExpression refExpr,
             Optional<object> value,
@@ -937,6 +946,28 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         checkExpr: cmpExpr,
                         isPositiveCheck: isPositive);
                 }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Attempts to infer the result of an equality comparison from the types of the operands.
+        /// </summary>
+        private void ResolveEquality(BoundBinaryEx cmpExpr)
+        {
+            Debug.Assert(cmpExpr.Operation >= Operations.Equal && cmpExpr.Operation <= Operations.NotIdentical);
+
+            bool isStrict = (cmpExpr.Operation == Operations.Identical || cmpExpr.Operation == Operations.NotIdentical);
+
+            if (isStrict)
+            {
+                // Always returns false if checked for strict equality and the operands are of different types (and vice versa for strict non-eq)
+                bool isPositive = (cmpExpr.Operation == Operations.Equal || cmpExpr.Operation == Operations.Identical);
+                bool canBeSameType = Routine.TypeRefContext.CanBeSameType(cmpExpr.Left.TypeRefMask, cmpExpr.Right.TypeRefMask);
+                cmpExpr.ConstantValue = !canBeSameType ? new Optional<object>(!isPositive) : default;
             }
         }
 
@@ -1126,7 +1157,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // TOOD: x.ConstantValue // in case we know and the operand is a local variable (we can ignore the expression and emit result immediatelly)
 
-            if (x.Operand is BoundLiteral)
+            var opTypeMask = x.Operand.TypeRefMask;
+            if (x.Operand is BoundLiteral
+                || (!opTypeMask.IsAnyType && !opTypeMask.IsRef && !Routine.TypeRefContext.IsObject(opTypeMask)))
             {
                 x.ConstantValue = ConstantValueExtensions.AsOptional(false);
             }
@@ -1136,7 +1169,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 {
                     // if (Variable is T) => variable is T in True branch state
                     var vartype = x.AsType.GetTypeRefMask(TypeCtx);
-                    if (x.Operand.TypeRefMask.IsRef) vartype = vartype.WithRefFlag; // keep IsRef flag
+                    if (opTypeMask.IsRef) vartype = vartype.WithRefFlag; // keep IsRef flag
 
                     State.SetLocalType(State.GetLocalHandle(vref.Name.NameValue), vartype);
                 }
@@ -1551,7 +1584,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 candidates = Construct(candidates, x);
 
-                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
+                var method = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
+                if ((method is MissingMethodSymbol || method is InaccessibleMethodSymbol)
+                    && type.LookupMember<IMethodSymbol>(Name.SpecialMethodNames.CallStatic.Value) != null)
+                {
+                    // __callStatic at runtime solves both inaccessible and missing method problems
+                    // TODO: remember and emit call to __callstatic directly (CallStaticMethodSymbol?)
+                    method = null;
+                }
+
+                x.TargetMethod = method;
             }
 
             BindTargetMethod(x);

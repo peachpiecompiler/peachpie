@@ -23,7 +23,8 @@ namespace Peachpie.DiagnosticTests
     public class DiagnosticTest
     {
         private readonly ITestOutputHelper _output;
-        private readonly PhpCompilation _emptyCompilation;
+
+        private static readonly PhpCompilation EmptyCompilation = CreateEmptyCompilation();
 
         private static readonly Regex DiagnosticAnnotationRegex = new Regex(@"/\*!([A-Z]*[0-9]*)!\*/");
         private static readonly Regex TypeAnnotationRegex = new Regex(@"/\*\|([^/]*)\|\*/");
@@ -35,7 +36,6 @@ namespace Peachpie.DiagnosticTests
         public DiagnosticTest(ITestOutputHelper output)
         {
             _output = output;
-            _emptyCompilation = CreateEmptyCompilation();
         }
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace Peachpie.DiagnosticTests
 
             var code = File.ReadAllText(path);
             var syntaxTree = PhpSyntaxTree.ParseCode(SourceText.From(code, Encoding.UTF8), PhpParseOptions.Default, PhpParseOptions.Default, path);
-            var compilation = (PhpCompilation)_emptyCompilation.AddSyntaxTrees(syntaxTree);
+            var compilation = (PhpCompilation)EmptyCompilation.AddSyntaxTrees(syntaxTree);
 
             bool isCorrect = true;
 

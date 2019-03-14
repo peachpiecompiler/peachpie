@@ -746,6 +746,26 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return mask;
         }
 
+        /// <summary>
+        /// Returns whether there exists a type present possibly in both <paramref name="a"/> and <paramref name="b"/>.
+        /// The result is overapproximate - false result is ensured to be sound, but true result means it is possible
+        /// but not certain (e.g. class hierarchy is not checked for object and array type compatibility).
+        /// </summary>
+        public bool CanBeSameType(TypeRefMask a, TypeRefMask b)
+        {
+            // TODO: Consider adding _isResource mask if needed for efficiency
+            // TODO: Consider traversing the combinations of inheritance tree in the case of objects, arrays and resources (skipped for inefficiency)
+            return
+                (a & b & ~TypeRefMask.FlagsMask) != 0   // Either one of them is mixed or there is at least one type present in both
+                || a.IsRef || b.IsRef
+                || (IsObject(a) && IsObject(b))
+                || (IsArray(a) && IsArray(b))
+                || (IsAString(a) && IsAString(b))
+                || (IsLambda(a) && IsLambda(b))
+                || (GetTypes(a).Any(t => t == BoundTypeRefFactory.ResourceTypeRef) && IsObject(b))
+                || (IsObject(a) && GetTypes(b).Any(t => t == BoundTypeRefFactory.ResourceTypeRef));
+        }
+
         #endregion
     }
 }

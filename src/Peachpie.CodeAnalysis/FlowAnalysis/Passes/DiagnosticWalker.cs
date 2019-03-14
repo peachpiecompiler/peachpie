@@ -14,13 +14,19 @@ using Pchp.CodeAnalysis.Symbols;
 using Devsense.PHP.Syntax.Ast;
 using Peachpie.CodeAnalysis.Utilities;
 using Pchp.CodeAnalysis.Semantics.TypeRef;
+using System.Text.RegularExpressions;
+using Devsense.PHP.Syntax;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
     internal partial class DiagnosticWalker<T> : GraphExplorer<T>
     {
+        private static readonly Regex PrintfSpecsRegex = new Regex(@"%(?:(\d)+\$)?[+-]?(?:[ 0]|'.{1})?-?\d*(?:\.\d+)?[bcdeEufFgGosxX]");
+
         private readonly DiagnosticBag _diagnostics;
         private SourceRoutineSymbol _routine;
+
+        private bool _callsParentCtor;
 
         PhpCompilation DeclaringCompilation => _routine.DeclaringCompilation;
 
@@ -103,11 +109,51 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             base.VisitCFGInternal(x);
 
+            CheckParams();
+
+            if (!_callsParentCtor && _routine.Name == Devsense.PHP.Syntax.Name.SpecialMethodNames.Construct.Value
+                && _routine.ContainingType.BaseType?.ResolvePhpCtor() != null)
+            {
+                // Missing calling parent::__construct
+                _diagnostics.Add(_routine, _routine.SyntaxSignature.Span.ToTextSpan(), ErrorCode.WRN_ParentCtorNotCalled, _routine.ContainingType.Name);
+            }
+
             // analyse missing or redefined labels
             CheckLabels(x.Labels);
 
             // report unreachable blocks
             CheckUnreachableCode(x);
+        }
+
+        private void CheckParams()
+        {
+            // Check the compatibility of type hints with PhpDoc, if both exist
+            if (_routine.PHPDocBlock != null)
+            {
+                for (int i = 0; i < _routine.SourceParameters.Length; i++)
+                {
+                    var param = _routine.SourceParameters[i];
+
+                    // Consider only parameters passed by value, with both typehints and PHPDoc comments
+                    if (!param.Syntax.IsOut && !param.Syntax.PassedByRef
+                        && param.Syntax.TypeHint != null
+                        && param.PHPDocOpt != null && param.PHPDocOpt.TypeNamesArray.Length != 0)
+                    {
+                        var tmask = PHPDoc.GetTypeMask(TypeCtx, param.PHPDocOpt.TypeNamesArray, _routine.GetNamingContext());
+                        if (!tmask.IsVoid && !tmask.IsAnyType)
+                        {
+                            var hintType = param.Type;
+                            var docType = DeclaringCompilation.GetTypeFromTypeRef(TypeCtx, tmask);
+                            if (!docType.IsOfType(hintType))
+                            {
+                                // PHPDoc type is incompatible with type hint
+                                _diagnostics.Add(_routine, param.Syntax, ErrorCode.WRN_ParamPhpDocTypeHintIncompatible,
+                                    param.PHPDocOpt.TypeNames, param.Name, param.Syntax.TypeHint);
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         void CheckLabels(ImmutableArray<ControlFlowGraph.LabelBlockState> labels)
@@ -150,6 +196,39 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_ExpressionNotRead);
             }
 
+            // Check valid types and uniqueness of the keys
+            HashSet<(string, long)> lazyKeyConstSet = null;             // Stores canonic string representations of the keys to check for duplicates
+            for (int i = 0; i < x.Items.Length; i++)
+            {
+                var item = x.Items[i];
+                if (item.Key == null)
+                    continue;
+
+                var keyTypeMask = item.Key.TypeRefMask;
+                if (!keyTypeMask.IsAnyType && !keyTypeMask.IsRef)    // Disallowing 'mixed' for key type would have caused too many false positives
+                {
+                    var keyTypes = _routine.TypeRefContext.GetTypes(keyTypeMask);
+                    bool allKeyTypesValid = keyTypes.Count > 0 && keyTypes.All(AnalysisFacts.IsValidKeyType);
+                    if (!allKeyTypesValid)
+                    {
+                        string keyTypeStr = _routine.TypeRefContext.ToString(keyTypeMask);
+                        _diagnostics.Add(_routine, item.Key.PhpSyntax, ErrorCode.WRN_InvalidArrayKeyType, keyTypeStr);
+                    }
+                }
+
+                if (AnalysisFacts.TryGetCanonicKeyStringConstant(item.Key.ConstantValue, out (string, long) keyConst))
+                {
+                    if (lazyKeyConstSet == null)
+                        lazyKeyConstSet = new HashSet<(string, long)>();
+
+                    if (!lazyKeyConstSet.Add(keyConst))
+                    {
+                        // Duplicate array key
+                        _diagnostics.Add(_routine, item.Key.PhpSyntax ?? item.Value.PhpSyntax, ErrorCode.WRN_DuplicateArrayKey, keyConst);
+                    }
+                }
+            }
+
             return base.VisitArray(x);
         }
 
@@ -161,6 +240,24 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         internal override T VisitTypeRef(BoundTypeRef typeRef)
         {
             CheckUndefinedType(typeRef);
+
+            // Check that the right case of a class name is used
+            if (typeRef.IsObject && typeRef is BoundClassTypeRef ct && ct.Type != null)
+            {
+                string refName = ct.ClassName.Name.Value;
+
+                if (ct.Type.Kind != SymbolKind.ErrorType)
+                {
+                    string symbolName = ct.Type.Name;
+
+                    if (refName != symbolName && refName.Equals(symbolName, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        // Wrong class name case
+                        _diagnostics.Add(_routine, typeRef.PhpSyntax, ErrorCode.INF_ClassNameWrongCase, refName, symbolName);
+                    }
+                }
+            }
+
             return base.VisitTypeRef(typeRef);
         }
 
@@ -260,6 +357,24 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_AssigningSameVariable);
             }
 
+            // Check the type of the value assigned to a field against its PHPDoc
+            var valMask = x.Value.TypeRefMask;
+            if (!valMask.IsAnyType && !valMask.IsRef
+                && x.Target is BoundFieldRef fr && fr.BoundReference.Symbol is SourceFieldSymbol fieldSymbol
+                && fieldSymbol.FindPhpDocVarTag() is PHPDocBlock.TypeVarDescTag fieldDoc
+                && fieldDoc.TypeNamesArray.Length != 0)
+            {
+                var namingCtx = NameUtils.GetNamingContext(fieldSymbol.PhpDocBlock.ContainingType);
+                var fieldMask = PHPDoc.GetTypeMask(TypeCtx, fieldDoc.TypeNamesArray, namingCtx);
+
+                if (!TypeCtx.CanBeSameType(fieldMask, valMask))
+                {
+                    // The value can't be of the type specified in PHPDoc
+                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_FieldPhpDocAssignIncompatible,
+                        TypeCtx.ToString(valMask), fieldSymbol, fieldDoc.TypeNames);
+                }
+            }
+
             //
 
             return base.VisitAssign(x);
@@ -330,6 +445,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             if (x.Name.IsDirect)
             {
                 CheckObsoleteSymbol(x.PhpSyntax, x.TargetMethod);
+                CheckGlobalFunctionUsage(x);
             }
             else
             {
@@ -347,7 +463,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         public override T VisitInstanceFunctionCall(BoundInstanceFunctionCall call)
         {
-            // TODO: Enable the diagnostic when several problems are solved (such as __call())
+            // TODO: Consider checking if there are enough situations where this makes sense
+            //       (it could only work if IncludeSubclasses is false or the class is final)
             //CheckUndefinedMethodCall(call, call.Instance?.ResultType, call.Name);
 
             // check target type
@@ -383,11 +500,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         {
             CheckMissusedPrimitiveType(call.TypeRef);
 
-            // TODO: Enable the diagnostic when the __callStatic() method is properly processed during analysis
-            //CheckUndefinedMethodCall(call, call.TypeRef?.ResolvedType, call.Name);
+            CheckUndefinedMethodCall(call, call.TypeRef.ResolveTypeSymbol(DeclaringCompilation) as TypeSymbol, call.Name);
 
             // check deprecated
             CheckObsoleteSymbol(call.PhpSyntax, call.TargetMethod);
+
+            // Mark that parent::__construct was called (to be checked later)
+            if (call.Name.IsDirect && call.Name.NameValue.Name.IsConstructName
+                && call.TypeRef is BoundReservedTypeRef rt && rt.ReservedType == ReservedTypeRef.ReservedType.parent)
+            {
+                _callsParentCtor = true;
+            }
 
             //
             return base.VisitStaticFunctionCall(call);
@@ -459,6 +582,30 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return default;
         }
 
+        public override T VisitUnaryExpression(BoundUnaryEx x)
+        {
+            base.VisitUnaryExpression(x);
+
+            switch (x.Operation)
+            {
+                case Operations.Clone:
+                    var operandTypeMask = x.Operand.TypeRefMask;
+                    if (!operandTypeMask.IsAnyType && !operandTypeMask.IsRef)
+                    {
+                        var types = _routine.TypeRefContext.GetTypes(operandTypeMask);
+                        if (!types.All(t => t.IsObject))
+                        {
+                            // clone called on non-object
+                            string typeString = _routine.TypeRefContext.ToString(operandTypeMask);
+                            _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_CloneNonObject, typeString);
+                        }
+                    }
+                    break;
+            }
+
+            return default;
+        }
+
         public override T VisitBinaryExpression(BoundBinaryEx x)
         {
             base.VisitBinaryExpression(x);
@@ -476,6 +623,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         }
                     }
                     break;
+            }
+
+            return default;
+        }
+
+        public override T VisitConversion(BoundConversionEx x)
+        {
+            base.VisitConversion(x);
+
+            if (!x.IsImplicit && x.PhpSyntax != null && x.Operand.TypeRefMask.IsSingleType
+                && x.TargetType == _routine.TypeRefContext.GetTypes(x.Operand.TypeRefMask).Single())
+            {
+                _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.INF_RedundantCast);
             }
 
             return default;
@@ -555,10 +715,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         private void CheckUndefinedMethodCall(BoundRoutineCall x, TypeSymbol type, BoundRoutineName name)
         {
-            if (name.IsDirect && x.TargetMethod.IsErrorMethodOrNull() && type != null && !type.IsErrorType())
+            if (x.TargetMethod is MissingMethodSymbol)
             {
                 var span = x.PhpSyntax is FunctionCall fnc ? fnc.NameSpan : x.PhpSyntax.Span;
-                _diagnostics.Add(_routine, span.ToTextSpan(), ErrorCode.WRN_UndefinedMethodCall, name.NameValue.ToString(), type.Name);
+                _diagnostics.Add(_routine, span.ToTextSpan(), ErrorCode.WRN_UndefinedMethodCall, type.Name, name.NameValue.ToString());
             }
         }
 
@@ -593,6 +753,50 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 {
                     _diagnostics.Add(_routine, typeRef.PhpSyntax, ErrorCode.WRN_UndefinedType, typeRef.ToString());
                 }
+            }
+        }
+
+        private void CheckGlobalFunctionUsage(BoundGlobalFunctionCall call)
+        {
+            if (!AnalysisFacts.HasSimpleName(call, out string name))
+            {
+                return;
+            }
+
+            switch (name)
+            {
+                case "printf":
+                case "sprintf":
+                    // Check that the number of arguments matches the format string
+                    if (!call.ArgumentsInSourceOrder.IsEmpty && call.ArgumentsInSourceOrder[0].Value.ConstantValue.TryConvertToString(out string format))
+                    {
+                        int posSpecCount = 0;
+                        int numSpecMax = 0;
+                        foreach (Match match in PrintfSpecsRegex.Matches(format))
+                        {
+                            var numSpecStr = match.Groups[1].Value;
+                            if (numSpecStr == string.Empty)
+                            {
+                                // %d
+                                posSpecCount++;
+                            }
+                            else
+                            {
+                                // %2$d
+                                int numSpec = int.Parse(numSpecStr);
+                                numSpecMax = Math.Max(numSpec, numSpecMax);
+                            }
+                        }
+
+                        int expectedArgCount = 1 + Math.Max(posSpecCount, numSpecMax);
+
+                        if (call.ArgumentsInSourceOrder.Length != expectedArgCount)
+                        {
+                            // Wrong number of arguments with respect to the format string
+                            _diagnostics.Add(_routine, call.PhpSyntax, ErrorCode.WRN_FormatStringWrongArgCount, name);
+                        }
+                    }
+                    break;
             }
         }
 
@@ -644,6 +848,26 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             {
                 // TODO: Start supporting yielding from exception handling constructs.
                 _diagnostics.Add(_routine, boundYieldStatement.PhpSyntax, ErrorCode.ERR_NotYetImplemented, "Yielding from an exception handling construct (try, catch, finally)");
+            }
+
+            return default;
+        }
+
+        public override T VisitCFGForeachEnumereeEdge(ForeachEnumereeEdge x)
+        {
+            base.VisitCFGForeachEnumereeEdge(x);
+
+            var enumereeTypeMask = x.Enumeree.TypeRefMask;
+            if (!enumereeTypeMask.IsAnyType && !enumereeTypeMask.IsRef)
+            {
+                // Apart from array, any object can possibly implement Traversable, hence no warning for them
+                var types = _routine.TypeRefContext.GetTypes(enumereeTypeMask);
+                if (!types.Any(t => t.IsArray || t.IsObject))                          // Using !All causes too many false positives (due to explode(..) etc.)
+                {
+                    // Using non-iterable type for enumeree
+                    string typeString = _routine.TypeRefContext.ToString(enumereeTypeMask);
+                    _diagnostics.Add(_routine, x.Enumeree.PhpSyntax, ErrorCode.WRN_ForeachNonIterable, typeString);
+                }
             }
 
             return default;
