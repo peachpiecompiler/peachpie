@@ -135,6 +135,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return base.VisitBinaryExpression(x);
         }
 
+        public override object VisitCopyValue(BoundCopyValue x)
+        {
+            var valueEx = (BoundExpression)Accept(x.Expression);
+            if (valueEx.IsDeeplyCopied)
+            {
+                return x.Update(valueEx);
+            }
+            else
+            {
+                // deep copy is unnecessary:
+                TransformationCount++;
+                return valueEx;
+            }
+        }
+
         public override object VisitAssign(BoundAssignEx x)
         {
             // A = A <binOp> <right>

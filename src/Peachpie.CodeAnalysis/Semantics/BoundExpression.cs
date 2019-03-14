@@ -270,6 +270,11 @@ namespace Pchp.CodeAnalysis.Semantics
         public virtual bool RequiresContext => !this.ConstantValue.HasValue;
 
         /// <summary>
+        /// Decides whether an expression represented by this node should be copied if a certain operation is performed.
+        /// </summary>
+        public virtual bool IsDeeplyCopied => !ConstantValue.HasValue;
+
+        /// <summary>
         /// Resolved value of the expression.
         /// </summary>
         public Optional<object> ConstantValue { get; set; }
@@ -668,6 +673,8 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         public override BoundExpression Instance => null;
 
+        public override bool IsDeeplyCopied => false;
+
         public BoundConcatEx(ImmutableArray<BoundArgument> arguments)
             : base(arguments)
         {
@@ -703,6 +710,8 @@ namespace Pchp.CodeAnalysis.Semantics
         readonly IBoundTypeRef _typeref;
 
         public override BoundExpression Instance => null;
+
+        public override bool IsDeeplyCopied => false;
 
         public BoundNewEx(IBoundTypeRef tref, ImmutableArray<BoundArgument> arguments)
             : base(arguments)
@@ -873,6 +882,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         IMethodSymbol IAnonymousFunctionOperation.Symbol => BoundLambdaMethod;
 
+        public override bool IsDeeplyCopied => false;
+
         public BoundLambda(ImmutableArray<BoundArgument> usevars)
         {
             _usevars = usevars;
@@ -952,6 +963,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override bool RequiresContext => false;
 
+        public override bool IsDeeplyCopied => false;
+
         public BoundLiteral(object value)
         {
             this.ConstantValue = value;
@@ -999,6 +1012,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override bool RequiresContext => this.Expression.RequiresContext;
 
+        public override bool IsDeeplyCopied => false; // already copied
+
         public override OperationKind Kind => OperationKind.None;
 
         public override void Accept(OperationVisitor visitor) => visitor.DefaultVisit(this);
@@ -1024,6 +1039,47 @@ namespace Pchp.CodeAnalysis.Semantics
         public override OperationKind Kind => OperationKind.BinaryOperator;
 
         public override bool RequiresContext => Left.RequiresContext || Right.RequiresContext;
+
+        public override bool IsDeeplyCopied
+        {
+            get
+            {
+                switch (Operation)
+                {
+                    // respective operators returns immutable values:
+                    case Ast.Operations.Xor:
+                    case Ast.Operations.Or:
+                    case Ast.Operations.And:
+                    case Ast.Operations.BitOr:
+                    case Ast.Operations.BitXor:
+                    case Ast.Operations.BitAnd:
+                    case Ast.Operations.Equal:
+                    case Ast.Operations.NotEqual:
+                    case Ast.Operations.Identical:
+                    case Ast.Operations.NotIdentical:
+                    case Ast.Operations.LessThan:
+                    case Ast.Operations.GreaterThan:
+                    case Ast.Operations.LessThanOrEqual:
+                    case Ast.Operations.GreaterThanOrEqual:
+                    case Ast.Operations.ShiftLeft:
+                    case Ast.Operations.ShiftRight:
+                    case Ast.Operations.Add:
+                    case Ast.Operations.Sub:
+                    case Ast.Operations.Mul:
+                    case Ast.Operations.Pow:
+                    case Ast.Operations.Div:
+                    case Ast.Operations.Mod:
+                    case Ast.Operations.Concat:
+                        return false;
+
+                    case Ast.Operations.Coalesce:
+                        return Left.IsDeeplyCopied || Right.IsDeeplyCopied;
+
+                    default:
+                        return true;
+                }
+            }
+        }
 
         public Ast.Operations Operation { get; private set; }
 
@@ -1103,6 +1159,60 @@ namespace Pchp.CodeAnalysis.Semantics
         public bool UsesOperatorMethod => OperatorMethod != null;
 
         public UnaryOperatorKind OperatorKind { get { throw new NotSupportedException(); } }
+
+        public override bool IsDeeplyCopied
+        {
+            get
+            {
+                if (!base.IsDeeplyCopied)
+                {
+                    return false;
+                }
+
+                switch (Operation)
+                {
+                    // respective operators returns immutable values:
+                    case Ast.Operations.Plus:
+                    case Ast.Operations.Minus:
+                    case Ast.Operations.LogicNegation:
+                    case Ast.Operations.BitNegation:
+
+                    case Ast.Operations.Int8Cast:
+                    case Ast.Operations.Int16Cast:
+                    case Ast.Operations.Int32Cast:
+                    case Ast.Operations.Int64Cast:
+                    case Ast.Operations.UInt8Cast:
+                    case Ast.Operations.UInt16Cast:
+                    case Ast.Operations.UInt32Cast:
+                    case Ast.Operations.UInt64Cast:
+                    case Ast.Operations.DecimalCast:
+                    case Ast.Operations.DoubleCast:
+                    case Ast.Operations.FloatCast:
+                    case Ast.Operations.StringCast:
+                    case Ast.Operations.UnicodeCast:
+                    case Ast.Operations.BoolCast:
+                    case Ast.Operations.UnsetCast:
+
+                    case Ast.Operations.Clone:
+                    case Ast.Operations.Print:
+                        return false;
+
+                    case Ast.Operations.ObjectCast:
+                        return false;
+
+                    case Ast.Operations.ArrayCast:
+                    case Ast.Operations.BinaryCast:
+                        return true;
+
+                    // the result depends on what follows @:
+                    case Ast.Operations.AtSign:
+                        return Operand.IsDeeplyCopied;
+
+                    default:
+                        return base.IsDeeplyCopied;
+                }
+            }
+        }
 
         public BoundUnaryEx(BoundExpression operand, Ast.Operations op)
         {
@@ -1257,6 +1367,8 @@ namespace Pchp.CodeAnalysis.Semantics
         public override OperationKind Kind => OperationKind.Conditional;
 
         public override bool RequiresContext => Condition.RequiresContext || IfTrue.RequiresContext || IfFalse.RequiresContext;
+
+        public override bool IsDeeplyCopied => IfTrue.IsDeeplyCopied || IfFalse.IsDeeplyCopied;
 
         public BoundConditionalEx(BoundExpression condition, BoundExpression iftrue, BoundExpression iffalse)
         {
@@ -1755,6 +1867,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
             public override OperationKind Kind => OperationKind.ArrayInitializer;
 
+            public override bool IsDeeplyCopied => false;
+
             ImmutableArray<IOperation> IArrayInitializerOperation.ElementValues => _array._items.Select(x => x.Value).Cast<IOperation>().AsImmutable();
 
             public BoundArrayInitializer(BoundArrayEx array)
@@ -1919,6 +2033,8 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         public BoundExpression Operand { get; internal set; }
 
+        public override bool IsDeeplyCopied => false;
+
         /// <summary>
         /// The type.
         /// </summary>
@@ -1965,6 +2081,8 @@ namespace Pchp.CodeAnalysis.Semantics
     public partial class BoundGlobalConst : BoundExpression
     {
         public override OperationKind Kind => OperationKind.None;
+
+        public override bool IsDeeplyCopied => false;
 
         /// <summary>
         /// Constant name.
@@ -2021,6 +2139,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public Ast.PseudoConstUse.Types ConstType { get; private set; }
 
+        public override bool IsDeeplyCopied => false;
+
         public BoundPseudoConst(Ast.PseudoConstUse.Types type)
         {
             this.ConstType = type;
@@ -2059,6 +2179,8 @@ namespace Pchp.CodeAnalysis.Semantics
         public Ast.PseudoClassConstUse.Types ConstType { get; private set; }
 
         public override OperationKind Kind => OperationKind.None;
+
+        public override bool IsDeeplyCopied => false;
 
         public IBoundTypeRef TargetType { get; private set; }
 

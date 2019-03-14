@@ -410,16 +410,15 @@ namespace Pchp.CodeAnalysis.Semantics
 
         protected BoundExpression BindCopyValue(BoundExpression expr)
         {
-            if (expr == null ||
-                expr is BoundCopyValue ||
-                expr is BoundNewEx ||
-                expr is BoundArrayEx)
+            if (expr.IsDeeplyCopied)
             {
-                // do not copy
+                return new BoundCopyValue(expr).WithAccess(BoundAccess.Read);
+            }
+            else
+            {
+                // value does not have to be copied
                 return expr;
             }
-
-            return new BoundCopyValue(expr).WithAccess(BoundAccess.Read);
         }
 
         public BoundVariableRef BindCatchVariable(AST.CatchItem x)

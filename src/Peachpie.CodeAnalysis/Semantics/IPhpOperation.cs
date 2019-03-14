@@ -49,6 +49,11 @@ namespace Pchp.CodeAnalysis.Semantics
         /// If not, the expression can be evaluated in compile time or in app context.
         /// </summary>
         bool RequiresContext { get; }
+
+        /// <summary>
+        /// Decides whether an expression represented by this node should be copied if a certain operation is performed.
+        /// </summary>
+        bool IsDeeplyCopied { get; }
     }
 
     public interface IPhpStatement : IPhpOperation
