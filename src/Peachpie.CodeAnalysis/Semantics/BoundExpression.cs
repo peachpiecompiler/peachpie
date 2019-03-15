@@ -1368,9 +1368,9 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override OperationKind Kind => OperationKind.Conditional;
 
-        public override bool RequiresContext => Condition.RequiresContext || IfTrue.RequiresContext || IfFalse.RequiresContext;
+        public override bool RequiresContext => Condition.RequiresContext || (IfTrue != null && IfTrue.RequiresContext) || IfFalse.RequiresContext;
 
-        public override bool IsDeeplyCopied => IfTrue.IsDeeplyCopied || IfFalse.IsDeeplyCopied;
+        public override bool IsDeeplyCopied => (IfTrue ?? Condition).IsDeeplyCopied || IfFalse.IsDeeplyCopied;
 
         public BoundConditionalEx(BoundExpression condition, BoundExpression iftrue, BoundExpression iffalse)
         {
