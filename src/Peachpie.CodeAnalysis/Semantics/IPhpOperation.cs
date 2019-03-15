@@ -51,7 +51,7 @@ namespace Pchp.CodeAnalysis.Semantics
         bool RequiresContext { get; }
 
         /// <summary>
-        /// Decides whether an expression represented by this node should be copied if a certain operation is performed.
+        /// Decides whether an expression represented by this operation should be copied if it is passed by value (assignment, return).
         /// </summary>
         bool IsDeeplyCopied { get; }
     }

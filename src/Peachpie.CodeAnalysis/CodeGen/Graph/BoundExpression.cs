@@ -2242,18 +2242,19 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            var t = cg.Emit(this.Expression);
+            var expr = this.Expression;
+            var t = cg.Emit(expr);
 
-            if (!this.Expression.IsConstant())
+            if (expr.IsDeeplyCopied)
             {
                 // dereference
-                if (this.Expression.TypeRefMask.IsRef)
+                if (expr.TypeRefMask.IsRef)
                 {
                     t = cg.EmitDereference(t);
                 }
 
                 // copy
-                t = cg.EmitDeepCopy(t, this.Expression.TypeRefMask);
+                t = cg.EmitDeepCopy(t, expr.TypeRefMask);
             }
 
             //
