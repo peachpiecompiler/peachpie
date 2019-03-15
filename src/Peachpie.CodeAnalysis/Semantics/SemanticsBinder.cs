@@ -391,17 +391,25 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 Debug.Assert(_locals != null);
 
-                var isByRef = _locals.Routine.SyntaxSignature.AliasReturn;
-                var expr = stmt.Expression != null
-                    ? BindExpression(stmt.Expression, isByRef ? BoundAccess.ReadRef : BoundAccess.Read)
-                    : null;
+                BoundExpression expr;
 
-                if (!isByRef)
+                if (stmt.Expression != null)
                 {
-                    // copy returned value
-                    expr = BindCopyValue(expr);
+                    var isByRef = _locals.Routine.SyntaxSignature.AliasReturn;
+                    expr = BindExpression(stmt.Expression, isByRef ? BoundAccess.ReadRef : BoundAccess.Read);
+
+                    if (!isByRef)
+                    {
+                        // copy returned value
+                        expr = BindCopyValue(expr);
+                    }
+                }
+                else
+                {
+                    expr = null;
                 }
 
+                //
                 return new BoundReturnStatement(expr);
             }
 
