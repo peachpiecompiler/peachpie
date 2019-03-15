@@ -207,24 +207,58 @@ namespace Pchp.CodeAnalysis.Symbols
 
             // ignoring System.Object (we don't override its methods from PHP)
 
-            bool checkInterfaces = true;
-
             for (var t = type.BaseType; t != null && t.SpecialType != SpecialType.System_Object; t = t.BaseType)
             {
-                if (!t.IsAbstract)
-                {
-                    // we don't have to check interfaces,
-                    // all the virtual members from interface were already implemented
-                    checkInterfaces = false;
-                }
-
                 yield return t;
             }
 
             //
-            if (checkInterfaces)
+            // check interfaces which can populate abstract members only:
+            //
+
+            Queue<NamedTypeSymbol> typesWithInterfaces = null; // remember abstract types which interfaces have to be returned as well
+
+            for (var t = type; t != null && t.SpecialType != SpecialType.System_Object; t = t.BaseType)
             {
-                foreach (var t in type.AllInterfaces)
+                if (t.IsAbstract)
+                {
+                    if (t.Interfaces.IsDefaultOrEmpty)
+                    {
+                        continue;
+                    }
+
+                    if (typesWithInterfaces == null)
+                    {
+                        typesWithInterfaces = new Queue<NamedTypeSymbol>();
+                    }
+
+                    typesWithInterfaces.Enqueue(t);
+                }
+                else if (t != type)
+                {
+                    // we don't have to check interfaces,
+                    // all the virtual members from interface were already implemented
+                    break;
+                }
+            }
+
+            if (typesWithInterfaces != null)
+            {
+                var set = new HashSet<NamedTypeSymbol>();
+
+                // recursively get all interfaces from abstract types
+
+                while (typesWithInterfaces.Count != 0)
+                {
+                    var t = typesWithInterfaces.Dequeue();
+                    if (set.Add(t))
+                    {
+                        t.Interfaces.ForEach(typesWithInterfaces.Enqueue);
+                        set.UnionWith(t.Interfaces);
+                    }
+                }
+
+                foreach (var t in set.Where(x => x.IsInterface))
                 {
                     yield return t;
                 }
