@@ -270,7 +270,7 @@ namespace Pchp.CodeAnalysis.Semantics
         public virtual bool RequiresContext => !this.ConstantValue.HasValue;
 
         /// <summary>
-        /// Decides whether an expression represented by this node should be copied if a certain operation is performed.
+        /// Decides whether an expression represented by this operation should be copied if it is passed by value (assignment, return).
         /// </summary>
         public virtual bool IsDeeplyCopied => !ConstantValue.HasValue;
 
@@ -376,6 +376,8 @@ namespace Pchp.CodeAnalysis.Semantics
         protected ImmutableArray<IBoundTypeRef> _typeargs;
 
         ImmutableArray<IArgumentOperation> IInvocationOperation.Arguments => StaticCast<IArgumentOperation>.From(_arguments);
+
+        public override bool IsDeeplyCopied => false; // routines deeply copy the return value if necessary within its `return` statement already
 
         public ImmutableArray<BoundArgument> ArgumentsInSourceOrder { get => _arguments; internal set => _arguments = value; }
 
