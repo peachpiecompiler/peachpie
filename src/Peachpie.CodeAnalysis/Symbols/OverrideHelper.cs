@@ -84,6 +84,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 return null;    // static or private methods can't be overrides
             }
 
+            if (method.IsAbstract && method.ContainingType.IsInterface)
+            {
+                return null;    // interface member does not override
+            }
+
             //
             var bestCost = ConversionCost.Error;
             MethodSymbol bestCandidate = null;
@@ -97,6 +102,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
             foreach (var t in EnumerateOverridableTypes(method.ContainingType))
             {
+                Debug.Assert(t != method.ContainingType); // cannot override a member on the same type
+
                 foreach (var m in t.GetMembers(method.Name).OfType<MethodSymbol>())
                 {
                     if (overriden.Contains(m))
@@ -130,7 +137,12 @@ namespace Pchp.CodeAnalysis.Symbols
                     // already overriden methods cannot be overriden again:
                     for (var mbase = m; mbase != null; mbase = (MethodSymbol)mbase.OverriddenMethod)
                     {
-                        overriden.Add(mbase);
+                        if (!overriden.Add(mbase))
+                        {
+                            // already added,
+                            // the rest of methods as well
+                            break;
+                        }
                     }
                 }
             }
@@ -212,8 +224,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 yield return t;
             }
 
+            //yield return from type.AllInterfaces; // NOTE: this returns too much interfaces, we only needs the once that can introduce an abstract member:
+
             //
-            // check interfaces which can populate abstract members only:
+            // check interfaces which can introduce an abstract member only:
             //
 
             Queue<NamedTypeSymbol> typesWithInterfaces = null; // remember abstract types which interfaces have to be returned as well
@@ -257,9 +271,12 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
                 }
 
-                foreach (var t in set.Where(x => x.IsInterface))
+                foreach (var t in set)
                 {
-                    yield return t;
+                    if (t.IsInterface && t != type) // take only interfaces from the set of all base types
+                    {
+                        yield return t;
+                    }
                 }
             }
         }

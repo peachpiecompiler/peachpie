@@ -422,7 +422,14 @@ namespace Pchp.CodeAnalysis.CodeGen
         public TypeSymbol Emit(BoundExpression expr)
         {
             Contract.ThrowIfNull(expr);
-            return EmitSpecialize(expr);
+
+            var t = EmitSpecialize(expr);
+            if (t == null)
+            {
+                throw ExceptionUtilities.UnexpectedValue(null);
+            }
+
+            return t;
         }
 
         /// <summary>

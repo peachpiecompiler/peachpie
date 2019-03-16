@@ -12,6 +12,7 @@ using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Syntax;
 using Microsoft.Cci;
 using System.Threading;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -47,6 +48,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 if ((_commonflags & CommonFlags.OverriddenMethodResolved) == 0)
                 {
                     Interlocked.CompareExchange(ref _lazyOverridenMethod, this.ResolveOverride(), null);
+
+                    Debug.Assert(_lazyOverridenMethod != this);
 
                     _commonflags |= CommonFlags.OverriddenMethodResolved;
                 }
