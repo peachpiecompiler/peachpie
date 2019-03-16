@@ -201,10 +201,10 @@ namespace Pchp.CodeAnalysis.Semantics
             lhs.Dispose();
 
             // holder initialization routine
-            EmitInit(cg.Module, cg.Diagnostics, cg.DeclaringCompilation, holder, Declaration.InitialValue);
+            EmitInit(cg.Module, cg.Diagnostics, cg.DeclaringCompilation, holder, Declaration.InitialValue, routine: cg.Routine);
         }
 
-        void EmitInit(Emit.PEModuleBuilder module, DiagnosticBag diagnostic, PhpCompilation compilation, SynthesizedStaticLocHolder holder, BoundExpression initializer)
+        void EmitInit(Emit.PEModuleBuilder module, DiagnosticBag diagnostic, PhpCompilation compilation, SynthesizedStaticLocHolder holder, BoundExpression initializer, SourceRoutineSymbol routine)
         {
             var requiresContext = initializer != null && initializer.RequiresContext;
 
@@ -215,7 +215,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 holder.EmitInit(module, (il) =>
                 {
                     var cg = new CodeGenerator(il, module, diagnostic, compilation.Options.OptimizationLevel, false,
-                        holder.ContainingType, new ArgPlace(compilation.CoreTypes.Context, 1), new ArgPlace(holder, 0));
+                        holder.ContainingType, new ArgPlace(compilation.CoreTypes.Context, 1), new ArgPlace(holder, 0), routine: routine);
 
                     var valuePlace = new FieldPlace(cg.ThisPlaceOpt, holder.ValueField, module);
 
@@ -243,7 +243,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     // emit default value only if it won't be initialized by Init above
 
                     var cg = new CodeGenerator(il, module, diagnostic, compilation.Options.OptimizationLevel, false,
-                        holder.ContainingType, null, new ArgPlace(holder, 0));
+                        holder.ContainingType, null, new ArgPlace(holder, 0), routine: routine);
 
                     var valuePlace = new FieldPlace(cg.ThisPlaceOpt, holder.ValueField, module);
 
