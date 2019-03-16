@@ -254,7 +254,6 @@ namespace Pchp.CodeAnalysis.Symbols
                     if (set.Add(t))
                     {
                         t.Interfaces.ForEach(typesWithInterfaces.Enqueue);
-                        set.UnionWith(t.Interfaces);
                     }
                 }
 
