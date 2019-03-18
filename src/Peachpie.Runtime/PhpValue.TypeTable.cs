@@ -443,7 +443,7 @@ namespace Pchp.Core
                 // ensure blob is lazily copied
                 if (me.MutableStringBlob.IsShared)
                 {
-                    me._obj = me.MutableStringBlob.ReleaseOne();
+                    me._obj.blob = me.MutableStringBlob.ReleaseOne();
                 }
                 //
                 return base.EnsureAlias(ref me);
@@ -454,7 +454,7 @@ namespace Pchp.Core
                 var blob = me.MutableStringBlob;
                 if (blob.IsShared)
                 {
-                    me._obj = blob = blob.ReleaseOne();
+                    me._obj.blob = blob = blob.ReleaseOne();
                 }
                 //
                 return blob;

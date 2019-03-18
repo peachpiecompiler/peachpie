@@ -29,13 +29,40 @@ namespace Pchp.Core
         struct ValueField
         {
             [FieldOffset(0)]
-            public bool Bool; // NOTE: must be first field, having bool as the last field confuses .NET debugger and converts the netire struct to `0` or `1` // https://github.com/peachpiecompiler/peachpie/issues/249 // if still causes issues, remove this field and use Long only
+            public bool @bool; // NOTE: must be first field, having bool as the last field confuses .NET debugger and converts the entire struct to `0` or `1` // https://github.com/peachpiecompiler/peachpie/issues/249 // if still causes issues, remove this field and use Long only
 
             [FieldOffset(0)]
-            public long Long;
+            public long @long;
 
             [FieldOffset(0)]
-            public double Double;
+            public double @double;
+        }
+
+        #endregion
+
+        #region ObjectField
+
+        /// <summary>
+        /// Union for possible reference types.
+        /// </summary>
+        [StructLayout(LayoutKind.Explicit)]
+        [DebuggerNonUserCode]
+        struct ObjectField
+        {
+            [FieldOffset(0)]
+            public object @object;
+
+            [FieldOffset(0)]
+            public string @string;
+
+            [FieldOffset(0)]
+            public PhpString.Blob blob;
+
+            [FieldOffset(0)]
+            public PhpArray array;
+
+            [FieldOffset(0)]
+            public PhpAlias alias;
         }
 
         #endregion
@@ -48,14 +75,14 @@ namespace Pchp.Core
         TypeTable _type;
 
         /// <summary>
-        /// A reference type container.
-        /// </summary>
-        object _obj;
-
-        /// <summary>
         /// A value type container.
         /// </summary>
         ValueField _value;
+
+        /// <summary>
+        /// A reference type container.
+        /// </summary>
+        ObjectField _obj;
 
         #endregion
 
@@ -84,7 +111,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets value indicating whether the value is an alias containing another value.
         /// </summary>
-        public bool IsAlias => _obj is PhpAlias;
+        public bool IsAlias => _obj.@object is PhpAlias;
 
         /// <summary>
         /// Gets value indicating the value represents an object.
@@ -135,30 +162,30 @@ namespace Pchp.Core
         /// Gets the long field of the value.
         /// Does not perform a conversion, expects the value is of type long.
         /// </summary>
-        public long Long { get { Debug.Assert(TypeCode == PhpTypeCode.Long); return _value.Long; } }
+        public long Long { get { Debug.Assert(TypeCode == PhpTypeCode.Long); return _value.@long; } }
 
         /// <summary>
         /// Gets the double field of the value.
         /// Does not perform a conversion, expects the value is of type double.
         /// </summary>
-        public double Double { get { Debug.Assert(TypeCode == PhpTypeCode.Double); return _value.Double; } }
+        public double Double { get { Debug.Assert(TypeCode == PhpTypeCode.Double); return _value.@double; } }
 
         /// <summary>
         /// Gets the boolean field of the value.
         /// Does not perform a conversion, expects the value is of type boolean.
         /// </summary>
-        public bool Boolean { get { Debug.Assert(TypeCode == PhpTypeCode.Boolean); return _value.Bool; } }
+        public bool Boolean { get { Debug.Assert(TypeCode == PhpTypeCode.Boolean); return _value.@bool; } }
 
         /// <summary>
         /// Gets the object field of the value as string.
         /// Does not perform a conversion, expects the value is of type (readonly UTF16) string.
         /// </summary>
-        public string String { get { Debug.Assert(_obj is string); return (string)_obj; } }
+        public string String { get { Debug.Assert(_obj.@object is string); return _obj.@string; } }
 
         /// <summary>
         /// Gets underlaying <see cref="PhpString.Blob"/> object.
         /// </summary>
-        internal PhpString.Blob MutableStringBlob { get { Debug.Assert(_obj is PhpString.Blob); return (PhpString.Blob)_obj; } }
+        internal PhpString.Blob MutableStringBlob { get { Debug.Assert(_obj.@object is PhpString.Blob); return _obj.blob; } }
 
         /// <summary>
         /// Gets the object field of the value as PHP writable string.
@@ -169,17 +196,17 @@ namespace Pchp.Core
         /// <summary>
         /// Gets underlaying reference object.
         /// </summary>
-        public object Object { get { return _obj; } }
+        public object Object { get { return _obj.@object; } }
 
         /// <summary>
         /// Gets underlaying array object.
         /// </summary>
-        public PhpArray Array { get { Debug.Assert(TypeCode == PhpTypeCode.PhpArray); return (PhpArray)_obj; } }
+        public PhpArray Array { get { Debug.Assert(_obj.@object is PhpArray); return _obj.array; } }
 
         /// <summary>
         /// Gets underlaying alias object.
         /// </summary>
-        public PhpAlias Alias { get { Debug.Assert(_obj is PhpAlias); return (PhpAlias)_obj; } }
+        public PhpAlias Alias { get { Debug.Assert(_obj.@object is PhpAlias); return _obj.alias; } }
 
         #endregion
 
@@ -284,7 +311,7 @@ namespace Pchp.Core
         /// Wraps the value into <see cref="PhpAlias"/>,
         /// if value already contains the aliased value, it is returned as it is.
         /// </summary>
-        public PhpAlias/*!*/AsPhpAlias() => _obj as PhpAlias ?? new PhpAlias(this);
+        public PhpAlias/*!*/AsPhpAlias() => _obj.@object as PhpAlias ?? new PhpAlias(this);
 
         #endregion
 
@@ -358,7 +385,7 @@ namespace Pchp.Core
 
         public override bool Equals(object obj) => Equals((obj is PhpValue) ? (PhpValue)obj : FromClr(obj));
 
-        public override int GetHashCode() => _obj != null ? _obj.GetHashCode() : (int)_value.Long;
+        public override int GetHashCode() => _obj.@object != null ? _obj.@object.GetHashCode() : (int)_value.@long;
 
         public bool TryToIntStringKey(out IntStringKey key) => _type.TryToIntStringKey(ref this, out key);
 
@@ -574,7 +601,7 @@ namespace Pchp.Core
         /// <summary>
         /// Singleton of PhpValue representing <c>null</c>.
         /// </summary>
-        public static readonly PhpValue Null = new PhpValue(new NullTable());
+        public static readonly PhpValue Null = new PhpValue(TypeTable.NullTable);
 
         /// <summary>
         /// PhpValue representing <c>false</c>.
@@ -586,61 +613,51 @@ namespace Pchp.Core
         /// </summary>
         public static readonly PhpValue True = new PhpValue(true);
 
-        private PhpValue(long value) : this()
+        private PhpValue(long value) : this(TypeTable.LongTable)
         {
-            _type = TypeTable.LongTable;
-            _value.Long = value;
+            _value.@long = value;
         }
 
-        private PhpValue(double value) : this()
+        private PhpValue(double value) : this(TypeTable.DoubleTable)
         {
-            _type = TypeTable.DoubleTable;
-            _value.Double = value;
+            _value.@double = value;
         }
 
-        private PhpValue(bool value) : this()
+        private PhpValue(bool value) : this(TypeTable.BoolTable)
         {
-            _type = TypeTable.BoolTable;
-            _value.Bool = value;
+            _value.@bool = value;
         }
 
-        private PhpValue(TypeTable type, object obj)
+        private PhpValue(TypeTable type, object obj) : this((obj != null) ? type : TypeTable.NullTable)
         {
-            _type = (obj != null) ? type : TypeTable.NullTable;
-            _value = default(ValueField);
-            _obj = obj;
+            _obj.@object = obj;
         }
 
-        private PhpValue(PhpString.Blob blob)
+        private PhpValue(PhpString.Blob blob) : this(TypeTable.MutableStringTable)
         {
             Debug.Assert(blob != null);
-            _type = TypeTable.MutableStringTable;
-            _value = default(ValueField);
-            _obj = blob;
+            _obj.blob = blob;
         }
 
-        internal PhpValue(string value)
+        internal PhpValue(string value) : this(TypeTable.StringTable)
         {
             Debug.Assert(value != null);
-            _type = TypeTable.StringTable;
-            _value = default(ValueField);
-            _obj = value;
+            _obj.@string = value;
         }
 
-        private PhpValue(PhpArray array)
+        private PhpValue(PhpArray array) : this(TypeTable.ArrayTable)
         {
             Debug.Assert(array != null);
-            _type = TypeTable.ArrayTable;
-            _value = default(ValueField);
-            _obj = array;
+            _obj.array = array;
         }
 
         private PhpValue(TypeTable type)
         {
+            Debug.Assert(type != null);
+
             _type = type;
-            _value = default(ValueField);
-            _obj = null;
-            Debug.Assert(IsNull || !IsSet);
+            _value = default;
+            _obj = default;
         }
 
         public static PhpValue Create(PhpNumber number)
