@@ -20,47 +20,47 @@ namespace Pchp.CodeAnalysis.Semantics
         /// A value will be written to the place.
         /// Only available for VariableUse (variables, fields, properties, array items, references).
         /// </summary>
-        Write = 2,
+        Write = (1 << 1),
 
         /// <summary>
         /// The expression will be aliased and the alias will be read.
         /// </summary>
-        ReadRef = 4 | Read,
+        ReadRef = (1 << 2) | Read,
 
         /// <summary>
         /// An aliased value will be written to the place.
         /// Only available for VariableUse (variables, fields, properties, array items, references).
         /// </summary>
-        WriteRef = 32 | Write,
+        WriteRef = (1 << 3) | Write,
 
         /// <summary>
         /// Read is check only and won't result in an exception in case the variable does not exist.
         /// </summary>
-        ReadQuiet = 64,
+        ReadQuiet = (1 << 4),
 
         /// <summary>
         /// The expression is accessed as a part of chain,
         /// its member field will be written to.
         /// E.g. (EnsureObject)->Field = Value
         /// </summary>
-        EnsureObject = 1024 | Read,
+        EnsureObject = (1 << 5) | Read,
 
         /// <summary>
         /// The expression is accessed as a part of chain,
         /// its item entry will be written to.
         /// E.g. (EnsureArray)[] = Value
         /// </summary>
-        EnsureArray = 2048 | Read,
+        EnsureArray = (1 << 6) | Read,
 
         /// <summary>
         /// The variable will be unset. Combined with <c>quiet</c> flag, valid for variables, array entries and fields.
         /// </summary>
-        Unset = 4096,
+        Unset = (1 << 7),
 
         /// <summary>
         /// The variable will be checked whether it is set.
         /// </summary>
-        Isset = 8192 | ReadQuiet | Read,
+        Isset = (1 << 8) | ReadQuiet | Read,
 
         // NOTE: WriteAndReadRef has to be constructed by semantic binder as bound expression with Write and another bound expression with ReadRef
         // NOTE: ReadAndWriteAndReadRef has to be constructed by semantic binder as bound expression with Read|Write and another bound expression with ReadRef
