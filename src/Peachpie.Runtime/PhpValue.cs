@@ -660,10 +660,7 @@ namespace Pchp.Core
             _obj = default;
         }
 
-        public static PhpValue Create(PhpNumber number)
-            => (number.IsLong)
-                 ? Create(number.Long)
-                 : Create(number.Double);
+        public static PhpValue Create(PhpNumber number) => number.ToPhpValue();
 
         public static PhpValue Create(long value) => new PhpValue(value);
 
