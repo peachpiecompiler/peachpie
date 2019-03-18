@@ -234,7 +234,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
             for (var t = type; t != null && t.SpecialType != SpecialType.System_Object; t = t.BaseType)
             {
-                if (t.IsAbstract)
+                if (t.IsAbstract || t == type)
                 {
                     if (t.Interfaces.IsDefaultOrEmpty)
                     {
@@ -248,7 +248,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                     typesWithInterfaces.Enqueue(t);
                 }
-                else if (t != type)
+                else
                 {
                     // we don't have to check interfaces,
                     // all the virtual members from interface were already implemented
