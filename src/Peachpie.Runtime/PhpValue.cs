@@ -628,7 +628,7 @@ namespace Pchp.Core
             _value.@bool = value;
         }
 
-        private PhpValue(TypeTable type, object obj) : this((obj != null) ? type : TypeTable.NullTable)
+        private PhpValue(TypeTable type, object obj) : this(ReferenceEquals(obj, null) ? TypeTable.NullTable : type)
         {
             _obj.@object = obj;
         }
