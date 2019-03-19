@@ -1,5 +1,4 @@
 ﻿using Pchp.Core;
-using Pchp.Library.PerlRegex;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Library.Resources;
+using PerlRegex = Peachpie.Library.RegularExpressions;
 
 namespace Pchp.Library
 {
@@ -447,6 +447,36 @@ namespace Pchp.Library
             return 0;
         }
 
+        static bool IsDelimiterChar(char ch)
+        {
+            switch (ch)
+            {
+                case '\\':
+                case '+':
+                case '*':
+                case '?':
+                case '[':
+                case '^':
+                case ']':
+                case '$':
+                case '(':
+                case ')':
+                case '{':
+                case '}':
+                case '=':
+                case '!':
+                case '<':
+                case '>':
+                case '|':
+                case ':':
+                case '.':
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
         /// <summary>
         /// Quote regular expression characters.
         /// </summary>
@@ -474,7 +504,7 @@ namespace Pchp.Library
             for (int i = 0; i < str.Length; i++)
             {
                 char ch = str[i];
-                bool escape = ch == delimiterChar || PerlRegex.RegexParser.IsDelimiterChar(ch);
+                bool escape = ch == delimiterChar || IsDelimiterChar(ch);
 
                 if (escape)
                 {
@@ -541,7 +571,7 @@ namespace Pchp.Library
             var m = regex.Match(subject);
 
             bool offset_capture = (flags & PREG_SPLIT_OFFSET_CAPTURE) != 0;
-            PhpArray result = new PhpArray();
+            var result = new PhpArray();
             int last_index = 0;
 
             while (m.Success && (limit == -1 || --limit > 0) && last_index < subject.Length)
@@ -558,7 +588,7 @@ namespace Pchp.Library
                         List<object> lastUnsucessfulGroups = null;  // value of groups that was not successful since last succesful one
                         for (int i = 1; i < m.Groups.Count; i++)
                         {
-                            Group g = m.Groups[i];
+                            var g = m.Groups[i];
                             if (g.Length > 0 || (flags & PREG_SPLIT_NO_EMPTY) == 0)
                             {
                                 // the value to be added into the result:
@@ -611,7 +641,7 @@ namespace Pchp.Library
 
         #endregion
 
-        static void AddGroupNameToResult(Regex regex, PhpArray matches, int i, Action<PhpArray, string> action)
+        static void AddGroupNameToResult(PerlRegex.Regex regex, PhpArray matches, int i, Action<PhpArray, string> action)
         {
             var groupName = GetGroupName(regex, i);
             if (!string.IsNullOrEmpty(groupName))
@@ -629,7 +659,7 @@ namespace Pchp.Library
         /// <param name="matches">Array for storing results.</param>
         /// <param name="addOffsets">Whether or not add arrays with offsets instead of strings.</param>
         /// <returns>Number of full pattern matches.</returns>
-        static int FillMatchesArrayAllPatternOrder(Regex r, Match m, ref PhpArray matches, bool addOffsets)
+        static int FillMatchesArrayAllPatternOrder(PerlRegex.Regex r, PerlRegex.Match m, ref PhpArray matches, bool addOffsets)
         {
             // second index, increases at each match in pattern order
             int j = 0;
@@ -666,7 +696,7 @@ namespace Pchp.Library
         /// <param name="matches">Array for storing results.</param>
         /// <param name="addOffsets">Whether or not add arrays with offsets instead of strings.</param>
         /// <returns>Number of full pattern matches.</returns>
-        static int FillMatchesArrayAllSetOrder(Regex r, Match m, ref PhpArray matches, bool addOffsets)
+        static int FillMatchesArrayAllSetOrder(PerlRegex.Regex r, PerlRegex.Match m, ref PhpArray matches, bool addOffsets)
         {
             // first index, increases at each match in set order
             int i = 0;
@@ -696,7 +726,7 @@ namespace Pchp.Library
             return i;
         }
 
-        static int GetLastSuccessfulGroup(GroupCollection/*!*/ groups)
+        static int GetLastSuccessfulGroup(PerlRegex.GroupCollection/*!*/ groups)
         {
             Debug.Assert(groups != null);
 
@@ -709,7 +739,7 @@ namespace Pchp.Library
             return -1;
         }
 
-        static string GetGroupName(Regex regex, int index)
+        static string GetGroupName(PerlRegex.Regex regex, int index)
         {
             var name = regex.GroupNameFromNumber(index);
 
@@ -745,7 +775,7 @@ namespace Pchp.Library
             return (PhpValue)arr;
         }
 
-        static void GroupsToPhpArray(PcreGroupCollection groups, bool offsetCapture, PhpArray result)
+        static void GroupsToPhpArray(PerlRegex.PcreGroupCollection groups, bool offsetCapture, PhpArray result)
         {
             for (int i = 0; i < groups.Count; i++)
             {

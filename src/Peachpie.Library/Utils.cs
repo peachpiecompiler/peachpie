@@ -269,25 +269,6 @@ namespace Pchp.Library
         }
 
         /// <summary>
-        /// Copies the elements in the array to a newly created one using assignment and returns it.
-        /// </summary>
-        public static T[] ShallowClone<T>(this T[] arr)
-        {
-            if (arr == null)
-            {
-                return null;
-            }
-
-            var result = new T[arr.Length];
-            for (int i = 0; i < arr.Length; i++)
-            {
-                result[i] = arr[i];
-            }
-
-            return result;
-        }
-
-        /// <summary>
         /// Gets a slice of array.
         /// </summary>
         public static T[] Slice<T>(this T[] array, int start) // TODO: Span<T>
