@@ -223,7 +223,8 @@ namespace Pchp.Library.DateTime
                 if (Int64.TryParse(time, out seconds))
                 {
                     DateTimeOffset offset = DateTimeOffset.FromUnixTimeSeconds(seconds);
-                    return new DateTime(ctx) {
+                    return new DateTime(ctx)
+                    {
                         Time = offset.UtcDateTime,
                         // TODO should be set as UTC ?
                         TimeZone = TimeZoneInfo.Utc
@@ -237,9 +238,6 @@ namespace Pchp.Library.DateTime
 
             var builder = new StringBuilder();
 
-            //A list of so far not implemented datetime format characterd from PHP
-            List<Char> notImplemented = new List<char>() { '?', '/', '*', '+', '#', 'U', 'S', 'z', 'e', 'O', 'P', 'T' };
-
             //used to replace 24 hour H character with 12 hour format h if needed
             bool twelveHour = false;
 
@@ -247,12 +245,9 @@ namespace Pchp.Library.DateTime
             //bool resetUnixDateTime = false;
 
             // create DateTime from format+time
-            foreach (var c in format)
+            for (int i = 0; i < format.Length; i++)
             {
-                if(notImplemented.Contains(c))
-                {
-                    throw new NotImplementedException("Given datetime format string is not supported.");
-                }
+                var c = format[i];
 
                 switch (c)
                 {
@@ -294,24 +289,40 @@ namespace Pchp.Library.DateTime
                         break;
                     case '!':
                         //resetUnixDateTime = true;
-                        throw new NotImplementedException("Unix time resetting is not implemented.");
-                        //break;
+                        //throw new NotImplementedException("Unix time resetting is not implemented.");
+                    case '?':
+                    case '/':
+                    case '*':
+                    case '+':
+                    case '#':
+                    case 'U':
+                    case 'S':
+                    case 'z':
+                    case 'e':
+                    case 'O':
+                    case 'P':
+                    case 'T':
+                        throw new NotImplementedException($"Format modifier '{c}' at position {i}.");
                     default:
                         builder.Append(c);
                         break;
                 }
             }
-            System_DateTime dateTime;
-            String csStyleFormat = builder.ToString();
-            if (twelveHour)
-                csStyleFormat.Replace('H', 'h');
 
-            var success = System_DateTime.TryParseExact(time, csStyleFormat, CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeLocal, out dateTime);
+            if (twelveHour)
+            {
+                builder.Replace('H', 'h');
+            }
+
+            var csStyleFormat = builder.ToString();
+
+            var success = System_DateTime.TryParseExact(time, csStyleFormat, CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeLocal, out var dateTime);
 
             if (success)
             {
                 return new DateTime(ctx) { Time = dateTime };
-            } else
+            }
+            else
             {
                 throw new NotImplementedException("Given datetime format string is not supported or it is invalid.");
             }
