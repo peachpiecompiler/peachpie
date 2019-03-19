@@ -244,7 +244,7 @@ namespace Pchp.Library.DateTime
             bool twelveHour = false;
 
             //flag to reset the datetime to base Unix DateTime (1.1.1970)
-            bool resetUnixDateTime = false;
+            //bool resetUnixDateTime = false;
 
             // create DateTime from format+time
             foreach (var c in format)
@@ -293,9 +293,9 @@ namespace Pchp.Library.DateTime
                         builder.Append("ss");
                         break;
                     case '!':
-                        resetUnixDateTime = true;
+                        //resetUnixDateTime = true;
                         throw new NotImplementedException("Unix time resetting is not implemented.");
-                        break;
+                        //break;
                     default:
                         builder.Append(c);
                         break;
