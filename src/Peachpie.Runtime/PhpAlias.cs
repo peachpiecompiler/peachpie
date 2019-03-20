@@ -33,6 +33,15 @@ namespace Pchp.Core
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         public int ReferenceCount { get; private set; }
 
+        internal bool IsAliasForIterator => _iteratorAliasCount > 0;
+
+        internal void IncIteratorAliasCount() => _iteratorAliasCount++;
+
+        internal int DecIteratorAliasCount() => --_iteratorAliasCount;
+
+        // how many times the underlying value was converted to an alias in OrderedDictionary.Enumerator.CurrentValueAliased
+        private int _iteratorAliasCount;
+
         #endregion
 
         #region Construction

@@ -1580,6 +1580,8 @@ namespace Pchp.Core
         {
             FastEnumerator/*!*/_enumerator;
 
+            private HashSet<int> _aliasValueIndexes; // indexes where the value was changed to an alias
+
             internal OrderedDictionary UnderlayingArray => _enumerator.UnderlayingArray;
 
             public Enumerator(OrderedDictionary/*<TValue>*/ array)
@@ -1596,7 +1598,36 @@ namespace Pchp.Core
             /// </summary>
             public virtual TValue CurrentValue => _enumerator.CurrentValue.GetValue();
 
-            public PhpAlias CurrentValueAliased => _enumerator.CurrentValueAliased;
+            private PhpAlias _currentValueAliased;
+
+            public PhpAlias CurrentValueAliased
+            {
+                get
+                {
+                    if(_currentValueAliased == null)
+                    {
+                        var wasAlias = _enumerator.Bucket.Value.IsAlias;
+                        var alias = _enumerator.Bucket.Value.EnsureAlias();
+                        if(!wasAlias || alias.IsAliasForIterator)
+                        {
+                            if(_aliasValueIndexes == null)
+                            {
+                                _aliasValueIndexes = new HashSet<int> { _enumerator._i };
+
+                                alias.IncIteratorAliasCount();
+                            }
+                            else if(_aliasValueIndexes.Add(_enumerator._i)) // increment count only if this iterator doesn't already know about current index
+                            {
+                                alias.IncIteratorAliasCount();
+                            }
+                        }
+
+                        _currentValueAliased = alias;
+                    }
+
+                    return _currentValueAliased;
+                }
+            }
 
             public TValue CurrentKey => _enumerator.CurrentKey;
 
@@ -1610,22 +1641,64 @@ namespace Pchp.Core
 
             public virtual void Dispose()
             {
+                RestoreAliasedValues();
+
                 _enumerator = default;
             }
 
             public bool MoveFirst()
             {
                 _enumerator.Reset();
+                _currentValueAliased = null;
+
                 return _enumerator.MoveNext();
             }
 
-            public bool MoveLast() => _enumerator.MoveLast();
+            public bool MoveLast()
+            {
+                _currentValueAliased = null;
 
-            public bool MoveNext() => _enumerator.MoveNext();
+                return _enumerator.MoveLast();
+            }
 
-            public bool MovePrevious() => _enumerator.MovePrevious();
+            public bool MoveNext()
+            {
+                _currentValueAliased = null;
 
-            public void Reset() => _enumerator.Reset();
+                return _enumerator.MoveNext();
+            }
+
+            public bool MovePrevious()
+            {
+                _currentValueAliased = null;
+
+                return _enumerator.MovePrevious();
+            }
+
+            public void Reset()
+            {
+                _currentValueAliased = null;
+
+                _enumerator.Reset();
+            }
+
+            private void RestoreAliasedValues()
+            {
+                if(_aliasValueIndexes == null)
+                    return;
+
+                foreach(var pos in _aliasValueIndexes)
+                {
+                    if(!UnderlayingArray._data[pos].IsDeleted && UnderlayingArray._data[pos].Value.IsAlias)
+                    {
+                        var alias = UnderlayingArray._data[pos].Value.Alias;
+                        if(alias.IsAliasForIterator && alias.DecIteratorAliasCount() <= 0)
+                            UnderlayingArray._data[pos].Value = alias.Value; // dereferenced value
+                    }
+                }
+
+                _aliasValueIndexes = null;
+            }
         }
 
         /// <summary>
@@ -1694,7 +1767,7 @@ namespace Pchp.Core
         public struct FastEnumerator
         {
             readonly OrderedDictionary/*<TValue>*/ _array;
-            int _i;
+            internal int _i;
 
             internal OrderedDictionary UnderlayingArray => _array;
 
