@@ -764,15 +764,18 @@ namespace Pchp.Library
         /// <returns></returns>
         static PhpValue NewArrayItem(string item, int index, bool offsetCapture)
         {
-            if (!offsetCapture)
+            if (offsetCapture)
             {
-                return (PhpValue)item;
+                return new PhpArray(2)
+                {
+                    item,
+                    index
+                };
             }
-
-            var arr = new PhpArray(2);
-            arr.AddValue((PhpValue)item);
-            arr.AddValue((PhpValue)index);
-            return (PhpValue)arr;
+            else
+            {
+                return item;
+            }
         }
 
         static void GroupsToPhpArray(PerlRegex.PcreGroupCollection groups, bool offsetCapture, PhpArray result)
