@@ -2617,5 +2617,89 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        #region password_hash, password_verify
+
+        /// <summary>
+        /// Verifies that a password matches a hash.
+        /// </summary>
+        public static bool password_verify(string password, string hash)
+        {
+            return crypt(password, hash) == hash;
+        }
+
+        #endregion
+
+        #region crypt (Constants)
+
+        /// <summary>
+        /// sha512 crypt has the maximal salt length of 123 characters
+        /// </summary>
+        public const int CRYPT_SALT_LENGTH = 123;
+        public const int CRYPT_STD_DES = 0;
+        public const int CRYPT_EXT_DES = 0;
+        public const int CRYPT_MD5 = 0;
+        public const int CRYPT_BLOWFISH = 0;
+        public const int CRYPT_SHA256 = 0;
+        public const int CRYPT_SHA512 = 0;
+
+        #endregion
+
+        #region crypt
+
+        /// <summary>
+        /// One-way string hashing.
+        /// </summary>
+        /// <returns>Returns the hashed string or a string that is shorter than 13 characters and is guaranteed to differ from the salt on failure.</returns>
+        public static string crypt(string str, string salt/* mandatory since 5.6 */)
+        {
+            if (string.IsNullOrEmpty(salt))
+            {
+                throw new ArgumentException();
+            }
+
+            if (salt.Length >= 3)
+            {
+                if (salt[0] == '$')
+                {
+                    if (salt[2] == '$')
+                    {
+                        if (salt[1] == '1') // $1$
+                        {
+                            // MD5                            
+                        }
+
+                        if (salt[1] == '5') // $5$
+                        {
+                            // SHA256
+                        }
+
+                        if (salt[1] == '6') // $6$
+                        {
+                            // SHA512
+                        }
+                    }
+
+                    if (salt[1] == '2' && salt.Length >= 4 && salt[3] == '$') // $2 $
+                    {
+                        // blowfish
+                    }
+                }
+            }
+
+            if (salt.Length >= 2 && salt[0] == '*' && (salt[1] == '0' || salt[1] == '1'))
+            {
+                // failure
+            }
+            else
+            {
+                // DES
+            }
+
+            // failure
+            return salt.StartsWith("*0") ? "*1" : "*0";
+        }
+
+        #endregion
     }
 }
