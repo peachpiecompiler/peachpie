@@ -47,6 +47,11 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Max value of <see cref="Integer"/>.
+        /// </summary>
+        internal const int MaxKeyValue = int.MaxValue; // TODO: change this and "Integer" to long64
+
+        /// <summary>
         /// Integer value iff <see cref="IsString"/> return <B>false</B>.
         /// </summary>
         public int Integer => _ikey;
@@ -716,9 +721,18 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Gets value for <see cref="_nextFreeKey"/>.
+        /// </summary>
+        static int _getNextFreeKey(int key) => key < IntStringKey.MaxKeyValue ? key + 1 : IntStringKey.MaxKeyValue;
+
+        /// <summary>
         /// Adds value to the end of collection with newly assigned numeric key.
         /// </summary>
-        public void Add(TValue value) => Add_NoCheck(new IntStringKey(checked(_nextFreeKey++)), value);
+        public void Add(TValue value)
+        {
+            Add_NoCheck(new IntStringKey(_nextFreeKey), value);
+            _nextFreeKey = _getNextFreeKey(_nextFreeKey);
+        }
 
         /// <summary>
         /// Adds item at the end of collection.
@@ -733,7 +747,7 @@ namespace Pchp.Core
 
             if (key.IsInteger && key.Integer >= _nextFreeKey)
             {
-                _nextFreeKey = checked(key.Integer + 1);
+                _nextFreeKey = _getNextFreeKey(key.Integer);
             }
 
             return ref bucket.Value;
