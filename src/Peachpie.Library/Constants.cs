@@ -29,19 +29,56 @@ namespace Pchp.Library
         /// Determines whether a constant is defined.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
+        /// <param name="callerCtx">type of caller class. Used to resolve reserved type names if used in <paramref name="name"/>.</param>
         /// <param name="name">The name of the constant.</param>
         /// <returns>Whether the constant is defined.</returns>
-        public static bool defined(Context ctx, string name)
-            => ctx.IsConstantDefined(name);
+        public static bool defined(Context ctx, [ImportCallerClass]RuntimeTypeHandle callerCtx, string name)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return false;
+            }
+
+            var sepidx = name.IndexOf(':');
+            if (sepidx < 0)
+            {
+                // a global constant
+                return ctx.IsConstantDefined(name);
+            }
+            else
+            {
+                // a class constant
+                if (sepidx + 1 < name.Length && name[sepidx + 1] == ':')
+                {
+                    var tname = name.Remove(sepidx);
+
+                    var tinfo = ctx.ResolveType(tname, callerCtx, true);
+                    if (tinfo != null)
+                    {
+                        var cname = name.Substring(sepidx + 2);
+                        return tinfo.GetDeclaredConstant(cname) != null;
+                    }
+                }
+            }
+
+            //
+            return false;
+        }
 
         /// <summary>
-		/// Retrieves a value of a constant.
-		/// </summary>
-		/// <param name="ctx">Current runtime context.</param>
+        /// Retrieves a value of a constant.
+        /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
+        /// <param name="callerCtx">type of caller class. Used to resolve reserved type names if used in <paramref name="name"/>.</param>
         /// <param name="name">The name of the constant.</param>
-		/// <returns>The value.</returns>
-		public static PhpValue constant(Context ctx, string name)
+        /// <returns>The value.</returns>
+        public static PhpValue constant(Context ctx, [ImportCallerClass]RuntimeTypeHandle callerCtx, string name)
         {
+            if (name == null)
+            {
+                // TODO: invalid arg
+            }
+
             var sepidx = name.IndexOf(':');
             if (sepidx < 0)
             {
@@ -58,12 +95,11 @@ namespace Pchp.Library
                 if (sepidx + 1 < name.Length && name[sepidx + 1] == ':')
                 {
                     var tname = name.Remove(sepidx);
-                    var cname = name.Substring(sepidx + 2);
 
-                    var tinfo = ctx.GetDeclaredType(tname, true);
+                    var tinfo = ctx.ResolveType(tname, callerCtx, true);
                     if (tinfo != null)
                     {
-                        var p = tinfo.GetDeclaredConstant(cname);
+                        var p = tinfo.GetDeclaredConstant(name.Substring(sepidx + 2));
                         if (p != null)
                         {
                             return p.GetValue(ctx, null);
