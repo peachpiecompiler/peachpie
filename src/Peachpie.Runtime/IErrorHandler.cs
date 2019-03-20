@@ -40,7 +40,9 @@ namespace Pchp.Core
             if ((error & (PhpError)PhpErrorSets.Fatal) != 0)
             {
                 LogEventSource.Log.HandleFatal(message);
-                Trace.Fail(message);
+
+                // terminate the script
+                throw new InvalidOperationException(message);
             }
             else
             {

@@ -247,6 +247,15 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Throws PHP ERROR: Undefined function called.
+        /// </summary>
+        /// <param name="funcName">The function name.</param>
+        public static void UndefinedFunctionCalled(string funcName)
+        {
+            Throw(PhpError.Error, ErrResources.undefined_function_called, funcName);
+        }
+
+        /// <summary>
         /// Reports an error when a variable should be PHP object but it is not.
         /// </summary>
         /// <param name="reference">Whether a reference modifier (=&amp;) is used.</param>

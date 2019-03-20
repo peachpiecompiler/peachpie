@@ -39,10 +39,12 @@ namespace Pchp.Core.Dynamic
 
         protected virtual Expression BindMissingMethod(CallSiteContext bound)
         {
-            string nameText = bound.Name ?? "???";
-
-            // TODO: ErrCode method not found
-            throw new ArgumentException(string.Format("Function '{0}' not found!", nameText));
+            /* Template:
+             * PhpException.UndefinedFunctionCalled(name); // aka PhpException.Throw(Error, undefined_function_called, name)
+             * return NULL;
+            */
+            var throwcall = Expression.Call(typeof(PhpException), "UndefinedFunctionCalled", Array.Empty<Type>(), bound.IndirectName ?? Expression.Constant(bound.Name));
+            return Expression.Block(throwcall, ConvertExpression.BindDefault(this.ReturnType));
         }
 
         /// <summary>
