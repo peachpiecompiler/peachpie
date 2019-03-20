@@ -398,6 +398,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => IsVirtual && (!ContainingType.IsSealed || IsOverride || IsAbstract); // do not make method virtual if not necessary
 
+        internal override bool IsMetadataFinal => base.IsMetadataFinal && IsMetadataVirtual(); // altered IsMetadataVirtual -> causes change to '.final' metadata as well
+
         public override string GetDocumentationCommentXml(CultureInfo preferredCulture = null, bool expandIncludes = false, CancellationToken cancellationToken = default(CancellationToken))
         {
             // TODO: XmlDocumentationCommentCompiler
