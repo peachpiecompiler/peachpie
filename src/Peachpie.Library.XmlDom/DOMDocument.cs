@@ -802,6 +802,29 @@ namespace Peachpie.Library.XmlDom
         }
 
         /// <summary>
+        /// To be used as a static method.
+        /// Loads HTML from a string.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="source">String containing HTML document.</param>
+        /// <returns>returns a <see cref="DOMDocument"/> or <c>FALSE</c> on failure.</returns>
+        [Obsolete]
+        [return: CastToFalse]
+        public static DOMDocument loadHTML(Context ctx, string source)
+        {
+            var document = new DOMDocument();
+
+            if (document.loadHTML(ctx, source))
+            {
+                return document;
+            }
+            else
+            {
+                return null; // FALSE
+            }
+        }
+
+        /// <summary>
         /// Loads HTML from a string.
         /// </summary>
         /// <param name="ctx">Runtime context.</param>
