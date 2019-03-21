@@ -80,7 +80,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// - <see cref="AmbiguousMethodSymbol"/>
         /// - <see cref="InaccessibleMethodSymbol"/>
         /// </returns>
-        public MethodSymbol/*!*/Resolve(TypeRefContext typeCtx, ImmutableArray<BoundArgument> args, VisibilityScope scope)
+        public MethodSymbol/*!*/Resolve(TypeRefContext typeCtx, ImmutableArray<BoundArgument> args, VisibilityScope scope, bool isInstanceMethodCall)
         {
             if (_single != null)
             {
@@ -109,6 +109,28 @@ namespace Pchp.CodeAnalysis.Symbols
                 return new InaccessibleMethodSymbol(_methods.AsImmutable());
             }
 
+            // if there are both instance and static methods,
+            // take the right ones preferably:
+            var statics = result.Count(m => m.IsStatic);
+            if (statics > 0 && statics < result.Count)
+            {
+                if (isInstanceMethodCall)
+                {
+                    result.RemoveAll(m => m.IsStatic);
+                }
+                else
+                {
+                    result.RemoveAll(m => !m.IsStatic);
+                }
+            }
+            else
+            {
+                // otherwise,
+                // PHP allows that static methods to be called non-statically and vice versa
+                // let the compiler to deal with it
+            }
+
+            //
             if (scope.ScopeIsDynamic && result.Any(IsNonPublic))
             {
                 // we have to postpone the resolution to runtime:

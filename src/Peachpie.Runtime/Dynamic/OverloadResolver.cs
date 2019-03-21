@@ -55,6 +55,30 @@ namespace Pchp.Core.Dynamic
             }
         }
 
+        /// <summary>
+        /// Gets non-static methods only if there are any. Otherwise returns everything.
+        /// </summary>
+        public static MethodInfo[] NonStaticPreferably(this MethodInfo[] methods)
+        {
+            if (methods.Length <= 1)
+            {
+                // all methods are instance or static:
+                return methods;
+            }
+
+            int statics = methods.Count(m => m.IsStatic);
+            if (statics == 0 || statics == methods.Length)
+            {
+                // all methods are instance or static:
+                return methods;
+            }
+            else
+            {
+                // ignore the static methods:
+                return methods.Where(m => !m.IsStatic).ToArray();
+            }
+        }
+
         public static IEnumerable<MethodBase> Construct(this IEnumerable<MethodBase> methods, Type[] typeargs)
         {
             if (typeargs != null && typeargs.Length != 0)

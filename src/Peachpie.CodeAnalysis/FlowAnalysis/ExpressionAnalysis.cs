@@ -1518,7 +1518,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 // symbol might be ErrorSymbol
 
-                x.TargetMethod = overloads.Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
+                x.TargetMethod = overloads.Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, false);
             }
 
             BindTargetMethod(x);
@@ -1553,7 +1553,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                     candidates = Construct(candidates, x);
 
-                    x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
+                    x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, true);
                 }
                 else
                 {
@@ -1584,7 +1584,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 candidates = Construct(candidates, x);
 
-                var method = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
+                var method = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, false);
                 if ((method is MissingMethodSymbol || method is InaccessibleMethodSymbol)
                     && type.LookupMember<IMethodSymbol>(Name.SpecialMethodNames.CallStatic.Value) != null)
                 {
@@ -1655,7 +1655,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 var candidates = type.InstanceConstructors.ToArray();
 
                 //
-                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope);
+                x.TargetMethod = new OverloadsList(candidates).Resolve(this.TypeCtx, x.ArgumentsInSourceOrder, VisibilityScope, true);
                 x.ResultType = type;
             }
 

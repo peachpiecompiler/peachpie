@@ -229,6 +229,7 @@ namespace Pchp.Core.Dynamic
             // candidates:
             return bound.TargetType
                 .SelectRuntimeMethods(bound.Name, bound.ClassContext)
+                .NonStaticPreferably()
                 .SelectVisible(bound.ClassContext)
                 .Construct(bound.TypeArguments)
                 .ToArray();
