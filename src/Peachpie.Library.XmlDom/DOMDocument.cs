@@ -539,6 +539,27 @@ namespace Peachpie.Library.XmlDom
         #region Load and Save
 
         /// <summary>
+        /// To be used as a static method.
+        /// Loads the XML document from the specified URL.
+        /// </summary>
+        /// <returns>returns a <see cref="DOMDocument"/> or <c>FALSE</c> on failure.</returns>
+        [Obsolete]
+        [return: CastToFalse]
+        public static DOMDocument load(Context ctx, string fileName)
+        {
+            var document = new DOMDocument();
+
+            if (document.load(ctx, fileName))
+            {
+                return document;
+            }
+            else
+            {
+                return null; // FALSE
+            }
+        }
+
+        /// <summary>
         /// Loads the XML document from the specified URL.
         /// </summary>
         /// <param name="ctx">Current runtime context.</param>
