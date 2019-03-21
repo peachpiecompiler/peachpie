@@ -444,7 +444,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             // calling indirectly:
             if (x.Name.IsDirect)
             {
-                CheckObsoleteSymbol(x.PhpSyntax, x.TargetMethod);
+                CheckObsoleteSymbol(x.PhpSyntax, x.TargetMethod, isMemberCall: false);
                 CheckGlobalFunctionUsage(x);
             }
             else
@@ -471,7 +471,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             CheckMethodCallTargetInstance(call.Instance, call.Name.NameValue.Name.Value);
 
             // check deprecated
-            CheckObsoleteSymbol(call.PhpSyntax, call.TargetMethod);
+            CheckObsoleteSymbol(call.PhpSyntax, call.TargetMethod, isMemberCall: true);
 
             //
             return base.VisitInstanceFunctionCall(call);
@@ -503,7 +503,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             CheckUndefinedMethodCall(call, call.TypeRef.ResolveTypeSymbol(DeclaringCompilation) as TypeSymbol, call.Name);
 
             // check deprecated
-            CheckObsoleteSymbol(call.PhpSyntax, call.TargetMethod);
+            CheckObsoleteSymbol(call.PhpSyntax, call.TargetMethod, isMemberCall: true);
 
             // Mark that parent::__construct was called (to be checked later)
             if (call.Name.IsDirect && call.Name.NameValue.Name.IsConstructName
@@ -691,12 +691,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             }
         }
 
-        void CheckObsoleteSymbol(LangElement node, Symbol target)
+        void CheckObsoleteSymbol(LangElement node, Symbol target, bool isMemberCall)
         {
             var obsolete = target?.ObsoleteAttributeData;
             if (obsolete != null)
             {
-                _diagnostics.Add(_routine, node, ErrorCode.WRN_SymbolDeprecated, target.Kind.ToString(), target.Name, obsolete.Message);
+                string name = target.Name;
+
+                if (isMemberCall)
+                {
+                    var qname = target.ContainingType.PhpQualifiedName();
+                    name = qname.ToString(new Name(name), false);
+                }
+
+                _diagnostics.Add(_routine, node, ErrorCode.WRN_SymbolDeprecated, target.Kind.ToString(), name, obsolete.Message);
             }
         }
 
