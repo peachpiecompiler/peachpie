@@ -204,7 +204,7 @@
   <data name="ERR_CannotUseNonTrait" xml:space="preserve">
     <value>{0} cannot use {1} - it is not a trait</value>
   </data>
-  <data name="ERR_ToStringMustReturnString" xml:space="preserve">
+  <data name="WRN_ToStringMustReturnString" xml:space="preserve">
     <value>Method {0}::__toString() must return a string value</value>
   </data>
   <data name="ERR_CannotDeclareReturnType" xml:space="preserve">

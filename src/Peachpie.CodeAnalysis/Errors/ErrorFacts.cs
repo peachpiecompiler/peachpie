@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Globalization;
+using Peachpie.CodeAnalysis.Errors;
 
 namespace Pchp.CodeAnalysis.Errors
 {

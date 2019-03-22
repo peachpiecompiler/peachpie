@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Globalization;
 using Roslyn.Utilities;
+using Peachpie.CodeAnalysis.Errors;
 
 namespace Pchp.CodeAnalysis.Errors
 {

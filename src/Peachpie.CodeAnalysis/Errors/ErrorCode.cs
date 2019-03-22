@@ -87,8 +87,8 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_CannotExtendFrom,
         /// <summary>"{0} cannot implement {1} - it is not an interface"</summary>
         ERR_CannotImplementNonInterface,
-        /// <summary>Method {0}::__toString() must return a string value</summary>
-        ERR_ToStringMustReturnString,
+        /// <summary>{Free error code - take over with a new error diagnostic}</summary>
+        ERR_Reserved_1,
         /// <summary>{0}() cannot declare a return type</summary>
         ERR_CannotDeclareReturnType,
         /// <summary>A void function must not return a value</summary>
@@ -183,6 +183,8 @@ namespace Pchp.CodeAnalysis.Errors
         WRN_ParamPhpDocTypeHintIncompatible,
         /// <summary>Value of type {0} assigned to field {1} is incompatible with its PHPDoc type {2}.</summary>
         WRN_FieldPhpDocAssignIncompatible,
+        /// <summary>Method {0}::__toString() must return a string value</summary>
+        WRN_ToStringMustReturnString,
 
         //
         // Visible information

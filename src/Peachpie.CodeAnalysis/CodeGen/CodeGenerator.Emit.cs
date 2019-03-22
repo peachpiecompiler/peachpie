@@ -10,6 +10,7 @@ using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
+using Peachpie.CodeAnalysis.Errors;
 using Peachpie.CodeAnalysis.Utilities;
 using System;
 using System.Collections.Generic;

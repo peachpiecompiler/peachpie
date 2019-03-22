@@ -311,7 +311,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     // __tostring() allows only strings to be returned
                     if (x.Returned == null || !IsAllowedToStringReturnType(x.Returned.TypeRefMask))
                     {
-                        _diagnostics.Add(_routine, x.PhpSyntax ?? m, ErrorCode.ERR_ToStringMustReturnString, ((IPhpTypeSymbol)_routine.ContainingType).FullName.ToString());
+                        _diagnostics.Add(_routine, x.PhpSyntax ?? m, ErrorCode.WRN_ToStringMustReturnString, _routine.ContainingType.PhpQualifiedName().ToString());
                     }
                 }
             }
@@ -691,20 +691,25 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             }
         }
 
+        static string GetMemberNameForDiagnostic(Symbol target, bool isMemberName)
+        {
+            string name = target.Name;
+
+            if (isMemberName)
+            {
+                var qname = target.ContainingType.PhpQualifiedName();
+                name = qname.ToString(new Name(name), false);
+            }
+
+            return name;
+        }
+
         void CheckObsoleteSymbol(LangElement node, Symbol target, bool isMemberCall)
         {
             var obsolete = target?.ObsoleteAttributeData;
             if (obsolete != null)
             {
-                string name = target.Name;
-
-                if (isMemberCall)
-                {
-                    var qname = target.ContainingType.PhpQualifiedName();
-                    name = qname.ToString(new Name(name), false);
-                }
-
-                _diagnostics.Add(_routine, node, ErrorCode.WRN_SymbolDeprecated, target.Kind.ToString(), name, obsolete.Message);
+                _diagnostics.Add(_routine, node, ErrorCode.WRN_SymbolDeprecated, target.Kind.ToString(), GetMemberNameForDiagnostic(target, isMemberCall), obsolete.Message);
             }
         }
 

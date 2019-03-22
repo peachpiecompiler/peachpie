@@ -8,11 +8,10 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Pchp.CodeAnalysis.Errors {
+namespace Peachpie.CodeAnalysis.Errors {
     using System;
-    using System.Reflection;
-
-
+    
+    
     /// <summary>
     ///   A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>
@@ -40,7 +39,7 @@ namespace Pchp.CodeAnalysis.Errors {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Peachpie.CodeAnalysis.Errors.ErrorStrings", typeof(ErrorStrings).GetTypeInfo().Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Peachpie.CodeAnalysis.Errors.ErrorStrings", typeof(ErrorStrings).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -62,6 +61,33 @@ namespace Pchp.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Invalid assembly name: {0}.
+        /// </summary>
+        internal static string ERR_BadAssemblyName {
+            get {
+                return ResourceManager.GetString("ERR_BadAssemblyName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Provided documentation mode is unsupported or invalid: &apos;{0}&apos;..
+        /// </summary>
+        internal static string ERR_BadDocumentationMode {
+            get {
+                return ResourceManager.GetString("ERR_BadDocumentationMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Provided source code kind is unsupported or invalid: &apos;{0}&apos;.
+        /// </summary>
+        internal static string ERR_BadSourceCodeKind {
+            get {
+                return ResourceManager.GetString("ERR_BadSourceCodeKind", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Unrecognized option: &apos;{0}&apos;.
         /// </summary>
         internal static string ERR_BadSwitch {
@@ -76,6 +102,15 @@ namespace Pchp.CodeAnalysis.Errors {
         internal static string ERR_CannotDeclareReturnType {
             get {
                 return ResourceManager.GetString("ERR_CannotDeclareReturnType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to /embed switch is only supported when emitting Portable PDB (/debug:portable or /debug:embedded)..
+        /// </summary>
+        internal static string ERR_CannotEmbedWithoutPdb {
+            get {
+                return ResourceManager.GetString("ERR_CannotEmbedWithoutPdb", resourceCulture);
             }
         }
         
@@ -125,6 +160,24 @@ namespace Pchp.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot emit debug information for a source text without encoding..
+        /// </summary>
+        internal static string ERR_EncodinglessSyntaxTree {
+            get {
+                return ResourceManager.GetString("ERR_EncodinglessSyntaxTree", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot update &apos;{0}&apos;; attribute &apos;{1}&apos; is missing..
+        /// </summary>
+        internal static string ERR_EncUpdateFailedMissingAttribute {
+            get {
+                return ResourceManager.GetString("ERR_EncUpdateFailedMissingAttribute", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Error opening assembly file &apos;{0}&apos;: {1}.
         /// </summary>
         internal static string ERR_ErrorOpeningAssemblyFile {
@@ -152,11 +205,38 @@ namespace Pchp.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Unable to read debug information of method &apos;{0}&apos; (token 0x{1:X8}) from assembly &apos;{2}&apos;.
+        /// </summary>
+        internal static string ERR_InvalidDebugInfo {
+            get {
+                return ResourceManager.GetString("ERR_InvalidDebugInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Function name must be a string, {0} given.
         /// </summary>
         internal static string ERR_InvalidFunctionName {
             get {
                 return ResourceManager.GetString("ERR_InvalidFunctionName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid hash algorithm name: &apos;{0}&apos;.
+        /// </summary>
+        internal static string ERR_InvalidHashAlgorithmName {
+            get {
+                return ResourceManager.GetString("ERR_InvalidHashAlgorithmName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid instrumentation kind: {0}.
+        /// </summary>
+        internal static string ERR_InvalidInstrumentationKind {
+            get {
+                return ResourceManager.GetString("ERR_InvalidInstrumentationKind", resourceCulture);
             }
         }
         
@@ -179,6 +259,15 @@ namespace Pchp.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Failed to emit module &apos;{0}&apos;..
+        /// </summary>
+        internal static string ERR_ModuleEmitFailure {
+            get {
+                return ResourceManager.GetString("ERR_ModuleEmitFailure", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {0} {1}() must take exactly {2} arguments.
         /// </summary>
         internal static string ERR_MustTakeArgs {
@@ -188,11 +277,65 @@ namespace Pchp.CodeAnalysis.Errors {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to {0} is currently not supported by Peachpie..
+        ///   Looks up a localized string similar to Compilation options &apos;{0}&apos; and &apos;{1}&apos; can&apos;t both be specified at the same time..
+        /// </summary>
+        internal static string ERR_MutuallyExclusiveOptions {
+            get {
+                return ResourceManager.GetString("ERR_MutuallyExclusiveOptions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &apos;{0}&apos; not in the &apos;loop&apos; or &apos;switch&apos; context.
+        /// </summary>
+        internal static string ERR_NeedsLoopOrSwitch {
+            get {
+                return ResourceManager.GetString("ERR_NeedsLoopOrSwitch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to No overload for method {0} can be called..
+        /// </summary>
+        internal static string ERR_NoMatchingOverload {
+            get {
+                return ResourceManager.GetString("ERR_NoMatchingOverload", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} is currently not supported by PeachPie..
         /// </summary>
         internal static string ERR_NotYetImplemented {
             get {
                 return ResourceManager.GetString("ERR_NotYetImplemented", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Option &apos;{0}&apos; must be an absolute path..
+        /// </summary>
+        internal static string ERR_OptionMustBeAbsolutePath {
+            get {
+                return ResourceManager.GetString("ERR_OptionMustBeAbsolutePath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Could not write to output file &apos;{0}&apos; -- &apos;{1}&apos;.
+        /// </summary>
+        internal static string ERR_OutputWriteFailed {
+            get {
+                return ResourceManager.GetString("ERR_OutputWriteFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to An error occurred while writing the output file: {0}..
+        /// </summary>
+        internal static string ERR_PeWritingFailure {
+            get {
+                return ResourceManager.GetString("ERR_PeWritingFailure", resourceCulture);
             }
         }
         
@@ -251,15 +394,6 @@ namespace Pchp.CodeAnalysis.Errors {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Method {0}::__toString() must return a string value.
-        /// </summary>
-        internal static string ERR_ToStringMustReturnString {
-            get {
-                return ResourceManager.GetString("ERR_ToStringMustReturnString", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Type name &apos;{0}&apos; could not be resolved..
         /// </summary>
         internal static string ERR_TypeNameCannotBeResolved {
@@ -296,6 +430,42 @@ namespace Pchp.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to File name &apos;{0}&apos; is empty, contains invalid characters, has a drive specification without an absolute path, or is too long.
+        /// </summary>
+        internal static string FTL_InvalidInputFileName {
+            get {
+                return ResourceManager.GetString("FTL_InvalidInputFileName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Wrong case in class name &apos;{0}&apos;, expected &apos;{1}&apos;..
+        /// </summary>
+        internal static string INF_ClassNameWrongCase {
+            get {
+                return ResourceManager.GetString("INF_ClassNameWrongCase", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use of &apos;eval()&apos; is discouraged. Construct allows execution of arbitrary code and is subject to performance and memory overhead..
+        /// </summary>
+        internal static string INF_EvalDiscouraged {
+            get {
+                return ResourceManager.GetString("INF_EvalDiscouraged", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cast is redundant..
+        /// </summary>
+        internal static string INF_RedundantCast {
+            get {
+                return ResourceManager.GetString("INF_RedundantCast", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The declaration of &apos;{0}&apos; is ambiguous resulting in multiple versions to be compiled. Fix this issue by ensuring every base type is declared just once unconditionally..
         /// </summary>
         internal static string WRN_AmbiguousDeclaration {
@@ -314,11 +484,74 @@ namespace Pchp.CodeAnalysis.Errors {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Use of &apos;eval()&apos; is discouraged. Construct allows execution of arbitrary code and is subject to performance and memory overhead..
+        ///   Looks up a localized string similar to Assignment made to same variable; did you mean to assign something else?.
         /// </summary>
-        internal static string INF_EvalDiscouraged {
+        internal static string WRN_AssigningSameVariable {
             get {
-                return ResourceManager.GetString("INF_EvalDiscouraged", resourceCulture);
+                return ResourceManager.GetString("WRN_AssigningSameVariable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cloning of non-object: {0}..
+        /// </summary>
+        internal static string WRN_CloneNonObject {
+            get {
+                return ResourceManager.GetString("WRN_CloneNonObject", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Duplicate array key: &apos;{0}&apos;..
+        /// </summary>
+        internal static string WRN_DuplicateArrayKey {
+            get {
+                return ResourceManager.GetString("WRN_DuplicateArrayKey", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The expression is not being read. Did you mean to assign it somewhere?.
+        /// </summary>
+        internal static string WRN_ExpressionNotRead {
+            get {
+                return ResourceManager.GetString("WRN_ExpressionNotRead", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Value of type {0} assigned to field {1} is incompatible with its PHPDoc type {2}..
+        /// </summary>
+        internal static string WRN_FieldPhpDocAssignIncompatible {
+            get {
+                return ResourceManager.GetString("WRN_FieldPhpDocAssignIncompatible", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Using non-iterable type in foreach: {0}..
+        /// </summary>
+        internal static string WRN_ForeachNonIterable {
+            get {
+                return ResourceManager.GetString("WRN_ForeachNonIterable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Wrong number of arguments in {0}..
+        /// </summary>
+        internal static string WRN_FormatStringWrongArgCount {
+            get {
+                return ResourceManager.GetString("WRN_FormatStringWrongArgCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid array key type: {0}..
+        /// </summary>
+        internal static string WRN_InvalidArrayKeyType {
+            get {
+                return ResourceManager.GetString("WRN_InvalidArrayKeyType", resourceCulture);
             }
         }
         
@@ -350,6 +583,24 @@ namespace Pchp.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to PHPDoc type {0} of parameter ${1} is incompatible with its type hint {2}..
+        /// </summary>
+        internal static string WRN_ParamPhpDocTypeHintIncompatible {
+            get {
+                return ResourceManager.GetString("WRN_ParamPhpDocTypeHintIncompatible", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Missing the call of parent::__construct from {0}::__construct..
+        /// </summary>
+        internal static string WRN_ParentCtorNotCalled {
+            get {
+                return ResourceManager.GetString("WRN_ParentCtorNotCalled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Using string as the assertion is deprecated.
         /// </summary>
         internal static string WRN_StringAssertionDeprecated {
@@ -368,11 +619,20 @@ namespace Pchp.CodeAnalysis.Errors {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Too many arguments provided.
+        ///   Looks up a localized string similar to {0}() expects {1} parameter(s), {2} given.
         /// </summary>
         internal static string WRN_TooManyArguments {
             get {
                 return ResourceManager.GetString("WRN_TooManyArguments", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Method {0}::__toString() must return a string value.
+        /// </summary>
+        internal static string WRN_ToStringMustReturnString {
+            get {
+                return ResourceManager.GetString("WRN_ToStringMustReturnString", resourceCulture);
             }
         }
         
