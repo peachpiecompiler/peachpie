@@ -100,5 +100,13 @@ namespace Pchp.Core
         /// </summary>
         public virtual TargetPhpLanguageAttribute TargetPhpLanguage { get => _targetPhpLanguageAttribute; }
         static TargetPhpLanguageAttribute _targetPhpLanguageAttribute;
+
+        /// <summary>
+        /// Gets value indicating whether not defined classes should be automatically included when used for the first time.
+        /// Does not apply when SPL autoloading gets enabled.
+        /// This is intended for package distribution without the need of specifying autoload class map or a similar mechanism.
+        /// </summary>
+        /// <remarks>See <see cref="ImplicitAutoloadTypeByName"/> for more details.</remarks>
+        public bool EnableImplicitAutoload { get; set; }
     }
 }

@@ -55,6 +55,7 @@ namespace Peachpie.AspNetCore.Web
                 encoding: Encoding.UTF8)
             {
                 WorkingDirectory = rootpath,
+                EnableImplicitAutoload = true,
             };
         }
     }

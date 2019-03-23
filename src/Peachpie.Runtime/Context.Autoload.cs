@@ -73,35 +73,38 @@ namespace Pchp.Core
         /// </summary>
         PhpTypeInfo ImplicitAutoloadTypeByName(string fullName)
         {
-            var types = s_assClassMap.LookupTypes(fullName);
-            if (types != null)
+            if (EnableImplicitAutoload)
             {
-                ScriptInfo script = default;
-
-                for (int i = 0; i < types.Length; i++)
+                var types = s_assClassMap.LookupTypes(fullName);
+                if (types != null)
                 {
-                    var rpath = types[i].RelativePath;
-                    if (script.IsValid)
+                    ScriptInfo script = default;
+
+                    for (int i = 0; i < types.Length; i++)
                     {
-                        if (script.Path != rpath)
+                        var rpath = types[i].RelativePath;
+                        if (script.IsValid)
                         {
-                            Trace.WriteLine("Type '" + fullName + "' cannot be autoloaded. Ambiguous declarations in " + script.Path + " and " + rpath);
-                            return null; // ambiguity
+                            if (script.Path != rpath)
+                            {
+                                Trace.WriteLine("Type '" + fullName + "' cannot be autoloaded. Ambiguous declarations in " + script.Path + " and " + rpath);
+                                return null; // ambiguity
+                            }
+                        }
+                        else
+                        {
+                            script = ScriptsMap.GetDeclaredScript(rpath);
                         }
                     }
-                    else
+
+                    // pretend we are PHP and include the script:
+
+                    if (script.IsValid && !_scripts.IsIncluded(script.Index))   // include_once:
                     {
-                        script = ScriptsMap.GetDeclaredScript(rpath);
+                        script.Evaluate(this, this.Globals, null, default);
+
+                        return GetDeclaredType(fullName, autoload: false); // TODO: can we return types[0] directly in some cases?
                     }
-                }
-
-                // pretend we are PHP and include the script:
-
-                if (script.IsValid && !_scripts.IsIncluded(script.Index))   // include_once:
-                {
-                    script.Evaluate(this, this.Globals, null, default);
-
-                    return GetDeclaredType(fullName, autoload: false); // TODO: can we return types[0] directly in some cases?
                 }
             }
 

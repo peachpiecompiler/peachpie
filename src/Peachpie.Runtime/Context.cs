@@ -45,7 +45,13 @@ namespace Pchp.Core
         /// </param>
         public static Context CreateEmpty(params string[] cmdargs)
         {
-            var ctx = new Context();
+            var ctx = new Context()
+            {
+                RootPath = Directory.GetCurrentDirectory(),
+                EnableImplicitAutoload = true,
+            };
+
+            ctx.WorkingDirectory = ctx.RootPath;
             ctx.InitOutput(null);
             ctx.InitSuperglobals();
 
