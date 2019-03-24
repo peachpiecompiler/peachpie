@@ -207,6 +207,7 @@ namespace Peachpie.Library.MySql
                 //Database = dbname,
                 AllowZeroDateTime = true,
                 AllowUserVariables = true,
+                AllowPublicKeyRetrieval = true,
                 Port = (uint)port,
                 SslMode = (flags & ConnectFlags.SSL) != 0 ? MySqlSslMode.Preferred : MySqlSslMode.None,
                 UseCompression = (flags & ConnectFlags.Compress) != 0,
