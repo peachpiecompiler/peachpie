@@ -41,6 +41,8 @@ namespace Pchp.Library
             {
                 internal const char ObjectOpen = '{';
                 internal const char ObjectClose = '}';
+                internal const string ObjectOpenString = "{";
+                internal const string ObjectCloseString = "}";
 
                 internal const char ItemsSeparator = ',';
                 internal const string ItemsSeparatorString = ",";
@@ -65,6 +67,8 @@ namespace Pchp.Library
 
                 internal const char ArrayOpen = '[';
                 internal const char ArrayClose = ']';
+                internal const string ArrayOpenString = "[";
+                internal const string ArrayCloseString = "]";
 
                 internal const string NullLiteral = "null";
                 internal const string TrueLiteral = "true";
@@ -226,8 +230,6 @@ namespace Pchp.Library
                 }
 
                 void Write(string str) => _result.Append(str);
-
-                void Write(char ch) => _result.Append(ch.ToString());
 
                 public override void AcceptNull()
                 {
@@ -518,7 +520,7 @@ namespace Pchp.Library
                 void WriteArray(PhpArray array)
                 {
                     // [
-                    Write(Tokens.ArrayOpen);
+                    Write(Tokens.ArrayOpenString);
 
                     //
                     if (array.Count != 0)
@@ -547,13 +549,13 @@ namespace Pchp.Library
                     }
 
                     // ]
-                    Write(Tokens.ArrayClose);
+                    Write(Tokens.ArrayCloseString);
                 }
 
                 void WriteObject(IEnumerable<KeyValuePair<string, PhpValue>> properties)
                 {
                     // {
-                    Write(Tokens.ObjectOpen);
+                    Write(Tokens.ObjectOpenString);
 
                     _pretty.Indent();
 
@@ -587,7 +589,7 @@ namespace Pchp.Library
                     }
 
                     // }
-                    Write(Tokens.ObjectClose);
+                    Write(Tokens.ObjectCloseString);
                 }
 
                 IEnumerable<KeyValuePair<string, PhpValue>> JsonArrayProperties(PhpArray array)
