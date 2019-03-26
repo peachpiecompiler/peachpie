@@ -70,13 +70,15 @@ namespace Pchp.Library
                 internal const string TrueLiteral = "true";
                 internal const string FalseLiteral = "false";
 
+                internal const string PrettySpaceString = " "; // whitespace for pretty printing
+                internal const string PrettyNewLine = "\n"; // whitespace for pretty printing
             }
 
             #endregion
 
             #region ObjectWriter
 
-            sealed class ObjectWriter : PhpVariableVisitor
+            sealed class ObjectWriter : PhpVariableVisitor // TODO: :FormatterVisitor
             {
                 Encoding Encoding => _ctx.StringEncoding;
 
@@ -90,6 +92,74 @@ namespace Pchp.Library
                 readonly Context _ctx;
                 readonly RuntimeTypeHandle _caller;
                 readonly JsonEncodeOptions _encodeOptions;
+                readonly IPrettyPrinter _pretty;
+
+                #region IPrettyPrinter
+
+                /// <summary>
+                /// Used to output pretty printing whitespaces if enabled.
+                /// </summary>
+                interface IPrettyPrinter
+                {
+                    void Indent();
+                    void Unindent();
+                    
+                    /// <summary>Writes a single whitespace, if <see cref="JSON_PRETTY_PRINT"/> is enabled.</summary>
+                    void Space();
+                    
+                    /// <summary>Writes new line and indentation, if <see cref="JSON_PRETTY_PRINT"/> is enabled.</summary>
+                    void NewLine();
+                }
+
+                sealed class PrettyPrintOff : IPrettyPrinter
+                {
+                    public void Indent() { }
+                    public void NewLine() { }
+                    public void Space() { }
+                    public void Unindent() { }
+                }
+
+                sealed class PrettyPrintOn : IPrettyPrinter
+                {
+                    int _indent = 0;
+                    string _indentStr = null;
+                    readonly PhpString.Blob _output;
+
+                    public PrettyPrintOn(PhpString.Blob output)
+                    {
+                        _output = output ?? throw new ArgumentNullException();
+                    }
+
+                    public void Indent()
+                    {
+                        _indent++;
+                        _indentStr = null;
+                    }
+
+                    public void NewLine()
+                    {
+                        if (_indentStr == null)
+                        {
+                            _indentStr = Tokens.PrettyNewLine + new string(' ', _indent * 4);
+                        }
+
+                        _output.Add(_indentStr);
+                    }
+
+                    public void Space()
+                    {
+                        _output.Add(Tokens.PrettySpaceString);
+                    }
+
+                    public void Unindent()
+                    {
+                        _indent--;
+                        _indentStr = null;
+                        Debug.Assert(_indent >= 0);
+                    }
+                }
+
+                #endregion
 
                 #region Options
 
@@ -111,6 +181,7 @@ namespace Pchp.Library
                     _ctx = ctx;
                     _encodeOptions = encodeOptions;
                     _caller = caller;
+                    _pretty = HasPrettyPrint ? (IPrettyPrinter)new PrettyPrintOn(_result) : new PrettyPrintOff();
                 }
 
                 public static PhpString Serialize(Context ctx, PhpValue variable, JsonEncodeOptions encodeOptions, RuntimeTypeHandle caller)
@@ -155,6 +226,7 @@ namespace Pchp.Library
                 }
 
                 void Write(string str) => _result.Append(str);
+
                 void Write(char ch) => _result.Append(ch.ToString());
 
                 public override void AcceptNull()
@@ -451,6 +523,8 @@ namespace Pchp.Library
                     //
                     if (array.Count != 0)
                     {
+                        _pretty.Indent();
+
                         bool bFirst = true;
 
                         var enumerator = array.GetFastEnumerator();
@@ -460,11 +534,16 @@ namespace Pchp.Library
                             if (bFirst) bFirst = false;
                             else Write(Tokens.ItemsSeparatorString);
 
+                            _pretty.NewLine();
+
                             Debug.Assert(enumerator.CurrentKey.IsInteger);
 
                             // value
                             Accept(enumerator.CurrentValue);
                         }
+
+                        _pretty.Unindent();
+                        _pretty.NewLine();
                     }
 
                     // ]
@@ -476,17 +555,35 @@ namespace Pchp.Library
                     // {
                     Write(Tokens.ObjectOpen);
 
+                    _pretty.Indent();
+
                     bool bFirst = true;
                     foreach (var pair in properties)
                     {
                         // ,
-                        if (bFirst) bFirst = false;
-                        else Write(Tokens.ItemsSeparatorString);
+                        if (bFirst)
+                        {
+                            bFirst = false;
+                        }
+                        else
+                        {
+                            Write(Tokens.ItemsSeparatorString);
+                        }
 
-                        // "key":value
+                        _pretty.NewLine();
+
+                        // "key": value
                         WriteString(pair.Key);
                         Write(Tokens.PropertyKeyValueSeparatorString);
+                        _pretty.Space();
                         pair.Value.Accept(this);
+                    }
+
+                    _pretty.Unindent();
+
+                    if (!bFirst)
+                    {
+                        _pretty.NewLine();
                     }
 
                     // }
