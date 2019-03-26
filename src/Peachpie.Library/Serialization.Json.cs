@@ -273,12 +273,10 @@ namespace Pchp.Library
                 /// <summary>
                 /// Determines if given character is printable character. Otherwise it must be encoded.
                 /// </summary>
-                /// <param name="c"></param>
-                /// <returns></returns>
-                private static bool CharIsPrintable(char c)
+                private bool CharIsPrintable(char c)
                 {
                     return
-                        (c <= 0x7f) &&   // ASCII
+                        (c <= 0x7f || HasUnescapedUnicode) &&   // ASCII
                         (!char.IsControl(c)) && // not control
                         (!(c >= 9 && c <= 13)); // not BS, HT, LF, Vertical Tab, Form Feed, CR
                 }
