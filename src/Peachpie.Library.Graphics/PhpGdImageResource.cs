@@ -11,7 +11,6 @@ using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.Formats.Bmp;
-//using SixLabors.ImageSharp.Processing.Drawing.Brushes;
 
 namespace Peachpie.Library.Graphics
 {

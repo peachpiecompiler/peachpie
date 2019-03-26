@@ -7,6 +7,7 @@ using Pchp.Core;
 using Pchp.Library.Streams;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Bmp;
 using SixLabors.ImageSharp.Formats.Gif;
@@ -1522,7 +1523,7 @@ namespace Peachpie.Library.Graphics
             if (x < 0 || y < 0) return true;
             if (x > img.Image.Width || y > img.Image.Height) return true;
 
-            FloodFill(img.Image, x, y, FromRGBA(col), false, Rgba32.Red);
+            img.Image.Mutate(o => o.ApplyProcessor(new FloodFillProcessor<Rgba32>(new Point(x, y), FromRGBA(col), false, Rgba32.Red)));
 
             return true;
         }
@@ -1628,81 +1629,6 @@ namespace Peachpie.Library.Graphics
         }
 
         #endregion
-
-        /// <summary>
-        /// Perform a flood fill of an image. Either until a border with specified color is reached, or the region with original color.
-        /// </summary>
-        /// <param name="image">image to fill</param>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
-        /// <param name="color">Color to be filled with</param>
-        /// <param name="toBorder">False - color the connected region of same color, True - color until border is reached</param>
-        /// <param name="border">Color of the region border, used if toBorder = True</param>
-        private static void FloodFill(Image<Rgba32>/*!*/image, int x, int y, Rgba32 color, bool toBorder, Rgba32 border)
-        {
-            Debug.Assert(image != null);
-
-            var pointQueue = new Queue<Point>();
-            pointQueue.Enqueue(new Point(x, y));
-            var floodFrom = image[x, y];
-
-            // The same color cannot be filled with itself
-            if (floodFrom == color)
-                return;
-
-            while (pointQueue.Count > 0)
-            {
-                var currentPoint = pointQueue.Dequeue();
-                var currentY = currentPoint.Y;
-                var currentX = currentPoint.X;
-
-                int leftEdge, rightEdge;
-                leftEdge = rightEdge = currentX;
-
-                // Filling until reaching a border of specified color
-                if (toBorder)
-                {
-                    // Get the row segment to be colored
-                    while (rightEdge + 1 < image.Width && image[rightEdge + 1, currentY] != border && image[rightEdge + 1, currentY] != color)
-                        rightEdge++;
-                    while (leftEdge > 0 && image[leftEdge - 1, currentY] != border && image[leftEdge - 1, currentY] != color)
-                        leftEdge--;
-
-                    // Actually color the row
-                    for (int workingX = leftEdge; workingX <= rightEdge; workingX++)
-                    {
-                        image[workingX, currentY] = color;
-
-                        //Add the pixels above and below to the queue
-                        if (currentY > 0 && image[workingX, currentY - 1] != border && image[workingX, currentY - 1] != color)
-                            pointQueue.Enqueue(new Point(workingX, currentY - 1));
-                        if (currentY + 1 < image.Height && image[workingX, currentY + 1] != border && image[workingX, currentY + 1] != color)
-                            pointQueue.Enqueue(new Point(workingX, currentY + 1));
-                    }
-                }
-                else
-                // Filling whole region of same color
-                {
-                    // Get the row segment to be colored
-                    while (rightEdge + 1 < image.Width && image[rightEdge + 1, currentY] == floodFrom)
-                        rightEdge++;
-                    while (leftEdge > 0 && image[leftEdge - 1, currentY] == floodFrom)
-                        leftEdge--;
-
-                    // Actually color the row
-                    for (int workingX = leftEdge; workingX <= rightEdge; workingX++)
-                    {
-                        image[workingX, currentY] = color;
-
-                        //Add the pixels above and below to the queue
-                        if (currentY > 0 && image[workingX, currentY - 1] == floodFrom)
-                            pointQueue.Enqueue(new Point(workingX, currentY - 1));
-                        if (currentY + 1 < image.Height && image[workingX, currentY + 1] == floodFrom)
-                            pointQueue.Enqueue(new Point(workingX, currentY + 1));
-                    }
-                }
-            }
-        }
 
         #endregion
 
