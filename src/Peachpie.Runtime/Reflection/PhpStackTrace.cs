@@ -109,15 +109,14 @@ namespace Pchp.Core.Reflection
 
         [DebuggerNonUserCode]
         public PhpStackTrace()
+            : this(new StackTrace(true))
         {
-            // collect stack trace if possible:
-            InitPhpStackFrames(new StackTrace(true));
-
             Debug.Assert(_frames != null);
         }
 
-        internal PhpStackTrace(StackTrace clrtrace)
+        public PhpStackTrace(StackTrace/*!*/clrtrace)
         {
+            // collect stack trace if possible:
             InitPhpStackFrames(clrtrace);
         }
 
