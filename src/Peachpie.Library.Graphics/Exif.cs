@@ -4,6 +4,7 @@ using Pchp.Core;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.MetaData.Profiles.Exif;
 using SixLabors.ImageSharp.PixelFormats;
 
@@ -351,7 +352,7 @@ namespace Peachpie.Library.Graphics
                 height.Value = (PhpValue)thumbnail.Height;
 
             if (imagetype != null)  // TODO: get thumbnail image format
-                imagetype.Value = (PhpValue)(format == ImageFormats.Jpeg ? PhpImage.IMAGETYPE_JPEG : PhpImage.IMAGETYPE_TIFF_II);
+                imagetype.Value = (PhpValue)(format == JpegFormat.Instance ? PhpImage.IMAGETYPE_JPEG : PhpImage.IMAGETYPE_TIFF_II);
 
             using (var ms2 = new MemoryStream())
             {

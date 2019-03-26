@@ -8,7 +8,10 @@ using SixLabors.ImageSharp.Formats;
 using Pchp.Core;
 using TImage = SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Rgba32>;
 using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing.Drawing.Brushes;
+using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp.Formats.Gif;
+using SixLabors.ImageSharp.Formats.Bmp;
+//using SixLabors.ImageSharp.Processing.Drawing.Brushes;
 
 namespace Peachpie.Library.Graphics
 {
@@ -44,8 +47,8 @@ namespace Peachpie.Library.Graphics
         /// Determine if the pixel format is indexed.
         /// </summary>
         public bool IsIndexed =>
-            _format == ImageFormats.Gif ||
-            _format == ImageFormats.Bmp;
+            _format == GifFormat.Instance ||
+            _format == BmpFormat.Instance;
         
         internal bool AlphaBlending = false;
         internal bool SaveAlpha = false;

@@ -15,15 +15,7 @@ using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Primitives;
 using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp.Processing.Convolution;
-using SixLabors.ImageSharp.Processing.Drawing;
-using SixLabors.ImageSharp.Processing.Drawing.Brushes;
-using SixLabors.ImageSharp.Processing.Drawing.Pens;
-using SixLabors.ImageSharp.Processing.Filters;
-using SixLabors.ImageSharp.Processing.Overlays;
-using SixLabors.ImageSharp.Processing.Text;
-using SixLabors.ImageSharp.Processing.Transforms;
-using SixLabors.ImageSharp.Processing.Transforms.Resamplers;
+using SixLabors.ImageSharp.Processing.Processors.Transforms;
 using SixLabors.Primitives;
 using SixLabors.Shapes;
 
@@ -370,7 +362,7 @@ namespace Peachpie.Library.Graphics
                     .Crop(new Rectangle(src_x, src_y, src_w, src_h))
                     .Resize(dst_w, dst_h, resampler)))
             {
-                dst_img.Image.Mutate(o => o.DrawImage(GraphicsOptions.Default, cropped, new Point(dst_x, dst_y)));
+                dst_img.Image.Mutate(o => o.DrawImage(cropped, new Point(dst_x, dst_y), GraphicsOptions.Default));
             }
 
             return true;
@@ -386,7 +378,7 @@ namespace Peachpie.Library.Graphics
         [return: CastToFalse]
         public static PhpResource imagecreate(int x_size, int y_size)
         {
-            var img = imagecreatecommon(x_size, y_size, new BmpConfigurationModule(), ImageFormats.Bmp);
+            var img = imagecreatecommon(x_size, y_size, new BmpConfigurationModule(), BmpFormat.Instance);
 
             img.Image.Mutate(o => o.BackgroundColor(Rgba32.White));
             img.AlphaBlending = true;
@@ -400,7 +392,7 @@ namespace Peachpie.Library.Graphics
         [return: CastToFalse]
         public static PhpResource imagecreatetruecolor(int x_size, int y_size)
         {
-            var img = imagecreatecommon(x_size, y_size, new PngConfigurationModule(), ImageFormats.Png);
+            var img = imagecreatecommon(x_size, y_size, new PngConfigurationModule(), PngFormat.Instance);
 
             img.Image.Mutate(o => o.BackgroundColor(Rgba32.Black));
             img.AlphaBlending = true;
@@ -977,19 +969,19 @@ namespace Peachpie.Library.Graphics
 
             FontStyle style;
 
-            if (family.IsStyleAvailible(FontStyle.Regular))
+            if (family.IsStyleAvailable(FontStyle.Regular))
             {
                 style = FontStyle.Regular;
             }
-            else if (family.IsStyleAvailible(FontStyle.Bold))
+            else if (family.IsStyleAvailable(FontStyle.Bold))
             {
                 style = FontStyle.Bold;
             }
-            else if (family.IsStyleAvailible(FontStyle.Italic))
+            else if (family.IsStyleAvailable(FontStyle.Italic))
             {
                 style = FontStyle.Italic;
             }
-            else if (family.IsStyleAvailible(FontStyle.BoldItalic))
+            else if (family.IsStyleAvailable(FontStyle.BoldItalic))
             {
                 style = FontStyle.BoldItalic;
             }
@@ -999,17 +991,30 @@ namespace Peachpie.Library.Graphics
             }
 
             var font = new Font(family, (float)size, style);
-            var textsize = TextMeasurer.Measure(text, new RendererOptions(font));
+
+            var rendererOptions = new RendererOptions(font);
+            var textsize = TextMeasurer.Measure(text, rendererOptions);
 
             // text transformation:
             var matrix = (angle == 0.0) ? Matrix3x2.Identity : Matrix3x2.CreateRotation((float)(angle * -2.0 * Math.PI / 360.0f));
             matrix.Translation = new Vector2(x, y);
 
-            var path = new PathBuilder(matrix).AddLine(0, 0, textsize.Width, 0).Build();
 
             // draw the text:
             // TODO: col < 0 => turn off antialiasing
-            img.Image.Mutate(o => o.DrawText(text, font, FromRGBA(Math.Abs(color)), path));
+            var rgbaColor = FromRGBA(Math.Abs(color));
+            if (angle == 0.0)
+            {
+                // Horizontal version is optimized by ImageSharp
+                img.Image.Mutate(o => o.DrawText(text, font, rgbaColor, new PointF(x, y - font.Size)));
+            }
+            else
+            {
+                // Obtain and fill the particular glyphs if rotated
+                var path = new PathBuilder(matrix).AddLine(0, 0, textsize.Width, 0).Build();
+                var glyphs = TextBuilder.GenerateGlyphs(text, path, rendererOptions);
+                img.Image.Mutate(o => o.Fill(rgbaColor, glyphs));
+            }
 
             // calculate drawen text boundaries:
             var pts = new Vector2[]
@@ -1482,7 +1487,7 @@ namespace Peachpie.Library.Graphics
             var fontStyle = FontStyle.Regular;
             if (fontInd == 3 || fontInd >= 5)
             {
-                if (fontFamily.IsStyleAvailible(FontStyle.Bold))
+                if (fontFamily.IsStyleAvailable(FontStyle.Bold))
                 {
                     fontStyle = FontStyle.Bold;
                 }
