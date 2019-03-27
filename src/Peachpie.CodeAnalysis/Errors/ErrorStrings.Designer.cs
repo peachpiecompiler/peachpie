@@ -97,6 +97,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot re-assign $this.
+        /// </summary>
+        internal static string ERR_CannotAssignToThis {
+            get {
+                return ResourceManager.GetString("ERR_CannotAssignToThis", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {0}() cannot declare a return type.
         /// </summary>
         internal static string ERR_CannotDeclareReturnType {

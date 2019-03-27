@@ -525,6 +525,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         public override T VisitVariableRef(BoundVariableRef x)
         {
             CheckUninitializedVariableUse(x);
+
+            if (x.Access.IsWrite)
+            {
+                // assignment to $this is not allowed:
+                if (x.Variable is ThisVariableReference)
+                {
+                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.ERR_CannotAssignToThis);
+                }
+            }
+
             return base.VisitVariableRef(x);
         }
 

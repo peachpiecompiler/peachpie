@@ -326,4 +326,7 @@
   <data name="WRN_FieldPhpDocAssignIncompatible" xml:space="preserve">
     <value>Value of type {0} assigned to field {1} is incompatible with its PHPDoc type {2}.</value>
   </data>
+  <data name="ERR_CannotAssignToThis" xml:space="preserve">
+    <value>Cannot re-assign $this</value>
+  </data>
 </root>

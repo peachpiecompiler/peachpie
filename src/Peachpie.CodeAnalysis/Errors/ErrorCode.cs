@@ -87,8 +87,8 @@ namespace Pchp.CodeAnalysis.Errors
         ERR_CannotExtendFrom,
         /// <summary>"{0} cannot implement {1} - it is not an interface"</summary>
         ERR_CannotImplementNonInterface,
-        /// <summary>{Free error code - take over with a new error diagnostic}</summary>
-        ERR_Reserved_1,
+        /// <summary>Cannot re-assign $this</summary>
+        ERR_CannotAssignToThis,
         /// <summary>{0}() cannot declare a return type</summary>
         ERR_CannotDeclareReturnType,
         /// <summary>A void function must not return a value</summary>
