@@ -592,7 +592,7 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to PHPDoc type {0} of parameter ${1} is incompatible with its type hint {2}..
+        ///   Looks up a localized string similar to PHPDoc type &apos;{0}&apos; of parameter ${1} is incompatible with its type hint &apos;{2}&apos;..
         /// </summary>
         internal static string WRN_ParamPhpDocTypeHintIncompatible {
             get {
