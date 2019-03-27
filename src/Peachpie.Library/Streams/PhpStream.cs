@@ -1045,7 +1045,7 @@ namespace Pchp.Library.Streams
                     done = filteredLength > 0;
                     readFilteredCount += filteredLength;
 
-                    if (length < 0)
+                    if (ending)
                     {
                         // If the data contains the EOLN, store the rest into the buffers, otherwise return the whole packet.
                         int eoln = FindEoln(packet, 0);
