@@ -301,13 +301,14 @@ namespace Pchp.Core
     /// </summary>
     /// <remarks>Optimized for concatenation and output.</remarks>
     [DebuggerDisplay("{ToString()}", Type = PhpVariable.TypeNameString)]
-    [DebuggerNonUserCode]
+    [DebuggerNonUserCode, DebuggerStepThrough]
     public struct PhpString : IPhpConvertible
     {
         /// <summary>
         /// Writeable string representation consisting of both Unicode (<see cref="string"/> or <see cref="char"/>[]) and Single-byte characters (<see cref="byte"/>[]).
         /// </summary>
         [DebuggerDisplay("{DebugString}")]
+        [DebuggerNonUserCode, DebuggerStepThrough]
         public sealed class Blob : IMutableString
         {
             #region enum Flags
