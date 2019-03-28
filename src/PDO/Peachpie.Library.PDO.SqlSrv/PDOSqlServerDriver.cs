@@ -33,11 +33,10 @@ namespace Peachpie.Library.PDO.SqlSrv
         protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
         {
             //TODO sqlserver pdo dsn to dotnet connectionstring
-            var csb = new SqlConnectionStringBuilder(dsn.ToString())
-            {
-                UserID = user,
-                Password = password
-            };
+            var csb = new SqlConnectionStringBuilder(dsn.ToString());
+
+            if (user != null) csb.UserID = user;
+            if (password != null) csb.Password = password;
 
             return csb.ConnectionString;
         }
