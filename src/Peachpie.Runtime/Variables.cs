@@ -550,7 +550,7 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Checks the value is of type <c>bool</c> or <c>&bool</c> and gets its value.
+        /// Checks the value is of type <c>bool</c> or <c>&amp;bool</c> and gets its value.
         /// </summary>
         public static bool IsBoolean(this PhpValue value, out bool b) => value.IsBooleanImpl(out b);
     }

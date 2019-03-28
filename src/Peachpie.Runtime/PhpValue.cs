@@ -593,7 +593,7 @@ namespace Pchp.Core
         #region Helpers
 
         /// <summary>
-        /// Checks the value is of type <c>bool</c> or <c>&bool</c> and gets its value.
+        /// Checks the value is of type <c>bool</c> or <c>&amp;bool</c> and gets its value.
         /// </summary>
         internal bool IsBooleanImpl(out bool b)
         {
