@@ -39,6 +39,9 @@ function f() {
 	// get last two segments of host name
 	preg_match('/[^.]+\.[^.]+$/', $host, $matches);
 	echo "domain name is: {$matches[0]}\n";
+
+    // escaped regular letter // https://github.com/peachpiecompiler/peachpie/issues/393
+    preg_match('/\_/', $str);
 }
 
 f();
