@@ -109,24 +109,29 @@ namespace Pchp.Core
         public bool IsSet => !IsDefault && _type.Type != PhpTypeCode.Undefined;
 
         /// <summary>
+        /// Gets value indicating the value is <c>FALSE</c> or <c>&amp;FALSE</c>.
+        /// </summary>
+        public bool IsFalse => IsBooleanImpl(out var b) && !b;
+
+        /// <summary>
         /// Gets value indicating whether the value is an alias containing another value.
         /// </summary>
-        public bool IsAlias => _obj.@object is PhpAlias;
+        public bool IsAlias => ReferenceEquals(_type, TypeTable.AliasTable);
 
         /// <summary>
         /// Gets value indicating the value represents an object.
         /// </summary>
-        public bool IsObject => (TypeCode == PhpTypeCode.Object);
+        public bool IsObject => ReferenceEquals(_type, TypeTable.ClassTable);
 
         /// <summary>
         /// Gets value indicating the value represents PHP array.
         /// </summary>
-        public bool IsArray => (TypeCode == PhpTypeCode.PhpArray);
+        public bool IsArray => ReferenceEquals(_type, TypeTable.ArrayTable);
 
         /// <summary>
         /// Gets value indicating the value represents boolean.
         /// </summary>
-        public bool IsBoolean => (TypeCode == PhpTypeCode.Boolean);
+        public bool IsBoolean => ReferenceEquals(_type, TypeTable.BoolTable);
 
         /// <summary>
         /// Gets value indicating this variable after dereferencing is a scalar variable.
@@ -582,6 +587,58 @@ namespace Pchp.Core
         /// Gets the enumerator object allowing to iterate through PHP values, arrays and iterators.
         /// </summary>
         public IEnumerator<KeyValuePair<PhpValue, PhpValue>> GetEnumerator() => this.GetForeachEnumerator(false, default(RuntimeTypeHandle));
+
+        #endregion
+
+        #region Helpers
+
+        /// <summary>
+        /// Checks the value is of type <c>bool</c> or <c>&bool</c> and gets its value.
+        /// </summary>
+        internal bool IsBooleanImpl(out bool b)
+        {
+            if (IsBoolean)
+            {
+                b = _value.@bool;
+                return true;
+            }
+            else if (IsAlias)
+            {
+                return _obj.alias.Value.IsBoolean(out b);
+            }
+            else
+            {
+                b = default;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Checks the value is of type <c>string</c> or <c>&amp;string</c> and gets its value.
+        /// Single-byte strings are decoded using <c>UTF-8</c>.
+        /// </summary>
+        internal bool IsStringImpl(out string str)
+        {
+            if (ReferenceEquals(_type, TypeTable.StringTable))
+            {
+                str = _obj.@string;
+                return true;
+            }
+            else if (ReferenceEquals(_type, TypeTable.MutableStringTable))
+            {
+                str = _obj.blob.ToString(Encoding.UTF8);
+                return true;
+            }
+            else if (IsAlias)
+            {
+                return _obj.alias.Value.IsStringImpl(out str);
+            }
+            else
+            {
+                str = default;
+                return false;
+            }
+        }
 
         #endregion
 

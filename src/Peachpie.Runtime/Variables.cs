@@ -412,22 +412,9 @@ namespace Pchp.Core
         }
 
         /// <summary>
-        /// Determines whether the value is <see cref="bool"/>.
+        /// Determines whether the value is <see cref="bool"/> (either as a value or an alias).
         /// </summary>
-        public static bool IsBoolean(this PhpValue value)
-        {
-            switch (value.TypeCode)
-            {
-                case PhpTypeCode.Boolean:
-                    return true;
-
-                case PhpTypeCode.Alias:
-                    return IsBoolean(value.Alias.Value);
-
-                default:
-                    return false;
-            }
-        }
+        public static bool IsBoolean(this PhpValue value) => value.IsBoolean || (value.IsAlias && value.Alias.Value.IsBoolean);
 
         /// <summary>
         /// Determines whether the value is <see cref="double"/>.
@@ -474,13 +461,8 @@ namespace Pchp.Core
         /// </summary>
         public static string ToStringOrNull(this PhpValue value)
         {
-            switch (value.TypeCode)
-            {
-                case PhpTypeCode.String: return value.String;
-                case PhpTypeCode.MutableString: return value.MutableString.ToString();
-                case PhpTypeCode.Alias: return ToStringOrNull(value.Alias.Value);
-                default: return null;
-            }
+            IsString(value, out var @string);
+            return @string;
         }
 
         /// <summary>
@@ -528,23 +510,11 @@ namespace Pchp.Core
             return (value.Object is PhpAlias alias ? alias.Value.Object : value.Object) as PhpArray;
         }
 
-        public static bool IsString(this PhpValue value, out string @string)
-        {
-            switch (value.TypeCode)
-            {
-                case PhpTypeCode.String:
-                    @string = value.String;
-                    return true;
-                case PhpTypeCode.MutableString:
-                    @string = value.MutableStringBlob.ToString(Encoding.UTF8);
-                    return true;
-                case PhpTypeCode.Alias:
-                    return IsString(value.Alias.Value, out @string);
-                default:
-                    @string = null;
-                    return false;
-            }
-        }
+        /// <summary>
+        /// Checks the value is of type <c>string</c> or <c>&amp;string</c> and gets its value.
+        /// Single-byte strings are decoded using <c>UTF-8</c>.
+        /// </summary>
+        public static bool IsString(this PhpValue value, out string @string) => value.IsStringImpl(out @string);
 
         public static bool IsLong(this PhpValue value, out long l)
         {
@@ -579,19 +549,9 @@ namespace Pchp.Core
             }
         }
 
-        public static bool IsBoolean(this PhpValue value, out bool b)
-        {
-            switch (value.TypeCode)
-            {
-                case PhpTypeCode.Boolean:
-                    b = value.Boolean;
-                    return true;
-                case PhpTypeCode.Alias:
-                    return IsBoolean(value.Alias.Value, out b);
-                default:
-                    b = default(bool);
-                    return false;
-            }
-        }
+        /// <summary>
+        /// Checks the value is of type <c>bool</c> or <c>&bool</c> and gets its value.
+        /// </summary>
+        public static bool IsBoolean(this PhpValue value, out bool b) => value.IsBooleanImpl(out b);
     }
 }
