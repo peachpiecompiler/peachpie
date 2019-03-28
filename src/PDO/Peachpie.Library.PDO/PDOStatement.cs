@@ -1023,6 +1023,13 @@ namespace Peachpie.Library.PDO
                 }
             }
 
+            if (m_dr_names == null)
+            {
+                // Get the column schema, if possible,
+                // for the associative fetch
+                initializeColumnNames();
+            }
+
             var style = fetch_style != PDO_FETCH.Default ? fetch_style : m_fetchStyle;
             var flags = style & PDO_FETCH.Flags;
 
@@ -1033,7 +1040,7 @@ namespace Peachpie.Library.PDO
                 case PDO_FETCH.FETCH_KEY_PAIR:
 
                     Debug.Assert(m_dr.FieldCount == 2);
-                    while (m_dr.HasRows)
+                    while (m_dr.Read())
                     {
                         // 1st col => 2nd col
                         result.Add(ReadColumn(0).ToIntStringKey(), ReadColumn(1));
@@ -1043,7 +1050,7 @@ namespace Peachpie.Library.PDO
                 case PDO_FETCH.FETCH_UNIQUE:
 
                     Debug.Assert(m_dr.FieldCount >= 1);
-                    while (m_dr.HasRows)
+                    while (m_dr.Read())
                     {
                         // 1st col => [ 2nd col, 3rd col, ... ]
                         result.Add(ReadColumn(0).ToIntStringKey(), ReadArray(true, false, from: 1));
@@ -1052,14 +1059,15 @@ namespace Peachpie.Library.PDO
 
                 default:
 
-                    while (m_dr.HasRows)
+                    for(; ; )
                     {
                         var value = fetch(style);
-                        if (value == PhpValue.False)
+                        if (value.IsFalse)
                             break;
 
                         result.Add(value);
                     }
+
                     break;
             }
 
