@@ -245,6 +245,11 @@ namespace Peachpie.RequestHandler
         }
 
         /// <summary>
+        /// Whether the underlaying connection is alive.
+        /// </summary>
+        public bool IsClientConnected => _httpctx.Response.IsClientConnected;
+
+        /// <summary>
         /// Gets or sets session handler for current context.
         /// </summary>
         PhpSessionHandler IHttpPhpContext.SessionHandler

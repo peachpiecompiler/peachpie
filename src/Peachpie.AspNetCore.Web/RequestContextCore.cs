@@ -134,6 +134,11 @@ namespace Peachpie.AspNetCore.Web
         }
 
         /// <summary>
+        /// Whether the underlaying connection is alive.
+        /// </summary>
+        public bool IsClientConnected => !_httpctx.RequestAborted.IsCancellationRequested;
+
+        /// <summary>
         /// Gets or sets session handler for current context.
         /// </summary>
         PhpSessionHandler IHttpPhpContext.SessionHandler

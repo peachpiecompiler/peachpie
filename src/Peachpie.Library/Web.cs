@@ -912,8 +912,8 @@ namespace Pchp.Library
                 //if (http.ExecutionTimedOut)
                 //    result |= CONNECTION_TIMEOUT;
 
-                //if (!http.Response.IsClientConnected)
-                //    result |= CONNECTION_ABORTED;
+                if (!http.IsClientConnected)
+                    result |= CONNECTION_ABORTED;
             }
 
             return result;
@@ -925,10 +925,9 @@ namespace Pchp.Library
         public static int connection_aborted(Context ctx)
         {
             var http = ctx.HttpPhpContext;
-            if (http != null)
+            if (http != null && !http.IsClientConnected)
             {
-                //if (!http.Response.IsClientConnected)
-                //    return 1;
+                return 1;
             }
 
             return 0;

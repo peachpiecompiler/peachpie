@@ -61,6 +61,11 @@ namespace Pchp.Core
         /// </summary>
         long MaxRequestSize { get; }
 
+        /// <summary>
+        /// Whether the underlaying connection is alive.
+        /// </summary>
+        bool IsClientConnected { get; }
+
         #region session
 
         /// <summary>
