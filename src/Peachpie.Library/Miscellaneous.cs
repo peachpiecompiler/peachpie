@@ -420,52 +420,6 @@ namespace Pchp.Library
 
         #endregion
 
-        #region set_time_limit, ignore_user_abort
-
-        /// <summary>
-        /// Sets the request time-out in seconds (configuration option "max_execution_time").
-        /// No value is returned.
-        /// </summary>
-        /// <param name="ctx">Runtime context.</param>
-        /// <param name="seconds">The time-out setting for request.</param>
-        public static bool set_time_limit(Context ctx, int seconds)
-        {
-            //ctx.ApplyExecutionTimeout(seconds);
-
-            return false;
-        }
-
-        /// <summary>
-        /// Get a value of a configuration option "ignore_user_abort".
-        /// </summary>
-        /// <returns>The current value of the option.</returns>
-        public static bool ignore_user_abort(Context ctx)
-        {
-            return ctx.Configuration.Core.IgnoreUserAbort;
-        }
-
-        /// <summary>
-        /// Sets a value of a configuration option "ignore_user_abort".
-        /// </summary>
-        /// <param name="ctx">Runtime context.</param>
-        /// <param name="value">The new value of the option.</param>
-        /// <returns>The previous value of the option.</returns>
-        /// <exception cref="PhpException">Web request PHP context is not available (Warning).</exception>
-        public static bool ignore_user_abort(Context ctx, bool value)
-        {
-            if (!ctx.IsWebApplication) return true;
-
-            bool result = ctx.Configuration.Core.IgnoreUserAbort;
-            ctx.Configuration.Core.IgnoreUserAbort = value;
-
-            //// enables/disables disconnection tracking:
-            //ctx.TrackClientDisconnection = !value;
-
-            return result;
-        }
-
-        #endregion
-
         /// <summary>
         /// This function flushes all response data to the client and finishes the request.
         /// This allows for time consuming tasks to be performed without leaving the connection to the client open.
