@@ -44,17 +44,17 @@ namespace Peachpie.Library.Graphics
             var pixelSpan = image.GetPixelSpan();
             int rowLength = image.Width;
 
-            var pointQueue = new Queue<Point>();
-            pointQueue.Enqueue(_startPoint);
+            var segmentQueue = new Queue<(Point point, int rightEdge)>();
+            segmentQueue.Enqueue((_startPoint, _startPoint.X));
 
-            while (pointQueue.Count > 0)
+            while (segmentQueue.Count > 0)
             {
-                var currentPoint = pointQueue.Dequeue();
+                var (currentPoint, rightEdge) = segmentQueue.Dequeue();
                 var currentY = currentPoint.Y;
                 var currentX = currentPoint.X;
 
-                int leftEdge, rightEdge;
-                leftEdge = rightEdge = currentX;
+                int leftEdge;
+                leftEdge = currentX;
 
                 // Filling until reaching a border of specified color
                 if (_toBorder)
@@ -80,20 +80,11 @@ namespace Peachpie.Library.Graphics
                     // Actually color the row
                     SetPixelRow(pixelSpan, rowLength, leftEdge, rightEdge, currentY, _fillColor);
 
-                    // Add the pixels above and below to the queue (only the first one of each continuous row, as it will fill all the pixels on its right later)
-                    bool aboveMarked = false;
-                    bool belowMarked = false;
-                    for (int workingX = leftEdge; workingX <= rightEdge; workingX++)
-                    {
-                        if (currentY > 0)
-                        {
-                            aboveMarked = TryAddPixelToQueueWithBorder(floodFrom, pixelSpan, rowLength, pointQueue, aboveMarked, workingX, currentY - 1);
-                        }
-                        if (currentY + 1 < image.Height)
-                        {
-                            belowMarked = TryAddPixelToQueueWithBorder(floodFrom, pixelSpan, rowLength, pointQueue, belowMarked, workingX, currentY + 1);
-                        }
-                    }
+                    // Add the segments to be filled above and below to the queue
+                    if (currentY > 0)
+                        AddFillingSegmentsToQueueWithBorder(floodFrom, pixelSpan, segmentQueue, rowLength, leftEdge, rightEdge, currentY - 1);
+                    if (currentY + 1 < image.Height)
+                        AddFillingSegmentsToQueueWithBorder(floodFrom, pixelSpan, segmentQueue, rowLength, leftEdge, rightEdge, currentY + 1);
                 }
                 else
                 // Filling whole region of same color
@@ -107,66 +98,75 @@ namespace Peachpie.Library.Graphics
                     // Actually color the row
                     SetPixelRow(pixelSpan, rowLength, leftEdge, rightEdge, currentY, _fillColor);
 
-                    // Add the pixels above and below to the queue (only the first one of each continuous sequence, as it will fill all the pixels on its right later)
-                    bool aboveMarked = false;
-                    bool belowMarked = false;
-                    for (int workingX = leftEdge; workingX <= rightEdge; workingX++)
-                    {
-                        // TODO: Save the offsets where it turned from true to false in the queue as well and then start the rightEdge from there
-                        if (currentY > 0)
-                        {
-                            aboveMarked = TryAddPixelToQueue(floodFrom, pixelSpan, rowLength, pointQueue, aboveMarked, workingX, currentY - 1);
-                        }
+                    // Add the segments to be filled above and below to the queue
+                    if (currentY > 0)
+                        AddFillingSegmentsToQueue(floodFrom, pixelSpan, segmentQueue, rowLength, leftEdge, rightEdge, currentY - 1);
+                    if (currentY + 1 < image.Height)
+                        AddFillingSegmentsToQueue(floodFrom, pixelSpan, segmentQueue, rowLength, leftEdge, rightEdge, currentY + 1);
+                }
+            }
+        }
 
-                        if (currentY + 1 < image.Height)
-                        {
-                            belowMarked = TryAddPixelToQueue(floodFrom, pixelSpan, rowLength, pointQueue, belowMarked, workingX, currentY + 1);
-                        }
+        private static void AddFillingSegmentsToQueue(TPixel floodFrom, Span<TPixel> pixelSpan, Queue<(Point, int)> segmentQueue, int rowLength, int xStart, int xEnd, int y)
+        {
+            int? markStart = null;
+
+            int rowStart = y * rowLength;
+            for (int x = xStart; x <= xEnd; x++)
+            {
+                var color = pixelSpan[rowStart + x];
+                if (markStart != null)
+                {
+                    if (!color.Equals(floodFrom))
+                    {
+                        segmentQueue.Enqueue((new Point(markStart.Value, y), x - 1));
+                        markStart = null;
+                    }
+                }
+                else
+                {
+                    if (color.Equals(floodFrom))
+                    {
+                        markStart = x;
                     }
                 }
             }
+
+            if (markStart != null)
+            {
+                segmentQueue.Enqueue((new Point(markStart.Value, y), xEnd));
+            }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryAddPixelToQueue(TPixel floodFrom, Span<TPixel> pixelSpan, int rowLength, Queue<Point> pointQueue, bool marked, int x, int y)
+        private void AddFillingSegmentsToQueueWithBorder(TPixel floodFrom, Span<TPixel> pixelSpan, Queue<(Point, int)> segmentQueue, int rowLength, int xStart, int xEnd, int y)
         {
-            var color = GetPixel(pixelSpan, rowLength, x, y);
-            if (marked)
+            int? markStart = null;
+
+            int rowStart = y * rowLength;
+            for (int x = xStart; x <= xEnd; x++)
             {
-                if (!color.Equals(floodFrom))
-                    marked = false;
-            }
-            else
-            {
-                if (color.Equals(floodFrom))
+                var color = pixelSpan[rowStart + x];
+                if (markStart != null)
                 {
-                    pointQueue.Enqueue(new Point(x, y));
-                    marked = true;
+                    if (color.Equals(_borderColor) || color.Equals(_fillColor))
+                    {
+                        segmentQueue.Enqueue((new Point(markStart.Value, y), x - 1));
+                        markStart = null;
+                    }
+                }
+                else
+                {
+                    if (!color.Equals(_borderColor) && !color.Equals(_fillColor))
+                    {
+                        markStart = x;
+                    }
                 }
             }
 
-            return marked;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryAddPixelToQueueWithBorder(TPixel floodFrom, Span<TPixel> pixelSpan, int rowLength, Queue<Point> pointQueue, bool marked, int x, int y)
-        {
-            var color = GetPixel(pixelSpan, rowLength, x, y);
-            if (marked)
+            if (markStart != null)
             {
-                if (color.Equals(_borderColor) || color.Equals(_fillColor))
-                    marked = false;
+                segmentQueue.Enqueue((new Point(markStart.Value, y), xEnd));
             }
-            else
-            {
-                if (!color.Equals(_borderColor) && !color.Equals(_fillColor))
-                {
-                    pointQueue.Enqueue(new Point(x, y));
-                    marked = true;
-                }
-            }
-
-            return marked;
         }
 
         private static TPixel GetPixel(Span<TPixel> span, int rowLength, int x, int y) => span[y * rowLength + x];
