@@ -145,9 +145,9 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="extension">Extension name.</param>
         /// <returns>Enumeration of routine names associated with given extension.</returns>
-        public static IEnumerable<string> GetRoutinesByExtension(string extension)
+        public static IEnumerable<RoutineInfo> GetRoutinesByExtension(string extension)
         {
-            return ExtensionsAppContext.ExtensionsTable.GetRoutinesByExtension(extension).Select(r => r.Name);
+            return ExtensionsAppContext.ExtensionsTable.GetRoutinesByExtension(extension);
         }
 
         /// <summary>

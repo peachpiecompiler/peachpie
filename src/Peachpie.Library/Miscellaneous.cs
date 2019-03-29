@@ -224,7 +224,7 @@ namespace Pchp.Library
             var result = new PhpArray();
             foreach (var e in Context.GetRoutinesByExtension(extension))
             {
-                result.Add(PhpValue.Create(e));
+                result.Add(PhpValue.Create(e.Name));
             }
 
             // gets NULL (FALSE) if there are no functions
