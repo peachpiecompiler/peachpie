@@ -11,6 +11,7 @@
     <DefineCommonCapabilities Condition=" '$(DefineCommonCapabilities)' == '' ">true</DefineCommonCapabilities>
   </PropertyGroup>
 
+  <UsingTask AssemblyFile="$(PeachpieToolFullPath)" TaskName="Peachpie.NET.Sdk.Tools.BuildTask" />
   <UsingTask AssemblyFile="$(PeachpieToolFullPath)" TaskName="Peachpie.NET.Sdk.Tools.ComposerTask" />
 
   <!-- default Compile and None -->
@@ -176,39 +177,40 @@
       <!-- convert DefineConstants to item list -->
       <DefineConstants Include="$(DefineConstants)" />
       <DefineConstants Include="DEBUG" Condition=" '$(Configuration)' == 'Debug' " />
-
-      <!-- compose RSP file content -->
-      <RspLine Include="--temp-output:$(TempOutputDir)" />
-      <RspLine Include="--out:$(TempOutputDir)%(IntermediateAssembly.Filename)%(IntermediateAssembly.Extension)" />
-      <RspLine Include="--output-name:%(IntermediateAssembly.Filename)" />
-      <RspLine Include="--optimize:$(Optimize)" />
-      <RspLine Include="--langversion:$(LangVersion)" Condition=" '$(LangVersion)' != '' " />
-      <RspLine Include="--phpdoctypes:$(PhpDocTypes)" Condition=" '$(PhpDocTypes)' != '' " />
-      <RspLine Include="--shortopentag+" Condition=" '$(ShortOpenTag)' == 'true' " />
-      <RspLine Include="--xmldoc:$(DocumentationFile)" Condition=" '$(GenerateDocumentationFile)' == 'true' and '$(DocumentationFile)' != '' " />
-      <RspLine Include="--nowarn:$(NoWarn.Replace('\n', ';'))" Condition=" '$(NoWarn)' != '' " />
-      <RspLine Include="--debug-type:$(DebugType)" />
-
-      <RspLine Include="--keyfile:$(AssemblyOriginatorKeyFile)" Condition=" '$(SignAssembly)' == 'true' and '$(AssemblyOriginatorKeyFile)' != ''" />
-      <RspLine Include="--publicsign+" Condition=" '$(SignAssembly)' == 'true' and '$(PublicSign)' == 'true'" />
-      <RspLine Include="--publicsign-" Condition=" '$(SignAssembly)' == 'true' and '$(PublicSign)' == 'false'" />
-      <RspLine Include="--version:$(Version)" Condition=" '$(Version)' != '' " />
-
-      <RspLine Include="--emit-entry-point:$(EmitEntryPoint)" />
-      <RspLine Include="--main:$(StartupObject)" Condition=" '$(StartupObject)' != '' " />
-      <RspLine Include="--pdb:$(PdbFile)" Condition=" '$(PdbFile)' != '' " />
-      <RspLine Include="--sourcelink:$(SourceLink)" Condition=" '$(SourceLink)' != '' " />
-      <RspLine Include="--target-framework:$(TargetFramework)" />
-      <RspLine Include="--sdk-dir:$(NetFrameworkPath)" Condition=" '$(NetFrameworkPath)' != '' " />
-      <RspLine Include="@(DefineConstants->'--define:%(Identity)')" />
-      <RspLine Include="@(ReferencePath->'--reference:%(FullPath)')" />
-      <RspLine Include="@(Compile)" />
     </ItemGroup>
 
-    <WriteLinesToFile File="$(TempOutputDir)compile-php-args.rsp" Lines="@(RspLine)" Overwrite="true" />
+    <PropertyGroup>
+      <_PublicSign Condition=" '$(SignAssembly)' == 'true' ">$(PublicSign)</_PublicSign>
+      <_KeyFile Condition=" '$(SignAssembly)' == 'true' ">$(AssemblyOriginatorKeyFile)</_KeyFile>
+      <_DocumentationFile Condition=" '$(GenerateDocumentationFile)' == 'true' ">$(DocumentationFile)</_DocumentationFile>
+    </PropertyGroup>
 
     <Error Condition=" '$(PeachpieToolFullPath)'=='' " Text="Path to Peachpie.NET.Sdk.dll was not set." />
-    <Exec Command="dotnet &quot;$(PeachpieToolFullPath)&quot; @$(TempOutputDir)compile-php-args.rsp" />
+
+    <BuildTask Condition=" Exists('$(PeachpieToolFullPath)') "               
+               OutputPath="$(TempOutputDir)%(IntermediateAssembly.Filename)%(IntermediateAssembly.Extension)"
+               OutputName="%(IntermediateAssembly.Filename)"
+               TempOutputPath="$(TempOutputDir)"
+               TargetFramework="$(TargetFramework)"
+               NetFrameworkPath="$(NetFrameworkPath)"
+               Optimize="$(Optimize)"
+               DebugType="$(DebugType)"
+               PdbFile="$(PdbFile)"
+               DocumentationFile="$(DocumentationFile)"
+               Version="$(Version)"
+               EmitEntryPoint="$(EmitEntryPoint)"
+               EntryPoint="$(StartupObject)"
+               LangVersion="$(LangVersion)"
+               PhpDocTypes="$(PhpDocTypes)"
+               ShortOpenTags="$(ShortOpenTag)"
+               NoWarn="$(NoWarn.Replace('\n', ';'))"
+               KeyFile="$(_KeyFile)"
+               PublicSign="$(_PublicSign)"
+               SourceLink="$(SourceLink)"               
+               DefineConstants="@(DefineConstants)"
+               ReferencePath="@(ReferencePath)"
+               Compile="@(Compile)"
+               />
 
     <Copy SourceFiles="$(TempOutputDir)$(DocumentationFile)" DestinationFolder="$(OutputPath)" Condition=" '$(GenerateDocumentation)'=='true' " />
   </Target>

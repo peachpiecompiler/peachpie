@@ -2,9 +2,8 @@
 
   <Import Project="..\..\build\Targets\Settings.props" />
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>Peachpie.NET.Sdk</AssemblyName>
-    <OutputType>Exe</OutputType>
 
     <PackageOnlyBuild>true</PackageOnlyBuild>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
@@ -20,7 +19,7 @@
     <NoPackageAnalysis>true</NoPackageAnalysis>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackToolsDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\netcoreapp2.0\publish</PackToolsDir>
+    <PackToolsDir>$(MSBuildThisFileDirectory)bin\$(Configuration)\$(TargetFramework)\publish</PackToolsDir>
     <NuspecFile>$(MSBuildThisFileDirectory)$(MSbuildProjectName).nuspec</NuspecFile>
   </PropertyGroup>
 
