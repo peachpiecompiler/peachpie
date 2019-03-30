@@ -837,7 +837,7 @@ namespace Peachpie.Library.Graphics
             }
 
             //
-            var rotated = img.Image.Clone(o => o.Rotate((float)(angle * (-Math.PI / 180.0)), new BicubicResampler()));
+            var rotated = img.Image.Clone(o => o.Rotate((float)-angle));
             return new PhpGdImageResource(rotated, img.Format);
         }
 
