@@ -696,5 +696,12 @@ namespace Pchp.Library
             PhpException.FunctionDeprecated("set_magic_quotes_runtime");
             return false;
         }
+
+        /// <summary>
+        /// Gets the loaded php.ini path, or <c>FALSE</c> if one is not loaded.
+        /// The function always returns false.
+        /// </summary>
+        // [return: CastToFalse]
+        public static bool/*string*/ php_ini_loaded_file() => false;
     }
 }
