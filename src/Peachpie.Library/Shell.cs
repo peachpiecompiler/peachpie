@@ -486,7 +486,9 @@ namespace Pchp.Library
             //    return p.ExitCode;
             //}
 
-            throw new NotImplementedException();
+            PhpException.FunctionNotSupported("shell_exec");
+            stringOutput = "";
+            return -1;
         }
 
         /// <summary>
