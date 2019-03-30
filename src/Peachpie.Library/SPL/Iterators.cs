@@ -646,6 +646,7 @@ namespace Pchp.Library.Spl
     /// <summary>
     /// This iterator cannot be rewound.
     /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class NoRewindIterator : IteratorIterator
     {
         [PhpFieldsOnlyCtor]
@@ -708,6 +709,7 @@ namespace Pchp.Library.Spl
         public abstract bool accept();
     }
 
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class CallbackFilterIterator : FilterIterator
     {
         readonly protected Context _ctx;
@@ -732,6 +734,25 @@ namespace Pchp.Library.Spl
         }
 
         public override bool accept() => _callback.Invoke(_ctx, current(), key(), PhpValue.FromClass(this)).ToBoolean();
+    }
+
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
+    public class RecursiveCallbackFilterIterator : CallbackFilterIterator, OuterIterator, RecursiveIterator
+    {
+        [PhpFieldsOnlyCtor]
+        protected RecursiveCallbackFilterIterator(Context ctx)
+            : base(ctx)
+        {
+        }
+
+        public RecursiveCallbackFilterIterator(Context ctx, RecursiveIterator iterator, IPhpCallable callback)
+            : base(ctx, iterator, callback)
+        {
+        }
+
+        public virtual RecursiveIterator getChildren() => ((RecursiveIterator)_iterator).getChildren();
+
+        public virtual bool hasChildren() => ((RecursiveIterator)_iterator).hasChildren();
     }
 
     /// <summary>
