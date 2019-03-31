@@ -115,9 +115,19 @@ namespace Pchp.Library.Spl
         public virtual bool isLink() { throw new NotImplementedException(); }
         public virtual bool isReadable() { throw new NotImplementedException(); }
         public virtual bool isWritable() { throw new NotImplementedException(); }
-        public virtual SplFileObject openFile(string open_mode = "r", bool use_include_path = false, PhpResource context = null) { throw new NotImplementedException(); /* NOTE: use _file_class */ }
-        public virtual void setFileClass(string class_name = "SplFileObject") => _file_class = class_name;
-        public virtual void setInfoClass(string class_name = "SplFileInfo") => _info_class = class_name;
+        public virtual SplFileObject openFile(Context ctx, string open_mode = "r", bool use_include_path = false, PhpResource context = null)
+        {
+            if (string.IsNullOrEmpty(_file_class) || string.Equals(_file_class, nameof(SplFileObject), StringComparison.OrdinalIgnoreCase))
+            {
+                return new SplFileObject(ctx, _fullpath, open_mode, use_include_path, context);
+            }
+            else
+            {
+                return (SplFileObject)ctx.Create(_file_class, _fullpath, open_mode, use_include_path, PhpValue.FromClass(context));
+            }
+        }
+        public virtual void setFileClass(string class_name = nameof(SplFileObject)) => _file_class = class_name;
+        public virtual void setInfoClass(string class_name = nameof(SplFileInfo)) => _info_class = class_name;
         public virtual string __toString() => _fullpath;
         public override string ToString() => _fullpath;
     }
