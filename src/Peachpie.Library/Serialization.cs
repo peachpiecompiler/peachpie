@@ -181,7 +181,7 @@ namespace Pchp.Library
                 /// <summary>
                 /// Object ID counter used by the <B>r</B> and <B>R</B> tokens.
                 /// </summary>
-                int sequenceNumber;
+                int _seq;
 
                 /// <summary>
                 /// Maintains a sequence number for every <see cref="object"/> and <see cref="PhpAlias"/> that have already been serialized.
@@ -294,7 +294,7 @@ namespace Pchp.Library
 
                 public override void Accept(PhpArray value)
                 {
-                    serializedRefs[value] = sequenceNumber;
+                    serializedRefs[value] = ++_seq;
 
                     Write(Tokens.Array);
                     Write(Tokens.Colon);
@@ -317,21 +317,20 @@ namespace Pchp.Library
                         Accept(entry.Key.String);
 
                     // value
-                    sequenceNumber--;   // don't assign a seq number to array keys
                     entry.Value.Accept(this);
                 }
 
                 public override void Accept(PhpAlias value)
                 {
-                    sequenceNumber--;
+                    ++_seq;
+
                     if (value.ReferenceCount == 0)
                     {
                         value.Value.Accept(this);
                     }
                     else
                     {
-                        int seq;
-                        if (serializedRefs.TryGetValue(value, out seq))
+                        if (serializedRefs.TryGetValue(value, out var seq))
                         {
                             // this reference has already been serialized -> write out its seq. number
                             Write(Tokens.Reference);
@@ -341,7 +340,7 @@ namespace Pchp.Library
                         }
                         else
                         {
-                            serializedRefs.Add(value, sequenceNumber + 1);
+                            serializedRefs[value] = _seq;
                             value.Value.Accept(this);
                         }
                     }
@@ -356,6 +355,8 @@ namespace Pchp.Library
                     }
                     else
                     {
+                        ++_seq;
+
                         int seq;
                         if (serializedRefs.TryGetValue(value, out seq))
                         {
@@ -364,11 +365,10 @@ namespace Pchp.Library
                             Write(Tokens.Colon);
                             Write(seq.ToString());
                             Write(Tokens.Semicolon);
-                            sequenceNumber--;
                         }
                         else
                         {
-                            serializedRefs.Add(value, sequenceNumber);
+                            serializedRefs[value] = _seq;
                             SerializeObject(value);
                         }
                     }
@@ -562,7 +562,6 @@ namespace Pchp.Library
                     {
                         // write out the property name and the property value
                         Accept(pair.Key);
-                        sequenceNumber--; // don't assign a seq number to property names
                         Accept(pair.Value);
                     }
                 }
@@ -577,6 +576,21 @@ namespace Pchp.Library
                 readonly Context _ctx;
                 readonly Stream _stream;
                 readonly RuntimeTypeHandle _caller;
+
+                /// <summary>
+                /// Deserialized objects map.
+                /// </summary>
+                Dictionary<int, PhpAlias> _lazyObjects;
+
+                PhpAlias/*!*/AddSeq()
+                {
+                    if (_lazyObjects == null)
+                    {
+                        _lazyObjects = new Dictionary<int, PhpAlias>();
+                    }
+
+                    return (_lazyObjects[_lazyObjects.Count + 1] = new PhpAlias(PhpValue.Null));
+                }
 
                 public ObjectReader(Context ctx, Stream stream, RuntimeTypeHandle caller)
                 {
@@ -625,9 +639,9 @@ namespace Pchp.Library
                 /// <summary>
                 /// Throws a <see cref="SerializationException"/> due to an invalid back-reference.
                 /// </summary>
-                private void ThrowInvalidReference()
+                private Exception InvalidReferenceException()
                 {
-                    throw new InvalidDataException(LibResources.invalid_data_bad_back_reference);
+                    return new InvalidDataException(LibResources.invalid_data_bad_back_reference);
                 }
 
                 #endregion
@@ -828,8 +842,8 @@ namespace Pchp.Library
                         case Tokens.Array: return PhpValue.Create(ParseArray());
                         case Tokens.Object: return PhpValue.FromClass(ParseObject(false));
                         case Tokens.ObjectSer: return PhpValue.FromClass(ParseObject(true));
-                        case Tokens.Reference: throw new NotImplementedException();
-                        case Tokens.ObjectRef: throw new NotImplementedException();
+                        case Tokens.Reference: return ParseObjectRef();
+                        case Tokens.ObjectRef: return ParseObjectRef();
 
                         default:
                             ThrowUnexpected();
@@ -953,11 +967,13 @@ namespace Pchp.Library
 
                 PhpArray ParseArray()
                 {
+                    var seq = AddSeq();
+
                     Consume(Tokens.Colon);
                     int length = unchecked((int)ReadInteger());
                     if (length < 0) ThrowInvalidLength();
 
-                    var arr = (length == 0) ? PhpArray.NewEmpty() : new PhpArray(length);
+                    var arr = new PhpArray(length);
 
                     Consume(Tokens.Colon);
                     Consume(Tokens.BraceOpen);
@@ -981,6 +997,7 @@ namespace Pchp.Library
                     Consume(Tokens.BraceClose);
 
                     //
+                    seq.Value = arr;
                     return arr;
                 }
 
@@ -990,6 +1007,8 @@ namespace Pchp.Library
                 /// <param name="serializable">If <B>true</B>, the last token eaten was <B>C</B>, otherwise <B>O</B>.</param>
                 object ParseObject(bool serializable)
                 {
+                    var seq = AddSeq();
+
                     // :{length}:"{classname}":
                     Consume(Tokens.Colon);  // :
                     string class_name = ReadString().AsString();   // <length>:"classname"
@@ -1081,7 +1100,26 @@ namespace Pchp.Library
                     Consume(Tokens.BraceClose);
 
                     //
+                    seq.Value = PhpValue.FromClass(obj);
                     return obj;
+                }
+
+                PhpAlias ParseObjectRef()
+                {
+                    var seq = AddSeq();
+
+                    Consume(Tokens.Colon);
+
+                    var seqref = (int)ReadInteger();
+                    if (_lazyObjects == null || !_lazyObjects.TryGetValue(seqref, out var alias))
+                    {
+                        throw InvalidReferenceException();
+                    }
+
+                    Consume(Tokens.Semicolon);
+
+                    //
+                    return alias;
                 }
             }
 
