@@ -104,10 +104,10 @@ namespace Pchp.Library.Spl
         public virtual string getPathname() => _fullpath;
         public virtual long getPerms() { throw new NotImplementedException(); }
 
-        [return:CastToFalse]
+        [return: CastToFalse]
         public virtual string getRealPath(Context ctx) => ResolvedInfo.FullName;
 
-        public virtual long getSize() { throw new NotImplementedException(); }
+        public virtual long getSize() => (ResolvedInfo is FileInfo finfo) ? finfo.Length : 0;
         public virtual string getType() { throw new NotImplementedException(); }
         public virtual bool isDir() => ResolvedInfo.Exists && ResolvedInfo is DirectoryInfo;
         public virtual bool isExecutable() { throw new NotImplementedException(); }
