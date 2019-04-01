@@ -919,8 +919,11 @@ namespace Pchp.Core.Dynamic
                         }
                         else if (p.ParameterType == typeof(QueryValue<LocalVariables>))
                         {
-                            // no way we can implement this
-                            throw new NotImplementedException();    // TODO: empty array & report warning
+                            // pass NULL value if we don't have the locals
+                            boundargs[i] = Expression.Default(p.ParameterType);
+
+                            // TODO: report it might get wrong
+                            // TODO: if we create IPhpCallback in compile-time, we know the routine needs the locals, ...
                         }
                     }
                     else if (p.IsLateStaticParameter())
