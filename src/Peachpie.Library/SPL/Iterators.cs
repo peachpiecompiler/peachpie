@@ -733,7 +733,7 @@ namespace Pchp.Library.Spl
             _callback = callback;
         }
 
-        public override bool accept() => _callback.Invoke(_ctx, current(), key(), PhpValue.FromClass(this)).ToBoolean();
+        public override bool accept() => _callback.Invoke(_ctx, current(), key(), PhpValue.FromClass(_iterator)).ToBoolean();
     }
 
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]

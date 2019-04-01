@@ -284,11 +284,13 @@ namespace Pchp.Library.Spl
                 return PhpValue.Null;
             }
 
-            switch (_flags & KEY_MODE_MASK)
+            if ((_flags & KEY_AS_FILENAME) != 0)
             {
-                case KEY_AS_PATHNAME: return _current.FullName;
-                case KEY_AS_FILENAME: return _current.Name;
-                default: throw new InvalidOperationException();
+                return _current.Name;
+            }
+            else
+            {
+                return _current.FullName;
             }
         }
 
@@ -300,8 +302,8 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class RecursiveDirectoryIterator : FilesystemIterator, SeekableIterator, RecursiveIterator
     {
-        private string subPath =  string.Empty;
-        
+        private string subPath = string.Empty;
+
         public RecursiveDirectoryIterator(Context ctx, string file_name, int flags = KEY_AS_PATHNAME | CURRENT_AS_FILEINFO | SKIP_DOTS)
             : base(ctx, file_name, flags)
         {
