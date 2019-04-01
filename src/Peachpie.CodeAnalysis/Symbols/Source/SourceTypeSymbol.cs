@@ -189,7 +189,9 @@ namespace Pchp.CodeAnalysis.Symbols
                         var map = new Dictionary<Name, DeclaredAs>();
 
                         // mehods that will be mapped to containing class:
-                        IEnumerable<MethodSymbol> traitmethods = Symbol.GetMembers().OfType<MethodSymbol>();
+                        IEnumerable<MethodSymbol> traitmethods = Symbol.GetMembers()
+                            .OfType<MethodSymbol>()
+                            .Where(m => m.MethodKind == MethodKind.Ordinary); // only regular methods, not constructors
 
                         // methods from used traits:
                         if (Symbol.OriginalDefinition is SourceTypeSymbol srct && !srct.TraitUses.IsEmpty)

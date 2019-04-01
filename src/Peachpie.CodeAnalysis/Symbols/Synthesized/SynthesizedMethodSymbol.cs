@@ -32,6 +32,10 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public SynthesizedMethodSymbol(TypeSymbol containingType, string name, bool isstatic, bool isvirtual, TypeSymbol returnType, Accessibility accessibility = Accessibility.Private, bool isfinal = true, bool isabstract = false, bool phphidden = false, params ParameterSymbol[] ps)
         {
+            Debug.Assert(
+                name != WellKnownMemberNames.InstanceConstructorName &&
+                name != WellKnownMemberNames.StaticConstructorName);
+
             _type = containingType;
             _name = name;
             _static = isstatic;
