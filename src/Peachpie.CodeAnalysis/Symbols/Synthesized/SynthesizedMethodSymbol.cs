@@ -32,10 +32,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public SynthesizedMethodSymbol(TypeSymbol containingType, string name, bool isstatic, bool isvirtual, TypeSymbol returnType, Accessibility accessibility = Accessibility.Private, bool isfinal = true, bool isabstract = false, bool phphidden = false, params ParameterSymbol[] ps)
         {
-            Debug.Assert(
-                name != WellKnownMemberNames.InstanceConstructorName &&
-                name != WellKnownMemberNames.StaticConstructorName);
-
             _type = containingType;
             _name = name;
             _static = isstatic;
@@ -102,7 +98,17 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override bool IsExplicitInterfaceImplementation => ExplicitOverride != null && ExplicitOverride.ContainingType.IsInterface;
 
-        public override MethodKind MethodKind => MethodKind.Ordinary;
+        public override MethodKind MethodKind
+        {
+            get
+            {
+                Debug.Assert(
+                    Name != WellKnownMemberNames.InstanceConstructorName &&
+                    Name != WellKnownMemberNames.StaticConstructorName);
+
+                return MethodKind.Ordinary;
+            }
+        }
 
         public override string Name => _name;
 
