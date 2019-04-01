@@ -221,6 +221,12 @@ namespace Pchp.Library.Streams
                     accessOptions |= StreamAccessOptions.Exclusive;
                     break;
 
+                case 'c':
+                    // flags = O_CREAT;
+                    fileMode = FileMode.OpenOrCreate;
+                    fileAccess = FileAccess.Write;
+                    break;
+
                 default:
                     PhpException.Throw(PhpError.Warning, ErrResources.invalid_file_mode, mode);
                     return false;
