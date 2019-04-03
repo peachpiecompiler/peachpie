@@ -350,6 +350,23 @@ namespace Pchp.Library.DateTime
             return this;
         }
 
+        public virtual DateTime setISODate(int year, int week, int day = 1)
+        {
+            var time = TimeZoneInfo.ConvertTime(Time, TimeZone);
+            this.Time = TimeZoneInfo.ConvertTime(
+                new System_DateTime(
+                    year, 1, 1,
+                    time.Hour, time.Minute, time.Second,
+                    time.Millisecond
+                ),
+                TimeZone
+            );
+
+            this.Time = this.Time.AddDays((week - 1) * 7 + day - 1);
+
+            return this;
+        }
+
         public virtual DateTime setTime(int hour, int minute, int second)
         {
             try
