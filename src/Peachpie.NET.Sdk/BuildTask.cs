@@ -128,10 +128,13 @@ namespace Peachpie.NET.Sdk.Tools
             AddNoEmpty(args, "sourcelink", SourceLink);
             AddNoEmpty(args, "logger", "Peachpie.Compiler.Diagnostics.Observer, Peachpie.Compiler.Diagnostics");
 
-            foreach (var d in DefineConstants)
-            {
-                args.Add("/d:" + d);
-            }
+			if (DefineConstants != null)
+			{
+				foreach (var d in DefineConstants)
+				{
+					args.Add("/d:" + d);
+				}
+			}
 
             foreach (var r in ReferencePath)
             {
