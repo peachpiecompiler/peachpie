@@ -311,7 +311,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     // __tostring() allows only strings to be returned
                     if (x.Returned == null || !IsAllowedToStringReturnType(x.Returned.TypeRefMask))
                     {
-                        _diagnostics.Add(_routine, x.PhpSyntax ?? m, ErrorCode.WRN_ToStringMustReturnString, _routine.ContainingType.PhpQualifiedName().ToString());
+                        var span = (x.PhpSyntax != null ? x.PhpSyntax.Span : m.HeadingSpan).ToTextSpan();   // span of return expression OR span of routine header
+                        _diagnostics.Add(_routine, span, ErrorCode.WRN_ToStringMustReturnString, _routine.ContainingType.PhpQualifiedName().ToString());
                     }
                 }
             }
