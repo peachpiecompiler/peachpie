@@ -523,7 +523,7 @@ namespace Peachpie.Library.PDO
                     m_pdo.HandleError(new PDOException("Supplied parameter index must be an integer."));
                     return false;
                 }
-                int paramIndex = (int)parameter;
+                int paramIndex = ((int)parameter) - 1;
 
                 if (paramIndex < m_positionalPlaceholders.Count)
                 {
@@ -1082,6 +1082,12 @@ namespace Peachpie.Library.PDO
                 return PhpValue.False;
             }
 
+            // read next row
+            if (!this.m_dr.Read())
+            {
+                return PhpValue.False;
+            }
+
             return this.ReadArray(false, true)[column_number].GetValue();
         }
 
@@ -1092,6 +1098,12 @@ namespace Peachpie.Library.PDO
             if (!CheckDataReader())
             {
                 return null;
+            }
+
+            // read next row
+            if (!this.m_dr.Read())
+            {
+                return PhpValue.False;
             }
 
             if (string.IsNullOrEmpty(class_name) || class_name == nameof(stdClass))
