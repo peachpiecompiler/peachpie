@@ -179,6 +179,20 @@ namespace Peachpie.NET.Sdk.Tools
                 
                 return resultCode == 0;
             }
+            catch (AggregateException ex)
+            {
+                if (ex.InnerExceptions != null)
+                {
+                    foreach (var innerEx in ex.InnerExceptions)
+                    {
+                        this.Log.LogErrorFromException(innerEx);
+                    }
+                }
+                else
+                    this.Log.LogErrorFromException(ex);
+
+                return false;
+            }
             catch (Exception ex)
             {
                 this.Log.LogErrorFromException(ex);
