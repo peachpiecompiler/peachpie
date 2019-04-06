@@ -65,7 +65,7 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
-        #region date_format, date_create, date_create_immutable, date_offset_get, date_modify, date_add, date_sub, date_diff
+        #region date_format, date_create, date_create_immutable, date_offset_get, date_modify, date_add, date_sub, date_diff, date_timestamp_set
 
         [return: CastToFalse]
         public static string date_format(DateTime datetime, string format)
@@ -166,6 +166,12 @@ namespace Pchp.Library.DateTime
 
             return interval;
         }
+
+        /// <summary>
+        /// Sets the date and time based on an Unix timestamp.
+        /// </summary>
+        /// <returns>Returns the <see cref="DateTime"/> object for method chaining.</returns>
+        public static DateTime date_timestamp_set(DateTime @object, long unixtimestamp) => @object.setTimestamp(unixtimestamp);
 
         #endregion
 

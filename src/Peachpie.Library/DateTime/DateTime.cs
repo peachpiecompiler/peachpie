@@ -415,7 +415,11 @@ namespace Pchp.Library.DateTime
             return DateTimeUtils.UtcToUnixTimeStamp(Time);
         }
 
-        public DateTime setTimestamp(int unixtimestamp)
+        /// <summary>
+        /// Sets the date and time based on an Unix timestamp.
+        /// </summary>
+        /// <returns>Returns the <see cref="DateTime"/> object for method chaining.</returns>
+        public DateTime setTimestamp(long unixtimestamp)
         {
             this.Time = DateTimeUtils.UnixTimeStampToUtc(unixtimestamp);
             return this;
