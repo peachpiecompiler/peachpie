@@ -7,6 +7,7 @@ using Devsense.PHP.Syntax;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.TypeRef;
 using Pchp.CodeAnalysis.Symbols;
+using Peachpie.CodeAnalysis.Utilities;
 using AST = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis
@@ -15,7 +16,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     /// Context of <see cref="TypeRefMask"/> and <see cref="IBoundTypeRef"/> instances.
     /// Contains additional information for routine context like current namespace, current type context etc.
     /// </summary>
-    public sealed partial class TypeRefContext
+    public sealed class TypeRefContext
     {
         #region Fields & Properties
 
@@ -37,6 +38,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// List of types occuring in the context.
         /// </summary>
         private readonly List<IBoundTypeRef>/*!*/_typeRefs = new List<IBoundTypeRef>();
+
+        /// <summary>Corresponding compilation object. Cannot be <c>null</c>.</summary>
+        private readonly PhpCompilation _compilation;
+
+        internal BoundTypeRefFactory BoundTypeRefFactory => _compilation.TypeRefFactory;
 
         /// <summary>
         /// Contains type of current context (refers to <c>self</c>).
@@ -61,12 +67,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #region Initialization
 
-        internal TypeRefContext(SourceTypeSymbol selfType)
-            : this(selfType, thisType: selfType)
+        internal TypeRefContext(PhpCompilation compilation, SourceTypeSymbol selfType)
+            : this(compilation, selfType, thisType: selfType)
         { }
 
-        internal TypeRefContext(SourceTypeSymbol selfType, SourceTypeSymbol thisType)
+        internal TypeRefContext(PhpCompilation compilation, SourceTypeSymbol selfType, SourceTypeSymbol thisType)
         {
+            _compilation = compilation ?? throw ExceptionUtilities.ArgumentNull(nameof(compilation));
             _selfType = selfType;
             _thisType = thisType;
         }
@@ -632,7 +639,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets index of the given type within the context. Returns <c>-1</c> if such type is not present.
         /// </summary>
-        public int GetTypeIndex(IBoundTypeRef/*!*/typeref) { return _typeRefs.IndexOf(typeref); }
+        int GetTypeIndex(IBoundTypeRef/*!*/typeref) { return _typeRefs.IndexOf(typeref); }
 
         /// <summary>
         /// Gets value indicating whether given type mask represents a number.

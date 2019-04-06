@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.Operations;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
+using Peachpie.CodeAnalysis.Utilities;
 using Ast = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
@@ -15,6 +16,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
     {
         private readonly DelayedTransformations _delayedTransformations;
         private readonly SourceRoutineSymbol _routine;
+
+        protected PhpCompilation DeclaringCompilation => _routine.DeclaringCompilation;
+        protected BoundTypeRefFactory BoundTypeRefFactory => DeclaringCompilation.TypeRefFactory;
 
         public int TransformationCount { get; private set; }
 
@@ -40,7 +44,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         private TransformationRewriter(DelayedTransformations delayedTransformations, SourceRoutineSymbol routine)
         {
             _delayedTransformations = delayedTransformations;
-            _routine = routine;
+            _routine = routine ?? throw ExceptionUtilities.ArgumentNull(nameof(routine));
         }
 
         protected override void OnVisitCFG(ControlFlowGraph x)

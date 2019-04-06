@@ -38,7 +38,12 @@ namespace Pchp.CodeAnalysis
         private Symbol[] _lazyWellKnownTypeMembers;
 
         internal Conversions/*!*/Conversions { get; }
-        
+
+        /// <summary>
+        /// Gets factory object for constructing <see cref="BoundTypeRef"/>.
+        /// </summary>
+        internal BoundTypeRefFactory TypeRefFactory { get; } = new BoundTypeRefFactory(null);
+
         #region CoreTypes, CoreMethods
 
         /// <summary>
@@ -243,7 +248,7 @@ namespace Pchp.CodeAnalysis
                 return null;
             }
 
-            var t = BoundTypeRefFactory.CreateFromTypeRef(tref, null, selfHint);
+            var t = this.TypeRefFactory.CreateFromTypeRef(tref, null, selfHint);
 
             var symbol = t.ResolveRuntimeType(this);
 

@@ -1,28 +1,24 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.PooledObjects;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
-using System.Text;
+using System.Reflection.Metadata;
+using System.Threading;
 using System.Threading.Tasks;
+using Devsense.PHP.Syntax;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeGen;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Emit;
+using Microsoft.CodeAnalysis.PooledObjects;
 using Microsoft.CodeAnalysis.Symbols;
-using Roslyn.Utilities;
-using System.Collections.Immutable;
-using System.IO;
-using System.Reflection.Metadata;
-using System.Threading;
-using System.Diagnostics;
+using Pchp.CodeAnalysis.DocumentationComments;
 using Pchp.CodeAnalysis.Emit;
 using Pchp.CodeAnalysis.Symbols;
-using Microsoft.CodeAnalysis.Collections;
-using System.Collections.Concurrent;
-using Devsense.PHP.Syntax;
-using Pchp.CodeAnalysis.DocumentationComments;
 using Pchp.CodeAnalysis.Utilities;
-using System.Reflection;
+using Roslyn.Utilities;
 
 namespace Pchp.CodeAnalysis
 {
@@ -359,7 +355,7 @@ namespace Pchp.CodeAnalysis
         {
             if (predicate == null)
             {
-                throw new ArgumentNullException(nameof(predicate));
+                throw Peachpie.CodeAnalysis.Utilities.ExceptionUtilities.ArgumentNull(nameof(predicate));
             }
 
             if (filter == SymbolFilter.None)
@@ -522,7 +518,7 @@ namespace Pchp.CodeAnalysis
         {
             if (predicate == null)
             {
-                throw new ArgumentNullException(nameof(predicate));
+                throw Peachpie.CodeAnalysis.Utilities.ExceptionUtilities.ArgumentNull(nameof(predicate));
             }
 
             if (filter == SymbolFilter.None)
@@ -722,7 +718,7 @@ namespace Pchp.CodeAnalysis
         {
             if (oldTree == null)
             {
-                throw new ArgumentNullException(nameof(oldTree));
+                throw Peachpie.CodeAnalysis.Utilities.ExceptionUtilities.ArgumentNull(nameof(oldTree));
             }
 
             if (newTree == null)
@@ -912,7 +908,7 @@ namespace Pchp.CodeAnalysis
             return this.SourceSymbolCollection
                 .GetFiles()
                 .Select(f => f.SyntaxTree)
-                .Where(tree => tree.IsPharEntry ||  tree.FilePath.IsPharFile())
+                .Where(tree => tree.IsPharEntry || tree.FilePath.IsPharFile())
                 .Select(tree => EmbeddedText.FromSource(tree.FilePath, tree.GetText()))
                 .ToList();
         }

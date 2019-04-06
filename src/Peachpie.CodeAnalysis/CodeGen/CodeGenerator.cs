@@ -280,6 +280,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public PhpCompilation DeclaringCompilation => _moduleBuilder.Compilation;
 
+        /// <summary>Gets <see cref="BoundTypeRefFactory"/> instance.</summary>
+        BoundTypeRefFactory BoundTypeRefFactory => DeclaringCompilation.TypeRefFactory;
+
         /// <summary>
         /// Gets conversions helper class.
         /// </summary>

@@ -1,4 +1,5 @@
 ﻿using Devsense.PHP.Syntax;
+using Peachpie.CodeAnalysis.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -113,7 +114,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <returns>Type mask of the parameter or <c>void</c>.</returns>
         public TypeRefMask GetParamType(TypeRefContext/*!*/ctx, int index)
         {
-            if (ctx == null) throw new ArgumentNullException("ctx");
+            if (ctx == null) throw ExceptionUtilities.ArgumentNull(nameof(ctx));
 
             if (_typeCtx != null && index >= 0 && index < _paramsType.Length)
                 return ctx.AddToContext(_typeCtx, _paramsType[index]);
@@ -129,7 +130,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <returns>TYpe mask of <c>static</c> in given context or <c>void</c>.</returns>
         public TypeRefMask GetLateStaticBindType(TypeRefContext/*!*/ctx)
         {
-            if (ctx == null) throw new ArgumentNullException("ctx");
+            if (ctx == null) throw ExceptionUtilities.ArgumentNull("ctx");
 
             if (_typeCtx != null && !_lateStaticBindType.IsUninitialized)
                 return ctx.AddToContext(_typeCtx, _lateStaticBindType);

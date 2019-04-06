@@ -1276,8 +1276,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal BoundConversionEx(BoundExpression operand, BoundTypeRef targetType)
         {
-            this.Operand = operand ?? throw new ArgumentNullException(nameof(operand));
-            this.TargetType = targetType ?? throw new ArgumentNullException(nameof(targetType));
+            this.Operand = operand ?? throw ExceptionUtilities.ArgumentNull(nameof(operand));
+            this.TargetType = targetType ?? throw ExceptionUtilities.ArgumentNull(nameof(targetType));
         }
 
         internal BoundConversionEx Update(BoundExpression operand, BoundTypeRef targetType)

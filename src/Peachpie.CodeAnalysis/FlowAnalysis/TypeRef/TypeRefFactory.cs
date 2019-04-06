@@ -21,7 +21,7 @@ namespace Pchp.CodeAnalysis
             if (t.IsNullableType(out var ttype)) return CreateMask(ctx, ttype) | ctx.GetNullTypeMask();
 
             //
-            return BoundTypeRefFactory.Create(t).GetTypeRefMask(ctx);
+            return ctx.BoundTypeRefFactory.Create(t).GetTypeRefMask(ctx);
         }
         
         /// <summary>
@@ -32,6 +32,7 @@ namespace Pchp.CodeAnalysis
             Contract.ThrowIfNull(containingType);
 
             return new TypeRefContext(
+                containingType.DeclaringCompilation,
                 containingType, // scope
                 thisType: containingType.IsTrait ? null : containingType);
         }

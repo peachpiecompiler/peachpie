@@ -14,33 +14,42 @@ using Ast = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
-    static class BoundTypeRefFactory
+    class BoundTypeRefFactory
     {
         #region Primitive Types
 
-        internal static readonly BoundPrimitiveTypeRef/*!*/VoidTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Void);
-        internal static readonly BoundPrimitiveTypeRef/*!*/NullTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Null);
-        internal static readonly BoundPrimitiveTypeRef/*!*/BoolTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Boolean);
-        internal static readonly BoundPrimitiveTypeRef/*!*/LongTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Long);
-        internal static readonly BoundPrimitiveTypeRef/*!*/DoubleTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Double);
-        internal static readonly BoundPrimitiveTypeRef/*!*/StringTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.String);
-        internal static readonly BoundPrimitiveTypeRef/*!*/ObjectTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Object);
-        internal static readonly BoundPrimitiveTypeRef/*!*/WritableStringRef = new BoundPrimitiveTypeRef(PhpTypeCode.WritableString);
-        internal static readonly BoundPrimitiveTypeRef/*!*/ArrayTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.PhpArray);
-        internal static readonly BoundPrimitiveTypeRef/*!*/IterableTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Iterable);
-        internal static readonly BoundPrimitiveTypeRef/*!*/CallableTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Callable);
-        internal static readonly BoundPrimitiveTypeRef/*!*/ResourceTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Resource);
+        internal readonly BoundPrimitiveTypeRef/*!*/VoidTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Void);
+        internal readonly BoundPrimitiveTypeRef/*!*/NullTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Null);
+        internal readonly BoundPrimitiveTypeRef/*!*/BoolTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Boolean);
+        internal readonly BoundPrimitiveTypeRef/*!*/LongTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Long);
+        internal readonly BoundPrimitiveTypeRef/*!*/DoubleTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Double);
+        internal readonly BoundPrimitiveTypeRef/*!*/StringTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.String);
+        internal readonly BoundPrimitiveTypeRef/*!*/ObjectTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Object);
+        internal readonly BoundPrimitiveTypeRef/*!*/WritableStringRef = new BoundPrimitiveTypeRef(PhpTypeCode.WritableString);
+        internal readonly BoundPrimitiveTypeRef/*!*/ArrayTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.PhpArray);
+        internal readonly BoundPrimitiveTypeRef/*!*/IterableTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Iterable);
+        internal readonly BoundPrimitiveTypeRef/*!*/CallableTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Callable);
+        internal readonly BoundPrimitiveTypeRef/*!*/ResourceTypeRef = new BoundPrimitiveTypeRef(PhpTypeCode.Resource);
 
         #endregion
 
         #region Special Types
 
-        internal static readonly BoundClassTypeRef/*!*/TraversableTypeRef = new BoundClassTypeRef(NameUtils.SpecialNames.Traversable, null, null);
-        internal static readonly BoundClassTypeRef/*!*/ClosureTypeRef = new BoundClassTypeRef(NameUtils.SpecialNames.Closure, null, null);
+        internal readonly BoundClassTypeRef/*!*/TraversableTypeRef = new BoundClassTypeRef(NameUtils.SpecialNames.Traversable, null, null);
+        internal readonly BoundClassTypeRef/*!*/ClosureTypeRef = new BoundClassTypeRef(NameUtils.SpecialNames.Closure, null, null);
 
         #endregion
 
-        public static BoundTypeRef Create(ITypeSymbol symbol)
+        /// <summary>
+        /// Initializes new instance of <see cref="BoundTypeRefFactory"/>.
+        /// </summary>
+        /// <param name="compilation">Bound compilation.</param>
+        public BoundTypeRefFactory(PhpCompilation compilation)
+        {
+            // TBD
+        }
+
+        public BoundTypeRef Create(ITypeSymbol symbol)
         {
             if (symbol != null)
             {
@@ -62,7 +71,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        public static BoundTypeRef Create(ConstantValue c)
+        public BoundTypeRef Create(ConstantValue c)
         {
             Contract.ThrowIfNull(c);
 
@@ -84,7 +93,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>Create type reference refering to a variable containing <c>PhpTypeInfo</c> value.</summary>
         public static BoundTypeRef CreateFromPlace(IPlace place) => new BoundTypeRefFromPlace(place);
 
-        public static BoundTypeRef CreateFromTypeRef(Ast.TypeRef tref, SemanticsBinder binder = null, SourceTypeSymbol self = null, bool objectTypeInfoSemantic = false)
+        public BoundTypeRef CreateFromTypeRef(Ast.TypeRef tref, SemanticsBinder binder = null, SourceTypeSymbol self = null, bool objectTypeInfoSemantic = false)
         {
             if (tref is Ast.PrimitiveTypeRef pt)
             {
@@ -145,7 +154,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
-        static ImmutableArray<BoundTypeRef> Create(IList<Ast.TypeRef> trefs, SemanticsBinder binder, SourceTypeSymbol self)
+        ImmutableArray<BoundTypeRef> Create(IList<Ast.TypeRef> trefs, SemanticsBinder binder, SourceTypeSymbol self)
         {
             return trefs
                 .Select(t => CreateFromTypeRef(t, binder, self, objectTypeInfoSemantic: false).WithSyntax(t))

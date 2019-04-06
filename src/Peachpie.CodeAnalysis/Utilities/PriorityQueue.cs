@@ -31,7 +31,7 @@ namespace Peachpie.CodeAnalysis.Utilities
         {
             _heap = new T[DefaultCapacity];
             _count = 0;
-            _comparer = comparer ?? throw new ArgumentNullException(nameof(comparer));
+            _comparer = comparer ?? throw ExceptionUtilities.ArgumentNull(nameof(comparer));
         }
 
         /// <summary>

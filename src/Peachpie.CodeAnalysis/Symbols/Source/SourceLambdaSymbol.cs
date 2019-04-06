@@ -108,6 +108,6 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsSealed => false;
 
-        protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(_container as SourceTypeSymbol, thisType: null);
+        protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(DeclaringCompilation, _container as SourceTypeSymbol, thisType: null);
     }
 }

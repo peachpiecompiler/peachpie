@@ -68,7 +68,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override NamedTypeSymbol ContainingType => _file;
 
-        protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(null);
+        protected override TypeRefContext CreateTypeRefContext() => new TypeRefContext(DeclaringCompilation, null);
 
         public override void GetDiagnostics(DiagnosticBag diagnostic)
         {

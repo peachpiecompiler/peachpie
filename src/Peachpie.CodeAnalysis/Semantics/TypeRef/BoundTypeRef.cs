@@ -87,7 +87,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
                 case PhpTypeCode.Resource: result = ctx.GetResourceTypeMask(); break;
                 case PhpTypeCode.Object: result = ctx.GetSystemObjectTypeMask(); break;
                 case PhpTypeCode.Null: return ctx.GetNullTypeMask();
-                case PhpTypeCode.Iterable: result = ctx.GetArrayTypeMask() | ctx.GetTypeMask(BoundTypeRefFactory.TraversableTypeRef, true); break;   // array | Traversable
+                case PhpTypeCode.Iterable: result = ctx.GetArrayTypeMask() | ctx.GetTypeMask(ctx.BoundTypeRefFactory.TraversableTypeRef, true); break;   // array | Traversable
                 case PhpTypeCode.Callable: result = ctx.GetArrayTypeMask() | ctx.GetStringTypeMask() | ctx.GetSystemObjectTypeMask(); break;// array | string | object
                 default:
                     throw ExceptionUtilities.UnexpectedValue(_type);
@@ -232,7 +232,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
             }
 
             // unk
-            return BoundTypeRefFactory.ObjectTypeRef;
+            return target.BoundTypeRefFactory.ObjectTypeRef;
         }
     }
 

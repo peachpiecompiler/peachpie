@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis;
 using System.Diagnostics;
 using Devsense.PHP.Syntax;
 using System.Threading;
+using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -93,7 +94,7 @@ namespace Pchp.CodeAnalysis.Symbols
             MethodSymbol basector, MethodSymbol __construct, int paramsLimit = int.MaxValue)
             : base(containingType, WellKnownMemberNames.InstanceConstructorName, false, false, containingType.DeclaringCompilation.CoreTypes.Void, accessibility)
         {
-            _basector = basector ?? throw new ArgumentNullException(nameof(basector));
+            _basector = basector ?? throw ExceptionUtilities.ArgumentNull(nameof(basector));
             _phpconstruct = __construct;
 
             this.IsInitFieldsOnly = isInitFieldsOnly;

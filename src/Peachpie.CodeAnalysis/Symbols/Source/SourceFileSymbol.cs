@@ -95,8 +95,23 @@ namespace Pchp.CodeAnalysis.Symbols
 
         SourceLambdaSymbol ILambdaContainerSymbol.ResolveLambdaSymbol(LambdaFunctionExpr expr)
         {
-            if (expr == null) throw new ArgumentNullException(nameof(expr));
-            return _lazyMembers.OfType<SourceLambdaSymbol>().First(s => s.Syntax == expr);
+            if (expr == null)
+            {
+                throw new ArgumentNullException(nameof(expr));
+            }
+
+            if (_lazyMembers != null)
+            {
+                for (int i = 0; i < _lazyMembers.Count; i++)
+                {
+                    if (_lazyMembers[i] is SourceLambdaSymbol s && s.Syntax == expr)
+                    {
+                        return s;
+                    }
+                }
+            }
+
+            throw ExceptionUtilities.Unreachable;
         }
 
         /// <summary>

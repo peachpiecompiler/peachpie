@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Peachpie.CodeAnalysis.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -34,8 +35,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected CoreMember(CoreType declaringClass, string memberName)
         {
-            this.DeclaringClass = declaringClass ?? throw new ArgumentNullException(nameof(declaringClass));
-            this.MemberName = memberName ?? throw new ArgumentNullException(nameof(memberName));
+            this.DeclaringClass = declaringClass ?? throw ExceptionUtilities.ArgumentNull(nameof(declaringClass));
+            this.MemberName = memberName ?? throw ExceptionUtilities.ArgumentNull(nameof(memberName));
         }
 
         /// <summary>Implicit cast to the symbol.</summary>

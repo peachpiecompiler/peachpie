@@ -117,6 +117,9 @@ namespace Pchp.CodeAnalysis.Semantics
         /// </summary>
         internal PhpCompilation DeclaringCompilation { get; }
 
+        /// <summary>Gets <see cref="BoundTypeRefFactory"/> instance.</summary>
+        internal BoundTypeRefFactory BoundTypeRefFactory => DeclaringCompilation.TypeRefFactory;
+
         /// <summary>
         /// Gets value determining whether to compile <c>assert</c>. otherwise the expression is ignored.
         /// </summary>
