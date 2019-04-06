@@ -165,6 +165,8 @@ namespace Pchp.CodeAnalysis
             _referenceManager = (reuseReferenceManager && referenceManager != null)
                 ? referenceManager
                 : new ReferenceManager(MakeSourceAssemblySimpleName(), options.AssemblyIdentityComparer, referenceManager?.ObservedMetadata, options.SdkDirectory);
+
+            Semantics.BoundTypeRefFactory.ClearResolvedTypes();
         }
 
         /// <summary>

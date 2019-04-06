@@ -153,5 +153,25 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         public static IBoundTypeRef Create(QualifiedName qname, SourceTypeSymbol self) => new BoundClassTypeRef(qname, null, self);
+
+        // reset any resolved types from a previous compilation
+        public static void ClearResolvedTypes()
+        {
+            VoidTypeRef.ResolvedType = null;
+            NullTypeRef.ResolvedType = null;
+            BoolTypeRef.ResolvedType = null;
+            LongTypeRef.ResolvedType = null;
+            DoubleTypeRef.ResolvedType = null;
+            StringTypeRef.ResolvedType = null;
+            ObjectTypeRef.ResolvedType = null;
+            WritableStringRef.ResolvedType = null;
+            ArrayTypeRef.ResolvedType = null;
+            IterableTypeRef.ResolvedType = null;
+            CallableTypeRef.ResolvedType = null;
+            ResourceTypeRef.ResolvedType = null;
+
+            TraversableTypeRef.ResolvedType = null;
+            ClosureTypeRef.ResolvedType = null;
+        }
     }
 }
