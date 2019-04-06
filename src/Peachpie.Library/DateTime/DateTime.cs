@@ -415,6 +415,12 @@ namespace Pchp.Library.DateTime
             return DateTimeUtils.UtcToUnixTimeStamp(Time);
         }
 
+        public DateTime setTimestamp(int unixtimestamp)
+        {
+            this.Time = DateTimeUtils.UnixTimeStampToUtc(unixtimestamp);
+            return this;
+        }
+
         public virtual void __wakeup()
         {
 
@@ -512,6 +518,11 @@ namespace Pchp.Library.DateTime
             return DateTimeUtils.UtcToUnixTimeStamp(Time);
         }
 
+        public DateTimeImmutable setTimestamp(int unixtimestamp)
+        {
+            return new DateTimeImmutable(DateTimeUtils.UnixTimeStampToUtc(unixtimestamp), this.TimeZone);
+        }
+
         public DateTimeZone getTimezone()
         {
             return new DateTimeZone(this.TimeZone);
@@ -530,7 +541,6 @@ namespace Pchp.Library.DateTime
         public virtual DateTimeImmutable setDate(int year, int month, int day) => throw new NotImplementedException();
         public virtual DateTimeImmutable setISODate(int year, int week, int day = 1) => throw new NotImplementedException();
         public virtual DateTimeImmutable setTime(int hour, int minute, int second = 0, int microseconds = 0) => throw new NotImplementedException();
-        public virtual DateTimeImmutable setTimestamp(int unixtimestamp) => throw new NotImplementedException();
         public virtual DateTimeImmutable setTimezone(DateTimeZone timezone) => throw new NotImplementedException();
         public virtual DateTimeImmutable sub(DateInterval interval) => new DateTimeImmutable(Time.Subtract(interval.AsTimeSpan()), TimeZone);
 
