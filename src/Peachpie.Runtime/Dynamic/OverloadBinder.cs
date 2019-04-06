@@ -793,6 +793,30 @@ namespace Pchp.Core.Dynamic
             public ConversionCost MinimalCost;
         }
 
+        /// <summary>
+        /// Helper comparer providing cheaper and shorter methods first.
+        /// Handles case when two methods are candidates with the same cost (the first one gets called).
+        /// </summary>
+        sealed class MethodCostInfoComparer : IComparer<MethodCostInfo>
+        {
+            public static readonly IComparer<MethodCostInfo> Instance = new MethodCostInfoComparer();
+
+            int IComparer<MethodCostInfo>.Compare(MethodCostInfo x, MethodCostInfo y)
+            {
+                var xps = x.Method.GetParameters();
+                var yps = y.Method.GetParameters();
+
+                // shorter signature first:
+                if (xps.Length < yps.Length) return -1;
+                if (xps.Length > yps.Length) return +1;
+
+                // less cost first:
+                if (x.MinimalCost < y.MinimalCost) return -1;
+                if (x.MinimalCost > y.MinimalCost) return +1;
+                return 0;
+            }
+        }
+
         #endregion
 
         /// <summary>
@@ -812,8 +836,6 @@ namespace Pchp.Core.Dynamic
                 throw new ArgumentNullException();
 
             // overload resolution
-
-            // order methods
 
             /*
              * cost1 = CostOf(m1)
@@ -929,6 +951,10 @@ namespace Pchp.Core.Dynamic
                 }
                 body.Add(Expression.Assign(expr_best, minexpr));
                 locals.Add(expr_best);
+
+                // order methods (most probable call first, less args first)
+                // handles case of two candidates with the same cost:
+                list.Sort(MethodCostInfoComparer.Instance);
 
                 // switch over method costs
                 for (int i = list.Count - 1; i >= 0; i--)
