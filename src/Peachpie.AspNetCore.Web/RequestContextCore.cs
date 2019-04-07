@@ -40,13 +40,15 @@ namespace Peachpie.AspNetCore.Web
             }
 
             StringValues newitem = new StringValues(value);
-            //StringValues olditem;
-            //if (_httpctx.Response.Headers.TryGetValue(name, out olditem))
-            //{
-            //    newitem = StringValues.Concat(olditem, newitem);
-            //}
+            if (name.EqualsOrdinalIgnoreCase("set-cookie"))
+            {
+                StringValues olditem;
+                if (_httpctx.Response.Headers.TryGetValue(name, out olditem))
+                {
+                    newitem = StringValues.Concat(olditem, newitem);
+                }
+            }
 
-            //
             _httpctx.Response.Headers[name] = newitem;
         }
 

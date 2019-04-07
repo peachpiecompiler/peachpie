@@ -15,7 +15,7 @@ namespace Pchp.Library.DateTime
     /// Representation of date and time.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
-    public class DateTime : DateTimeInterface, IPhpComparable
+    public class DateTime : DateTimeInterface, IPhpComparable, IPhpCloneable
     {
         #region Constants
 
@@ -438,6 +438,19 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
+        #region IPhpCloneable
+
+        public object Clone()
+        {
+            DateTime time = new DateTime(_ctx);
+            time.Time = Time;
+            time.TimeZone = TimeZone;
+
+            return time;
+        }
+
+        #endregion
+
         #region CLR Conversions
 
         /// <summary>
@@ -452,8 +465,10 @@ namespace Pchp.Library.DateTime
     /// Representation of date and time.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
-    public class DateTimeImmutable : DateTimeInterface, IPhpComparable
+    public class DateTimeImmutable : DateTimeInterface, IPhpComparable, IPhpCloneable
     {
+        readonly protected Context _ctx;
+
         /// <summary>
         /// Get the date-time value, stored in UTC
         /// </summary>
@@ -464,8 +479,11 @@ namespace Pchp.Library.DateTime
         /// </summary>
         internal TimeZoneInfo TimeZone { get; private set; }
 
-        internal DateTimeImmutable(System_DateTime time, TimeZoneInfo tz)
+        internal DateTimeImmutable(Context ctx, System_DateTime time, TimeZoneInfo tz)
         {
+            Debug.Assert(ctx != null);
+
+            this._ctx = ctx;
             this.Time = time;
             this.TimeZone = tz;
         }
@@ -486,6 +504,7 @@ namespace Pchp.Library.DateTime
                 throw new ArgumentException();
             }
 
+            this._ctx = ctx;
             this.Time = DateTime.StrToTime(ctx, time, System_DateTime.UtcNow);
 
             //this.date.Value = this.Time.ToString("yyyy-mm-dd HH:mm:ss");
@@ -524,7 +543,7 @@ namespace Pchp.Library.DateTime
 
         public DateTimeImmutable setTimestamp(int unixtimestamp)
         {
-            return new DateTimeImmutable(DateTimeUtils.UnixTimeStampToUtc(unixtimestamp), this.TimeZone);
+            return new DateTimeImmutable(_ctx, DateTimeUtils.UnixTimeStampToUtc(unixtimestamp), this.TimeZone);
         }
 
         public DateTimeZone getTimezone()
@@ -532,21 +551,32 @@ namespace Pchp.Library.DateTime
             return new DateTimeZone(this.TimeZone);
         }
 
+        public virtual DateTimeImmutable modify(string modify)
+        {
+            if (modify == null)
+            {
+                //PhpException.ArgumentNull("modify");
+                //return false;
+                throw new ArgumentNullException();
+            }
+
+            return new DateTimeImmutable(_ctx, DateTime.StrToTime(_ctx, modify, Time), this.TimeZone);
+        }
+
         public void __wakeup() { }
 
         #endregion
 
-        public virtual DateTimeImmutable add(DateInterval interval) => new DateTimeImmutable(Time.Add(interval.AsTimeSpan()), TimeZone);
+        public virtual DateTimeImmutable add(DateInterval interval) => new DateTimeImmutable(_ctx, Time.Add(interval.AsTimeSpan()), TimeZone);
         public static DateTimeImmutable createFromFormat(string format, string time, DateTimeZone timezone = null) => throw new NotImplementedException();
         public static DateTimeImmutable createFromMutable(DateTime datetime) => throw new NotImplementedException();
         public static PhpArray getLastErrors() => throw new NotImplementedException();
-        public virtual DateTimeImmutable modify(string modify) => throw new NotImplementedException();
         public static DateTimeImmutable __set_state(PhpArray array) => throw new NotImplementedException();
         public virtual DateTimeImmutable setDate(int year, int month, int day) => throw new NotImplementedException();
         public virtual DateTimeImmutable setISODate(int year, int week, int day = 1) => throw new NotImplementedException();
         public virtual DateTimeImmutable setTime(int hour, int minute, int second = 0, int microseconds = 0) => throw new NotImplementedException();
         public virtual DateTimeImmutable setTimezone(DateTimeZone timezone) => throw new NotImplementedException();
-        public virtual DateTimeImmutable sub(DateInterval interval) => new DateTimeImmutable(Time.Subtract(interval.AsTimeSpan()), TimeZone);
+        public virtual DateTimeImmutable sub(DateInterval interval) => new DateTimeImmutable(_ctx, Time.Subtract(interval.AsTimeSpan()), TimeZone);
 
         /// <summary>
         /// Returns the difference between two DateTime objects
@@ -556,6 +586,12 @@ namespace Pchp.Library.DateTime
         #region IPhpComparable
 
         int IPhpComparable.Compare(PhpValue obj) => DateTimeFunctions.CompareTime(this.Time, obj);
+
+        #endregion
+
+        #region IPhpCloneable
+        
+        public object Clone() => new DateTimeImmutable(_ctx, Time, TimeZone);
 
         #endregion
     }
