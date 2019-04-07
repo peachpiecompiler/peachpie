@@ -175,15 +175,24 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
+        #region date_get_last_errors
+
+        /// <summary>
+        /// Returns the warnings and errors.
+        /// </summary>
+        public static PhpArray date_get_last_errors(Context ctx) => DateTime.getLastErrors(ctx);
+
+        #endregion
+
         #region date, idate, gmdate
 
         /// <summary>
-		/// Returns a string formatted according to the given format string using the current local time.
-		/// </summary>
-		/// <param name="ctx">Current runtime context.</param>
+        /// Returns a string formatted according to the given format string using the current local time.
+        /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
         /// <param name="format">Format definition for output.</param>
-		/// <returns>Formatted string.</returns>
-		public static string date(Context ctx, string format)
+        /// <returns>Formatted string.</returns>
+        public static string date(Context ctx, string format)
         {
             return FormatDate(format, System_DateTime.UtcNow, PhpTimeZone.GetCurrentTimeZone(ctx));
         }

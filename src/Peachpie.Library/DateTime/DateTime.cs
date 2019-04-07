@@ -184,6 +184,9 @@ namespace Pchp.Library.DateTime
             return new DateTimeZone(this.TimeZone);
         }
 
+        /// <summary>Returns the warnings and errors</summary>
+        public static PhpArray getLastErrors(Context ctx) => throw new NotImplementedException();
+
         public virtual DateTime modify(string modify)
         {
             if (modify == null)
@@ -288,8 +291,8 @@ namespace Pchp.Library.DateTime
                         builder.Append("ss");
                         break;
                     case '!':
-                        //resetUnixDateTime = true;
-                        //throw new NotImplementedException("Unix time resetting is not implemented.");
+                    //resetUnixDateTime = true;
+                    //throw new NotImplementedException("Unix time resetting is not implemented.");
                     case '?':
                     case '/':
                     case '*':
@@ -567,7 +570,7 @@ namespace Pchp.Library.DateTime
         public virtual DateTimeImmutable add(DateInterval interval) => new DateTimeImmutable(_ctx, Time.Add(interval.AsTimeSpan()), TimeZone);
         public static DateTimeImmutable createFromFormat(string format, string time, DateTimeZone timezone = null) => throw new NotImplementedException();
         public static DateTimeImmutable createFromMutable(DateTime datetime) => throw new NotImplementedException();
-        public static PhpArray getLastErrors() => throw new NotImplementedException();
+        public static PhpArray getLastErrors(Context ctx) => DateTime.getLastErrors(ctx);
         public static DateTimeImmutable __set_state(PhpArray array) => throw new NotImplementedException();
         public virtual DateTimeImmutable setDate(int year, int month, int day) => throw new NotImplementedException();
         public virtual DateTimeImmutable setISODate(int year, int week, int day = 1) => throw new NotImplementedException();
