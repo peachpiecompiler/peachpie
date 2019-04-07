@@ -39,17 +39,18 @@ namespace Peachpie.AspNetCore.Web
                 return;
             }
 
-            StringValues newitem = new StringValues(value);
+            //
+            var stringValue = new StringValues(value);
+
+            // headers that can have multiple values:
             if (name.EqualsOrdinalIgnoreCase("set-cookie"))
             {
-                StringValues olditem;
-                if (_httpctx.Response.Headers.TryGetValue(name, out olditem))
-                {
-                    newitem = StringValues.Concat(olditem, newitem);
-                }
+                _httpctx.Response.Headers.Append(name, stringValue);
             }
-
-            _httpctx.Response.Headers[name] = newitem;
+            else
+            {
+                _httpctx.Response.Headers[name] = stringValue;
+            }
         }
 
         void IHttpPhpContext.RemoveHeader(string name) { _httpctx.Response.Headers.Remove(name); }

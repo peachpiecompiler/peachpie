@@ -440,14 +440,11 @@ namespace Pchp.Library.DateTime
 
         #region IPhpCloneable
 
-        public object Clone()
+        public object Clone() => new DateTime(_ctx)
         {
-            DateTime time = new DateTime(_ctx);
-            time.Time = Time;
-            time.TimeZone = TimeZone;
-
-            return time;
-        }
+            Time = Time,
+            TimeZone = TimeZone,
+        };
 
         #endregion
 
@@ -590,7 +587,7 @@ namespace Pchp.Library.DateTime
         #endregion
 
         #region IPhpCloneable
-        
+
         public object Clone() => new DateTimeImmutable(_ctx, Time, TimeZone);
 
         #endregion
