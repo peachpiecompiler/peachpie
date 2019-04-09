@@ -91,7 +91,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 var cvalue = symbol.GetConstantValue(false);
                 target.ConstantValue = (cvalue != null) ? new Optional<object>(cvalue.Value) : null;
-                target.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, symbol.Type);
+
+                if (cvalue != null && cvalue.IsNull)
+                {
+                    target.TypeRefMask = TypeCtx.GetNullTypeMask();
+                    return true;
+                }
+
+                target.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, symbol.Type, notNull: true);
 
                 return true;
             }

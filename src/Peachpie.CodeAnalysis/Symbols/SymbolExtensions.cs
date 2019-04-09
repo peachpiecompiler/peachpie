@@ -14,7 +14,14 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         public static readonly Func<Symbol, bool> s_IsReachable = new Func<Symbol, bool>(t => !t.IsUnreachable);
 
+        public static readonly Func<AttributeData, bool> s_IsNotNullAttribute = new Func<AttributeData, bool>(IsNotNullAttribute);
+
         public static IEnumerable<T> WhereReachable<T>(this IEnumerable<T> symbols) where T : Symbol => symbols.Where<T>(s_IsReachable);
+
+        static bool IsNotNullAttribute(AttributeData attr)
+        {
+            return attr.AttributeClass.MetadataName == "NotNullAttribute" && ((AssemblySymbol)attr.AttributeClass.ContainingAssembly).IsPeachpieCorLibrary;
+        }
 
         /// <summary>
         /// Returns a constructed named type symbol if 'type' is generic, otherwise just returns 'type'
@@ -56,6 +63,40 @@ namespace Pchp.CodeAnalysis.Symbols
             }
             //
             return false;
+        }
+
+        /// <summary>
+        /// Determines if
+        /// - method symbol cannot return NULL. E.g. has return attribute [return: NotNullAttribute] or [return: CastToFalse]
+        /// - parameter symbol cannot be NULL (has attribute [NotNullAttribute])
+        /// - field symbol cannot be NULL (has [NotNullAttribute])
+        /// - property cannot be NULL (has [NotNullAttribute])
+        /// </summary>
+        public static bool HasNotNullAttribute(this Symbol symbol)
+        {
+            ImmutableArray<AttributeData> attrs;
+
+            if (symbol is MethodSymbol m)
+            {
+                if (m.CastToFalse)
+                {
+                    // [return: CastToFalse] implicitly denotates method as [NotNull]
+                    return true;
+                }
+
+                attrs = m.GetReturnTypeAttributes();
+
+                // TODO: determine the method cannot return NULL
+                // - is a value type
+                // - its source is analysed and it cannot result in NULL
+                // - it has another NotNullAttribute (compiler generated, not just from Peachpie.Runtime)
+            }
+            else if (symbol != null)
+            {
+                attrs = symbol.GetAttributes();
+            }
+
+            return !attrs.IsDefaultOrEmpty && symbol.GetAttributes().Any(s_IsNotNullAttribute);
         }
 
         /// <summary>
@@ -186,7 +227,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public static AttributeData GetPhpRwAttribute(this ParameterSymbol symbol) => GetAttribute(symbol, CoreTypes.PhpRwAttributeFullName);
 
         public static AttributeData GetPhpScriptAttribute(this TypeSymbol symbol) => GetAttribute(symbol, CoreTypes.PhpScriptAttributeFullName);
-        
+
         public static string[] PhpExtensionAttributeValues(this AttributeData phpextensionattribute)
         {
             if (phpextensionattribute != null && phpextensionattribute.CommonConstructorArguments.Length >= 1)

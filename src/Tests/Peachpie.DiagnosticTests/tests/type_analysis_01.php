@@ -20,7 +20,7 @@ function foo(/*|mixed|*/$x)
 
   /*|object|*/$system_object = new System\Object();
   /*|Closure|*/$closure = function($a, $b) { return $a + $b; };
-  /*|resource|*/$resource = stream_context_create();
+  /*|resource|null|*/$resource = stream_context_create();
   /*|stdClass|*/$stdClass = new stdClass();
   
   // TODO: Update when made more precise
@@ -45,18 +45,15 @@ function foo(/*|mixed|*/$x)
     case 6:
       /*|object|*/$result = $system_object;
       break;
-    case 7:
-      /*|resource|*/$result = $resource;
-      break;
     default:
       /*|stdClass|*/$result = $stdClass;
       break;
   }
 
-  return /*|array|boolean|double|integer|resource|stdClass|string|object|*/$result;
+  return /*|array|boolean|double|integer|stdClass|string|object|*/$result;
 }
 
-/*|array|boolean|double|integer|resource|stdClass|string|object|*/$res = foo(42);
+/*|array|boolean|double|integer|stdClass|string|object|*/$res = foo(42);
 
 function bar(bool .../*|boolean[]|*/$x) {
   return /*|boolean[]|*/$x;

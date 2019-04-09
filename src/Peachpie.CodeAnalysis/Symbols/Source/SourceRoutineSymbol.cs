@@ -384,6 +384,9 @@ namespace Pchp.CodeAnalysis.Symbols
             // attributes from PHPDoc
             // ...
 
+            // [NotNullAttribute]
+            // ...
+
             //
             return base.GetAttributes().AddRange(attrs);
         }

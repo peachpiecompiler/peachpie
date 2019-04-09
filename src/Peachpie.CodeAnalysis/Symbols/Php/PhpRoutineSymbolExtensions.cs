@@ -149,15 +149,18 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // create the type mask from the CLR type symbol
-            var mask = TypeRefFactory.CreateMask(ctx, t);
+            var mask = TypeRefFactory.CreateMask(ctx, t, notNull: (symbol as Symbol).HasNotNullAttribute());
 
-            // [CastToFalse]
-            if (symbol is IPhpRoutineSymbol phpr && phpr.CastToFalse)
+            if (symbol is IPhpRoutineSymbol phpr)
             {
-                mask |= ctx.GetBooleanTypeMask();    // the function may return FALSE
+                // [CastToFalse]
+                if (phpr.CastToFalse)
+                {
+                    mask |= ctx.GetBooleanTypeMask();    // the function may return FALSE
 
-                // remove NULL (NULL is changed to FALSE), note it also can't return -1
-                mask = ctx.WithoutNull(mask);
+                    // remove NULL (NULL is changed to FALSE), note it also can't return -1
+                    mask = ctx.WithoutNull(mask);
+                }
             }
 
             //
@@ -198,7 +201,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 //
                 var phpparam = new PhpParam(
                     index++,
-                    TypeRefFactory.CreateMask(ctx, p.Type),
+                    TypeRefFactory.CreateMask(ctx, p.Type, notNull: p.HasNotNullAttribute()),
                     p.RefKind != RefKind.None,
                     p.IsParams,
                     isPhpRw: p.GetPhpRwAttribute() != null,

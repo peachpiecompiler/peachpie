@@ -99,7 +99,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Gets type mask of the type reference in given context.
         /// </summary>
-        public virtual TypeRefMask GetTypeRefMask(TypeRefContext ctx) => ctx.GetTypeMask(this, false);
+        public virtual TypeRefMask GetTypeRefMask(TypeRefContext ctx) => WithNullableMask(ctx.GetTypeMask(this, false), ctx);
 
         /// <summary>Add <c>NULL</c> type mask if <see cref="IsNullable"/> is set to <c>true</c>.</summary>
         protected TypeRefMask WithNullableMask(TypeRefMask mask, TypeRefContext ctx)

@@ -13,15 +13,31 @@ namespace Pchp.CodeAnalysis
 {
     internal static partial class TypeRefFactory
     {
-        public static TypeRefMask CreateMask(TypeRefContext ctx, TypeSymbol t)
+        public static TypeRefMask CreateMask(TypeRefContext ctx, TypeSymbol t, bool notNull = false)
         {
             // shortcuts:
             if (t.Is_PhpValue()) return TypeRefMask.AnyType;
             if (t.Is_PhpAlias()) return TypeRefMask.AnyType.WithRefFlag;
-            if (t.IsNullableType(out var ttype)) return CreateMask(ctx, ttype) | ctx.GetNullTypeMask();
+            if (t.IsNullableType(out var ttype)) return CreateMask(ctx, ttype, notNull: true) | ctx.GetNullTypeMask();
 
-            //
-            return ctx.BoundTypeRefFactory.Create(t).GetTypeRefMask(ctx);
+            switch (t.SpecialType)
+            {
+                case SpecialType.System_Void: return 0;
+                case SpecialType.System_Boolean: return ctx.GetBooleanTypeMask();
+                case SpecialType.System_Int64: return ctx.GetLongTypeMask();
+                case SpecialType.System_Double: return ctx.GetDoubleTypeMask();
+                case SpecialType.System_String: return ctx.GetStringTypeMask();
+                case SpecialType.System_Object: return ctx.GetSystemObjectTypeMask() | ctx.GetNullTypeMask();
+                default:
+                    var mask = ctx.BoundTypeRefFactory.Create(t).GetTypeRefMask(ctx);
+
+                    if (!notNull && t.CanBeAssignedNull())
+                    {
+                        mask |= ctx.GetNullTypeMask();
+                    }
+
+                    return mask;
+            }
         }
         
         /// <summary>

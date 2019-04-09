@@ -764,12 +764,6 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
                         if (t.Name == "PhpResource") return WithNullableMask(ctx.GetResourceTypeMask(), ctx);
                     }
 
-                    if (t.IsNullableType(out var ttype))
-                    {
-                        // <T> | NULL
-                        return TypeRefFactory.CreateMask(ctx, ttype) | ctx.GetNullTypeMask();
-                    }
-
                     break;
             }
 
