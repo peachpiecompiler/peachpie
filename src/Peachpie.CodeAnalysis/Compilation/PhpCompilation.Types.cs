@@ -80,14 +80,17 @@ namespace Pchp.CodeAnalysis
             Contract.ThrowIfNull(first);
             Contract.ThrowIfNull(second);
 
-            Debug.Assert(first != CoreTypes.PhpAlias && second != CoreTypes.PhpAlias);
-
             // merge is not needed:
             if (first == second)
                 return first;
 
-            if (first == CoreTypes.PhpValue || second == CoreTypes.PhpValue)
+            if (first == CoreTypes.PhpValue || second == CoreTypes.PhpValue ||
+                first == CoreTypes.PhpAlias || second == CoreTypes.PhpAlias)
                 return CoreTypes.PhpValue;
+
+            // an integer (int | long)
+            if (IsIntegerNumber(first) && IsIntegerNumber(second))
+                return CoreTypes.Long;
 
             // a number (int | double)
             if (IsNumber(first) && IsNumber(second))
@@ -203,6 +206,24 @@ namespace Pchp.CodeAnalysis
             return type;
         }
 
+        static bool IsIntegerNumber(TypeSymbol type)
+        {
+            Contract.ThrowIfNull(type);
+
+            switch (type.SpecialType)
+            {
+                case SpecialType.System_Int16:
+                case SpecialType.System_Int32:
+                case SpecialType.System_Int64:
+                case SpecialType.System_UInt16:
+                case SpecialType.System_UInt32:
+                case SpecialType.System_UInt64:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         /// <summary>
         /// Determines whether given type is treated as a PHP number (<c>int</c> or <c>double</c>).
         /// </summary>
@@ -211,9 +232,9 @@ namespace Pchp.CodeAnalysis
             Contract.ThrowIfNull(type);
 
             return
+                IsIntegerNumber(type) ||
                 type.SpecialType == SpecialType.System_Double ||
-                type.SpecialType == SpecialType.System_Int32 ||
-                type.SpecialType == SpecialType.System_Int64 ||
+                type.SpecialType == SpecialType.System_Single ||
                 type == CoreTypes.PhpNumber;
         }
 
