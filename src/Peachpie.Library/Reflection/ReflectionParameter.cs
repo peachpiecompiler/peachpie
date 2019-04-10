@@ -90,6 +90,7 @@ namespace Pchp.Library.Reflection
             _index = p._index;
             _type = p._type;
             _allowsNull = p._allowsNull;
+            _isVariadic = p._isVariadic;
             _name = p._name;
             _defaultValue = p._defaultValue;
         }
