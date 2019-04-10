@@ -955,6 +955,11 @@ namespace Pchp.Core.Dynamic
                     {
                         throw new NotSupportedException(); // we don't know current late static bound type
                     }
+                    else if (p.IsClosureParameter())
+                    {
+                        boundargs[i] = args.BindArgument(argi, p);
+                        argi++;
+                    }
                     else
                     {
                         throw new NotImplementedException();
