@@ -270,16 +270,16 @@ namespace Pchp.Library.Reflection
 
             return result;
         }
-        public bool hasConstant(string name) { throw new NotImplementedException(); }
+        public bool hasConstant(string name) => _tinfo.GetDeclaredConstant(name) != null;
         public bool hasMethod(string name) => _tinfo.RuntimeMethods[name] != null;
-        public bool hasProperty(string name) { throw new NotImplementedException(); }
-        public bool implementsInterface(string @interface) { throw new NotImplementedException(); }
+        public bool hasProperty(string name) => _tinfo.Type.GetField(name) != null;
+        public bool implementsInterface(string @interface) => _tinfo.Type.GetInterface(@interface.Replace("\\", ".")) != null;
         public bool inNamespace() => this.name.IndexOf(ReflectionUtils.NameSeparator) >= 0;
         public bool isAbstract() => _tinfo.Type.IsAbstract;
         public bool isAnonymous() => _tinfo.Type.IsSealed && _tinfo.Type.IsNotPublic && _tinfo.Type.Name.StartsWith("class@anonymous", StringComparison.Ordinal); // internal sealed 'class@anonymous...' {}
         public bool isCloneable() { throw new NotImplementedException(); }
         public bool isFinal() => _tinfo.Type.IsSealed;
-        public bool isInstance(object @object) { throw new NotImplementedException(); }
+        public bool isInstance(object @object) => _tinfo.Type.IsInstanceOfType(@object);
         public bool isInstantiable() => !object.ReferenceEquals(_tinfo.Creator, PhpTypeInfo.InaccessibleCreator);
         public bool isInterface() => _tinfo.IsInterface;
         public bool isInternal() => !isUserDefined();

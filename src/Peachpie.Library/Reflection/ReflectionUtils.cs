@@ -59,6 +59,7 @@ namespace Pchp.Library.Reflection
 
                     var allowsNull = p.GetCustomAttribute<NotNullAttribute>() == null;
                     var defaultValue = p.HasDefaultValue ? PhpValue.FromClr(p.RawDefaultValue) : default(PhpValue);
+                    var isVariadic = p.GetCustomAttribute<ParamArrayAttribute>() != null;
 
                     int index = pi - implicitps;
                     if (index == parameters.Count)
@@ -71,13 +72,13 @@ namespace Pchp.Library.Reflection
                             }
                         }
 
-                        parameters.Add(new ReflectionParameter(function, index, p.ParameterType, allowsNull, p.Name, defaultValue));
+                        parameters.Add(new ReflectionParameter(function, index, p.ParameterType, allowsNull, isVariadic, p.Name, defaultValue));
                     }
                     else
                     {
                         // update existing
                         Debug.Assert(index < parameters.Count);
-                        parameters[index].AddOverload(p.ParameterType, allowsNull, p.Name, defaultValue);
+                        parameters[index].AddOverload(p.ParameterType, allowsNull, isVariadic, p.Name, defaultValue);
                     }
                 }
 
