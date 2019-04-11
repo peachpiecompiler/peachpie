@@ -89,6 +89,31 @@ namespace Pchp.Core.Reflection
         }
 
         /// <summary>
+        /// Determines whether given parametr allows <c>NULL</c> as the argument value.
+        /// </summary>
+        public static bool IsNullable(this ParameterInfo p)
+        {
+            if (p.ParameterType.IsValueType &&
+                p.ParameterType != typeof(PhpValue) &&
+                //p.ParameterType != typeof(PhpArray) // TODO: uncomment when PhpArray will be struct
+                p.ParameterType != typeof(PhpString))
+            {
+                if (p.ParameterType.IsNullable_T(out var _))
+                {
+                    return true;
+                }
+
+                // NULL is not possible on value types
+                return false;
+            }
+            else
+            {
+                // NULL is explicitly disallowed?
+                return p.GetCustomAttribute<NotNullAttribute>() == null;
+            }
+        }
+
+        /// <summary>
         /// Types that we do not expose in reflection.
         /// </summary>
         readonly static HashSet<Type> s_hiddenTypes = new HashSet<Type>()

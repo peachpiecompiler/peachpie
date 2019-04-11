@@ -57,7 +57,7 @@ namespace Pchp.Library.Reflection
                 {
                     var p = ps[pi];
 
-                    var allowsNull = p.GetCustomAttribute<NotNullAttribute>() == null;
+                    var allowsNull = p.IsNullable();
                     var defaultValue = p.HasDefaultValue ? PhpValue.FromClr(p.RawDefaultValue) : default(PhpValue);
                     var isVariadic = p.GetCustomAttribute<ParamArrayAttribute>() != null;
 
