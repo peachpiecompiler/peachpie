@@ -120,8 +120,8 @@ namespace Pchp.Library.Reflection
         public bool isConstructor() => name.EqualsOrdinalIgnoreCase(Core.Reflection.ReflectionUtils.PhpConstructorName);
         public bool isDestructor() => name.EqualsOrdinalIgnoreCase(Core.Reflection.ReflectionUtils.PhpDestructorName);
         public bool isFinal() => _routine.Methods.All(m => m.IsFinal);
-        public bool isPrivate() { throw new NotImplementedException(); }
-        public bool isProtected() { throw new NotImplementedException(); }
+        public bool isPrivate() => _routine.Methods.All(m => m.IsPrivate);
+        public bool isProtected() => _routine.Methods.All(m => m.IsFamily);
         public bool isPublic() => _routine.Methods.Any(m => m.IsPublic);
         public bool isStatic() => _routine.Methods.Any(m => m.IsStatic);
         public void setAccessible(bool accessible) { throw new NotImplementedException(); }

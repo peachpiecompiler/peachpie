@@ -28,6 +28,7 @@ namespace Pchp.Library.Reflection
         internal ReflectionFunctionAbstract _function;
         internal Type _type;
         internal bool _allowsNull;
+        internal bool _isVariadic;
         internal string _name;
 
         /// <summary>Zero-based index of the parameter.</summary>
@@ -41,7 +42,7 @@ namespace Pchp.Library.Reflection
         [PhpFieldsOnlyCtor]
         protected ReflectionParameter() { }
 
-        internal ReflectionParameter(ReflectionFunctionAbstract function, int index, Type type, bool allowsNull, string name, PhpValue defaultValue = default(PhpValue))
+        internal ReflectionParameter(ReflectionFunctionAbstract function, int index, Type type, bool allowsNull, bool isVariadic, string name, PhpValue defaultValue = default(PhpValue))
         {
             Debug.Assert(function != null);
             Debug.Assert(index >= 0);
@@ -51,12 +52,13 @@ namespace Pchp.Library.Reflection
             _index = index;
             _type = type;
             _allowsNull = allowsNull;
+            _isVariadic = isVariadic;
             _name = name;
             _defaultValue = defaultValue;
         }
 
         /// <summary>Updates the parameter information with an overloaded parameter information.</summary>
-        internal void AddOverload(Type type, bool allowsNull, string name, PhpValue defaultValue = default(PhpValue))
+        internal void AddOverload(Type type, bool allowsNull, bool isVariadic, string name, PhpValue defaultValue = default(PhpValue))
         {
             if (hasTypeInternal(type) && !hasTypeInternal(_type))
             {
@@ -64,6 +66,7 @@ namespace Pchp.Library.Reflection
             }
 
             _allowsNull |= allowsNull;
+            _isVariadic |= isVariadic;
 
             if (_defaultValue.IsDefault && !defaultValue.IsDefault)
             {
@@ -87,6 +90,7 @@ namespace Pchp.Library.Reflection
             _index = p._index;
             _type = p._type;
             _allowsNull = p._allowsNull;
+            _isVariadic = p._isVariadic;
             _name = p._name;
             _defaultValue = p._defaultValue;
         }
@@ -187,7 +191,7 @@ namespace Pchp.Library.Reflection
 
         public bool isPassedByReference() => _type == typeof(PhpAlias);
 
-        public bool isVariadic() { throw new NotImplementedException(); }
+        public bool isVariadic() => _isVariadic;
 
         public virtual string __toString() => $"Parameter #{_index} [ <{(_defaultValue.IsDefault ? "required" : "optional")}>{_debugTypeName} ${_name}{_debugDefaultValue} ]";
 
