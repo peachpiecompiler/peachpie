@@ -270,6 +270,10 @@ namespace Peachpie.Library.Scripting
             {
                 foreach (var d in diagnostics)
                 {
+                    if (d.Severity != DiagnosticSeverity.Error) {
+                        continue;
+                    }
+
                     PhpException.Throw(PhpError.Error, d.GetMessage());
                 }
 

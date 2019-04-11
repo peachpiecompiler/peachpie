@@ -1524,17 +1524,24 @@ namespace Pchp.Core
                 return PhpValue.Null;
             }
 
+            // Make sure the currently loaded assemblies are added as references
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies()
+                .Where(assembly => !assembly.IsDynamic)
+                .Select(assembly => assembly.Location)
+                .Where(x => x.Length != 0)
+                .ToArray();
+
             var script = Core.Context.DefaultScriptingProvider.CreateScript(
                 new Context.ScriptOptions()
                 {
                     Context = ctx,
                     Location = new Location(Path.Combine(ctx.RootPath, currentpath), line, column),
+                    AdditionalReferences = assemblies,
                     EmitDebugInformation = false,   // TODO
                     IsSubmission = true,
                 },
                 code);
 
-            //
             return script.Evaluate(ctx, locals, @this, self);
         }
 
