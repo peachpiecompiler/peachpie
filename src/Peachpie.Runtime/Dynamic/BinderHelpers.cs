@@ -29,7 +29,8 @@ namespace Pchp.Core.Dynamic
             return
                 p.IsContextParameter() || p.IsQueryValueParameter() ||
                 p.IsLateStaticParameter() ||
-                p.IsImportCallerClassParameter() || p.IsImportCallerStaticClassParameter();
+                p.IsImportCallerClassParameter() || p.IsImportCallerStaticClassParameter() ||
+                p.IsClosureParameter();
 
             // TODO: classCtx, <this>
         }
@@ -65,6 +66,11 @@ namespace Pchp.Core.Dynamic
             return
                 (p.ParameterType == typeof(PhpTypeInfo)) &&
                 p.GetCustomAttribute(typeof(ImportCallerStaticClassAttribute)) != null;
+        }
+
+        public static bool IsClosureParameter(this ParameterInfo p)
+        {
+            return p.ParameterType == typeof(Closure) && p.Name == "<closure>";
         }
 
         /// <summary>
@@ -948,6 +954,11 @@ namespace Pchp.Core.Dynamic
                     else if (p.IsImportCallerStaticClassParameter())
                     {
                         throw new NotSupportedException(); // we don't know current late static bound type
+                    }
+                    else if (p.IsClosureParameter())
+                    {
+                        boundargs[i] = args.BindArgument(argi, p);
+                        argi++;
                     }
                     else
                     {
