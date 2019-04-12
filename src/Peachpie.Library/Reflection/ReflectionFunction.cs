@@ -13,6 +13,11 @@ namespace Pchp.Library.Reflection
     public class ReflectionFunction : ReflectionFunctionAbstract
     {
         /// <summary>
+        /// Indicates deprecated functions.
+        /// </summary>
+        public const int IS_DEPRECATED = 0x40000;
+
+        /// <summary>
         /// When constructed from a <see cref="Closure"/>,
         /// the original instance of the closure is here.
         /// Otherwise, this is <c>null</c>.

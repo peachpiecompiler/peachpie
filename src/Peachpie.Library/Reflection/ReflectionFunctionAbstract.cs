@@ -44,8 +44,24 @@ namespace Pchp.Library.Reflection
         [return: CastToFalse]
         public string getDocComment() => null;
         public long getEndLine() { throw new NotImplementedException(); }
-        //public ReflectionExtension getExtension() { throw new NotImplementedException(); }
-        public string getExtensionName() { throw new NotImplementedException(); }
+        public ReflectionExtension getExtension()
+        {
+            var extname = getExtensionName();
+            return extname != null ? new ReflectionExtension(extname) : null;
+        }
+        [return: CastToFalse]
+        public string getExtensionName()
+        {
+            var containingType = _routine.Methods[0].DeclaringType;
+            var extensions = containingType.GetCustomAttribute<PhpExtensionAttribute>(false)?.Extensions;
+
+            if (extensions != null && extensions.Length != 0)
+            {
+                return extensions[0];
+            }
+
+            return null;
+        }
         public virtual string getFileName(Context ctx) { throw new NotImplementedException(); }
         public string getName() => name;
         public string getNamespaceName()
@@ -65,7 +81,7 @@ namespace Pchp.Library.Reflection
         public PhpArray getParameters()
         {
             var parameters = ReflectionUtils.ResolveReflectionParameters(this, _routine.Methods);
-            
+
             //
 
             var arr = new PhpArray(parameters.Count);
@@ -76,8 +92,10 @@ namespace Pchp.Library.Reflection
 
             return arr;
         }
-
-        //public ReflectionType getReturnType() { throw new NotImplementedException(); }
+        public virtual ReflectionType getReturnType()
+        {
+            throw new NotImplementedException();
+        }
         public string getShortName()
         {
             var name = this.name;
