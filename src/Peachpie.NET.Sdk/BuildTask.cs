@@ -136,15 +136,26 @@ namespace Peachpie.NET.Sdk.Tools
 				}
 			}
 
-            foreach (var r in ReferencePath)
+            if (ReferencePath != null && ReferencePath.Length != 0)
             {
-                args.Add("/r:" + r);
+                foreach (var r in ReferencePath)
+
+                {
+                    args.Add("/r:" + r);
+                }
+            }
+            else
+            {
+                Log.LogWarning("No references specified.");
             }
 
             // sources at the end:
-            foreach (var s in Compile)
+            if (Compile != null)
             {
-                args.Add(s);
+                foreach (var s in Compile)
+                {
+                    args.Add(s);
+                }
             }
 
             //
