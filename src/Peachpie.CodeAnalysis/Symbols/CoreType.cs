@@ -139,7 +139,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public readonly CoreType
             Context, Operators, Convert, Comparison, StrictComparison, PhpException,
-            ScriptAttribute, PhpTraitAttribute, PharAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, NotNullAttribute, PhpMemberVisibilityAttribute,
+            ScriptAttribute, PhpTraitAttribute, PharAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, NotNullAttribute, ReturnTypeAttribute, PhpMemberVisibilityAttribute,
             ScriptDiedException,
             IStaticInit, RoutineInfo, IndirectLocal,
             BinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
@@ -195,6 +195,7 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpHiddenAttribute = Create("PhpHiddenAttribute");
             PhpFieldsOnlyCtorAttribute = Create(PhpFieldsOnlyCtorAttributeName);
             NotNullAttribute = Create("NotNullAttribute");
+            ReturnTypeAttribute = Create("ReturnTypeAttribute");
             PhpMemberVisibilityAttribute = Create(PhpMemberVisibilityAttributeName);
             IStaticInit = Create("IStaticInit");
             RoutineInfo = Create("Reflection.RoutineInfo");

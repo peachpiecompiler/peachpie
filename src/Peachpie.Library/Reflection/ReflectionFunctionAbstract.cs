@@ -94,8 +94,20 @@ namespace Pchp.Library.Reflection
         }
         public virtual ReflectionType getReturnType()
         {
-            throw new NotImplementedException();
+            var returnType = _routine.Methods.Select(m => m.GetCustomAttribute<ReturnTypeAttribute>()).First();
+
+            if (returnType == null)
+            {
+                return null;
+            }
+
+            return new ReflectionType()
+            {
+                Name = returnType.SyntaxType,
+                AllowsNull = returnType.AllowsNull
+            };
         }
+
         public string getShortName()
         {
             var name = this.name;
@@ -104,7 +116,7 @@ namespace Pchp.Library.Reflection
         }
         public long getStartLine() { throw new NotImplementedException(); }
         public PhpArray getStaticVariables() { throw new NotImplementedException(); }
-        public bool hasReturnType() { throw new NotImplementedException(); }
+        public bool hasReturnType() => _routine.Methods.Any(m => m.GetCustomAttribute<ReturnTypeAttribute>() != null);
         public bool inNamespace() => name.IndexOf(ReflectionUtils.NameSeparator) > 0;
         public virtual bool isClosure() { throw new NotImplementedException(); }
         public virtual bool isDeprecated() { throw new NotImplementedException(); }

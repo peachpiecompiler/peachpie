@@ -288,6 +288,26 @@ namespace Pchp.Core
     }
 
     /// <summary>
+    /// Compiler generated attribute denoting that the method returns a specific type
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Method)]
+    public sealed class ReturnTypeAttribute : Attribute
+    {
+        /// <summary>
+        /// The type containing exported functions.
+        /// </summary>
+        public string SyntaxType { get; private set; }
+
+        public bool AllowsNull { get; private set; }
+
+        public ReturnTypeAttribute(string type, bool allowsNull)
+        {
+            SyntaxType = type;
+            AllowsNull = allowsNull;
+        }
+    }
+
+    /// <summary>
 	/// Marks arguments having by-value argument pass semantics and data of the value can be changed by a callee.
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]

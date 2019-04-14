@@ -11,11 +11,16 @@ namespace Pchp.Library.Reflection
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(ReflectionUtils.ExtensionName)]
     public class ReflectionType
     {
-        public virtual bool allowsNull() { throw new NotImplementedException(); }
+        public string Name { get; set; }
+        public bool AllowsNull { get; set; }
+        public bool BuiltIn { get; set; }
 
-        public virtual bool isBuiltin() { throw new NotImplementedException(); }
 
-        public virtual string __toString() { throw new NotImplementedException(); }
+        public virtual bool allowsNull() => AllowsNull;
+
+        public virtual bool isBuiltin() => BuiltIn;
+
+        public virtual string __toString() => Name;
 
         public override string ToString() => __toString();
     }
@@ -23,7 +28,7 @@ namespace Pchp.Library.Reflection
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(ReflectionUtils.ExtensionName)]
     public class ReflectionNamedType : ReflectionType
     {
-        public virtual string getName() { throw new NotImplementedException(); }
+        public virtual string getName() => Name;
     }
 
 }

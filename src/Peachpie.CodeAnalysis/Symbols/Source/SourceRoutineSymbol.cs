@@ -391,6 +391,21 @@ namespace Pchp.CodeAnalysis.Symbols
             return base.GetAttributes().AddRange(attrs);
         }
 
+        internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(CommonModuleCompilationState compilationState)
+        {
+            if (SyntaxReturnType != null)
+            {
+                yield return new SynthesizedAttributeData(
+                    DeclaringCompilation.CoreMethods.Ctors.ReturnTypeAttribute,
+                    ImmutableArray.Create(
+                        new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, SyntaxReturnType.QualifiedName.ToString()),
+                        new TypedConstant(DeclaringCompilation.CoreTypes.Boolean.Symbol, TypedConstantKind.Primitive, SyntaxReturnType.IsNullable())
+                    ), ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+            }
+
+            yield break;
+        }
+
         internal override ObsoleteAttributeData ObsoleteAttributeData => null;   // TODO: from PHPDoc
 
         /// <summary>
