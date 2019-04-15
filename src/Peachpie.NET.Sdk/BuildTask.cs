@@ -126,7 +126,7 @@ namespace Peachpie.NET.Sdk.Tools
             AddNoEmpty(args, "nowarn", NoWarn);
             AddNoEmpty(args, "phpdoctypes", PhpDocTypes);
             AddNoEmpty(args, "sourcelink", SourceLink);
-            AddNoEmpty(args, "logger", "Peachpie.Compiler.Diagnostics.Observer, Peachpie.Compiler.Diagnostics");
+            AddNoEmpty(args, "logger", "Peachpie.Compiler.Diagnostics.Observer,Peachpie.Compiler.Diagnostics");
 
 			if (DefineConstants != null)
 			{
