@@ -53,8 +53,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (Interfaces.IsEmpty)
                 {
                     // get interfaces of base type
-                    return BaseType != null
-                        ? BaseType.AllInterfaces
+                    return (BaseType != null && BaseType != this)
+                        ? BaseType.AllInterfaces    // TODO: handle circular dependency, stack overflow
                         : ImmutableArray<NamedTypeSymbol>.Empty;
                 }
 
@@ -62,7 +62,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 var todo = new Queue<NamedTypeSymbol>();
 
-                for (var b = this; b != null; b = b.BaseType)
+                for (var b = this; b != null; b = b.BaseType)   // TODO: handle circular dependency, stack overflow
                 {
                     b.Interfaces.ForEach(todo.Enqueue);
                 }

@@ -371,8 +371,8 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public override bool IsUnreachable =>
             IsMarkedUnreachable ||
-            BaseType?.IsUnreachable == true ||
-            Interfaces.Any(i => i.IsUnreachable) ||
+            (BaseType != null && BaseType != this && BaseType.IsUnreachable) || // TODO: handle circular dependency, stack overflow
+            Interfaces.Any(i => i != this && i.IsUnreachable) ||
             TraitUses.Any(tu => tu.Symbol.IsUnreachable);
 
         /// <summary>
@@ -689,13 +689,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
         void CheckForCircularBase(SourceTypeSymbol t, DiagnosticBag diagnostics)
         {
-            var set = new HashSet<SourceTypeSymbol>();  // only care about source symbols
-            for (var b = t; b != null; b = b.BaseType as SourceTypeSymbol)
+            if (t.BaseType != null && t.BaseType.SpecialType != SpecialType.System_Object)
             {
-                if (set.Add(b) == false)
+                var set = new HashSet<SourceTypeSymbol>();  // only care about source symbols
+                for (var b = t; b != null; b = b.BaseType as SourceTypeSymbol)
                 {
-                    diagnostics.Add(CreateLocation(_syntax.HeadingSpan), ErrorCode.ERR_CircularBase, t.BaseType, t);
-                    break;
+                    if (set.Add(b) == false)
+                    {
+                        diagnostics.Add(CreateLocation(_syntax.HeadingSpan), ErrorCode.ERR_CircularBase, t.BaseType, t);
+                        break;
+                    }
                 }
             }
         }
