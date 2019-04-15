@@ -46,7 +46,10 @@ namespace Pchp.Library
 		/// <returns><B>true</B> if the class given by <paramref name="className"/> has been defined,
 		/// <B>false</B> otherwise.</returns>
 		public static bool class_exists(Context ctx, string className, bool autoload = true)
-            => ctx.GetDeclaredType(className, autoload) != null;
+        {
+            var info = ctx.GetDeclaredType(className, autoload);
+            return info != null && !info.IsInterface;
+        }
 
         /// <summary>
 		/// Tests whether a given interface is defined.
