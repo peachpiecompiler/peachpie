@@ -479,11 +479,17 @@ namespace Peachpie.Library.Network
 
                         for (int i = 0; i < response.Headers.Count; i++)
                         {
-                            // header
-                            ch.ProcessingHeaders.User.Invoke(ctx, new[] {
-                                PhpValue.FromClr(ch),
-                                PhpValue.Create(response.Headers[i] + HttpHeaders.HeaderSeparator),
-                            });
+                            var key = response.Headers.GetKey(i);
+                            var value = response.Headers.Get(i);
+
+                            if (key == null || key.Length != 0)
+                            {
+                                // header
+                                ch.ProcessingHeaders.User.Invoke(ctx, new[] {
+                                    PhpValue.FromClr(ch),
+                                    PhpValue.Create(key + ": " + value + HttpHeaders.HeaderSeparator),
+                                });
+                            }
                         }
 
                         // \r\n
