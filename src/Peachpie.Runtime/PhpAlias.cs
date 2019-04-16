@@ -10,7 +10,7 @@ namespace Pchp.Core
     /// <summary>
     /// Represents an aliased value.
     /// </summary>
-    [DebuggerDisplay("{Value.DisplayString,nq}, Refs#{_refcount}", Type = "&{Value.DebugTypeName,nq}")]
+    [DebuggerDisplay("{Value.DisplayString,nq}, Refs#{ReferenceCount}", Type = "&{Value.DebugTypeName,nq}")]
     [DebuggerNonUserCode]
     public class PhpAlias : IPhpConvertible
     {
