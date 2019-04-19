@@ -1206,7 +1206,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 Debug.Assert(handle.IsValid);
 
                 // Remove any constant value of isset()
-                x.ConstantValue = default(Optional<object>);
+                x.ConstantValue = default;
 
                 //
                 if (State.IsLocalSet(handle))
@@ -1245,6 +1245,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         //
                         State.SetLocalType(handle, newtype);
                     }
+                }
+                else if (localname.IsAutoGlobal)
+                {
+                    // nothing
                 }
                 else
                 {
