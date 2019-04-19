@@ -425,13 +425,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     : ps.Length - skippedps;
 
                 //
+                var routineName = GetMemberNameForDiagnostic(x.TargetMethod, (x.Instance != null || x is BoundNewEx || x is BoundStaticFunctionCall));
+
+                //
                 if (x.ArgumentsInSourceOrder.Length < expectsmin)
                 {
-                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_MissingArguments, x.TargetMethod.RoutineName, expectsmin, x.ArgumentsInSourceOrder.Length);
+                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_MissingArguments, routineName, expectsmin, x.ArgumentsInSourceOrder.Length);
                 }
                 else if (x.ArgumentsInSourceOrder.Length > expectsmax)
                 {
-                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_TooManyArguments, x.TargetMethod.RoutineName, expectsmax, x.ArgumentsInSourceOrder.Length);
+                    _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_TooManyArguments, routineName, expectsmax, x.ArgumentsInSourceOrder.Length);
                 }
             }
 
@@ -705,7 +708,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         static string GetMemberNameForDiagnostic(Symbol target, bool isMemberName)
         {
             string name = target.Name;
-
+            
+            if (target.Kind == SymbolKind.Method)
+            {
+                if (name == WellKnownMemberNames.InstanceConstructorName)
+                {
+                    name = Name.SpecialMethodNames.Construct.Value;
+                }
+            }
+            
             if (isMemberName)
             {
                 var qname = target.ContainingType.PhpQualifiedName();
