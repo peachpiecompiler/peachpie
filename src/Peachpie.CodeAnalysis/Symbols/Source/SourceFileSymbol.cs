@@ -171,9 +171,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
         protected string CreateRelativeFilePath(string fullPath)
         {
-            return PhpFileUtilities.GetRelativePath(
+            var relpath = PhpFileUtilities.GetRelativePath(
                 PhpFileUtilities.NormalizeSlashes(fullPath),
                 PhpFileUtilities.NormalizeSlashes(_compilation.Options.BaseDirectory));
+
+            if (!string.IsNullOrEmpty(_compilation.Options.SubDirectory))
+            {
+                relpath = PhpFileUtilities.NormalizeSlashes(PathUtilities.CombinePathsUnchecked(_compilation.Options.SubDirectory, relpath));
+            }
+
+            return relpath;
         }
 
         public virtual string RelativeFilePath => CreateRelativeFilePath(_syntaxTree.Source.FilePath);

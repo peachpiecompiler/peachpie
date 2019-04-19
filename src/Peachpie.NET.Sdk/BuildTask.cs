@@ -76,6 +76,9 @@ namespace Peachpie.NET.Sdk.Tools
         public string SourceLink { get; set; }
 
         /// <summary></summary>
+        public string PhpRelativePath { get; set; }
+
+        /// <summary></summary>
         public string[] DefineConstants { get; set; }
 
         /// <summary></summary>
@@ -83,6 +86,8 @@ namespace Peachpie.NET.Sdk.Tools
 
         /// <summary></summary>
         public string[] Compile { get; set; }
+
+        // TODO: embed
 
         /// <summary></summary>
         public override bool Execute()
@@ -126,6 +131,7 @@ namespace Peachpie.NET.Sdk.Tools
             AddNoEmpty(args, "nowarn", NoWarn);
             AddNoEmpty(args, "phpdoctypes", PhpDocTypes);
             AddNoEmpty(args, "sourcelink", SourceLink);
+            AddNoEmpty(args, "subdir", PhpRelativePath);
             AddNoEmpty(args, "logger", "Peachpie.Compiler.Diagnostics.Observer,Peachpie.Compiler.Diagnostics");
 
 			if (DefineConstants != null)

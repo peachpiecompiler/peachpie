@@ -141,6 +141,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             var managedResources = new List<ResourceDescription>();
             var defines = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             string outputDirectory = baseDirectory;
+            string subDirectory = null;
             string outputFileName = null;
             string documentationPath = null;
             string moduleName = null;
@@ -566,6 +567,15 @@ namespace Pchp.CodeAnalysis.CommandLine
                         }
                         continue;
 
+                    case "subdir":
+                        if (!string.IsNullOrEmpty(value))
+                        {
+                            // TODO: check value
+                            subDirectory = Utilities.PhpFileUtilities.NormalizeSlashes(RemoveQuotesAndSlashes(value));
+
+                        }
+                        continue;
+
                     case "embed":
                         if (string.IsNullOrEmpty(value))
                         {
@@ -662,6 +672,7 @@ namespace Pchp.CodeAnalysis.CommandLine
                 outputKind: outputKind,
                 baseDirectory: baseDirectory,
                 sdkDirectory: sdkDirectoryOpt,
+                subDirectory: subDirectory,
                 moduleName: moduleName,
                 mainTypeName: mainTypeName,
                 scriptClassName: WellKnownMemberNames.DefaultScriptClassName,

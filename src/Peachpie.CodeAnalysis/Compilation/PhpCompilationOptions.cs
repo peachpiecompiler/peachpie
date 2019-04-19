@@ -53,6 +53,12 @@ namespace Pchp.CodeAnalysis
         public string BaseDirectory { get; private set; }
 
         /// <summary>
+        /// A path where all the compiled scripts will be moved virtually.
+        /// File "a/index.php" will be compiled into "<see cref="SubDirectory"/>/a/index.php"
+        /// </summary>
+        public string SubDirectory { get; private set; }
+
+        /// <summary>
         /// Compilation root directory.
         /// All script paths will be emitted relatively to this path.
         /// </summary>
@@ -95,6 +101,7 @@ namespace Pchp.CodeAnalysis
             OutputKind outputKind,
             string baseDirectory,
             string sdkDirectory,
+            string subDirectory = null,
             bool reportSuppressedDiagnostics = false,
             string moduleName = null,
             string mainTypeName = null,
@@ -123,7 +130,7 @@ namespace Pchp.CodeAnalysis
             ImmutableArray<Diagnostic> diagnostics = default(ImmutableArray<Diagnostic>),
             PhpParseOptions parseOptions = null,
             bool referencesSupersedeLowerVersions = false)
-            : this(outputKind, baseDirectory, sdkDirectory,
+            : this(outputKind, baseDirectory, sdkDirectory, subDirectory,
                    reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName,
                    versionString,
                    optimizationLevel, checkOverflow,
@@ -151,6 +158,7 @@ namespace Pchp.CodeAnalysis
             OutputKind outputKind,
             string baseDirectory,
             string sdkDirectory,
+            string subDirectory,
             bool reportSuppressedDiagnostics,
             string moduleName,
             string mainTypeName,
@@ -190,6 +198,7 @@ namespace Pchp.CodeAnalysis
         {
             this.BaseDirectory = baseDirectory;
             this.SdkDirectory = sdkDirectory;
+            this.SubDirectory = subDirectory;
             this.PhpDocTypes = phpdocTypes;
             this.ParseOptions = parseOptions;
             this.Diagnostics = diagnostics;
@@ -200,6 +209,7 @@ namespace Pchp.CodeAnalysis
             outputKind: other.OutputKind,
             baseDirectory: other.BaseDirectory,
             sdkDirectory: other.SdkDirectory,
+            subDirectory: other.SubDirectory,
             moduleName: other.ModuleName,
             mainTypeName: other.MainTypeName,
             scriptClassName: other.ScriptClassName,
