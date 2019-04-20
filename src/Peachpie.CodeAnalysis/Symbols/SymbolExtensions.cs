@@ -125,6 +125,12 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public static QualifiedName MakeQualifiedName(this NamedTypeSymbol type)
         {
+            if (type.OriginalDefinition != type)
+            {
+                // constructed generics, traits
+                return MakeQualifiedName(type.OriginalDefinition);
+            }
+
             return NameUtils.MakeQualifiedName(type.Name, type.NamespaceName, true);
         }
 
