@@ -425,7 +425,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     : ps.Length - skippedps;
 
                 //
-                var routineName = GetMemberNameForDiagnostic(x.TargetMethod, (x.Instance != null || x is BoundNewEx || x is BoundStaticFunctionCall));
+                var routineName =
+                    (x is BoundNewEx)
+                    ? "new " + x.TargetMethod.ContainingType.PhpQualifiedName().ToString()
+                    : GetMemberNameForDiagnostic(x.TargetMethod, (x.Instance != null || x is BoundStaticFunctionCall));
 
                 //
                 if (x.ArgumentsInSourceOrder.Length < expectsmin)
@@ -708,14 +711,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         static string GetMemberNameForDiagnostic(Symbol target, bool isMemberName)
         {
             string name = target.Name;
-            
-            if (target.Kind == SymbolKind.Method)
-            {
-                if (name == WellKnownMemberNames.InstanceConstructorName)
-                {
-                    name = Name.SpecialMethodNames.Construct.Value;
-                }
-            }
             
             if (isMemberName)
             {
