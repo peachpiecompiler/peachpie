@@ -94,6 +94,14 @@ namespace Peachpie.NET.Sdk.Tools
         {
             _cancellation = new CancellationTokenSource();
 
+            // initiate our assembly resolver within MSBuild process:
+            AssemblyResolver.InitializeSafe();
+
+            if (IsCanceled())
+            {
+                return false;
+            }
+
             //
             // compose compiler arguments:
             var args = new List<string>(1024)
@@ -179,6 +187,11 @@ namespace Peachpie.NET.Sdk.Tools
             // run the compiler:
             string libs = Environment.GetEnvironmentVariable("LIB") + @";C:\Windows\Microsoft.NET\assembly\GAC_MSIL";
 
+            if (IsCanceled())
+            {
+                return false;
+            }
+
             // compile
             try
             {
@@ -236,6 +249,14 @@ namespace Peachpie.NET.Sdk.Tools
         public void Cancel()
         {
             _cancellation.Cancel();
+        }
+
+        /// <summary>
+        /// Gets value indicating user has canceled the task.
+        /// </summary>
+        public bool IsCanceled()
+        {
+            return _cancellation != null && _cancellation.IsCancellationRequested;
         }
 
         bool HasDebugPlus
