@@ -38,6 +38,18 @@ namespace Pchp.Library.Reflection
 
         #endregion
 
+        /// <summary>Helper that gets the routine's return type.</summary>
+        internal protected bool ResolveReturnType(out Type type, out bool notNullFlag)
+        {
+            var m = _routine.Methods[0];
+
+            type = m.ReturnType;
+            notNullFlag = m.ReturnTypeCustomAttributes.IsDefined(typeof(NotNullAttribute), false);
+
+            //
+            return type != typeof(PhpValue) && type != typeof(PhpAlias); // dunno
+        }
+
         //private void __clone(void ) { throw new NotImplementedException(); }
         public virtual ReflectionClass getClosureScopeClass() { throw new NotImplementedException(); }
         public virtual object getClosureThis() { throw new NotImplementedException(); }
@@ -94,7 +106,7 @@ namespace Pchp.Library.Reflection
         }
         public virtual ReflectionType getReturnType()
         {
-            throw new NotImplementedException();
+            return ResolveReturnType(out var t, out var nullable) ? new ReflectionNamedType(t, nullable) : null;
         }
         public string getShortName()
         {
@@ -104,7 +116,10 @@ namespace Pchp.Library.Reflection
         }
         public long getStartLine() { throw new NotImplementedException(); }
         public PhpArray getStaticVariables() { throw new NotImplementedException(); }
-        public bool hasReturnType() { throw new NotImplementedException(); }
+        public bool hasReturnType()
+        {
+            return ResolveReturnType(out var _, out var _);
+        }
         public bool inNamespace() => name.IndexOf(ReflectionUtils.NameSeparator) > 0;
         public virtual bool isClosure() { throw new NotImplementedException(); }
         public virtual bool isDeprecated() { throw new NotImplementedException(); }
