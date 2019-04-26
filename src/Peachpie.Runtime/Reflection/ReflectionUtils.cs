@@ -93,6 +93,8 @@ namespace Pchp.Core.Reflection
         /// </summary>
         public static bool IsNullable(this ParameterInfo p)
         {
+            Debug.Assert(typeof(PhpArray).IsValueType == false); // see TODO below
+
             if (p.ParameterType.IsValueType &&
                 p.ParameterType != typeof(PhpValue) &&
                 //p.ParameterType != typeof(PhpArray) // TODO: uncomment when PhpArray will be struct

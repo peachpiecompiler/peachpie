@@ -44,7 +44,9 @@ namespace Pchp.Library.Reflection
             var m = _routine.Methods[0];
 
             type = m.ReturnType;
-            notNullFlag = m.ReturnTypeCustomAttributes.IsDefined(typeof(NotNullAttribute), false);
+            notNullFlag =
+                m.ReturnTypeCustomAttributes.IsDefined(typeof(NotNullAttribute), false) ||
+                m.ReturnTypeCustomAttributes.IsDefined(typeof(CastToFalse), false); // [return: CastToFalse] => NULL cannot be returned
 
             //
             return type != typeof(PhpValue) && type != typeof(PhpAlias); // dunno
