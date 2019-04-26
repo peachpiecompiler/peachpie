@@ -705,6 +705,56 @@ namespace Pchp.Library
 
         #endregion
 
+        #region get_headers
+
+        /// <summary>
+        /// Fetches all the headers sent by the server in response to an HTTP request.
+        /// </summary>
+        /// <param name="url">The target URL.</param>
+        /// <param name="format">If the optional <paramref name="format"/> parameter is set to non-zero, <see cref="get_headers"/>() parses the response and sets the array's keys.</param>
+        /// <param name="context">A valid context resource created with <see cref="Streams.PhpContexts.stream_context_create"/>().</param>
+        /// <returns></returns>
+        [return: CastToFalse]
+        public static PhpArray get_headers(string url, int format = 0, PhpResource context = null)
+        {
+            var arr = new PhpArray();
+
+            var streamcontext = Streams.StreamContext.GetValid(context, allowNull: true);
+
+            try
+            {
+                using (var client = new System.Net.Http.HttpClient())
+                {
+                    var response = client.GetAsync(url, System.Net.Http.HttpCompletionOption.ResponseHeadersRead).Result;
+                    
+                    arr.Add($"HTTP/{response.Version} {(int)response.StatusCode} {response.ReasonPhrase}");
+                    
+                    foreach (var h in response.Headers)
+                    {
+                        var value = string.Join(", ", h.Value);
+
+                        if (format == 0)
+                        {
+                            arr.Add(h.Key + ": " + value);
+                        }
+                        else
+                        {
+                            arr[h.Key] = value;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                PhpException.Throw(PhpError.Warning, ex.Message);
+                return null;
+            }
+
+            return arr;
+        }
+
+        #endregion
+
         #region getallheaders, apache_request_headers
 
         /// <summary>
