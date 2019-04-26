@@ -39,7 +39,7 @@ namespace Pchp.Library.Reflection
         #endregion
 
         /// <summary>Helper that gets the routine's return type.</summary>
-        internal protected bool ResolveReturnType(out Type type, out bool notNullFlag)
+        private protected bool ResolveReturnType(out Type type, out bool notNullFlag)
         {
             var m = _routine.Methods[0];
 

@@ -27,10 +27,10 @@ namespace Pchp.Library.Reflection
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(ReflectionUtils.ExtensionName)]
     public class ReflectionNamedType : ReflectionType
     {
-        internal protected readonly Type _type;
-        internal protected readonly bool _notNullFlag;
+        private protected readonly Type _type;
+        private protected readonly bool _notNullFlag;
 
-        internal protected static bool ResolvePhpType(Type type, out string name, out bool builtin, out bool nullable)
+        private protected static bool ResolvePhpType(Type type, out string name, out bool builtin, out bool nullable)
         {
             if (type == null)
             {
@@ -89,7 +89,7 @@ namespace Pchp.Library.Reflection
             return true;
         }
 
-        internal protected bool ResolvePhpType(out string name, out bool builtin, out bool allowsNull)
+        private protected bool ResolvePhpType(out string name, out bool builtin, out bool allowsNull)
         {
             if (ResolvePhpType(_type, out name, out builtin, out allowsNull))
             {

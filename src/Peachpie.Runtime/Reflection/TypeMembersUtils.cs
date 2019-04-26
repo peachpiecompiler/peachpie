@@ -95,10 +95,13 @@ namespace Pchp.Core.Reflection
 
         static readonly Func<IntStringKey, string> s_keyToString = new Func<IntStringKey, string>(k => k.ToString());
 
-        static readonly Func<FieldInfo, bool> s_notInternalFieldsPredicate = new Func<FieldInfo, bool>(
-            f => (f.Attributes & (FieldAttributes.Assembly)) != FieldAttributes.Assembly && // ignore "internal" fields
-                 !f.FieldType.IsPointer // ignore unsafe pointers
-        );
+        static readonly Func<FieldInfo, bool> s_notInternalFieldsPredicate = new Func<FieldInfo, bool>(f =>
+        {
+            var access = f.Attributes & FieldAttributes.FieldAccessMask;
+            return
+                access != FieldAttributes.Assembly && access != FieldAttributes.FamANDAssem &&  // ignore "internal" and "private protected" fields
+                !f.FieldType.IsPointer;
+        });
 
         static readonly Func<FieldInfo, PhpTypeInfo, string> s_formatPropertyNameForPrint = new Func<FieldInfo, PhpTypeInfo, string>((f, declarer) =>
         {
