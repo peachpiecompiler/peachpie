@@ -63,6 +63,14 @@ namespace Peachpie.AspNetCore.Web
             return _httpctx.Response.Headers.Select(pair => new KeyValuePair<string, string>(pair.Key, pair.Value.ToString()));
         }
 
+        IEnumerable<KeyValuePair<string, IEnumerable<string>>> IHttpPhpContext.RequestHeaders
+        {
+            get
+            {
+                return _httpctx.Request.Headers.Select(header => new KeyValuePair<string, IEnumerable<string>>(header.Key, header.Value));
+            }
+        }
+
         public string CacheControl
         {
             get => _httpctx.Response.Headers["cache-control"];

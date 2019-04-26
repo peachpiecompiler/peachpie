@@ -705,6 +705,44 @@ namespace Pchp.Library
 
         #endregion
 
+        #region getallheaders, apache_request_headers
+
+        /// <summary>
+        /// Fetch all HTTP request headers.
+        /// </summary>
+        /// <returns>An associative array of all the HTTP headers in the current request, or FALSE on failure.</returns>
+        [return: CastToFalse]
+        public static PhpArray apache_request_headers(Context ctx) => getallheaders(ctx);
+
+        /// <summary>
+        /// Fetch all HTTP request headers.
+        /// </summary>
+        /// <returns>An associative array of all the HTTP headers in the current request, or FALSE on failure.</returns>
+        [return: CastToFalse]
+        public static PhpArray getallheaders(Context ctx)
+        {
+            var webctx = ctx.HttpPhpContext;
+            if (webctx != null)
+            {
+                var headers = webctx.RequestHeaders;
+                if (headers != null)
+                {
+                    var result = new PhpArray(16);
+
+                    foreach (var h in headers)
+                    {
+                        result[h.Key] = string.Join(", ", h.Value) ?? string.Empty;
+                    }
+
+                    return result;
+                }
+            }
+
+            return null;
+        }
+
+        #endregion
+
         #region rawurlencode, rawurldecode, urlencode, urldecode
 
         /// <summary>

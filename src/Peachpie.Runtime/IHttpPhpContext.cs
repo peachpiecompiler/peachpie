@@ -35,6 +35,15 @@ namespace Pchp.Core
 
         #endregion
 
+        #region request
+
+        /// <summary>
+        /// Gets the current request headers.
+        /// </summary>
+        IEnumerable<KeyValuePair<string, IEnumerable<string>>> RequestHeaders { get; }
+
+        #endregion
+
         /// <summary>
         /// Gets or sets HTTP response status code.
         /// </summary>

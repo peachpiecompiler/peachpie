@@ -165,6 +165,18 @@ namespace Peachpie.RequestHandler
             }
         }
 
+        IEnumerable<KeyValuePair<string, IEnumerable<string>>> IHttpPhpContext.RequestHeaders
+        {
+            get
+            {
+                var headers = _httpctx.Request.Headers;
+                for (int i = 0; i < headers.Count; i++)
+                {
+                    yield return new KeyValuePair<string, IEnumerable<string>>(headers.GetKey(i), headers.GetValues(i));
+                }
+            }
+        }
+
         public string CacheControl
         {
             get => _httpctx.Response.CacheControl;
