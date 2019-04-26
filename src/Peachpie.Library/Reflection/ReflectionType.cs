@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Pchp.Core;
+using Pchp.Core.Reflection;
 
 namespace Pchp.Library.Reflection
 {
@@ -15,15 +16,106 @@ namespace Pchp.Library.Reflection
 
         public virtual bool isBuiltin() { throw new NotImplementedException(); }
 
+        [Obsolete]
         public virtual string __toString() { throw new NotImplementedException(); }
 
+#pragma warning disable CS0612 // Type or member is obsolete
         public override string ToString() => __toString();
+#pragma warning restore CS0612 // Type or member is obsolete
     }
 
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(ReflectionUtils.ExtensionName)]
     public class ReflectionNamedType : ReflectionType
     {
-        public virtual string getName() { throw new NotImplementedException(); }
+        internal protected readonly Type _type;
+        internal protected readonly bool _notNullFlag;
+
+        internal protected static bool ResolvePhpType(Type type, out string name, out bool builtin, out bool nullable)
+        {
+            if (type == null)
+            {
+                name = null;
+                builtin = false;
+                nullable = true;
+                return false;
+            }
+
+            nullable = !type.IsValueType;
+
+            if (type == typeof(long) || type == typeof(int))
+            {
+                name = PhpVariable.TypeNameInt;
+                builtin = true;
+            }
+            else if (type == typeof(double))
+            {
+                name = PhpVariable.TypeNameDouble;
+                builtin = true;
+            }
+            else if (type == typeof(bool))
+            {
+                name = PhpVariable.TypeNameBool;
+                builtin = true;
+            }
+            else if (type == typeof(string) || type == typeof(PhpString))
+            {
+                name = PhpVariable.TypeNameString;
+                builtin = true;
+            }
+            else if (type == typeof(PhpArray))
+            {
+                name = PhpArray.PhpTypeName;
+                builtin = true;
+            }
+            else if (type == typeof(PhpAlias) || type == typeof(PhpValue))
+            {
+                name = null;
+                builtin = false;
+                return false;
+            }
+            else if (type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            {
+                nullable = true;
+                return ResolvePhpType(type.GetGenericArguments()[0], out name, out builtin, out var _);
+            }
+            else
+            {
+                var tinfo = type.GetPhpTypeInfo();
+                name = tinfo.Name;
+                builtin = false;
+                nullable = true;
+            }
+
+            return true;
+        }
+
+        internal protected bool ResolvePhpType(out string name, out bool builtin, out bool allowsNull)
+        {
+            if (ResolvePhpType(_type, out name, out builtin, out allowsNull))
+            {
+                allowsNull &= !_notNullFlag;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        internal ReflectionNamedType(Type type, bool notNullFlag = false)
+        {
+            _type = type ?? throw new ArgumentNullException(nameof(type));
+            _notNullFlag = notNullFlag;
+        }
+
+        public virtual string getName() => ResolvePhpType(out var name, out var _, out var _) ? name : "mixed";
+
+        public override bool isBuiltin() => ResolvePhpType(out var _, out var builtin, out var _) && builtin;
+
+        public override bool allowsNull() => ResolvePhpType(out var _, out var _, out var nullable) && nullable;
+
+        [Obsolete]
+        public override string __toString() => getName();
     }
 
 }
