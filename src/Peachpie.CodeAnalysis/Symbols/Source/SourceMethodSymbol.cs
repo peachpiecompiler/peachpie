@@ -247,7 +247,20 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override Symbol ContainingSymbol => _type;
 
-        public override Accessibility DeclaredAccessibility => _syntax.Modifiers.GetAccessibility();
+        public override Accessibility DeclaredAccessibility
+        {
+            get
+            {
+                if (_syntax.Modifiers == PhpMemberAttributes.Private && _syntax.Name.Name.IsConstructName)
+                {
+                    // workaround for `private` __construct()
+                    // we have to be able to call __construct even from derived class
+                    return Accessibility.Protected;
+                }
+
+                return _syntax.Modifiers.GetAccessibility();
+            }
+        }
 
         public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences
         {
