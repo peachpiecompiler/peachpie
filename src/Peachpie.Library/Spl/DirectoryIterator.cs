@@ -205,7 +205,6 @@ namespace Pchp.Library.Spl
             }
             else
             {
-                _dotname = null;
                 _entry = _original;
                 _fullpath = _original.FullName;
             }
