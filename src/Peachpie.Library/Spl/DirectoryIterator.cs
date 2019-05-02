@@ -117,14 +117,8 @@ namespace Pchp.Library.Spl
         }
 
         public DirectoryIterator(Context ctx, string path)
-            : base(ctx, path)
         {
-        }
-
-        protected internal DirectoryIterator(FileSystemInfo/*!*/entry)
-            : base(entry)
-        {
-            __construct((DirectoryInfo)entry);
+            __construct(ctx, path);
         }
 
         [PhpFieldsOnlyCtor]
@@ -226,17 +220,21 @@ namespace Pchp.Library.Spl
         }
 
         public FilesystemIterator(Context ctx, string path, int flags = KEY_AS_PATHNAME | CURRENT_AS_FILEINFO | SKIP_DOTS)
-            : base(ctx, path)
         {
             __construct(ctx, path, flags);
         }
 
-        protected internal FilesystemIterator(DirectoryInfo/*!*/entry, int flags)
+        private protected FilesystemIterator(DirectoryInfo/*!*/entry, int flags)
+        {
+            __construct(entry, flags);
+        }
+
+        private protected void __construct(DirectoryInfo/*!*/entry, int flags)
         {
             _flags = flags;
             _fullpath = entry.FullName;
 
-            __construct(entry);
+            base.__construct(entry);
         }
 
         public override sealed void __construct(Context ctx, string file_name)
@@ -246,11 +244,8 @@ namespace Pchp.Library.Spl
 
         public virtual void __construct(Context ctx, string path, int flags = KEY_AS_PATHNAME | CURRENT_AS_FILEINFO | SKIP_DOTS)
         {
-            base.__construct(ctx, path);
             _flags = flags;
-
-            //
-            Position = 0;
+            base.__construct(ctx, path);
         }
 
         public virtual int getFlags() => _flags;
@@ -304,9 +299,9 @@ namespace Pchp.Library.Spl
     {
         private string subPath = string.Empty;
 
-        public RecursiveDirectoryIterator(Context ctx, string file_name, int flags = KEY_AS_PATHNAME | CURRENT_AS_FILEINFO | SKIP_DOTS)
-            : base(ctx, file_name, flags)
+        public RecursiveDirectoryIterator(Context ctx, string file_name, int flags = KEY_AS_PATHNAME | CURRENT_AS_FILEINFO)
         {
+            __construct(ctx, file_name, flags);
         }
 
         [PhpFieldsOnlyCtor]
@@ -315,8 +310,13 @@ namespace Pchp.Library.Spl
         }
 
         private protected RecursiveDirectoryIterator(DirectoryInfo entry, int flags, string subPath)
-            : base(entry, flags)
         {
+            __construct(entry, flags, subPath);
+        }
+
+        private protected void __construct(DirectoryInfo entry, int flags, string subPath)
+        {
+            base.__construct(entry, flags);
             this.subPath = subPath;
         }
 

@@ -68,7 +68,12 @@ namespace Pchp.Library.Spl
         {
         }
 
-        protected internal SplFileInfo(FileSystemInfo/*!*/entry)
+        internal SplFileInfo(FileSystemInfo/*!*/entry)
+        {
+            __construct(entry);
+        }
+
+        private protected void __construct(FileSystemInfo/*!*/entry)
         {
             _entry = entry;
             _fullpath = entry.FullName;
