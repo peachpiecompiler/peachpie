@@ -3286,7 +3286,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits .ret instruction with sequence point at closing brace.
         /// </summary>
-        public void EmitRet(TypeSymbol stack)
+        public void EmitRet(TypeSymbol stack, bool forceJumpToExit = false)
         {
             // sequence point
             var body = AstUtils.BodySpanOrInvalid(Routine?.Syntax);
@@ -3296,7 +3296,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
 
             //
-            if (_il.InExceptionHandler)
+            if (_il.InExceptionHandler || forceJumpToExit)
             {
                 ((ExitBlock)this.Routine.ControlFlowGraph.Exit).EmitTmpRet(this, stack);
             }

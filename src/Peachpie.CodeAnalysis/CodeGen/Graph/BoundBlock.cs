@@ -219,7 +219,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// </summary>
         internal void EmitTmpRet(CodeGenerator cg, TypeSymbol stack)
         {
-            if (_rettmp == null)
+            if (_rettmp == null && !cg.Routine.IsGeneratorMethod())
             {
                 var rtype = cg.Routine.ReturnType;
                 if (rtype.SpecialType != SpecialType.System_Void)
@@ -245,6 +245,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         internal override void Emit(CodeGenerator cg)
         {
+            // note: ILBuider removes eventual unreachable .ret opcode
+
+            if (_retlbl != null && _rettmp == null)
+            {
+                cg.Builder.MarkLabel(_retlbl);
+            }
+
             // if generator method: set state to -2 (closed)
             if (cg.Routine.IsGeneratorMethod())
             {
@@ -255,13 +262,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
                 cg.Builder.EmitRet(true);
                 return;
-            }
-
-            // note: ILBuider removes eventual unreachable .ret opcode
-
-            if (_retlbl != null && _rettmp == null)
-            {
-                cg.Builder.MarkLabel(_retlbl);
             }
 
             // return <default>;
