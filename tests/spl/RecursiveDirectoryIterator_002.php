@@ -22,12 +22,9 @@ function display($it) {
     $keyval = is_numeric($key) ? '#' : $key;  // Order integers are non-deterministic
     echo "{$keyval} => ". "{$value->getPath()}@{$value->getFilename()}" ."\n";
 
-    if ($it instanceof RecursiveIteratorIterator) {
-      $it = $it->getInnerIterator();
-    }
-
-    if ($it instanceof RecursiveDirectoryIterator) {
-      echo "<{$it->getSubPath()}@{$it->getSubPathname()}>\n";
+    $innerIt = ($it instanceof RecursiveIteratorIterator) ? $it->getInnerIterator() : $it;
+    if ($innerIt instanceof RecursiveDirectoryIterator) {
+      echo "<{$innerIt->getSubPath()}@{$innerIt->getSubPathname()}>\n";
     }
 
     $lines[] = ob_get_clean();
