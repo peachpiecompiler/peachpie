@@ -19,7 +19,8 @@ function display($it) {
     }
 
     flags($value);
-    echo "{$key} => ". "{$value->getPath()}@{$value->getFilename()}" ."\n";
+    $keyval = is_numeric($key) ? '#' : $key;  // Order integers are non-deterministic
+    echo "{$keyval} => ". "{$value->getPath()}@{$value->getFilename()}" ."\n";
 
     if ($it instanceof RecursiveIteratorIterator) {
       $it = $it->getInnerIterator();
@@ -51,6 +52,12 @@ function test() {
   display(new RecursiveDirectoryIterator('subdir'));
 
   display(new RecursiveIteratorIterator(new RecursiveDirectoryIterator('subdir')));
+
+  //display(new GlobIterator(__DIR__ . DIRECTORY_SEPARATOR . 'sampleDir'));
+  //display(new GlobIterator(__DIR__ . DIRECTORY_SEPARATOR . 'sampleDir'. DIRECTORY_SEPARATOR .'*'));
+  //display(new GlobIterator(__DIR__ . DIRECTORY_SEPARATOR . 'sampleDir'. DIRECTORY_SEPARATOR .'subDir'));
+  //display(new GlobIterator(__DIR__ . DIRECTORY_SEPARATOR . 'sampleDir'. DIRECTORY_SEPARATOR .'*'. DIRECTORY_SEPARATOR .'*'));
+  //display(new GlobIterator(__DIR__ . DIRECTORY_SEPARATOR . 'sampleDir'. DIRECTORY_SEPARATOR .'file*'));
 }
 
 test();
