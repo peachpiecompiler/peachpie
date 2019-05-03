@@ -18,6 +18,7 @@ namespace Pchp.Library.Spl
 
         private protected FileSystemInfo[] _children; // list of child elements
         private protected DirectoryInfo _original; // the directory we are iterating
+        private protected string _originalRelativePath; // relative path to it
 
         /// <summary>Gets or sets the internal iterator position.</summary>
         private protected int Position
@@ -90,20 +91,22 @@ namespace Pchp.Library.Spl
             if (TryGetEntryOnPosition(position, true, out _entry, out _dotname))
             {
                 _fullpath = _entry.FullName;
+                _relativePath = Path.Combine(_originalRelativePath, _dotname ?? _entry.Name);
                 return true;
             }
             else
             {
-                _fullpath = string.Empty;
+                _relativePath = _fullpath = string.Empty;
                 _entry = _original;
                 return false;
             }
         }
 
-        private protected void __construct(DirectoryInfo entry, FileSystemInfo[] children = null)
+        private protected void __construct(DirectoryInfo entry, string relativePath, FileSystemInfo[] children = null)
         {
             _entry = entry;
             _original = entry ?? throw new ArgumentNullException();
+            _originalRelativePath = relativePath;
 
             if (!_original.Exists)
             {
@@ -129,12 +132,18 @@ namespace Pchp.Library.Spl
         public override void __construct(Context ctx, string path)
         {
             base.__construct(ctx, path); // init _fullpath
-            __construct(new DirectoryInfo(_fullpath));
+            __construct(new DirectoryInfo(_fullpath), path);
         }
 
         public override string getFilename() => _dotname ?? base.getFilename();
 
+        public override string getPath() => (_dotname != null) ? _originalRelativePath : base.getPath();
+
         public virtual bool isDot() => _dotname != null;
+
+        public override string __toString() => getFilename();
+
+        public override string ToString() => getFilename();
 
         #region SeekableIterator
 
@@ -197,17 +206,11 @@ namespace Pchp.Library.Spl
             }
 
             //
-
-            if ((_flags & CURRENT_AS_SELF) != 0)
-            {
-                _entry = _current ?? _original;
-                _fullpath = _entry.FullName;
-            }
-            else
-            {
-                _entry = _original;
-                _fullpath = _original.FullName;
-            }
+            _entry = _current ?? _original;
+            _fullpath = _entry.FullName;
+            _relativePath = (_current != null)
+                ? Path.Combine(_originalRelativePath, _dotname ?? _entry.Name)
+                : _originalRelativePath;
 
             //
             return _current != null;
@@ -223,17 +226,17 @@ namespace Pchp.Library.Spl
             __construct(ctx, path, flags);
         }
 
-        private protected FilesystemIterator(DirectoryInfo/*!*/entry, int flags)
+        private protected FilesystemIterator(DirectoryInfo/*!*/entry, string relativePath, int flags)
         {
-            __construct(entry, flags);
+            __construct(entry, relativePath, flags);
         }
 
-        private protected void __construct(DirectoryInfo/*!*/entry, int flags)
+        private protected void __construct(DirectoryInfo/*!*/entry, string relativePath, int flags)
         {
             _flags = flags;
             _fullpath = entry.FullName;
 
-            base.__construct(entry);
+            base.__construct(entry, relativePath);
         }
 
         public override sealed void __construct(Context ctx, string file_name)
@@ -251,8 +254,6 @@ namespace Pchp.Library.Spl
 
         public virtual void setFlags(int flags) => _flags = flags;
 
-        public override bool isDot() => false;
-
         #region Iterator
 
         public override PhpValue current()
@@ -264,7 +265,7 @@ namespace Pchp.Library.Spl
 
             switch (_flags & CURRENT_MODE_MASK)
             {
-                case CURRENT_AS_FILEINFO: return PhpValue.FromClass(new SplFileInfo(_current));
+                case CURRENT_AS_FILEINFO: return PhpValue.FromClass(new SplFileInfo(_current, _relativePath));
                 case CURRENT_AS_PATHNAME: return _current.FullName;
                 case CURRENT_AS_SELF: return PhpValue.FromClass(this);
                 default: throw new InvalidOperationException();
@@ -280,11 +281,11 @@ namespace Pchp.Library.Spl
 
             if ((_flags & KEY_AS_FILENAME) != 0)
             {
-                return _current.Name;
+                return getFilename();
             }
             else
             {
-                return _current.FullName;
+                return getPathname();
             }
         }
 
@@ -308,14 +309,14 @@ namespace Pchp.Library.Spl
         {
         }
 
-        private protected RecursiveDirectoryIterator(DirectoryInfo entry, int flags, string subPath)
+        private protected RecursiveDirectoryIterator(DirectoryInfo entry, string relativePath, int flags, string subPath)
         {
-            __construct(entry, flags, subPath);
+            __construct(entry, relativePath, flags, subPath);
         }
 
-        private protected void __construct(DirectoryInfo entry, int flags, string subPath)
+        private protected void __construct(DirectoryInfo entry, string relativePath, int flags, string subPath)
         {
-            base.__construct(entry, flags);
+            base.__construct(entry, relativePath, flags);
             this.subPath = subPath;
         }
 
@@ -330,6 +331,7 @@ namespace Pchp.Library.Spl
             {
                 return new RecursiveDirectoryIterator(
                     dinfo,
+                    Path.Combine(_originalRelativePath, dinfo.Name),
                     _flags,
                     string.IsNullOrEmpty(subPath) ? dinfo.Name : Path.Combine(subPath, dinfo.Name));
             }
@@ -341,9 +343,9 @@ namespace Pchp.Library.Spl
 
         public bool hasChildren() => _current is DirectoryInfo && _dotname == null;
 
-        public virtual string getSubPath() => subPath;
+        public virtual string getSubPath() => subPath ?? string.Empty;
 
-        public virtual string getSubPathname() => string.IsNullOrEmpty(subPath) ? string.Empty : Path.GetFileName(subPath);
+        public virtual string getSubPathname() => Path.Combine(subPath ?? string.Empty, getFilename());
     }
 
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
@@ -372,7 +374,7 @@ namespace Pchp.Library.Spl
             var dirInfo = new DirectoryInfo(dir);
 
             _fullpath = dir;
-            __construct(dirInfo, children);
+            __construct(dirInfo, path, children);
             _flags = flags | SKIP_DOTS;
 
             Position = 0;

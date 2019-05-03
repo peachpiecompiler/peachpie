@@ -6,15 +6,14 @@ function test() {
   $it = new \RecursiveIteratorIterator($it);
 
   foreach ($it as $file) {
-    $name = $file->getFilename();
-    if ($name == "." || $name == "..") {
+    if ($file->isDot()) {
       continue;
     }
 
     for ($i = 0; $i < $it->getDepth(); $i++) {
       echo "  ";
     }
-  	echo $name ."\n";
+  	echo $file->getFilename() ."\n";
   }
 }
 

@@ -12,6 +12,7 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
     public class SplFileInfo
     {
+        private protected string _relativePath;     // Path string supplied in constructor (may be relative, non-cannonical etc.)
         private protected string _fullpath;
         private protected FileSystemInfo _entry;
 
@@ -68,19 +69,21 @@ namespace Pchp.Library.Spl
         {
         }
 
-        internal SplFileInfo(FileSystemInfo/*!*/entry)
+        internal SplFileInfo(FileSystemInfo/*!*/entry, string file_name)
         {
-            __construct(entry);
+            __construct(entry, file_name);
         }
 
-        private protected void __construct(FileSystemInfo/*!*/entry)
+        private protected void __construct(FileSystemInfo/*!*/entry, string file_name)
         {
             _entry = entry;
             _fullpath = entry.FullName;
+            _relativePath = file_name;
         }
 
         public virtual void __construct(Context ctx, string file_name)
         {
+            _relativePath = file_name;
             _fullpath = FileSystemUtils.AbsolutePath(ctx, file_name);
         }
 
@@ -98,15 +101,15 @@ namespace Pchp.Library.Spl
             return ext.Substring(1);
         }
         public virtual SplFileInfo getFileInfo(Context ctx, string class_name = null) => CreateFileInfo(ctx, class_name ?? _info_class, _fullpath);
-        public virtual string getFilename() => ResolvedInfo.Name;
+        public virtual string getFilename() => PhpPath.basename(_relativePath);
         public virtual long getGroup() { throw new NotImplementedException(); }
         public virtual long getInode() { throw new NotImplementedException(); }
         public virtual string getLinkTarget() { throw new NotImplementedException(); }
         public virtual long getMTime() { throw new NotImplementedException(); }
         public virtual long getOwner() { throw new NotImplementedException(); }
-        public virtual string getPath() => PhpPath.dirname(_fullpath);
+        public virtual string getPath() => PhpPath.dirname(_relativePath);
         public virtual SplFileInfo getPathInfo(Context ctx, string class_name = null) => CreateFileInfo(ctx, class_name ?? _info_class, PhpPath.dirname(_fullpath));
-        public virtual string getPathname() => _fullpath;
+        public virtual string getPathname() => _relativePath;
         public virtual long getPerms() { throw new NotImplementedException(); }
 
         [return: CastToFalse]
@@ -133,8 +136,8 @@ namespace Pchp.Library.Spl
         }
         public virtual void setFileClass(string class_name = nameof(SplFileObject)) => _file_class = class_name;
         public virtual void setInfoClass(string class_name = nameof(SplFileInfo)) => _info_class = class_name;
-        public virtual string __toString() => _fullpath;
-        public override string ToString() => _fullpath;
+        public virtual string __toString() => _relativePath;
+        public override string ToString() => _relativePath;
     }
 
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(SplExtension.Name)]
@@ -410,6 +413,8 @@ namespace Pchp.Library.Spl
         public override string getFilename() => _fullpath;
 
         public override string getPath() => string.Empty;
+
+        public override string getPathname() => _fullpath;
 
         [return: CastToFalse]
         public override string getRealPath(Context ctx) => null;
