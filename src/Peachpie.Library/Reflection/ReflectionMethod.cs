@@ -85,6 +85,9 @@ namespace Pchp.Library.Reflection
 
                     _tinfo = ctx.GetDeclaredTypeOrThrow(@class, true);
                     _routine = _tinfo.RuntimeMethods[name] ?? throw new ReflectionException(string.Format(Resources.Resources.method_does_not_exist, _tinfo.Name, name));
+
+                    // ok
+                    return;
                 }
             }
 
