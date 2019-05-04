@@ -56,9 +56,22 @@ namespace Pchp.Library.Reflection
             _routine = routine;
         }
 
+        public ReflectionMethod(Context ctx, string class_method) => __construct(ctx, class_method);
+
         public ReflectionMethod(Context ctx, PhpValue @class, string name) => __construct(ctx, @class, name);
 
-        public ReflectionMethod(Context ctx, string class_method) => __construct(ctx, class_method);
+        public void __construct(Context ctx, PhpValue @class, string name)
+        {
+            if (name != null)
+            {
+                _tinfo = ReflectionUtils.ResolvePhpTypeInfo(ctx, @class);
+                _routine = _tinfo.RuntimeMethods[name] ?? throw new ReflectionException(string.Format(Resources.Resources.method_does_not_exist, _tinfo.Name, name));
+            }
+            else
+            {
+                __construct(ctx, @class.AsString(ctx));
+            }
+        }
 
         public void __construct(Context ctx, string class_method)
         {
@@ -76,12 +89,6 @@ namespace Pchp.Library.Reflection
             }
 
             throw new ReflectionException();
-        }
-
-        public void __construct(Context ctx, PhpValue @class, string name)
-        {
-            _tinfo = ReflectionUtils.ResolvePhpTypeInfo(ctx, @class);
-            _routine = _tinfo.RuntimeMethods[name] ?? throw new ReflectionException(string.Format(Resources.Resources.method_does_not_exist, _tinfo.Name, name));
         }
 
         #endregion
