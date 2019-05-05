@@ -1039,6 +1039,36 @@ namespace Pchp.CodeAnalysis
             }
         }
 
+        /// <summary>
+        /// Gets resource of additional metadata for each of declared symbol.
+        /// </summary>
+        ResourceDescription SourceMetadataResource()
+        {
+            return new ResourceDescription(".source.metadata.resources", () =>
+            {
+                var stream = new MemoryStream();
+
+                var table = this.SourceSymbolCollection;
+
+                var writer = new System.Resources.ResourceWriter(stream);
+                foreach (var r in table.AllRoutines)
+                {
+                    var metadata = r.GetSymbolMetadataResource();
+                    if (!string.IsNullOrEmpty(metadata))
+                    {
+                        var id = r.ContainingType.GetFullName() + "." + r.MetadataName;
+                        writer.AddResource(id, metadata);
+                    }
+                }
+
+                //
+                writer.Generate();
+                stream.Position = 0;
+                return stream;
+
+            }, isPublic: true);
+        }
+
         internal override CommonPEModuleBuilder CreateModuleBuilder(EmitOptions emitOptions, IMethodSymbol debugEntryPoint, Stream sourceLinkStream, IEnumerable<EmbeddedText> embeddedTexts, IEnumerable<ResourceDescription> manifestResources, CompilationTestData testData, DiagnosticBag diagnostics, CancellationToken cancellationToken)
         {
             Debug.Assert(!IsSubmission || HasCodeToEmit());
@@ -1061,6 +1091,8 @@ namespace Pchp.CodeAnalysis
             {
                 manifestResources = manifestResources.Concat(SynthesizedResources);
             }
+
+            manifestResources = manifestResources.Concat(new[] { SourceMetadataResource() });
 
             PEModuleBuilder moduleBeingBuilt;
             if (_options.OutputKind.IsNetModule())

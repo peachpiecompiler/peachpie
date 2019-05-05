@@ -604,6 +604,13 @@ namespace Pchp.CodeAnalysis
             return string.Empty;
         }
 
+        /// <summary>
+        /// The resource contains an additional textual metadata to be used by the runtime if needed (JSON format).
+        /// The resource is indexed by the symbol full metadata name.
+        /// Can be <c>null</c>.
+        /// </summary>
+        internal virtual string GetSymbolMetadataResource() => null;
+
         internal string GetDebuggerDisplay()
         {
             return $"{this.Kind} {this.ToDisplayString(SymbolDisplayFormat.TestFormat)}";

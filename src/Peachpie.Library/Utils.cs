@@ -254,6 +254,21 @@ namespace Pchp.Library
         /// Determines whether two strings are equal while ignoring casing.
         /// </summary>
         public static bool EqualsOrdinalIgnoreCase(this string str1, string str2) => string.Equals(str1, str2, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Decodes given json encoded string.
+        /// </summary>
+        public static PhpValue JsonDecode(string value)
+        {
+            var options = new PhpSerialization.JsonSerializer.DecodeOptions();
+            var scanner = new Json.JsonScanner(new StringReader(value), options);
+            var parser = new Json.Parser(options)
+            {
+                Scanner = scanner,
+            };
+
+            return parser.Parse() ? parser.Result : throw new FormatException();
+        }
     }
 
     internal static class ArrayExtensions

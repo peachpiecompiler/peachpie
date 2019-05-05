@@ -393,6 +393,27 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override ObsoleteAttributeData ObsoleteAttributeData => null;   // TODO: from PHPDoc
 
+        internal override string GetSymbolMetadataResource()
+        {
+            var phpdoc = this.PHPDocBlock;
+            if (phpdoc != null)
+            {
+                var stream = new System.IO.StringWriter();
+                using (var writer = new Roslyn.Utilities.JsonWriter(stream))
+                {
+                    writer.WriteObjectStart();
+                    writer.Write("doc", ContainingFile.SyntaxTree.GetText().ToString(phpdoc.Span.ToTextSpan()));
+                    // type:
+                    // ...
+                    writer.WriteObjectEnd();
+                }
+
+                return stream.ToString();
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// virtual = IsVirtual AND NewSlot 
         /// override = IsVirtual AND !NewSlot

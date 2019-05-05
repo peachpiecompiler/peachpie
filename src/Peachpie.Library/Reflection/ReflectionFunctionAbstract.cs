@@ -56,7 +56,21 @@ namespace Pchp.Library.Reflection
         public virtual ReflectionClass getClosureScopeClass() { throw new NotImplementedException(); }
         public virtual object getClosureThis() { throw new NotImplementedException(); }
         [return: CastToFalse]
-        public string getDocComment() => null;
+        public string getDocComment()
+        {
+            var metadata = Peachpie.Runtime.Reflection.MetadataResourceManager.GetMetadata(_routine.Methods[0]);
+            if (metadata != null)
+            {
+                var decoded = (stdClass)StringUtils.JsonDecode(metadata).Object;
+                if (decoded.GetRuntimeFields().TryGetValue("doc", out var doc))
+                {
+                    return doc.AsString();
+                }
+            }
+
+            return null;
+        }
+        public long getStartLine() { throw new NotImplementedException(); }
         public long getEndLine() { throw new NotImplementedException(); }
         public ReflectionExtension getExtension()
         {
@@ -116,7 +130,6 @@ namespace Pchp.Library.Reflection
             var sep = name.LastIndexOf(ReflectionUtils.NameSeparator);
             return (sep < 0) ? name : name.Substring(sep + 1);
         }
-        public long getStartLine() { throw new NotImplementedException(); }
         public PhpArray getStaticVariables() { throw new NotImplementedException(); }
         public bool hasReturnType()
         {
