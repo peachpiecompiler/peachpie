@@ -382,8 +382,23 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             // attributes from PHPDoc
-            // ...
+            var phpdoc = this.PHPDocBlock;
+            if (phpdoc != null)
+            {
+                var deprecated = phpdoc.GetElement<PHPDocBlock.DeprecatedTag>();
+                if (deprecated != null)
+                {
+                    // [ObsoleteAttribute(message, false)]
+                    attrs = attrs.Add(new SynthesizedAttributeData(
+                        (MethodSymbol)DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_ObsoleteAttribute__ctor),
+                            ImmutableArray.Create(
+                                new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, deprecated.Version/*NOTE:Version contains the message*/),
+                                new TypedConstant(DeclaringCompilation.CoreTypes.Boolean.Symbol, TypedConstantKind.Primitive, false/*isError*/)),
+                            ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
+                }
 
+                // ...
+            }
             // [NotNullAttribute]
             // ...
 
@@ -391,7 +406,24 @@ namespace Pchp.CodeAnalysis.Symbols
             return base.GetAttributes().AddRange(attrs);
         }
 
-        internal override ObsoleteAttributeData ObsoleteAttributeData => null;   // TODO: from PHPDoc
+        public override ImmutableArray<AttributeData> GetReturnTypeAttributes()
+        {
+            return base.GetReturnTypeAttributes(); // TODO: [return: NotNull]
+        }
+
+        internal override ObsoleteAttributeData ObsoleteAttributeData
+        {
+            get
+            {
+                var deprecated = this.PHPDocBlock?.GetElement<PHPDocBlock.DeprecatedTag>();
+                if (deprecated != null)
+                {
+                    return new ObsoleteAttributeData(ObsoleteAttributeKind.Deprecated, deprecated.Version/*==Text*/, isError: false);
+                }
+
+                return null;
+            }
+        }
 
         internal override string GetSymbolMetadataResource()
         {
