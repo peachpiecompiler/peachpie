@@ -175,7 +175,7 @@ namespace Pchp.Library.Reflection
 
         public int getPosition() => _index;
 
-        public ReflectionType getType() { throw new NotImplementedException(); }
+        public ReflectionType getType() => hasTypeInternal(_type) ? new ReflectionNamedType(_type, !_allowsNull) : null;
 
         public bool hasType() => hasTypeInternal(_type);
 
