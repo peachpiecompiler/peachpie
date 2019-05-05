@@ -97,6 +97,12 @@ namespace Pchp.Core.Dynamic
 
             var target_type = target.GetTypeInfo();
 
+            if (target_type.IsByRef)
+            {
+                // TODO: what to do
+                target_type = target_type.UnderlyingSystemType.GetTypeInfo();
+            }
+
             // enum
             if (target_type.IsEnum)
             {
@@ -640,8 +646,8 @@ namespace Pchp.Core.Dynamic
                     // ref T : cost(T) | ConversionCost.Warning
                     // CONSIDER: no warning if PhpValue is passed by ref as well and we implement this in CallBinder {ref PhpValue value; int tmp; foo(ref tmp); value = tmp;}
                     return Expression.Or(
-                        BindCostFromValue(arg, target_type.GetElementType()),
-                        Expression.Constant(ConversionCost.Warning));
+                        Expression.Convert(BindCostFromValue(arg, target_type.GetElementType()), typeof(int)),
+                        Expression.Convert(Expression.Constant(ConversionCost.Warning), typeof(int)));
                 }
 
                 if (ReflectionUtils.IsPhpClassType(target_type))
