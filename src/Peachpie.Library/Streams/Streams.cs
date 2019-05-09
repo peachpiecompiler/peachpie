@@ -960,5 +960,29 @@ namespace Pchp.Library.Streams
         }
 
         #endregion
+
+        #region stream_is_local
+
+        /// <summary>
+        /// Checks if a stream, or a URL, is a local one or not.
+        /// </summary>
+        /// <param name="stream">The stream resource to check.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool stream_is_local(PhpStream stream) => !stream.Wrapper?.IsUrl ?? false;
+
+        /// <summary>
+        /// Checks if a stream, or a URL, is a local one or not.
+        /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
+        /// <param name="url">The URL to check.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool stream_is_local(Context ctx, string url)
+        {
+            string scheme = PhpStream.GetSchemeInternal(url, out var _);
+            var wrapper = StreamWrapper.GetWrapperInternal(ctx, scheme);
+            return !wrapper?.IsUrl ?? false;
+        }
+
+        #endregion
     }
 }
