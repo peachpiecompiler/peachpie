@@ -20,7 +20,7 @@ function display($it) {
     }
 
     flags($value);
-    $keyval = is_numeric($key) ? '#' : $key;  // Order integers are non-deterministic
+    $keyval = is_numeric($key) ? '#' : strtolower($key);  // Order integers are non-deterministic
     $path = strtolower($value->getPath());
     echo "{$keyval} => ". "{$path}@{$value->getFilename()}" ."\n";
 
