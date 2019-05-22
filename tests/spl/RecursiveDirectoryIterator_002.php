@@ -15,16 +15,19 @@ function display($it) {
 
     if ($it instanceof FilesystemIterator) {
       flags($it);
-      echo "[{$it} => {$it->getPath()}@{$it->getFilename()}]\n";
+      $path = strtolower($it->getPath());
+      echo "[{$it} => {$path}@{$it->getFilename()}]\n";
     }
 
     flags($value);
     $keyval = is_numeric($key) ? '#' : $key;  // Order integers are non-deterministic
-    echo "{$keyval} => ". "{$value->getPath()}@{$value->getFilename()}" ."\n";
+    $path = strtolower($value->getPath());
+    echo "{$keyval} => ". "{$path}@{$value->getFilename()}" ."\n";
 
     $innerIt = ($it instanceof RecursiveIteratorIterator) ? $it->getInnerIterator() : $it;
     if ($innerIt instanceof RecursiveDirectoryIterator) {
-      echo "<{$innerIt->getSubPath()}@{$innerIt->getSubPathname()}>\n";
+      $path = strtolower($innerIt->getSubPath());
+      echo "<{$path}@{$innerIt->getSubPathname()}>\n";
     }
 
     $lines[] = ob_get_clean();

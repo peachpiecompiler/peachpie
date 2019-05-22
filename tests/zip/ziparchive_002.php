@@ -9,7 +9,7 @@ function print_ret($ret) {
 }
 
 function print_props($zip) {
-  echo $zip->status ."|". $zip->statusSys ."|". $zip->numFiles ."|". $zip->filename ."|". $zip->comment ."|". @$zip->getStatusString() ."\n";
+  echo $zip->status ."|". $zip->statusSys ."|". $zip->numFiles ."|". strtolower($zip->filename) ."|". $zip->comment ."|". @$zip->getStatusString() ."\n";
 }
 
 function test($filename) {

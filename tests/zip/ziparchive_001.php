@@ -16,7 +16,7 @@ function test($filename) {
   $zip->addFromString("testfilephp.txt", "#1 This is a test string added as testfilephp.txt.\n");
   $zip->addFromString("testfilephp2.txt", "#2 This is a test string added as testfilephp2.txt.\n");
   $zip->addFile("ziparchive_001.txt", "ipsum.txt", 2, 5); // $start and $length must be ignored
-  echo "filename: ". $zip->filename ."\n";
+  echo "filename: ". strtolower($zip->filename) ."\n";
   echo "numfiles: " . $zip->numFiles . "\n";
   //echo "status:" . $zip->status . "\n";
   $zip->close();
