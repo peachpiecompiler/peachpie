@@ -3998,7 +3998,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         Debug.Assert(stack.tIndex == cg.CoreTypes.PhpValue);
                         // GetItemValue(<array>, <index>)
                         //cg.Builder.EmitBoolConstant(Access.IsQuiet);
-                        t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.IPhpArray.GetItemValue_PhpValue);
+                        t = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.IPhpArray.GetItemValue_PhpValue);
                     }
 
                     return t;

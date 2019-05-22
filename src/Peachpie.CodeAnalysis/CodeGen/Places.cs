@@ -319,7 +319,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 stack -= 1;
             }
 
-            il.EmitOpCode(getter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, stack);
+            il.EmitOpCode(getter.IsVirtual || getter.ContainingType.IsInterface ? ILOpCode.Callvirt : ILOpCode.Call, stack);
             il.EmitToken(getter, null, DiagnosticBag.GetInstance());
 
             //

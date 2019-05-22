@@ -3519,7 +3519,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 stack += 1 + 1;    // there is no <this>, + it pushes <newinst> on stack
             }
 
-            if (code == ILOpCode.Callvirt && (!method.IsVirtual || method.IsSealed || method.ContainingType.IsSealed))
+            if (code == ILOpCode.Callvirt && !method.ContainingType.IsInterface && (!method.IsVirtual || method.IsSealed || method.ContainingType.IsSealed))
             {
                 code = ILOpCode.Call; // virtual dispatch is unnecessary
             }
