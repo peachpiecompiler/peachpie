@@ -26,7 +26,7 @@ function test() {
     $it = new MyRecursiveDirectoryIterator('subdir');
     $it = new RecursiveIteratorIterator($it);
     foreach ($it as $file) {
-        if ($file->getPathname() == '.' || $file->getPathname() == '..') {
+        if ($file->getFilename() == '.' || $file->getFilename() == '..') {
           continue;
         }
 
