@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Pchp.Core;
+using Pchp.Core.Reflection;
 using Pchp.Core.Utilities;
 using Pchp.Library.Streams;
 
@@ -299,17 +300,22 @@ namespace Pchp.Library.Spl
     {
         private string subPath = string.Empty;
 
+        readonly protected Context _ctx;
+
         public RecursiveDirectoryIterator(Context ctx, string file_name, int flags = KEY_AS_PATHNAME | CURRENT_AS_FILEINFO)
+            : this(ctx)
         {
             __construct(ctx, file_name, flags);
         }
 
         [PhpFieldsOnlyCtor]
-        protected RecursiveDirectoryIterator()
+        protected RecursiveDirectoryIterator(Context ctx)
         {
+            _ctx = ctx;
         }
 
-        private protected RecursiveDirectoryIterator(DirectoryInfo entry, string relativePath, int flags, string subPath)
+        private protected RecursiveDirectoryIterator(Context ctx, DirectoryInfo entry, string relativePath, int flags, string subPath)
+            : this(ctx)
         {
             __construct(entry, relativePath, flags, subPath);
         }
@@ -325,15 +331,27 @@ namespace Pchp.Library.Spl
             base.__construct(ctx, path, flags);
         }
 
-        public RecursiveIterator getChildren()
+        RecursiveIterator RecursiveIterator.getChildren() => getChildren();
+
+        public virtual RecursiveDirectoryIterator getChildren()
         {
             if (_current is DirectoryInfo dinfo)
             {
-                return new RecursiveDirectoryIterator(
-                    dinfo,
-                    Path.Combine(_originalRelativePath, dinfo.Name),
-                    _flags,
-                    string.IsNullOrEmpty(subPath) ? dinfo.Name : Path.Combine(subPath, dinfo.Name));
+                var relativePath = Path.Combine(_originalRelativePath, dinfo.Name);
+                if (this.GetType() == typeof(RecursiveDirectoryIterator))
+                {
+                    return new RecursiveDirectoryIterator(
+                        _ctx,
+                        dinfo,
+                        relativePath,
+                        _flags,
+                        string.IsNullOrEmpty(subPath) ? dinfo.Name : Path.Combine(subPath, dinfo.Name));
+                }
+                else
+                {
+                    // In case of a derived class we must create an instance of this class
+                    return (RecursiveDirectoryIterator)_ctx.Create(default, this.GetPhpTypeInfo(), relativePath, _flags);
+                }
             }
             else
             {
@@ -341,7 +359,7 @@ namespace Pchp.Library.Spl
             }
         }
 
-        public bool hasChildren() => _current is DirectoryInfo && _dotname == null;
+        public virtual bool hasChildren() => _current is DirectoryInfo && _dotname == null;
 
         public virtual string getSubPath() => subPath ?? string.Empty;
 
