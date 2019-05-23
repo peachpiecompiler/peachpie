@@ -531,7 +531,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 expr.Access = BoundAccess.None;
 
-                if (!expr.IsConstant() && !IsDebug)
+                if (!expr.IsConstant())
                 {
                     // POP LOAD <expr>
                     EmitPop(Emit(expr));
