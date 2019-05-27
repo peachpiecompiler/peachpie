@@ -3507,9 +3507,13 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (this.IfTrue != null)
             {
+                // !COND?T:F -> COND?F:T
+                bool isnegation = this.Condition.IsLogicNegation(out var negexpr);
+                var condition = isnegation ? negexpr : this.Condition;
+
                 // Cond ? True : False
-                cg.EmitConvertToBool(this.Condition);   // i4
-                cg.Builder.EmitBranch(ILOpCode.Brtrue, trueLbl);
+                cg.EmitConvertToBool(condition);   // i4
+                cg.Builder.EmitBranch(isnegation ? ILOpCode.Brfalse : ILOpCode.Brtrue, trueLbl);
 
                 // false:
                 cg.EmitConvert(this.IfFalse, result_type);

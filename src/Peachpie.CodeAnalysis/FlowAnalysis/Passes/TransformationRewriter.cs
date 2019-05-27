@@ -90,6 +90,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         return new BoundUnaryEx(x.Condition, Ast.Operations.LogicNegation).WithAccess(x);
                     }
                 }
+
+                // handled in BoundConditionalEx.Emit:
+                //// !COND ? A : B => COND ? B : A
+                //if (x.Condition is BoundUnaryEx unary && unary.Operation == Ast.Operations.LogicNegation)
+                //{
+                //    TransformationCount++;
+                //    return new BoundConditionalEx(unary.Operand, x.IfFalse, x.IfTrue).WithAccess(x);
+                //}
             }
 
             return x;
