@@ -152,6 +152,16 @@ namespace Peachpie.Library.Network
 
         public string Password { get; set; }
 
+        public string ProxyType { get; set; } = "http";
+
+        public string ProxyHost { get; set; }
+
+        public int ProxyPort { get; set; } = 1080;
+
+        public string ProxyUsername { get; set; }
+
+        public string ProxyPassword { get; set; }
+
         /// <summary>
         /// Specify how to process headers.
         /// WARN: if <see cref="ProcessingResponse"/> is RETURN => STDOUT means RETURN.

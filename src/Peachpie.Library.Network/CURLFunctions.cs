@@ -302,7 +302,20 @@ namespace Peachpie.Library.Network
             if (ch.Username != null) req.Credentials = new NetworkCredential(ch.Username, ch.Password ?? string.Empty);
             if (ch.AcceptEncoding != null) req.Accept = ch.AcceptEncoding;
             // TODO: certificate
-            // TODO: proxy
+            if (!string.IsNullOrEmpty(ch.ProxyType) && !string.IsNullOrEmpty(ch.ProxyHost))
+            {
+                WebProxy proxy = new WebProxy(string.Format("{0}://{2}:{3}", ch.ProxyType, ch.ProxyHost, ch.ProxyPort));
+                if (!string.IsNullOrEmpty(ch.ProxyUsername))
+                {
+                    proxy.Credentials = new NetworkCredential(ch.ProxyUsername, ch.ProxyPassword ?? string.Empty);
+                } else {
+                    proxy.Credentials = null;
+                }
+                req.Proxy = proxy;
+            } else {
+                // by default, curl does not go through system proxy
+                req.Proxy = new WebProxy();
+            }
 
             foreach (var option in ch.Options)
             {

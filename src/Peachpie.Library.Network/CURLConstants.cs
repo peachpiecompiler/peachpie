@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using Pchp.Core;
 using Pchp.Library.Streams;
 
@@ -657,6 +658,35 @@ namespace Peachpie.Library.Network
 
                 case CURLOPT_USERNAME: ch.Username = value.ToString(); break;
                 case CURLOPT_USERPWD: (ch.Username, ch.Password) = SplitUserPwd(value.ToString()); break;
+                // case CURLOPT_PROXYAUTH:
+                // case CURLOPT_PROXY_SERVICE_NAME:
+                case CURLOPT_PROXYTYPE:
+                    // only http supported now
+                    switch ((int)value.ToLong())
+                    {
+                        case CURLPROXY_HTTP:
+                            ch.ProxyType = "http";
+                            break;
+                        default:
+                            PhpException.ArgumentValueNotSupported(nameof(option), nameof(CURLOPT_PROXYTYPE));
+                            break;
+                    }
+                    break;
+                case CURLOPT_PROXY:
+                    (ch.ProxyType, ch.ProxyUsername, ch.ProxyPassword, ch.ProxyHost, ch.ProxyPort) = ParseProxy(value.ToString());
+                    break;
+                case CURLOPT_PROXYPORT:
+                    ch.ProxyPort = (int)value.ToLong();
+                    break;
+                case CURLOPT_PROXYUSERPWD:
+                    string[] auth = value.ToString().Split(':');
+                    if (auth.Length != 2)
+                    {
+                        PhpException.InvalidArgument(nameof(CURLOPT_PROXYUSERPWD));
+                    }
+                    ch.ProxyUsername = auth[0];
+                    ch.ProxyPassword = auth[1];
+                    break;
                 case CURLOPT_PROTOCOLS: ch.Protocols = (int)value.ToLong(); break;
                 case CURLOPT_REDIR_PROTOCOLS:
                     PhpException.ArgumentValueNotSupported(nameof(option), nameof(CURLOPT_REDIR_PROTOCOLS));
@@ -712,6 +742,53 @@ namespace Peachpie.Library.Network
             {
                 return (value.Substring(0, colPos), value.Substring(colPos + 1));
             }
+        }
+
+        static (string scheme, string username, string password, string host, int port) ParseProxy(string proxy)
+        {
+            string proxy_string = Regex.Replace(proxy, @"\s+", "");
+
+            string scheme   = "http";
+            string username = "";
+            string password = "";
+            string host     = "";
+            int    port     = 1080;
+
+            if (proxy_string.IndexOf("://") != -1)
+            {
+                string[] pair = Regex.Split(proxy_string, "://");
+                scheme = pair[0];
+                proxy_string = pair[1];
+            }
+
+            string host_string = proxy_string;
+
+            if (proxy_string.IndexOf("@") != -1)
+            {
+                string[] pair = Regex.Split(proxy_string, "@");
+                host_string = pair[1];
+
+                string[] auth = Regex.Split(pair[0], ":");
+                username = auth[0];
+                if (auth.Length == 2)
+                {
+                    password = auth[1];
+                }
+            }
+
+            string[] address = Regex.Split(host_string, ":");
+
+            host = address[0];
+
+            if (address.Length == 2)
+            {
+                if (int.TryParse(address[1].TrimEnd('/'), out var p))
+                {
+                    port = p;
+                }
+            }
+
+            return (scheme, username, password, host, port);
         }
 
         internal static bool TryGetOption(this CURLResource ch, int option, out PhpValue value)
