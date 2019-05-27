@@ -111,6 +111,7 @@ namespace Pchp.Library
             {
                 case "precision":
                     // TODO: this can be set in .NET <see cref="Core.Convert.ToString(double, Context)"/> by specifying "G{precision}", consider performance
+                    AssertGet(option, action);
                     return (PhpValue)15;    // default Double precision in .NET
                 case "allow_url_fopen":
                     return (PhpValue)GetSet(ref config.Core.AllowUrlFopen, true, value, action);
