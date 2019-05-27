@@ -289,7 +289,7 @@ namespace Peachpie.Library.Network
 
             req.Method = ch.Method;
             req.AllowAutoRedirect = ch.FollowLocation && ch.MaxRedirects != 0;
-            req.Timeout = ch.Timeout;
+            req.Timeout = ch.Timeout <= 0 ? System.Threading.Timeout.Infinite : ch.Timeout;
             req.ContinueTimeout = ch.ContinueTimeout;
             if (req.AllowAutoRedirect)
             {

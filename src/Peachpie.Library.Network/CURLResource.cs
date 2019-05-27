@@ -84,7 +84,7 @@ namespace Peachpie.Library.Network
         /// <summary>
         /// The maximum number of miliseconds to allow cURL functions to execute.
         /// </summary>
-        public int Timeout { get; set; } = 100_000; // 100s is HttpWebRequest default
+        public int Timeout { get; set; } = 0; // default of curl is 0 which means it never times out during transfer
 
         /// <summary>
         /// Gets or sets a timeout, in milliseconds, to wait until the 100-Continue is received from the server.
