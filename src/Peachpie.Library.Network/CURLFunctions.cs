@@ -288,10 +288,14 @@ namespace Peachpie.Library.Network
             Debug.Assert(ch.Method != null, "Method == null");
 
             req.Method = ch.Method;
-            req.AllowAutoRedirect = ch.FollowLocation;
+            req.AllowAutoRedirect = ch.FollowLocation && ch.MaxRedirects != 0;
             req.Timeout = ch.Timeout;
             req.ContinueTimeout = ch.ContinueTimeout;
-            req.MaximumAutomaticRedirections = ch.MaxRedirects;
+            if (req.AllowAutoRedirect)
+            {
+                // equal or less than 0 will cause exception
+                req.MaximumAutomaticRedirections = ch.MaxRedirects < 0 ? int.MaxValue : ch.MaxRedirects;
+            }
             //req.AutomaticDecompression = (DecompressionMethods)~0; // NOTICE: this nullify response Content-Length and Content-Encoding
             if (ch.CookieHeader != null) TryAddCookieHeader(req, ch.CookieHeader);
             if (ch.CookieFileSet) req.CookieContainer = new CookieContainer();

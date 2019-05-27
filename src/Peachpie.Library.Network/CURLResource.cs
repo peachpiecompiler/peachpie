@@ -78,7 +78,8 @@ namespace Peachpie.Library.Network
             }
         }
 
-        public int MaxRedirects { get; set; } = 50;
+        // default is -1 for an infinite number of redirects in curl
+        public int MaxRedirects { get; set; } = -1;
 
         /// <summary>
         /// The maximum number of miliseconds to allow cURL functions to execute.
