@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core.Utilities;
 
@@ -19,6 +20,8 @@ namespace Pchp.Core
             /// Gets server type interface name.
             /// </summary>
             public override string ServerApi => "cli";
+
+            public override Encoding StringEncoding => Console.OutputEncoding;
 
             /// <summary>
             /// Initializes the console context.
