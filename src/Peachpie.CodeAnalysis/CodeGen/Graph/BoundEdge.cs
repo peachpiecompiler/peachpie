@@ -51,20 +51,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             Contract.ThrowIfNull(Condition);
 
-            // if the cndition was resolved in compile-time,
-            // generate only the positive branch
-            if (!cg.IsDebug && this.Condition.ConstantValue.TryConvertToBool(out bool evaluated))
-            {
-                cg.Scope.ContinueWith(evaluated ? TrueTarget : FalseTarget);
-                return;
-            }
-
-            //
+            // !COND?T:F -> COND?F:T
+            bool isnegation = this.Condition.IsLogicNegation(out var negexpr);
+            var condition = isnegation ? negexpr : this.Condition;
 
             if (IsLoop) // perf
             {
                 cg.Builder.DefineHiddenSequencePoint();
-                cg.Builder.EmitBranch(ILOpCode.Br, this.Condition);
+                cg.Builder.EmitBranch(ILOpCode.Br, condition);
 
                 // {
                 cg.GenerateScope(TrueTarget, NextBlock.Ordinal);
@@ -72,16 +66,16 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
                 // if (Condition)
                 cg.EmitSequencePoint(this.Condition.PhpSyntax);
-                cg.Builder.MarkLabel(this.Condition);
-                cg.EmitConvert(this.Condition, cg.CoreTypes.Boolean);
-                cg.Builder.EmitBranch(ILOpCode.Brtrue, TrueTarget);
+                cg.Builder.MarkLabel(condition);
+                cg.EmitConvert(condition, cg.CoreTypes.Boolean);
+                cg.Builder.EmitBranch(isnegation ? ILOpCode.Brfalse : ILOpCode.Brtrue, TrueTarget);
             }
             else
             {
                 // if (Condition)
                 cg.EmitSequencePoint(this.Condition.PhpSyntax);
-                cg.EmitConvert(this.Condition, cg.CoreTypes.Boolean);
-                cg.Builder.EmitBranch(ILOpCode.Brfalse, FalseTarget);
+                cg.EmitConvert(condition, cg.CoreTypes.Boolean);
+                cg.Builder.EmitBranch(isnegation ? ILOpCode.Brtrue : ILOpCode.Brfalse, FalseTarget);
 
                 // {
                 cg.GenerateScope(TrueTarget, NextBlock.Ordinal);
