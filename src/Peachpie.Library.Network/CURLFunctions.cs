@@ -288,17 +288,34 @@ namespace Peachpie.Library.Network
             Debug.Assert(ch.Method != null, "Method == null");
 
             req.Method = ch.Method;
-            req.AllowAutoRedirect = ch.FollowLocation;
-            req.Timeout = ch.Timeout;
+            req.AllowAutoRedirect = ch.FollowLocation && ch.MaxRedirects != 0;
+            req.Timeout = ch.Timeout <= 0 ? System.Threading.Timeout.Infinite : ch.Timeout;
             req.ContinueTimeout = ch.ContinueTimeout;
-            req.MaximumAutomaticRedirections = ch.MaxRedirects;
+            if (req.AllowAutoRedirect)
+            {
+                // equal or less than 0 will cause exception
+                req.MaximumAutomaticRedirections = ch.MaxRedirects < 0 ? int.MaxValue : ch.MaxRedirects;
+            }
             //req.AutomaticDecompression = (DecompressionMethods)~0; // NOTICE: this nullify response Content-Length and Content-Encoding
             if (ch.CookieHeader != null) TryAddCookieHeader(req, ch.CookieHeader);
             if (ch.CookieFileSet) req.CookieContainer = new CookieContainer();
             if (ch.Username != null) req.Credentials = new NetworkCredential(ch.Username, ch.Password ?? string.Empty);
             if (ch.AcceptEncoding != null) req.Accept = ch.AcceptEncoding;
             // TODO: certificate
-            // TODO: proxy
+            if (!string.IsNullOrEmpty(ch.ProxyType) && !string.IsNullOrEmpty(ch.ProxyHost))
+            {
+                WebProxy proxy = new WebProxy(string.Format("{0}://{2}:{3}", ch.ProxyType, ch.ProxyHost, ch.ProxyPort));
+                if (!string.IsNullOrEmpty(ch.ProxyUsername))
+                {
+                    proxy.Credentials = new NetworkCredential(ch.ProxyUsername, ch.ProxyPassword ?? string.Empty);
+                } else {
+                    proxy.Credentials = null;
+                }
+                req.Proxy = proxy;
+            } else {
+                // by default, curl does not go through system proxy
+                req.Proxy = new WebProxy();
+            }
 
             foreach (var option in ch.Options)
             {

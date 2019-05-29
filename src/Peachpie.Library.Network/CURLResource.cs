@@ -78,12 +78,13 @@ namespace Peachpie.Library.Network
             }
         }
 
-        public int MaxRedirects { get; set; } = 50;
+        // default is -1 for an infinite number of redirects in curl
+        public int MaxRedirects { get; set; } = -1;
 
         /// <summary>
         /// The maximum number of miliseconds to allow cURL functions to execute.
         /// </summary>
-        public int Timeout { get; set; } = 100_000; // 100s is HttpWebRequest default
+        public int Timeout { get; set; } = 0; // default of curl is 0 which means it never times out during transfer
 
         /// <summary>
         /// Gets or sets a timeout, in milliseconds, to wait until the 100-Continue is received from the server.
@@ -150,6 +151,16 @@ namespace Peachpie.Library.Network
         public string Username { get; set; }
 
         public string Password { get; set; }
+
+        public string ProxyType { get; set; } = "http";
+
+        public string ProxyHost { get; set; }
+
+        public int ProxyPort { get; set; } = 1080;
+
+        public string ProxyUsername { get; set; }
+
+        public string ProxyPassword { get; set; }
 
         /// <summary>
         /// Specify how to process headers.
