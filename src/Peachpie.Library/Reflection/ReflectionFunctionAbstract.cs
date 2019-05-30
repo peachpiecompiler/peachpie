@@ -72,10 +72,18 @@ namespace Pchp.Library.Reflection
         }
 
         [return: CastToFalse]
-        public long getStartLine() => -1;
+        public long getStartLine()
+        {
+            PhpException.FunctionNotSupported("ReflectionFunctionAbstract::getStartLine");
+            return -1;
+        }
 
         [return: CastToFalse]
-        public long getEndLine() => -1;
+        public long getEndLine()
+        {
+            PhpException.FunctionNotSupported("ReflectionFunctionAbstract::getEndLine");
+            return -1;
+        }
 
         public ReflectionExtension getExtension()
         {

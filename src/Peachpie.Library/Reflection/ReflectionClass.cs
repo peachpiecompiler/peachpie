@@ -238,10 +238,18 @@ namespace Pchp.Library.Reflection
         }
 
         [return: CastToFalse]
-        public int getStartLine() => -1;
+        public int getStartLine()
+        {
+            PhpException.FunctionNotSupported("ReflectionClass::getStartLine");
+            return -1;
+        }
 
         [return: CastToFalse]
-        public int getEndLine() => -1;
+        public int getEndLine()
+        {
+            PhpException.FunctionNotSupported("ReflectionClass::getEndLine");
+            return -1;
+        }
 
         public PhpArray getStaticProperties() { throw new NotImplementedException(); }
         public PhpValue getStaticPropertyValue(string name) { throw new NotImplementedException(); }
