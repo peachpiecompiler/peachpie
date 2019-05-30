@@ -70,8 +70,13 @@ namespace Pchp.Library.Reflection
 
             return null;
         }
-        public long getStartLine() { throw new NotImplementedException(); }
-        public long getEndLine() { throw new NotImplementedException(); }
+
+        [return: CastToFalse]
+        public long getStartLine() => -1;
+
+        [return: CastToFalse]
+        public long getEndLine() => -1;
+
         public ReflectionExtension getExtension()
         {
             var extname = getExtensionName();

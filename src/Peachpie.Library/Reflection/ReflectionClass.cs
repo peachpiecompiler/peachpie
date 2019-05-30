@@ -90,7 +90,7 @@ namespace Pchp.Library.Reflection
             {
                 return p.GetValue(ctx, null);
             }
-            
+
             //
             return PhpValue.False;
         }
@@ -120,7 +120,6 @@ namespace Pchp.Library.Reflection
         public PhpArray getDefaultProperties() { throw new NotImplementedException(); }
         [return: CastToFalse]
         public string getDocComment() => null;
-        public int getEndLine() { throw new NotImplementedException(); }
         //public ReflectionExtension getExtension() { throw new NotImplementedException(); }
         public string getExtensionName() => _tinfo.Extensions.FirstOrDefault() ?? string.Empty;
 
@@ -237,7 +236,13 @@ namespace Pchp.Library.Reflection
             var sep = name.LastIndexOf(ReflectionUtils.NameSeparator);
             return (sep < 0) ? name : name.Substring(sep + 1);
         }
-        public int getStartLine() { throw new NotImplementedException(); }
+
+        [return: CastToFalse]
+        public int getStartLine() => -1;
+
+        [return: CastToFalse]
+        public int getEndLine() => -1;
+
         public PhpArray getStaticProperties() { throw new NotImplementedException(); }
         public PhpValue getStaticPropertyValue(string name) { throw new NotImplementedException(); }
         public PhpValue getStaticPropertyValue(string name, PhpAlias def_value) { throw new NotImplementedException(); }
