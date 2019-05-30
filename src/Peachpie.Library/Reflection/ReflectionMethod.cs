@@ -3,6 +3,7 @@ using Pchp.Core.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -107,6 +108,14 @@ namespace Pchp.Library.Reflection
             throw new NotImplementedException();
         }
         public ReflectionClass getDeclaringClass() => new ReflectionClass(_tinfo);
+        public override string getFileName(Context ctx)
+        {
+            var path = _tinfo.RelativePath;
+
+            return path != null
+                ? Path.GetFullPath(Path.Combine(ctx.RootPath, path))
+                : null;
+        }
         public long getModifiers()
         {
             long flags = 0;
