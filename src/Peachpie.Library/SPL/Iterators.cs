@@ -33,6 +33,25 @@ namespace Pchp.Library.Spl
         Iterator getInnerIterator();
     }
 
+    internal static class OuterIteratorExtensions
+    {
+        /// <summary>
+        /// Implementation of __call for outer iterators.
+        /// </summary>
+        public static PhpValue CallOnInner(this OuterIterator iterator, Context ctx, string name, PhpArray arguments)
+        {
+            var inner = iterator.getInnerIterator();
+
+            var method = inner.GetPhpTypeInfo().RuntimeMethods[name];
+            if (method == null)
+            {
+                PhpException.UndefinedFunctionCalled(name);
+            }
+
+            return method.Invoke(ctx, inner, arguments);
+        }
+    }
+
     /// <summary>
     /// Classes implementing RecursiveIterator can be used to iterate over iterators recursively.
     /// </summary>
@@ -596,23 +615,7 @@ namespace Pchp.Library.Spl
             return (_enumerator != null && _valid) ? _enumerator.CurrentValue : PhpValue.Void;
         }
 
-        // TODO: hide this method to not be visible by PHP code, make this behaviour internal
-        //public virtual PhpValue __call(ScriptContext context, object name, object args)
-        //{
-        //    var methodname = PhpVariable.AsString(name);
-        //    var argsarr = args as PhpArray;
-
-        //    if (this.iterator == null || argsarr == null)
-        //    {
-        //        PhpException.UndefinedMethodCalled(this.TypeName, methodname);
-        //        return null;
-        //    }
-
-        //    // call the method on internal iterator, as in PHP,
-        //    // only PHP leaves $this to self (which is potentionally dangerous and not correctly typed)
-        //    context.Stack.AddFrame((ICollection)argsarr.Values);
-        //    return this.iterator.InvokeMethod(methodname, null, context);
-        //}
+        public PhpValue __call(Context ctx, string name, PhpArray arguments) => this.CallOnInner(ctx, name, arguments);
     }
 
     /// <summary>

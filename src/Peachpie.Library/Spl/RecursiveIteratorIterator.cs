@@ -245,6 +245,8 @@ namespace Pchp.Library.Spl
             return _valid ? _enumerator.Current.Value : PhpValue.Null;
         }
 
+        public PhpValue __call(Context ctx, string name, PhpArray arguments) => this.CallOnInner(ctx, name, arguments);
+
         #endregion
     }
 
