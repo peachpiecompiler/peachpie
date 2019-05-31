@@ -96,7 +96,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 attrs = symbol.GetAttributes();
             }
 
-            return !attrs.IsDefaultOrEmpty && symbol.GetAttributes().Any(s_IsNotNullAttribute);
+            return !attrs.IsDefaultOrEmpty && attrs.Any(s_IsNotNullAttribute);
         }
 
         /// <summary>
