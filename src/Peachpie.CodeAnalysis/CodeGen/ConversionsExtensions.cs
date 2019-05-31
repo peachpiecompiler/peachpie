@@ -148,7 +148,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (ps.Length != pconsumed) throw new InvalidOperationException();
 
-                EmitImplicitConversion(cg, cg.EmitCall(ILOpCode.Call, method), to, @checked: true);
+                EmitImplicitConversion(cg, cg.EmitCall(method.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, method), to, @checked: true);
             }
             else
             {
