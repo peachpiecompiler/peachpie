@@ -104,7 +104,7 @@ namespace Pchp.Library
     /// Implements <see cref="SessionHandlerInterface"/> to be used in combination with <see cref="Session.session_set_save_handler(SessionHandlerInterface, bool)"/> function.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
-    public class SessionHandler : SessionHandlerInterface
+    public class SessionHandler : SessionHandlerInterface, SessionUpdateTimestampHandlerInterface
     {
         protected readonly Context _ctx;
 
@@ -147,6 +147,10 @@ namespace Pchp.Library
         {
             return Session.session_create_id();
         }
+
+        public virtual bool updateTimestamp(string key, string val) => write(key, val);
+
+        public virtual bool validateId(string key) => true;
     }
 
     #endregion
@@ -391,7 +395,7 @@ namespace Pchp.Library
         /// <summary>
         /// Implementats <see cref="SessionHandlerInterface"/> with callback functions.
         /// </summary>
-        sealed class CustomSessionHandler : SessionHandlerInterface
+        sealed class CustomSessionHandler : SessionHandlerInterface, SessionUpdateTimestampHandlerInterface
         {
             readonly Context _ctx;
             readonly IPhpCallable
@@ -433,6 +437,10 @@ namespace Pchp.Library
             public bool destroy(string session_id) => (bool)_destroy.Invoke(_ctx, (PhpValue)session_id);
 
             public bool gc(long maxlifetime) => (bool)_gc.Invoke(_ctx, (PhpValue)maxlifetime);
+
+            public bool updateTimestamp(string key, string val) => (_update_timestamp != null) ? (bool)_update_timestamp.Invoke(_ctx, key, val) : true;
+
+            public bool validateId(string key) => (_validate_sid != null) ? (bool)_validate_sid.Invoke(_ctx, key) : true;
         }
 
         #endregion
