@@ -8,12 +8,12 @@ using static Pchp.Library.StandardPhpOptions;
 
 namespace Pchp.Library
 {
-    #region SessionHandlerInterface
+    #region SessionHandlerInterface, SessionUpdateTimestampHandlerInterface
 
     /// <summary>
     /// Prototype for creating a custom session handler.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("session")]
     public interface SessionHandlerInterface
     {
         /// <summary>
@@ -76,6 +76,23 @@ namespace Pchp.Library
         /// <param name="maxlifetime">Sessions that have not updated for the last maxlifetime seconds will be removed.</param>
         /// <returns>The return value (usually TRUE on success, FALSE on failure). Note this value is returned internally to PHP for processing.</returns>
         bool gc(long maxlifetime);
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("session")]
+    public interface SessionUpdateTimestampHandlerInterface
+    {
+        /// <summary>
+        /// Update timestamp.
+        /// </summary>
+        bool updateTimestamp(string key, string val);
+
+        /// <summary>
+        /// Validate ID.
+        /// </summary>
+        bool validateId(string key);
     }
 
     #endregion
