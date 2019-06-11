@@ -142,7 +142,13 @@ namespace Pchp.Library.Reflection
         public virtual bool isProtected() => _pinfo.IsProtected;
         public virtual bool isPublic() => _pinfo.IsPublic;
         public virtual bool isStatic() => _pinfo.IsStatic;
-        public virtual void setAccessible(bool accessible) { throw new NotImplementedException(); }
+        public virtual void setAccessible(bool accessible)
+        {
+            // silently ignore the function call,
+            // some frameworks use it in combination with reflection which works just fine in .NET
+
+            PhpException.FunctionNotSupported(nameof(setAccessible));
+        }
         public virtual void setValue(Context ctx, object @object, PhpValue value) { _pinfo.SetValue(ctx, @object, value); }
     }
 }
