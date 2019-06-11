@@ -13,8 +13,23 @@ namespace Pchp.Library.Spl
     [PhpType(PhpTypeAttribute.InheritName)]
     public class Error : System.Exception, Throwable
     {
+        [PhpHidden]
         internal readonly PhpStackTrace/*!*/_stacktrace;
-        internal Throwable _previous;
+
+        private Throwable previous;
+
+        /// <summary>
+        /// This property is used by some PHP frameworks
+        /// to "override" <see cref="getTrace"/> and <see cref="getTraceAsString"/> feature.
+        /// </summary>
+        private PhpArray/*!*/trace
+        {
+            get => _trace ?? (_trace = _stacktrace.GetBacktrace());
+            set => _trace = value;
+        }
+
+        [PhpHidden]
+        internal protected PhpArray _trace;
 
         protected string message;
         protected long code;
@@ -48,7 +63,7 @@ namespace Pchp.Library.Spl
             this.message = message;
             this.code = code;
 
-            _previous = previous;
+            this.previous = previous;
         }
 
         public virtual int getCode() => (int)code;
@@ -59,13 +74,13 @@ namespace Pchp.Library.Spl
 
         public virtual string getMessage() => message;
 
-        public virtual Throwable getPrevious() => _previous ?? this.InnerException as Throwable;
+        public virtual Throwable getPrevious() => previous ?? this.InnerException as Throwable;
 
-        public virtual PhpArray getTrace() => _stacktrace.GetBacktrace();
+        public virtual PhpArray getTrace() => _trace ?? _stacktrace.GetBacktrace();
 
-        public virtual string getTraceAsString() => _stacktrace.GetStackTraceString();
+        public virtual string getTraceAsString() => _stacktrace.GetStackTraceString(); // TODO: _trace
 
-        public virtual string __toString() => _stacktrace.FormatExceptionString(this.GetPhpTypeInfo().Name, getMessage());
+        public virtual string __toString() => _stacktrace.FormatExceptionString(this.GetPhpTypeInfo().Name, getMessage());   // TODO: _trace
 
         public sealed override string ToString() => __toString();
     }
