@@ -1168,6 +1168,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override LhsStack EmitStorePreamble(CodeGenerator cg, BoundAccess access)
         {
+            // should be handled in DiagnosticWalker before this happens
             throw ExceptionUtilities.Unreachable;
         }
 

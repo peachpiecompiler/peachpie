@@ -533,7 +533,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         {
             CheckUninitializedVariableUse(x);
 
-            if (x.Access.IsWrite)
+            if (x.Access.IsWrite || x.Access.IsUnset)
             {
                 // assignment to $this is not allowed:
                 if (x.Variable is ThisVariableReference)
