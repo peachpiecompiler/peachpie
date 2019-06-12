@@ -516,6 +516,33 @@ namespace Pchp.Core
         /// </summary>
         public static bool IsString(this PhpValue value, out string @string) => value.IsStringImpl(out @string);
 
+        /// <summary>
+        /// Gets value indicating the variable contains a single-byte string value.
+        /// </summary>
+        public static bool IsBinaryString(this PhpValue value, out PhpString @string)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.MutableString:
+                    if (value.MutableStringBlob.ContainsBinaryData)
+                    {
+                        @string = value.MutableString;
+                        return true;
+                    }
+                    else
+                    {
+                        goto default;
+                    }
+
+                case PhpTypeCode.Alias:
+                    return value.Alias.Value.IsBinaryString(out @string);
+
+                default:
+                    @string = default;
+                    return false;
+            }
+        }
+
         public static bool IsLong(this PhpValue value, out long l)
         {
             switch (value.TypeCode)
