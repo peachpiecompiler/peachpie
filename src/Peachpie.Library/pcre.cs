@@ -308,7 +308,7 @@ namespace Pchp.Library
             {
                 evaluator = (match) =>
                 {
-                    var matches_arr = new PhpArray(0);
+                    var matches_arr = new PhpArray();
                     GroupsToPhpArray(match.PcreGroups, false, matches_arr);
 
                     return callback
@@ -321,31 +321,46 @@ namespace Pchp.Library
 
             //
             var subject_array = subject.AsArray();
-            if (subject_array == null)
-            {
-                return PhpValue.Create(
-                    evaluator == null
-                        ? regex.Replace(subject.ToStringOrThrow(ctx), replacement, limit, ref count)
-                        : regex.Replace(subject.ToStringOrThrow(ctx), evaluator, limit, ref count));
-            }
-            else
+            if (subject_array != null)
             {
                 var arr = new PhpArray(subject_array.Count);
 
                 var enumerator = subject_array.GetFastEnumerator();
                 while (enumerator.MoveNext())
                 {
+                    var input = enumerator.CurrentValue;
+                    var oldvalue = input.ToStringOrThrow(ctx);
+                    var oldcount = count;
+
                     var newvalue = evaluator == null
-                        ? regex.Replace(enumerator.CurrentValue.ToStringOrThrow(ctx), replacement, limit, ref count)
-                        : regex.Replace(enumerator.CurrentValue.ToStringOrThrow(ctx), evaluator, limit, ref count);
+                        ? regex.Replace(oldvalue, replacement, limit, ref count)
+                        : regex.Replace(oldvalue, evaluator, limit, ref count);
 
-                    // TODO: trick on how to quickly update values od enumerated array without hashing:
-                    // enumerator.CurrentValue = PhpValue.Create(newvalue);
+                    // - quick workaround for https://github.com/peachpiecompiler/peachpie/issues/178
+                    // - use the original value if possible (mem perf.)
 
-                    arr[enumerator.CurrentKey] = newvalue;
+                    arr[enumerator.CurrentKey] = (oldcount == count)
+                        ? (input.IsBinaryString(out var bstring) ? bstring.DeepCopy() : oldvalue)
+                        : newvalue;
                 }
 
-                return PhpValue.Create(arr);
+                return arr;
+            }
+            else
+            {
+                var oldvalue = subject.ToStringOrThrow(ctx);
+                var oldcount = count;
+
+                var newvalue = evaluator == null
+                        ? regex.Replace(oldvalue, replacement, limit, ref count)
+                        : regex.Replace(oldvalue, evaluator, limit, ref count);
+
+                // - quick workaround for https://github.com/peachpiecompiler/peachpie/issues/178
+                // - use the original value if possible (mem perf.)
+
+                return (oldcount == count)
+                    ? (subject.IsBinaryString(out var bstring) ? bstring.DeepCopy() : oldvalue)
+                    : newvalue;
             }
         }
 
