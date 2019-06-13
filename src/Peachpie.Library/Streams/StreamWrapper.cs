@@ -1516,8 +1516,11 @@ namespace Pchp.Library.Streams
         /// <returns></returns>
         private PhpStream OpenFiltered(Context ctx, string path, string arguments, string mode, StreamOpenOptions options, StreamContext context)
         {
-            PhpStream rv = PhpStream.Open(ctx, path, mode, options, context);
-            if (rv == null) return null;
+            var rv = PhpStream.Open(ctx, path, mode, options, context);
+            if (rv == null)
+            {
+                return null;
+            }
 
             // Note that only the necessary read/write chain is updated (depending on the StreamAccessOptions)
             foreach (string arg in arguments.Split('/'))
@@ -1525,17 +1528,17 @@ namespace Pchp.Library.Streams
                 if (string.Compare(arg, 0, "read=", 0, "read=".Length) == 0)
                 {
                     foreach (string filter in arg.Substring("read=".Length).Split('|'))
-                        PhpFilter.AddToStream(rv, filter, FilterChainOptions.Tail | FilterChainOptions.Read, PhpValue.Null);
+                        PhpFilter.AddToStream(ctx, rv, filter, FilterChainOptions.Tail | FilterChainOptions.Read, PhpValue.Null);
                 }
                 else if (string.Compare(arg, 0, "write=", 0, "write=".Length) == 0)
                 {
                     foreach (string filter in arg.Substring("read=".Length).Split('|'))
-                        PhpFilter.AddToStream(rv, filter, FilterChainOptions.Tail | FilterChainOptions.Write, PhpValue.Null);
+                        PhpFilter.AddToStream(ctx, rv, filter, FilterChainOptions.Tail | FilterChainOptions.Write, PhpValue.Null);
                 }
                 else
                 {
                     foreach (string filter in arg.Split('|'))
-                        PhpFilter.AddToStream(rv, filter, FilterChainOptions.Tail | FilterChainOptions.ReadWrite, PhpValue.Null);
+                        PhpFilter.AddToStream(ctx, rv, filter, FilterChainOptions.Tail | FilterChainOptions.ReadWrite, PhpValue.Null);
                 }
             }
 

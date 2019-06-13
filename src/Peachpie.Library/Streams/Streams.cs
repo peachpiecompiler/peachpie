@@ -316,49 +316,53 @@ namespace Pchp.Library.Streams
         #region stream_filter_append, stream_filter_prepend
 
         /// <summary>Adds filtername to the list of filters attached to stream.</summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="stream"></param>
         /// <param name="filter"></param>
         /// <param name="read_write">Combination of the <see cref="FilterChainOptions"/> flags.</param>
-        public static bool stream_filter_append(PhpResource stream, string filter, FilterChainOptions read_write = FilterChainOptions.ReadWrite)
+        public static bool stream_filter_append(Context ctx, PhpResource stream, string filter, FilterChainOptions read_write = FilterChainOptions.ReadWrite)
         {
-            return stream_filter_append(stream, filter, read_write, PhpValue.Null);
+            return stream_filter_append(ctx, stream, filter, read_write, PhpValue.Null);
         }
 
         /// <summary>Adds filtername to the list of filters attached to stream.</summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="stream">The target stream.</param>
         /// <param name="filter">The filter name.</param>
         /// <param name="read_write">Combination of the <see cref="FilterChainOptions"/> flags.</param>
         /// <param name="parameters">Additional parameters for a user filter.</param>
-        public static bool stream_filter_append(PhpResource stream, string filter, FilterChainOptions read_write, PhpValue parameters)
+        public static bool stream_filter_append(Context ctx, PhpResource stream, string filter, FilterChainOptions read_write, PhpValue parameters)
         {
             PhpStream s = PhpStream.GetValid(stream);
             if (s == null) return false;
 
             var where = (FilterChainOptions)read_write & FilterChainOptions.ReadWrite;
-            return PhpFilter.AddToStream(s, filter, where | FilterChainOptions.Tail, parameters);
+            return PhpFilter.AddToStream(ctx, s, filter, where | FilterChainOptions.Tail, parameters);
         }
 
         /// <summary>Adds <paramref name="filter"/> to the list of filters attached to <paramref name="stream"/>.</summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="stream">The target stream.</param>
         /// <param name="filter">The filter name.</param>
         /// <param name="read_write">Combination of the <see cref="FilterChainOptions"/> flags.</param>
-        public static bool stream_filter_prepend(PhpResource stream, string filter, FilterChainOptions read_write = FilterChainOptions.ReadWrite)
+        public static bool stream_filter_prepend(Context ctx, PhpResource stream, string filter, FilterChainOptions read_write = FilterChainOptions.ReadWrite)
         {
-            return stream_filter_prepend(stream, filter, read_write, PhpValue.Null);
+            return stream_filter_prepend(ctx, stream, filter, read_write, PhpValue.Null);
         }
 
         /// <summary>Adds <paramref name="filter"/> to the list of filters attached to <paramref name="stream"/>.</summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="stream">The target stream.</param>
         /// <param name="filter">The filter name.</param>
         /// <param name="read_write">Combination of the <see cref="FilterChainOptions"/> flags.</param>
         /// <param name="parameters">Additional parameters for a user filter.</param>
-        public static bool stream_filter_prepend(PhpResource stream, string filter, FilterChainOptions read_write, PhpValue parameters)
+        public static bool stream_filter_prepend(Context ctx, PhpResource stream, string filter, FilterChainOptions read_write, PhpValue parameters)
         {
             var s = PhpStream.GetValid(stream);
             if (s == null) return false;
 
             var where = (FilterChainOptions)read_write & FilterChainOptions.ReadWrite;
-            return PhpFilter.AddToStream(s, filter, where | FilterChainOptions.Head, parameters);
+            return PhpFilter.AddToStream(ctx, s, filter, where | FilterChainOptions.Head, parameters);
         }
 
         #endregion
@@ -368,23 +372,22 @@ namespace Pchp.Library.Streams
         /// <summary>
         /// Registers a user stream filter.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="filter">The name of the filter (may contain wildcards).</param>
         /// <param name="classname">The PHP user class (derived from <c>php_user_filter</c>) implementing the filter.</param>
         /// <returns><c>true</c> if the filter was succesfully added, <c>false</c> if the filter of such name already exists.</returns>
-        public static bool stream_filter_register(string filter, string classname)
+        public static bool stream_filter_register(Context ctx, string filter, string classname)
         {
-            // EX: [stream_filter_register]
-
-            return PhpFilter.AddUserFilter(filter, classname);
+            return UserFilterFactory.TryRegisterFilter(ctx, filter, classname);
         }
 
         /// <summary>
         /// Retrieves the list of registered filters.
         /// </summary>
         /// <returns>A <see cref="PhpArray"/> containing the names of available filters. Cannot be <c>null</c>.</returns>
-        public static PhpArray stream_get_filters()
+        public static PhpArray stream_get_filters(Context ctx)
         {
-            return new PhpArray(PhpFilter.GetFilterNames());
+            return new PhpArray(PhpFilter.GetFilterNames(ctx));
         }
 
         #endregion
@@ -803,7 +806,7 @@ namespace Pchp.Library.Streams
 
             foreach (PhpFilter f in stream.StreamFilters)
             {
-                array.Add(f.FilterName);
+                array.Add(f.filtername);
             }
 
             return array;

@@ -378,7 +378,7 @@ namespace Pchp.Library
             yield return new[] { "Debug Build", AsYesNo(Core.Utilities.ContextExtensions.IsDebugRuntime()) };
             yield return new[] { "IPv6 Support", AsYesNo(System.Net.Sockets.Socket.OSSupportsIPv6) };
             yield return new[] { "Registered PHP Streams", string.Join(", ", Streams.StreamWrapper.SystemStreamWrappers.Keys) };
-            yield return new[] { "Registered Stream Filters", string.Join(", ", Streams.PhpFilter.GetFilterNames()) };
+            yield return new[] { "Registered Stream Filters", string.Join(", ", Streams.PhpFilter.GetFilterNames(ctx)) };
         }
 
         static string GetOsName()

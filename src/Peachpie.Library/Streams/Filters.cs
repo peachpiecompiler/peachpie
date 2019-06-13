@@ -6,6 +6,7 @@ using Pchp.Core;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using Pchp.Core.Reflection;
 
 namespace Pchp.Library.Streams
 {
@@ -210,18 +211,8 @@ namespace Pchp.Library.Streams
     /// User filter base class, the derived classes to be used by <see cref="PhpFilters.stream_filter_register"/>.
     /// </summary>
     [PhpType(PhpTypeAttribute.PhpTypeName.NameOnly)]
-    public class php_user_filter
+    public class php_user_filter : PhpFilter
     {
-        /// <summary>
-        /// Name of the filter registered by <c>stream_filter_append</c>.
-        /// </summary>
-        public string filtername { get; internal set; }
-
-        /// <summary>
-        /// Parameter value passed to <see cref="PhpFilters.stream_filter_append(PhpResource, string, FilterChainOptions, PhpValue)"/>.
-        /// </summary>
-        public PhpValue @params { get; set; } = PhpValue.Null;
-
         /// <summary>
         /// Called when applying the filter.
         /// </summary>
@@ -237,6 +228,16 @@ namespace Pchp.Library.Streams
         /// Called when closing the filter.
         /// </summary>
         public virtual void onClose() { }
+
+        #region PhpFilter
+
+        [PhpHidden]
+        public sealed override TextElement /*PhpFilter.*/Filter(IEncodingProvider enc, TextElement input, bool closing)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
     }
 
     #endregion
@@ -275,17 +276,129 @@ namespace Pchp.Library.Streams
         /// Returns the list of filters created by this <see cref="IFilterFactory"/>.
         /// </summary>
         /// <returns>The list of implemented filters.</returns>
-        string[] GetImplementedFilterNames();
+        string[] GetImplementedFilterNames(Context ctx);
 
         /// <summary>
         /// Checks if a filter is being created by this factory and optionally returns a new instance of this filter.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="name">The name of the filter (may contain wildcards).</param>
         /// <param name="instantiate"><c>true</c> to fill <paramref name="instance"/> with a new instance of that filter.</param>
         /// <param name="instance">Filled with a new instance of an implemented filter if <paramref name="instantiate"/>.</param>
         /// <param name="parameters">Additional parameters provided to the filter constructor.</param>
         /// <returns><c>true</c> if a filter with the given name was found.</returns>
-        bool GetImplementedFilter(string name, bool instantiate, out PhpFilter instance, PhpValue parameters);
+        bool GetImplementedFilter(Context ctx, string name, bool instantiate, out PhpFilter instance, PhpValue parameters);
+    }
+
+    internal class UserFilterFactory : IFilterFactory
+    {
+        class UserFilters
+        {
+            /// <summary>
+            /// List of {name, filter class}.
+            /// The filter class is lazily resolved from <see cref="string"/> to <see cref="Pchp.Core.Reflection.PhpTypeInfo"/>.
+            /// </summary>
+            readonly List<KeyValuePair<string, object>> _filters = new List<KeyValuePair<string, object>>();
+
+            public bool TryRegisterFilter(string filter, string classname)
+            {
+                for (int i = 0; i < _filters.Count; i++)
+                {
+                    if (_filters[i].Key.EqualsOrdinalIgnoreCase(filter))
+                    {
+                        return false;
+                    }
+                }
+
+                _filters.Add(new KeyValuePair<string, object>(filter, classname));
+                return true;
+            }
+
+            public bool GetImplementedFilter(Context ctx, string name, bool instantiate, out PhpFilter instance, PhpValue parameters)
+            {
+
+                instance = null;
+                for (int i = 0; i < _filters.Count; i++)
+                {
+                    var pair = _filters[i];
+
+                    // TODO: wildcard
+                    if (pair.Key.EqualsOrdinalIgnoreCase(name))
+                    {
+                        if (instantiate)
+                        {
+                            var tinfo = pair.Value as PhpTypeInfo;
+                            if (tinfo == null)
+                            {
+                                Debug.Assert(pair.Value is string);
+                                tinfo = ctx.GetDeclaredTypeOrThrow((string)pair.Value, autoload: true);
+
+                                if (tinfo != null) // always true
+                                {
+                                    _filters[i] = new KeyValuePair<string, object>(pair.Key, tinfo);
+                                }
+                                else
+                                {
+                                    throw null; // unreachable
+                                }
+                            }
+
+                            instance = (php_user_filter)tinfo.Creator(ctx);
+                        }
+
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            public string[] GetImplementedFilterNames()
+            {
+                if (_filters.Count == 0)
+                {
+                    return Array.Empty<string>();
+                }
+
+                //
+
+                var arr = new string[_filters.Count];
+                for (int i = 0; i < arr.Length; i++)
+                {
+                    arr[i] = _filters[i].Key;
+                }
+
+                return arr;
+            }
+        }
+
+        public static bool TryRegisterFilter(Context ctx, string filter, string classname)
+        {
+            return ctx.GetStatic<UserFilters>().TryRegisterFilter(filter, classname);
+        }
+
+        public bool GetImplementedFilter(Context ctx, string name, bool instantiate, out PhpFilter instance, PhpValue parameters)
+        {
+            if (ctx.TryGetStatic<UserFilters>(out var filters))
+            {
+                return filters.GetImplementedFilter(ctx, name, instantiate, out instance, parameters);
+            }
+
+            instance = null;
+            return false;
+        }
+
+        public string[] GetImplementedFilterNames(Context ctx)
+        {
+            if (ctx.TryGetStatic<UserFilters>(out var filters))
+            {
+                return filters.GetImplementedFilterNames();
+            }
+            else
+            {
+                return Array.Empty<string>();
+            }
+        }
     }
 
     /// <summary>
@@ -293,25 +406,19 @@ namespace Pchp.Library.Streams
     /// </summary>
     public abstract class PhpFilter : IFilter
     {
-        #region Filtering methods and properties.
-
-        /// <summary>
-        /// Creates a new instance of the <see cref="PhpFilter"/>.
-        /// </summary>
-        /// <param name="parameters">The parameters.</param>
-        public PhpFilter(object parameters)
-        {
-            this.parameters = parameters;
-        }
-
         /// <summary>
         /// The filter name, same as the name used for creating the filter (see GetFilter).
         /// </summary>
-        public string FilterName
+        public string filtername
         {
             get;
-            private set;
+            internal set;
         }
+
+        /// <summary>
+        /// An additional <c>mixed</c> parameter passed at <c>stream_filter_append/prepend</c>.
+        /// </summary>
+        public PhpValue @params { get; internal set; } = PhpValue.Null;
 
         #region IFilter Overrides
 
@@ -330,12 +437,6 @@ namespace Pchp.Library.Streams
         /// Called when the containig stream is being closed.
         /// </summary>
         public void OnClose() { }
-        #endregion
-
-        /// <summary>
-        /// An additional <c>mixed</c> parameter passed at <c>stream_filter_append/prepend</c>.
-        /// </summary>
-        protected readonly object parameters;
 
         #endregion
 
@@ -344,12 +445,13 @@ namespace Pchp.Library.Streams
         /// <summary>
         /// Insert the filter into the filter chains.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="stream">Which stream's filter chains.</param>
         /// <param name="filter">What filter.</param>
         /// <param name="where">What position in the chains.</param>
         /// <param name="parameters">Additional parameters for the filter.</param>
         /// <returns>True if successful.</returns>
-        public static bool AddToStream(PhpStream stream, string filter, FilterChainOptions where, PhpValue parameters)
+        public static bool AddToStream(Context ctx, PhpStream stream, string filter, FilterChainOptions where, PhpValue parameters)
         {
             PhpFilter readFilter, writeFilter;
 
@@ -358,7 +460,7 @@ namespace Pchp.Library.Streams
 
             if ((where & FilterChainOptions.Read) > 0)
             {
-                if (!GetFilter(filter, true, out readFilter, parameters))
+                if (!GetFilter(ctx, filter, true, out readFilter, parameters))
                 {
                     //PhpException.Throw(PhpError.Warning, CoreResources.GetString("invalid_filter_name", filter));
                     //return false;
@@ -372,7 +474,7 @@ namespace Pchp.Library.Streams
 
             if ((where & FilterChainOptions.Write) > 0)
             {
-                if (!GetFilter(filter, true, out writeFilter, parameters))
+                if (!GetFilter(ctx, filter, true, out writeFilter, parameters))
                 {
                     //PhpException.Throw(PhpError.Warning, CoreResources.GetString("invalid_filter_name", filter));
                     //return false;
@@ -394,19 +496,23 @@ namespace Pchp.Library.Streams
         /// <summary>
         /// Searches for a filter implementation in the known <see cref="PhpFilter"/> descendants.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="filter">The name of the filter (may contain wildcards).</param>
         /// <param name="instantiate"><c>true</c> to fille <paramref name="instance"/> with a new instance of that filter.</param>
         /// <param name="instance">Filled with a new instance of an implemented filter if <paramref name="instantiate"/>.</param>
         /// <param name="parameters">Additional parameters for the filter.</param>
         /// <returns><c>true</c> if a filter with the given name was found.</returns>
-        internal static bool GetFilter(string filter, bool instantiate, out PhpFilter instance, PhpValue parameters)
+        internal static bool GetFilter(Context ctx, string filter, bool instantiate, out PhpFilter instance, PhpValue parameters)
         {
-            foreach (var factory in systemFilters)
+            foreach (var factory in _filterFactories)
             {
-                if (factory.GetImplementedFilter(filter, instantiate, out instance, parameters))
+                if (factory.GetImplementedFilter(ctx, filter, instantiate, out instance, parameters))
                 {
                     if (instance != null)
-                        instance.FilterName = filter;
+                    {
+                        instance.filtername = filter;
+                        instance.@params = parameters.IsDefault ? PhpValue.Null : parameters.DeepCopy();
+                    }
 
                     return true;
                 }
@@ -417,82 +523,35 @@ namespace Pchp.Library.Streams
         }
 
         /// <summary>
-        /// Registers a user stream filter.
-        /// </summary>
-        /// <param name="filter">The name of the filter (may contain wildcards).</param>
-        /// <param name="classname">The PHP user class (derived from <c>php_user_filter</c>) implementing the filter.</param>
-        /// <returns><c>true</c> if the filter was succesfully added, <c>false</c> if the filter of such name already exists.</returns>
-        public static bool AddUserFilter(string filter, string classname)
-        {
-            // Note: have to check for wildcard conflicts too (?)
-            PhpFilter instance;
-            if (GetFilter(filter, false, out instance, PhpValue.Null))
-            {
-                // EX: [PhpFilter.Register] stringtable - filter already exists, check the filter name string?
-                return false;
-            }
-
-            // Check the given filter for validity?
-
-            UserFilters.Add(filter, classname);
-            return true;
-        }
-
-        /// <summary>
         /// Register a built-in stream filter factory.
         /// </summary>
-        /// <param name="factory">The filter factory.</param>
-        /// <returns><c>true</c> if successfully added.</returns>
-        public static bool AddSystemFilter(IFilterFactory factory)
+        /// <param name="factory">The filter factory. Must not be <c>null</c>.</param>
+        public static void AddFilterFactory(IFilterFactory factory)
         {
-            PhpFilter instance;
-            bool ok = true;
-            foreach (string filter in factory.GetImplementedFilterNames())
-                if (GetFilter(filter, false, out instance, PhpValue.Null)) ok = false;
-            Debug.Assert(ok);
-
-            systemFilters.Add(factory);
-            return ok;
+            _filterFactories.Add(factory ?? throw new ArgumentNullException(nameof(factory)));
         }
 
         /// <summary>
         /// Retrieves the list of registered filters.
         /// </summary>
         /// <returns>A <see cref="PhpArray"/> containing the names of available filters.</returns>
-        public static IEnumerable<string> GetFilterNames()
+        public static IEnumerable<string> GetFilterNames(Context ctx)
         {
             var set = new HashSet<string>();
-            foreach (IFilterFactory factory in systemFilters)
-            {
-                set.UnionWith(factory.GetImplementedFilterNames());
-            }
 
-            if (UserFilters != null)
+            foreach (var factory in _filterFactories)
             {
-                set.UnionWith(UserFilters.Keys);
+                set.UnionWith(factory.GetImplementedFilterNames(ctx));
             }
 
             return set;
         }
 
-        /// <summary>
-        /// Gets or sets the collection of user filtername:classname associations.
-        /// </summary>
-        private static Dictionary<string, string> UserFilters
+        /// <summary>The list of filters factories.</summary>
+		static readonly List<IFilterFactory> _filterFactories = new List<IFilterFactory>()  // NOTE: thread-safety not needed, the list is only being read
         {
-            get
-            {
-                // EX: store userfilters in ScriptContext.
-                return null;
-            }
-            set
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        /// <summary>The list of built-in filters.</summary>
-		private static List<IFilterFactory> systemFilters = new List<IFilterFactory>(); // TODO: thread safe
+            new UserFilterFactory(),
+        };
 
         #endregion
     }

@@ -223,7 +223,6 @@ namespace Pchp.Library.Streams
         /// Initializes a new instance of the class.
         /// </summary>
         public ZlibFilter()
-            : base(null)
         {
             _state = ZlibState.NotStarted;
         }

@@ -8,7 +8,7 @@ namespace Pchp.Library.Streams
 {
     internal sealed class ZlibFilterFactory : IFilterFactory
     {
-        public bool GetImplementedFilter(string name, bool instantiate, out PhpFilter instance, PhpValue parameters)
+        public bool GetImplementedFilter(Context ctx, string name, bool instantiate, out PhpFilter instance, PhpValue parameters)
         {
             instance = null;
 
@@ -25,7 +25,7 @@ namespace Pchp.Library.Streams
             return false;
         }
 
-        public string[] GetImplementedFilterNames()
+        public string[] GetImplementedFilterNames(Context ctx)
         {
             return new string[] { "zlib.deflate", "zlib.inflate" };
         }
