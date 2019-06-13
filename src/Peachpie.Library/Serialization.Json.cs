@@ -22,8 +22,7 @@ namespace Pchp.Library
 
         internal static int GetLastJsonError(Context ctx)
         {
-            var p = ctx.TryGetProperty<JsonLastError>();
-            return (p != null) ? p.LastError : 0;
+            return ctx.TryGetStatic<JsonLastError>(out var p) ? p.LastError : 0;
         }
 
         #endregion
@@ -107,10 +106,10 @@ namespace Pchp.Library
                 {
                     void Indent();
                     void Unindent();
-                    
+
                     /// <summary>Writes a single whitespace, if <see cref="JSON_PRETTY_PRINT"/> is enabled.</summary>
                     void Space();
-                    
+
                     /// <summary>Writes new line and indentation, if <see cref="JSON_PRETTY_PRINT"/> is enabled.</summary>
                     void NewLine();
                 }
@@ -616,21 +615,25 @@ namespace Pchp.Library
 
             protected override PhpValue CommonDeserialize(Context ctx, Stream data, RuntimeTypeHandle caller)
             {
-                var jsonerror = ctx.GetStatic<JsonLastError>();
 
                 var options = _decodeOptions ?? new DecodeOptions();
                 var scanner = new Json.JsonScanner(new StreamReader(data), options);
                 var parser = new Json.Parser(options) { Scanner = scanner };
 
-                jsonerror.LastError = JsonSerialization.JSON_ERROR_NONE;
-
-                if (!parser.Parse())
+                if (parser.Parse())
+                {
+                    if (ctx.TryGetStatic<JsonLastError>(out var jsonerror))
+                    {
+                        jsonerror.LastError = JSON_ERROR_NONE;
+                    }
+                }
+                else
                 {
                     var errorcode = JsonSerialization.JSON_ERROR_SYNTAX;
 
                     if ((options.Options & JsonDecodeOptions.JSON_THROW_ON_ERROR) == 0)
                     {
-                        jsonerror.LastError = errorcode;
+                        ctx.GetStatic<JsonLastError>().LastError = errorcode;
                         return PhpValue.Null;
                     }
                     else

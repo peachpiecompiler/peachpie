@@ -101,6 +101,11 @@ namespace Pchp.Core
         public T GetStatic<T>() where T : new() => GetStatic<T>(StaticIndexes.StaticsIndex<T>());
 
         /// <summary>
+        /// Gets context static object of type <typeparamref name="T"/> if it was addedinto the context already.
+        /// </summary>
+        public bool TryGetStatic<T>(out T value) where T : class => (value = TryGetProperty<T>()) != default;
+
+        /// <summary>
         /// Static objects within the context.
         /// Cannot be <c>null</c>.
         /// </summary>

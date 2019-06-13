@@ -277,20 +277,13 @@ namespace Pchp.Library.DateTime
         /// 3. default UTC time zone</remarks>
         internal static TimeZoneInfo GetCurrentTimeZone(Context ctx)
         {
-            var info = ctx.TryGetProperty<TimeZoneInfo>();
-
             // if timezone is set by date_default_timezone_set(), return it
 
+            var info = ctx.TryGetProperty<TimeZoneInfo>();
             if (info == null)
             {
                 // default timezone was not set, use & cache the current timezone
-                var cache = ctx.TryGetProperty<CurrentTimeZoneCache>();
-                if (cache == null)
-                {
-                    ctx.SetProperty(cache = new CurrentTimeZoneCache());
-                }
-
-                info = cache.TimeZone;
+                info = ctx.GetStatic<CurrentTimeZoneCache>().TimeZone;
             }
 
             //
