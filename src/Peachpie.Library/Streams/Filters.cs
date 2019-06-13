@@ -205,43 +205,6 @@ namespace Pchp.Library.Streams
 
     #endregion
 
-    #region php_user_filter
-
-    /// <summary>
-    /// User filter base class, the derived classes to be used by <see cref="PhpFilters.stream_filter_register"/>.
-    /// </summary>
-    [PhpType(PhpTypeAttribute.PhpTypeName.NameOnly)]
-    public class php_user_filter : PhpFilter
-    {
-        /// <summary>
-        /// Called when applying the filter.
-        /// </summary>
-        public virtual long filter(PhpResource @in, PhpResource @out, ref long consumed, bool closing) { return PhpFilters.PSFS_PASS_ON; }
-
-        /// <summary>
-        /// Called when creating the filter.
-        /// </summary>
-        /// <returns></returns>
-        public virtual bool onCreate() { return true; }
-
-        /// <summary>
-        /// Called when closing the filter.
-        /// </summary>
-        public virtual void onClose() { }
-
-        #region PhpFilter
-
-        [PhpHidden]
-        public sealed override TextElement /*PhpFilter.*/Filter(IEncodingProvider enc, TextElement input, bool closing)
-        {
-            throw new NotImplementedException();
-        }
-
-        #endregion
-    }
-
-    #endregion
-
     #region Stream Filter Base Classes
 
     #region Filter options
@@ -409,16 +372,12 @@ namespace Pchp.Library.Streams
         /// <summary>
         /// The filter name, same as the name used for creating the filter (see GetFilter).
         /// </summary>
-        public string filtername
-        {
-            get;
-            internal set;
-        }
+        public string filtername { get; internal set; } = string.Empty;
 
         /// <summary>
         /// An additional <c>mixed</c> parameter passed at <c>stream_filter_append/prepend</c>.
         /// </summary>
-        public PhpValue @params { get; internal set; } = PhpValue.Null;
+        public PhpValue @params { get; internal set; } = string.Empty;
 
         #region IFilter Overrides
 
@@ -554,6 +513,76 @@ namespace Pchp.Library.Streams
         };
 
         #endregion
+    }
+
+    /// <summary>
+    /// User filter base class, the derived classes to be used by <see cref="PhpFilters.stream_filter_register"/>.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.PhpTypeName.NameOnly)]
+    public class php_user_filter : PhpFilter
+    {
+        /// <summary>
+        /// Called when applying the filter.
+        /// </summary>
+        public virtual long filter(PhpResource @in, PhpResource @out, PhpAlias consumed, bool closing) => 0;
+
+        /// <summary>
+        /// Called when creating the filter.
+        /// </summary>
+        public virtual bool onCreate() => true;
+
+        /// <summary>
+        /// Called when closing the filter.
+        /// </summary>
+        public virtual void onClose() { }
+
+        #region PhpFilter
+
+        [PhpHidden]
+        public sealed override TextElement /*PhpFilter.*/Filter(IEncodingProvider enc, TextElement input, bool closing)
+        {
+            var @in = new UserFilterBucketBrigade() { bucket = input.ToPhpString() };
+            var @out = new UserFilterBucketBrigade();
+            var consumed = new PhpAlias(0L);
+
+            switch ((PhpFilters.FilterStatus)filter(@in, @out, consumed, closing))
+            {
+                case PhpFilters.FilterStatus.OK:
+                    return new TextElement(@out.bucket, enc.StringEncoding);
+
+                case PhpFilters.FilterStatus.MoreData:
+                    return TextElement.Empty;
+
+                case PhpFilters.FilterStatus.FatalError:
+                default:
+                    // silently stop feeding this filter
+                    return TextElement.Null;
+            }
+        }
+
+        #endregion
+    }
+
+    public sealed class UserFilterBucketBrigade : PhpResource
+    {
+        public UserFilterBucketBrigade()
+            : base("userfilter.bucket brigade")
+        {
+        }
+
+        internal PhpString bucket;
+
+        internal long consumed = 0;
+    }
+
+    /// <summary>
+    /// Object created by <c>stream_bucket_make_writeable</c> and <c>stream_​bucket_​new</c>.
+    /// </summary>
+    public sealed class UserFilterBucket : stdClass
+    {
+        // PhpResource bucket{ get; set; }
+        public PhpString data;
+        public long datalen;
     }
 
     #endregion

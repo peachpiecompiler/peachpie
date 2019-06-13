@@ -391,6 +391,67 @@ namespace Pchp.Library.Streams
         }
 
         #endregion
+
+        #region stream_bucket_***
+
+        /// <summary>
+        /// Append bucket to brigade.
+        /// </summary>
+        public static void stream_bucket_append(UserFilterBucketBrigade brigade, UserFilterBucket bucket)
+        {
+            if (!bucket.data.IsEmpty)
+            {
+                brigade.bucket.EnsureWritable().Append(bucket.data);
+            }
+        }
+
+        /// <summary>
+        /// Return a bucket object from the brigade for operating on.
+        /// </summary>
+        /// <returns>Object or <c>NULL</c>.</returns>
+        public static UserFilterBucket stream_bucket_make_writeable(UserFilterBucketBrigade brigade)
+        {
+            if (brigade == null || brigade.consumed >= brigade.bucket.Length)
+            {
+                return null;
+            }
+
+            brigade.consumed = brigade.bucket.Length;
+
+            return new UserFilterBucket
+            {
+                data = brigade.bucket,
+                datalen = brigade.bucket.Length,
+            };
+        }
+
+        /// <summary>
+        /// Create a new bucket for use on the current stream.
+        /// </summary>
+        public static UserFilterBucket stream_bucket_new(PhpResource stream, PhpString buffer)
+        {
+            return new UserFilterBucket
+            {
+                data = buffer,
+                datalen = buffer.Length,
+            };
+        }
+
+        /// <summary>
+        /// Prepend bucket to brigade.
+        /// </summary>
+        public static void stream_bucket_prepend(UserFilterBucketBrigade brigade, UserFilterBucket bucket)
+        {
+            if (!bucket.data.IsEmpty)
+            {
+                var blob = bucket.data.DeepCopy().EnsureWritable();
+                blob.Append(brigade.bucket);
+
+                brigade.bucket = new PhpString(blob);
+            }
+        }
+
+        #endregion
     }
 
     /// <summary>
