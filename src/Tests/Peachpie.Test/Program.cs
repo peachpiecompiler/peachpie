@@ -26,6 +26,7 @@ namespace Peachpie.Test
                     IsSubmission = false,
                     AdditionalReferences = new string[] {
                         typeof(Library.Graphics.PhpImage).Assembly.Location,
+                        typeof(Library.MySql.MySql).Assembly.Location,
                         typeof(Library.Network.CURLFunctions).Assembly.Location,
                     },
                 }, File.ReadAllText(fullpath));
