@@ -611,7 +611,18 @@ namespace Pchp.Core
 
                 return PhpCallback.CreateInvalid();
             }
-            public override string DisplayString(ref PhpValue me) => me.Object.GetType().FullName.Replace('.', '\\') + "#" + me.Object.GetHashCode().ToString("X");
+            public override string DisplayString(ref PhpValue me)
+            {
+                var obj = me.Object;
+                if (obj is PhpResource resource)
+                {
+                    return $"resource id='{resource.Id}' type='{resource.TypeName}'";
+                }
+                else
+                {
+                    return obj.GetPhpTypeInfo().Name + "#" + obj.GetHashCode().ToString("X");
+                }
+            }
             public override void Output(ref PhpValue me, Context ctx) => ctx.Echo(Convert.ToStringOrThrow(me.Object, ctx));
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.AcceptObject(me.Object);
         }

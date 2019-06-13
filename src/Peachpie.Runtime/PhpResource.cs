@@ -1,6 +1,7 @@
 ﻿using Pchp.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ namespace Pchp.Core
 	/// Resources rely on GC Finalization - override FreeManaged for cleanup.
 	/// When printing a resource variable in PHP, "Resource id #x" prints out.
 	/// </summary>
+    [DebuggerDisplay("resource id='{Id}' type='{TypeName,nq}'")]
     public class PhpResource : IDisposable, IPhpConvertible
     {
         /// <summary>The name of this variable type.</summary>
