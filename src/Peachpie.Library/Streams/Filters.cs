@@ -204,6 +204,43 @@ namespace Pchp.Library.Streams
 
     #endregion
 
+    #region php_user_filter
+
+    /// <summary>
+    /// User filter base class, the derived classes to be used by <see cref="PhpFilters.stream_filter_register"/>.
+    /// </summary>
+    [PhpType(PhpTypeAttribute.PhpTypeName.NameOnly)]
+    public class php_user_filter
+    {
+        /// <summary>
+        /// Name of the filter registered by <c>stream_filter_append</c>.
+        /// </summary>
+        public string filtername { get; internal set; }
+
+        /// <summary>
+        /// Parameter value passed to <see cref="PhpFilters.stream_filter_append(PhpResource, string, FilterChainOptions, PhpValue)"/>.
+        /// </summary>
+        public PhpValue @params { get; set; } = PhpValue.Null;
+
+        /// <summary>
+        /// Called when applying the filter.
+        /// </summary>
+        public virtual long filter(PhpResource @in, PhpResource @out, ref long consumed, bool closing) { return PhpFilters.PSFS_PASS_ON; }
+
+        /// <summary>
+        /// Called when creating the filter.
+        /// </summary>
+        /// <returns></returns>
+        public virtual bool onCreate() { return true; }
+
+        /// <summary>
+        /// Called when closing the filter.
+        /// </summary>
+        public virtual void onClose() { }
+    }
+
+    #endregion
+
     #region Stream Filter Base Classes
 
     #region Filter options
@@ -364,9 +401,8 @@ namespace Pchp.Library.Streams
         /// <returns><c>true</c> if a filter with the given name was found.</returns>
         internal static bool GetFilter(string filter, bool instantiate, out PhpFilter instance, PhpValue parameters)
         {
-            instance = null;
-
-            foreach (IFilterFactory factory in systemFilters)
+            foreach (var factory in systemFilters)
+            {
                 if (factory.GetImplementedFilter(filter, instantiate, out instance, parameters))
                 {
                     if (instance != null)
@@ -374,17 +410,9 @@ namespace Pchp.Library.Streams
 
                     return true;
                 }
-
-            // TODO: the registered filter names may be wildcards - use fnmatch.
-            string classname;
-            if ((UserFilters != null) && (UserFilters.TryGetValue(filter, out classname)))
-            {
-                if (instantiate)
-                {
-                    // EX: [PhpFilter.GetFilter] create a new user filter; and support the WILDCARD naming too.
-                }
-                return true;
             }
+
+            instance = null;
             return false;
         }
 
