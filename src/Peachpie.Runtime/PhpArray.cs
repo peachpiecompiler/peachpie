@@ -124,7 +124,7 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="data">The enumerator containing values added to the new instance.</param>
         public PhpArray(IEnumerable data)
-            : base((data is ICollection) ? ((ICollection)data).Count : 0)
+            : base(data is ICollection collection ? collection.Count : 0)
         {
             if (data != null)
             {
@@ -137,7 +137,7 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="data">The enumerator containing values added to the new instance.</param>
         public PhpArray(IEnumerable<PhpValue> data)
-            : base((data is ICollection) ? ((ICollection)data).Count : 0)
+            : base(data is ICollection collection ? collection.Count : 0)
         {
             if (data != null)
             {
@@ -146,7 +146,7 @@ namespace Pchp.Core
         }
 
         public PhpArray(IEnumerable<string> data)
-            : base((data is ICollection) ? ((ICollection)data).Count : 0)
+            : base(data is ICollection collection ? collection.Count : 0)
         {
             if (data != null)
             {
@@ -159,7 +159,7 @@ namespace Pchp.Core
         /// </summary>
         /// <param name="data">The enumerator containing values added to the new instance.</param>
         public PhpArray(IEnumerable<KeyValuePair<IntStringKey, PhpValue>> data)
-            : base((data is ICollection) ? ((ICollection)data).Count : 0)
+            : base(data is ICollection collection ? collection.Count : 0)
         {
             if (data != null)
             {

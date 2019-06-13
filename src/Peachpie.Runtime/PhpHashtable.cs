@@ -615,7 +615,7 @@ namespace Pchp.Core
         /// <summary>
         /// Adds range of values at the end of the hashtable.
         /// </summary>
-        /// <param name="enumeration">The value enumeration.Cannot be <c>null</c>.</param>
+        /// <param name="enumeration">The value enumeration. Cannot be <c>null</c>.</param>
         public void AddRange(IEnumerable<PhpValue> enumeration)
         {
             foreach (var value in enumeration)
@@ -627,12 +627,12 @@ namespace Pchp.Core
         /// <summary>
         /// Adds range of values at the end of the hashtable.
         /// </summary>
-        /// <param name="enumeration">The value enumeration.Cannot be <c>null</c>.</param>
+        /// <param name="enumeration">The value enumeration. Cannot be <c>null</c>.</param>
         public void AddRange(IEnumerable<string> enumeration)
         {
             foreach (var value in enumeration)
             {
-                AddToEnd((PhpValue)value);
+                AddToEnd(value);
             }
         }
 

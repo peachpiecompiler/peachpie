@@ -384,7 +384,7 @@ namespace Pchp.Library.Streams
         /// <returns>A <see cref="PhpArray"/> containing the names of available filters. Cannot be <c>null</c>.</returns>
         public static PhpArray stream_get_filters()
         {
-            return new PhpArray(PhpFilter.GetFilterNames().Select(PhpValue.Create));
+            return new PhpArray(PhpFilter.GetFilterNames());
         }
 
         #endregion
