@@ -552,9 +552,16 @@ namespace Pchp.Core
             var callbacks = _lazyShutdownCallbacks;
             if (callbacks != null)
             {
-                for (int i = 0; i < callbacks.Count; i++)
+                try
                 {
-                    callbacks[i](this);
+                    for (int i = 0; i < callbacks.Count; i++)
+                    {
+                        callbacks[i](this);
+                    }
+                }
+                catch (ScriptDiedException died)
+                {
+                    died.ProcessStatus(this);
                 }
 
                 //
