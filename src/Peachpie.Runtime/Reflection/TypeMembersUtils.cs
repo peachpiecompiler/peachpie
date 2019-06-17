@@ -256,10 +256,14 @@ namespace Pchp.Core.Reflection
 
                 foreach (var c in ctors)
                 {
-                    if (c.IsStatic) continue;
+                    if (c.IsStatic || c.IsPhpHidden())
+                    {
+                        continue;
+                    }
 
                     if (c.IsPhpFieldsOnlyCtor())
                     {
+                        // we want this one:
                         return (_ctx) => c.Invoke(new object[] { _ctx });
                     }
 

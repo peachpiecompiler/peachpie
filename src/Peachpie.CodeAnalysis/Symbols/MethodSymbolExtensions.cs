@@ -59,6 +59,11 @@ namespace Pchp.CodeAnalysis.Symbols
             if (m != null && m.MethodKind == MethodKind.Constructor && !m.IsStatic &&
                 (m.DeclaredAccessibility == Accessibility.ProtectedOrInternal || m.DeclaredAccessibility == Accessibility.Protected))
             {
+                if (m is SynthesizedPhpCtorSymbol sctor)
+                {
+                    return sctor.IsInitFieldsOnly;
+                }
+
                 var attrs = m.GetAttributes();
                 return !attrs.IsEmpty && attrs.Any(attr => attr.AttributeClass.MetadataName == CoreTypes.PhpFieldsOnlyCtorAttributeName);
             }

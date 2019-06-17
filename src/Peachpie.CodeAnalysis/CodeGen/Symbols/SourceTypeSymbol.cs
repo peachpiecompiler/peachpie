@@ -214,11 +214,11 @@ namespace Pchp.CodeAnalysis.Symbols
             Debug.Assert(ctor.BaseCtor != null);
             Debug.Assert(ctor.PhpConstructor == null);
 
-            // Pchp.Core.Utilities.ContextExtensions.DefaultContext
+            // Pchp.Core.Utilities.ContextExtensions.CurrentContext
             var extensions = (NamedTypeSymbol)module.Compilation.GetTypeByMetadataName("Pchp.Core.Utilities.ContextExtensions");
             if (extensions.IsErrorTypeOrNull()) throw new InvalidOperationException("Class Pchp.Core.Utilities.ContextExtensions cannot be resolved.");
 
-            var ctxfield = extensions.LookupMember<PropertySymbol>("DefaultContext");
+            var ctxfield = extensions.LookupMember<PropertySymbol>("CurrentContext");
             if (ctxfield == null) throw new InvalidOperationException("Property ContextExtensions.DefaultContext cannot be resolved.");
 
             Debug.Assert(ctxfield.GetMethod.IsStatic);
@@ -230,7 +230,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ContainingFile = ContainingFile,
             };
 
-            // this( Context.Default )
+            // this( ContextExtensions.CurrentContext )
             cg.EmitPop(cg.EmitForwardCall(ctor.BaseCtor, ctor));
 
             // ret

@@ -34,8 +34,12 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public static bool IsPhpHidden(this Symbol s, PhpCompilation compilation = null)
         {
-            var attrs = s.GetAttributes();
+            if (s is SynthesizedMethodSymbol smethod)
+            {
+                return smethod.IsPhpHidden;
+            }
 
+            var attrs = s.GetAttributes();
             if (attrs.Length != 0)
             {
                 bool hascond = false;

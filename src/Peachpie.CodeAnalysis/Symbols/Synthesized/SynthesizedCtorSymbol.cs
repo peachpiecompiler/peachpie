@@ -87,17 +87,14 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public MethodSymbol PhpConstructor => _phpconstruct;
 
-        public bool IsInitFieldsOnly { get; private set; }
+        public bool IsInitFieldsOnly { get; internal set; }
 
         protected SynthesizedPhpCtorSymbol(SourceTypeSymbol containingType, Accessibility accessibility,
-            bool isInitFieldsOnly,
             MethodSymbol basector, MethodSymbol __construct, int paramsLimit = int.MaxValue)
             : base(containingType, WellKnownMemberNames.InstanceConstructorName, false, false, containingType.DeclaringCompilation.CoreTypes.Void, accessibility)
         {
             _basector = basector ?? throw ExceptionUtilities.ArgumentNull(nameof(basector));
             _phpconstruct = __construct;
-
-            this.IsInitFieldsOnly = isInitFieldsOnly;
 
             // clone parameters from __construct ?? basector
             var template = (__construct ?? basector).Parameters;
@@ -175,11 +172,15 @@ namespace Pchp.CodeAnalysis.Symbols
             // create .ctor(s)
             if (phpconstruct == null)
             {
-                yield return defaultctor = new SynthesizedPhpCtorSymbol(type, Accessibility.Public, false, basector, null);
+                yield return defaultctor = new SynthesizedPhpCtorSymbol(type, Accessibility.Public, basector, null);
             }
             else
             {
-                var fieldsinitctor = new SynthesizedPhpCtorSymbol(type, Accessibility.ProtectedOrInternal, true, basector, null);
+                var fieldsinitctor = new SynthesizedPhpCtorSymbol(type, Accessibility.ProtectedOrInternal, basector, null)
+                {
+                    IsInitFieldsOnly = true,
+                    IsEditorBrowsableHidden = true,
+                };
                 yield return fieldsinitctor;
 
                 // generate .ctor(s) calling PHP __construct with optional overloads in case there is an optional parameter
@@ -189,20 +190,22 @@ namespace Pchp.CodeAnalysis.Symbols
                     var p = ps[i] as SourceParameterSymbol;
                     if (p != null && p.Initializer != null && p.ExplicitDefaultConstantValue == null)   // => ConstantValue couldn't be resolved for optional parameter
                     {
-                        yield return new SynthesizedPhpCtorSymbol(type, phpconstruct.DeclaredAccessibility, false, fieldsinitctor, phpconstruct, i);
+                        yield return new SynthesizedPhpCtorSymbol(type, phpconstruct.DeclaredAccessibility, fieldsinitctor, phpconstruct, i);
                     }
                 }
 
-                yield return defaultctor = new SynthesizedPhpCtorSymbol(type, phpconstruct.DeclaredAccessibility, false, fieldsinitctor, phpconstruct);
+                yield return defaultctor = new SynthesizedPhpCtorSymbol(type, phpconstruct.DeclaredAccessibility, fieldsinitctor, phpconstruct);
             }
 
             // parameterless .ctor() with shared context
-            if (defaultctor.DeclaredAccessibility == Accessibility.Public && !type.IsAbstract)
+            if (defaultctor.DeclaredAccessibility == Accessibility.Public && type.DeclaredAccessibility == Accessibility.Public && !type.IsAbstract)
             {
-                //// Template:
-                //// void .ctor() : this(Context.Default) { }
-                //yield return new SynthesizedParameterlessPhpCtorSymbol(type, Accessibility.Public, defaultctor);
-                // TODO: uncomment once overload resolution will prioritize the overload with Context parameter over this one!
+                // Template:
+                // void .ctor(...) : this(ContextExtensions.CurrentContext, ...) { }
+
+                // NOTE: overload resolution will prioritize the overload with Context parameter over this one
+
+                yield return new SynthesizedParameterlessPhpCtorSymbol(type, Accessibility.Public, defaultctor);
             }
 
             yield break;
@@ -216,13 +219,15 @@ namespace Pchp.CodeAnalysis.Symbols
             // find best matching basector
             foreach (var c in candidates)
             {
-                var calledparams = c.Parameters.Where(p => !p.IsImplicitlyDeclared && !p.IsParams).ToImmutableArray();
-
                 if (!c.IsStatic &&
                     c.DeclaredAccessibility != Accessibility.Private &&
                     c.DeclaredAccessibility != Accessibility.Internal &&
-                    c.DeclaredAccessibility != Accessibility.ProtectedAndInternal)
+                    c.DeclaredAccessibility != Accessibility.ProtectedAndInternal &&
+                    !c.IsPhpHidden()
+                    )
                 {
+                    var calledparams = c.Parameters.Where(p => !p.IsImplicitlyDeclared && !p.IsParams).ToImmutableArray();
+
                     var cost = OverrideHelper.OverrideCost(givenparams, calledparams);
                     if (cost < bestcost)
                     {
@@ -278,31 +283,6 @@ namespace Pchp.CodeAnalysis.Symbols
         }
 
         #endregion
-
-        BaseAttributeData _lazyPhpFieldsOnlyCtorAttribute;
-
-        public override ImmutableArray<AttributeData> GetAttributes()
-        {
-            var attrs = base.GetAttributes();
-
-            // IsInitFieldsOnly => InitFieldsOnlyCtorAttribute
-            if (IsInitFieldsOnly)
-            {
-                // [PhpFieldsOnlyCtorAttribute]
-                if (_lazyPhpFieldsOnlyCtorAttribute == null)
-                {
-                    var lazyPhpFieldsOnlyCtorAttribute = new SynthesizedAttributeData(
-                        DeclaringCompilation.CoreMethods.Ctors.PhpFieldsOnlyCtorAttribute,
-                        ImmutableArray<TypedConstant>.Empty,
-                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
-                    Interlocked.CompareExchange(ref _lazyPhpFieldsOnlyCtorAttribute, lazyPhpFieldsOnlyCtorAttribute, null);
-                }
-
-                attrs = attrs.Add(_lazyPhpFieldsOnlyCtorAttribute);
-            }
-
-            return attrs;
-        }
     }
 
     #endregion
@@ -314,7 +294,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public new SourceTraitTypeSymbol ContainingType => (SourceTraitTypeSymbol)base.ContainingType;
 
         public SynthesizedPhpTraitCtorSymbol(SourceTraitTypeSymbol containingType)
-            : base(containingType, Accessibility.Public, false, containingType.BaseType.InstanceConstructors[0]/*Object..ctor()*/, null)
+            : base(containingType, Accessibility.Public, containingType.BaseType.InstanceConstructors[0]/*Object..ctor()*/, null)
         {
 
         }
@@ -350,8 +330,9 @@ namespace Pchp.CodeAnalysis.Symbols
         public SynthesizedParameterlessPhpCtorSymbol(
             SourceTypeSymbol containingType, Accessibility accessibility,
             MethodSymbol defaultctor)
-            : base(containingType, accessibility, false, defaultctor, null)
+            : base(containingType, accessibility, defaultctor, null)
         {
+            IsPhpHidden = true; // from the PHP context, do not use this Context-less .ctor, we have the Context instance and we want to pass it properly
         }
 
         protected override IEnumerable<ParameterSymbol> CreateParameters(IEnumerable<ParameterSymbol> baseparams)
@@ -372,11 +353,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public override ImmutableArray<AttributeData> GetAttributes()
         {
             // [CompilerGenerated]
-            var compilergenerated = (MethodSymbol)DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_Runtime_CompilerServices_CompilerGeneratedAttribute__ctor);
-
-            return base.GetAttributes().Add(
-                new SynthesizedAttributeData(compilergenerated, ImmutableArray<TypedConstant>.Empty, ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty)
-            );
+            return base.GetAttributes().Add(DeclaringCompilation.CreateCompilerGeneratedAttribute());
         }
     }
 

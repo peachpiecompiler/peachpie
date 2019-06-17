@@ -31,13 +31,13 @@ namespace Pchp.Core.Utilities
         }
 
         /// <summary>
-        /// Lazily instantiated instance of <see cref="Context"/> used for newly created PHP objects marked as shared.
+        /// A lazily instantiated instance of <see cref="Context"/> for the current runtime context.
         /// </summary>
-        public static Context DefaultContext
+        public static Context CurrentContext
         {
             get
             {
-                // CONSIDER: extensible, web context
+                // CONSIDER: extensible, web context, bound from HttpContext
                 return _sharedContext ?? (_sharedContext = Context.CreateEmpty());
             }
             set

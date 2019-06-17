@@ -13,7 +13,7 @@ namespace Pchp.CodeAnalysis.Symbols
     class SynthesizedMethodSymbol : MethodSymbol
     {
         readonly TypeSymbol _type;
-        readonly bool _static, _virtual, _final, _abstract, _phphidden;
+        readonly bool _static, _virtual, _final, _abstract;
         readonly string _name;
         TypeSymbol _return;
         readonly Accessibility _accessibility;
@@ -28,6 +28,16 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal MethodSymbol ExplicitOverride { get; set; }
 
+        /// <summary>
+        /// If set to <c>true</c>, the method will emit [EditorBrowsable(Never)] attribute.
+        /// </summary>
+        public bool IsEditorBrowsableHidden { get; internal set; }
+
+        /// <summary>
+        /// If set to <c>true</c>, the method will emit [PhpHiddenAttribute] attribute.
+        /// </summary>
+        public bool IsPhpHidden { get; internal set; }
+
         public override IMethodSymbol OverriddenMethod => ExplicitOverride;
 
         public SynthesizedMethodSymbol(TypeSymbol containingType, string name, bool isstatic, bool isvirtual, TypeSymbol returnType, Accessibility accessibility = Accessibility.Private, bool isfinal = true, bool isabstract = false, bool phphidden = false, params ParameterSymbol[] ps)
@@ -40,7 +50,8 @@ namespace Pchp.CodeAnalysis.Symbols
             _return = returnType;
             _accessibility = accessibility;
             _final = isfinal && isvirtual && !isstatic;
-            _phphidden = phphidden;
+
+            IsPhpHidden = phphidden;
 
             SetParameters(ps);
         }
@@ -52,17 +63,39 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<AttributeData> GetAttributes()
         {
-            if (_phphidden)
+            var builder = ImmutableArray.CreateBuilder<AttributeData>();
+
+            if (IsPhpHidden)
             {
-                return ImmutableArray.Create<AttributeData>(
-                    // [PhpHiddenAttribute]
-                    new SynthesizedAttributeData(
-                        DeclaringCompilation.CoreTypes.PhpHiddenAttribute.Ctor().Symbol,
-                        ImmutableArray<TypedConstant>.Empty,
-                        ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
+                // [PhpHiddenAttribute]
+                builder.Add(new SynthesizedAttributeData(
+                    DeclaringCompilation.CoreMethods.Ctors.PhpHiddenAttribute,
+                    ImmutableArray<TypedConstant>.Empty,
+                    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
             }
 
-            return ImmutableArray<AttributeData>.Empty;
+            if (IsEditorBrowsableHidden)
+            {
+                builder.Add(new SynthesizedAttributeData(
+                    (MethodSymbol)DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_ComponentModel_EditorBrowsableAttribute__ctor),
+                    ImmutableArray.Create(
+                        new TypedConstant(
+                            DeclaringCompilation.GetWellKnownType(WellKnownType.System_ComponentModel_EditorBrowsableState),
+                            TypedConstantKind.Enum,
+                            System.ComponentModel.EditorBrowsableState.Never)),
+                    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
+            }
+
+            if (this is SynthesizedPhpCtorSymbol sctor && sctor.IsInitFieldsOnly) // we do it here to avoid allocating new ImmutableArray in derived class
+            {
+                // [PhpFieldsOnlyCtorAttribute]
+                builder.Add(new SynthesizedAttributeData(
+                    DeclaringCompilation.CoreMethods.Ctors.PhpFieldsOnlyCtorAttribute,
+                    ImmutableArray<TypedConstant>.Empty,
+                    ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
+            }
+
+            return builder.ToImmutable();
         }
 
         public override Symbol ContainingSymbol => _type;

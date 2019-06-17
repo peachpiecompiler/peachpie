@@ -157,7 +157,7 @@ namespace Pchp.Core.Reflection
             {
                 if (_lazyCreator == null)
                 {
-                    var ctors = _type.DeclaredConstructors.Where(c => c.IsPublic && !c.IsStatic).ToArray();
+                    var ctors = _type.DeclaredConstructors.Where(c => c.IsPublic && !c.IsStatic && !c.IsPhpHidden()).ToArray();
                     if (ctors.Length != 0)
                     {
                         _lazyCreator = Dynamic.BinderHelpers.BindToCreator(_type.AsType(), ctors);
@@ -185,7 +185,7 @@ namespace Pchp.Core.Reflection
                     bool hasPrivate = false;
                     foreach (var c in _type.DeclaredConstructors)
                     {
-                        if (!c.IsStatic && !c.IsPhpFieldsOnlyCtor())
+                        if (!c.IsStatic && !c.IsPhpFieldsOnlyCtor() && !c.IsPhpHidden())
                         {
                             ctorsList.Add(c);
                             hasPrivate |= c.IsPrivate;
@@ -213,7 +213,7 @@ namespace Pchp.Core.Reflection
                     bool hasProtected = false;
                     foreach (var c in _type.DeclaredConstructors)
                     {
-                        if (!c.IsStatic && !c.IsPrivate && !c.IsPhpFieldsOnlyCtor())
+                        if (!c.IsStatic && !c.IsPrivate && !c.IsPhpFieldsOnlyCtor() && !c.IsPhpHidden())
                         {
                             ctorsList.Add(c);
                             hasProtected |= c.IsFamily;
