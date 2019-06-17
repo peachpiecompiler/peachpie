@@ -113,6 +113,14 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public override ImmutableArray<AttributeData> GetAttributes()
+        {
+            // [CompilerGenerated]
+            return ImmutableArray.Create(
+                DeclaringCompilation.CreateCompilerGeneratedAttribute()
+                );
+        }
+
         #endregion
     }
 }
