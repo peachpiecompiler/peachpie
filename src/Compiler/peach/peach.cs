@@ -45,6 +45,7 @@ namespace Pchp.CodeAnalysis.CommandLine
             {
                 typeof(object).Assembly,            // mscorlib (or System.Runtime)
                 typeof(HashSet<>).Assembly,         // System.Core
+                typeof(System.ComponentModel.EditorBrowsableAttribute).Assembly, // System.Runtime
                 typeof(Core.Context).Assembly,      // Peachpie.Runtime
                 typeof(Library.Strings).Assembly,   // Peachpie.Library
                 typeof(Peachpie.Library.XmlDom.DOMDocument).Assembly,   // Peachpie.Library.XmlDom
