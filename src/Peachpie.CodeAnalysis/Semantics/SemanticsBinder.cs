@@ -925,7 +925,14 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (expr.IsMemberOf == null)
             {
-                if (!varname.IsDirect)
+                if (varname.IsDirect)
+                {
+                    if (access.IsEnsure && varname.NameValue.IsThisVariableName)
+                    {
+                        access = BoundAccess.Read;
+                    }
+                }
+                else
                 {
                     Routine.Flags |= RoutineFlags.HasIndirectVar;
                 }
