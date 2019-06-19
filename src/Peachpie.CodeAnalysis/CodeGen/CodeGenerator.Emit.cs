@@ -80,7 +80,11 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (_callerTypePlace == null)
                 {
-                    if (this.Routine is SourceGlobalMethodSymbol global)
+                    if (GeneratorStateMachineMethod != null)
+                    {
+                        // TODO: 
+                    }
+                    else if (this.Routine is SourceGlobalMethodSymbol global)
                     {
                         _callerTypePlace = new ParamPlace(global.SelfParameter);
                     }
@@ -154,6 +158,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// </summary>
         public TypeSymbol EmitPhpThis()
         {
+            if (GeneratorStateMachineMethod != null)
+            {
+                return GeneratorStateMachineMethod.ThisParameter.EmitLoad(_il);
+            }
+
             if (Routine != null)
             {
                 var thisplace = Routine.GetPhpThisVariablePlace(this.Module);
@@ -623,6 +632,11 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             if (Routine != null)
             {
+                if (GeneratorStateMachineMethod != null)
+                {
+                    // TODO: GeneratorStateMachineMethod.ThisParameter or ContainingType, but when in lambda we don't have containin type :/
+                }
+
                 if (Routine is SourceLambdaSymbol lambda)
                 {
                     // Handle lambda since $this can be null (unbound)

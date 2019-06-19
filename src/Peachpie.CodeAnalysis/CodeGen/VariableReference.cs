@@ -707,9 +707,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public virtual TypeSymbol EmitLoadValue(CodeGenerator cg, ref LhsStack lhs, BoundAccess access)
         {
-            if (Place != null)
+            var place = this.Place;
+            if (place != null)
             {
-                return Place.EmitLoadValue(cg, ref lhs, access);
+                return place.EmitLoadValue(cg, ref lhs, access);
             }
             else
             {
@@ -1153,6 +1154,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
         public override TypeSymbol EmitLoadValue(CodeGenerator cg, ref LhsStack lhs, BoundAccess access)
         {
+            if (cg.GeneratorStateMachineMethod != null)
+            {
+                return (new ParamPlace(cg.GeneratorStateMachineMethod.ThisParameter)).EmitLoadValue(cg, ref lhs, access);
+                // TODO: access.IsReadRef
+            }
+
             if (access.IsReadRef)
             {
                 // just wrap this into PhpAlias

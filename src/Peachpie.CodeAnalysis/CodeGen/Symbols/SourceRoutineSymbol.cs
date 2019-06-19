@@ -382,17 +382,20 @@ namespace Pchp.CodeAnalysis.Symbols
             return new OperatorPlace(DeclaringCompilation.CoreMethods.Operators.Context_Closure, new ParamPlace(ClosureParameter));
         }
 
-        public override IPlace GetPhpThisVariablePlace(PEModuleBuilder module = null)
+        internal override IPlace GetThisPlace()
         {
             if (UseThis)
             {
-                // Template: Operators.This(<closure>)
+                // Template: Operators.Context(<closure>)
                 return new OperatorPlace(DeclaringCompilation.CoreMethods.Operators.This_Closure, new ParamPlace(ClosureParameter));
             }
-            else
-            {
-                return null;
-            }
+
+            return base.GetThisPlace();
+        }
+
+        public override IPlace GetPhpThisVariablePlace(PEModuleBuilder module = null)
+        {
+            return GetThisPlace();
         }
 
         internal IPlace GetCallerTypePlace()
