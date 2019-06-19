@@ -38,6 +38,30 @@ namespace Peachpie.AspNetCore.Web
         }
 
         /// <summary>
+        /// Gets context associated with current <see cref="HttpContext"/>.
+        /// </summary>
+        /// <exception cref="NotSupportedException">Thrown in case <see cref="IHttpContextAccessor"/> is not registered
+        /// or a current <see cref="HttpContext"/> cannot be obtained.</exception>
+        public static Context GetOrCreateContext()
+        {
+            if (s_HttpContextAccessor == null)
+            {
+                s_HttpContextAccessor = new HttpContextAccessor();
+            }
+
+            var httpcontext = s_HttpContextAccessor.HttpContext; // uses AsyncLocal to maintain value within ExecutionContext, set by ASP.NET Core framework
+            if (httpcontext != null)
+            {
+                return httpcontext.GetOrCreateContext();
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+        static HttpContextAccessor s_HttpContextAccessor;
+
+        /// <summary>
         /// Gets existing context associated with given <see cref="HttpContext"/> or creates new one with default settings.
         /// </summary>
         public static Context/*!*/GetOrCreateContext(this HttpContext httpctx)
