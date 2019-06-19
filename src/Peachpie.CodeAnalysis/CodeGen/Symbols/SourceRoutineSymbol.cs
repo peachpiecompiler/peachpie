@@ -167,6 +167,14 @@ namespace Pchp.CodeAnalysis.Symbols
                 // create generator object via Operators factory method
                 cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.BuildGenerator_Context_Object_PhpArray_PhpArray_GeneratorStateMachineDelegate_RuntimeMethodHandle);
 
+                // .UseDynamicScope( scope ) : Generator
+                if (this is SourceLambdaSymbol lambda)
+                {
+                    lambda.GetCallerTypePlace().EmitLoad(cg.Builder); // RuntimeTypeContext
+                    cg.EmitCall(ILOpCode.Call, cg.CoreTypes.Operators.Method("UseDynamicScope", cg.CoreTypes.Generator, cg.CoreTypes.RuntimeTypeHandle))
+                        .Expect(cg.CoreTypes.Generator);
+                }
+
                 // Convert to return type (Generator or PhpValue, depends on analysis)
                 cg.EmitConvert(cg.CoreTypes.Generator, 0, this.ReturnType);
                 il.EmitRet(false);

@@ -82,7 +82,14 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     if (GeneratorStateMachineMethod != null)
                     {
-                        // TODO: 
+                        if (this.Routine is SourceLambdaSymbol)
+                        {
+                            // Operator.GetGeneratorDynamicScope(g)
+                            _callerTypePlace = new OperatorPlace(
+                                CoreTypes.Operators.Method("GetGeneratorDynamicScope", CoreTypes.Generator),
+                                new ParamPlace(GeneratorStateMachineMethod.GeneratorParameter));
+                        }
+                        // otherwise the caller type is resolve statically already
                     }
                     else if (this.Routine is SourceGlobalMethodSymbol global)
                     {

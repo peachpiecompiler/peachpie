@@ -1506,6 +1506,14 @@ namespace Pchp.Core
 
         public static MethodInfo GetGeneratorOwnerMethod(Generator g) => (MethodInfo)MethodBase.GetMethodFromHandle(g._ownerhandle);
 
+        public static Generator UseDynamicScope(this Generator g, RuntimeTypeHandle scope)
+        {
+            g._scope = scope;
+            return g;
+        }
+
+        public static RuntimeTypeHandle GetGeneratorDynamicScope(this Generator g) => g._scope;
+
         #endregion
 
         #region Dynamic

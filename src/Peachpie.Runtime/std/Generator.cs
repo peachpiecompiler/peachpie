@@ -21,6 +21,13 @@ public class Generator : Iterator
     readonly internal RuntimeMethodHandle _ownerhandle;
 
     /// <summary>
+    /// INTERNAL: In case Generator is created inside a Closure (anonymous function),
+    /// we remember the Closure's scope here.
+    /// Otherwise the Generator's scope is resolved statically during the compilation.
+    /// </summary>
+    internal RuntimeTypeHandle _scope;
+
+    /// <summary>
     /// Bounded this for non-static enumerator methods, null for static ones.
     /// </summary>
     readonly internal object _this;
