@@ -1,11 +1,9 @@
-﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
+﻿using Peachpie.AspNetCore.Web;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
-namespace Peachpie.AspNetCore.Web
+namespace Microsoft.AspNetCore.Builder
 {
     public static class RequestDelegateExtension
     {
