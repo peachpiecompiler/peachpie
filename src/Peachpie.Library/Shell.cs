@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
@@ -131,42 +134,41 @@ namespace Pchp.Library
         /// <summary>
         /// Executes a shell command.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="command">The command to execute.</param>
         /// <returns>The last line of the output.</returns>
-        public static string exec(string command)
+        public static string exec(Context ctx, string command)
         {
-            string result;
-
-            Execution.ShellExec(command, Execution.OutputHandling.ArrayOfLines, null, out result);
+            Execution.ShellExec(ctx, command, Execution.OutputHandling.ArrayOfLines, null, out var result);
             return result;
         }
 
         /// <summary>
         /// Executes a shell command.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="command">The command to execute.</param>
         /// <param name="output">An array where to add items of output. One item per each line of the output.</param>
         /// <returns>The last line of the output.</returns>
-        public static string exec(string command, ref PhpArray output)
-        {
-            int exit_code;
-            return exec(command, ref output, out exit_code);
-        }
+        public static string exec(Context ctx, string command, ref PhpArray output) => exec(ctx, command, ref output, out var _);
 
         /// <summary>
         /// Executes a shell command.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="command">The command to execute.</param>
         /// <param name="output">An array where to add items of output. One item per each line of the output.</param>
         /// <param name="exitCode">Exit code of the process.</param>
         /// <returns>The last line of the output.</returns>
-        public static string exec(string command, ref PhpArray output, out int exitCode)
+        public static string exec(Context ctx, string command, ref PhpArray output, out int exitCode)
         {
             // creates a new array if user specified variable not containing one:
-            if (output == null) output = new PhpArray();
+            if (output == null)
+            {
+                output = new PhpArray();
+            }
 
-            string result;
-            exitCode = Execution.ShellExec(command, Execution.OutputHandling.ArrayOfLines, output, out result);
+            exitCode = Execution.ShellExec(ctx, command, Execution.OutputHandling.ArrayOfLines, output, out var result);
 
             return result;
         }
@@ -178,11 +180,11 @@ namespace Pchp.Library
         /// <summary>
         /// Executes a command and writes raw output to the output sink set on the current script context.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="command">The command.</param>
-        public static void passthru(string command)
+        public static void passthru(Context ctx, string command)
         {
-            string dummy;
-            Execution.ShellExec(command, Execution.OutputHandling.RedirectToScriptOutput, null, out dummy);
+            Execution.ShellExec(ctx, command, Execution.OutputHandling.RedirectToScriptOutput, null, out var _);
         }
 
         /// <summary>
@@ -190,10 +192,9 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="command">The command.</param>
         /// <param name="exitCode">An exit code of the process.</param>
-        public static void passthru(string command, out int exitCode)
+        public static void passthru(Context ctx, string command, out int exitCode)
         {
-            string dummy;
-            exitCode = Execution.ShellExec(command, Execution.OutputHandling.RedirectToScriptOutput, null, out dummy);
+            exitCode = Execution.ShellExec(ctx, command, Execution.OutputHandling.RedirectToScriptOutput, null, out var _);
         }
 
         #endregion
@@ -204,31 +205,31 @@ namespace Pchp.Library
         /// Executes a command and writes output line by line to the output sink set on the current script context.
         /// Flushes output after each written line.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="command">The command.</param>
         /// <returns>
         /// Either the last line of the output or a <B>null</B> reference if the command fails (returns non-zero exit code).
         /// </returns>
         [return: CastToFalse]
-        public static string system(string command)
+        public static string system(Context ctx, string command)
         {
-            int exit_code;
-            return system(command, out exit_code);
+            return system(ctx, command, out var exit_code);
         }
 
         /// <summary>
         /// Executes a command and writes output line by line to the output sink set on the current script context.
         /// Flushes output after each written line.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="command">The command.</param>
         /// <param name="exitCode">An exit code of the process.</param>
         /// <returns>
         /// Either the last line of the output or a <B>null</B> reference if the command fails (returns non-zero exit code).
         /// </returns>
         [return: CastToFalse]
-        public static string system(string command, out int exitCode)
+        public static string system(Context ctx, string command, out int exitCode)
         {
-            string result;
-            exitCode = Execution.ShellExec(command, Execution.OutputHandling.FlushLinesToScriptOutput, null, out result);
+            exitCode = Execution.ShellExec(ctx, command, Execution.OutputHandling.FlushLinesToScriptOutput, null, out var result);
             return (exitCode == 0) ? result : null;
         }
 
@@ -236,10 +237,9 @@ namespace Pchp.Library
 
         #region shell_exec
 
-        public static string shell_exec(string command)
+        public static string shell_exec(Context ctx, string command)
         {
-            string result;
-            Execution.ShellExec(command, Execution.OutputHandling.String, null, out result);
+            Execution.ShellExec(ctx, command, Execution.OutputHandling.String, null, out var result);
             return result;
         }
 
@@ -377,20 +377,7 @@ namespace Pchp.Library
         /// <summary>
         /// Executes a <c>cmd.exe</c> and passes it a specified command.
         /// </summary>
-        /// <param name="command">The command to be passed.</param>
-        /// <returns>A string containing the entire output.</returns>
-        /// <remarks>Implements backticks operator (i.e. <code>`command`</code>).</remarks>
-        public static string ShellExec(string command)
-        {
-            string result;
-            ShellExec(command, OutputHandling.String, null, out result);
-            return result;
-        }
-
-
-        /// <summary>
-        /// Executes a <c>cmd.exe</c> and passes it a specified command.
-        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="command">The command to be passed.</param>
         /// <param name="handling">How to handle the output.</param>
         /// <param name="arrayOutput">
@@ -402,93 +389,95 @@ namespace Pchp.Library
         /// <see cref="OutputHandling.FlushLinesToScriptOutput"/>. 
         /// </param>
         /// <returns>Exit code of the process.</returns>
-        public static int ShellExec(string command, OutputHandling handling, PhpArray arrayOutput, out string stringOutput)
+        public static int ShellExec(Context ctx, string command, OutputHandling handling, PhpArray arrayOutput, out string stringOutput)
         {
             if (!MakeCommandSafe(ref command))
             {
-                stringOutput = "";
+                stringOutput = string.Empty;
                 return -1;
             }
 
-            //using (Process p = new Process())
-            //{
-            //    IdentitySection identityConfig = null;
+            using (var p = new Process())
+            {
+                //IdentitySection identityConfig = null;
 
-            //    try { identityConfig = WebConfigurationManager.GetSection("system.web/identity") as IdentitySection; }
-            //    catch { }
+                //try { identityConfig = WebConfigurationManager.GetSection("system.web/identity") as IdentitySection; }
+                //catch { }
 
-            //    if (identityConfig != null)
-            //    {
-            //        p.StartInfo.UserName = identityConfig.UserName;
-            //        if (identityConfig.Password != null)
-            //        {
-            //            p.StartInfo.Password = new SecureString();
-            //            foreach (char c in identityConfig.Password) p.StartInfo.Password.AppendChar(c);
-            //            p.StartInfo.Password.MakeReadOnly();
-            //        }
-            //    }
+                //if (identityConfig != null)
+                //{
+                //    p.StartInfo.UserName = identityConfig.UserName;
+                //    if (identityConfig.Password != null)
+                //    {
+                //        p.StartInfo.Password = new SecureString();
+                //        foreach (char c in identityConfig.Password) p.StartInfo.Password.AppendChar(c);
+                //        p.StartInfo.Password.MakeReadOnly();
+                //    }
+                //}
 
-            //    p.StartInfo.FileName = "cmd.exe";
-            //    p.StartInfo.Arguments = "/c " + command;
-            //    p.StartInfo.UseShellExecute = false;
-            //    p.StartInfo.CreateNoWindow = true;
-            //    p.StartInfo.RedirectStandardOutput = true;
-            //    p.Start();
+                if (CurrentPlatform.IsWindows)
+                {
+                    p.StartInfo.FileName = "cmd.exe";
+                    p.StartInfo.Arguments = "/c " + command;
+                }
+                else
+                {
+                    p.StartInfo.FileName = "/bin/bash";
+                    p.StartInfo.Arguments = command;
+                }
 
-            //    stringOutput = null;
-            //    switch (handling)
-            //    {
-            //        case OutputHandling.String:
-            //            stringOutput = p.StandardOutput.ReadToEnd();
-            //            break;
+                p.StartInfo.UseShellExecute = false;
+                p.StartInfo.CreateNoWindow = true;
+                p.StartInfo.RedirectStandardOutput = true;
+                p.Start();
 
-            //        case OutputHandling.ArrayOfLines:
-            //            {
-            //                string line;
-            //                while ((line = p.StandardOutput.ReadLine()) != null)
-            //                {
-            //                    stringOutput = line;
-            //                    if (arrayOutput != null) arrayOutput.Add(line);
-            //                }
-            //                break;
-            //            }
+                stringOutput = null;
+                switch (handling)
+                {
+                    case OutputHandling.String:
+                        stringOutput = p.StandardOutput.ReadToEnd();
+                        break;
 
-            //        case OutputHandling.FlushLinesToScriptOutput:
-            //            {
-            //                ScriptContext context = ScriptContext.CurrentContext;
+                    case OutputHandling.ArrayOfLines:
+                        {
+                            string line;
+                            while ((line = p.StandardOutput.ReadLine()) != null)
+                            {
+                                arrayOutput?.Add(line);
+                                stringOutput = line;
+                            }
+                            break;
+                        }
 
-            //                string line;
-            //                while ((line = p.StandardOutput.ReadLine()) != null)
-            //                {
-            //                    stringOutput = line;
-            //                    context.Output.WriteLine(line);
-            //                    context.Output.Flush();
-            //                }
-            //                break;
-            //            }
+                    case OutputHandling.FlushLinesToScriptOutput:
+                        {
+                            string line;
+                            while ((line = p.StandardOutput.ReadLine()) != null)
+                            {
+                                stringOutput = line;
+                                ctx.Output.WriteLine(line);
+                                ctx.Output.Flush();
+                            }
+                            break;
+                        }
 
-            //        case OutputHandling.RedirectToScriptOutput:
-            //            {
-            //                ScriptContext context = ScriptContext.CurrentContext;
+                    case OutputHandling.RedirectToScriptOutput:
+                        {
+                            byte[] buffer = new byte[1024];
+                            int count;
+                            while ((count = p.StandardOutput.BaseStream.Read(buffer, 0, buffer.Length)) > 0)
+                            {
+                                ctx.OutputStream.Write(buffer, 0, count);
+                            }
+                            break;
+                        }
+                }
 
-            //                byte[] buffer = new byte[1024];
-            //                int count;
-            //                while ((count = p.StandardOutput.BaseStream.Read(buffer, 0, buffer.Length)) > 0)
-            //                {
-            //                    context.OutputStream.Write(buffer, 0, count);
-            //                }
-            //                break;
-            //            }
-            //    }
+                p.WaitForExit();
 
-            //    p.WaitForExit();
-
-            //    return p.ExitCode;
-            //}
-
-            PhpException.FunctionNotSupported("shell_exec");
-            stringOutput = "";
-            return -1;
+                //
+                return p.ExitCode;
+            }
         }
 
         /// <summary>
@@ -502,46 +491,49 @@ namespace Pchp.Library
         /// </para>
         internal static string EscapeCommand(string command)
         {
-            if (command == null) return String.Empty;
+            if (string.IsNullOrEmpty(command))
+            {
+                return string.Empty;
+            }
 
-            StringBuilder sb = new StringBuilder(command);
+            var sb = new StringBuilder(command);
 
             // GENERICS:
             //			if (Environment.OSVersion.Platform!=PlatformID.Unix)
-            {
-                for (int i = 0; i < sb.Length; i++)
-                {
-                    switch (sb[i])
-                    {
-                        case '"':
-                        case '\'':
-                        case '#':
-                        case '&':
-                        case ';':
-                        case '`':
-                        case '|':
-                        case '*':
-                        case '?':
-                        case '~':
-                        case '<':
-                        case '>':
-                        case '^':
-                        case '(':
-                        case ')':
-                        case '[':
-                        case ']':
-                        case '{':
-                        case '}':
-                        case '$':
-                        case '\\':
-                        case '\u000A':
-                        case '\u00FF':
-                        case '%':
-                            sb[i] = ' ';
-                            break;
-                    }
-                }
-            }
+            //{
+            //    for (int i = 0; i < sb.Length; i++)
+            //    {
+            //        switch (sb[i])
+            //        {
+            //            case '"':
+            //            case '\'':
+            //            case '#':
+            //            case '&':
+            //            case ';':
+            //            case '`':
+            //            case '|':
+            //            case '*':
+            //            case '?':
+            //            case '~':
+            //            case '<':
+            //            case '>':
+            //            case '^':
+            //            case '(':
+            //            case ')':
+            //            case '[':
+            //            case ']':
+            //            case '{':
+            //            case '}':
+            //            case '$':
+            //            case '\\':
+            //            case '\u000A':
+            //            case '\u00FF':
+            //            case '%':
+            //                sb[i] = ' ';
+            //                break;
+            //        }
+            //    }
+            //}
             //      else
             //      {
             //        // ???
@@ -567,19 +559,23 @@ namespace Pchp.Library
         /// </remarks>
         internal static bool MakeCommandSafe(ref string command)
         {
-            //if (command == null) return false;
+            if (string.IsNullOrWhiteSpace(command))
+            {
+                return false;
+            }
+
             //GlobalConfiguration global = Configuration.Global;
 
             //if (!global.SafeMode.Enabled) return true;
 
-            //int first_space = command.IndexOf(' ');
-            //if (first_space == -1) first_space = command.Length;
+            int first_space = command.IndexOf(' ');
+            if (first_space < 0) first_space = command.Length;
 
-            //if (command.IndexOf("..", 0, first_space) >= 0)
-            //{
-            //    PhpException.Throw(PhpError.Warning, "dotdot_not_allowed_in_path");
-            //    return false;
-            //}
+            if (command.IndexOf("..", 0, first_space) >= 0)
+            {
+                PhpException.Throw(PhpError.Warning, "dotdot_not_allowed_in_path");
+                return false;
+            }
 
             //try
             //{
@@ -587,7 +583,7 @@ namespace Pchp.Library
             //    string target_path = Path.Combine(global.SafeMode.ExecutionDirectory, file_name);
 
             //    // <execution directory>/<file name> <escaped arguments>
-            //    command = String.Concat(target_path, EscapeCommand(command.Substring(first_space)));
+            //    command = string.Concat(target_path, EscapeCommand(command.Substring(first_space)));
             //}
             //catch (ArgumentException)
             //{
