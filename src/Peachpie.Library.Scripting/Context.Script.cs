@@ -53,7 +53,7 @@ namespace Peachpie.Library.Scripting
         /// Refernces to scripts that preceeds this one.
         /// Current script requires these to be evaluated first.
         /// </summary>
-        public IEnumerable<Script> DependingSubmissions => _previousSubmissions;
+        public IEnumerable<Script> DependingSubmissions => _previousSubmissions;    // TODO: resolve the compiled code dependencies - referenced types and declared functions. Also, this might cause a huge memory leak.
 
         /// <summary>
         /// Gets the assembly content.

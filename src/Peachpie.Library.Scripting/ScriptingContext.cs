@@ -6,7 +6,7 @@ using Pchp.Core;
 namespace Peachpie.Library.Scripting
 {
     /// <summary>
-    /// Data associated with <see cref="Pchp.Core.Context"/>.
+    /// Data associated with <see cref="Context"/>.
     /// </summary>
     sealed class ScriptingContext
     {

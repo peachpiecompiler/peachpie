@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using Pchp.Core;
 
 namespace Peachpie.Library.Scripting
@@ -12,29 +13,66 @@ namespace Peachpie.Library.Scripting
     [Export(typeof(Context.IScriptingProvider))]
     public sealed class ScriptingProvider : Context.IScriptingProvider
     {
-        readonly Dictionary<string, List<Script>> _scripts = new Dictionary<string, List<Script>>();
+        readonly Dictionary<string, List<Script>> _scripts = new Dictionary<string, List<Script>>(StringComparer.Ordinal);
+        readonly ReaderWriterLockSlim _scriptsLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
         readonly PhpCompilationFactory _builder = new PhpCompilationFactory();
 
-        List<Script> EnsureCache(string code)
+        Script/*!*/TryGetOrCreateScript(string code, Context.ScriptOptions options, ScriptingContext context)
         {
-            if (!_scripts.TryGetValue(code, out List<Script> candidates))
+            var script = default(Script);
+
+            _scriptsLock.EnterUpgradeableReadLock();
+            try
             {
-                _scripts[code] = candidates = new List<Script>();
+                if (!_scripts.TryGetValue(code, out var subsmissions))
+                {
+                    _scriptsLock.EnterWriteLock();
+                    try
+                    {
+                        if (!_scripts.TryGetValue(code, out subsmissions))
+                        {
+                            _scripts[code] = subsmissions = new List<Script>(1);
+                        }
+                    }
+                    finally
+                    {
+                        _scriptsLock.ExitWriteLock();
+                    }
+                }
+
+                if ((script = CacheLookupNoLock(subsmissions, options, code, context)) == null)
+                {
+                    _scriptsLock.EnterWriteLock();
+                    try
+                    {
+                        if ((script = CacheLookupNoLock(subsmissions, options, code, context)) == null)
+                        {
+                            subsmissions.Add((script = Script.Create(options, code, _builder, context.Submissions)));
+                        }
+                    }
+                    finally
+                    {
+                        _scriptsLock.ExitWriteLock();
+                    }
+                }
             }
-            return candidates;
+            finally
+            {
+                _scriptsLock.ExitUpgradeableReadLock();
+            }
+
+            return script;
         }
 
-        Script CacheLookup(Context.ScriptOptions options, string code, ScriptingContext data)
+        Script CacheLookupNoLock(List<Script> candidates, Context.ScriptOptions options, string code, ScriptingContext context)
         {
-            if (_scripts.TryGetValue(code, out List<Script> candidates))
+            foreach (var c in candidates)
             {
-                foreach (var c in candidates)
+                // candidate requires that all its dependencies were loaded into context
+                // TODO: resolve the compiled code dependencies - referenced types and declared functions - instead of "DependingSubmissions"
+                if (c.DependingSubmissions.All(context.Submissions.Contains))
                 {
-                    // candidate requires that all its dependencies were loaded into context
-                    if (c.DependingSubmissions.All(data.Submissions.Contains))
-                    {
-                        return c;
-                    }
+                    return c;
                 }
             }
 
@@ -43,19 +81,13 @@ namespace Peachpie.Library.Scripting
 
         Context.IScript Context.IScriptingProvider.CreateScript(Context.ScriptOptions options, string code)
         {
-            var data = ScriptingContext.EnsureContext(options.Context);
-            var script = CacheLookup(options, code, data);
-            if (script == null)
-            {
-                // TODO: rwlock cache[code]
-                script = Script.Create(options, code, _builder, data.Submissions);
-                EnsureCache(code).Add(script);
-            }
+            var context = ScriptingContext.EnsureContext(options.Context);
+            var script = TryGetOrCreateScript(code, options, context);
 
             Debug.Assert(script != null);
 
             //
-            data.Submissions.Add(script);
+            context.Submissions.Add(script);
 
             //
             return script;
