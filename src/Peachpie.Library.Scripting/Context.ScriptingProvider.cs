@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using Pchp.Core;
 
 namespace Peachpie.Library.Scripting
@@ -14,6 +15,7 @@ namespace Peachpie.Library.Scripting
     {
         readonly Dictionary<string, List<Script>> _scripts = new Dictionary<string, List<Script>>();
         readonly PhpCompilationFactory _builder = new PhpCompilationFactory();
+        readonly ReaderWriterLockSlim _rwLock = new ReaderWriterLockSlim();
 
         List<Script> EnsureCache(string code)
         {
@@ -44,12 +46,31 @@ namespace Peachpie.Library.Scripting
         Context.IScript Context.IScriptingProvider.CreateScript(Context.ScriptOptions options, string code)
         {
             var data = ScriptingContext.EnsureContext(options.Context);
-            var script = CacheLookup(options, code, data);
+
+            _rwLock.EnterReadLock();
+            Script script;
+            try
+            {
+                script = CacheLookup(options, code, data);
+            }
+            finally
+            {
+                _rwLock.ExitReadLock();
+            }
+
             if (script == null)
             {
-                // TODO: rwlock cache[code]
                 script = Script.Create(options, code, _builder, data.Submissions);
-                EnsureCache(code).Add(script);
+
+                _rwLock.EnterWriteLock();
+                try
+                {
+                    EnsureCache(code).Add(script);
+                }
+                finally
+                {
+                    _rwLock.ExitWriteLock();
+                }
             }
 
             Debug.Assert(script != null);
