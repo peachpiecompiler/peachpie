@@ -296,12 +296,7 @@ namespace Pchp.Core
             get { return _superglobals.server; }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException();
-                }
-
-                _superglobals.server = value;
+                _superglobals.server = value ?? throw new ArgumentNullException();
             }
         }
 
@@ -314,12 +309,7 @@ namespace Pchp.Core
             get { return _superglobals.env; }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException();
-                }
-
-                _superglobals.env = value;
+                _superglobals.env = value ?? throw new ArgumentNullException();
             }
         }
 
@@ -332,12 +322,7 @@ namespace Pchp.Core
             get { return _superglobals.request; }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException();
-                }
-
-                _superglobals.request = value;
+                _superglobals.request = value ?? throw new ArgumentNullException();
             }
         }
 
@@ -350,12 +335,7 @@ namespace Pchp.Core
             get { return _superglobals.get; }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException();
-                }
-
-                _superglobals.get = value;
+                _superglobals.get = value ?? throw new ArgumentNullException();
             }
         }
 
@@ -368,12 +348,7 @@ namespace Pchp.Core
             get { return _superglobals.post; }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException();
-                }
-
-                _superglobals.post = value;
+                _superglobals.post = value ?? throw new ArgumentNullException();
             }
         }
 
@@ -386,12 +361,7 @@ namespace Pchp.Core
             get { return _superglobals.files; }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException();
-                }
-
-                _superglobals.files = value;
+                _superglobals.files = value ?? throw new ArgumentNullException();
             }
         }
 
@@ -404,12 +374,7 @@ namespace Pchp.Core
             get { return _superglobals.session; }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException();
-                }
-
-                _superglobals.session = value;
+                _superglobals.session = value ?? throw new ArgumentNullException();
             }
         }
 
@@ -422,12 +387,7 @@ namespace Pchp.Core
             get { return _superglobals.cookie; }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException();
-                }
-
-                _superglobals.cookie = value;
+                _superglobals.cookie = value ?? throw new ArgumentNullException();
             }
         }
 
