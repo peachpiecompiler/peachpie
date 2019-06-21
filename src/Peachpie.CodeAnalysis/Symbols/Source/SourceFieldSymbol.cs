@@ -61,7 +61,7 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Optional associated PHPDoc block defining the field type hint.
         /// </summary>
-        internal PHPDocBlock PhpDocBlock => _phpDoc;
+        internal PHPDocBlock PHPDocBlock => _phpDoc;
         readonly PHPDocBlock _phpDoc;
 
         /// <summary>
@@ -70,6 +70,8 @@ namespace Pchp.CodeAnalysis.Symbols
         readonly Accessibility _accessibility;
 
         readonly BoundExpression _initializer;
+
+        readonly ImmutableArray<AttributeData> _customAttributes;
 
         /// <summary>
         /// Gets value indicating whether this field redefines a field from a base type.
@@ -150,7 +152,7 @@ namespace Pchp.CodeAnalysis.Symbols
         }
         PropertySymbol _fieldAccessorProperty;
 
-        public SourceFieldSymbol(SourceTypeSymbol type, string name, Location location, Accessibility accessibility, PHPDocBlock phpdoc, PhpPropertyKind kind, BoundExpression initializer = null)
+        public SourceFieldSymbol(SourceTypeSymbol type, string name, Location location, Accessibility accessibility, PHPDocBlock phpdoc, PhpPropertyKind kind, BoundExpression initializer = null, ImmutableArray<AttributeData> customAttributes = default)
         {
             Contract.ThrowIfNull(type);
             Contract.ThrowIfNull(name);
@@ -162,6 +164,7 @@ namespace Pchp.CodeAnalysis.Symbols
             _phpDoc = phpdoc;
             _initializer = initializer;
             _location = location;
+            _customAttributes = customAttributes;
         }
 
         #region FieldSymbol
@@ -196,6 +199,41 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override int? TypeLayoutOffset => null;
 
+        public override ImmutableArray<AttributeData> GetAttributes()
+        {
+            var attrs = _customAttributes;
+
+            // attributes from syntax node
+            if (attrs.IsDefaultOrEmpty)
+            {
+                attrs = ImmutableArray<AttributeData>.Empty;
+            }
+            else
+            {
+                // initialize attribute data if necessary:
+                attrs
+                    .OfType<SourceCustomAttribute>()
+                    .ForEach(x => x.Bind(this, _containingType.ContainingFile));
+            }
+
+            // attributes from PHPDoc
+            if (_phpDoc != null)
+            {
+                var deprecated = _phpDoc.GetElement<PHPDocBlock.DeprecatedTag>();
+                if (deprecated != null)
+                {
+                    // [ObsoleteAttribute(message, false)]
+                    attrs = attrs.Add(DeclaringCompilation.CreateObsoleteAttribute(deprecated));
+                }
+
+                // ...
+            }
+
+
+            //
+            return attrs;
+        }
+
         #endregion
 
         internal override ConstantValue GetConstantValue(bool earlyDecodingWellKnownAttributes)
@@ -205,7 +243,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override TypeSymbol GetFieldType(ConsList<FieldSymbol> fieldsBeingBound)
         {
-            // TODO: HHVM TypeHint
+            // TODO: PHP 7.4 TypeHint
 
             //
             if ((IsConst || IsReadOnly) && Initializer != null)

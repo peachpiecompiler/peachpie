@@ -205,7 +205,7 @@ namespace Pchp.CodeAnalysis.DocumentationComments
 
             foreach (var field in type.GetMembers().OfType<SourceFieldSymbol>())
             {
-                if ((phpdoc = field.PhpDocBlock) != null)
+                if ((phpdoc = field.PHPDocBlock) != null)
                 {
                     var summary = phpdoc.Summary;
                     var value = string.Empty;

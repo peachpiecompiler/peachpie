@@ -138,6 +138,7 @@ namespace Peachpie.CodeAnalysis.Syntax
             //
 
             // T_VAR|T_STATIC|T_PUBLIC|T_PRIVATE|T_PROTECTED (VariableName)+ "T_COLON QualifiedName" T_SEMI  // var $pname : A;
+            // TODO: PHP 7.4 syntax introduces typed properties with a different syntax - will be added to parser
 
             //
 

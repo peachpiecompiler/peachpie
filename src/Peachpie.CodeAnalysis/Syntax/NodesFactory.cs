@@ -42,8 +42,7 @@ namespace Peachpie.CodeAnalysis.Syntax
         /// <summary>
         /// Gets constructed global code (ast root).
         /// </summary>
-        public GlobalCode Root => _root;
-        GlobalCode _root;
+        public GlobalCode Root { get; private set; }
 
         /// <summary>
         /// Gets constructed yield extpressions.
@@ -134,7 +133,7 @@ namespace Peachpie.CodeAnalysis.Syntax
         {
             Debug.Assert(_annotations == null || _annotations.Count == 0, $"file {this.SourceUnit.FilePath} contains CLR annotations we did not consume! Probably a bogus in AdditionalSyntaxProvider."); // all parsed custom annotations have to be consumed
 
-            return _root = (GlobalCode)base.GlobalCode(span, statements, context);
+            return Root = (GlobalCode)base.GlobalCode(span, statements, context);
         }
 
         public override LangElement Function(Span span, bool conditional, bool aliasReturn, PhpMemberAttributes attributes, TypeRef returnType, Name name, Span nameSpan, IEnumerable<FormalTypeParam> typeParamsOpt, IEnumerable<FormalParam> formalParams, Span formalParamsSpan, LangElement body)
@@ -145,8 +144,14 @@ namespace Peachpie.CodeAnalysis.Syntax
 
         public override LangElement Type(Span span, Span headingSpan, bool conditional, PhpMemberAttributes attributes, Name name, Span nameSpan, IEnumerable<FormalTypeParam> typeParamsOpt, INamedTypeRef baseClassOpt, IEnumerable<INamedTypeRef> implements, IEnumerable<LangElement> members, Span bodySpan)
         {
-            return AddAndReturn(ref _types,
-                WithCustomAttributes((TypeDecl)base.Type(span, headingSpan, conditional, attributes, name, nameSpan, typeParamsOpt, baseClassOpt, implements, members, bodySpan)));
+            var tref = (TypeDecl)base.Type(span, headingSpan, conditional, attributes, name, nameSpan, typeParamsOpt, baseClassOpt, implements, members, bodySpan);
+
+            return AddAndReturn(ref _types, WithCustomAttributes(tref));
+        }
+
+        public override LangElement DeclList(Span span, PhpMemberAttributes attributes, IEnumerable<LangElement> decls)
+        {
+            return WithCustomAttributes(base.DeclList(span, attributes, decls));
         }
 
         public override LangElement Method(Span span, bool aliasReturn, PhpMemberAttributes attributes, TypeRef returnType, Span returnTypeSpan, string name, Span nameSpan, IEnumerable<FormalTypeParam> typeParamsOpt, IEnumerable<FormalParam> formalParams, Span formalParamsSpan, IEnumerable<ActualParam> baseCtorParams, LangElement body)

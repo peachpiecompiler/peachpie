@@ -915,13 +915,16 @@ namespace Pchp.CodeAnalysis.Symbols
                         ? PhpPropertyKind.AppStaticField
                         : PhpPropertyKind.StaticField;
 
+                flist.TryGetCustomAttributes(out var attrs);
+
                 foreach (var f in flist.Fields)
                 {
                     yield return new SourceFieldSymbol(this, f.Name.Value,
                         CreateLocation(f.NameSpan),
                         flist.Modifiers.GetAccessibility(), f.PHPDoc ?? flist.PHPDoc,
                         fkind,
-                        (f.Initializer != null) ? binder.BindWholeExpression(f.Initializer, BoundAccess.Read).SingleBoundElement() : null);
+                        initializer: (f.Initializer != null) ? binder.BindWholeExpression(f.Initializer, BoundAccess.Read).SingleBoundElement() : null,
+                        customAttributes: attrs);
                 }
             }
 

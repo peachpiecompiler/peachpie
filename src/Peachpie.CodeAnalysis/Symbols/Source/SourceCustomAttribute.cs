@@ -52,6 +52,8 @@ namespace Pchp.CodeAnalysis.Symbols
 
             if (_type == null)
             {
+                // TODO: check the attribute can bi bound to symbol
+
                 var type = (NamedTypeSymbol)symbol.DeclaringCompilation.GetTypeFromTypeRef(_tref);
 
                 if (type.IsErrorTypeOrNull() || type.SpecialType == SpecialType.System_Object)

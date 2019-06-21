@@ -365,7 +365,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 && fieldSymbol.FindPhpDocVarTag() is PHPDocBlock.TypeVarDescTag fieldDoc
                 && fieldDoc.TypeNamesArray.Length != 0)
             {
-                var namingCtx = NameUtils.GetNamingContext(fieldSymbol.PhpDocBlock.ContainingType);
+                var namingCtx = NameUtils.GetNamingContext(fieldSymbol.PHPDocBlock.ContainingType);
                 var fieldMask = PHPDoc.GetTypeMask(TypeCtx, fieldDoc.TypeNamesArray, namingCtx);
 
                 if (!TypeCtx.CanBeSameType(fieldMask, valMask))

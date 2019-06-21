@@ -389,16 +389,12 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (deprecated != null)
                 {
                     // [ObsoleteAttribute(message, false)]
-                    attrs = attrs.Add(new SynthesizedAttributeData(
-                        (MethodSymbol)DeclaringCompilation.GetWellKnownTypeMember(WellKnownMember.System_ObsoleteAttribute__ctor),
-                            ImmutableArray.Create(
-                                new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, deprecated.Version/*NOTE:Version contains the message*/),
-                                new TypedConstant(DeclaringCompilation.CoreTypes.Boolean.Symbol, TypedConstantKind.Primitive, false/*isError*/)),
-                            ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
+                    attrs = attrs.Add(DeclaringCompilation.CreateObsoleteAttribute(deprecated));
                 }
 
                 // ...
             }
+
             // [NotNullAttribute]
             // ...
 
