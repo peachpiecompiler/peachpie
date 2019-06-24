@@ -121,8 +121,8 @@ namespace Pchp.Library.Spl
         public virtual bool isExecutable() { throw new NotImplementedException(); }
         public virtual bool isFile() => ResolvedInfo.Exists && ResolvedInfo is FileInfo;
         public virtual bool isLink() { throw new NotImplementedException(); }
-        public virtual bool isReadable() => ResolvedInfo.Exists && ResolvedInfo.Attributes.HasFlag(FileModeFlags.Read);
-        public virtual bool isWritable() => ResolvedInfo.Exists && ResolvedInfo.Attributes.HasFlag(FileModeFlags.Write);
+        public virtual bool isReadable() => ResolvedInfo.Exists;
+        public virtual bool isWritable() => ResolvedInfo.Exists && !(ResolvedInfo is FileInfo && ResolvedInfo.Attributes.HasFlag(FileAttributes.ReadOnly));
         public virtual SplFileObject openFile(Context ctx, string open_mode = "r", bool use_include_path = false, PhpResource context = null)
         {
             if (string.IsNullOrEmpty(_file_class) || string.Equals(_file_class, nameof(SplFileObject), StringComparison.OrdinalIgnoreCase))

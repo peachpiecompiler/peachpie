@@ -4,6 +4,8 @@ function flags($obj) {
   echo "|";
   if ($obj->isFile()) echo "F";
   if ($obj->isDir()) echo "D";
+  if ($obj->isReadable()) echo "R";
+  if ($obj->isWritable()) echo "W";
   if ($obj instanceof DirectoryIterator && $obj->isDot()) echo "O";
   echo "| ";
 }
