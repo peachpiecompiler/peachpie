@@ -687,8 +687,9 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(PhpValue)) return (ConversionCost.PassCostly);
             if (target == typeof(string) || target == typeof(PhpString)) return (ConversionCost.ImplicitCast);
             if (target == typeof(PhpArray)) return (ConversionCost.Warning);
-
-            throw new NotImplementedException($"costof(double -> {target})");
+            
+            //throw new NotImplementedException($"costof(double -> {target})");
+            return ConversionCost.NoConversion;
         }
 
         static ConversionCost BindCostFromLong(Expression arg, Type target)
@@ -701,7 +702,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(PhpValue)) return (ConversionCost.PassCostly);
             if (target == typeof(string) || target == typeof(PhpString)) return (ConversionCost.ImplicitCast);
             if (target == typeof(PhpArray)) return (ConversionCost.Warning);
-            if (target == typeof(object) || target == typeof(stdClass)) return ConversionCost.PassCostly;    // TODO: Error when passing to a PHP function
+            //if (target == typeof(object) || target == typeof(stdClass)) return ConversionCost.PassCostly;    // TODO: Error when passing to a PHP function
 
             // TODO: lookup for cast operator
 
@@ -768,8 +769,10 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(long) || target == typeof(int) || target == typeof(uint)) return Expression.Constant(ConversionCost.LoosingPrecision);
             if (target == typeof(string) || target == typeof(PhpString)) return Expression.Constant(ConversionCost.Warning);
             if (target == typeof(IPhpCallable)) return Expression.Constant(ConversionCost.LoosingPrecision);
+            //if (target == typeof(object) || target == typeof(stdClass)) return Expression.Constant(ConversionCost.NoConversion);
 
-            throw new NotImplementedException($"costof(array -> {target})");
+            //throw new NotImplementedException($"costof(array -> {target})");
+            return Expression.Constant(ConversionCost.NoConversion);
         }
 
         #endregion
