@@ -190,6 +190,7 @@ namespace Pchp.Library
         /// <summary>
         /// Executes a command and writes raw output to the output sink set on the current script context.
         /// </summary>
+        /// <param name="ctx">Runtime context.</param>
         /// <param name="command">The command.</param>
         /// <param name="exitCode">An exit code of the process.</param>
         public static void passthru(Context ctx, string command, out int exitCode)
