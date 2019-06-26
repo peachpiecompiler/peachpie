@@ -626,10 +626,11 @@ namespace Peachpie.Library.PDO
         /// <returns></returns>
         public bool CloseReader()
         {
-            if (!this.m_dr?.IsClosed ?? false)
+            if (this.m_dr != null && !this.m_dr.IsClosed)
             {
                 m_dr.Close();
             }
+
             return false;
         }
 

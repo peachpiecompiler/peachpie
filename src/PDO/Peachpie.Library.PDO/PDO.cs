@@ -176,11 +176,14 @@ namespace Peachpie.Library.PDO
         {
             this.ClearError();
 
-            var dbCommand = this.CreateCommand(statement);
+            lastExecutedStatement?.CloseReader();
+
             try
             {
-                int affected = dbCommand.ExecuteNonQuery();
-                return PhpValue.Create(affected);
+                var dbCommand = this.CreateCommand(statement);
+                var affected = dbCommand.ExecuteNonQuery();
+                dbCommand.Dispose();
+                return affected;
             }
             catch (System.Exception ex)
             {
