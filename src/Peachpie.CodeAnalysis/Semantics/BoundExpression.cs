@@ -2216,7 +2216,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
-    #region BoundIsSetEx, BoundUnsetEx, BoundIsEmptyEx
+    #region BoundIsSetEx, BoundOffsetExists, BoundIsEmptyEx
 
     public partial class BoundIsEmptyEx : BoundExpression
     {
@@ -2260,6 +2260,10 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         public override OperationKind Kind => OperationKind.None;
 
+        public override bool IsDeeplyCopied => false;
+
+        public override bool RequiresContext => VarReference.RequiresContext;
+
         /// <summary>
         /// Reference to be checked if it is set.
         /// </summary>
@@ -2292,6 +2296,52 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <param name="visitor">A reference to a <see cref="PhpOperationVisitor{TResult}"/> instance. Cannot be <c>null</c>.</param>
         /// <returns>The value returned by the <paramref name="visitor"/>.</returns>
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitIsSet(this);
+    }
+
+    public partial class BoundOffsetExists : BoundExpression
+    {
+        public override OperationKind Kind => OperationKind.None;
+
+        public override bool IsDeeplyCopied => false;
+
+        public override bool RequiresContext => Receiver.RequiresContext || Index.RequiresContext;
+
+        /// <summary>
+        /// The array.
+        /// </summary>
+        public BoundExpression Receiver { get; set; }
+
+        /// <summary>
+        /// The index.
+        /// </summary>
+        public BoundExpression Index { get; set; }
+
+        public BoundOffsetExists(BoundExpression receiver, BoundExpression index)
+        {
+            this.Receiver = receiver ?? throw new ArgumentNullException(nameof(receiver));
+            this.Index = index ?? throw new ArgumentNullException(nameof(index));
+        }
+
+        public BoundOffsetExists Update(BoundExpression receiver, BoundExpression index)
+        {
+            if (Receiver == receiver && Index == index)
+            {
+                return this;
+            }
+            else
+            {
+                return new BoundOffsetExists(receiver, index).WithContext(this);
+            }
+        }
+
+        public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor)
+            => visitor.VisitOffsetExists(this);
+
+        public override void Accept(OperationVisitor visitor)
+            => visitor.DefaultVisit(this);
+
+        public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument)
+            => visitor.DefaultVisit(this, argument);
     }
 
     #endregion

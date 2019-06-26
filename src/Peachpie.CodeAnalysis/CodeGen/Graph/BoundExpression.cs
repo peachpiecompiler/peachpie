@@ -258,7 +258,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     il.EmitOpCode(ILOpCode.Add);
                     return cg.CoreTypes.Double;
                 }
-                else 
+                else
                 {
                     // r8 + value : r8
                     if (ytype != cg.CoreTypes.PhpValue) { ytype = cg.EmitConvertToPhpValue(ytype, right.TypeRefMask); }
@@ -1632,7 +1632,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Mul_long_number)
                                 .Expect(cg.CoreTypes.PhpNumber);
                     }
-                    else 
+                    else
                     {
                         // i8 * value : number
                         if (ytype != cg.CoreTypes.PhpValue) { cg.EmitConvertToPhpValue(ytype, right.TypeRefMask); }
@@ -1727,7 +1727,7 @@ namespace Pchp.CodeAnalysis.Semantics
                         //
                         throw cg.NotImplementedException($"Mul(PhpValue, {ytype.Name})", right);
                     }
-                    else                      
+                    else
                     {
                         // x -> PhpValue
                         if (xtype != cg.CoreTypes.PhpValue) { xtype = cg.EmitConvertToPhpValue(xtype, right.TypeRefMask); }
@@ -1839,7 +1839,7 @@ namespace Pchp.CodeAnalysis.Semantics
                             // number / r8 : r8
                             return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpNumber.Division_number_double);
                         }
-                        else 
+                        else
                         {
                             // number / value : number
                             if (ytype != cg.CoreTypes.PhpValue) { cg.EmitConvertToPhpValue(ytype, right.TypeRefMask); }
@@ -1963,7 +1963,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     {
                         // x -> PhpValue
                         xtype = cg.EmitConvertToPhpValue(xtype, xtype_hint);
-                        
+
                         // y -> PhpValue
                         cg.EmitConvert(right, cg.CoreTypes.PhpValue);
                         ytype = cg.CoreTypes.PhpValue;
@@ -4645,6 +4645,34 @@ namespace Pchp.CodeAnalysis.Semantics
 
             //
             return cg.CoreTypes.Boolean;
+        }
+    }
+
+    partial class BoundOffsetExists
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            // Operators.OffsetExists( Receiver, Index ) : bool
+
+            var arrayType = cg.Emit(Receiver);
+            var indexType = cg.Emit(Index);
+
+            //if (arrayType.IsOfType(cg.CoreTypes.ArrayAccess))
+            //{
+            //    cg.EmitConvert(indexType, 0, cg.CoreTypes.PhpValue);
+            //    return cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.Operators.offsetExists_ArrayAccess_PhpValue);
+            //}
+
+            var op = cg.Conversions.ResolveOperator(arrayType, false, new[] { "offsetExists" }, new[] { cg.CoreTypes.Operators.Symbol }, operand: indexType, target: cg.CoreTypes.Boolean);
+            if (op != null)
+            {
+                cg.EmitConversion(new CommonConversion(true, false, false, false, false, op), arrayType, cg.CoreTypes.Boolean, op: indexType);
+                return cg.CoreTypes.Boolean;
+            }
+            else
+            {
+                throw cg.NotImplementedException($"offsetExists({arrayType}, {indexType})", this);
+            }
         }
     }
 

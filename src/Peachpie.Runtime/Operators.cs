@@ -428,6 +428,8 @@ namespace Pchp.Core
             // IList
             if (obj is IList) return new ListAsPhpArray((IList)obj);
 
+            // TODO: IDictionary
+
             // Fatal error: Uncaught Error: Cannot use object of type {0} as array
             PhpException.Throw(PhpError.Error, Resources.ErrResources.object_used_as_array, obj.GetPhpTypeInfo().Name);
             throw new ArgumentException(nameof(obj));
@@ -581,6 +583,70 @@ namespace Pchp.Core
         /// Implements <c>&amp;[]</c> operator on <see cref="PhpValue"/>.
         /// </summary>
         public static PhpAlias EnsureItemAlias(PhpValue value, PhpValue index, bool quiet = false) => value.EnsureItemAlias(index, quiet);
+
+        public static bool offsetExists(this string value, PhpValue index)
+        {
+            return index.TryToIntStringKey(out var key) && key.IsInteger && offsetExists(value, key.Integer);
+        }
+
+        public static bool offsetExists(this string value, long index)
+        {
+            return value != null && index >= 0 && index < value.Length;
+        }
+
+        public static bool offsetExists(this PhpString value, long index)
+        {
+            return index >= 0 && index < value.Length;
+        }
+
+        public static bool offsetExists(object obj, PhpValue index)
+        {
+            if (obj is ArrayAccess arrrayAccess)
+            {
+                return arrrayAccess.offsetExists(index);
+            }
+            else if (obj is IPhpArray arr)
+            {
+                return IsSet(arr.GetItemValue(index));
+            }
+            else if (obj is IList list)
+            {
+                return index.TryToIntStringKey(out var key) && key.IsInteger && key.Integer >= 0 && key.Integer < list.Count;
+            }
+            // TODO: IDictionary
+
+            return false;
+        }
+
+        public static bool offsetExists(PhpAlias alias, PhpValue index) => offsetExists(alias.Value, index);
+
+        public static bool offsetExists(this PhpValue value, PhpValue index)
+        {
+            if (value.Object is PhpArray array)
+            {
+                return array.ContainsKey(index.ToIntStringKey());
+            }
+            else if (value.Object is string str)
+            {
+                return offsetExists(str, index);
+            }
+            else if (value.Object is PhpString.Blob blob)
+            {
+                return index.TryToIntStringKey(out var key) && key.IsInteger && key.Integer >= 0 && key.Integer < blob.Length;
+            }
+            else if (value.Object is PhpAlias alias)
+            {
+                return offsetExists(alias.Value, index);
+            }
+            else if (value.Object != null)
+            {
+                // class instance
+                return offsetExists(value.Object, index);
+            }
+
+            // scalar or NULL
+            return false;
+        }
 
         #endregion
 

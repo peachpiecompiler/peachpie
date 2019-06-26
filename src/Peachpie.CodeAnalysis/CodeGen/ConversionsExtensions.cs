@@ -92,9 +92,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// <summary>
         /// Emits the given conversion. 'from' and 'to' matches the classified conversion.
         /// </summary>
-        public static void EmitConversion(this CodeGenerator cg, CommonConversion conversion, TypeSymbol from, TypeSymbol to, bool @checked = false)
+        public static void EmitConversion(this CodeGenerator cg, CommonConversion conversion, TypeSymbol from, TypeSymbol to, TypeSymbol op = null, bool @checked = false)
         {
-            // {from} is loaded on stack
+            // {from}, {op} is loaded on stack
 
             //
 
@@ -105,6 +105,11 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (conversion.IsIdentity)
             {
+                if (op != null)
+                {
+                    throw new ArgumentException(nameof(op));
+                }
+
                 if (to.SpecialType == SpecialType.System_Void)
                 {
                     // POP
@@ -115,11 +120,21 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else if (conversion.IsNumeric)
             {
+                if (op != null)
+                {
+                    throw new ArgumentException(nameof(op));
+                }
+
                 EmitNumericConversion(cg, from, to, @checked: @checked);
             }
             else if (conversion.IsReference)
             {
-                // TODO: ensure from/to is valid reference type
+                if (op != null)
+                {
+                    throw new ArgumentException(nameof(op));
+                }
+
+                // TODO: ensure from/to is a valid reference type
                 cg.EmitCastClass(to);
             }
             else if (conversion.IsUserDefined)
@@ -130,12 +145,42 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (method.HasThis)
                 {
-                    if (from.IsValueType) cg.EmitStructAddr(from);
+                    if (from.IsValueType)
+                    {
+                        if (op != null)
+                        {
+                            throw new ArgumentException(nameof(op));
+                        }
+
+                        cg.EmitStructAddr(from);
+                    }
                 }
                 else
                 {
                     if (ps[0].RefKind != RefKind.None) throw new InvalidOperationException();
-                    EmitImplicitConversion(cg, from, ps[0].Type, @checked: @checked);
+                    if (from != ps[0].Type)
+                    {
+                        if (op != null)
+                        {
+                            if (!from.IsOfType(ps[0].Type))
+                            {
+                                throw new ArgumentException(nameof(op));
+                            }
+                        }
+                        else
+                        {
+                            EmitImplicitConversion(cg, from, ps[0].Type, @checked: @checked);
+                        }
+                    }
+                    pconsumed++;
+                }
+
+                if (op != null)
+                {
+                    if (ps.Length > pconsumed)
+                    {
+                        EmitImplicitConversion(cg, op, ps[pconsumed].Type, @checked: @checked);
+                    }
                     pconsumed++;
                 }
 

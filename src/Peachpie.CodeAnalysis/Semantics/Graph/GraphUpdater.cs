@@ -508,6 +508,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return x.Update((BoundReferenceExpression)Accept(x.VarReference));
         }
 
+        public override object VisitOffsetExists(BoundOffsetExists x)
+        {
+            return x.Update((BoundExpression)Accept(x.Receiver), (BoundExpression)Accept(x.Index));
+        }
+
         public override object VisitLambda(BoundLambda x)
         {
             return x.Update(VisitImmutableArray(x.UseVars));

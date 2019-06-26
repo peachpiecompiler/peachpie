@@ -547,16 +547,29 @@ namespace Pchp.CodeAnalysis.Semantics
 
             for (int i = varlist.Count - 1; i >= 0; i--)
             {
-                var expr = new BoundIsSetEx((BoundReferenceExpression)BindExpression(varlist[i], BoundAccess.Isset));
+                BoundExpression issetExpr;
+
+                if (varlist[i] is AST.ItemUse itemuse)
+                {
+                    issetExpr = new BoundOffsetExists(
+                        receiver: BindExpression(itemuse.Array, BoundAccess.Read.WithQuiet()),
+                        index: BindExpression(itemuse.Index));
+                }
+                else
+                {
+                    issetExpr = new BoundIsSetEx((BoundReferenceExpression)BindExpression(varlist[i], BoundAccess.Isset));
+                }
+
+                //
 
                 if (result == null)
                 {
-                    result = expr;
+                    result = issetExpr;
                 }
                 else
                 {
                     // isset(i1) && ... && isset(iN)
-                    result = new BoundBinaryEx(expr, result, AST.Operations.And);
+                    result = new BoundBinaryEx(issetExpr, result, AST.Operations.And).WithAccess(BoundAccess.Read);
                 }
             }
 

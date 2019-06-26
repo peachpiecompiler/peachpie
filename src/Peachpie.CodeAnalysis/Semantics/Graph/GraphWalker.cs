@@ -464,6 +464,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return default;
         }
 
+        public override T VisitOffsetExists(BoundOffsetExists x)
+        {
+            Accept(x.Receiver);
+            Accept(x.Index);
+
+            return default;
+        }
+
         public override T VisitLambda(BoundLambda x)
         {
             return default;

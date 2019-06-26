@@ -1192,7 +1192,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         #endregion
 
-        #region Visit IsSet
+        #region Visit IsSet, OffsetExists
 
         protected override void Visit(BoundIsSetEx x, ConditionBranch branch)
         {
@@ -1266,6 +1266,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             // always returns a boolean
             x.TypeRefMask = TypeCtx.GetBooleanTypeMask();
+        }
+
+        public override T VisitOffsetExists(BoundOffsetExists x)
+        {
+            // receiver[index]
+            base.VisitOffsetExists(x);
+
+            // TODO: if receiver is undefined -> result is false
+
+            // always bool
+            x.ResultType = DeclaringCompilation.CoreTypes.Boolean;
+            x.TypeRefMask = TypeCtx.GetBooleanTypeMask();
+            return default;
         }
 
         #endregion
