@@ -293,14 +293,9 @@ namespace Peachpie.Library.PDO
 
         /// <inheritDoc />
         [return: CastToFalse]
-        public string quote(string str, int parameter_type = PARAM_STR)
+        public string quote(string str, PARAM parameter_type = PARAM.PARAM_STR)
         {
-            PARAM param = PARAM.PARAM_NULL;
-            if (Enum.IsDefined(typeof(PARAM), parameter_type))
-            {
-                param = (PARAM)parameter_type;
-            }
-            return this.m_driver.Quote(str, param);
+            return m_driver?.Quote(str, parameter_type);
         }
 
         private void SetDefaultAttributes()

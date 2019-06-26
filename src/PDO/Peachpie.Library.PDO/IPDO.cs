@@ -84,7 +84,7 @@ namespace Peachpie.Library.PDO
         /// <param name="str">The string.</param>
         /// <param name="parameter_type">Type of the parameter.</param>
         /// <returns></returns>
-        string quote(string str, int parameter_type = PDO.PARAM_STR);
+        string quote(string str, PDO.PARAM parameter_type = PDO.PARAM.PARAM_STR);
         /// <summary>
         /// Rolls back a transaction.
         /// </summary>

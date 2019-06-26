@@ -82,7 +82,7 @@ namespace Peachpie.Library.PDO
         /// <inheritDoc />
         public virtual string Quote(string str, PDO.PARAM param)
         {
-            return null;
+            throw new NotImplementedException();
         }
 
         /// <inheritDoc />

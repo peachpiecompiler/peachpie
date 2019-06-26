@@ -62,7 +62,7 @@ namespace Peachpie.Library.PDO.MySQL
         /// <inheritDoc />
         public override string Quote(string str, PDO.PARAM param)
         {
-            return MySqlHelper.EscapeString(str);
+            return "'" + MySqlHelper.EscapeString(str) + "'";
         }
     }
 }
