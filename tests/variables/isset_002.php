@@ -35,4 +35,4 @@ function test($a, $offset) {
 test(new LoggedArrayAccess(), "foo");
 test(new \SplObjectStorage(), new stdClass());
 
-echo "Done."
+echo "Done.";
