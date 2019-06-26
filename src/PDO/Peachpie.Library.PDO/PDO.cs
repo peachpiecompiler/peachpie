@@ -178,18 +178,18 @@ namespace Peachpie.Library.PDO
 
             lastExecutedStatement?.CloseReader();
 
-            try
+            using (var dbCommand = this.CreateCommand(statement))
             {
-                var dbCommand = this.CreateCommand(statement);
-                var affected = dbCommand.ExecuteNonQuery();
-                dbCommand.Dispose();
-                return affected;
-            }
-            catch (System.Exception ex)
-            {
-                //TODO err
-                this.HandleError(ex);
-                return PhpValue.False;
+                try
+                {
+                    return dbCommand.ExecuteNonQuery();
+                }
+                catch (System.Exception ex)
+                {
+                    //TODO err
+                    this.HandleError(ex);
+                    return PhpValue.False;
+                }
             }
         }
 
