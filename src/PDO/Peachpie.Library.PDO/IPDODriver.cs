@@ -93,5 +93,10 @@ namespace Peachpie.Library.PDO
         /// <param name="driver_options">The driver options.</param>
         /// <returns></returns>
         PDOStatement PrepareStatement(Context ctx, PDO pdo, string statement, PhpArray driver_options);
+
+        /// <summary>
+        /// Processes DB exception and returns corresponding error info.
+        /// </summary>
+        void HandleException(Exception ex, out string SQLSTATE, out string code, out string message);
     }
 }

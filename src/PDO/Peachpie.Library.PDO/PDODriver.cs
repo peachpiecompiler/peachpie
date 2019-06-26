@@ -86,6 +86,14 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
+        public virtual void HandleException(Exception ex, out string SQLSTATE, out string code, out string message)
+        {
+            SQLSTATE = string.Empty;
+            code = null;
+            message = ex.Message;
+        }
+
+        /// <inheritDoc />
         public virtual PhpValue GetAttribute(PDO pdo, int attribute)
         {
             return PhpValue.Null;

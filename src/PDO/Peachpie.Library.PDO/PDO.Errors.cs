@@ -8,8 +8,9 @@ namespace Peachpie.Library.PDO
 {
     partial class PDO
     {
-        private PhpValue m_errorCode;
-        private PhpValue m_errorInfo;
+        string _errorSqlState;
+        string _errorCode;
+        string _errorMessage;
 
         /// <summary>
         /// Clears the error.
@@ -17,8 +18,9 @@ namespace Peachpie.Library.PDO
         [PhpHidden]
         internal void ClearError()
         {
-            this.m_errorCode = PhpValue.Null;
-            this.m_errorInfo = PhpValue.Null;
+            _errorSqlState = null;
+            _errorCode = null;
+            _errorMessage = null;
         }
 
         /// <summary>
@@ -30,8 +32,11 @@ namespace Peachpie.Library.PDO
         [PhpHidden]
         internal void HandleError(System.Exception ex)
         {
+            // fill errorInfo
+            m_driver.HandleException(ex, out _errorSqlState, out _errorCode, out _errorMessage);
+
+            //
             PDO_ERRMODE mode = (PDO_ERRMODE)this.m_attributes[PDO_ATTR.ATTR_ERRMODE].ToLong();
-            //TODO : fill errorCode and errorInfo
             switch (mode)
             {
                 case PDO_ERRMODE.ERRMODE_SILENT:
@@ -53,15 +58,12 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public PhpValue errorCode()
-        {
-            return this.m_errorCode;
-        }
+        public string errorCode() => _errorCode;
 
         /// <inheritDoc />
-        public PhpValue errorInfo()
+        public PhpArray errorInfo() => new PhpArray(3)
         {
-            return this.m_errorInfo;
-        }
+            _errorSqlState, _errorCode, _errorMessage,
+        };
     }
 }

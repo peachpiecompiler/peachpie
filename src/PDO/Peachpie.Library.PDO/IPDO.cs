@@ -35,12 +35,12 @@ namespace Peachpie.Library.PDO
         /// Fetch the SQLSTATE associated with the last operation on the database handle
         /// </summary>
         /// <returns></returns>
-        PhpValue errorCode();
+        string errorCode();
         /// <summary>
         /// Fetch extended error information associated with the last operation on the database handle
         /// </summary>
         /// <returns></returns>
-        PhpValue errorInfo();
+        PhpArray errorInfo();
         /// <summary>
         /// Execute an SQL statement and return the number of affected rows.
         /// </summary>
