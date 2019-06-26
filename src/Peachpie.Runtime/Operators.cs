@@ -584,6 +584,19 @@ namespace Pchp.Core
         /// </summary>
         public static PhpAlias EnsureItemAlias(PhpValue value, PhpValue index, bool quiet = false) => value.EnsureItemAlias(index, quiet);
 
+        public static bool offsetExists(this PhpArray value, long index) =>
+            value != null &&
+            value.ContainsKey((int)index);
+
+        public static bool offsetExists(this PhpArray value, string index) =>
+            value != null &&
+            value.ContainsKey(index);
+
+        public static bool offsetExists(this PhpArray value, PhpValue index) =>
+            value != null &&
+            index.TryToIntStringKey(out var key) &&
+            value.ContainsKey(key);
+
         public static bool offsetExists(this string value, PhpValue index)
         {
             return index.TryToIntStringKey(out var key) && key.IsInteger && offsetExists(value, key.Integer);
