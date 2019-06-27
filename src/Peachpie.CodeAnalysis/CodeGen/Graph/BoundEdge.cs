@@ -312,11 +312,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         MethodSymbol _moveNextMethod, _disposeMethod;
         PropertySymbol _currentValue, _currentKey, _current;
 
-        static ILOpCode CallOpCode(MethodSymbol method, TypeSymbol declaringtype)
-        {
-            return method.IsMetadataVirtual() ? ILOpCode.Callvirt : ILOpCode.Call;
-        }
-
         internal void EmitMoveNext(CodeGenerator cg)
         {
             Debug.Assert(_enumeratorLoc.IsValid);
@@ -334,7 +329,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 _enumeratorLoc.EmitLoad(cg.Builder);
             }
 
-            cg.EmitCall(CallOpCode(_moveNextMethod, _enumeratorLoc.Type), _moveNextMethod)
+            cg.EmitCall(ILOpCode.Callvirt, _moveNextMethod)
                 .Expect(SpecialType.System_Boolean);
         }
 
@@ -349,12 +344,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // special PhpArray enumerator
 
                 cg.EmitSequencePoint(valueVar.PhpSyntax);
-                valueVar.BindPlace(cg).EmitStore(cg, new PropertyPlace(_enumeratorLoc, _currentValue), valueVar.Access);
+                valueVar.BindPlace(cg).EmitStore(cg, new PropertyPlace(_enumeratorLoc, _currentValue, cg.Module), valueVar.Access);
 
                 if (keyVar != null)
                 {
                     cg.EmitSequencePoint(keyVar.PhpSyntax);
-                    keyVar.BindPlace(cg).EmitStore(cg, new PropertyPlace(_enumeratorLoc, _currentKey), keyVar.Access);
+                    keyVar.BindPlace(cg).EmitStore(cg, new PropertyPlace(_enumeratorLoc, _currentKey, cg.Module), keyVar.Access);
                 }
             }
             else
@@ -398,7 +393,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 else
                 {
                     cg.EmitSequencePoint(valueVar.PhpSyntax);
-                    valueVar.BindPlace(cg).EmitStore(cg, new PropertyPlace(_enumeratorLoc, _current), valueVar.Access);  // TOOD: PhpValue.FromClr
+                    valueVar.BindPlace(cg).EmitStore(cg, new PropertyPlace(_enumeratorLoc, _current, cg.Module), valueVar.Access);
 
                     if (keyVar != null)
                     {
@@ -424,7 +419,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                     _enumeratorLoc.EmitLoad(cg.Builder);
                 }
 
-                cg.EmitCall(CallOpCode(_disposeMethod, (TypeSymbol)_enumeratorLoc.Type), _disposeMethod)
+                cg.EmitCall(ILOpCode.Callvirt, _disposeMethod)
                     .Expect(SpecialType.System_Void);
             }
 
@@ -492,7 +487,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             else if (getEnumeratorMethod != null && getEnumeratorMethod.ParameterCount == 0 && enumereeType.IsReferenceType)
             {
                 // enumeree.GetEnumerator()
-                enumeratorType = cg.EmitCall(CallOpCode(getEnumeratorMethod, enumereeType), getEnumeratorMethod);
+                enumeratorType = cg.EmitCall(ILOpCode.Callvirt, getEnumeratorMethod);
             }
             else
             {

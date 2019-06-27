@@ -258,12 +258,12 @@ namespace Pchp.CodeAnalysis.CodeGen
     internal class FieldPlace : FieldPlace_Raw
     {
         readonly IPlace _holder;
-        
+
         public FieldPlace(IPlace holder, IFieldSymbol field, Emit.PEModuleBuilder module = null)
-            :base(field, module)
+            : base(field, module)
         {
             _holder = holder;
-            
+
             Debug.Assert(holder != null || field.IsStatic, "receiver not set");
             Debug.Assert(holder == null || holder.Type.IsOfType(_field.ContainingType) || _field.ContainingType.IsValueType, $"receiver of type {holder?.Type} mismatches the field's containing type {_field?.ContainingType}");
         }
@@ -291,18 +291,53 @@ namespace Pchp.CodeAnalysis.CodeGen
     {
         readonly IPlace _holder;
         readonly PropertySymbol _property;
+        readonly Emit.PEModuleBuilder _module;
 
-        public PropertyPlace(IPlace holder, Cci.IPropertyDefinition property)
+        public PropertyPlace(IPlace holder, Cci.IPropertyDefinition property, Emit.PEModuleBuilder module = null)
         {
             Contract.ThrowIfNull(property);
 
             _holder = holder;
             _property = (PropertySymbol)property;
+            _module = module;
         }
 
         public TypeSymbol Type => _property.Type;
 
         public bool HasAddress => false;
+
+        TypeSymbol EmitReceiver(ILBuilder il)
+        {
+            if (_holder != null)
+            {
+                var type = _holder.Type;
+                if (type.IsValueType)
+                {
+                    if (_holder.HasAddress)
+                    {
+                        _holder.EmitLoadAddress(il);
+                    }
+                    else
+                    {
+                        throw new NotSupportedException();
+                    }
+                }
+                else
+                {
+                    _holder.EmitLoad(il);
+                }
+
+                if (_property.IsStatic)
+                {
+                    il.EmitOpCode(ILOpCode.Pop);
+                    type = null;
+                }
+
+                return type;
+            }
+
+            return null;
+        }
 
         public TypeSymbol EmitLoad(ILBuilder il)
         {
@@ -312,15 +347,19 @@ namespace Pchp.CodeAnalysis.CodeGen
             var stack = +1;
             var getter = _property.GetMethod;
 
-            if (_holder != null)
+            var receiver = EmitReceiver(il);
+            if (receiver != null)
             {
-                Debug.Assert(!getter.IsStatic);
-                _holder.EmitLoad(il);   // {holder}
                 stack -= 1;
             }
 
             il.EmitOpCode((getter.IsVirtual || getter.IsAbstract) ? ILOpCode.Callvirt : ILOpCode.Call, stack);
-            il.EmitToken(getter, null, DiagnosticBag.GetInstance());
+
+            var getterref = (_module != null)
+                ? _module.Translate(getter, DiagnosticBag.GetInstance(), false)
+                : getter;
+
+            il.EmitToken(getterref, null, DiagnosticBag.GetInstance());    // TODO: Translate
 
             //
             return getter.ReturnType;
@@ -333,12 +372,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitStorePrepare(ILBuilder il)
         {
-            if (_holder != null)
-            {
-                Debug.Assert(_property.SetMethod != null);
-                Debug.Assert(!_property.SetMethod.IsStatic);
-                _holder.EmitLoad(il);   // {holder}
-            }
+            EmitReceiver(il);
         }
 
         public void EmitStore(ILBuilder il)
@@ -356,7 +390,12 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             //
             il.EmitOpCode(setter.IsVirtual ? ILOpCode.Callvirt : ILOpCode.Call, stack);
-            il.EmitToken(setter, null, DiagnosticBag.GetInstance());
+
+            var setterref = (_module != null)
+                ? _module.Translate(setter, DiagnosticBag.GetInstance(), false)
+                : setter;
+
+            il.EmitToken(setterref, null, DiagnosticBag.GetInstance());    // TODO: Translate
 
             //
             Debug.Assert(setter.ReturnType.SpecialType == SpecialType.System_Void);

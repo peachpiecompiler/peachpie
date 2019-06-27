@@ -2417,22 +2417,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             Debug.Assert(prop.GetMethod != null);
             Debug.Assert(prop.GetMethod.ParameterCount == 0);
 
-            var getter = prop.GetMethod;
-
-            if (holder != null && !getter.IsStatic)
-            {
-                Debug.Assert(holder.Type != null);
-                if (holder.Type.IsValueType)
-                {
-                    holder.EmitLoadAddress(_il);
-                }
-                else
-                {
-                    holder.EmitLoad(_il);
-                }
-            }
-
-            return EmitCall(getter.IsMetadataVirtual() ? ILOpCode.Callvirt : ILOpCode.Call, getter);
+            return prop.EmitLoadValue(this, holder);
         }
 
         internal TypeSymbol EmitCastClass(TypeSymbol from, TypeSymbol to)

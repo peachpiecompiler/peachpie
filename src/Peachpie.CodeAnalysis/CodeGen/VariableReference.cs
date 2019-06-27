@@ -380,6 +380,15 @@ namespace Pchp.CodeAnalysis.Semantics
             return reference.EmitLoadValue(cg, ref lhs, access);
         }
 
+        public static TypeSymbol EmitLoadValue(this PropertySymbol property, CodeGenerator cg, IPlace receiver)
+        {
+            using (var lhs = EmitReceiver(cg, receiver))
+            {
+                // TOOD: PhpValue.FromClr
+                return cg.EmitCall(ILOpCode.Callvirt/*changed to .call by EmitCall if possible*/, property.GetMethod);
+            }
+        }
+
         public static void EmitStore(this IVariableReference target, CodeGenerator cg, LocalDefinition local, BoundAccess access)
         {
             var lhs = target.EmitStorePreamble(cg, access);
@@ -395,6 +404,17 @@ namespace Pchp.CodeAnalysis.Semantics
 
             var lhs = target.EmitStorePreamble(cg, access);
             var type = place.EmitLoad(cg.Builder);
+            target.EmitStore(cg, ref lhs, type, access);
+
+            lhs.Dispose();
+        }
+
+        public static void EmitStore(this IVariableReference target, CodeGenerator cg, Func<TypeSymbol> valueLoader, BoundAccess access)
+        {
+            Debug.Assert(access.IsWrite || access.IsWriteRef); // Write or WriteRef
+
+            var lhs = target.EmitStorePreamble(cg, access);
+            var type = valueLoader();
             target.EmitStore(cg, ref lhs, type, access);
 
             lhs.Dispose();
@@ -457,6 +477,31 @@ namespace Pchp.CodeAnalysis.Semantics
             var receiverType = receiver != null ? lhs.EmitReceiver(cg, receiver) : null;
 
             return EmitReceiver(cg, symbol, receiverType);
+        }
+
+        public static LhsStack EmitReceiver(CodeGenerator cg, IPlace receiver)
+        {
+            var type = receiver.Type;
+            if (type.IsValueType)
+            {
+                if (receiver.HasAddress)
+                {
+                    receiver.EmitLoadAddress(cg.Builder);
+                }
+                else
+                {
+                    receiver.EmitLoad(cg.Builder);
+                    cg.EmitStructAddr(type);
+                }
+
+                return new LhsStack { Stack = type, StackByRef = true, };
+            }
+            else
+            {
+                receiver.EmitLoad(cg.Builder);
+
+                return new LhsStack { Stack = type, StackByRef = false, };
+            }
         }
     }
 
@@ -1227,7 +1272,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // just initialize Place
             if (cg.ContextPlaceOpt != null)
             {
-                Place = new PropertyPlace(cg.ContextPlaceOpt, ResolveSuperglobalProperty(cg.DeclaringCompilation));
+                Place = new PropertyPlace(cg.ContextPlaceOpt, ResolveSuperglobalProperty(cg.DeclaringCompilation), cg.Module);
             }
             else
             {
