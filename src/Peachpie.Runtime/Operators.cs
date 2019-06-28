@@ -586,16 +586,19 @@ namespace Pchp.Core
 
         public static bool offsetExists(this PhpArray value, long index) =>
             value != null &&
-            value.ContainsKey((int)index);
+            value.TryGetValue((int)index, out var x) &&
+            IsSet(x);
 
         public static bool offsetExists(this PhpArray value, string index) =>
             value != null &&
-            value.ContainsKey(index);
+            value.TryGetValue(index, out var x) &&
+            IsSet(x);
 
         public static bool offsetExists(this PhpArray value, PhpValue index) =>
             value != null &&
             index.TryToIntStringKey(out var key) &&
-            value.ContainsKey(key);
+            value.TryGetValue(key, out var x) &&
+            IsSet(x);
 
         public static bool offsetExists(this string value, PhpValue index)
         {
@@ -637,7 +640,7 @@ namespace Pchp.Core
         {
             if (value.Object is PhpArray array)
             {
-                return array.ContainsKey(index.ToIntStringKey());
+                return offsetExists(array, index);
             }
             else if (value.Object is string str)
             {
