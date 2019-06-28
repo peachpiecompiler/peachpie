@@ -23,14 +23,25 @@ namespace Pchp.Core.Reflection
         [DebuggerDisplay("{Name} (functions: {Routines.Count}, types: {Types.Count})")]
         sealed class ExtensionInfo
         {
-            public readonly string Name;
-            public readonly ICollection<ClrRoutineInfo> Routines = new HashSet<ClrRoutineInfo>();
-            public readonly ICollection<PhpTypeInfo> Types = new HashSet<PhpTypeInfo>();
+            /// <summary>
+            /// The extension name.
+            /// </summary>
+            public string Name { get; }
+
+            /// <summary>
+            /// Collection of routines within the extensions. Cannot be <c>null</c>.
+            /// </summary>
+            public ICollection<ClrRoutineInfo> Routines { get; } = new HashSet<ClrRoutineInfo>();
+
+            /// <summary>
+            /// Collection of classes and interface within the extension. Cannot be <c>null</c>.
+            /// </summary>
+            public ICollection<PhpTypeInfo> Types { get; } = new HashSet<PhpTypeInfo>();
 
             public ExtensionInfo(string name)
             {
                 Debug.Assert(!string.IsNullOrEmpty(name));
-                this.Name = name;
+                this.Name = name ?? throw new ArgumentNullException(nameof(name));
             }
         }
 
@@ -38,17 +49,12 @@ namespace Pchp.Core.Reflection
         /// Table of known extensions and their declarations.
         /// Filled lazily. Cannot be <c>null</c>.
         /// </summary>
-        readonly Dictionary<string, ExtensionInfo>/*!*/_extensions = new Dictionary<string, ExtensionInfo>(StringComparer.Ordinal);
+        readonly Dictionary<string, ExtensionInfo>/*!*/_extensions = new Dictionary<string, ExtensionInfo>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// Set of <see cref="PhpExtensionAttribute.Registrator"/> values being instantiated to avoid repetitious initializations.
+        /// Already processed assemblies, or types.
         /// </summary>
-        readonly HashSet<RuntimeTypeHandle>/*!*/_touchedRegistrators = new HashSet<RuntimeTypeHandle>();
-
-        /// <summary>
-        /// Assemblies already processed.
-        /// </summary>
-        readonly HashSet<string>/*!*/_touchedAssemblies = new HashSet<string>(StringComparer.Ordinal);
+        readonly HashSet<object>/*!*/_processed = new HashSet<object>();
 
         /// <summary>
         /// Gets known extension names.
@@ -63,14 +69,9 @@ namespace Pchp.Core.Reflection
         /// <returns>Enumeration of routines associated with given extension.</returns>
         public ICollection<ClrRoutineInfo> GetRoutinesByExtension(string extension)
         {
-            if (extension != null && _extensions.TryGetValue(extension, out var info))
-            {
-                return info.Routines;
-            }
-            else
-            {
-                return Array.Empty<ClrRoutineInfo>();
-            }
+            return extension != null && _extensions.TryGetValue(extension, out var info)
+                ? info.Routines
+                : Array.Empty<ClrRoutineInfo>();
         }
 
         /// <summary>
@@ -78,71 +79,36 @@ namespace Pchp.Core.Reflection
         /// </summary>
         public ICollection<PhpTypeInfo> GetTypesByExtension(string extension)
         {
-            if (extension != null && _extensions.TryGetValue(extension, out var info))
-            {
-                return info.Types;
-            }
-            else
-            {
-                return Array.Empty<PhpTypeInfo>();
-            }
+            return extension != null && _extensions.TryGetValue(extension, out var info)
+                ? info.Types
+                : Array.Empty<PhpTypeInfo>();
         }
 
         /// <summary>
         /// Gets value indicating that given extension was loaded.
         /// </summary>
-        public bool ContainsExtension(string extension)
-        {
-            return extension != null && _extensions.ContainsKey(extension);
-        }
-
-        bool AddAssembly(AssemblyName assname)
-        {
-            lock (_touchedAssemblies)
-            {
-                return _touchedAssemblies.Add(assname.FullName);
-            }
-        }
+        public bool ContainsExtension(string extension) => extension != null && _extensions.ContainsKey(extension);
 
         /// <summary>
-        /// Adds extensions specified within the assembly attribute into the table.
+        /// Adds routine within its associated extension(s).
         /// </summary>
-        /// <param name="ass">The assembly to be added.</param>
-        /// <returns>The same value as provided in <paramref name="ass"/>.</returns>
-        public Assembly AddAssembly(Assembly ass)
+        /// <param name="attr">Corresponding <see cref="PhpExtensionAttribute"/> of the containing class. Can be <c>null</c>.</param>
+        /// <param name="routine">Library routine to be included into the table.</param>
+        internal void AddRoutine(PhpExtensionAttribute attr, ClrRoutineInfo/*!*/routine)
         {
-            if (AddAssembly(ass.GetName()))
+            if (attr == null)
             {
-                var attrs = ass.GetCustomAttributes<PhpExtensionAttribute>();
-                if (attrs != null)
+                return;
+            }
+
+            var extensions = attr.Extensions;
+            if (extensions != null)
+            {
+                for (int i = 0; i < extensions.Length; i++)
                 {
-                    foreach (var attr in attrs)
-                    {
-                        EnsureExtensions(attr.Extensions);
-                        VisitExtensionAttribute(attr);
-                    }
+                    EnsureExtensionInfo(extensions[i]).Routines.Add(routine);
                 }
             }
-
-            return ass;
-        }
-
-        /// <summary>
-        /// Adds routine within its associated extension.
-        /// </summary>
-        /// <param name="container">Type containing the routine declaration. Will be reflected for optional <see cref="PhpExtensionAttribute"/>.</param>
-        /// <param name="routine">Library routine to be included in the table.</param>
-        internal void AddRoutine(Type/*!*/container, ClrRoutineInfo/*!*/routine)
-        {
-            var extinfo = container.GetCustomAttribute<PhpExtensionAttribute>();
-            if (extinfo != null)
-            {
-                AddRoutine(extinfo, routine);
-                VisitExtensionAttribute(extinfo);
-            }
-
-            //
-            AddAssembly(container.Assembly);
         }
 
         public void AddType(PhpTypeInfo type)
@@ -154,61 +120,91 @@ namespace Pchp.Core.Reflection
             {
                 for (int i = 0; i < extensions.Length; i++)
                 {
-                    EnsureExtension(extensions[i]).Types.Add(type);
+                    EnsureExtensionInfo(extensions[i]).Types.Add(type);
                 }
             }
+
+            // CONSIDER: VisitAssembly(type.Type.Assembly);
         }
 
-        void AddRoutine(PhpExtensionAttribute extension, ClrRoutineInfo routine)
+        ExtensionInfo/*!*/EnsureExtensionInfo(string extension)
         {
-            var extensions = extension.Extensions;
-            for (int i = 0; i < extensions.Length; i++)
+            if (!_extensions.TryGetValue(extension, out var info))
             {
-                EnsureExtension(extensions[i]).Routines.Add(routine);
-            }
-        }
-
-        void EnsureExtensions(string[] extensions)
-        {
-            if (extensions == null || extensions.Length == 0)
-            {
-                return;
-            }
-
-            lock (_extensions)
-            {
-                for (int i = 0; i < extensions.Length; i++)
-                {
-                    var extension = extensions[i];
-                    if (!_extensions.ContainsKey(extension))
-                    {
-                        _extensions[extension] = new ExtensionInfo(extension);
-                    }
-                }
-            }
-        }
-
-        ExtensionInfo EnsureExtension(string extension)
-        {
-            ExtensionInfo info;
-
-            lock (_extensions)
-            {
-                if (!_extensions.TryGetValue(extension, out info))
-                {
-                    _extensions[extension] = info = new ExtensionInfo(extension);
-                }
+                _extensions[extension] = info = new ExtensionInfo(extension);
             }
 
             return info;
         }
 
-        void VisitExtensionAttribute(PhpExtensionAttribute attr)
+        /// <summary>
+        /// Reflects <see cref="PhpExtensionAttribute"/> of given type once.
+        /// </summary>
+        /// <returns>Value indicating the type was visited for the first time.</returns>
+        internal bool VisitFunctionsContainer(Type/*!*/container, out PhpExtensionAttribute attr)
         {
-            if (attr.Registrator != null && _touchedRegistrators.Add(attr.Registrator.TypeHandle))
+            if (_processed.Add(container))
             {
-                Activator.CreateInstance(attr.Registrator);
-                Debug.WriteLine($"Object of type {attr.Registrator.FullName} has been activated.");
+                VisitAssembly(container.Assembly);
+
+                VisitAttribute(attr = container.GetCustomAttribute<PhpExtensionAttribute>());
+
+                return true;
+            }
+            else
+            {
+                attr = null;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Adds extensions specified within the assembly attribute into the table.
+        /// </summary>
+        /// <param name="ass">The assembly to be added.</param>
+        /// <returns>Value indicating the assembly was visited for the first time.</returns>
+        bool VisitAssembly(Assembly ass)
+        {
+            if (_processed.Add(ass))
+            {
+                var attrs = ass.GetCustomAttributes<PhpExtensionAttribute>();
+                if (attrs != null)
+                {
+                    foreach (var attr in attrs)
+                    {
+                        VisitAttribute(attr);
+                    }
+                }
+
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        void VisitAttribute(PhpExtensionAttribute attr)
+        {
+            if (attr == null)
+            {
+                return;
+            }
+
+            var extensions = attr.Extensions;
+            if (extensions != null)
+            {
+                for (int i = 0; i < extensions.Length; i++)
+                {
+                    EnsureExtensionInfo(extensions[i]);
+                }
+            }
+
+            var registrator = attr.Registrator;
+            if (registrator != null)
+            {
+                Activator.CreateInstance(registrator); // CONSIDER: dependency injection, global service provider
+                Debug.WriteLine($"Object of type {registrator.FullName} has been activated.");
             }
         }
     }

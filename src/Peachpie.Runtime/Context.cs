@@ -91,6 +91,8 @@ namespace Pchp.Core
                 }
             }
 
+            static readonly HashSet<Type> s_processedConstantsContainers = new HashSet<Type>();
+
             /// <summary>
             /// Dummy method, nop.
             /// </summary>
@@ -100,6 +102,11 @@ namespace Pchp.Core
                 // the loader is being ensured from a static .cctor of a PHP script or a PHP type
             }
 
+            /// <summary>
+            /// Reflects given assembly for PeachPie compiler specifics - compiled scripts, references to other assemblies, declared functions and classes.
+            /// Scripts and declarations are loaded into application context (static).
+            /// </summary>
+            /// <param name="assembly">PeachPie compiler generated assembly.</param>
             static void AddScriptReference(Assembly assembly)
             {
                 if (assembly == null)
@@ -129,13 +136,14 @@ namespace Pchp.Core
                 // ImportPhpFunctionsAttribute
                 foreach (var t in module.GetCustomAttributes<ImportPhpFunctionsAttribute>())
                 {
-                    // TODO: remember the container, do not reflect repetitiously
-
-                    foreach (var m in t.ContainerType.GetMethods())
+                    if (ExtensionsAppContext.ExtensionsTable.VisitFunctionsContainer(t.ContainerType, out var attr))
                     {
-                        if (m.IsPublic && m.IsStatic && !m.IsPhpHidden())
+                        foreach (var m in t.ContainerType.GetMethods())
                         {
-                            RoutinesTable.DeclareAppRoutine(m.Name, m);
+                            if (m.IsPublic && m.IsStatic && !m.IsPhpHidden())
+                            {
+                                ExtensionsAppContext.ExtensionsTable.AddRoutine(attr, RoutinesTable.DeclareAppRoutine(m.Name, m));
+                            }
                         }
                     }
                 }
@@ -143,8 +151,13 @@ namespace Pchp.Core
                 // ImportPhpConstantsAttribute
                 foreach (var t in module.GetCustomAttributes<ImportPhpConstantsAttribute>())
                 {
-                    // TODO: remember the container, do not reflect repetitiously
+                    if (!s_processedConstantsContainers.Add(t.ContainerType))
+                    {
+                        // already visited before
+                        continue;
+                    }
 
+                    // reflect constants defined in the container
                     foreach (var m in t.ContainerType.GetMembers(BindingFlags.Static | BindingFlags.Public))
                     {
                         if (m is FieldInfo fi && !fi.IsPhpHidden())

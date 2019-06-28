@@ -58,11 +58,6 @@ namespace Pchp.Core.Reflection
                 routine = new ClrRoutineInfo(index, name, method);
                 _appRoutines.Add(routine);
                 _nameToIndex[name] = index;
-
-                // register the routine within the extensions table
-                ExtensionsAppContext.ExtensionsTable.AddRoutine(
-                        container: method.DeclaringType,
-                        routine: routine);
             }
 
             //

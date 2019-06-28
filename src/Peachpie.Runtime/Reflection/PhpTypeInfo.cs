@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Pchp.Core.Reflection
@@ -350,6 +351,11 @@ namespace Pchp.Core.Reflection
         readonly static Dictionary<RuntimeTypeHandle, PhpTypeInfo> s_cache = new Dictionary<RuntimeTypeHandle, PhpTypeInfo>();
 
         /// <summary>
+        /// RW lock used ot access underlaying cache.
+        /// </summary>
+        readonly static ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+
+        /// <summary>
         /// Gets <see cref="PhpTypeInfo"/> of given <typeparamref name="TType"/>.
         /// </summary>
         /// <typeparam name="TType">Type to get info about.</typeparam>
@@ -371,35 +377,48 @@ namespace Pchp.Core.Reflection
             var handle = type.TypeHandle;
 
             // lookup cache first
-            lock (s_cache)    // TODO: RW lock
+            _lock.EnterUpgradeableReadLock();
+            try
             {
-                s_cache.TryGetValue(handle, out result);
+                if (!s_cache.TryGetValue(handle, out result))
+                {
+                    _lock.EnterWriteLock();
+                    try
+                    {
+                        if (s_cache.TryGetValue(handle, out result))
+                        {
+                            // double checked lock
+                        }
+                        else if (type.IsGenericTypeDefinition)
+                        {
+                            // generic type definition cannot be used as a type parameter for GetPhpTypeInfo<T>
+                            // just instantiate the type info and cache the result
+                            result = new PhpTypeInfo(type);
+                        }
+                        else
+                        {
+                            // invoke GetPhpTypeInfo<TType>() dynamically and cache the result
+                            result = (PhpTypeInfo)s_getPhpTypeInfo_T
+                                .MakeGenericMethod(type)
+                                .Invoke(null, Array.Empty<object>());
+                        }
+
+                        //
+                        s_cache[handle] = result;
+                    }
+                    finally
+                    {
+                        _lock.ExitWriteLock();
+                    }
+                }
             }
-
-            // invoke GetPhpTypeInfo<TType>() dynamically and cache the result
-            if (result == null)
+            finally
             {
-                if (type.IsGenericTypeDefinition)
-                {
-                    // generic type definition cannot be used as a type parameter for GetPhpTypeInfo<T>
-                    // just instantiate the type info and cache the result
-                    result = new PhpTypeInfo(type);
-                }
-                else
-                {
-                    // TypeInfoHolder<TType>.TypeInfo;
-                    result = (PhpTypeInfo)s_getPhpTypeInfo_T
-                        .MakeGenericMethod(type)
-                        .Invoke(null, Utilities.ArrayUtils.EmptyObjects);
-                }
-
-                lock (s_cache)
-                {
-                    s_cache[handle] = result;
-                }
+                _lock.ExitUpgradeableReadLock();
             }
 
             //
+            Debug.Assert(result != null);
             return result;
         }
 
@@ -411,15 +430,20 @@ namespace Pchp.Core.Reflection
         {
             PhpTypeInfo result = null;
 
-            if (handle.Equals(default(RuntimeTypeHandle)))
+            if (handle.Equals(default))
             {
                 return null;
             }
 
             // lookup cache first
-            lock (s_cache)   // TODO: RW lock
+            _lock.EnterReadLock();
+            try
             {
                 s_cache.TryGetValue(handle, out result);
+            }
+            finally
+            {
+                _lock.ExitReadLock();
             }
 
             return result ?? GetPhpTypeInfo(Type.GetTypeFromHandle(handle));
