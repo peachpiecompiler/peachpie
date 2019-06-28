@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Pchp.Core
 {
@@ -52,7 +51,7 @@ namespace Pchp.Core
             /// <param name="this">Optional. Reference to current <c>$this</c> object.</param>
             /// <param name="self">Optional. Current type context in which the script is included. Used to resolve <c>self</c> and <c>parent</c> in evaluated script.</param>
             /// <returns>Return value of the script.</returns>
-            PhpValue Evaluate(Context ctx, PhpArray locals, object @this = null, RuntimeTypeHandle self = default(RuntimeTypeHandle));
+            PhpValue Evaluate(Context ctx, PhpArray locals, object @this = null, RuntimeTypeHandle self = default);
 
             /// <summary>
             /// Resolves global function handle(s).

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Composition;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -10,7 +9,6 @@ using Pchp.Core;
 
 namespace Peachpie.Library.Scripting
 {
-    [Export(typeof(Context.IScriptingProvider))]
     public sealed class ScriptingProvider : Context.IScriptingProvider
     {
         readonly Dictionary<string, List<Script>> _scripts = new Dictionary<string, List<Script>>(StringComparer.Ordinal);

@@ -6,7 +6,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Specialized;
 using System.Reflection;
-using Microsoft.Extensions.DependencyModel;
 
 namespace Peachpie.Library.PDO
 {

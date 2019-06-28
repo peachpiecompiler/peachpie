@@ -12,7 +12,6 @@ namespace Peachpie.Library.PDO
     /// PDO driver class for IBM DB2
     /// </summary>
     /// <seealso cref="Peachpie.Library.PDO.PDODriver" />
-    [System.Composition.Export(typeof(IPDODriver))]
     public class PDODB2Driver : PDODriver
     {
         /// <summary>

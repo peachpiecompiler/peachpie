@@ -12,7 +12,6 @@ namespace Peachpie.Library.PDO.Firebird
     /// PDO driver for firebird
     /// </summary>
     /// <seealso cref="Peachpie.Library.PDO.PDODriver" />
-    [System.Composition.Export(typeof(IPDODriver))]
     public class PDOFirebirdDriver : PDODriver
     {
         /// <summary>
@@ -27,9 +26,11 @@ namespace Peachpie.Library.PDO.Firebird
         protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
         {
             //TODO firebird pdo parameters to dotnet connectionstring
-            var csb = new FbConnectionStringBuilder(dsn.ToString());
-            csb.UserID = user;
-            csb.Password = password;
+            var csb = new FbConnectionStringBuilder(dsn.ToString())
+            {
+                UserID = user,
+                Password = password
+            };
             return csb.ConnectionString;
         }
 

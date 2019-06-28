@@ -203,8 +203,8 @@ namespace Pchp.Core.Reflection
             var registrator = attr.Registrator;
             if (registrator != null)
             {
+                Debug.WriteLine($"Creating '{registrator.FullName}' ...");
                 Activator.CreateInstance(registrator); // CONSIDER: dependency injection, global service provider
-                Debug.WriteLine($"Object of type {registrator.FullName} has been activated.");
             }
         }
     }

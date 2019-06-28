@@ -12,7 +12,6 @@ namespace Peachpie.Library.PDO.Sqlite
     /// PDO driver class for SQLite
     /// </summary>
     /// <seealso cref="Peachpie.Library.PDO.PDODriver" />
-    [System.Composition.Export(typeof(IPDODriver))]
     public class PDOSqliteDriver : PDODriver
     {
         /// <summary>
