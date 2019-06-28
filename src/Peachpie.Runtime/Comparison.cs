@@ -311,17 +311,13 @@ namespace Pchp.Core
 		/// <remarks>Note that this comparison is not transitive (e.g. {"2","10","10a"} leads to a contradiction).</remarks>
         public static int Compare(string sx, string sy)
         {
-            long lx, ly;
-            double dx, dy;
-            Convert.NumberInfo info_x, info_y;
-
-            info_x = Convert.StringToNumber(sx, out lx, out dx);
+            var info_x = Convert.StringToNumber(sx, out var lx, out var dx);
 
             // an operand is not entirely convertable to numbers => string comparison is performed:
             if ((info_x & Convert.NumberInfo.IsNumber) == 0)
                 return string.CompareOrdinal(sx, sy);
 
-            info_y = Convert.StringToNumber(sy, out ly, out dy);
+            var info_y = Convert.StringToNumber(sy, out var ly, out var dy);
 
             // an operand is not entirely convertable to numbers => string comparison is performed:
             if ((info_y & Convert.NumberInfo.IsNumber) == 0)
@@ -340,10 +336,7 @@ namespace Pchp.Core
         {
             Debug.Assert(sx != null);
 
-            double dx;
-            long lx;
-
-            switch (Convert.StringToNumber(sx, out lx, out dx) & Convert.NumberInfo.TypeMask)
+            switch (Convert.StringToNumber(sx, out var lx, out var dx) & Convert.NumberInfo.TypeMask)
             {
                 case Convert.NumberInfo.Double: return Compare(dx, (double)ly);
                 case Convert.NumberInfo.LongInteger: return Compare(lx, ly);
@@ -357,11 +350,8 @@ namespace Pchp.Core
         public static int Compare(string/*!*/sx, double dy)
         {
             Debug.Assert(sx != null);
-
-            double dx;
-            long lx;
-
-            switch (Convert.StringToNumber(sx, out lx, out dx) & Convert.NumberInfo.TypeMask)
+            
+            switch (Convert.StringToNumber(sx, out var lx, out var dx) & Convert.NumberInfo.TypeMask)
             {
                 case Convert.NumberInfo.Double: return Compare(dx, dy);
                 case Convert.NumberInfo.LongInteger: return Compare((double)lx, dy);
@@ -379,10 +369,7 @@ namespace Pchp.Core
         {
             Debug.Assert(x != null);
 
-            double dx;
-            long lx;
-
-            switch (Convert.StringToNumber(x, out lx, out dx) & Convert.NumberInfo.TypeMask)
+            switch (Convert.StringToNumber(x, out var lx, out var dx) & Convert.NumberInfo.TypeMask)
             {
                 case Convert.NumberInfo.Double: return dx == ly;
                 case Convert.NumberInfo.LongInteger: return lx == ly;
@@ -400,10 +387,7 @@ namespace Pchp.Core
         {
             Debug.Assert(x != null);
 
-            double dx;
-            long lx;
-
-            switch (Convert.StringToNumber(x, out lx, out dx) & Convert.NumberInfo.TypeMask)
+            switch (Convert.StringToNumber(x, out var lx, out var dx) & Convert.NumberInfo.TypeMask)
             {
                 case Convert.NumberInfo.Double: return dx == dy;
                 case Convert.NumberInfo.LongInteger: return lx == dy;
@@ -417,13 +401,13 @@ namespace Pchp.Core
     /// </summary>
     public static class StrictComparison
     {
-        public static bool Ceq(bool bx, PhpValue y) => y.IsBoolean(out bool by) && bx == by;
-        public static bool Ceq(long lx, PhpValue y) => y.IsLong(out long ly) && lx == ly;
+        public static bool Ceq(bool bx, PhpValue y) => y.IsBoolean(out var by) && bx == by;
+        public static bool Ceq(long lx, PhpValue y) => y.IsLong(out var ly) && lx == ly;
         public static bool Ceq(long lx, PhpNumber y) => y.IsLong && lx == y.Long;
-        public static bool Ceq(double dx, PhpValue y) => y.IsDouble(out double dy) && dx == dy;
+        public static bool Ceq(double dx, PhpValue y) => y.IsDouble(out var dy) && dx == dy;
         public static bool Ceq(double dx, PhpNumber y) => y.IsDouble && dx == y.Double;
 
-        public static bool Ceq(PhpValue x, bool by) => x.IsBoolean(out bool bx) && bx == by;
+        public static bool Ceq(PhpValue x, bool by) => x.IsBoolean(out var bx) && bx == by;
 
         public static bool Ceq(PhpValue x, PhpValue y) => x.StrictEquals(y);
 
