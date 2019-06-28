@@ -127,12 +127,17 @@ namespace Pchp.Core
             /// <summary>
             /// Maps script paths to their id.
             /// </summary>
-            static Dictionary<string, int> _scriptsMap = new Dictionary<string, int>(128, CurrentPlatform.PathComparer);
+            static readonly Dictionary<string, int> _scriptsMap = new Dictionary<string, int>(128, CurrentPlatform.PathComparer);
 
             /// <summary>
             /// Set of script directories and contained script ids.
             /// </summary>
-            static Dictionary<string, List<int>> _dirsMap = new Dictionary<string, List<int>>(32, CurrentPlatform.PathComparer);
+            static readonly Dictionary<string, List<int>> _dirsMap = new Dictionary<string, List<int>>(32, CurrentPlatform.PathComparer);
+
+            /// <summary>
+            /// <see cref="_scriptsMap"/> and <see cref="_dirsMap"/> lock.
+            /// </summary>
+            static readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
 
             /// <summary>
             /// Scripts descriptors corresponding to id.
@@ -181,13 +186,29 @@ namespace Pchp.Core
 
                 path = NormalizeSlashes(path);
 
-                lock (_scriptsMap)  // TODO: remove lock, not needed
+                _lock.EnterUpgradeableReadLock();
+                try
                 {
                     if (!_scriptsMap.TryGetValue(path, out index))
                     {
-                        index = _scriptsMap.Count;
-                        AddToMapNoLock(path, index);
+                        _lock.EnterWriteLock();
+                        try
+                        {
+                            if (!_scriptsMap.TryGetValue(path, out index))
+                            {
+                                index = _scriptsMap.Count;
+                                AddToMapNoLock(path, index);
+                            }
+                        }
+                        finally
+                        {
+                            _lock.ExitWriteLock();
+                        }
                     }
+                }
+                finally
+                {
+                    _lock.ExitUpgradeableReadLock();
                 }
 
                 return index;
@@ -237,12 +258,18 @@ namespace Pchp.Core
 
                 //
                 int index;
-                lock (_scriptsMap)  // TODO: R lock
+
+                _lock.EnterReadLock();
+                try
                 {
                     if (!_scriptsMap.TryGetValue(NormalizeSlashes(path), out index))
                     {
                         return default;
                     }
+                }
+                finally
+                {
+                    _lock.ExitReadLock();
                 }
 
                 return _scripts[index];
