@@ -65,13 +65,7 @@ namespace Pchp.Core.Reflection
             /// Returns new indexes indexed from <c>0</c>.
             /// </summary>
             /// <returns></returns>
-            public int GetNewIndex()
-            {
-                lock (this)
-                {
-                    return _count++;
-                }
-            }
+            public int GetNewIndex() => Interlocked.Increment(ref _count) - 1;
 
             /// <summary>
             /// Gets count of returned indexes.

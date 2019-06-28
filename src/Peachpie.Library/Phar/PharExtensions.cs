@@ -39,17 +39,14 @@ namespace Pchp.Library.Phar
                 Assembly = stubScriptType.Assembly;
                 PharFile = GetPharFile(stubScriptType);
 
-                lock (typeof(CachedPhar)) // Context.DeclareScript will be lock-less
-                {
-                    Scripts = EnumeratePharScripts(stubScriptType.Assembly, PharFile)
-                        .Select(t =>
-                        {
-                            var relpath = PharEntryRelativePath(t);
-                            Context.DeclareScript(relpath, Context.ScriptInfo.CreateMain(t));
-                            return relpath;
-                        })
-                        .ToArray();
-                }
+                Scripts = EnumeratePharScripts(stubScriptType.Assembly, PharFile)
+                    .Select(t =>
+                    {
+                        var relpath = PharEntryRelativePath(t);
+                        Context.DeclareScript(relpath, Context.ScriptInfo.CreateMain(t));
+                        return relpath;
+                    })
+                    .ToArray();
             }
         }
 
