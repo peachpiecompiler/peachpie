@@ -3025,20 +3025,23 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
-                if (value is int)
+                if (value is int i)
                 {
                     if (targetOpt != null)
                     {
                         switch (targetOpt.SpecialType)
                         {
                             case SpecialType.System_Boolean:
-                                _il.EmitBoolConstant((int)value != 0);
+                                _il.EmitBoolConstant(i != 0);
                                 return targetOpt;
                             case SpecialType.System_Int64:
-                                _il.EmitLongConstant((long)(int)value);
+                                _il.EmitLongConstant(i);
+                                return targetOpt;
+                            case SpecialType.System_Double:
+                                _il.EmitDoubleConstant(i);
                                 return targetOpt;
                             case SpecialType.System_String:
-                                _il.EmitStringConstant(value.ToString());
+                                _il.EmitStringConstant(i.ToString());
                                 return targetOpt;
                         }
                     }
@@ -3053,13 +3056,19 @@ namespace Pchp.CodeAnalysis.CodeGen
                         switch (targetOpt.SpecialType)
                         {
                             case SpecialType.System_Boolean:
-                                _il.EmitBoolConstant((long)value != 0);
+                                _il.EmitBoolConstant(l != 0);
                                 return targetOpt;
                             case SpecialType.System_Int32:
-                                _il.EmitIntConstant((int)(long)value);
+                                _il.EmitIntConstant((int)l);
+                                return targetOpt;
+                            case SpecialType.System_Double:
+                                _il.EmitDoubleConstant(l);
+                                return targetOpt;
+                            case SpecialType.System_Single:
+                                _il.EmitSingleConstant(l);
                                 return targetOpt;
                             case SpecialType.System_String:
-                                _il.EmitStringConstant(value.ToString());
+                                _il.EmitStringConstant(l.ToString());
                                 return targetOpt;
                             default:
                                 break;
@@ -3069,9 +3078,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                     Builder.EmitLongConstant(l);
                     return CoreTypes.Long;
                 }
-                else if (value is string)
+                else if (value is string str)
                 {
-                    var str = (string)value;
                     if (targetOpt != null)
                     {
                         switch (targetOpt.SpecialType)
@@ -3110,25 +3118,25 @@ namespace Pchp.CodeAnalysis.CodeGen
                     }
 
                     // template: LOAD bool
-                    Builder.EmitBoolConstant((bool)value);
+                    Builder.EmitBoolConstant(b);
                     return CoreTypes.Boolean;
                 }
-                else if (value is double)
+                else if (value is double d)
                 {
                     if (targetOpt != null)
                     {
                         switch (targetOpt.SpecialType)
                         {
                             case SpecialType.System_Boolean:
-                                _il.EmitBoolConstant((double)value != 0.0);
+                                _il.EmitBoolConstant(d != 0.0);
                                 return targetOpt;
                             case SpecialType.System_Int64:
-                                _il.EmitLongConstant((long)(double)value);
+                                _il.EmitLongConstant((long)d);
                                 return targetOpt;
                         }
                     }
 
-                    Builder.EmitDoubleConstant((double)value);
+                    Builder.EmitDoubleConstant(d);
                     return CoreTypes.Double;
                 }
                 else if (value is float)
