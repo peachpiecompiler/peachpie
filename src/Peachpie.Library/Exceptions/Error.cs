@@ -76,7 +76,7 @@ namespace Pchp.Library.Spl
 
         public virtual Throwable getPrevious() => previous ?? this.InnerException as Throwable;
 
-        public virtual PhpArray getTrace() => _trace ?? _stacktrace.GetBacktrace();
+        public virtual PhpArray getTrace() => trace;
 
         public virtual string getTraceAsString() => _stacktrace.GetStackTraceString(); // TODO: _trace
 
