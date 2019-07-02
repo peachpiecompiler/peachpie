@@ -272,17 +272,9 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Debug.Assert(_field.IsStatic == (_holder == null));
 
-            if (_holder != null)
+            if (!_field.IsStatic)
             {
-                if (_holder.Type != null && _holder.Type.IsValueType)
-                {
-                    Debug.Assert(_holder.HasAddress);
-                    _holder.EmitLoadAddress(il);
-                }
-                else
-                {
-                    _holder.EmitLoad(il);
-                }
+                VariableReferenceExtensions.EmitReceiver(il, _holder);
             }
         }
     }
@@ -308,35 +300,18 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         TypeSymbol EmitReceiver(ILBuilder il)
         {
-            if (_holder != null)
-            {
-                var type = _holder.Type;
-                if (type.IsValueType)
-                {
-                    if (_holder.HasAddress)
-                    {
-                        _holder.EmitLoadAddress(il);
-                    }
-                    else
-                    {
-                        throw new NotSupportedException();
-                    }
-                }
-                else
-                {
-                    _holder.EmitLoad(il);
-                }
+            var lhs = VariableReferenceExtensions.EmitReceiver(il, _holder);
 
-                if (_property.IsStatic)
+            if (_property.IsStatic)
+            {
+                if (lhs.Stack != null && !lhs.Stack.IsVoid())
                 {
                     il.EmitOpCode(ILOpCode.Pop);
-                    type = null;
                 }
-
-                return type;
+                return null;
             }
 
-            return null;
+            return lhs.Stack;
         }
 
         public TypeSymbol EmitLoad(ILBuilder il)

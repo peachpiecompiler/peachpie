@@ -717,7 +717,34 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
 
         bool IsPeachpieCorLibrary => _symbol.ContainingAssembly is AssemblySymbol ass && ass.IsPeachpieCorLibrary;
 
-        public override bool IsObject => _symbol.SpecialType == SpecialType.None; // CONSIDER
+        public override bool IsObject
+        {
+            get
+            {
+                switch (_symbol.SpecialType)
+                {
+                    // value types acting like PHP objects:
+                    case SpecialType.System_DateTime:
+                        return true;
+
+                    case SpecialType.System_String:
+                        return false;
+
+                    case SpecialType.None:
+                        // not PhpArray, PhpResource // TODO: unify this
+                        if (_symbol.Is_PhpArray() ||
+                            _symbol.Is_PhpAlias())
+                        {
+                            return false;
+                        }
+
+                        return _symbol.IsReferenceType;
+
+                    default:
+                        return _symbol.IsReferenceType;
+                }
+            }
+        }
 
         public override bool IsArray => IsPeachpieCorLibrary && _symbol.Name == "PhpArray";
 
@@ -728,6 +755,10 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
         public BoundTypeRefFromSymbol(ITypeSymbol symbol)
         {
             Debug.Assert(((TypeSymbol)symbol).IsValidType());
+
+            Debug.Assert(!symbol.Is_PhpValue());
+            Debug.Assert(!symbol.Is_PhpAlias());
+
             _symbol = symbol ?? throw ExceptionUtilities.ArgumentNull(nameof(symbol));
         }
 

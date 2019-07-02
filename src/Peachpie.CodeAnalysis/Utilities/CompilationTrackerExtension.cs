@@ -77,7 +77,14 @@ namespace Pchp.CodeAnalysis.Utilities
 
         public static void TrackException(this PhpCompilation c, Exception ex)
         {
-            if (ex != null && !c.Observers.IsDefaultOrEmpty)
+            if (ex is AggregateException aex && aex.InnerExceptions != null)
+            {
+                foreach (var innerEx in aex.InnerExceptions)
+                {
+                    TrackException(c, innerEx);
+                }
+            }
+            else if (ex != null && !c.Observers.IsDefaultOrEmpty)
             {
                 c.Observers.ForEach(o => o.OnError(ex));
             }

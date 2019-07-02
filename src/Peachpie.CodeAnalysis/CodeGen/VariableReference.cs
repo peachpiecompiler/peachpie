@@ -430,7 +430,7 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitPop(receiver);
                 }
 
-                return new LhsStack { Stack = cg.CoreTypes.Void };
+                return default;
             }
             else
             {
@@ -450,20 +450,23 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
                 else
                 {
-                    if (receiver != null)
+                    if (receiver == null)
                     {
-                        cg.EmitConvert(receiver, 0, symbol.ContainingType);
-
-                        if (symbol.ContainingType.IsValueType)
-                        {
-                            throw cg.NotImplementedException(); // cg.EmitStructAddr(_field.ContainingType);   // value -> valueaddr
-                        }
-
-                        return new LhsStack { Stack = symbol.ContainingType };
+                        throw cg.NotImplementedException($"Non-static field {symbol.ContainingType.Name}::${symbol.MetadataName} accessed statically!");
                     }
                     else
                     {
-                        throw cg.NotImplementedException($"Non-static field {symbol.ContainingType.Name}::${symbol.MetadataName} accessed statically!");
+                        var lhs = new LhsStack();
+
+                        cg.EmitConvert(receiver, 0, lhs.Stack = symbol.ContainingType);
+                        
+                        if (symbol.ContainingType.IsValueType)
+                        {
+                            cg.EmitStructAddr(symbol.ContainingType);
+                            lhs.StackByRef = true;
+                        }
+
+                        return lhs;
                     }
                 }
             }
@@ -479,30 +482,37 @@ namespace Pchp.CodeAnalysis.Semantics
             return EmitReceiver(cg, symbol, receiverType);
         }
 
-        public static LhsStack EmitReceiver(CodeGenerator cg, IPlace receiver)
+        public static LhsStack EmitReceiver(ILBuilder il, IPlace receiver)
         {
+            if (receiver == null)
+            {
+                return default;
+            }
+
             var type = receiver.Type;
             if (type.IsValueType)
             {
                 if (receiver.HasAddress)
                 {
-                    receiver.EmitLoadAddress(cg.Builder);
+                    receiver.EmitLoadAddress(il);
                 }
                 else
                 {
-                    receiver.EmitLoad(cg.Builder);
-                    cg.EmitStructAddr(type);
+                    receiver.EmitLoad(il);
+                    il.EmitStructAddr(type);
                 }
 
                 return new LhsStack { Stack = type, StackByRef = true, };
             }
             else
             {
-                receiver.EmitLoad(cg.Builder);
+                receiver.EmitLoad(il);
 
                 return new LhsStack { Stack = type, StackByRef = false, };
             }
         }
+
+        public static LhsStack EmitReceiver(CodeGenerator cg, IPlace receiver) => EmitReceiver(cg.Builder, receiver);
     }
 
     #endregion

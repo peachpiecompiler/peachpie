@@ -107,14 +107,19 @@ namespace Pchp.CodeAnalysis.Symbols
             return typeSymbol.IsReferenceType || typeSymbol.IsEnumType() || typeSymbol.SpecialType.CanBeConst();
         }
 
-        public static bool Is_PhpAlias(this TypeSymbol t)
+        public static bool Is_PhpArray(this ITypeSymbol t)
         {
-            return t.MetadataName == "PhpAlias" && t.ContainingAssembly?.IsPeachpieCorLibrary == true;
+            return t.MetadataName == "PhpArray" && (t.ContainingAssembly as AssemblySymbol)?.IsPeachpieCorLibrary == true;
         }
 
-        public static bool Is_PhpValue(this TypeSymbol t)
+        public static bool Is_PhpAlias(this ITypeSymbol t)
         {
-            return t.MetadataName == "PhpValue" && t.ContainingAssembly?.IsPeachpieCorLibrary == true;
+            return t.MetadataName == "PhpAlias" && (t.ContainingAssembly as AssemblySymbol)?.IsPeachpieCorLibrary == true;
+        }
+
+        public static bool Is_PhpValue(this ITypeSymbol t)
+        {
+            return t.MetadataName == "PhpValue" && (t.ContainingAssembly as AssemblySymbol)?.IsPeachpieCorLibrary == true;
         }
 
         public static bool IsOfType(this TypeSymbol t, TypeSymbol oftype)

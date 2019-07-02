@@ -1306,11 +1306,19 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (targetType.SpecialType != SpecialType.System_Void)
                 {
+                    //var lhs = default(LhsStack);
+                    //lhs = VariableReferenceExtensions.EmitReceiver(this, ref lhs, method, thisExpr);
+
                     var receiverPlace = PlaceOrNull(thisExpr);
                     if (receiverPlace != null && targetType.IsValueType)
                     {
-                        // load addr of the receiver directly:
-                        receiverPlace.EmitLoadAddress(_il);
+                        // load addr of the receiver:
+                        var lhs = VariableReferenceExtensions.EmitReceiver(this, receiverPlace);
+
+                        if (lhs.Stack == null || lhs.Stack.IsVoid())
+                        {
+                            throw this.NotImplementedException();
+                        }
                     }
                     else
                     {
@@ -3505,6 +3513,30 @@ namespace Pchp.CodeAnalysis.CodeGen
             il.EmitOpCode(ILOpCode.Initobj);
             il.EmitSymbolToken(module, diagnostics, (TypeSymbol)tmp.Type, null);
             // ldloca <loc>
+            il.EmitLocalAddress(tmp);
+        }
+
+        /// <summary>
+        /// Gets or create a local variable and returns it back to pool.
+        /// </summary>
+        public static LocalDefinition GetTemporaryLocalAndReturn(this ILBuilder il, TypeSymbol t)
+        {
+            var definition = il.LocalSlotManager.AllocateSlot((Microsoft.Cci.ITypeReference)t, LocalSlotConstraints.None);
+
+            il.LocalSlotManager.FreeSlot(definition);
+
+            return definition;
+        }
+
+        /// <summary>
+        /// Copies a value type from the top of evaluation stack into a temporary variable and loads its address.
+        /// </summary>
+        public static void EmitStructAddr(this ILBuilder il, TypeSymbol t)
+        {
+            Debug.Assert(t.IsStructType());
+
+            var tmp = GetTemporaryLocalAndReturn(il, t);
+            il.EmitLocalStore(tmp);
             il.EmitLocalAddress(tmp);
         }
 
