@@ -142,7 +142,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
                     if (_syntax.Signature.FormalParams.Length != 2)
                     {
-                        diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 2);
+                        diagnostic.Add(this, _syntax.Signature.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 2);
                     }
                 }
                 else if (name.IsCallStaticName) // __callstatic($name, $args)
@@ -153,7 +153,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
                     if (_syntax.Signature.FormalParams.Length != 2)
                     {
-                        diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 2);
+                        diagnostic.Add(this, _syntax.Signature.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 2);
                     }
                 }
                 else if (name == Devsense.PHP.Syntax.Name.SpecialMethodNames.Set)   // __set($name, $value)
@@ -164,7 +164,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
                     if (_syntax.Signature.FormalParams.Length != 2)
                     {
-                        diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 2);
+                        diagnostic.Add(this, _syntax.Signature.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 2);
                     }
                 }
                 else if (name == Devsense.PHP.Syntax.Name.SpecialMethodNames.Get)   // __get($name)
@@ -175,7 +175,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
                     if (_syntax.Signature.FormalParams.Length != 1)
                     {
-                        diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 1);
+                        diagnostic.Add(this, _syntax.Signature.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 1);
                     }
                 }
                 else if (name == Devsense.PHP.Syntax.Name.SpecialMethodNames.Isset)   // __isset($name)
@@ -186,7 +186,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
                     if (_syntax.Signature.FormalParams.Length != 1)
                     {
-                        diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 1);
+                        diagnostic.Add(this, _syntax.Signature.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 1);
                     }
                 }
                 else if (name == Devsense.PHP.Syntax.Name.SpecialMethodNames.Unset)   // __unset($name)
@@ -197,7 +197,7 @@ namespace Pchp.CodeAnalysis.Symbols
                     }
                     if (_syntax.Signature.FormalParams.Length != 1)
                     {
-                        diagnostic.Add(this, _syntax.ReturnType.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 1);
+                        diagnostic.Add(this, _syntax.Signature.Span.ToTextSpan(), Errors.ErrorCode.ERR_MustTakeArgs, "Method", _type.FullName.ToString(name, false), 1);
                     }
                 }
                 // ...
