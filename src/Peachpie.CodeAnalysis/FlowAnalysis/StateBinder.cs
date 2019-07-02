@@ -28,7 +28,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (flowCtx == null)
             {
                 // create FlowContext 
-                flowCtx = new FlowContext(typeCtx, routine); 
+                flowCtx = new FlowContext(typeCtx, routine);
             }
 
             // create FlowState
@@ -39,23 +39,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             {
                 var local = state.GetLocalHandle(new VariableName(p.Name));
                 var ptype = p.GetResultType(typeCtx);
-                if (p.IsNotNull)
-                {
-                    // remove 'null' type from the mask,
-                    // it cannot be null
-                    ptype = typeCtx.WithoutNull(ptype);
-                }
-                else if (p.Type.IsReferenceType)    // a reference type that can be null
-                {
-                    ptype |= typeCtx.GetNullTypeMask();
-                }
-
                 state.SetLocalType(local, ptype);
-
-                if (p.Syntax.PassedByRef && !p.Syntax.IsVariadic)
-                {
-                    state.MarkLocalByRef(local);
-                }
             }
 
             // $this

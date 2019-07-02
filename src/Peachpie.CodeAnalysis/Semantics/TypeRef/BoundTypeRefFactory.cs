@@ -62,6 +62,10 @@ namespace Pchp.CodeAnalysis.Semantics
                     case SpecialType.System_String: return StringTypeRef;
                     case SpecialType.System_Object: return ObjectTypeRef;
                     default:
+
+                        if (symbol.Is_PhpArray()) return ArrayTypeRef;
+                        if (symbol.Is_PhpString()) return WritableStringRef;
+                        
                         return new BoundTypeRefFromSymbol(symbol);
                 }
             }

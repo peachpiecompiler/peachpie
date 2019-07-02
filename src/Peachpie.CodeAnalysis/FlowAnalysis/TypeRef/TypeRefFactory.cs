@@ -42,6 +42,10 @@ namespace Pchp.CodeAnalysis
                     {
                         mask = ctx.GetArrayTypeMask();
                     }
+                    else if (t.Is_PhpString())
+                    {
+                        mask = ctx.GetWritableStringTypeMask();
+                    }
                     else
                     {
                         mask = ctx.BoundTypeRefFactory.Create(t).GetTypeRefMask(ctx);

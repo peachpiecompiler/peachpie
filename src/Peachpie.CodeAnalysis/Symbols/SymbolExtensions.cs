@@ -95,6 +95,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 // - its source is analysed and it cannot result in NULL
                 // - it has another NotNullAttribute (compiler generated, not just from Peachpie.Runtime)
             }
+            else if (symbol is SourceParameterSymbol sp)
+            {
+                return sp.IsNotNull;
+            }
             else if (symbol != null)
             {
                 attrs = symbol.GetAttributes();
