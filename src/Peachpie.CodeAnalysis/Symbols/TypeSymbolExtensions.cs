@@ -92,6 +92,14 @@ namespace Pchp.CodeAnalysis.Symbols
             return type.IsReferenceType || type.IsNullableType();// || type.IsPointerType();
         }
 
+        /// <summary>
+        /// Type is PhpValue or PhpAlias.
+        /// </summary>
+        public static bool CanBePhpAlias(this TypeSymbol type)
+        {
+            return Is_PhpValue(type) || Is_PhpAlias(type);
+        }
+
         public static bool CanBeConst(this TypeSymbol typeSymbol)
         {
             Debug.Assert((object)typeSymbol != null);

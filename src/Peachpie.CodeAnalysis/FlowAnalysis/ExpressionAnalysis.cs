@@ -1809,7 +1809,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                                 if (overridenf == null || overridenf.IsAccessible(this.TypeCtx.SelfType))
                                 {
                                     x.BoundReference = new FieldReference(x.Instance, overridenf ?? field);
-                                    x.TypeRefMask = field.GetResultType(TypeCtx).WithRefFlag;
+                                    x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, field.Type).WithIsRef(field.Type.CanBePhpAlias());
                                     x.ResultType = field.Type;
                                     return default;
                                 }
@@ -1887,7 +1887,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             x.BoundReference = new FieldReference(null, field);
                         }
 
-                        x.TypeRefMask = field.GetResultType(TypeCtx).WithRefFlag;
+                        x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, field.Type).WithIsRef(field.Type.CanBePhpAlias());
+                        x.ResultType = field.Type;
                         return default;
                     }
                     else if (x.IsStaticField)
@@ -1897,7 +1898,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         if (prop != null && prop.IsStatic)
                         {
                             x.BoundReference = new PropertyReference(null, prop);
-                            x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, prop.Type).WithRefFlag;
+                            x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, prop.Type).WithIsRef(prop.Type.CanBePhpAlias());
                             return default;
                         }
                     }

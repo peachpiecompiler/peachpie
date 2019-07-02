@@ -228,6 +228,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             }
         }
 
+        public TypeRefMask WithIsRef(bool isref)
+        {
+            return isref
+                ? (_mask | (ulong)MaskFlags.IsRef)
+                : (_mask & ~(ulong)MaskFlags.IsRef);
+        }
+
         /// <summary>
         /// Marks this type as it may include subclasses.
         /// </summary>
