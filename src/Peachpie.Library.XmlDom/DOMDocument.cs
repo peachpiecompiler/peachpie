@@ -940,9 +940,8 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         public virtual void xinclude(int options = 0)
         {
-            throw new NotImplementedException();
+            XIncludeHelper.ReplaceXIncludes(null, XmlDocument,0);
         }
-
         #endregion
 
         #region Validation

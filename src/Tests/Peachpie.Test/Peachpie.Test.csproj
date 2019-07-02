@@ -11,6 +11,7 @@
     <ProjectReference Include="..\..\Peachpie.Library.Graphics\Peachpie.Library.Graphics.csproj" />
     <ProjectReference Include="..\..\Peachpie.Library.Network\Peachpie.Library.Network.csproj" />
     <ProjectReference Include="..\..\Peachpie.Library.Scripting\Peachpie.Library.Scripting.csproj" />
+    <ProjectReference Include="..\..\Peachpie.Library.XmlDom\Peachpie.Library.XmlDom.csproj" />
     <ProjectReference Include="..\..\Peachpie.Library\Peachpie.Library.csproj" />
     <ProjectReference Include="..\..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
   </ItemGroup>
