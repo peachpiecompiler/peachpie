@@ -14,7 +14,10 @@ namespace Pchp.Library.Spl
         /// Original stack trace created when the class was constructed.
         /// </summary>
         [PhpHidden]
-        internal readonly PhpStackTrace/*!*/_stacktrace;
+        private PhpStackTrace/*!*/_stacktrace;
+
+        [PhpHidden]
+        private PhpArray _trace;
 
         private Throwable previous;
 
@@ -27,9 +30,6 @@ namespace Pchp.Library.Spl
             get => _trace ?? (_trace = _stacktrace.GetBacktrace());
             set => _trace = value;
         }
-
-        [PhpHidden]
-        internal protected PhpArray _trace;
 
         protected string message;
         protected long code;
