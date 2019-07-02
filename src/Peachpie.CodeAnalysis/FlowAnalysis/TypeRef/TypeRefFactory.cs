@@ -16,8 +16,6 @@ namespace Pchp.CodeAnalysis
         public static TypeRefMask CreateMask(TypeRefContext ctx, TypeSymbol t, bool notNull = false)
         {
             // shortcuts:
-            if (t.Is_PhpValue()) return TypeRefMask.AnyType;
-            if (t.Is_PhpAlias()) return TypeRefMask.AnyType.WithRefFlag;
             if (t.IsNullableType(out var ttype)) return CreateMask(ctx, ttype, notNull: true) | ctx.GetNullTypeMask();
 
             switch (t.SpecialType)
@@ -29,7 +27,25 @@ namespace Pchp.CodeAnalysis
                 case SpecialType.System_String: return ctx.GetStringTypeMask() | (notNull ? 0 : ctx.GetNullTypeMask());
                 case SpecialType.System_Object: return ctx.GetSystemObjectTypeMask() | ctx.GetNullTypeMask();
                 default:
-                    var mask = ctx.BoundTypeRefFactory.Create(t).GetTypeRefMask(ctx);
+
+                    TypeRefMask mask;
+
+                    if (t.Is_PhpValue())
+                    {
+                        return TypeRefMask.AnyType;
+                    }
+                    else if (t.Is_PhpAlias())
+                    {
+                        return TypeRefMask.AnyType.WithRefFlag;
+                    }
+                    else if (t.Is_PhpArray())
+                    {
+                        mask = ctx.GetArrayTypeMask();
+                    }
+                    else
+                    {
+                        mask = ctx.BoundTypeRefFactory.Create(t).GetTypeRefMask(ctx);
+                    }
 
                     if (!notNull && t.CanBeAssignedNull())
                     {

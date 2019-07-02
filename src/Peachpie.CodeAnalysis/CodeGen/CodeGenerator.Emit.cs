@@ -1396,7 +1396,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
-        TypeSymbol LoadMethodSpecialArgument(ParameterSymbol p, BoundTypeRef staticType)
+        TypeSymbol LoadMethodSpecialArgument(ParameterSymbol p, BoundTypeRef staticType, ITypeSymbol selfType)
         {
             // Context
             if (SpecialParameterSymbol.IsContextParameter(p))
@@ -1505,6 +1505,11 @@ namespace Pchp.CodeAnalysis.CodeGen
                     // LOAD <statictype>
                     return (TypeSymbol)staticType.EmitLoadTypeInfo(this);
                 }
+                else if (selfType != null && selfType.Is_PhpValue() == false && selfType.Is_PhpAlias() == false)
+                {
+                    // late static bound type is self:
+                    return this.EmitLoadPhpTypeInfo(selfType);
+                }
                 else
                 {
                     throw ExceptionUtilities.Unreachable;
@@ -1557,7 +1562,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     p.IsImplicitlyDeclared &&   // implicitly declared parameter
                     !p.IsParams)
                 {
-                    LoadMethodSpecialArgument(p, staticType ?? BoundTypeRefFactory.Create(thisType ?? method.ContainingType));
+                    LoadMethodSpecialArgument(p, staticType, thisType ?? method.ContainingType);
                     continue;
                 }
 
@@ -1649,7 +1654,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     p.IsImplicitlyDeclared &&   // implicitly declared parameter
                     !p.IsParams)
                 {
-                    LoadMethodSpecialArgument(p, staticType ?? BoundTypeRefFactory.Create(thisType ?? method.ContainingType));
+                    LoadMethodSpecialArgument(p, staticType, thisType ?? method.ContainingType);
                     continue;
                 }
 
