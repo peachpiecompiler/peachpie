@@ -25,7 +25,7 @@ namespace Pchp.CodeAnalysis
                 case SpecialType.System_Int64: return ctx.GetLongTypeMask();
                 case SpecialType.System_Double: return ctx.GetDoubleTypeMask();
                 case SpecialType.System_String: return ctx.GetStringTypeMask() | (notNull ? 0 : ctx.GetNullTypeMask());
-                case SpecialType.System_Object: return ctx.GetSystemObjectTypeMask() | ctx.GetNullTypeMask();
+                case SpecialType.System_Object: return ctx.GetSystemObjectTypeMask() | (notNull ? 0 : ctx.GetNullTypeMask());
                 default:
 
                     TypeRefMask mask;
