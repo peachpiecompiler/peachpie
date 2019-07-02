@@ -216,15 +216,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     }
                 }
 
-                if (AnalysisFacts.TryGetCanonicKeyStringConstant(item.Key.ConstantValue, out (string, long) keyConst))
+                if (AnalysisFacts.TryGetCanonicKeyStringConstant(item.Key.ConstantValue, out var keyConst))
                 {
                     if (lazyKeyConstSet == null)
                         lazyKeyConstSet = new HashSet<(string, long)>();
 
                     if (!lazyKeyConstSet.Add(keyConst))
                     {
-                        // Duplicate array key
-                        _diagnostics.Add(_routine, item.Key.PhpSyntax ?? item.Value.PhpSyntax, ErrorCode.WRN_DuplicateArrayKey, keyConst);
+                        // Duplicate array key: '{0}'
+                        _diagnostics.Add(
+                            _routine,
+                            item.Key.PhpSyntax ?? item.Value.PhpSyntax,
+                            ErrorCode.WRN_DuplicateArrayKey,
+                            keyConst.Item1 ?? keyConst.Item2.ToString());
                     }
                 }
             }
