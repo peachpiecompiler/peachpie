@@ -37,6 +37,7 @@ namespace Peachpie.Library.XmlDom
         #endregion
 
         static Stack<XmlDocument> documents=new Stack<XmlDocument>();
+        static Dictionary<string, string> references = new Dictionary<string, string>();
         static int replaceCount = 0;
 
         public static int XIncludeXml(string absoluteUri,XmlElement includeNode,XmlDocument MasterDocument)
@@ -106,6 +107,12 @@ namespace Peachpie.Library.XmlDom
                             if (valueOfXPoiner == String.Empty)
                             {
                                 documents.Push(document);
+                                if (references.ContainsKey(uri))
+                                {
+                                    throw new Exception();
+                                    //fatal error, cycle recursion
+                                }
+                                references[absoluteUri] = uri;
                                 XIncludeXml(uri, includeElement, null);
                             }
                             else
@@ -136,6 +143,7 @@ namespace Peachpie.Library.XmlDom
                         else
                             throw ex;
                     }
+                    references = new Dictionary<string, string>();
                 }
             }
             if (MasterDocument == null)
