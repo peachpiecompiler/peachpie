@@ -17,7 +17,7 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         public const string nsOfXIncludeNew = "http://www.w3.org/2001/XInclude";
         public const string nsOfXIncludeOld = "http://www.w3.org/2003/XInclude";
-        public const string nsOfXml = "xml";
+        public const string nsOfXml = "http://www.w3.org/XML/1998/namespace";
 
         /// <summary>
         /// elements
@@ -142,10 +142,37 @@ namespace Peachpie.Library.XmlDom
             {
                 //There are not any includes, insert root of this document to parent document 
                 XmlDocument parent = documents.Pop();
+
+                //base uri fix.
+                if (document.DocumentElement.BaseURI != includeNode.ParentNode.BaseURI)
+                {
+                    parent.DocumentElement.SetAttribute("xmlns:xml", nsOfXml);
+
+                    XmlAttribute baseUri = document.CreateAttribute("xml", atBase, nsOfXml);
+                    baseUri.Value = document.DocumentElement.BaseURI;
+
+                    document.DocumentElement.Attributes.Append(baseUri);
+                }
+
+                //lang  fix.
+                if (parent.DocumentElement.Attributes.GetNamedItem(atLang) != null && document.DocumentElement.Attributes.GetNamedItem(atLang) != null)
+                {
+                    if (document.DocumentElement.Attributes.GetNamedItem(atLang).Value != parent.Attributes.GetNamedItem(atLang).Value)
+                    {
+                        parent.DocumentElement.SetAttribute("lang:xml", nsOfXml);
+
+                        XmlAttribute lang = document.CreateAttribute("xml", atLang, nsOfXml);
+                        lang.Value = document.DocumentElement.Attributes.GetNamedItem(atLang).Value;
+
+                        document.DocumentElement.Attributes.Append(lang);
+                    }
+                }
+
                 XmlNode importedNode = parent.ImportNode(document.DocumentElement, true);
+
                 includeNode.ParentNode.ReplaceChild(importedNode, includeNode);
                 replaceCount++;
-                //TODO: Treat uribase
+
                 return 0;
             }
             return replaceCount;
