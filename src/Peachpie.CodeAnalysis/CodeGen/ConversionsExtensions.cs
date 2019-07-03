@@ -38,7 +38,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             if (!TryEmitImplicitConversion(cg, from, to, @checked))
             {
-                throw cg.NotImplementedException($"Cannot implicitly convert '{from}' to '{to}'.");
+                throw cg.NotImplementedException($"Cannot implicitly convert '{from}' to '{to}'");
             }
         }
 
@@ -100,7 +100,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             if (conversion.Exists == false)
             {
-                throw cg.NotImplementedException($"Conversion from '{from}' to '{to}' does not exist.");
+                throw cg.NotImplementedException($"Conversion from '{from}' to '{to}' ");
             }
 
             if (conversion.IsIdentity)

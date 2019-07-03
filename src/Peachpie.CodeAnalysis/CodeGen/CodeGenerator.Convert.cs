@@ -646,7 +646,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else
                 {
-                    throw this.NotImplementedException($"Conversion from '{from}' to '{to}'.");
+                    throw this.NotImplementedException($"Conversion from '{from}' to '{to}'");
                 }
             }
         }

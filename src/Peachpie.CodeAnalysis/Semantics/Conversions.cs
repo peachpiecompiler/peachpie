@@ -27,9 +27,28 @@ namespace Pchp.CodeAnalysis.Semantics
         static CommonConversion ImplicitNumeric => new CommonConversion(true, false, true, false, true, null);
         static CommonConversion ExplicitNumeric => new CommonConversion(true, false, true, false, false, null);
 
-        static int ConvCost(CommonConversion conv, bool returning)
+        /// <summary>
+        /// Calculates "cost" of conversion.
+        /// </summary>
+        static int ConvCost(CommonConversion conv)
         {
-            return conv.IsIdentity ? 0 : (conv.IsImplicit ^ returning) ? 1 : 3;
+            if (conv.Exists)
+            {
+                if (conv.IsIdentity)
+                {
+                    return 0;
+                }
+
+                var cost = (conv.IsReference || conv.IsNumeric) ? 1
+                    : conv.IsUserDefined ?  4
+                    : 8;
+
+                return conv.IsImplicit ? (cost) : (cost * 2);
+            }
+            else
+            {
+                throw new ArgumentException();
+            }
         }
 
         static (bool floating, bool signed, int size) ClassifyNumericType(TypeSymbol type)
@@ -117,7 +136,18 @@ namespace Pchp.CodeAnalysis.Semantics
                                     var conv = ClassifyConversion(method.ReturnType, target, checkimplicit: false, checkexplicit: false);
                                     if (conv.Exists)    // TODO: chain the conversion, sum the cost
                                     {
-                                        cost += ConvCost(conv, true);
+                                        if (conv.IsNumeric)
+                                        {
+                                            var clfrom = ClassifyNumericType(method.ReturnType);
+                                            var clto = ClassifyNumericType(target);
+
+                                            if (clfrom.size == 1) // bool
+                                                continue;
+
+                                            cost += Math.Abs(clto.size / 16 - clfrom.size / 16) + (clfrom.floating != clto.floating ? 1 : 0);
+                                        }
+
+                                        cost += ConvCost(conv);
                                     }
                                     else
                                     {
@@ -143,7 +173,7 @@ namespace Pchp.CodeAnalysis.Semantics
                                         var conv = ClassifyConversion(receiver, pstype, checkexplicit: false, checkimplicit: false);
                                         if (conv.Exists)   // TODO: chain the conversion
                                         {
-                                            cost += ConvCost(conv, false);
+                                            cost += ConvCost(conv);
                                         }
                                         else
                                         {
@@ -169,7 +199,7 @@ namespace Pchp.CodeAnalysis.Semantics
                                         var conv = ClassifyConversion(operand, ps[pconsumed].Type, checkexplicit: false);
                                         if (conv.Exists)    // TODO: chain the conversion
                                         {
-                                            cost += ConvCost(conv, false);
+                                            cost += ConvCost(conv);
                                         }
                                         else
                                         {
@@ -220,9 +250,13 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 case SpecialType.System_Char: return new[] { "AsChar", "ToChar" };
                 case SpecialType.System_Boolean: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsBoolean", "ToBoolean" };
+                case SpecialType.System_Byte:
+                case SpecialType.System_SByte:
                 case SpecialType.System_Int32: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsInt", "ToInt", "ToLong" };
                 case SpecialType.System_Int64: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsLong", "ToLong" };
+                case SpecialType.System_Single:
                 case SpecialType.System_Double: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsDouble", "ToDouble" };
+                case SpecialType.System_Decimal: return new[] { WellKnownMemberNames.ImplicitConversionName, "ToDecimal" };
                 case SpecialType.System_String: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsString", WellKnownMemberNames.ObjectToString };
                 case SpecialType.System_Object: return new[] { "AsObject" }; // implicit conversion to object is not possible
                 default:
@@ -308,6 +342,19 @@ namespace Pchp.CodeAnalysis.Semantics
             return false;
         }
 
+        MethodSymbol TryWellKnownImplicitConversion(TypeSymbol from, TypeSymbol to)
+        {
+            // Object -> PhpValue
+            if (to == _compilation.CoreTypes.PhpValue && from.IsReferenceType && !IsSpecialReferenceType(from))
+            {
+                // expecting the object to be a class instance
+                return _compilation.CoreMethods.PhpValue.FromClass_Object;
+            }
+
+            //
+            return null;
+        }
+
         public CommonConversion ClassifyConversion(TypeSymbol from, TypeSymbol to, bool checkimplicit = true, bool checkexplicit = true)
         {
             if (from == to)
@@ -344,7 +391,9 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 // TODO: cache result
 
-                var op = checkimplicit ? ResolveOperator(from, false, ImplicitConversionOpNames(to), new[] { to, _compilation.CoreTypes.Convert.Symbol }, target: to) : null;
+                var op = checkimplicit
+                    ? TryWellKnownImplicitConversion(from, to) ?? ResolveOperator(from, false, ImplicitConversionOpNames(to), new[] { to, _compilation.CoreTypes.Convert.Symbol }, target: to)
+                    : null;
 
                 if (op != null)
                 {

@@ -3154,6 +3154,30 @@ namespace Pchp.CodeAnalysis.CodeGen
                     Builder.EmitIntConstant(unchecked((int)(uint)value));
                     return DeclaringCompilation.GetSpecialType(SpecialType.System_UInt32);
                 }
+                else if (value is ulong ul)
+                {
+                    if (targetOpt != null)
+                    {
+                        switch (targetOpt.SpecialType)
+                        {
+                            case SpecialType.System_Boolean:
+                                _il.EmitBoolConstant(ul != 0.0);
+                                return targetOpt;
+                            case SpecialType.System_Int64:
+                                _il.EmitLongConstant((long)ul);
+                                return targetOpt;
+                            case SpecialType.System_Double:
+                                _il.EmitDoubleConstant((double)ul);
+                                return targetOpt;
+                            case SpecialType.System_String:
+                                _il.EmitStringConstant(ul.ToString());
+                                return targetOpt;
+                        }
+                    }
+
+                    _il.EmitLongConstant(unchecked((long)ul));
+                    return DeclaringCompilation.GetSpecialType(SpecialType.System_UInt64);
+                }
                 else if (value is char)
                 {
                     if (targetOpt != null)

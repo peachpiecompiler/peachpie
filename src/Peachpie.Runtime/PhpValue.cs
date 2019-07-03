@@ -228,6 +228,8 @@ namespace Pchp.Core
 
         public double ToDouble() => _type.ToDouble(ref this);
 
+        public decimal ToDecimal() => (decimal)_type.ToDouble(ref this);    // TODO: more precision when converting from string 
+
         public bool ToBoolean() => _type.ToBoolean(ref this);
 
         public Convert.NumberInfo ToNumber(out PhpNumber number) => _type.ToNumber(ref this, out number);

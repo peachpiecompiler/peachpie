@@ -92,6 +92,10 @@ namespace Pchp.CodeAnalysis
             if (IsIntegerNumber(first) && IsIntegerNumber(second))
                 return CoreTypes.Long;
 
+            // float|double
+            if (IsFloatNumber(first) && IsFloatNumber(second))
+                return CoreTypes.Double;
+
             // a number (int | double)
             if (IsNumber(first) && IsNumber(second))
                 return CoreTypes.PhpNumber;
@@ -193,7 +197,9 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         internal TypeSymbol MergeNull(TypeSymbol type)
         {
-            if (type == null || type.SpecialType == SpecialType.System_Void)
+            Contract.ThrowIfNull(type);
+
+            if (type.IsVoid())
             {
                 return CoreTypes.Object;
             }
@@ -218,6 +224,20 @@ namespace Pchp.CodeAnalysis
                 case SpecialType.System_UInt16:
                 case SpecialType.System_UInt32:
                 case SpecialType.System_UInt64:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        static bool IsFloatNumber(TypeSymbol type)
+        {
+            Contract.ThrowIfNull(type);
+
+            switch (type.SpecialType)
+            {
+                case SpecialType.System_Single:
+                case SpecialType.System_Double:
                     return true;
                 default:
                     return false;
