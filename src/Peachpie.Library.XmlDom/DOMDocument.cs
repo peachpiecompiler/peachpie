@@ -940,7 +940,7 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         public virtual void xinclude(int options = 0)
         {
-            XIncludeHelper.ReplaceXIncludes(null, XmlDocument,0);
+            XIncludeHelperVol2.XIncludeXml(@"C:/Users/Tomas Husak/Desktop/Github/peachpie/src/Tests/Peachpie.Test/bin/Debug/netcoreapp2.0/xinclude001a.xml", null,XmlDocument);
         }
         #endregion
 
