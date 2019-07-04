@@ -525,10 +525,10 @@ namespace Pchp.Core
                 case PhpTypeCode.Double: return Double;
                 case PhpTypeCode.Int32: return (int)Long;
                 case PhpTypeCode.Long: return Long;
+                case PhpTypeCode.PhpArray:
+                case PhpTypeCode.String:
                 case PhpTypeCode.Object: return Object;
-                case PhpTypeCode.PhpArray: return Array;
-                case PhpTypeCode.String: return String;
-                case PhpTypeCode.MutableString: return MutableString.ToString();
+                case PhpTypeCode.MutableString: return MutableStringBlob.ToString();
                 case PhpTypeCode.Alias: return Alias.Value.ToClr();
                 case PhpTypeCode.Undefined:
                 case PhpTypeCode.Null: return null;

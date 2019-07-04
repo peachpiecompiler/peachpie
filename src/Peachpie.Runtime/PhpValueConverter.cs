@@ -16,30 +16,6 @@ namespace Pchp.Core
             //public static readonly Func<T, PhpValue> s_toPhpValue = (Func<T, PhpValue>)Create_T_to_PhpValue();
             public static readonly Func<PhpValue, T> s_fromPhpValue = (Func<PhpValue, T>)Create_PhpValue_to_T();
 
-            static GenericConverter()
-            {
-                //try
-                //{
-                //    s_toPhpValue = (Func<T, PhpValue>)Create_T_to_PhpValue();
-                //}
-                //catch (Exception ex)
-                //{
-                //    s_toPhpValue = (_) => throw ex;
-                //}
-
-                //try
-                //{
-                //    s_fromPhpValue = ;
-                //}
-                //catch (Exception ex)
-                //{
-                //    s_fromPhpValue = (_) => throw ex;
-                //}
-
-                //Debug.Assert(s_toPhpValue != null);
-                //Debug.Assert(s_fromPhpValue != null);
-            }
-
             //static Delegate Create_T_to_PhpValue()
             //{
             //    var type = typeof(T);
@@ -63,26 +39,30 @@ namespace Pchp.Core
 
             static Delegate Create_PhpValue_to_T()
             {
-                var type = typeof(T);
+                if (typeof(T) == typeof(PhpValue)) return Utilities.FuncExtensions.Identity<PhpValue>();
+                if (typeof(T) == typeof(PhpAlias)) return new Func<PhpValue, PhpAlias>(x => x.AsPhpAlias());
+                if (typeof(T) == typeof(string)) return new Func<PhpValue, string>(x => x.ToString());
+                if (typeof(T) == typeof(double)) return new Func<PhpValue, double>(x => x.ToDouble());
+                if (typeof(T) == typeof(float)) return new Func<PhpValue, float>(x => (float)x.ToDouble());
+                if (typeof(T) == typeof(long)) return new Func<PhpValue, long>(x => x.ToLong());
+                if (typeof(T) == typeof(int)) return new Func<PhpValue, int>(x => (int)x.ToLong());
+                if (typeof(T) == typeof(bool)) return new Func<PhpValue, bool>(x => x.ToBoolean());
+                if (typeof(T) == typeof(PhpArray)) return new Func<PhpValue, PhpArray>(x => x.ToArray());
+                if (typeof(T) == typeof(byte)) return new Func<PhpValue, byte>(x => (byte)x.ToLong()); 
+                if (typeof(T) == typeof(char)) return new Func<PhpValue, char>(x => Convert.ToChar(x));
+                if (typeof(T) == typeof(uint)) return new Func<PhpValue, uint>(x => (uint)x.ToLong());
+                if (typeof(T) == typeof(ulong)) return new Func<PhpValue, ulong>(x => (ulong)x.ToLong());
+                if (typeof(T) == typeof(DateTime)) return new Func<PhpValue, DateTime>(Convert.ToDateTime); 
+                if (typeof(T) == typeof(byte[])) return new Func<PhpValue, byte[]>(x => x.ToBytesOrNull() ?? throw new InvalidCastException());
 
-                if (type == typeof(PhpValue)) return Utilities.FuncExtensions.Identity<PhpValue>();
-                if (type == typeof(PhpAlias)) return new Func<PhpValue, PhpAlias>(x => x.AsPhpAlias());
-                if (type == typeof(string)) return new Func<PhpValue, string>(x => x.ToString());
-                if (type == typeof(double)) return new Func<PhpValue, double>(x => x.ToDouble());
-                if (type == typeof(float)) return new Func<PhpValue, float>(x => (float)x.ToDouble());
-                if (type == typeof(long)) return new Func<PhpValue, long>(x => x.ToLong());
-                if (type == typeof(int)) return new Func<PhpValue, int>(x => (int)x.ToLong());
-                if (type == typeof(bool)) return new Func<PhpValue, bool>(x => x.ToBoolean());
-                if (type == typeof(PhpArray)) return new Func<PhpValue, PhpArray>(x => x.ToArray());
-
-                if (type.IsValueType)
+                if (typeof(T).IsValueType)
                 {
-                    if (type.IsGenericType)
+                    if (typeof(T).IsGenericType)
                     {
                         // Nullable<U>
-                        if (type.GetGenericTypeDefinition() == typeof(Nullable<>))
+                        if (typeof(T).GetGenericTypeDefinition() == typeof(Nullable<>))
                         {
-                            var typeU = type.GenericTypeArguments[0];
+                            var typeU = typeof(T).GenericTypeArguments[0];
                             if (typeU == typeof(bool)) return new Func<PhpValue, Nullable<bool>>(x => Operators.IsSet(x) ? (bool?)x.ToBoolean() : null);
                             if (typeU == typeof(int)) return new Func<PhpValue, Nullable<int>>(x => Operators.IsSet(x) ? (int?)(int)x.ToLong() : null);
                             if (typeU == typeof(long)) return new Func<PhpValue, Nullable<long>>(x => Operators.IsSet(x) ? (long?)x.ToLong() : null);
@@ -93,7 +73,7 @@ namespace Pchp.Core
                 else // type.IsReferenceType
                 {
                     // Delegate
-                    if (type.BaseType == typeof(MulticastDelegate))
+                    if (typeof(T).BaseType == typeof(MulticastDelegate))
                     {
                         // Error: needs Context
                         throw new ArgumentException();
@@ -114,7 +94,7 @@ namespace Pchp.Core
 
         //    static MethodInfo CreateFunc()
         //    {
-                
+
         //    }
         //}
 
