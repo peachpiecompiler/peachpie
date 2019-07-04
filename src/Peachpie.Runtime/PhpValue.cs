@@ -279,6 +279,8 @@ namespace Pchp.Core
 
         public static explicit operator PhpArray(PhpValue value) => value.ToArray();
 
+        public static explicit operator DateTime(PhpValue value) => value.ToDateTime();
+
         /// <summary>
         /// Implicit conversion to string,
         /// preserves <c>null</c>,

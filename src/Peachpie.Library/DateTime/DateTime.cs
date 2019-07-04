@@ -456,7 +456,7 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Gets given PHP DateTime as <see cref="System_DateTime"/> (UTC).
         /// </summary>
-        public static implicit operator System_DateTime(DateTime dt) => dt.Time;
+        public static implicit operator System_DateTime(DateTime dt) => TimeZoneInfo.ConvertTime(dt.Time, dt.TimeZone);
 
         #endregion
     }

@@ -948,7 +948,7 @@ namespace Pchp.Core
                 p++;
             }
 
-            Done:
+        Done:
 
             // an exponent ends with 'e', 'E', '-', or '+':
             if (state == 4 || state == 5)
@@ -1209,6 +1209,44 @@ namespace Pchp.Core
 
             numDigits = offset - offsetStart;
             return true;
+        }
+
+        #endregion
+
+        #region ToDateTime
+
+        /// <summary>
+        /// Converts a value to <see cref="DateTime"/>.
+        /// Supports
+        /// - implicit conversions from an object (like PHP <c>DateTime</c>)
+        /// - conversions from <see cref="string"/>.
+        /// </summary>
+        /// <exception cref="InvalidCastException">When an unsupported value is used.</exception>
+        public static DateTime ToDateTime(this PhpValue value)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.Object:
+                    var m = Dynamic.ConvertExpression.FindImplicitOperator(value.Object.GetType(), typeof(DateTime));
+                    if (m != null)
+                    {
+                        return (DateTime)m.Invoke(null, new[] { value.Object });
+                    }
+
+                    goto default;
+
+                case PhpTypeCode.MutableString:
+                    return DateTime.Parse(value.MutableStringBlob.ToString());
+
+                case PhpTypeCode.String:
+                    return DateTime.Parse(value.String);
+
+                case PhpTypeCode.Alias:
+                    return ToDateTime(value.Alias.Value);
+
+                default:
+                    throw new InvalidCastException();
+            }
         }
 
         #endregion

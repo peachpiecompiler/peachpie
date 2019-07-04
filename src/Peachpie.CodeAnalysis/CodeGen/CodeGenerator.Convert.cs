@@ -513,6 +513,23 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// Emits conversion to <c>System.DateTime</c>.
+        /// </summary>
+        /// <param name="from">Value on stack to be converted.</param>
+        private void EmitConvertToDateTime(TypeSymbol from)
+        {
+            // PhpValue
+            EmitConvertToPhpValue(from, 0);
+
+            // Convert.ToDateTime( STACK ) : DateTime
+            var datetime = DeclaringCompilation.GetSpecialType(SpecialType.System_DateTime);
+            var method = CoreTypes.Convert.Method("ToDateTime", CoreTypes.PhpValue);
+
+            EmitCall(ILOpCode.Call, method)
+                .Expect(datetime);
+        }
+
+        /// <summary>
         /// Emits expression and converts it to required type.
         /// </summary>
         public void EmitConvert(BoundExpression expr, TypeSymbol to)
@@ -643,6 +660,10 @@ namespace Pchp.CodeAnalysis.CodeGen
                     // Template: new Nullable<T>( (T)from )
                     EmitConvert(from, fromHint, ttype);
                     EmitCall(ILOpCode.Newobj, ((NamedTypeSymbol)to).InstanceConstructors[0]);
+                }
+                else if (to.SpecialType == SpecialType.System_DateTime)
+                {
+                    EmitConvertToDateTime(from);
                 }
                 else
                 {

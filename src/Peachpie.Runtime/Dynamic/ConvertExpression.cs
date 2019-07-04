@@ -95,22 +95,20 @@ namespace Pchp.Core.Dynamic
                 return Expression.New(Cache.PhpAlias.ctor_PhpValue_int, BindToValue(arg), Expression.Constant(1));
             }
 
-            var target_type = target.GetTypeInfo();
-
-            if (target_type.IsByRef)
+            if (target.IsByRef)
             {
                 // TODO: what to do
-                target_type = target_type.UnderlyingSystemType.GetTypeInfo();
+                target = target.UnderlyingSystemType;
             }
 
             // enum
-            if (target_type.IsEnum)
+            if (target.IsEnum)
             {
                 return Expression.Convert(BindToLong(arg), target);
             }
 
             // 
-            if (target_type.IsValueType == false)
+            if (target.IsValueType == false)
             {
                 return BindAsReferenceType(arg, target);
             }
@@ -125,8 +123,7 @@ namespace Pchp.Core.Dynamic
                 // DateTime
                 if (target == typeof(DateTime))
                 {
-                    // TODO: DateTime from long or string
-                    return BindAsReferenceType(arg, target); // (DateTime)value.Object // TODO: review once we support value types properly
+                    return BindToDateTime(arg, ctx);
                 }
 
                 // Nullable<T>
@@ -138,6 +135,39 @@ namespace Pchp.Core.Dynamic
 
             //
             throw new NotImplementedException(target.ToString());
+        }
+
+        public static MethodInfo FindImplicitOperator(Type t, Type toType)
+        {
+            foreach (var m in t.GetRuntimeMethods())
+            {
+                // "public static TO op_Implicit(THIS)"
+                if (m.IsPublic && m.IsStatic && m.Name == "op_Implicit" &&
+                    m.ReturnParameter.ParameterType == toType)
+                {
+                    var ps = m.GetParameters();
+                    if (ps.Length == 1 && ps[0].ParameterType.IsAssignableFrom(t))
+                    {
+                        return m;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        static Expression BindToDateTime(Expression arg, Expression ctx)
+        {
+            var impl = FindImplicitOperator(arg.Type, typeof(DateTime));
+            if (impl != null)
+            {
+                return Expression.Convert(arg, typeof(DateTime), impl);
+            }
+            else
+            {
+                // Convert.ToDateTime( PhpValue )
+                return Expression.Call(Cache.Operators.ToDateTime_PhpValue, BindToValue(arg));
+            }
         }
 
         static Expression BindToNullable(Expression arg, Type target, Type nullable_t, Expression ctx)

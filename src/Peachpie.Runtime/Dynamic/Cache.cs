@@ -40,6 +40,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo ToPhpString_PhpValue_Context = typeof(Core.Convert).GetMethod("ToPhpString", Types.PhpValue, typeof(Context));
             public static MethodInfo ToPhpNumber_String = typeof(Core.Convert).GetMethod("ToNumber", Types.String[0]);
             public static MethodInfo ToBoolean_Object = typeof(Core.Convert).GetMethod("ToBoolean", Types.Object[0]);
+            public static MethodInfo ToDateTime_PhpValue = typeof(Core.Convert).GetMethod("ToDateTime", Types.PhpValue);
 
             public static MethodInfo Object_EnsureArray = typeof(Core.Operators).GetMethod("EnsureArray", Types.Object);
 
