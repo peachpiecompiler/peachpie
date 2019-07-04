@@ -123,6 +123,7 @@ namespace Peachpie.Library.XmlDom
                     }
                     catch (System.IO.FileNotFoundException ex)
                     {
+                        documents.Pop();
                         //Get fallbacknodes
                         XmlElement[] fallbacks = includeElement.GetElementsByTagName(nsPrefix + ":" + etFallback).OfType<XmlElement>().ToArray<XmlElement>();
                         if (fallbacks.Length > 1)
@@ -245,6 +246,12 @@ namespace Peachpie.Library.XmlDom
                         if (valueOfXPoiner == String.Empty)
                         {
                             documents.Push(document);
+                            if (references.ContainsKey(uri))
+                            {
+                                throw new Exception();
+                                //fatal error, cycle recursion
+                            }
+                            references[absoluteUri] = uri;
                             XIncludeXml(uri, includeElement, null);
                         }
                         else
