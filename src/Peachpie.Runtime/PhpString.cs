@@ -928,6 +928,8 @@ namespace Pchp.Core
 
             #region ToString
 
+            public override string ToString() => ToString(Encoding.UTF8);
+
             public string ToString(Encoding encoding)
             {
                 // TODO: cache the result for current chunks version
