@@ -14,7 +14,7 @@ namespace Pchp.Core
         /// <summary>
         /// Methods table for <see cref="PhpValue"/> instance.
         /// </summary>
-        [DebuggerNonUserCode]
+        [DebuggerNonUserCode, DebuggerStepThrough]
         abstract class TypeTable
         {
             #region Singletons
@@ -170,7 +170,7 @@ namespace Pchp.Core
             public abstract void Accept(ref PhpValue me, PhpVariableVisitor visitor);
         }
 
-        [DebuggerNonUserCode]
+        [DebuggerNonUserCode, DebuggerStepThrough]
         class NullTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Null;
@@ -219,14 +219,14 @@ namespace Pchp.Core
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.AcceptNull();
         }
 
-        [DebuggerNonUserCode]
+        [DebuggerNonUserCode, DebuggerStepThrough]
         sealed class VoidTable : NullTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Undefined;
             public override string DisplayString(ref PhpValue me) => PhpVariable.TypeNameVoid;
         }
 
-        [DebuggerNonUserCode]
+        [DebuggerNonUserCode, DebuggerStepThrough]
         sealed class LongTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Long;
@@ -255,7 +255,7 @@ namespace Pchp.Core
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Long);
         }
 
-        [DebuggerNonUserCode]
+        [DebuggerNonUserCode, DebuggerStepThrough]
         sealed class DoubleTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Double;
@@ -284,7 +284,7 @@ namespace Pchp.Core
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Double);
         }
 
-        [DebuggerNonUserCode]
+        [DebuggerNonUserCode, DebuggerStepThrough]
         sealed class BoolTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Boolean;
@@ -331,7 +331,7 @@ namespace Pchp.Core
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Boolean);
         }
 
-        [DebuggerNonUserCode]
+        [DebuggerNonUserCode, DebuggerStepThrough]
         sealed class StringTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.String;
@@ -399,7 +399,7 @@ namespace Pchp.Core
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.String);
         }
 
-        [DebuggerNonUserCode]
+        [DebuggerNonUserCode, DebuggerStepThrough]
         sealed class MutableStringTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.MutableString;
@@ -471,7 +471,7 @@ namespace Pchp.Core
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.MutableString);
         }
 
-        [DebuggerNonUserCode]
+        [DebuggerNonUserCode, DebuggerStepThrough]
         sealed class ClassTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Object;
@@ -627,7 +627,7 @@ namespace Pchp.Core
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.AcceptObject(me.Object);
         }
 
-        [DebuggerNonUserCode]
+        [DebuggerNonUserCode, DebuggerStepThrough]
         sealed class ArrayTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.PhpArray;
@@ -690,7 +690,7 @@ namespace Pchp.Core
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Array);
         }
 
-        [DebuggerNonUserCode]
+        [DebuggerNonUserCode, DebuggerStepThrough]
         sealed class AliasTable : TypeTable
         {
             public override PhpTypeCode Type => PhpTypeCode.Alias;
