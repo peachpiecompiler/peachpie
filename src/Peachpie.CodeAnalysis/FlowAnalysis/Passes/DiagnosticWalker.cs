@@ -718,7 +718,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         static string GetMemberNameForDiagnostic(Symbol target, bool isMemberName)
         {
             string name = target.Name;
-            
+
             if (isMemberName)
             {
                 var qname = target.ContainingType.PhpQualifiedName();
@@ -789,6 +789,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 else
                 {
                     _diagnostics.Add(_routine, typeRef.PhpSyntax, ErrorCode.WRN_UndefinedType, typeRef.ToString());
+                }
+            }
+
+            // undefined "parent"
+            if (typeRef is BoundReservedTypeRef reservedType && reservedType.ReservedType == ReservedTypeRef.ReservedType.parent && typeRef.PhpSyntax != null)
+            {
+                var typeCtx = _routine.ContainingType as SourceTypeSymbol;
+                if ((typeCtx != null && typeCtx.IsTrait) || _routine.IsGlobalScope)
+                {
+                    // global code or trait -> resolved at run time
+                }
+                else if (typeCtx == null || typeCtx.Syntax.BaseClass == null)
+                {
+                    // in a global function or a class without parent -> error
+                    Add(typeRef.PhpSyntax.Span, Devsense.PHP.Errors.FatalErrors.ParentAccessedInParentlessClass);
                 }
             }
         }

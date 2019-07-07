@@ -28,6 +28,13 @@ namespace Pchp.CodeAnalysis.Errors
 
         public void Error(Span span, ErrorInfo info, params string[] argsOpt)
         {
+            if (info == FatalErrors.ParentAccessedInParentlessClass)
+            {
+                // ignore PHP2070: we'll handle it more precisely, also we might recover from it
+                // otherwise we'll report it again in our diagnostics
+                return;
+            }
+
             if (_diagnostics == null)
             {
                 _diagnostics = new List<Diagnostic>();
