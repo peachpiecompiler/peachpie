@@ -558,6 +558,10 @@ namespace Peachpie.Library.XmlDom
                 return null; // FALSE
             }
         }
+        /// <summary>
+        /// File name of loaded document
+        /// </summary>
+        public string fileNameOfXmlDoc; 
 
         /// <summary>
         /// Loads the XML document from the specified URL.
@@ -569,6 +573,7 @@ namespace Peachpie.Library.XmlDom
         public virtual bool load(Context ctx, string fileName, int options = 0)
         {
             // TODO: this method can be called both statically and via an instance
+            fileNameOfXmlDoc = fileName;
 
             _isHtmlDocument = false;
 
@@ -938,9 +943,10 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Not implemented (TODO: need a XInclude implementation for this).
         /// </summary>
-        public virtual void xinclude(int options = 0)
+        public virtual void xinclude(Context ctx, int options = 0)
         {
-            XIncludeHelperVol2.XIncludeXml(@"C:/Users/Tomas Husak/Desktop/Github/peachpie/src/Tests/Peachpie.Test/bin/Debug/netcoreapp2.0/xinclude001a.xml", null,XmlDocument);
+            XIncludeHelper x = new XIncludeHelper(ctx);
+            x.XIncludeXml(fileNameOfXmlDoc, null, XmlDocument);
         }
         #endregion
 
