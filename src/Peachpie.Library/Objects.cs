@@ -165,20 +165,34 @@ namespace Pchp.Library
         public static PhpArray get_declared_traits(Context ctx) => get_declared_types(ctx, false, true);
 
         /// <summary>
-		/// Gets the name of the class from which class given by <paramref name="classNameOrObject"/>
-		/// inherits.
-		/// </summary>
-        /// <remarks>
-		/// If the class given by <paramref name="classNameOrObject"/> has no parent in PHP class hierarchy, this method returns <B>false</B>.
-		/// </remarks>
-		[return: CastToFalse]
-        public static string get_parent_class(Context ctx, [ImportCallerClass]RuntimeTypeHandle caller, PhpValue classNameOrObject)
+        /// Retrieves the parent class name for current object from which this function is called.
+        /// </summary>
+        [return: CastToFalse]
+        public static string get_parent_class(Context ctx, [ImportCallerClass]RuntimeTypeHandle caller)
         {
-            var tinfo = TypeNameOrObjectToType(ctx, classNameOrObject, caller);
+            if (caller.Equals(default))
+            {
+                return null;
+            }
+
+            var tinfo = Type.GetTypeFromHandle(caller)?.GetPhpTypeInfo();
+            return tinfo.BaseType?.Name;
+        }
+
+        /// <summary>
+        /// Gets the name of the class from which class given by <paramref name="classNameOrObject"/>
+        /// inherits.
+        /// </summary>
+        /// <remarks>
+        /// If the class given by <paramref name="classNameOrObject"/> has no parent in PHP class hierarchy, this method returns <B>false</B>.
+        /// </remarks>
+        [return: CastToFalse]
+        public static string get_parent_class(Context ctx, PhpValue classNameOrObject)
+        {
+            var tinfo = TypeNameOrObjectToType(ctx, classNameOrObject);
 
             //
-            var btype = tinfo?.BaseType;
-            return btype?.Name;
+            return tinfo?.BaseType?.Name;
         }
 
         /// <summary>
