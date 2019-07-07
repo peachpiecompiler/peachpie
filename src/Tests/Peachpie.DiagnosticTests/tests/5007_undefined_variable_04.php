@@ -21,7 +21,7 @@ function never_maybe_defined($foo) {
   }
 
   if (isset($maybeDefined) && isset($neverDefined)) {
-    echo $maybeDefined;
+    echo $maybeDefined;/*!PHP5011!*/
   }
 
   if (!isset($maybeDefined)) {
