@@ -558,10 +558,6 @@ namespace Peachpie.Library.XmlDom
                 return null; // FALSE
             }
         }
-        /// <summary>
-        /// File name of loaded document
-        /// </summary>
-        public string fileNameOfXmlDoc; 
 
         /// <summary>
         /// Loads the XML document from the specified URL.
@@ -573,7 +569,6 @@ namespace Peachpie.Library.XmlDom
         public virtual bool load(Context ctx, string fileName, int options = 0)
         {
             // TODO: this method can be called both statically and via an instance
-            fileNameOfXmlDoc = fileName;
 
             _isHtmlDocument = false;
 
@@ -593,7 +588,7 @@ namespace Peachpie.Library.XmlDom
 #pragma warning restore 618
                     }
 
-                    XmlDocument.Load(XmlReader.Create(stream.RawStream, settings));
+                    XmlDocument.Load(XmlReader.Create(stream.RawStream, settings, XIncludeHelper.UriResolver(fileName, ctx.WorkingDirectory)));
                 }
                 catch (XmlException e)
                 {
@@ -946,7 +941,7 @@ namespace Peachpie.Library.XmlDom
         public virtual void xinclude(Context ctx, int options = 0)
         {
             XIncludeHelper x = new XIncludeHelper(ctx);
-            x.XIncludeXml(fileNameOfXmlDoc, null, XmlDocument);
+            x.XIncludeXml(XmlDocument.BaseURI, null, XmlDocument,null);
         }
         #endregion
 
