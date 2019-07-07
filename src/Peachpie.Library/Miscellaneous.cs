@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
+using Pchp.Core.Utilities;
 
 namespace Pchp.Library
 {
@@ -266,8 +267,8 @@ namespace Pchp.Library
         {
             string system, host, release, version, machine;
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) system = "Windows NT";
-            //else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) system = "OSX";
+            if (CurrentPlatform.IsWindows) system = "Windows NT";
+            else if (CurrentPlatform.IsOsx) system = "OSX";
             else system = "Unix";
 
             host = System.Net.Dns.GetHostName();
