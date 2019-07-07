@@ -217,70 +217,106 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 return new SimpleEdge((BoundBlock)Accept(target));
             }
 
+            if (x.Condition is BoundBinaryEx bex)
+            {
+                // if (A && FALSE)
+                if (bex.Operation == Ast.Operations.And && bex.Right.ConstantValue.TryConvertToBool(out var bright) && bright == false)
+                {
+                    // if (Left && FALSE) {Unreachable} else {F} -> if (Left) {F} else {F}
+                    // result is always FALSE but we have to evaluate Left
+                    TransformationCount++;
+                    NotePossiblyUnreachable(x.TrueTarget);
+
+                    var target = (BoundBlock)Accept(x.FalseTarget);
+                    return new ConditionalEdge(target, target, bex.Left);
+                }
+
+                // if (A || TRUE)
+                if (bex.Operation == Ast.Operations.Or && bex.Right.ConstantValue.TryConvertToBool(out bright) && bright == true)
+                {
+                    // if (Left || TRUE) {T} else {Unreachable} -> if (Left) {T} else {T}
+                    // result is always FALSE but we have to evaluate Left
+                    TransformationCount++;
+                    NotePossiblyUnreachable(x.FalseTarget);
+
+                    var target = (BoundBlock)Accept(x.TrueTarget);
+                    return new ConditionalEdge(target, target, bex.Left);
+                }
+            }
+
             return base.VisitCFGConditionalEdge(x);
         }
 
         public override object VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
         {
-            var result = base.VisitGlobalFunctionCall(x);
-            if (result is BoundGlobalFunctionCall)
+            if (x.Name.NameValue == NameUtils.SpecialNames.dirname)
             {
-                x = (BoundGlobalFunctionCall)result;
-
-                if (x.Name.NameValue == NameUtils.SpecialNames.dirname)
+                // dirname( __FILE__ ) -> __DIR__
+                if (x.ArgumentsInSourceOrder.Length == 1 &&
+                    x.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc &&
+                    pc.ConstType == Ast.PseudoConstUse.Types.File)
                 {
-                    // dirname( __FILE__ ) -> __DIR__
-                    if (x.ArgumentsInSourceOrder.Length == 1 &&
-                        x.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc &&
-                        pc.ConstType == Ast.PseudoConstUse.Types.File)
-                    {
-                        TransformationCount++;
-                        return new BoundPseudoConst(Ast.PseudoConstUse.Types.Dir).WithAccess(x.Access);
-                    }
+                    TransformationCount++;
+                    return new BoundPseudoConst(Ast.PseudoConstUse.Types.Dir).WithAccess(x.Access);
                 }
-                else if (x.Name.NameValue == NameUtils.SpecialNames.get_parent_class)
+            }
+            else if (x.Name.NameValue == NameUtils.SpecialNames.get_parent_class)
+            {
+                bool TryResolveParentClassInCurrentClassContext(SourceRoutineSymbol routine, out BoundLiteral newExpression)
                 {
-                    bool TryResolveParentClassInCurrentClassContext(SourceRoutineSymbol routine, out BoundLiteral newExpression)
+                    // in global function, always FALSE
+                    if (routine is SourceFunctionSymbol)
                     {
-                        // in global function, always FALSE
-                        if (routine is SourceFunctionSymbol)
+                        // FALSE
+                        newExpression = new BoundLiteral(false.AsObject());
+                        return true;
+                    }
+
+                    // in a method, we can resolve in compile time:
+                    if (routine is SourceMethodSymbol m && m.ContainingType is SourceTypeSymbol t && !t.IsTrait)
+                    {
+                        if (t.BaseType == null || t.BaseType.IsObjectType())
                         {
                             // FALSE
-                            newExpression = new BoundLiteral(false.AsObject());
+                            newExpression = new BoundLiteral(false.AsObject())
+                            {
+                                ConstantValue = false.AsOptional()
+                            };
                             return true;
                         }
-
-                        // in a method, we can resolve in compile time:
-                        if (routine is SourceMethodSymbol m && m.ContainingType is SourceTypeSymbol t && !t.IsTrait)
+                        else
                         {
-                            if (t.BaseType == null || t.BaseType.IsObjectType())
+                            // {class name}
+                            var baseTypeName = t.BaseType.PhpQualifiedName().ToString();
+                            newExpression = new BoundLiteral(baseTypeName)
                             {
-                                // FALSE
-                                newExpression = new BoundLiteral(false.AsObject())
-                                {
-                                    ConstantValue = false.AsOptional()
-                                };
-                                return true;
-                            }
-                            else
-                            {
-                                // {class name}
-                                var baseTypeName = t.BaseType.PhpQualifiedName().ToString();
-                                newExpression = new BoundLiteral(baseTypeName)
-                                {
-                                    ConstantValue = baseTypeName
-                                };
-                                return true;
-                            }
+                                ConstantValue = baseTypeName
+                            };
+                            return true;
                         }
-
-                        //
-                        newExpression = default;
-                        return false;
                     }
 
-                    // get_parent_class() -> {class name} | FALSE
-                    if (x.ArgumentsInSourceOrder.Length == 0)
+                    //
+                    newExpression = default;
+                    return false;
+                }
+
+                // get_parent_class() -> {class name} | FALSE
+                if (x.ArgumentsInSourceOrder.Length == 0)
+                {
+                    if (TryResolveParentClassInCurrentClassContext(_routine, out var newExpression))
+                    {
+                        TransformationCount++;
+                        return newExpression.WithContext(x);
+                    }
+                }
+
+                // get_parent_class( ??? ) -> parent::class | FALSE
+                if (x.ArgumentsInSourceOrder.Length == 1)
+                {
+                    // get_parent_class($this), get_parent_class(__CLASS__) ->  {class name} | FALSE
+                    if ((x.ArgumentsInSourceOrder[0].Value is BoundVariableRef varref && varref.Variable is ThisVariableReference) ||
+                        (x.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc && pc.ConstType == Ast.PseudoConstUse.Types.Class))
                     {
                         if (TryResolveParentClassInCurrentClassContext(_routine, out var newExpression))
                         {
@@ -288,43 +324,28 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                             return newExpression.WithContext(x);
                         }
                     }
-
-                    // get_parent_class( ??? ) -> parent::class | FALSE
-                    if (x.ArgumentsInSourceOrder.Length == 1)
-                    {
-                        // get_parent_class($this), get_parent_class(__CLASS__) ->  {class name} | FALSE
-                        if ((x.ArgumentsInSourceOrder[0].Value is BoundVariableRef varref && varref.Variable is ThisVariableReference) ||
-                            (x.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc && pc.ConstType == Ast.PseudoConstUse.Types.Class))
-                        {
-                            if (TryResolveParentClassInCurrentClassContext(_routine, out var newExpression))
-                            {
-                                TransformationCount++;
-                                return newExpression.WithContext(x);
-                            }
-                        }
-                    }
-
                 }
-                else if (x.Name.NameValue == NameUtils.SpecialNames.method_exists)
+
+            }
+            else if (x.Name.NameValue == NameUtils.SpecialNames.method_exists)
+            {
+                // method_exists(FALSE, ...) -> FALSE
+                if (x.ArgumentsInSourceOrder.Length >= 1)
                 {
-                    // method_exists(FALSE, ...) -> FALSE
-                    if (x.ArgumentsInSourceOrder.Length >= 1)
+                    var value = x.ArgumentsInSourceOrder[0].Value.ConstantValue;
+                    if (value.HasValue && value.TryConvertToBool(out var bvalue) && !bvalue)
                     {
-                        var value = x.ArgumentsInSourceOrder[0].Value.ConstantValue;
-                        if (value.HasValue && value.TryConvertToBool(out var bvalue) && !bvalue)
+                        TransformationCount++;
+                        return new BoundLiteral(false.AsObject())
                         {
-                            TransformationCount++;
-                            return new BoundLiteral(false.AsObject())
-                            {
-                                ConstantValue = false.AsOptional()
-                            }.WithContext(x);
-                        }
+                            ConstantValue = false.AsOptional()
+                        }.WithContext(x);
                     }
                 }
             }
 
             //
-            return result;
+            return base.VisitGlobalFunctionCall(x);
         }
 
         /// <summary>

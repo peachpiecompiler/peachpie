@@ -198,8 +198,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         internal ConditionalEdge(BoundBlock source, BoundBlock @true, BoundBlock @false, BoundExpression cond)
             : base(source)
         {
-            Debug.Assert(@true != @false);
-
             _true = @true;
             _false = @false;
             _condition = cond;
@@ -209,8 +207,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         internal ConditionalEdge(BoundBlock @true, BoundBlock @false, BoundExpression cond)
         {
-            Debug.Assert(@true != @false);
-
             _true = @true;
             _false = @false;
             _condition = cond;

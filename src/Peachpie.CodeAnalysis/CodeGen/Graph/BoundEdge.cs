@@ -55,7 +55,13 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             bool isnegation = this.Condition.IsLogicNegation(out var negexpr);
             var condition = isnegation ? negexpr : this.Condition;
 
-            if (IsLoop) // perf
+            if (TrueTarget == FalseTarget)
+            {
+                // condition always results in the same code flow
+                cg.EmitSequencePoint(this.Condition.PhpSyntax);
+                cg.EmitPop(cg.Emit(this.Condition));
+            }
+            else if (IsLoop) // perf
             {
                 cg.Builder.DefineHiddenSequencePoint();
                 cg.Builder.EmitBranch(ILOpCode.Br, condition);
