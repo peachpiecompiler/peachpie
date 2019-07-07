@@ -147,6 +147,20 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return base.VisitBinaryExpression(x);
         }
 
+        public override object VisitUnaryExpression(BoundUnaryEx x)
+        {
+            if (x.Operation == Ast.Operations.LogicNegation &&
+                x.Operand is BoundUnaryEx ux &&
+                ux.Operation == Ast.Operations.LogicNegation)
+            {
+                // !!X -> (bool)X
+                TransformationCount++;
+                return new BoundConversionEx((BoundExpression)Accept(ux.Operand), BoundTypeRefFactory.BoolTypeRef).WithAccess(x.Access);
+            }
+
+            return base.VisitUnaryExpression(x);
+        }
+
         public override object VisitCopyValue(BoundCopyValue x)
         {
             var valueEx = (BoundExpression)Accept(x.Expression);
@@ -244,6 +258,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 }
             }
 
+            //
             return base.VisitCFGConditionalEdge(x);
         }
 
