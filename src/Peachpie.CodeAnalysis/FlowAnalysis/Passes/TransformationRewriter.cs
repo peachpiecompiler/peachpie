@@ -228,7 +228,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     NotePossiblyUnreachable(x.TrueTarget);
 
                     var target = (BoundBlock)Accept(x.FalseTarget);
-                    return new ConditionalEdge(target, target, bex.Left);
+                    return new ConditionalEdge(target, target, bex.Left.WithAccess(BoundAccess.None));
                 }
 
                 // if (A || TRUE)
@@ -240,7 +240,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     NotePossiblyUnreachable(x.FalseTarget);
 
                     var target = (BoundBlock)Accept(x.TrueTarget);
-                    return new ConditionalEdge(target, target, bex.Left);
+                    return new ConditionalEdge(target, target, bex.Left.WithAccess(BoundAccess.None));
                 }
             }
 
