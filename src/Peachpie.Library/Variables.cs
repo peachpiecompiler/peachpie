@@ -1102,7 +1102,7 @@ namespace Pchp.Library
 
             public override void Accept(double obj) => _output.Append(Core.Convert.ToString(obj, _ctx));
 
-            public override void Accept(string obj) => _output.Append($"'{obj}'");
+            public override void Accept(string obj) => _output.Append($"'{obj.Replace(@"\", @"\\")}'");
 
             public override void Accept(PhpString obj)
             {
