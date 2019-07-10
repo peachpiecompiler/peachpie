@@ -204,7 +204,7 @@ namespace Pchp.CodeAnalysis
                 return CoreTypes.Object;
             }
 
-            if (type.IsValueType || IsAString(type) || type.IsOfType(CoreTypes.IPhpArray))
+            if (type.IsValueType || type.IsOfType(CoreTypes.IPhpArray))
             {
                 return CoreTypes.PhpValue;    // Nullable bool|long|double -> PhpValue
             }
