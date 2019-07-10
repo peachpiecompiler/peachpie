@@ -137,7 +137,16 @@ namespace Pchp.CodeAnalysis.Semantics
             else if (tref is Ast.NullableTypeRef nullable)
             {
                 var t = CreateFromTypeRef(nullable.TargetType, binder, self, objectTypeInfoSemantic);
-                t.IsNullable = true;
+                if (t.IsNullable != true)
+                {
+                    if (t is BoundPrimitiveTypeRef bpt)
+                    {
+                        // do not change the cached singleton // https://github.com/peachpiecompiler/peachpie/issues/455
+                        t = new BoundPrimitiveTypeRef(bpt.TypeCode);
+                    }
+
+                    t.IsNullable = true;
+                }
                 return t;
             }
             else if (tref is Ast.GenericTypeRef gt)
