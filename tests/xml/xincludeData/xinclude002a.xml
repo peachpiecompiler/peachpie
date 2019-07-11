@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<root xmlns:xi="http://www.w3.org/2001/XInclude">
+<p>First include:</p>
+<p>
+<xi:include href="xinclude002b.xml"/>
+Text in include parent tag
+</p>
+<p>Second include:</p>
+<xi:include href="xinclude002c.xml">Some text</xi:include>
+</root>

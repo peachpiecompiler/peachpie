@@ -7,6 +7,8 @@ using System.Xml;
 using Pchp.Core;
 using Mvp.Xml;
 using Mvp.Xml.XPointer;
+using Mvp.Xml.Common;
+using Pchp.CodeAnalysis;
 
 namespace Peachpie.Library.XmlDom
 {
@@ -69,6 +71,7 @@ namespace Peachpie.Library.XmlDom
         public int XIncludeXml(string absoluteUri, XmlElement includeNode, XmlDocument MasterDocument, string xpointer)
         {
             XmlDocument document;
+            int checkingError = 0;
 
             if (MasterDocument == null)
             {
@@ -93,9 +96,9 @@ namespace Peachpie.Library.XmlDom
                 
                 //Find all include elements, which does not have ancestor element fallback.
                 XmlElement[] includeNodes = document.SelectNodes($"//{nsPrefix}:{etInclude}[ not( ancestor::{nsPrefix}:{etFallback} ) ]", nsm).OfType<XmlElement>().ToArray<XmlElement>();
-                TreatIncludes(includeNodes, document, absoluteUri, nsPrefix, nsm);    
+                checkingError=TreatIncludes(includeNodes, document, absoluteUri, nsPrefix, nsm);    
             }
-            if (MasterDocument == null)
+            if (MasterDocument == null && checkingError == 0)
             {
                 //There are not any includes, insert root of this document to parent document 
                 XmlDocument parent = documents.Pop();
@@ -169,7 +172,9 @@ namespace Peachpie.Library.XmlDom
                     documents.Push(document);
                     if (references.ContainsKey(includeElement.BaseURI + valueOfXPoiner))
                     {
-                        throw new Exception();
+                        PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_WARNING,0,0,0, $"DOMDocument::xinclude(): detected a recursion in {absoluteUri} in {ctx.MainScriptFile.Path}", absoluteUri);
+                        return -1;
+                        //throw new Exception();
                         //fatal error, cycle recursion
                     }
                     references[absoluteUri] = includeElement.BaseURI + valueOfXPoiner;
@@ -196,7 +201,9 @@ namespace Peachpie.Library.XmlDom
                         {
                             if (references.ContainsKey(uri))
                             {
-                                throw new Exception();
+                                //throw new Exception();
+                                PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, $"DOMDocument::xinclude(): detected a recursion in {absoluteUri} in {ctx.MainScriptFile.Path}", absoluteUri);
+                                return -1;
                                 //fatal error, cycle recursion
                             }
                             references[absoluteUri] = uri;
@@ -206,7 +213,9 @@ namespace Peachpie.Library.XmlDom
                         {
                             if (references.ContainsKey(uri + valueOfXPoiner))
                             {
-                                throw new Exception();
+                                //throw new Exception();
+                                PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, $"DOMDocument::xinclude(): detected a recursion in {absoluteUri} in {ctx.MainScriptFile.Path}", absoluteUri);
+                                return -1;
                                 //fatal error, cycle recursion
                             }
                             references[absoluteUri] = uri+valueOfXPoiner;
