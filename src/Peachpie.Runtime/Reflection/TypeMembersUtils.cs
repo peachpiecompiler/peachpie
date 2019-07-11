@@ -442,7 +442,7 @@ namespace Pchp.Core.Reflection
                 for (int i = 0; i < minfos.Length; i++)
                 {
                     // - remove private and protected methods
-                    if ((minfos[i].Attributes & (MethodAttributes.Private | MethodAttributes.Assembly | MethodAttributes.FamANDAssem)) != 0)
+                    if (!minfos[i].IsPublic)    // REVIEW: internal ?
                     {
                         mask_visible &= ~(1ul << i);
                     }
