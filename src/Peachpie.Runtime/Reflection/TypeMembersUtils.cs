@@ -376,7 +376,7 @@ namespace Pchp.Core.Reflection
                     var m_type = ((MethodInfo)m).GetBaseDefinition().DeclaringType;
 
                     // language.oop5.visibility: Members declared protected can be accessed only within the class itself and by inheriting and parent classes
-                    return classCtx.IsAssignableFrom(m_type) || m_type.IsAssignableFrom(classCtx);
+                    return IsInheritance(classCtx, m_type); // classCtx.IsAssignableFrom(m_type) || m_type.IsAssignableFrom(classCtx);
                 }
             }
 
@@ -395,6 +395,97 @@ namespace Pchp.Core.Reflection
         }
 
         public static bool IsStatic(MethodInfo method) => method.IsStatic;
+
+        /// <summary>
+        /// Checks if <paramref name="t1"/> is a sub class of <paramref name="t2"/> or the other way.
+        /// </summary>
+        static bool IsInheritance(Type t1, Type t2)
+        {
+            return t1.IsAssignableFrom(t2) || t2.IsAssignableFrom(t1);
+        }
+
+        /// <summary>
+        /// Resolves a method by its name, visible in given <paramref name="context"/>.
+        /// </summary>
+        /// <param name="tinfo">Type info.</param>
+        /// <param name="name">Method name.</param>
+        /// <param name="context">Current class context.</param>
+        /// <returns>Resolved method or <c>null</c>.</returns>
+        public static RoutineInfo GetVisibleMethod(this PhpTypeInfo/*!*/tinfo, string/*!*/name, RuntimeTypeHandle context = default)
+        {
+            var tcontext = context.Equals(default) ? null : Type.GetTypeFromHandle(context);
+
+            var method = (PhpMethodInfo)tinfo.RuntimeMethods[name];
+            if (method == null)
+            {
+                // look for a private method in current context
+
+                if (tcontext != null && tcontext != tinfo.Type && IsInheritance(tinfo.Type, tcontext))
+                {
+                    return GetVisibleMethod(tcontext.GetPhpTypeInfo(), name, context);
+                }
+
+                return null;
+            }
+            var minfos = method.Methods;
+
+            Debug.Assert(minfos != null && minfos.Length != 0);
+            Debug.Assert(minfos.Length < sizeof(ulong) * 8);    // we have to fit into 64 bits
+
+            ulong mask_all = (1ul << minfos.Length) - 1; // 00011111 ('1' for each method, 64 is max) // in most cases 00000001
+            ulong mask_visible = mask_all;
+
+            if (ReferenceEquals(tcontext, null) || !IsInheritance(tinfo.Type, tcontext))
+            {
+                // no class context,
+                // or class context is not inheriting
+                for (int i = 0; i < minfos.Length; i++)
+                {
+                    // - remove private and protected methods
+                    if ((minfos[i].Attributes & (MethodAttributes.Private | MethodAttributes.Assembly | MethodAttributes.FamANDAssem)) != 0)
+                    {
+                        mask_visible &= ~(1ul << i);
+                    }
+                }
+            }
+            else
+            {
+                // a class context
+                for (int i = 0; i < minfos.Length; i++)
+                {
+                    // - remove invisible private methods, protected methods are all visible in PHP
+                    if (minfos[i].IsPrivate && minfos[i].DeclaringType != tcontext)
+                    {
+                        mask_visible &= ~(1ul << i);
+                    }
+                }
+
+                if (mask_visible == 0ul && tcontext != tinfo.Type)
+                {
+                    // - look for a private method in a subclass {context}
+                    return GetVisibleMethod(tcontext.GetPhpTypeInfo(), name, context);
+                }
+            }
+
+            if (mask_visible == mask_all)
+            {
+                // all methods are visible
+                return method;
+            }
+            else if (mask_visible == 0ul)
+            {
+                // no methods are visible
+                // TODO: out bool inaccessible = true
+                return null;
+            }
+            else
+            {
+                // in CLR we might have just some methods visible -> construct&cache a new PhpMethodInfo
+                // TODO: cache new PhpMethodInfo with only {mask_visible} minfos
+                Debug.Fail("TODO: cache new PhpMethodInfo with only {mask_visible} minfos");
+                return method;
+            }
+        }
 
         #region PhpPropertyInfo
 

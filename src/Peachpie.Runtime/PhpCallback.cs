@@ -145,17 +145,20 @@ namespace Pchp.Core
 
             PhpCallable BindCore(PhpTypeInfo tinfo)
             {
-                var routine = (PhpMethodInfo)tinfo?.RuntimeMethods[_method];
-                if (routine != null)
+                if (tinfo != null)
                 {
-                    return routine.PhpInvokable.Bind(null);
-                }
-                else if (tinfo != null)
-                {
-                    routine = (PhpMethodInfo)tinfo.RuntimeMethods[TypeMethods.MagicMethods.__callstatic];
+                    var routine = (PhpMethodInfo)tinfo.GetVisibleMethod(_method, _callerCtx);
                     if (routine != null)
                     {
-                        return routine.PhpInvokable.BindMagicCall(null, _method);
+                        return routine.PhpInvokable.Bind(null);
+                    }
+                    else
+                    {
+                        routine = (PhpMethodInfo)tinfo.RuntimeMethods[TypeMethods.MagicMethods.__callstatic];
+                        if (routine != null)
+                        {
+                            return routine.PhpInvokable.BindMagicCall(null, _method);
+                        }
                     }
                 }
 
@@ -209,10 +212,8 @@ namespace Pchp.Core
             {
                 if (tinfo != null)
                 {
-                    // TODO: visibility {_callerCtx}
-
                     var method = _item2.ToString(ctx);
-                    var routine = (PhpMethodInfo)tinfo.RuntimeMethods[method];
+                    var routine = (PhpMethodInfo)tinfo.GetVisibleMethod(method, _callerCtx);
                     if (routine != null)
                     {
                         if (target != null)

@@ -13,6 +13,8 @@ namespace Pchp.Core.Reflection
 {
     /// <summary>
     /// Collection of PHP type methods and magic methods.
+    /// Hides special methods and hidden methods.
+    /// Hides private methods from base classes.
     /// </summary>
     public class TypeMethods : IEnumerable<RoutineInfo>
     {
@@ -51,8 +53,9 @@ namespace Pchp.Core.Reflection
 
         internal TypeMethods(PhpTypeInfo type)
         {
+            // note: GetMethods() ignores "private" members on subclasses
             IEnumerable<MethodInfo> methods = type.Type
-                .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy);
+                .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
             // skip members of {System.Object} if we are in a PHP type
             if (type.Type.AsType() != typeof(object))
