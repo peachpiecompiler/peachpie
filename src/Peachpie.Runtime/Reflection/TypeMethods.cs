@@ -55,7 +55,7 @@ namespace Pchp.Core.Reflection
         {
             // note: GetMethods() ignores "private" members on subclasses
             IEnumerable<MethodInfo> methods = type.Type
-                .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy);
 
             // skip members of {System.Object} if we are in a PHP type
             if (type.Type.AsType() != typeof(object))
