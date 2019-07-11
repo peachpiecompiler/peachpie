@@ -209,6 +209,8 @@ namespace Pchp.Core
             {
                 if (tinfo != null)
                 {
+                    // TODO: visibility {_callerCtx}
+
                     var method = _item2.ToString(ctx);
                     var routine = (PhpMethodInfo)tinfo.RuntimeMethods[method];
                     if (routine != null)
@@ -226,7 +228,7 @@ namespace Pchp.Core
                             }
                             else
                             {
-                                // consider: compiler (and this binder) creates dummy instance of self;
+                                // CONSIDER: compiler (and this binder) creates dummy instance of self;
                                 // can we create a special singleton instance marked as "null" so use of $this inside the method will fail ?
                                 // TODO: use caller instance or warning (calling instance method statically)
                                 return routine.PhpInvokable.Bind(tinfo.GetUninitializedInstance(ctx));

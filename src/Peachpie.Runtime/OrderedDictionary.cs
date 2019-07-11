@@ -28,7 +28,7 @@ namespace Pchp.Core
     /// <summary>
     /// Represents both integer or string array key.
     /// </summary>
-    [DebuggerNonUserCode]
+    [DebuggerNonUserCode, DebuggerStepThrough]
     public struct IntStringKey : IEquatable<IntStringKey>, IComparable<IntStringKey>
     {
         /// <summary>
@@ -36,7 +36,7 @@ namespace Pchp.Core
         /// </summary>
         internal readonly static IntStringKey EmptyStringKey = new IntStringKey(string.Empty);
 
-        [DebuggerNonUserCode]
+        [DebuggerNonUserCode, DebuggerStepThrough]
         public class EqualityComparer : IEqualityComparer<IntStringKey>
         {
             public static readonly EqualityComparer/*!*/ Default = new EqualityComparer();
@@ -152,7 +152,7 @@ namespace Pchp.Core
     /// <remarks>
     /// Not thread safe.
     /// </remarks>
-    [DebuggerNonUserCode]
+    [DebuggerNonUserCode, DebuggerStepThrough]
     [DebuggerDisplay("dictionary (count = {Count})")]
     public sealed class OrderedDictionary/*<TValue>*/ : IEnumerable<KeyValuePair<IntStringKey, TValue>>, IEnumerable<TValue>
     {

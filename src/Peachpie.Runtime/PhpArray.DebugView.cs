@@ -9,7 +9,7 @@ namespace Pchp.Core
 {
     [DebuggerDisplay("array(length = {Count})", Type = PhpTypeName)]
     [DebuggerTypeProxy(typeof(PhpArrayDebugView))]
-    [DebuggerNonUserCode]
+    [DebuggerNonUserCode, DebuggerStepThrough]
     partial class PhpArray
     {
         sealed class PhpArrayDebugView
