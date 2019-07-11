@@ -67,6 +67,7 @@ namespace Peachpie.Library.XmlDom
         /// <param name="absoluteUri">Uri of treated xml document.</param>
         /// <param name="includeNode">Node, which references to document, which Uri is absoluteUri</param>
         /// <param name="MasterDocument">Document, where Xinclude start</param>
+        /// <param name="xpointer"></param>
         /// <returns></returns>
         public int XIncludeXml(string absoluteUri, XmlElement includeNode, XmlDocument MasterDocument, string xpointer)
         {
@@ -77,7 +78,7 @@ namespace Peachpie.Library.XmlDom
             {
                 document = new XmlDocument();
                 if (xpointer == null)
-                    document.Load(absoluteUri);
+                    document.Load(new XmlBaseAwareXmlReader(absoluteUri));
                 else
                     document.Load((new XPointerReader(absoluteUri,xpointer)));
             }
@@ -118,7 +119,7 @@ namespace Peachpie.Library.XmlDom
 
         void baseUriFix(XmlDocument parent, XmlDocument child, XmlElement includeNode)
         {
-            if (child.DocumentElement.BaseURI != includeNode.ParentNode.BaseURI)
+            if (child.DocumentElement.BaseURI != includeNode.ParentNode.BaseURI && child.DocumentElement.BaseURI !=String.Empty)
             {
                 parent.DocumentElement.SetAttribute("xmlns:xml", nsOfXml);
 
@@ -244,7 +245,7 @@ namespace Peachpie.Library.XmlDom
                         includeElement.ParentNode.RemoveChild(includeElement);
                     }
                     else
-                        throw ex; //error missing fallback
+                        PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, $"DOMDocument::xinclude(): missing file {absoluteUri} in {ctx.MainScriptFile.Path}", absoluteUri);//error missing fallback
                 }
                 references = new Dictionary<string, string>();
             }
