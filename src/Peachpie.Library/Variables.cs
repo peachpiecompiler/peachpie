@@ -1091,24 +1091,56 @@ namespace Pchp.Library
             {
             }
 
-            public override PhpString Serialize(PhpValue value)
-            {
-                return base.Serialize(value);
-            }
-
             public override void Accept(bool obj) => _output.Append(obj ? PhpVariable.True : PhpVariable.False);
 
             public override void Accept(long obj) => _output.Append(obj.ToString());
 
             public override void Accept(double obj) => _output.Append(Core.Convert.ToString(obj, _ctx));
 
-            public override void Accept(string obj) => _output.Append($"'{obj.Replace(@"\", @"\\")}'");
+            public override void Accept(string obj)
+            {
+                if (string.IsNullOrEmpty(obj))
+                {
+                    _output.Append("''");
+                }
+                else
+                {
+                    _output.Append("'");
+
+                    // `\` and `'` will be escaped
+                    int last = 0;
+                    char ch;
+                    for (int i = 0; i < obj.Length; i++)
+                    {
+                        switch (ch = obj[i])
+                        {
+                            case '\'':
+                            case '\\':
+                                _output.Append(obj.Substring(last, i - last));
+                                _output.Append(ch == '\'' ? @"\'" : @"\\");
+                                last = i + 1;
+                                break;
+                        }
+                    }
+
+                    _output.Append(obj.Substring(last));
+
+                    _output.Append("'");
+                }
+            }
 
             public override void Accept(PhpString obj)
             {
-                _output.Append("'");
-                _output.Append(obj);
-                _output.Append("'");
+                //if (obj.ContainsBinaryData)
+                //{
+                //    _output.Append("'");
+                //    _output.Append(obj);  // TODO: escape ' and \
+                //    _output.Append("'");
+                //}
+                //else
+                {
+                    Accept(obj.ToString());
+                }
             }
 
             public override void AcceptNull() => _output.Append(PhpVariable.TypeNameNull);
@@ -1167,6 +1199,10 @@ namespace Pchp.Library
                 }
                 else
                 {
+                    // {ClassName}::__set_state(array(
+                    //   [key] => value,
+                    // ))
+
                     throw new NotImplementedException();
                 }
 
