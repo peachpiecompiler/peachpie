@@ -302,8 +302,9 @@ namespace Pchp.Library
         /// <param name="path">Arbitrary path.</param>
         /// <returns>
         /// The given <paramref name="path"/> combined with the current working directory or
-        /// <B>null</B> (<B>false</B> in PHP) if the path is invalid or doesn't exists.
+        /// <B>false</B> if the path is invalid or doesn't exists.
         /// </returns>
+        [return:CastToFalse]
         public static string realpath(Context ctx, string path)
         {
             if (path == null)
