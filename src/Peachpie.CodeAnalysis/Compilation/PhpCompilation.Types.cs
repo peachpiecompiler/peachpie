@@ -656,15 +656,16 @@ namespace Pchp.CodeAnalysis
 
                 //
                 TypeSymbol result;
-                var types = typeCtx.GetTypes(typeMask);
-                if (types.Count != 0)
+
+                var typesEnum = typeCtx.GetTypes(typeMask).GetEnumerator();
+                if (typesEnum.MoveNext())
                 {
                     // determine best fitting CLR type based on defined PHP types hierarchy
-                    result = types[0].ResolveRuntimeType(this);
+                    result = typesEnum.Current.ResolveRuntimeType(this);
 
-                    for (int i = 1; i < types.Count; i++)
+                    while (typesEnum.MoveNext())
                     {
-                        var tdesc = types[i].ResolveRuntimeType(this);
+                        var tdesc = typesEnum.Current.ResolveRuntimeType(this);
                         Debug.Assert(!tdesc.IsErrorType());
                         result = Merge(result, tdesc);
                     }

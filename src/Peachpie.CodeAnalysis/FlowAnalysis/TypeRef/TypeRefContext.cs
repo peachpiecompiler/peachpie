@@ -18,6 +18,227 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     /// </summary>
     public sealed class TypeRefContext
     {
+        #region Nested class: TypeRefEnumerable, TypeRefEnumerator
+
+        /// <summary>
+        /// Fast enumerable of types within <see cref="TypeRefContext"/> denotated by a bit mask.
+        /// No allocations.
+        /// </summary>
+        public struct TypeRefEnumerable
+        {
+            readonly TypeRefContext _ctx;
+            readonly ulong _tmask;
+
+            public TypeRefEnumerable(TypeRefContext ctx, ulong tmask)
+            {
+                _ctx = ctx ?? throw new ArgumentNullException();
+                _tmask = tmask;
+            }
+
+            public TypeRefEnumerator GetEnumerator() => new TypeRefEnumerator(_ctx, _tmask);
+
+            /// <summary>
+            /// Gets the first element in the enumeration or <c>null</c> if the enumeration is empty.
+            /// </summary>
+            /// <returns></returns>
+            public IBoundTypeRef FirstOrDefault()
+            {
+                if (_tmask == 0ul)
+                {
+                    return null;
+                }
+                else
+                {
+                    var enumerator = GetEnumerator();
+                    return enumerator.MoveNext() ? enumerator.Current : null;   // always true
+                }
+            }
+
+            /// <summary>
+            /// Gets value indicating the enumation is empty;
+            /// </summary>
+            public bool IsEmpty => _tmask == 0;
+
+            /// <summary>
+            /// Gets value indicating there is just one item.
+            /// </summary>
+            public bool IsSingle => _tmask != 0 && (_tmask & (_tmask - 1)) == 0;
+
+            /// <summary>
+            /// Gets items count.
+            /// </summary>
+            public int Count
+            {
+                get
+                {
+                    if (_tmask == 0)
+                    {
+                        return 0;
+                    }
+                    else if (IsSingle)
+                    {
+                        return 1;
+                    }
+                    else
+                    {
+
+                        var mask = _tmask;
+                        int count = 0;
+
+                        for (int i = 0; mask != 0; i++, mask = (mask & ~(ulong)1) >> 1)
+                        {
+                            if ((mask & 1) != 0) count++;
+                        }
+
+                        return count;
+                    }
+                }
+            }
+
+            ///// <summary>
+            ///// Gets array of qualified names of enumerated types.
+            ///// </summary>
+            //public QualifiedName[]/*!!*/SelectQualifiedNames() => Select(TypeHelpers.s_tref_qualifiedName);
+
+            /// <summary>
+            /// Creates array and selects items into it.
+            /// </summary>
+            public TResult[]/*!!*/Select<TResult>(Func<IBoundTypeRef, TResult> selector)
+            {
+                var count = this.Count;
+                if (count == 0)
+                {
+                    return EmptyArray<TResult>.Instance;
+                }
+                else
+                {
+                    var array = new TResult[count];
+                    var enumerator = GetEnumerator();
+                    var index = 0;
+                    while (enumerator.MoveNext())
+                    {
+                        array[index++] = selector(enumerator.Current);
+                    }
+                    Debug.Assert(index == count);
+                    return array;
+                }
+            }
+
+            /// <summary>
+            /// Gets value indicating the collection is not empty.
+            /// </summary>
+            public bool Any() => !IsEmpty;
+
+            /// <summary>
+            /// Gets value indicating an item in this collection is valid for given <paramref name="predicate"/>.
+            /// </summary>
+            /// <param name="predicate">Predicate. Cannot be <c>null</c>.</param>
+            public bool Any(Func<IBoundTypeRef, bool> predicate)
+            {
+                if (IsEmpty)
+                {
+                    return false;
+                }
+                else
+                {
+                    var enumerator = GetEnumerator();
+                    while (enumerator.MoveNext())
+                    {
+                        if (predicate(enumerator.Current)) return true;
+                    }
+
+                    return false;
+                }
+            }
+
+            /// <summary>
+            /// Enumeration is empty or all items are <see cref="IBoundTypeRef.IsArray"/>.
+            /// </summary>
+            public bool AllIsArray() => All(TypeHelpers.s_isarray);
+
+            /// <summary>
+            /// Enumeration is empty or all items are a number.
+            /// </summary>
+            public bool AllIsNumber() => All(TypeHelpers.s_isnumber);
+
+            /// <summary>
+            /// Enumeration is empty or all items are <see cref="IBoundTypeRef.IsObject"/>.
+            /// </summary>
+            public bool AllIsObject() => All(TypeHelpers.s_isobject);
+
+            /// <summary>
+            /// Determines whether all elements of a sequence satisfy a condition.
+            /// </summary>
+            public bool All(Func<IBoundTypeRef, bool>/*!*/predicate)
+            {
+                if (!IsEmpty)
+                {
+                    var enumerator = GetEnumerator();
+                    while (enumerator.MoveNext())
+                    {
+                        if (!predicate(enumerator.Current)) return false;
+                    }
+
+                }
+
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Fast enumerator of types within <see cref="TypeRefContext"/> denotated by a bit mask.
+        /// No allocations.
+        /// </summary>
+        public struct TypeRefEnumerator
+        {
+            readonly TypeRefContext _ctx;
+
+            ulong _tmask;   // mask which bits are trimmed and moved by {_index} so we can quickly check there are no remaininig types
+            int _index;     // internal index to {_ctx._typeRefs}
+
+            public TypeRefEnumerator(TypeRefContext ctx, ulong tmask)
+            {
+                Debug.Assert(ctx != null || tmask == 0ul);
+
+                _ctx = ctx;
+                _tmask = tmask;
+                _index = -1;
+            }
+
+            /// <summary>
+            /// Gets the current item.
+            /// </summary>
+            public IBoundTypeRef Current
+            {
+                get
+                {
+                    Debug.Assert(_index >= 0 && _index < _ctx._typeRefs.Count); // invalid enumerator?
+                    return _ctx._typeRefs[_index];
+                }
+            }
+
+            /// <summary>
+            /// Moves to the next item.
+            /// </summary>
+            public bool MoveNext()
+            {
+                bool isvalid = false;
+
+                do
+                {
+                    _index++;
+
+                    isvalid = (_tmask & 1ul) != 0;
+                    _tmask >>= 1;   // move bit mask
+
+                } while (!isvalid && _tmask != 0); // found or remaining bits are zero
+
+                return isvalid;
+            }
+        }
+
+        #endregion
+
         #region Fields & Properties
 
         /// <summary>
@@ -219,21 +440,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets enumeration of types matching given masks.
         /// </summary>
-        private IList<IBoundTypeRef>/*!!*/GetTypes(TypeRefMask typemask, ulong bitmask)
+        private TypeRefEnumerable/*!!*/GetTypes(TypeRefMask typemask, ulong bitmask)
         {
             var mask = typemask.Mask & bitmask & ~TypeRefMask.FlagsMask;
-            if (mask == (ulong)0 || typemask.IsAnyType)
-                return EmptyArray<IBoundTypeRef>.Instance;
-
-            var result = new List<IBoundTypeRef>(1);
-            for (int i = 0; mask != 0; i++, mask = (mask & ~(ulong)1) >> 1)
-                if ((mask & 1) != 0)
-                {
-                    Debug.Assert(i < _typeRefs.Count);
-                    result.Add(_typeRefs[i]);
-                }
-
-            return result;
+            if (mask == 0ul || typemask.IsAnyType)
+            {
+                return default;
+            }
+            else
+            {
+                return new TypeRefEnumerable(this, mask);
+            }
         }
 
         private TypeRefMask GetPrimitiveTypeRefMask(IBoundTypeRef/*!*/typeref)
@@ -563,7 +780,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets types referenced by given type mask.
         /// </summary>
-        public IList<IBoundTypeRef>/*!*/GetTypes(TypeRefMask mask)
+        public TypeRefEnumerable/*!*/GetTypes(TypeRefMask mask)
         {
             return GetTypes(mask, TypeRefMask.AnyTypeMask);
         }
@@ -571,12 +788,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets types of type <c>object</c> (classes, interfaces, traits) referenced by given type mask.
         /// </summary>
-        public IList<IBoundTypeRef>/*!*/GetObjectTypes(TypeRefMask mask)
+        public TypeRefEnumerable/*!*/GetObjectTypes(TypeRefMask mask)
         {
-            if (mask.IsAnyType)
-                return EmptyArray<IBoundTypeRef>.Instance;
-
-            return GetTypes(mask, _isObjectMask);
+            return mask.IsAnyType
+                ? default
+                : GetTypes(mask, _isObjectMask);
         }
 
         /// <summary>
@@ -620,7 +836,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 //}
 
                 //
-                types.AddRange(GetTypes(mask).Select(t => t.ToString()));
+                foreach (var t in GetTypes(mask))
+                {
+                    types.Add(t.ToString());
+                }
 
                 //if (isNumber)
                 //    types.Add("number");

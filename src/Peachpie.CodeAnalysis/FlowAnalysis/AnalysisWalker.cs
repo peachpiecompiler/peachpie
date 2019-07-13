@@ -173,7 +173,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                     return true;
                 }
 
-                return !tmask.IsAnyType && TypeCtx.GetTypes(tmask).All(TypeHelpers.IsNumber);
+                return !tmask.IsAnyType && TypeCtx.GetTypes(tmask).AllIsNumber();
             }
 
             return false;
@@ -184,7 +184,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         protected bool IsClassOnly(TypeRefMask tmask)
         {
-            return !tmask.IsVoid && !tmask.IsAnyType && TypeCtx.GetTypes(tmask).All(x => x.IsObject);
+            return !tmask.IsVoid && !tmask.IsAnyType && TypeCtx.GetTypes(tmask).AllIsObject();
         }
 
         /// <summary>
@@ -192,7 +192,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         protected bool IsArrayOnly(TypeRefMask tmask)
         {
-            return !tmask.IsVoid && !tmask.IsAnyType && TypeCtx.GetTypes(tmask).All(x => x.IsArray);
+            return !tmask.IsVoid && !tmask.IsAnyType && TypeCtx.GetTypes(tmask).AllIsArray();
         }
 
         /// <summary>

@@ -1568,9 +1568,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (resolvedtype == null)
                 {
                     var typeref = TypeCtx.GetObjectTypes(TypeCtx.WithoutNull(x.Instance.TypeRefMask));    // ignore NULL, causes runtime exception anyway
-                    if (typeref.Count == 1)
+                    if (typeref.IsSingle)
                     {
-                        resolvedtype = (TypeSymbol)typeref[0].ResolveTypeSymbol(DeclaringCompilation);
+                        resolvedtype = (TypeSymbol)typeref.FirstOrDefault().ResolveTypeSymbol(DeclaringCompilation);
                     }
                     // else: a common base?
                 }
@@ -1783,9 +1783,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 if (resolvedtype == null)
                 {
                     var typerefs = TypeCtx.GetObjectTypes(TypeCtx.WithoutNull(x.Instance.TypeRefMask));   // ignore NULL, would cause runtime exception in read access, will be ensured to non-null in write access
-                    if (typerefs.Count == 1)
+                    if (typerefs.IsSingle)
                     {
-                        resolvedtype = (NamedTypeSymbol)typerefs[0].ResolveTypeSymbol(DeclaringCompilation);
+                        resolvedtype = (NamedTypeSymbol)typerefs.FirstOrDefault().ResolveTypeSymbol(DeclaringCompilation);
                     }
                 }
 

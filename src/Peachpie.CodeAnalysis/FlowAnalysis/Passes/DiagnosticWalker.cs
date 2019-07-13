@@ -207,11 +207,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 var keyTypeMask = item.Key.TypeRefMask;
                 if (!keyTypeMask.IsAnyType && !keyTypeMask.IsRef)    // Disallowing 'mixed' for key type would have caused too many false positives
                 {
-                    var keyTypes = _routine.TypeRefContext.GetTypes(keyTypeMask);
-                    bool allKeyTypesValid = keyTypes.Count > 0 && keyTypes.All(AnalysisFacts.IsValidKeyType);
-                    if (!allKeyTypesValid)
+                    var valid = !keyTypeMask.IsVoid;
+                    foreach (var t in TypeCtx.GetTypes(keyTypeMask))
                     {
-                        string keyTypeStr = _routine.TypeRefContext.ToString(keyTypeMask);
+                        valid &= AnalysisFacts.IsValidKeyType(t);
+                    }
+
+                    if (!valid)
+                    {
+                        string keyTypeStr = TypeCtx.ToString(keyTypeMask);
                         _diagnostics.Add(_routine, item.Key.PhpSyntax, ErrorCode.WRN_InvalidArrayKeyType, keyTypeStr);
                     }
                 }
@@ -616,12 +620,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     var operandTypeMask = x.Operand.TypeRefMask;
                     if (!operandTypeMask.IsAnyType && !operandTypeMask.IsRef)
                     {
-                        var types = _routine.TypeRefContext.GetTypes(operandTypeMask);
-                        if (!types.All(t => t.IsObject))
+                        var types = TypeCtx.GetTypes(operandTypeMask);
+                        foreach (var t in types)
                         {
-                            // clone called on non-object
-                            string typeString = _routine.TypeRefContext.ToString(operandTypeMask);
-                            _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_CloneNonObject, typeString);
+                            if (!t.IsObject)    // clone called on non-object
+                            {
+                                _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.WRN_CloneNonObject, TypeCtx.ToString(operandTypeMask));
+                                break;
+                            }
                         }
                     }
                     break;
@@ -656,8 +662,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         {
             base.VisitConversion(x);
 
-            if (!x.IsImplicit && x.PhpSyntax != null && x.Operand.TypeRefMask.IsSingleType
-                && x.TargetType == _routine.TypeRefContext.GetTypes(x.Operand.TypeRefMask).Single())
+            if (!x.IsImplicit && x.PhpSyntax != null &&
+                x.Operand.TypeRefMask.IsSingleType &&
+                x.TargetType == TypeCtx.GetTypes(x.Operand.TypeRefMask).FirstOrDefault())
             {
                 _diagnostics.Add(_routine, x.PhpSyntax, ErrorCode.INF_RedundantCast);
             }
@@ -913,12 +920,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             if (!enumereeTypeMask.IsAnyType && !enumereeTypeMask.IsRef)
             {
                 // Apart from array, any object can possibly implement Traversable, hence no warning for them
-                var types = _routine.TypeRefContext.GetTypes(enumereeTypeMask);
-                if (!types.Any(t => t.IsArray || t.IsObject))                          // Using !All causes too many false positives (due to explode(..) etc.)
+                var types = TypeCtx.GetTypes(enumereeTypeMask);
+                if (!types.Any(t => t.IsArray || t.IsObject))   // Using !All causes too many false positives (due to explode(..) etc.)
                 {
                     // Using non-iterable type for enumeree
-                    string typeString = _routine.TypeRefContext.ToString(enumereeTypeMask);
-                    _diagnostics.Add(_routine, x.Enumeree.PhpSyntax, ErrorCode.WRN_ForeachNonIterable, typeString);
+                    _diagnostics.Add(_routine, x.Enumeree.PhpSyntax, ErrorCode.WRN_ForeachNonIterable, TypeCtx.ToString(enumereeTypeMask));
                 }
             }
 

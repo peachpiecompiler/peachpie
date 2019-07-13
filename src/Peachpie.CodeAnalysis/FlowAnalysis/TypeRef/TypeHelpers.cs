@@ -17,6 +17,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
     /// </summary>
     internal static class TypeHelpers
     {
+        public static readonly Func<IBoundTypeRef, bool> s_isarray = new Func<IBoundTypeRef, bool>(t => t.IsArray);
+        public static readonly Func<IBoundTypeRef, bool> s_isnumber = new Func<IBoundTypeRef, bool>(IsNumber);
+        public static readonly Func<IBoundTypeRef, bool> s_isobject = new Func<IBoundTypeRef, bool>(t => t.IsObject);
+
         /// <summary>
         /// Determines if given <see cref="IBoundTypeRef"/> represents a number (integral or real).
         /// </summary>

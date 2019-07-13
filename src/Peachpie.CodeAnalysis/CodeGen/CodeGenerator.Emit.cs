@@ -282,7 +282,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                             if (tmask.IsSingleType)
                             {
-                                var tref = this.TypeRefContext.GetTypes(tmask)[0];
+                                var tref = this.TypeRefContext.GetTypes(tmask).FirstOrDefault();
                                 var clrtype = (TypeSymbol)tref.ResolveTypeSymbol(DeclaringCompilation);
                                 if (clrtype.IsValidType() && !clrtype.IsObjectType())
                                 {
@@ -391,7 +391,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (stack.IsReferenceType && this.Routine != null)
                 {
-                    var tref = this.TypeRefContext.GetTypes(tmask)[0];
+                    var tref = this.TypeRefContext.GetTypes(tmask).FirstOrDefault();
                     if (tref.IsObject)
                     {
                         // naive IL beutifier,
