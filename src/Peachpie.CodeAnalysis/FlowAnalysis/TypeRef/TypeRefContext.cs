@@ -532,7 +532,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (_isStringMask != 0)
             {
-                return new TypeRefMask(_isStringMask);
+                return _isStringMask;
             }
             else
             {
@@ -547,7 +547,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (_isWritableStringMask != 0)
             {
-                return new TypeRefMask(_isWritableStringMask);
+                return _isWritableStringMask;
             }
             else
             {
@@ -562,7 +562,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (_isLongMask != 0)
             {
-                return new TypeRefMask(_isLongMask);
+                return _isLongMask;
             }
             else
             {
@@ -577,7 +577,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (_isBoolMask != 0)
             {
-                return new TypeRefMask(_isBoolMask);
+                return _isBoolMask;
             }
             else
             {
@@ -592,7 +592,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             if (_isDoubleMask != 0)
             {
-                return new TypeRefMask(_isDoubleMask);
+                return _isDoubleMask;
             }
             else
             {
