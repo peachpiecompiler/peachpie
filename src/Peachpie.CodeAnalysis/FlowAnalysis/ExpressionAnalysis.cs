@@ -978,7 +978,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 // Always returns false if checked for strict equality and the operands are of different types (and vice versa for strict non-eq)
                 bool isPositive = (cmpExpr.Operation == Operations.Equal || cmpExpr.Operation == Operations.Identical);
                 bool canBeSameType = Routine.TypeRefContext.CanBeSameType(cmpExpr.Left.TypeRefMask, cmpExpr.Right.TypeRefMask);
-                cmpExpr.ConstantValue = !canBeSameType ? new Optional<object>(!isPositive) : default;
+                cmpExpr.ConstantValue = !canBeSameType ? (!isPositive).AsOptional() : default;
             }
         }
 
