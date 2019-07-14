@@ -149,9 +149,9 @@ namespace Peachpie.CodeAnalysis.Syntax
             return AddAndReturn(ref _types, WithCustomAttributes(tref));
         }
 
-        public override LangElement DeclList(Span span, PhpMemberAttributes attributes, IEnumerable<LangElement> decls)
+        public override LangElement DeclList(Span span, PhpMemberAttributes attributes, IList<LangElement> decls, TypeRef type)
         {
-            return WithCustomAttributes(base.DeclList(span, attributes, decls));
+            return WithCustomAttributes(base.DeclList(span, attributes, decls, type));
         }
 
         public override LangElement Method(Span span, bool aliasReturn, PhpMemberAttributes attributes, TypeRef returnType, Span returnTypeSpan, string name, Span nameSpan, IEnumerable<FormalTypeParam> typeParamsOpt, IEnumerable<FormalParam> formalParams, Span formalParamsSpan, IEnumerable<ActualParam> baseCtorParams, LangElement body)
@@ -169,10 +169,10 @@ namespace Peachpie.CodeAnalysis.Syntax
             return tref;
         }
 
-        public override LangElement Lambda(Span span, Span headingSpan, bool aliasReturn, PhpMemberAttributes modifiers, TypeRef returnType, IEnumerable<FormalParam> formalParams, Span formalParamsSpan, IEnumerable<FormalParam> lexicalVars, LangElement body)
+        public override LangElement Lambda(Span span, Span headingSpan, bool aliasReturn, TypeRef returnType, IEnumerable<FormalParam> formalParams, Span formalParamsSpan, IEnumerable<FormalParam> lexicalVars, LangElement body)
         {
             return AddAndReturn(ref _lambdas,
-                (LambdaFunctionExpr)base.Lambda(span, headingSpan, aliasReturn, modifiers, returnType, formalParams, formalParamsSpan, lexicalVars, body));
+                (LambdaFunctionExpr)base.Lambda(span, headingSpan, aliasReturn, returnType, formalParams, formalParamsSpan, lexicalVars, body));
         }
 
         public override LangElement Yield(Span span, LangElement keyOpt, LangElement valueOpt)
