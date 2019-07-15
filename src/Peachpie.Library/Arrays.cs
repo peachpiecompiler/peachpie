@@ -1963,11 +1963,16 @@ namespace Pchp.Library
             // "arrays" argument is PhpArray[] => compiler generates code converting any value to PhpArray.
             // Note, PHP does reject non-array arguments.
 
-            if (arrays == null || arrays.Length == 0)
+            if (arrays == null)
             {
                 //PhpException.InvalidArgument("arrays", LibResources.GetString("arg_null_or_empty"));
                 //return null;
-                throw new ArgumentException();
+                throw new ArgumentNullException();
+            }
+
+            if (arrays.Length == 0)
+            {
+                return PhpArray.NewEmpty();
             }
 
             var result = new PhpArray(arrays[0].Count);
