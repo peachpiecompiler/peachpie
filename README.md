@@ -11,7 +11,8 @@
 > If you run into any inconsistencies, bugs or incompatibilities, kindly let us know and we'll do our best to address them. Take a look at our [Roadmap](https://docs.peachpie.io/roadmap/) to see which features and extensions we still have to implement.
 
 <p align="center">
-<a href="http://www.nuget.org/profiles/peachpie"><img src="https://img.shields.io/nuget/v/Peachpie.App.svg?style=flat"></a>
+<a href="http://www.nuget.org/profiles/peachpie"> <img src="https://img.shields.io/nuget/v/Peachpie.App.svg?style=flat"></a>
+<a href="https://opencollective.com/peachpiecompiler" alt="Financial Contributors on Open Collective"><img src="https://opencollective.com/peachpiecompiler/all/badge.svg?label=financial+contributors" /></a>
 <a href="https://docs.peachpie.io"><img src="https://img.shields.io/badge/docs-peachpie.io-green.svg"></a>  
 <a href="https://gitter.im/iolevel/peachpie"><img src="https://badges.gitter.im/iolevel/peachpie.svg"></a>
 <a href="http://www.peachpie.io"><img src="https://img.shields.io/badge/Web-peachpie.io-orange.svg"></a>
@@ -92,3 +93,33 @@ This project is supported by the [.NET Foundation](http://www.dotnetfoundation.o
 If you have a problem or question, the easiest way is to submit an issue here. You can also follow us on [Twitter](https://twitter.com/pchpcompiler) or [Facebook](https://www.facebook.com/pchpcompiler/) and contact us there regarding your questions or ask the community for support on [Gitter](https://gitter.im/iolevel/peachpie), but please understand that we do not provide email support.
 
 For partnership inquiries, commercial support or other questions, please contact us via email at info@iolevel.com.
+
+## Contributors
+
+### Code Contributors
+
+This project exists thanks to all the people who contribute. [[Contribute](CONTRIBUTING.md)].
+<a href="https://github.com/peachpiecompiler/peachpie/graphs/contributors"><img src="https://opencollective.com/peachpiecompiler/contributors.svg?width=890&button=false" /></a>
+
+### Financial Contributors
+
+Become a financial contributor and help us sustain our community. [[Contribute](https://opencollective.com/peachpiecompiler/contribute)]
+
+#### Individuals
+
+<a href="https://opencollective.com/peachpiecompiler"><img src="https://opencollective.com/peachpiecompiler/individuals.svg?width=890"></a>
+
+#### Organizations
+
+Support this project with your organization. Your logo will show up here with a link to your website. [[Contribute](https://opencollective.com/peachpiecompiler/contribute)]
+
+<a href="https://opencollective.com/peachpiecompiler/organization/0/website"><img src="https://opencollective.com/peachpiecompiler/organization/0/avatar.svg"></a>
+<a href="https://opencollective.com/peachpiecompiler/organization/1/website"><img src="https://opencollective.com/peachpiecompiler/organization/1/avatar.svg"></a>
+<a href="https://opencollective.com/peachpiecompiler/organization/2/website"><img src="https://opencollective.com/peachpiecompiler/organization/2/avatar.svg"></a>
+<a href="https://opencollective.com/peachpiecompiler/organization/3/website"><img src="https://opencollective.com/peachpiecompiler/organization/3/avatar.svg"></a>
+<a href="https://opencollective.com/peachpiecompiler/organization/4/website"><img src="https://opencollective.com/peachpiecompiler/organization/4/avatar.svg"></a>
+<a href="https://opencollective.com/peachpiecompiler/organization/5/website"><img src="https://opencollective.com/peachpiecompiler/organization/5/avatar.svg"></a>
+<a href="https://opencollective.com/peachpiecompiler/organization/6/website"><img src="https://opencollective.com/peachpiecompiler/organization/6/avatar.svg"></a>
+<a href="https://opencollective.com/peachpiecompiler/organization/7/website"><img src="https://opencollective.com/peachpiecompiler/organization/7/avatar.svg"></a>
+<a href="https://opencollective.com/peachpiecompiler/organization/8/website"><img src="https://opencollective.com/peachpiecompiler/organization/8/avatar.svg"></a>
+<a href="https://opencollective.com/peachpiecompiler/organization/9/website"><img src="https://opencollective.com/peachpiecompiler/organization/9/avatar.svg"></a>
