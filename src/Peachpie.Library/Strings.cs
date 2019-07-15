@@ -2614,30 +2614,35 @@ namespace Pchp.Library
         internal static string StripTags(string str, string allowableTags, ref int state)
         {
             if (string.IsNullOrEmpty(str))
+            {
                 return string.Empty;
+            }
 
-            int br = 0, i = 0, depth = 0, length = str.Length;
+            int br = 0, i = 0, depth = 0;
             char lc = '\0';
 
-            // Simple state machine. State 0 is the output state, State 1 means we are inside a
-            // normal html tag and state 2 means we are inside a php tag.
+            // Simple state machine:
+            // - State 0 is the output state
+            // - State 1 means we are inside a normal html tag
+            // - State 2 means we are inside a php tag.
             //
             // lc holds the last significant character read and br is a bracket counter.
             // When an allowableTags string is passed in we keep track of the string in
             // state 1 and when the tag is closed check it against the allowableTags string
             // to see if we should allow it.
 
-            StringBuilder result = new StringBuilder(), tagBuf = new StringBuilder();
+            var result = new StringBuilder();
+            var tagBuf = new StringBuilder();
             if (allowableTags != null) allowableTags = allowableTags.ToLowerInvariant();
 
-            while (i < length)
+            while (i < str.Length)
             {
                 char c = str[i];
 
                 switch (c)
                 {
                     case '<':
-                        if (i + 1 < length && Char.IsWhiteSpace(str[i + 1])) goto default;
+                        if (i + 1 < str.Length && char.IsWhiteSpace(str[i + 1])) goto default;
                         if (state == 0)
                         {
                             lc = '<';
