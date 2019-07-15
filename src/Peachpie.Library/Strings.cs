@@ -1633,7 +1633,6 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The string to split.</param>
         /// <returns>An array with keys being character indeces and values being characters.</returns>
-        [return: CastToFalse]
         public static PhpArray str_split(string str)
         {
             if (string.IsNullOrEmpty(str))
@@ -1651,37 +1650,37 @@ namespace Pchp.Library
         /// Converts a string to an array.
         /// </summary>
         /// <param name="ctx">Current context. Cannot be <c>null</c>.</param>
-        /// <param name="obj">The string to split.</param>
-        /// <param name="splitLength">Length of chunks <paramref name="obj"/> should be split into.</param>
+        /// <param name="str">The string to split.</param>
+        /// <param name="splitLength">Length of chunks <paramref name="str"/> should be split into.</param>
         /// <returns>An array with keys being chunk indeces and values being chunks of <paramref name="splitLength"/>
         /// length.</returns>
         /// <exception cref="PhpException">The <paramref name="splitLength"/> parameter is not positive (Warning).</exception>
-        [return: CastToFalse]
-        public static PhpArray str_split(Context ctx, PhpValue obj, int splitLength)
+        // [return: CastToFalse]
+        public static PhpArray str_split(Context ctx, PhpString str, int splitLength)
         {
             if (splitLength < 1)
             {
-                throw new ArgumentOutOfRangeException();
+                throw new ArgumentOutOfRangeException(); // we throw instead of returning FALSE so we don't need [CastToFalse]
                 //PhpException.Throw(PhpError.Warning, LibResources.GetString("segment_length_not_positive"));
-                //return null;
+                //return null; // FALSE
             }
-            if (obj.IsNull)
+            if (str.IsEmpty)
             {
-                return new PhpArray();
+                // seems like an incosistency, but in PHP they really return this for an empty string:
+                return new PhpArray(1) { string.Empty }; // array(1){ [0] => "" }
             }
 
-            var bytes = obj.AsBytesOrNull(ctx);
-            if (bytes != null)
+            if (str.ContainsBinaryData)
             {
-                return Split(bytes, splitLength);
+                return Split(str.ToBytes(ctx), splitLength);
             }
             else
             {
-                return Split(obj.ToString(ctx), splitLength);
+                return Split(str.ToString(ctx), splitLength);
             }
         }
 
-        static PhpArray Split(string str, int splitLength)
+        internal static PhpArray Split(string str, int splitLength)
         {
             int length = str.Length;
             PhpArray result = new PhpArray(length / splitLength + 1);
@@ -1699,7 +1698,7 @@ namespace Pchp.Library
             return result;
         }
 
-        static PhpArray Split(byte[] str, int splitLength)
+        internal static PhpArray Split(byte[] str, int splitLength)
         {
             int length = str.Length;
             PhpArray result = new PhpArray(length / splitLength + 1);

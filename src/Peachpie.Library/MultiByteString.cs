@@ -458,6 +458,26 @@ namespace Pchp.Library
 
         #endregion
 
+        #region mb_str_split
+
+        /// <summary>
+        /// Performs string splitting to an array of chunks of size <c>1</c>.
+        /// </summary>
+        public static PhpArray mb_str_split(string @string) => Strings.str_split(@string);
+
+        /// <summary>
+        /// Performs string splitting to an array of defined size chunks.
+        /// </summary>
+        public static PhpArray mb_str_split(Context ctx, PhpString @string, int split_length = 1, string encoding = null)
+        {
+            return Strings.str_split(ctx, @string, split_length);
+
+            // NOTE: then we should encode it back to byte[] using:
+            // Encoding encode = GetEncoding(encoding) ?? ctx.Configuration.Get<MbConfig>().InternalEncoding
+        }
+
+        #endregion
+
         #region mb_strtoupper, mb_strtolower
 
         public static string mb_strtoupper(Context ctx, PhpValue str, string encoding = null)
