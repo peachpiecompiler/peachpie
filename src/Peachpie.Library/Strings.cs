@@ -2605,13 +2605,104 @@ namespace Pchp.Library
         public static string strip_tags(string str, string allowableTags = null)
         {
             int state = 0;
-            return StripTags(str, allowableTags, ref state);
+            return StripTags(str, new TagsHelper(allowableTags), ref state);
         }
+
+        /// <summary>
+        /// Strips HTML and PHP tags from a string.
+        /// </summary>
+        /// <param name="str">The string to strip tags from.</param>
+        /// <param name="allowableTags">Tags which should not be stripped.</param>
+        /// <returns>The result.</returns>
+        public static string strip_tags(string str, PhpArray allowableTags)
+        {
+            int state = 0;
+            return StripTags(str, new TagsHelper(allowableTags), ref state);
+        }
+
+        #region Nested struct: TagsHelper // helper object for checking 'strip_tags' allows given tag
+
+        /// <summary>Helper object for 'strip_tags' representing tag collection.</summary>
+        internal struct TagsHelper
+        {
+            readonly string _allowableTags;
+            readonly PhpArray _allowableTagsArray;
+
+            public TagsHelper(string tags)
+            {
+                _allowableTags = string.IsNullOrEmpty(tags) ? null : tags;
+                _allowableTagsArray = null;
+            }
+
+            public TagsHelper(PhpArray tags)
+            {
+                _allowableTags = null;
+                _allowableTagsArray = (tags != null && tags.Count != 0) ? tags : null;
+            }
+
+            /// <summary>Gets value indicating the collection is empty.</summary>
+            public bool IsEmpty => _allowableTags == null && _allowableTagsArray == null;
+
+            /// <summary>Determines if the collection contains given tag. The tag is specified without enclosing &lt; and &gt;.</summary>
+            public bool HasTag(string tag)
+            {
+                if (string.IsNullOrEmpty(tag))
+                {
+                    return false;
+                }
+
+                if (_allowableTags != null)
+                {
+                    // search "<tag>" in the string:
+                    int i = 0;
+                    for (; ; )
+                    {
+                        i = _allowableTags.IndexOf(tag, i, StringComparison.OrdinalIgnoreCase);
+                        if (i < 0)
+                        {
+                            break;
+                        }
+
+                        var end = i + tag.Length;
+
+                        if (i > 0 &&
+                            end < _allowableTags.Length &&
+                            _allowableTags[i - 1] == '<' &&
+                            _allowableTags[end] == '>')
+                        {
+                            // enclosed in "<tag>"
+                            return true;
+                        }
+                        else
+                        {
+                            i = end;
+                        }
+                    }
+                }
+                else if (_allowableTagsArray != null)
+                {
+                    // search "tag" in the array
+                    var e = _allowableTagsArray.GetFastEnumerator();
+                    while (e.MoveNext())
+                    {
+                        var str = e.CurrentValue.ToString();
+                        if (str != null && str.EqualsOrdinalIgnoreCase(tag))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+        }
+        
+        #endregion
 
         /// <summary>
         /// Strips tags allowing to set automaton start state and read its accepting state.
         /// </summary>
-        internal static string StripTags(string str, string allowableTags, ref int state)
+        internal static string StripTags(string str, TagsHelper allowableTags, ref int state)
         {
             if (string.IsNullOrEmpty(str))
             {
@@ -2633,7 +2724,7 @@ namespace Pchp.Library
 
             var result = new StringBuilder();
             var tagBuf = new StringBuilder();
-            if (allowableTags != null) allowableTags = allowableTags.ToLowerInvariant();
+            StringBuilder normalized = null;
 
             while (i < str.Length)
             {
@@ -2647,7 +2738,7 @@ namespace Pchp.Library
                         {
                             lc = '<';
                             state = 1;
-                            if (allowableTags != null)
+                            if (!allowableTags.IsEmpty)
                             {
                                 tagBuf.Length = 0;
                                 tagBuf.Append(c);
@@ -2665,7 +2756,7 @@ namespace Pchp.Library
                                 br++;
                             }
                         }
-                        else if (allowableTags != null && state == 1) tagBuf.Append(c);
+                        else if (state == 1 && !allowableTags.IsEmpty) tagBuf.Append(c);
                         else if (state == 0) result.Append(c);
                         break;
 
@@ -2678,7 +2769,7 @@ namespace Pchp.Library
                                 br--;
                             }
                         }
-                        else if (allowableTags != null && state == 1) tagBuf.Append(c);
+                        else if (state == 1 && !allowableTags.IsEmpty) tagBuf.Append(c);
                         else if (state == 0) result.Append(c);
                         break;
 
@@ -2694,25 +2785,25 @@ namespace Pchp.Library
                             case 1: /* HTML/XML */
                                 lc = '>';
                                 state = 0;
-                                if (allowableTags != null)
+                                if (!allowableTags.IsEmpty)
                                 {
                                     // find out whether this tag is allowable or not
                                     tagBuf.Append(c);
 
-                                    StringBuilder normalized = new StringBuilder();
+                                    if (normalized == null) normalized = new StringBuilder();
+                                    else normalized.Clear();
 
                                     bool done = false;
                                     int tagBufLen = tagBuf.Length, substate = 0;
 
                                     // normalize the tagBuf by removing leading and trailing whitespace and turn
-                                    // any <a whatever...> into just <a> and any </tag> into <tag>
+                                    // any <a whatever...> into just "a" and any </tag> into "tag"
                                     for (int j = 0; j < tagBufLen; j++)
                                     {
-                                        char d = Char.ToLower(tagBuf[j]);
+                                        char d = tagBuf[j];
                                         switch (d)
                                         {
                                             case '<':
-                                                normalized.Append(d);
                                                 break;
 
                                             case '>':
@@ -2720,7 +2811,7 @@ namespace Pchp.Library
                                                 break;
 
                                             default:
-                                                if (!Char.IsWhiteSpace(d))
+                                                if (!char.IsWhiteSpace(d))
                                                 {
                                                     if (substate == 0)
                                                     {
@@ -2735,8 +2826,7 @@ namespace Pchp.Library
                                         if (done) break;
                                     }
 
-                                    normalized.Append('>');
-                                    if (allowableTags.IndexOf(normalized.ToString()) >= 0) result.Append(tagBuf);
+                                    if (allowableTags.HasTag(normalized.ToString())) result.Append(tagBuf);
 
                                     tagBuf.Length = 0;
                                 }
@@ -2779,7 +2869,7 @@ namespace Pchp.Library
                             else if (lc != '\\') lc = c;
                         }
                         else if (state == 0) result.Append(c);
-                        else if (allowableTags != null && state == 1) tagBuf.Append(c);
+                        else if (state == 1 && !allowableTags.IsEmpty) tagBuf.Append(c);
                         break;
 
                     case '!':
@@ -2792,7 +2882,7 @@ namespace Pchp.Library
                         else
                         {
                             if (state == 0) result.Append(c);
-                            else if (allowableTags != null && state == 1) tagBuf.Append(c);
+                            else if (state == 1 && !allowableTags.IsEmpty) tagBuf.Append(c);
                         }
                         break;
 
@@ -2816,9 +2906,9 @@ namespace Pchp.Library
                     case 'e':
                         /* !DOCTYPE exception */
                         if (state == 3 && i > 6
-                            && Char.ToLower(str[i - 1]) == 'p' && Char.ToLower(str[i - 2]) == 'y'
-                            && Char.ToLower(str[i - 3]) == 't' && Char.ToLower(str[i - 4]) == 'c'
-                            && Char.ToLower(str[i - 5]) == 'o' && Char.ToLower(str[i - 6]) == 'd')
+                            && char.ToLowerInvariant(str[i - 1]) == 'p' && char.ToLowerInvariant(str[i - 2]) == 'y'
+                            && char.ToLowerInvariant(str[i - 3]) == 't' && char.ToLowerInvariant(str[i - 4]) == 'c'
+                            && char.ToLowerInvariant(str[i - 5]) == 'o' && char.ToLowerInvariant(str[i - 6]) == 'd')
                         {
                             state = 1;
                             break;
@@ -2842,7 +2932,7 @@ namespace Pchp.Library
                     /* fall-through */
                     default:
                         if (state == 0) result.Append(c);
-                        else if (allowableTags != null && state == 1) tagBuf.Append(c);
+                        else if (state == 1 && !allowableTags.IsEmpty) tagBuf.Append(c);
                         break;
                 }
                 i++;
@@ -3717,7 +3807,7 @@ namespace Pchp.Library
             {
                 char c = format[i];
 
-                Lambda:
+            Lambda:
                 switch (state)
                 {
                     case 0: // the initial state

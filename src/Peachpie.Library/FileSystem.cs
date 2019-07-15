@@ -851,7 +851,7 @@ namespace Pchp.Library
             if (line != null)
             {
                 int state = stream.StripTagsState;
-                line = Strings.StripTags(line, allowableTags, ref state);
+                line = Strings.StripTags(line, new Strings.TagsHelper(allowableTags), ref state);
                 stream.StripTagsState = state;
             }
 
