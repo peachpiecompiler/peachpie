@@ -190,8 +190,11 @@ namespace Peachpie.Library.Scripting
         ///<summary>foreach	foreach</summary>
         public const int T_FOREACH = (int)Tokens.T_FOREACH;
 
-        ///<summary>function or cfunction   functions</summary>
+        ///<summary>function</summary>
         public const int T_FUNCTION = (int)Tokens.T_FUNCTION;
+
+        /// <summary>"fn" keyword</summary>
+        public const int T_FN = (int)Tokens.T_FN;
 
         ///<summary>__FUNCTION__ magic constants</summary>
         public const int T_FUNC_C = (int)Tokens.T_FUNC_C;
@@ -330,6 +333,9 @@ namespace Peachpie.Library.Scripting
 
         ///<summary>**=	assignment operators(available since PHP 5.6.0)</summary>
         public const int T_POW_EQUAL = (int)Tokens.T_POW_EQUAL;
+
+        /// <summary>'??=' operator (PHP 7.4)</summary>
+        public const int T_COALESCE_EQUAL = (int)Tokens.T_COALESCE_EQUAL;
 
         ///<summary>print() print</summary>
         public const int T_PRINT = (int)Tokens.T_PRINT;
