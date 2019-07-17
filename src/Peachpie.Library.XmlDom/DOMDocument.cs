@@ -938,10 +938,10 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Not implemented (TODO: need a XInclude implementation for this).
         /// </summary>
-        public virtual void xinclude(Context ctx, int options = 0)
+        public virtual PhpValue xinclude(Context ctx, int options = 0)
         {
             XIncludeHelper x = new XIncludeHelper(ctx);
-            x.XIncludeXml(XmlDocument.BaseURI, null, XmlDocument,null);
+            return x.Include(XmlDocument);
         }
         #endregion
 
