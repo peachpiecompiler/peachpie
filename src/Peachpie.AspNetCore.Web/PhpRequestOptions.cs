@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core;
 
-namespace Peachpie.AspNetCore.Web
+namespace Microsoft.AspNetCore.Builder
 {
     /// <summary>
     /// PHP scripts hosting options.
