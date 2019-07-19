@@ -155,7 +155,7 @@ namespace Pchp.Core
 
             public bool DefineConstant(string name, PhpValue value, ref int idx, bool ignorecase = false)
             {
-                Debug.Assert(value.IsScalar);
+                Debug.Assert(value.IsScalar || value.IsArray);
 
                 if (idx == 0)
                 {
