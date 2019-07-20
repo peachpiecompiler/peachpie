@@ -30,6 +30,9 @@ namespace Pchp.Library
         /// <summary>String comparison respecting to locale.</summary>
         LocaleString = 5,
 
+        /// <summary>Compare items as strings using "natural ordering".</summary>
+        Natural = 6,
+
         /// <summary>Undefined comparison.</summary>
         Undefined = -1
     };
@@ -74,6 +77,7 @@ namespace Pchp.Library
         public const int SORT_REGULAR = (int)ComparisonMethod.Regular;
         public const int SORT_NUMERIC = (int)ComparisonMethod.Numeric;
         public const int SORT_STRING = (int)ComparisonMethod.String;
+        public const int SORT_NATURAL = (int)ComparisonMethod.Natural;
         public const int SORT_LOCALE_STRING = (int)ComparisonMethod.LocaleString;
 
         public const int SORT_DESC = (int)SortingOrder.Descending;
@@ -1131,6 +1135,9 @@ namespace Pchp.Library
                     case ComparisonMethod.LocaleString:
                         return new KeyComparer(Locale.GetStringComparer(ctx, false), order == SortingOrder.Descending);
 
+                    case ComparisonMethod.Natural:
+                        return new KeyComparer(new PhpNaturalComparer(ctx, false), order == SortingOrder.Descending);
+
                     default:
                         return (order == SortingOrder.Descending) ? KeyComparer.Reverse : KeyComparer.Default;
                 }
@@ -1147,6 +1154,9 @@ namespace Pchp.Library
 
                     case ComparisonMethod.LocaleString:
                         return new ValueComparer(Locale.GetStringComparer(ctx, false), order == SortingOrder.Descending);
+
+                    case ComparisonMethod.Natural:
+                        return new ValueComparer(new PhpNaturalComparer(ctx, false), order == SortingOrder.Descending);
 
                     default:
                         return (order == SortingOrder.Descending) ? ValueComparer.Reverse : ValueComparer.Default;
@@ -1493,10 +1503,11 @@ namespace Pchp.Library
 
                     switch (num)
                     {
-                        case (int)ComparisonMethod.Numeric:
                         case (int)ComparisonMethod.Regular:
+                        case (int)ComparisonMethod.Numeric:
                         case (int)ComparisonMethod.String:
                         case (int)ComparisonMethod.LocaleString:
+                        case (int)ComparisonMethod.Natural:
                             if (method != ComparisonMethod.Undefined)
                             {
                                 //PhpException.Throw(PhpError.Warning, LibResources.GetString("sorting_flag_already_specified", i));
@@ -1509,8 +1520,8 @@ namespace Pchp.Library
                             }
                             break;
 
-                        case (int)SortingOrder.Ascending:
                         case (int)SortingOrder.Descending:
+                        case (int)SortingOrder.Ascending:
                             if (order != SortingOrder.Undefined)
                             {
                                 //PhpException.Throw(PhpError.Warning, LibResources.GetString("sorting_flag_already_specified", i));
@@ -2431,8 +2442,11 @@ namespace Pchp.Library
                     comparer = PhpNumericComparer.Default; break;
                 case ComparisonMethod.String:
                     comparer = new PhpStringComparer(ctx); break;
+                case ComparisonMethod.Natural:
+                    comparer = new PhpNaturalComparer(ctx, false); break;
                 case ComparisonMethod.LocaleString:
-                //comparer = new PhpLocaleStringComparer(ctx); break;
+                    throw new NotImplementedException("array_unique( sortFlags: SORT_NATURAL )");
+                    //comparer = new PhpLocaleStringComparer(ctx); break;
                 default:
                     //PhpException.ArgumentValueNotSupported("sortFlags", (int)sortFlags);
                     //return null;
