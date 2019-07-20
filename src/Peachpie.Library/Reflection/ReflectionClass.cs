@@ -210,7 +210,13 @@ namespace Pchp.Library.Reflection
         }
         [return: CastToFalse]
         public ReflectionClass getParentClass() => (_tinfo.BaseType != null) ? new ReflectionClass(_tinfo.BaseType) : null;
-        public virtual PhpArray getProperties(int filter)
+
+        /// <summary>
+        /// Retrieves reflected properties.
+        /// </summary>
+        /// <param name="filter">Optional filter. A bit mask of modifiers (see <see cref="ReflectionClass"/> constants).</param>
+        /// <returns></returns>
+        public virtual PhpArray getProperties(int filter = 0)
         {
             var result = new PhpArray(8);
             foreach (var p in _tinfo.GetDeclaredProperties())
@@ -224,6 +230,7 @@ namespace Pchp.Library.Reflection
 
             return result;
         }
+
         [return: CastToFalse]
         public virtual ReflectionProperty getProperty(string name)
         {
