@@ -353,11 +353,15 @@ namespace Pchp.CodeAnalysis
             /// <summary>Special <c>dirname</c> function name.</summary>
             public static QualifiedName dirname { get { return new QualifiedName(new Name("dirname")); } }
 
-            /// <summary><c>get_parent_class</c> functio name.</summary>
+            /// <summary><c>get_parent_class</c> function name.</summary>
             public static QualifiedName get_parent_class => new QualifiedName(new Name("get_parent_class"));
 
-            /// <summary><c>method_exists</c> functio name.</summary>
+            /// <summary><c>method_exists</c> function name.</summary>
             public static QualifiedName method_exists => new QualifiedName(new Name("method_exists"));
+
+            public static QualifiedName ini_get = new QualifiedName(new Name("ini_get"));
+
+            public static QualifiedName extension_loaded = new QualifiedName(new Name("extension_loaded"));
         }
     }
 }

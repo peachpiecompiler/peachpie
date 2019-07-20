@@ -104,17 +104,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         }
                         break;
 
-                    case "extension_loaded":    // bool extension_loaded(name)
-                        if (args.Length == 1 && args[0].Value.ConstantValue.TryConvertToString(out str))
-                        {
-                            if (analysis.Model.Extensions.Contains(str, StringComparer.OrdinalIgnoreCase))
-                            {
-                                call.ConstantValue = ConstantValueExtensions.AsOptional(true);
-                                return;
-                            }
-                        }
-                        break;
-
                     case "defined":
                     case "constant":
                         if (args.Length == 1 && args[0].Value.ConstantValue.TryConvertToString(out str))

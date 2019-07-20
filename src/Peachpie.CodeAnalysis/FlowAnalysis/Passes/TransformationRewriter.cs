@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
@@ -264,6 +265,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         public override object VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
         {
+            // TODO: extensible, dictionary of functions ?
+
             if (x.Name.NameValue == NameUtils.SpecialNames.dirname)
             {
                 // dirname( __FILE__ ) -> __DIR__
@@ -342,21 +345,59 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 }
 
             }
-            else if (x.Name.NameValue == NameUtils.SpecialNames.method_exists)
+            else if (   // method_exists(class_name, method_name) -> FALSE
+                x.Name.NameValue == NameUtils.SpecialNames.method_exists &&
+                x.ArgumentsInSourceOrder.Length == 2)
             {
                 // method_exists(FALSE, ...) -> FALSE
-                if (x.ArgumentsInSourceOrder.Length >= 1)
+                var value = x.ArgumentsInSourceOrder[0].Value.ConstantValue;
+                if (value.HasValue && value.TryConvertToBool(out var bvalue) && !bvalue)
                 {
-                    var value = x.ArgumentsInSourceOrder[0].Value.ConstantValue;
-                    if (value.HasValue && value.TryConvertToBool(out var bvalue) && !bvalue)
+                    TransformationCount++;
+                    return new BoundLiteral(false.AsObject())
                     {
-                        TransformationCount++;
-                        return new BoundLiteral(false.AsObject())
-                        {
-                            ConstantValue = false.AsOptional()
-                        }.WithContext(x);
-                    }
+                        ConstantValue = false.AsOptional()
+                    }.WithContext(x);
                 }
+            }
+            else if (   // ini_get( {svalue} ) : string|FALSE
+                x.Name.NameValue == NameUtils.SpecialNames.ini_get &&
+                x.ArgumentsInSourceOrder.Length == 1 &&
+                x.ArgumentsInSourceOrder[0].Value.ConstantValue.TryConvertToString(out var svalue))
+            {
+                // options we're not supporting for sure
+                // always FALSE
+                if (svalue.StartsWith("xdebug.") || svalue.StartsWith("xcache.") || svalue.StartsWith("opcache.") || svalue.StartsWith("apc."))
+                {
+                    TransformationCount++;
+                    return new BoundLiteral(false.AsObject())
+                    {
+                        ConstantValue = false.AsOptional()
+                    }.WithContext(x);
+
+                    // TODO: well-known ini options can be translated to access the configuration property directly
+                }
+            }
+            else if (   // extension_loaded( {ext_name} ) : bool
+                x.Name.NameValue == NameUtils.SpecialNames.extension_loaded &&
+                x.ArgumentsInSourceOrder.Length == 1 &&
+                x.ArgumentsInSourceOrder[0].Value.ConstantValue.TryConvertToString(out var ext_name))
+            {
+                TransformationCount++;
+
+                bool hasextension = DeclaringCompilation
+                    .GlobalSemantics
+                    .Extensions
+                    .Contains(ext_name, StringComparer.OrdinalIgnoreCase);
+
+                // CONSIDER: only when hasextension == True ? Can we add extensions in runtime ?
+
+                Trace.WriteLine($"'extension_loaded({ext_name})' evaluated to {hasextension}.");
+
+                return new BoundLiteral(hasextension.AsObject())
+                {
+                    ConstantValue = hasextension.AsOptional()
+                }.WithContext(x);
             }
 
             //
