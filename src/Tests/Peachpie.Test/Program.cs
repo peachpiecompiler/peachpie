@@ -7,7 +7,7 @@ namespace Peachpie.Test
 {
     class Program
     {
-        const string ScriptPath = "xinclude_006.php";
+        const string ScriptPath = "index.php";
 
         static void Main(string[] args)
         {

@@ -936,8 +936,9 @@ namespace Peachpie.Library.XmlDom
         #region XInclude
 
         /// <summary>
-        /// Not implemented (TODO: need a XInclude implementation for this).
+        /// Substitutes XIncludes in a DOMDocument Object
         /// </summary>
+        /// <returns>Returns the number of XIncludes in the document, -1 if some processing failed, or FALSE if there were no substitutions.</returns>
         public virtual PhpValue xinclude(Context ctx, int options = 0)
         {
             XIncludeHelper x = new XIncludeHelper(ctx);
