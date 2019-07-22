@@ -463,21 +463,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 {
                     return new BoundLiteral(string.Empty) { ConstantValue = new Optional<object>(string.Empty) }.WithContext(x);
                 }
-                else if (newargs.Length == 1)
+                else if (newargs.Length == 1 && newargs[0].Value.ConstantValue.TryConvertToString(out var value))
                 {
-                    if (newargs[0].Value.ConstantValue.TryConvertToString(out var value))
-                    {
-                        // "value"
-                        return new BoundLiteral(value) { ConstantValue = new Optional<object>(value) }.WithContext(x);
-                    }
-                    else
-                    {
-                        // (string)arg[0]   // NOTE: value is always Unicode String
-                        return new BoundConversionEx(newargs[0].Value, DeclaringCompilation.TypeRefFactory.StringTypeRef)
-                        {
-                            TypeRefMask = _routine.TypeRefContext.GetStringTypeMask()
-                        }.WithContext(x);
-                    }
+                    // "value"
+                    return new BoundLiteral(value) { ConstantValue = new Optional<object>(value) }.WithContext(x);
                 }
 
                 //
