@@ -53,17 +53,8 @@ namespace Peachpie.Library.XmlDom
         static public string UriResolver(string resolvingUri, string absoluteUriOfDirectory)
         {
             Uri result;
-            try
-            {
-                result = new Uri(resolvingUri, UriKind.Absolute);
-            }
-            catch (UriFormatException)
-            {
-                result = new Uri(Path.Combine(absoluteUriOfDirectory, resolvingUri));
-            }
-
-            //if (!Uri.TryCreate(resolvingUri, UriKind.Absolute, out result)) // try, if resolvingUri is not absolute path
-            //    result = new Uri(Path.Combine(absoluteUriOfDirectory, resolvingUri));
+            if (!Uri.TryCreate(resolvingUri, UriKind.Absolute, out result)) // try, if resolvingUri is not absolute path
+                result = new Uri(new Uri("file://"), Path.Combine(absoluteUriOfDirectory, resolvingUri));
             return result.ToString();
         }
 
