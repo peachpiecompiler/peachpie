@@ -404,6 +404,64 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return base.VisitGlobalFunctionCall(x);
         }
 
+        public override object VisitConcat(BoundConcatEx x)
+        {
+            // transform arguments first:
+            x = (BoundConcatEx)base.VisitConcat(x);
+
+            //
+            var args = x.ArgumentsInSourceOrder;
+            if (args.Length == 0 || args.All(IsEmptyString))
+            {
+                // empty string:
+                TransformationCount++;
+                return new BoundLiteral(string.Empty) { ConstantValue = new Optional<object>(string.Empty) }.WithContext(x);
+            }
+
+            // visit & concat in compile time if we can:
+            var newargs = args;
+            int i = 0;
+            do
+            {
+                if (IsEmptyString(newargs[i]))
+                {
+                    newargs = newargs.RemoveAt(i);
+                    continue;
+                }
+
+                // accumulate evaluated string value if possible:
+                if (newargs[i].Value.ConstantValue.TryConvertToString(out var value))
+                {
+                    string result = value;
+                    int end = i + 1;
+                    while (end < newargs.Length && newargs[end].Value.ConstantValue.TryConvertToString(out var tmp))
+                    {
+                        result += tmp;
+                        end++;
+                    }
+
+                    if (end > i + 1) // we concat'ed something!
+                    {
+                        newargs = newargs
+                            .RemoveRange(i, end - i)
+                            .Insert(i, BoundArgument.Create(new BoundLiteral(result) { ConstantValue = new Optional<object>(result) }.WithAccess(BoundAccess.Read)));
+                    }
+                }
+
+                //
+                i++;
+            } while (i < newargs.Length);
+
+            //
+            if (newargs != args)
+            {
+                TransformationCount++;
+                return x.Update(newargs);
+            }
+
+            return x;
+        }
+
         /// <summary>
         /// If <paramref name="expr"/> is of type <typeparamref name="T"/> or it is a <see cref="BoundCopyValue" /> enclosing an
         /// expression of type <typeparamref name="T"/>, store the expression to <paramref name="typedExpr"/> and return true;
@@ -429,5 +487,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             isCopied = default;
             return false;
         }
+
+        private static bool IsEmptyString(BoundArgument a) => a.Value.ConstantValue.HasValue && ExpressionsExtension.IsEmptyStringValue(a.Value.ConstantValue.Value);
     }
 }
