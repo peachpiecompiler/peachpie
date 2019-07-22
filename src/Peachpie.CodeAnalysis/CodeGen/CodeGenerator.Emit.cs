@@ -187,7 +187,7 @@ namespace Pchp.CodeAnalysis.CodeGen
         {
             Contract.ThrowIfNull(this.GeneratorStateMachineMethod);
             // .ldarg <generator>
-            return new ParamPlace(this.GeneratorStateMachineMethod.GeneratorParameter).EmitLoad(_il);
+            return this.GeneratorStateMachineMethod.GeneratorParameter.EmitLoad(_il);
         }
 
         /// <summary>
@@ -957,7 +957,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     _il.EmitLocalLoad(tmparr);      // <array>
                     _il.EmitIntConstant(i);         // [i]
-                    EmitConvert(new ParamPlace(ps[i]).EmitLoad(_il), 0, elementType);
+                    EmitConvert(ps[i].EmitLoad(_il), 0, elementType);
                     _il.EmitOpCode(ILOpCode.Stelem);
                     EmitSymbolToken(elementType, null);
                 }
@@ -2695,7 +2695,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
             // <ctx>.DeclareFunction(RoutineInfo)
             EmitLoadContext();
-            new FieldPlace(null, field).EmitLoad(_il);
+            field.EmitLoad(this, holder: null);
 
             EmitCall(ILOpCode.Call, CoreMethods.Context.DeclareFunction_RoutineInfo);
         }
@@ -3607,13 +3607,31 @@ namespace Pchp.CodeAnalysis.CodeGen
         public static TypeSymbol EmitLoad(this ParameterSymbol p, ILBuilder il)
         {
             Debug.Assert(p != null, nameof(p));
-            return new ParamPlace(p).EmitLoad(il);
+
+            var index = p.Ordinal;
+            var hasthis = ((MethodSymbol)p.ContainingSymbol).HasThis ? 1 : 0;
+
+            il.EmitLoadArgumentOpcode(index + hasthis);
+            return p.Type;
         }
 
         public static TypeSymbol EmitLoad(this FieldSymbol f, CodeGenerator cg, IPlace holder = null)
         {
             Debug.Assert(f != null, nameof(f));
-            return new FieldPlace(holder, f, cg.Module).EmitLoad(cg.Builder);
+
+            if (!f.IsStatic)
+            {
+                // {holder}
+                Debug.Assert(holder != null);
+                VariableReferenceExtensions.EmitReceiver(cg.Builder, holder);
+            }
+
+            // .ldfld/.ldsfld {f}
+            cg.Builder.EmitOpCode(f.IsStatic ? ILOpCode.Ldsfld : ILOpCode.Ldfld);
+            cg.Builder.EmitToken(cg.Module.Translate(f, null, DiagnosticBag.GetInstance()), null, DiagnosticBag.GetInstance());
+
+            //
+            return f.Type;
         }
     }
 }
