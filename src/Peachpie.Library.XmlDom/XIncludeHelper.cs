@@ -115,7 +115,7 @@ namespace Peachpie.Library.XmlDom
                 // There are not any includes, insert root of this document to parent document 
                 XmlDocument parent = documents.Pop();
                 // base uri fix.
-                FixBaseUri(parent, document, includeNode);
+                //FixBaseUri(parent, document, includeNode);
                 // lang fix
                 Fixlang(parent, document);
 
@@ -221,26 +221,35 @@ namespace Peachpie.Library.XmlDom
                     }
                     else
                     {
-                        documents.Push(document);
+                        
                         if (valueOfXPoiner == String.Empty)
                         {
                             if (references.ContainsKey(uri)) //fatal error, cycle recursion
                             {
                                 PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, $"DOMDocument::xinclude(): detected a recursion in {absoluteUri} in {ctx.MainScriptFile.Path}", absoluteUri);
-                                return true;
+                                //return true;
                             }
-                            references[absoluteUri] = uri;
-                            IncludeXml(uri, includeElement, null, null);
+                            else
+                            {
+                                documents.Push(document);
+                                references[absoluteUri] = uri;
+                                IncludeXml(uri, includeElement, null, null);
+                            }
+
                         }
                         else
                         {
                             if (references.ContainsKey(uri + valueOfXPoiner)) // fatal error, cycle recursion
                             {
                                 PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, $"DOMDocument::xinclude(): detected a recursion in {absoluteUri} in {ctx.MainScriptFile.Path}", absoluteUri);
-                                return true;   
+                                return true;
                             }
-                            references[absoluteUri] = uri+valueOfXPoiner;
-                            IncludeXml(uri, includeElement, null, valueOfXPoiner);
+                            else
+                            {
+                                documents.Push(document);
+                                references[absoluteUri] = uri + valueOfXPoiner;
+                                IncludeXml(uri, includeElement, null, valueOfXPoiner);
+                            }
                         }
                     }
                 }
