@@ -2592,24 +2592,6 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public void EmitIntStringKey(string key)
         {
-            // lookup common keys:
-            var key_field = this.CoreTypes
-                .CommonPhpArrayKeys.Symbol
-                .GetMembers(key)
-                .OfType<FieldSymbol>().FirstOrDefault();
-
-            if (key_field != null)
-            {
-                Debug.Assert(key_field.IsStatic, "!key_field.IsStatic");
-                Debug.Assert(key_field.Type == CoreTypes.IntStringKey, "key_field.Type != IntStringKey");
-
-                // Template: .ldsfld key_field
-                key_field.EmitLoad(this);
-                return;
-            }
-
-            // TODO: lookup cached keys:
-
             // try convert string to integer as it is in PHP:
             if (TryConvertToIntKey(key, out int ikey))
             {
@@ -2617,6 +2599,19 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else
             {
+                // lookup common keys:
+                var key_fields = CoreTypes.CommonPhpArrayKeys.Symbol.GetMembers(key);   // 0 or 1, FieldSymbol
+                var key_field = key_fields.IsDefaultOrEmpty ? null : (FieldSymbol)key_fields[0];
+                if (key_field != null)
+                {
+                    Debug.Assert(key_field.IsStatic, "!key_field.IsStatic");
+                    Debug.Assert(key_field.Type == CoreTypes.IntStringKey, "key_field.Type != IntStringKey");
+
+                    // Template: .ldsfld key_field
+                    key_field.EmitLoad(this);
+                    return;
+                }
+
                 // Template: new IntStringKey( <key> )
                 _il.EmitStringConstant(key);
                 EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.IntStringKey_string);

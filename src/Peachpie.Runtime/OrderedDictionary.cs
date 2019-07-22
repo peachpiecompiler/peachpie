@@ -119,8 +119,6 @@ namespace Pchp.Core
 
         public bool Equals(IntStringKey other) => _ikey == other._ikey && _skey == other._skey;
 
-        public bool Equals(ref IntStringKey other) => _ikey == other._ikey && _skey == other._skey;
-
         public bool Equals(int ikey) => _ikey == ikey && ReferenceEquals(_skey, null);
 
         public override string ToString() => _skey ?? _ikey.ToString();

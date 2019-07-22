@@ -247,6 +247,39 @@ namespace Pchp.Core
         public readonly static IntStringKey PATH_INFO = new IntStringKey("PATH_INFO");
         public readonly static IntStringKey PATH_TRANSLATED = new IntStringKey("PATH_TRANSLATED");
         public readonly static IntStringKey ORIG_PATH_INFO = new IntStringKey("ORIG_PATH_INFO");
+
+        // commonly used array keys: // CONSIDER: generate the static cache in compile time
+        public readonly static IntStringKey args = new IntStringKey("args");
+        public readonly static IntStringKey wpdb = new IntStringKey("wpdb");
+        public readonly static IntStringKey type = new IntStringKey("type");
+        public readonly static IntStringKey title = new IntStringKey("title");
+        public readonly static IntStringKey description = new IntStringKey("description");
+        public readonly static IntStringKey status = new IntStringKey("status");
+        public readonly static IntStringKey data = new IntStringKey("data");
+        public readonly static IntStringKey key = new IntStringKey("key");
+        public readonly static IntStringKey body = new IntStringKey("body");
+        public readonly static IntStringKey where = new IntStringKey("where");
+        public readonly static IntStringKey message = new IntStringKey("message");
+        public readonly static IntStringKey orderby = new IntStringKey("orderby");
+        public readonly static IntStringKey post = new IntStringKey("post");
+        public readonly static IntStringKey post_type = new IntStringKey("post_type");
+        public readonly static IntStringKey post_status = new IntStringKey("post_status");
+        public readonly static IntStringKey flags = new IntStringKey("flags");
+        public readonly static IntStringKey app = new IntStringKey("app");
+        public readonly static IntStringKey path = new IntStringKey("path");
+        public readonly static IntStringKey context = new IntStringKey("context");
+        public readonly static IntStringKey result = new IntStringKey("result");
+        public readonly static IntStringKey name = new IntStringKey("name");
+        public readonly static IntStringKey user = new IntStringKey("user");
+        public readonly static IntStringKey url = new IntStringKey("url");
+        public readonly static IntStringKey action = new IntStringKey("action");
+        public readonly static IntStringKey id = new IntStringKey("id");
+
+        public readonly static IntStringKey a = new IntStringKey("a");
+        public readonly static IntStringKey b = new IntStringKey("b");
+        public readonly static IntStringKey i = new IntStringKey("i");
+        public readonly static IntStringKey q = new IntStringKey("q");
+        public readonly static IntStringKey x = new IntStringKey("x");
     }
 
     public static class PhpVariable
