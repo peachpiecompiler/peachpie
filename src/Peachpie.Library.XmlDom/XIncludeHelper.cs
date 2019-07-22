@@ -87,6 +87,7 @@ namespace Peachpie.Library.XmlDom
             if (MasterDocument == null)
             {
                 document = new XmlDocument();
+                document.PreserveWhitespace = true;
                 if (xpointer == null)
                     document.Load(new XmlBaseAwareXmlReader(absoluteUri));
                 else
