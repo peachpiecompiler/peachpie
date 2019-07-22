@@ -2851,23 +2851,25 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            if (this.ArgumentsInSourceOrder.Length <= 4 && cg.IsReadonlyStringOnly(this.TypeRefMask))
+            var args = this.ArgumentsInSourceOrder;
+
+            if (args.Length == 0)
+            {
+                // ""
+                cg.Builder.EmitStringConstant(string.Empty);
+                return cg.CoreTypes.String;
+            }
+
+            if (args.Length <= 4 && cg.IsReadonlyStringOnly(this.TypeRefMask))
             {
                 // Template: System.String.Concat( ... )
-                if (this.ArgumentsInSourceOrder.Length == 0)
-                {
-                    // ""
-                    cg.Builder.EmitStringConstant(string.Empty);
-                    return cg.CoreTypes.String;
-                }
-
-                foreach (var x in this.ArgumentsInSourceOrder)
+                foreach (var x in args)
                 {
                     cg.EmitConvert(x.Value, cg.CoreTypes.String);
                 }
 
                 //
-                if (this.ArgumentsInSourceOrder.Length == 1)
+                if (args.Length == 1)
                 {
                     // (string)arg[0]
                     return cg.CoreTypes.String;
@@ -2875,12 +2877,19 @@ namespace Pchp.CodeAnalysis.Semantics
                 else
                 {
                     // String.Concat( (string)0, (string)1, ... );
-                    var concat_method = ResolveConcatMethod(this.ArgumentsInSourceOrder.Length);
+                    var concat_method = ResolveConcatMethod(args.Length);
                     return cg.EmitCall(ILOpCode.Call, (MethodSymbol)cg.DeclaringCompilation.GetSpecialTypeMember(concat_method))
                         .Expect(SpecialType.System_String);
                 }
 
                 throw null;
+            }
+
+            if (args.Length == 1)
+            {
+                // Template: (PhpString)args[0]
+                cg.EmitConvert(args[0].Value, cg.CoreTypes.PhpString);
+                return cg.CoreTypes.PhpString;
             }
 
             // Template: new PhpString( new PhpString.Blob() { a1, a2, ..., aN } )
@@ -2891,7 +2900,7 @@ namespace Pchp.CodeAnalysis.Semantics
             // TODO: overload for 2, 3, 4 parameters directly
 
             // <PhpString>.Append(<expr>)
-            foreach (var x in this.ArgumentsInSourceOrder)
+            foreach (var x in args)
             {
                 var expr = x.Value;
                 if (IsEmpty(expr))
