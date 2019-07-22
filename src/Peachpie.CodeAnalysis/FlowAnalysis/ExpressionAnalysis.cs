@@ -1510,7 +1510,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override T VisitConcat(BoundConcatEx x)
         {
             VisitRoutineCall(x);
-            x.TypeRefMask = TypeCtx.GetWritableStringTypeMask();
+
+            // if possible, mark the result type as "String",
+            // otherwise we have to use "PhpString"
+            var args = x.ArgumentsInSourceOrder;
+            bool mustBePhpString = false;
+            for (int i = 0; i < args.Length; i++)
+            {
+                var targ = args[i].Value.TypeRefMask;
+                mustBePhpString |= targ.IsRef || targ.IsAnyType || this.TypeCtx.IsWritableString(targ) /*|| this.TypeCtx.IsObject(targ) //object are always converted to UTF16 String// */;
+            }
+
+            x.TypeRefMask = mustBePhpString ? TypeCtx.GetWritableStringTypeMask() : TypeCtx.GetStringTypeMask();
             BindTargetMethod(x);
 
             return default;

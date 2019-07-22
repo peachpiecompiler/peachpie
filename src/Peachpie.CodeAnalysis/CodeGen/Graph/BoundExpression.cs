@@ -2838,8 +2838,51 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundConcatEx
     {
+        static SpecialMember ResolveConcatMethod(int stringargs)
+        {
+            switch (stringargs)
+            {
+                case 2: return SpecialMember.System_String__ConcatStringString;
+                case 3: return SpecialMember.System_String__ConcatStringStringString;
+                case 4: return SpecialMember.System_String__ConcatStringStringStringString;
+                default: throw new ArgumentOutOfRangeException();
+            }
+        }
+
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
+            if (this.ArgumentsInSourceOrder.Length <= 4 && cg.IsReadonlyStringOnly(this.TypeRefMask))
+            {
+                // Template: System.String.Concat( ... )
+                if (this.ArgumentsInSourceOrder.Length == 0)
+                {
+                    // ""
+                    cg.Builder.EmitStringConstant(string.Empty);
+                    return cg.CoreTypes.String;
+                }
+
+                foreach (var x in this.ArgumentsInSourceOrder)
+                {
+                    cg.EmitConvert(x.Value, cg.CoreTypes.String);
+                }
+
+                //
+                if (this.ArgumentsInSourceOrder.Length == 1)
+                {
+                    // (string)arg[0]
+                    return cg.CoreTypes.String;
+                }
+                else
+                {
+                    // String.Concat( (string)0, (string)1, ... );
+                    var concat_method = ResolveConcatMethod(this.ArgumentsInSourceOrder.Length);
+                    return cg.EmitCall(ILOpCode.Call, (MethodSymbol)cg.DeclaringCompilation.GetSpecialTypeMember(concat_method))
+                        .Expect(SpecialType.System_String);
+                }
+
+                throw null;
+            }
+
             // Template: new PhpString( new PhpString.Blob() { a1, a2, ..., aN } )
 
             // new PhpString.Blob()
