@@ -423,12 +423,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             int i = 0;
             do
             {
-                if (IsEmptyString(newargs[i]))
-                {
-                    newargs = newargs.RemoveAt(i);
-                    continue;
-                }
-
                 // accumulate evaluated string value if possible:
                 if (newargs[i].Value.ConstantValue.TryConvertToString(out var value))
                 {
@@ -442,9 +436,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
                     if (end > i + 1) // we concat'ed something!
                     {
-                        newargs = newargs
-                            .RemoveRange(i, end - i)
-                            .Insert(i, BoundArgument.Create(new BoundLiteral(result) { ConstantValue = new Optional<object>(result) }.WithAccess(BoundAccess.Read)));
+                        newargs = newargs.RemoveRange(i, end - i);
+
+                        if (!string.IsNullOrEmpty(result))
+                        {
+                            newargs = newargs.Insert(i, BoundArgument.Create(new BoundLiteral(result)
+                            {
+                                ConstantValue = new Optional<object>(result),
+                                TypeRefMask = _routine.TypeRefContext.GetStringTypeMask(),
+                                ResultType = DeclaringCompilation.CoreTypes.String,
+                            }.WithAccess(BoundAccess.Read)));
+                        }
                     }
                 }
 
@@ -456,9 +458,33 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             if (newargs != args)
             {
                 TransformationCount++;
+
+                if (newargs.Length == 0)
+                {
+                    return new BoundLiteral(string.Empty) { ConstantValue = new Optional<object>(string.Empty) }.WithContext(x);
+                }
+                else if (newargs.Length == 1)
+                {
+                    if (newargs[0].Value.ConstantValue.TryConvertToString(out var value))
+                    {
+                        // "value"
+                        return new BoundLiteral(value) { ConstantValue = new Optional<object>(value) }.WithContext(x);
+                    }
+                    else
+                    {
+                        // (string)arg[0]   // NOTE: value is always Unicode String
+                        return new BoundConversionEx(newargs[0].Value, DeclaringCompilation.TypeRefFactory.StringTypeRef)
+                        {
+                            TypeRefMask = _routine.TypeRefContext.GetStringTypeMask()
+                        }.WithContext(x);
+                    }
+                }
+
+                //
                 return x.Update(newargs);
             }
 
+            //
             return x;
         }
 
