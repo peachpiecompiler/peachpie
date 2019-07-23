@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using Devsense.PHP.Syntax;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
 using Pchp.CodeAnalysis.Semantics;
@@ -477,6 +478,43 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return x;
         }
 
+        public override object VisitLiteral(BoundLiteral x)
+        {
+            // implicit conversion: string -> callable
+            if (x.Access.TargetType == DeclaringCompilation.CoreTypes.IPhpCallable &&
+                x.ConstantValue.TryConvertToString(out var fnName))
+            {
+                // Template: (callable)"fnName"
+                // resolve the 'RoutineInfo' if possible
+
+                MethodSymbol routine = null;
+                var dc = fnName.IndexOf(Name.ClassMemberSeparator, StringComparison.Ordinal);
+                if (dc < 0)
+                {
+                    routine = (MethodSymbol)DeclaringCompilation.GlobalSemantics.ResolveFunction(QualifiedName.Parse(fnName, true));
+                }
+                else
+                {
+                    //var tname = fnName.Remove(dc);
+                    //var mname = fnName.Substring(dc + Name.ClassMemberSeparator.Length);
+
+                    // type::method
+                    // self::method
+                    // parent::method
+                }
+
+                if (routine.IsValidMethod() || (routine is AmbiguousMethodSymbol a && a.IsOverloadable && a.Ambiguities.Length != 0)) // valid or ambiguous
+                {
+                    TransformationCount++;
+                    x.Access = x.Access.WithRead(DeclaringCompilation.CoreTypes.String);    // read the literal as string, do not rewrite it to BoundCallableConvert again
+                    return new BoundCallableConvert(x, DeclaringCompilation) { TargetCallable = routine }.WithContext(x);
+                }
+            }
+
+            //
+            return base.VisitLiteral(x);
+        }
+
         /// <summary>
         /// If <paramref name="expr"/> is of type <typeparamref name="T"/> or it is a <see cref="BoundCopyValue" /> enclosing an
         /// expression of type <typeparamref name="T"/>, store the expression to <paramref name="typedExpr"/> and return true;
@@ -491,16 +529,16 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 isCopied = false;
                 return true;
             }
-            else if (expr is BoundCopyValue copyVal && copyVal.Expression is T copiedRes)
+            else if (expr is BoundCopyValue copyVal)
             {
-                typedExpr = copiedRes;
-                isCopied = true;
-                return true;
+                return MatchExprSkipCopy<T>(copyVal.Expression, out typedExpr, out isCopied);
             }
-
-            typedExpr = default;
-            isCopied = default;
-            return false;
+            else
+            {
+                typedExpr = default;
+                isCopied = false;
+                return false;
+            }
         }
 
         private static bool IsEmptyString(BoundArgument a) => a.Value.ConstantValue.HasValue && ExpressionsExtension.IsEmptyStringValue(a.Value.ConstantValue.Value);

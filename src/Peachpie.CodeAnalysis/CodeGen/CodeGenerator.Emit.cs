@@ -851,7 +851,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
         public TypeSymbol Emit_NewArray<T>(TypeSymbol elementType, ImmutableArray<T> values, Func<T, TypeSymbol> emitter)
         {
-            if (values.Length != 0)
+            if (values.IsDefaultOrEmpty == false)
             {
                 // new []
                 _il.EmitIntConstant(values.Length);
@@ -878,6 +878,9 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
         }
 
+        /// <summary>Template: <code>Array.Empty&lt;elementType&gt;()</code></summary>
+        /// <param name="elementType"></param>
+        /// <returns></returns>
         internal TypeSymbol Emit_EmptyArray(TypeSymbol elementType)
         {
             // Array.Empty<elementType>()
@@ -2689,13 +2692,11 @@ namespace Pchp.CodeAnalysis.CodeGen
             Debug.Assert(f != null);
             Debug.Assert(!f.IsUnreachable);
 
-            var field = f.EnsureRoutineInfoField(_moduleBuilder);
-
             this.EmitSequencePoint(((FunctionDecl)f.Syntax).HeadingSpan);
 
             // <ctx>.DeclareFunction(RoutineInfo)
             EmitLoadContext();
-            field.EmitLoad(this, holder: null);
+            f.EmitLoadRoutineInfo(this);
 
             EmitCall(ILOpCode.Call, CoreMethods.Context.DeclareFunction_RoutineInfo);
         }

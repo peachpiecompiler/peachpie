@@ -157,6 +157,7 @@ namespace Pchp.CodeAnalysis
             _anonymousTypeManager = new AnonymousTypeManager(this);
 
             this.Conversions = new Semantics.Conversions(this);
+            this.TypeRefFactory = new Semantics.BoundTypeRefFactory(this);
 
             _referenceManager = (reuseReferenceManager && referenceManager != null)
                 ? referenceManager

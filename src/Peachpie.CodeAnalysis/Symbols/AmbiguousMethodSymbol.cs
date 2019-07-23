@@ -54,15 +54,18 @@ namespace Pchp.CodeAnalysis.Symbols
         public ImmutableArray<MethodSymbol> Ambiguities => _ambiguities;
         readonly ImmutableArray<MethodSymbol> _ambiguities;
 
+        /// <summary>
+        /// Gets value indicating the ambiguities are overloads of the same function.
+        /// Otherwise <see cref="Ambiguities"/> are different methods and only one of them is declared in runtime.
+        /// </summary>
         public bool IsOverloadable => _overloadable;
         readonly bool _overloadable;
 
-        public override ErrorMethodKind ErrorKind
-        {
-            get { return ErrorMethodKind.Ambiguous; }
-        }
+        public override ErrorMethodKind ErrorKind => ErrorMethodKind.Ambiguous;
 
         public override ImmutableArray<IMethodSymbol> OriginalSymbols => _ambiguities.CastArray<IMethodSymbol>();
+
+        public override string Name => _ambiguities[0].Name;
 
         /// <summary>
         /// Method symbol representing more overloads.

@@ -70,7 +70,8 @@ namespace Pchp.CodeAnalysis.Semantics
         public TypeRefMask WriteMask => _writeTypeMask;
 
         /// <summary>
-        /// Optional. Type the expression will be converted to.
+        /// Optional.
+        /// Type the expression will be implicitly converted to.
         /// </summary>
         internal TypeSymbol TargetType => _targetType;
 
@@ -1249,12 +1250,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
     #endregion
 
-    #region BoundConvertEx
+    #region BoundConvertEx, BoundCallableConvert
 
     /// <summary>
     /// Explicit conversion operation (cast operation).
     /// </summary>
-    public sealed partial class BoundConversionEx : BoundExpression, IConversionOperation
+    public partial class BoundConversionEx : BoundExpression, IConversionOperation
     {
         public override OperationKind Kind => OperationKind.Conversion;
 
@@ -1297,6 +1298,25 @@ namespace Pchp.CodeAnalysis.Semantics
         public override TResult Accept<TArgument, TResult>(OperationVisitor<TArgument, TResult> visitor, TArgument argument) => visitor.VisitConversion(this, argument);
 
         public override TResult Accept<TResult>(PhpOperationVisitor<TResult> visitor) => visitor.VisitConversion(this);
+    }
+
+    /// <summary>
+    /// Conversion to <c>IPhpCallable</c> (callable).
+    /// </summary>
+    public partial class BoundCallableConvert : BoundConversionEx
+    {
+        /// <summary>
+        /// Resolved method to be converted to callable.
+        /// </summary>
+        public IMethodSymbol TargetCallable { get; internal set; }
+
+        /// <summary>In case of an instance method, this is its receiver instance.</summary>
+        internal BoundExpression Receiver { get; set; }
+
+        internal BoundCallableConvert(BoundExpression operand, PhpCompilation compilation)
+            : base(operand, compilation.TypeRefFactory.Create(compilation.CoreTypes.IPhpCallable.Symbol))
+        {
+        }
     }
 
     #endregion

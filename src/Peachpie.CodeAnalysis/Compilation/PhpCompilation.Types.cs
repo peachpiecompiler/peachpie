@@ -42,7 +42,7 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Gets factory object for constructing <see cref="BoundTypeRef"/>.
         /// </summary>
-        internal BoundTypeRefFactory TypeRefFactory { get; } = new BoundTypeRefFactory(null);
+        internal BoundTypeRefFactory TypeRefFactory { get; }
 
         #region CoreTypes, CoreMethods
 

@@ -2219,6 +2219,32 @@ namespace Pchp.CodeAnalysis.Semantics
         }
     }
 
+    partial class BoundCallableConvert
+    {
+        internal override TypeSymbol Emit(CodeGenerator cg)
+        {
+            if (TargetCallable is MethodSymbol m && (m.IsValidMethod() || (m is AmbiguousMethodSymbol a && a.IsOverloadable && a.Ambiguities.Length != 0)))
+            {
+                if (m.IsStatic)
+                {
+                    return m.EmitLoadRoutineInfo(cg);
+                }
+                else
+                {
+                    Debug.Assert(Receiver != null);
+                    throw cg.NotImplementedException();
+                }
+            }
+
+            // generic conversion to IPhpCallable:
+            var target = (TypeSymbol)this.TargetType.ResolveTypeSymbol(cg.DeclaringCompilation);    // always IPhpCallable
+
+            // 
+            cg.EmitConvert(this.Operand, target);
+            return target;
+        }
+    }
+
     partial class BoundLiteral
     {
         internal override TypeSymbol Emit(CodeGenerator cg)

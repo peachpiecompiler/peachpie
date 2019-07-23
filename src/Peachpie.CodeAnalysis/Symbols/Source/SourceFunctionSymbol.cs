@@ -10,6 +10,7 @@ using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.FlowAnalysis;
 using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Syntax;
+using Pchp.CodeAnalysis.CodeGen;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -52,6 +53,14 @@ namespace Pchp.CodeAnalysis.Symbols
             }
 
             return _lazyRoutineInfoField;
+        }
+
+        internal override TypeSymbol EmitLoadRoutineInfo(CodeGenerator cg)
+        {
+            var fld = EnsureRoutineInfoField(cg.Module);
+
+            // Template: .ldsfld <>foo
+            return fld.EmitLoad(cg, holder: null);
         }
 
         internal override Signature SyntaxSignature => _syntax.Signature;
