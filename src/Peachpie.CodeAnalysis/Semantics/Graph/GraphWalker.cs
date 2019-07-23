@@ -172,9 +172,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 }
             }
 
-            for (int i = 0; i < x.ArgumentsInSourceOrder.Length; i++)
+            var args = x.ArgumentsInSourceOrder;
+            for (int i = 0; i < args.Length; i++)
             {
-                VisitArgument(x.ArgumentsInSourceOrder[i]);
+                VisitArgument(args[i]);
             }
 
             return default;

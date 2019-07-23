@@ -13,10 +13,13 @@ namespace Pchp.CodeAnalysis.Symbols
         public TypeRefMask Type;
         public bool IsVariadic;
 
+        public bool IsByValue => !IsPhpRw && !IsByRef && !IsAlias;
+
         /// <summary>
         /// Whether the parameter is passed as a PHP alias (<c>PhpAlias</c>).
         /// </summary>
         public bool IsAlias => Type.IsRef;
+
         public BoundExpression DefaultValue;
 
         /// <summary>

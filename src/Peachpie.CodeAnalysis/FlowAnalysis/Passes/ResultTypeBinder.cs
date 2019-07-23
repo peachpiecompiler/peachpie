@@ -98,6 +98,39 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return expression.ResultType = type;
         }
 
+        //protected override TypeSymbol VisitRoutineCall(BoundRoutineCall x)
+        //{
+        //    // visits arguments:
+        //    base.VisitRoutineCall(x);   // returns `null`
+
+        //    var method = x.TargetMethod;
+        //    if (method.IsValidMethod())
+        //    {
+        //        var ps = method.Parameters;
+        //        var args = x.ArgumentsInSourceOrder;
+        //        int pi = 0, argi = 0;
+        //        while (argi < args.Length && pi < ps.Length)
+        //        {
+        //            // skip implicit parameters:
+        //            if (argi == 0 && ps[pi].IsImplicitlyDeclared && !ps[pi].IsParams)
+        //            {
+        //                pi++;
+        //                continue;
+        //            }
+
+        //            var argex = args[argi].Value;
+
+        //            //// bind args[argi] -> ps[pi] // not used yet
+        //            //args[argi].Parameter = ps[pi];
+
+        //            //argex.BoundConversion = DeclaringCompilation.Conversions.ClassifyConversion()
+        //        }
+        //    }
+
+        //    //
+        //    return null;
+        //}
+
         //public override TypeSymbol VisitLiteral(BoundLiteral x)
         //{
         //    Debug.Assert(x.ConstantValue.HasValue);

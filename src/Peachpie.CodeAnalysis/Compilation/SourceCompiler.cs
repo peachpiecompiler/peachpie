@@ -389,7 +389,10 @@ namespace Pchp.CodeAnalysis
                 }
 
                 // 3. Resolve operators and types
-                compiler.BindTypes();
+                using (compilation.StartMetric("bind types"))
+                {
+                    compiler.BindTypes();
+                }
 
                 // 4. Transform Semantic Trees for Runtime Optimization
             } while (

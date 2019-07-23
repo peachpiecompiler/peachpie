@@ -1329,6 +1329,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         void BindParam(PhpParam expected, BoundArgument givenarg)
         {
+            // [PhpRwAttribute]
             if (expected.IsPhpRw)
             {
                 if (givenarg.Value is BoundReferenceExpression refexpr)
