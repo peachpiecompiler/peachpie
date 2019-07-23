@@ -353,6 +353,9 @@ namespace Pchp.CodeAnalysis
             /// <summary>Special <c>dirname</c> function name.</summary>
             public static QualifiedName dirname { get { return new QualifiedName(new Name("dirname")); } }
 
+            /// <summary>Special <c>basename</c> function name.</summary>
+            public static QualifiedName basename { get { return new QualifiedName(new Name("basename")); } }
+
             /// <summary><c>get_parent_class</c> function name.</summary>
             public static QualifiedName get_parent_class => new QualifiedName(new Name("get_parent_class"));
 

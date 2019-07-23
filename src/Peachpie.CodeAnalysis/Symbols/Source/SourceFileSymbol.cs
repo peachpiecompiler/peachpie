@@ -197,6 +197,8 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
+        public string FileName => PathUtilities.GetFileName(SyntaxTree.Source.FilePath);
+
         public override string Name => PathUtilities.GetFileName(_syntaxTree.Source.FilePath, true).Replace('.', '_');
 
         public override string NamespaceName => WellKnownPchpNames.ScriptsRootNamespace + DirectoryRelativePath;

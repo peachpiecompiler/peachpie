@@ -279,6 +279,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     return new BoundPseudoConst(Ast.PseudoConstUse.Types.Dir).WithAccess(x.Access);
                 }
             }
+            else if (x.Name.NameValue == NameUtils.SpecialNames.basename)
+            {
+                // basename( __FILE__ ) -> "filename"
+                if (x.ArgumentsInSourceOrder.Length == 1 &&
+                    x.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc &&
+                    pc.ConstType == Ast.PseudoConstUse.Types.File)
+                {
+                    TransformationCount++;
+                    var fname = _routine.ContainingFile.FileName;
+                    return new BoundLiteral(fname) { ConstantValue = new Optional<object>(fname) }.WithContext(x);
+                }
+            }
             else if (x.Name.NameValue == NameUtils.SpecialNames.get_parent_class)
             {
                 bool TryResolveParentClassInCurrentClassContext(SourceRoutineSymbol routine, out BoundLiteral newExpression)
