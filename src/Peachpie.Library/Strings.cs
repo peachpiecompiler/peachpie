@@ -5611,7 +5611,7 @@ namespace Pchp.Library
         /// Note that 'alphabetic' is determined by the current culture.
         /// </summary>
         /// <param name="str">The string to convert.</param>
-        /// <returns>The lowercased string or empty string if <paramref name="str"/> is null.</returns>
+        /// <returns>The uppercased string or empty string if <paramref name="str"/> is null.</returns>
         public static string strtoupper(string str) => str.ToUpperInvariant();
         //{
         //    // TODO: Locale: return (str == null) ? string.Empty : str.ToUpper(Locale.GetCulture(Locale.Category.CType));

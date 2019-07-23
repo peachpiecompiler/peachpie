@@ -112,9 +112,9 @@ namespace Pchp.Core.Reflection
 
         public override MethodInfo[] Methods => new[] { (MethodInfo)MethodBase.GetMethodFromHandle(_handle) };
 
-        public override PhpCallable PhpCallable => _lazyDelegate ?? (_lazyDelegate = BindDelegate());
+        public override PhpCallable PhpCallable => _lazyDelegate ?? BindDelegate();
 
-        PhpCallable BindDelegate() => Dynamic.BinderHelpers.BindToPhpCallable(Methods);
+        PhpCallable BindDelegate() => _lazyDelegate = Dynamic.BinderHelpers.BindToPhpCallable(Methods);
 
         internal static PhpRoutineInfo Create(string name, RuntimeMethodHandle handle, params RuntimeMethodHandle[] overloads)
         {
@@ -227,19 +227,6 @@ namespace Pchp.Core.Reflection
         MethodInfo[] _methods;
 
         public override MethodInfo[] Methods => _methods;
-        //{
-        //    get
-        //    {
-        //        var handles = _handles;
-        //        var methods = new MethodInfo[handles.Length];
-        //        for (int i = 0; i < handles.Length; i++)
-        //        {
-        //            methods[i] = (MethodInfo)MethodBase.GetMethodFromHandle(handles[i]);
-        //        }
-        //        //
-        //        return methods;
-        //    }
-        //}
 
         public override PhpCallable PhpCallable => _lazyDelegate ?? BindDelegate();
 
