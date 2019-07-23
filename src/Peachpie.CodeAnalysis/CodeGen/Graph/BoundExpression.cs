@@ -2831,37 +2831,13 @@ namespace Pchp.CodeAnalysis.Semantics
         {
             Debug.Assert(Access.IsNone);
 
-            Expressions(_arguments).ForEach(cg.EmitEcho);
-
-            return cg.CoreTypes.Void;
-        }
-
-        /// <summary>
-        /// Expressions to be echoed.
-        /// </summary>
-        static IEnumerable<BoundExpression> Expressions(ImmutableArray<BoundArgument> args)
-        {
-            foreach (var a in args)
+            var args = ArgumentsInSourceOrder;
+            for (int i = 0; i < args.Length; i++)
             {
-                if (a.Value is BoundConcatEx concat)
-                {
-                    // Check if arguments can be echoed separately without concatenating them,
-                    // this is only possible if the arguments won't have side effects.
-                    var concat_args = concat.ArgumentsInSourceOrder;
-                    if (concat_args.Length <= 1 ||
-                        concat_args.Skip(1).All(ca => ca.Value.IsConstant() || ca.Value is BoundVariableRef loc || ca.Value is BoundPseudoConst))
-                    {
-                        foreach (var ca in Expressions(concat_args))
-                        {
-                            yield return ca;
-                        }
-
-                        continue;
-                    }
-                }
-
-                yield return a.Value;
+                cg.EmitEcho(args[i].Value);
             }
+            
+            return cg.CoreTypes.Void;
         }
     }
 
