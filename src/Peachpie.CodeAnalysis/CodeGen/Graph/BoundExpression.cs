@@ -2223,7 +2223,10 @@ namespace Pchp.CodeAnalysis.Semantics
     {
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
-            if (TargetCallable is MethodSymbol m && (m.IsValidMethod() || (m is AmbiguousMethodSymbol a && a.IsOverloadable && a.Ambiguities.Length != 0)))
+            var m = TargetCallable as MethodSymbol;
+
+            if ((m != null && m.IsValidMethod()) ||
+                (m is AmbiguousMethodSymbol a && a.IsOverloadable && a.Ambiguities.Length != 0))
             {
                 if (m.IsStatic)
                 {

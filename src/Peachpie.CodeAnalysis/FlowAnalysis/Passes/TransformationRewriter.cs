@@ -515,6 +515,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return base.VisitLiteral(x);
         }
 
+        //public override object VisitArray(BoundArrayEx x)
+        //{
+        //    if (x.Access.TargetType == DeclaringCompilation.CoreTypes.IPhpCallable &&
+        //        x.Items.Length == 2 &&
+        //        x.Items[0].Value.ConstantValue.TryConvertToString(out var tname) &&   // TODO: or $this
+        //        x.Items[1].Value.ConstantValue.TryConvertToString(out var mname))
+        //    {
+        //          -> BoundCallableConvert
+        //    }
+
+        //    return base.VisitArray(x);
+        //}
+
         /// <summary>
         /// If <paramref name="expr"/> is of type <typeparamref name="T"/> or it is a <see cref="BoundCopyValue" /> enclosing an
         /// expression of type <typeparamref name="T"/>, store the expression to <paramref name="typedExpr"/> and return true;
