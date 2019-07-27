@@ -436,7 +436,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             var result = base.VisitGlobalFunctionCall(x);
 
             // use rewrite rule for this routine:
-            if ((x = result as BoundGlobalFunctionCall) != null && _special_functions.TryGetValue(x.Name.NameValue, out var rewrite_func))
+            if ((x = result as BoundGlobalFunctionCall) != null && x.Name.IsDirect && _special_functions.TryGetValue(x.Name.NameValue, out var rewrite_func))
             {
                 var newnode = rewrite_func(x);
                 if (newnode != null)
