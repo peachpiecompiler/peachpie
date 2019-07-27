@@ -480,7 +480,7 @@ namespace Pchp.Core
         /// Dereferences in case of an alias.
         /// </summary>
         /// <returns>Not aliased value.</returns>
-        public PhpValue GetValue() => Object is PhpAlias alias ? alias : this;
+        public PhpValue GetValue() => Object is PhpAlias alias ? alias.Value : this;
 
         /// <summary>
         /// Accesses the value as an array and gets item at given index.
