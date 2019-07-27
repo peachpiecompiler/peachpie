@@ -43,7 +43,173 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return updatedCFG != currentCFG;
         }
 
+        /// <summary>
+        /// Map of well-known routines and corresponding rewrite rule that can return a new expression as a replacement for the routine call.
+        /// Return <c>null</c> if the routine was not rewritten.
+        /// </summary>
+        readonly Dictionary<QualifiedName, Func<BoundGlobalFunctionCall, BoundExpression>> _special_functions;
+
+        private TransformationRewriter()
+        {
+            // initialize rewrite rules for specific well-known functions:
+            _special_functions = new Dictionary<QualifiedName, Func<BoundGlobalFunctionCall, BoundExpression>>()
+            {
+                { NameUtils.SpecialNames.dirname, x =>
+                {
+                    // dirname( __FILE__ ) -> __DIR__
+                    if (x.ArgumentsInSourceOrder.Length == 1 &&
+                        x.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc &&
+                        pc.ConstType == Ast.PseudoConstUse.Types.File)
+                    {
+                        return new BoundPseudoConst(Ast.PseudoConstUse.Types.Dir).WithAccess(x.Access);
+                    }
+
+                    return null;
+                } },
+                { NameUtils.SpecialNames.basename, x =>
+                {
+                    // basename( __FILE__ ) -> "filename"
+                    if (x.ArgumentsInSourceOrder.Length == 1 &&
+                        x.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc &&
+                        pc.ConstType == Ast.PseudoConstUse.Types.File)
+                    {
+                        var fname = _routine.ContainingFile.FileName;
+                        return new BoundLiteral(fname) { ConstantValue = new Optional<object>(fname) }.WithContext(x);
+                    }
+
+                    return null;
+                } },
+                { NameUtils.SpecialNames.get_parent_class, x =>
+                {
+                    bool TryResolveParentClassInCurrentClassContext(SourceRoutineSymbol routine, out BoundLiteral newExpression)
+                    {
+                        // in global function, always FALSE
+                        if (routine is SourceFunctionSymbol)
+                        {
+                            // FALSE
+                            newExpression = new BoundLiteral(false.AsObject());
+                            return true;
+                        }
+
+                        // in a method, we can resolve in compile time:
+                        if (routine is SourceMethodSymbol m && m.ContainingType is SourceTypeSymbol t && !t.IsTrait)
+                        {
+                            if (t.BaseType == null || t.BaseType.IsObjectType())
+                            {
+                                // FALSE
+                                newExpression = new BoundLiteral(false.AsObject())
+                                {
+                                    ConstantValue = false.AsOptional()
+                                };
+                                return true;
+                            }
+                            else
+                            {
+                                // {class name}
+                                var baseTypeName = t.BaseType.PhpQualifiedName().ToString();
+                                newExpression = new BoundLiteral(baseTypeName)
+                                {
+                                    ConstantValue = baseTypeName
+                                };
+                                return true;
+                            }
+                        }
+
+                        //
+                        newExpression = default;
+                        return false;
+                    }
+
+                    // get_parent_class() -> {class name} | FALSE
+                    if (x.ArgumentsInSourceOrder.Length == 0)
+                    {
+                        if (TryResolveParentClassInCurrentClassContext(_routine, out var newExpression))
+                        {
+                            return newExpression.WithContext(x);
+                        }
+                    }
+
+                    // get_parent_class( ??? ) -> parent::class | FALSE
+                    if (x.ArgumentsInSourceOrder.Length == 1)
+                    {
+                        // get_parent_class($this), get_parent_class(__CLASS__) ->  {class name} | FALSE
+                        if ((x.ArgumentsInSourceOrder[0].Value is BoundVariableRef varref && varref.Variable is ThisVariableReference) ||
+                            (x.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc && pc.ConstType == Ast.PseudoConstUse.Types.Class))
+                        {
+                            if (TryResolveParentClassInCurrentClassContext(_routine, out var newExpression))
+                            {
+                                return newExpression.WithContext(x);
+                            }
+                        }
+                    }
+
+                    return null;
+                } },
+                { NameUtils.SpecialNames.method_exists, x =>
+                {
+                    // method_exists(class_name, method_name) -> FALSE
+                    if (x.ArgumentsInSourceOrder.Length == 2)
+                    {
+                        // method_exists(FALSE, ...) -> FALSE
+                        var value = x.ArgumentsInSourceOrder[0].Value.ConstantValue;
+                        if (value.HasValue && value.TryConvertToBool(out var bvalue) && !bvalue)
+                        {
+                            return new BoundLiteral(false.AsObject())
+                            {
+                                ConstantValue = false.AsOptional()
+                            }.WithContext(x);
+                        }
+                    }
+                    return null;
+                } },
+                { NameUtils.SpecialNames.ini_get, x =>
+                {
+                    // ini_get( {svalue} ) : string|FALSE
+                    if (x.ArgumentsInSourceOrder.Length == 1 &&
+                        x.ArgumentsInSourceOrder[0].Value.ConstantValue.TryConvertToString(out var svalue))
+                    {
+                        // options we're not supporting for sure
+                        // always FALSE
+                        if (svalue.StartsWith("xdebug.") || svalue.StartsWith("xcache.") || svalue.StartsWith("opcache.") || svalue.StartsWith("apc."))
+                        {
+                            return new BoundLiteral(false.AsObject())
+                            {
+                                ConstantValue = false.AsOptional()
+                            }.WithContext(x);
+
+                            // TODO: well-known ini options can be translated to access the configuration property directly
+                        }
+                    }
+
+                    return null;
+                } },
+                { NameUtils.SpecialNames.extension_loaded, x =>
+                {
+                    // extension_loaded( {ext_name} ) : true|false
+                    if (x.ArgumentsInSourceOrder.Length == 1 &&
+                        x.ArgumentsInSourceOrder[0].Value.ConstantValue.TryConvertToString(out var ext_name))
+                    {
+                        bool hasextension = DeclaringCompilation
+                            .GlobalSemantics
+                            .Extensions
+                            .Contains(ext_name, StringComparer.OrdinalIgnoreCase);
+
+                        // CONSIDER: only when hasextension == True ? Can we add extensions in runtime ?
+
+                        Trace.WriteLine($"'extension_loaded({ext_name})' evaluated to {hasextension}.");
+
+                        return new BoundLiteral(hasextension.AsObject())
+                        {
+                            ConstantValue = hasextension.AsOptional()
+                        }.WithContext(x);
+                    }
+                    return null;
+                } },
+            };
+        }
+
         private TransformationRewriter(DelayedTransformations delayedTransformations, SourceRoutineSymbol routine)
+            : this()
         {
             _delayedTransformations = delayedTransformations;
             _routine = routine ?? throw ExceptionUtilities.ArgumentNull(nameof(routine));
@@ -266,155 +432,22 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         public override object VisitGlobalFunctionCall(BoundGlobalFunctionCall x)
         {
-            // TODO: extensible, dictionary of functions ?
+            // first rewrite function arguments if possible
+            var result = base.VisitGlobalFunctionCall(x);
 
-            if (x.Name.NameValue == NameUtils.SpecialNames.dirname)
+            // use rewrite rule for this routine:
+            if ((x = result as BoundGlobalFunctionCall) != null && _special_functions.TryGetValue(x.Name.NameValue, out var rewrite_func))
             {
-                // dirname( __FILE__ ) -> __DIR__
-                if (x.ArgumentsInSourceOrder.Length == 1 &&
-                    x.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc &&
-                    pc.ConstType == Ast.PseudoConstUse.Types.File)
+                var newnode = rewrite_func(x);
+                if (newnode != null)
                 {
                     TransformationCount++;
-                    return new BoundPseudoConst(Ast.PseudoConstUse.Types.Dir).WithAccess(x.Access);
+                    return newnode;
                 }
-            }
-            else if (x.Name.NameValue == NameUtils.SpecialNames.basename)
-            {
-                // basename( __FILE__ ) -> "filename"
-                if (x.ArgumentsInSourceOrder.Length == 1 &&
-                    x.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc &&
-                    pc.ConstType == Ast.PseudoConstUse.Types.File)
-                {
-                    TransformationCount++;
-                    var fname = _routine.ContainingFile.FileName;
-                    return new BoundLiteral(fname) { ConstantValue = new Optional<object>(fname) }.WithContext(x);
-                }
-            }
-            else if (x.Name.NameValue == NameUtils.SpecialNames.get_parent_class)
-            {
-                bool TryResolveParentClassInCurrentClassContext(SourceRoutineSymbol routine, out BoundLiteral newExpression)
-                {
-                    // in global function, always FALSE
-                    if (routine is SourceFunctionSymbol)
-                    {
-                        // FALSE
-                        newExpression = new BoundLiteral(false.AsObject());
-                        return true;
-                    }
-
-                    // in a method, we can resolve in compile time:
-                    if (routine is SourceMethodSymbol m && m.ContainingType is SourceTypeSymbol t && !t.IsTrait)
-                    {
-                        if (t.BaseType == null || t.BaseType.IsObjectType())
-                        {
-                            // FALSE
-                            newExpression = new BoundLiteral(false.AsObject())
-                            {
-                                ConstantValue = false.AsOptional()
-                            };
-                            return true;
-                        }
-                        else
-                        {
-                            // {class name}
-                            var baseTypeName = t.BaseType.PhpQualifiedName().ToString();
-                            newExpression = new BoundLiteral(baseTypeName)
-                            {
-                                ConstantValue = baseTypeName
-                            };
-                            return true;
-                        }
-                    }
-
-                    //
-                    newExpression = default;
-                    return false;
-                }
-
-                // get_parent_class() -> {class name} | FALSE
-                if (x.ArgumentsInSourceOrder.Length == 0)
-                {
-                    if (TryResolveParentClassInCurrentClassContext(_routine, out var newExpression))
-                    {
-                        TransformationCount++;
-                        return newExpression.WithContext(x);
-                    }
-                }
-
-                // get_parent_class( ??? ) -> parent::class | FALSE
-                if (x.ArgumentsInSourceOrder.Length == 1)
-                {
-                    // get_parent_class($this), get_parent_class(__CLASS__) ->  {class name} | FALSE
-                    if ((x.ArgumentsInSourceOrder[0].Value is BoundVariableRef varref && varref.Variable is ThisVariableReference) ||
-                        (x.ArgumentsInSourceOrder[0].Value is BoundPseudoConst pc && pc.ConstType == Ast.PseudoConstUse.Types.Class))
-                    {
-                        if (TryResolveParentClassInCurrentClassContext(_routine, out var newExpression))
-                        {
-                            TransformationCount++;
-                            return newExpression.WithContext(x);
-                        }
-                    }
-                }
-
-            }
-            else if (   // method_exists(class_name, method_name) -> FALSE
-                x.Name.NameValue == NameUtils.SpecialNames.method_exists &&
-                x.ArgumentsInSourceOrder.Length == 2)
-            {
-                // method_exists(FALSE, ...) -> FALSE
-                var value = x.ArgumentsInSourceOrder[0].Value.ConstantValue;
-                if (value.HasValue && value.TryConvertToBool(out var bvalue) && !bvalue)
-                {
-                    TransformationCount++;
-                    return new BoundLiteral(false.AsObject())
-                    {
-                        ConstantValue = false.AsOptional()
-                    }.WithContext(x);
-                }
-            }
-            else if (   // ini_get( {svalue} ) : string|FALSE
-                x.Name.NameValue == NameUtils.SpecialNames.ini_get &&
-                x.ArgumentsInSourceOrder.Length == 1 &&
-                x.ArgumentsInSourceOrder[0].Value.ConstantValue.TryConvertToString(out var svalue))
-            {
-                // options we're not supporting for sure
-                // always FALSE
-                if (svalue.StartsWith("xdebug.") || svalue.StartsWith("xcache.") || svalue.StartsWith("opcache.") || svalue.StartsWith("apc."))
-                {
-                    TransformationCount++;
-                    return new BoundLiteral(false.AsObject())
-                    {
-                        ConstantValue = false.AsOptional()
-                    }.WithContext(x);
-
-                    // TODO: well-known ini options can be translated to access the configuration property directly
-                }
-            }
-            else if (   // extension_loaded( {ext_name} ) : bool
-                x.Name.NameValue == NameUtils.SpecialNames.extension_loaded &&
-                x.ArgumentsInSourceOrder.Length == 1 &&
-                x.ArgumentsInSourceOrder[0].Value.ConstantValue.TryConvertToString(out var ext_name))
-            {
-                TransformationCount++;
-
-                bool hasextension = DeclaringCompilation
-                    .GlobalSemantics
-                    .Extensions
-                    .Contains(ext_name, StringComparer.OrdinalIgnoreCase);
-
-                // CONSIDER: only when hasextension == True ? Can we add extensions in runtime ?
-
-                Trace.WriteLine($"'extension_loaded({ext_name})' evaluated to {hasextension}.");
-
-                return new BoundLiteral(hasextension.AsObject())
-                {
-                    ConstantValue = hasextension.AsOptional()
-                }.WithContext(x);
             }
 
             //
-            return base.VisitGlobalFunctionCall(x);
+            return result;
         }
 
         public override object VisitConcat(BoundConcatEx x)
