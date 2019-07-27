@@ -266,6 +266,12 @@ namespace Pchp.Core
         /// </summary>
         public static PhpAlias EnsureAlias(ref PhpValue valueref) => valueref.EnsureAlias();
 
+        /// <summary>
+        /// Ensures the value is <see cref="PhpString"/> and gets mutable access to the value (non-shared).
+        /// </summary>
+        /// <returns>Object on which edit operations can be performed. Cannot be <c>null</c>.</returns>
+        public static PhpString.Blob EnsureWritableString(ref PhpValue valueref) => valueref.EnsureWritableString();
+
         #endregion
 
         #region IsSet, IsEmpty

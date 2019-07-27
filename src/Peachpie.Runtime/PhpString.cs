@@ -730,7 +730,7 @@ namespace Pchp.Core
                     else
                     {
                         AssertChunkObject(chunks);
-                        _chunks = new object[2] { chunks, newchunk };
+                        _chunks = new object[4] { chunks, newchunk, null, null };
                         _chunksCount = 2;
                         _flags |= Flags.IsArrayOfChunks;
                     }
@@ -1448,7 +1448,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets mutable access to the string value.
         /// </summary>
-        public Blob EnsureWritable()
+        public Blob/*!*/EnsureWritable()
         {
             Blob blob;
 
@@ -1461,13 +1461,11 @@ namespace Pchp.Core
             }
             else if (ReferenceEquals(_data, null))
             {
-                blob = new Blob();
-                _data = blob;
+                _data = blob = new Blob();
             }
             else if (_data is string str)
             {
-                blob = new Blob(str);
-                _data = blob;
+                _data = blob = new Blob(str);
             }
 
             //
@@ -1602,13 +1600,13 @@ namespace Pchp.Core
         /// <summary>
         /// Gets instance of blob that is not shared.
         /// </summary>
-        public static Blob AsWritable(PhpString str) => str.EnsureWritable();
+        public static Blob/*!*/AsWritable(PhpString str) => str.EnsureWritable();
 
         /// <summary>
         /// Gets read-only array access to the string.
         /// For write access, use <see cref="EnsureWritable()"/>.
         /// </summary>
-        public static Blob AsArray(PhpString str) => str._data is Blob b ? b : str._data is string s ? new Blob(s) : new Blob(); // TODO: can be removed (?)
+        public static Blob/*!*/AsArray(PhpString str) => str._data is Blob b ? b : str._data is string s ? new Blob(s) : new Blob(); // TODO: can be removed (?)
 
         /// <summary>
         /// Wraps the string into <see cref="PhpValue"/>.

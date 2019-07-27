@@ -190,7 +190,19 @@ namespace Pchp.Core
         /// <summary>
         /// Gets underlaying <see cref="PhpString.Blob"/> object.
         /// </summary>
-        internal PhpString.Blob MutableStringBlob { get { Debug.Assert(_obj.@object is PhpString.Blob); return _obj.blob; } }
+        internal PhpString.Blob MutableStringBlob
+        {
+            get
+            {
+                Debug.Assert(_obj.@object is PhpString.Blob);
+                return _obj.blob;
+            }
+            set
+            {
+                _obj.@object = value ?? throw new ArgumentNullException();
+                _type = TypeTable.MutableStringTable;
+            }
+        }
 
         /// <summary>
         /// Gets the object field of the value as PHP writable string.
@@ -468,7 +480,7 @@ namespace Pchp.Core
         /// Dereferences in case of an alias.
         /// </summary>
         /// <returns>Not aliased value.</returns>
-        public PhpValue GetValue() => IsAlias ? Alias.Value : this;
+        public PhpValue GetValue() => Object is PhpAlias alias ? alias : this;
 
         /// <summary>
         /// Accesses the value as an array and gets item at given index.
@@ -641,6 +653,39 @@ namespace Pchp.Core
             {
                 str = default;
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Converts current value to <see cref="PhpString"/> and gets mutable access to the value.
+        /// </summary>
+        /// <returns>Object on which edit operations can be performed. Cannot be <c>null</c>.</returns>
+        internal PhpString.Blob EnsureWritableString()
+        {
+            if (ReferenceEquals(_type, TypeTable.MutableStringTable))
+            {
+                var blob = MutableStringBlob;
+                if (blob.IsShared)
+                {
+                    MutableStringBlob = blob = blob.ReleaseOne();
+                }
+                return blob;
+            }
+            else if (IsNull)
+            {
+                return (MutableStringBlob = new PhpString.Blob());
+            }
+            else if (ReferenceEquals(_type, TypeTable.StringTable))
+            {
+                return (MutableStringBlob = new PhpString.Blob(this.String));
+            }
+            else if (IsAlias)
+            {
+                return _obj.alias.Value.EnsureWritableString();
+            }
+            else
+            {
+                return (MutableStringBlob = new PhpString.Blob(_type.ToStringQuiet(ref this)));
             }
         }
 

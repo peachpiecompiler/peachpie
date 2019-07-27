@@ -277,6 +277,7 @@ namespace Pchp.Core
 
         public readonly static IntStringKey a = new IntStringKey("a");
         public readonly static IntStringKey b = new IntStringKey("b");
+        public readonly static IntStringKey c = new IntStringKey("c");
         public readonly static IntStringKey i = new IntStringKey("i");
         public readonly static IntStringKey q = new IntStringKey("q");
         public readonly static IntStringKey x = new IntStringKey("x");
