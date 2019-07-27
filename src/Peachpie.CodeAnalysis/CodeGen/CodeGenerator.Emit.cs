@@ -2462,17 +2462,54 @@ namespace Pchp.CodeAnalysis.CodeGen
         }
 
         /// <summary>
+        /// Emits <c>PhpString.Blob.Append</c> expecting <c>PhpString.Blob</c> on top of evaluation stack.
+        /// </summary>
+        /// <param name="value">The expression to be appended.</param>
+        /// <param name="expandConcat">Whether to skip evaluation of <c>concat</c> expression and directly append its arguments.</param>
+        internal void Emit_PhpStringBlob_Append(BoundExpression value, bool expandConcat = true)
+        {
+            if (value is BoundConcatEx concat && expandConcat)
+            {
+                var args = concat.ArgumentsInSourceOrder;
+                for (int i = 0; i < args.Length; i++)
+                {
+                    if (i < args.Length - 1)
+                    {
+                        _il.EmitOpCode(ILOpCode.Dup);   // PhpString.Blob
+                    }
+
+                    Emit_PhpStringBlob_Append(args[i].Value);
+                }
+            }
+            else
+            {
+                if (!IsDebug && value.IsConstant() && ExpressionsExtension.IsEmptyStringValue(value.ConstantValue.Value))
+                {
+                    _il.EmitOpCode(ILOpCode.Pop);
+                }
+                else
+                {
+                    Emit_PhpStringBlob_Append(Emit(value));
+                }
+            }
+        }
+
+        /// <summary>
         /// Emits <c>PhpString.Blob.Append</c> expecting <c>PhpString.Blob</c> and <paramref name="ytype"/> on top of evaluation stack.
         /// </summary>
         /// <param name="ytype">Type of argument loaded on stack.</param>
-        internal void Emit_PhpStringBlob_Append(TypeSymbol ytype)
+        void Emit_PhpStringBlob_Append(TypeSymbol ytype)
         {
             if (ytype == CoreTypes.PhpAlias)
             {
                 ytype = Emit_PhpAlias_GetValue();
             }
 
-            if (ytype == CoreTypes.PhpString)
+            if (ytype.SpecialType == SpecialType.System_Void)
+            {
+                _il.EmitOpCode(ILOpCode.Pop);
+            }
+            else if (ytype == CoreTypes.PhpString)
             {
                 // Append(PhpString)
                 EmitCall(ILOpCode.Callvirt, CoreMethods.PhpStringBlob.Add_PhpString);

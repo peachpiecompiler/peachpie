@@ -2836,7 +2836,7 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 cg.EmitEcho(args[i].Value);
             }
-            
+
             return cg.CoreTypes.Void;
         }
     }
@@ -2915,7 +2915,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 //
                 cg.Builder.EmitOpCode(ILOpCode.Dup);        // <Blob>
-                cg.Emit_PhpStringBlob_Append(cg.Emit(expr));// .Append( ... )
+                cg.Emit_PhpStringBlob_Append(expr);// .Append( ... )
 
                 //
                 if (cg.IsDebug)
@@ -3337,13 +3337,177 @@ namespace Pchp.CodeAnalysis.Semantics
 
     partial class BoundCompoundAssignEx
     {
+        /// <summary>
+        /// Searches for an occurance of <see cref="SearchForTargetVisitor._target"/>.
+        /// </summary>
+        class SearchForTargetVisitor : Graph.GraphWalker<VoidStruct>
+        {
+            readonly BoundReferenceExpression/*!*/_target;
+
+            public bool Found { get; private set; }
+
+            public SearchForTargetVisitor(BoundReferenceExpression target)
+            {
+                _target = target ?? throw ExceptionUtilities.ArgumentNull();
+            }
+
+            public override VoidStruct VisitVariableName(BoundVariableName x)
+            {
+                if (_target is BoundVariableRef v)
+                {
+                    Found |= !v.Name.IsDirect || !x.IsDirect || v.Name.NameValue == x.NameValue;
+                }
+
+                return default;
+            }
+        }
+
+        /// <summary>
+        /// Determines if <paramref name="target"/> is not referenced within <paramref name="rvalue"/>.
+        /// </summary>
+        static bool IsSafeToUnroll(BoundReferenceExpression target, BoundExpression rvalue)
+        {
+            if (rvalue.IsConstant() || rvalue is BoundGlobalConst || rvalue is BoundPseudoConst || (rvalue is BoundFieldRef f && f.IsClassConstant))
+            {
+                return true;
+            }
+
+            var visitor = new SearchForTargetVisitor(target);
+            rvalue.Accept(visitor);
+            return visitor.Found != true;
+        }
+
+        static TypeSymbol EmitAppend(CodeGenerator cg, BoundReferenceExpression target, BoundExpression rvalue, BoundAccess access)
+        {
+            var target_place = target.BindPlace(cg);
+
+            bool inplace = false;
+            var lhs = default(LhsStack);
+
+            if (target_place.HasAddress && target_place.Type != null)
+            {
+                // we can perform in-place concatenation
+
+                if (target_place.Type == cg.CoreTypes.PhpValue)
+                {
+                    // Template: Operators.EnsureWritableString(ref PhpValue target).Add( .. )
+                    inplace = true;
+                    target_place.EmitLoadAddress(cg, ref lhs);  // ref PhpValue
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureWritableString_PhpArrayRef)
+                        .Expect(cg.CoreTypes.PhpString_Blob);
+                }
+                else if (target_place.Type == cg.CoreTypes.PhpAlias)
+                {
+                    // Template: Operators.EnsureWritableString(ref PhpValue target.Alias.Value).Add( .. )
+                    inplace = true;
+                    target_place.EmitLoadValue(cg, ref lhs, target.Access);
+                    cg.Emit_PhpAlias_GetValueAddr();    // ref PhpValue
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.EnsureWritableString_PhpArrayRef)
+                        .Expect(cg.CoreTypes.PhpString_Blob);
+                }
+                else if (target_place.Type == cg.CoreTypes.PhpString)
+                {
+                    // Template: (target : PhpString).EnsureWritable().Add( .. )
+                    inplace = true;
+                    target_place.EmitLoadAddress(cg, ref lhs);  // : ref PhpString
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpString.EnsureWritable)
+                        .Expect(cg.CoreTypes.PhpString_Blob);
+                }
+            }
+
+            //
+
+            if (inplace)
+            {
+                lhs.Dispose();
+            }
+            else
+            {
+                // Template: PhpString.AsWritable( ((PhpString)target) ) : Blob
+                lhs = target_place.EmitStorePreamble(cg, BoundAccess.Write);
+                cg.EmitConvertToPhpString(target_place.EmitLoadValue(cg, ref lhs, target.Access), 0);
+                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpString.AsWritable_PhpString) // Blob
+                    .Expect(cg.CoreTypes.PhpString_Blob);
+            }
+
+            // STACK: PhpString.Blob
+
+            // Template: .Add( rValue )
+
+            if (access.IsRead || !inplace)
+            {
+                cg.Builder.EmitOpCode(ILOpCode.Dup);    // 
+            }
+
+            // check rValue does not contain lValue!
+            // if {rvalue} references {target}, we cannot unroll concat expression
+
+            cg.Emit_PhpStringBlob_Append(rvalue, expandConcat: IsSafeToUnroll(target, rvalue));
+
+            // STACK: 'void' or 'PhpString.Blob'
+
+            if (access.IsRead || !inplace)
+            {
+                // STACK: PhpString.Blob
+
+                // Template: new PhpString(blob)
+                var result_type = cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpString_Blob)
+                    .Expect(cg.CoreTypes.PhpString);
+
+                // STACK: PhpString
+
+                LocalDefinition tmp = null;
+
+                if (access.IsRead)
+                {
+                    tmp = cg.GetTemporaryLocal(result_type, false);
+                    cg.Builder.EmitOpCode(ILOpCode.Dup);
+                    cg.Builder.EmitLocalStore(tmp);
+                }
+
+                if (!inplace)
+                {
+                    target_place.EmitStore(cg, ref lhs, result_type, target.Access);
+                    lhs.Dispose();
+                }
+                else
+                {
+                    cg.Builder.EmitOpCode(ILOpCode.Pop);
+                }
+
+                // STACK: void
+
+                if (access.IsRead)
+                {
+                    Debug.Assert(tmp != null);
+                    cg.Builder.EmitLoad(tmp);
+                    cg.ReturnTemporaryLocal(tmp);
+                    return result_type;
+                }
+            }
+
+            // STACK: void
+
+            if (access.IsNone)
+            {
+                return cg.CoreTypes.Void;
+            }
+            else
+            {
+                throw ExceptionUtilities.UnexpectedValue(access);
+            }
+        }
+
         internal override TypeSymbol Emit(CodeGenerator cg)
         {
             Debug.Assert(Access.IsRead || Access.IsNone);
 
-            // TODO: A .= B; where A : PhpString and target_place.HasAddress -> "A.EnsureWritable().Append(B)"
-
             // target X= value;
+
+            if (this.Operation == Operations.AssignAppend)
+            {
+                return EmitAppend(cg, this.Target, this.Value, this.Access);
+            }
 
             var target_place = this.Target.BindPlace(cg);
             Debug.Assert(target_place != null);
@@ -3360,9 +3524,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 case Operations.AssignAdd:
                     result_type = BoundBinaryEx.EmitAdd(cg, xtype, Value, target_place.Type);
                     break;
-                case Operations.AssignAppend:
-                    result_type = EmitAppend(cg, xtype, Value);
-                    break;
+                //case Operations.AssignAppend:
+                //    result_type = EmitAppend(cg, xtype, Value);
+                //    break;
                 ////case Operations.AssignPrepend:
                 ////    break;
                 case Operations.AssignDiv:
@@ -3425,32 +3589,6 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 throw ExceptionUtilities.UnexpectedValue(this.Access);
             }
-        }
-
-        static TypeSymbol EmitAppend(CodeGenerator cg, TypeSymbol xtype, BoundExpression y)
-        {
-            // x -> PhpString
-            cg.EmitConvertToPhpString(xtype, 0);
-
-            if (y.ConstantValue.HasValue && ExpressionsExtension.IsEmptyStringValue(y.ConstantValue.Value))
-            {
-                // nothing to append
-            }
-            else
-            {
-                // CALL EnsureWritable(x) : Blob
-                cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpString.AsWritable_PhpString); // Blob
-
-                // <STACK>.Append (Y)
-                cg.Builder.EmitOpCode(ILOpCode.Dup);
-                cg.Emit_PhpStringBlob_Append(cg.Emit(y));
-
-                // new PhpString(blob)
-                cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpString_Blob);
-            }
-
-            //
-            return cg.CoreTypes.PhpString;
         }
     }
 
