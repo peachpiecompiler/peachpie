@@ -2865,7 +2865,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 return cg.CoreTypes.String;
             }
 
-            if (args.Length <= 4 && cg.IsReadonlyStringOnly(this.TypeRefMask))
+            if (args.Length <= 4 && (cg.IsReadonlyStringOnly(this.TypeRefMask) || this.Access.TargetType == cg.CoreTypes.String))
             {
                 // Template: System.String.Concat( ... )
                 foreach (var x in args)
