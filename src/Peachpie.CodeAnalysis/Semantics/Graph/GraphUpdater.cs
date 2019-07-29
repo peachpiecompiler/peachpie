@@ -70,31 +70,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return alternate?.MoveToImmutable() ?? arr;
         }
 
-        protected ImmutableArray<T> VisitBlockImmutableArray<T>(ImmutableArray<T> arr) where T : BoundBlock
-        {
-            if (arr.IsDefaultOrEmpty)
-            {
-                return arr;
-            }
 
-            ImmutableArray<T>.Builder alternate = null;
-            for (int i = 0; i < arr.Length; i++)
-            {
-                var orig = arr[i];
-                var visited = orig?.Accept(this);
 
-                if (visited != orig)
-                {
-                    if (alternate == null)
-                    {
-                        alternate = arr.ToBuilder();
-                    }
-                    alternate[i] = (T)visited;
-                }
-            }
-
-            return alternate?.MoveToImmutable() ?? arr;
-        }
+        //protected ImmutableArray<T> VisitBlockImmutableArray<T>(ImmutableArray<T> arr) where T : BoundBlock => VisitImmutableArray(arr);
 
         protected ImmutableArray<KeyValuePair<T1, T2>> VisitImmutableArrayPairs<T1, T2>(ImmutableArray<KeyValuePair<T1, T2>> arr)
             where T1 : BoundOperation, IPhpOperation
@@ -139,22 +117,36 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         #endregion
 
+        #region Properties
+
+        /// <summary>
+        /// Gets value indicating the current block is in a conditional scope.
+        /// </summary>
+        protected bool IsConditional { get; private set; } = false;
+
+        #endregion
+
         #region Graph.Block
 
         protected override object DefaultVisitBlock(BoundBlock x) => throw new InvalidOperationException();
+
+        protected virtual Edge AcceptEdge(BoundBlock from, Edge edge)
+        {
+            return (Edge)edge?.Accept(this);
+        }
 
         public override object VisitCFGBlock(BoundBlock x)
         {
             return x.Update(
                     VisitList(x.Statements),
-                    (Edge)Accept(x.NextEdge));
+                    AcceptEdge(x, x.NextEdge));
         }
 
         public override object VisitCFGStartBlock(StartBlock x)
         {
             return x.Update(
                     VisitList(x.Statements),
-                    (Edge)Accept(x.NextEdge));
+                    AcceptEdge(x, x.NextEdge));
         }
 
         public override object VisitCFGExitBlock(ExitBlock x)
@@ -170,7 +162,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                     (BoundTypeRef)Accept(x.TypeRef),
                     (BoundVariableRef)Accept(x.Variable),
                     VisitList(x.Statements),
-                    (Edge)Accept(x.NextEdge));
+                    AcceptEdge(x, x.NextEdge));
         }
 
         public override object VisitCFGCaseBlock(CaseBlock x)
@@ -178,7 +170,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return x.Update(
                     x.CaseValue,                // TODO: Visit also the expressions
                     VisitList(x.Statements),
-                    (Edge)Accept(x.NextEdge));
+                    AcceptEdge(x, x.NextEdge));
         }
 
         #endregion
@@ -199,6 +191,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override object VisitCFGConditionalEdge(ConditionalEdge x)
         {
+            IsConditional = true;
+
             return x.Update(
                 (BoundBlock)Accept(x.TrueTarget),
                 (BoundBlock)Accept(x.FalseTarget),
@@ -207,15 +201,19 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override object VisitCFGTryCatchEdge(TryCatchEdge x)
         {
+            IsConditional = true;
+
             return x.Update(
                 (BoundBlock)Accept(x.BodyBlock),
-                VisitBlockImmutableArray(x.CatchBlocks),
+                VisitImmutableArray(x.CatchBlocks),
                 (BoundBlock)Accept(x.FinallyBlock),
                 (BoundBlock)Accept(x.NextBlock));
         }
 
         public override object VisitCFGForeachEnumereeEdge(ForeachEnumereeEdge x)
         {
+            IsConditional = true;
+
             var updated = x.Update(
                 (BoundBlock)Accept(x.Target),
                 (BoundExpression)Accept(x.Enumeree),
@@ -240,6 +238,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override object VisitCFGForeachMoveNextEdge(ForeachMoveNextEdge x)
         {
+            IsConditional = true;
+
             return x.Update(
                 (BoundBlock)Accept(x.BodyBlock),
                 (BoundBlock)Accept(x.NextBlock),
@@ -251,9 +251,11 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         public override object VisitCFGSwitchEdge(SwitchEdge x)
         {
+            IsConditional = true;
+
             return x.Update(
                 (BoundExpression)Accept(x.SwitchValue),
-                VisitBlockImmutableArray(x.CaseBlocks),
+                VisitImmutableArray(x.CaseBlocks),
                 (BoundBlock)Accept(x.NextBlock));
         }
 

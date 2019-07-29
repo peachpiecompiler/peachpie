@@ -72,7 +72,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 if (!_rewriter.IsRepaired(block))
                 {
                     block.Tag = _rewriter.RepairedColor;
-                    block.NextEdge = (Edge)Accept(block.NextEdge);
+                    block.NextEdge = AcceptEdge(block, block.NextEdge);
                 }
 
                 return block;

@@ -560,6 +560,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             return base.VisitLiteral(x);
         }
 
+        public override object VisitFunctionDeclaration(BoundFunctionDeclStatement x)
+        {
+            if (x.Function.IsConditional && !IsConditional && _routine.IsGlobalScope)
+            {
+                _delayedTransformations.FunctionsMarkedAsUnconditional.Add(x.Function);
+            }
+
+            // no transformation
+            return base.VisitFunctionDeclaration(x);
+        }
+
         //public override object VisitArray(BoundArrayEx x)
         //{
         //    if (x.Access.TargetType == DeclaringCompilation.CoreTypes.IPhpCallable &&

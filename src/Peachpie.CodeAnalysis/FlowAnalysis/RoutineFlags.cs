@@ -39,6 +39,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         IsUnreachable = 256,
 
+        /// <summary>The global function has been declared conditionally but analysis marked it as unconditional.</summary>
+        MarkedDeclaredUnconditionally = 512,
+
         /// <summary>
         /// Whether the routine has to define local variables as an array instead of native local variables.
         /// </summary>

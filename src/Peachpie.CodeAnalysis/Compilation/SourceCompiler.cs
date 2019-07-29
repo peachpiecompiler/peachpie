@@ -274,7 +274,7 @@ namespace Pchp.CodeAnalysis
                 allowParallel: allowParallel);
 
             // Apply transformation that cannot run in the parallel way
-            delayedTrn.Apply();
+            anyTransforms |= delayedTrn.Apply();
 
             return anyTransforms;
         }

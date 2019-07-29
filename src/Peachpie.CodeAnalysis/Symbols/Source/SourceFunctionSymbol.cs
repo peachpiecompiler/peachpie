@@ -11,6 +11,7 @@ using Pchp.CodeAnalysis.FlowAnalysis;
 using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Syntax;
 using Pchp.CodeAnalysis.CodeGen;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -27,7 +28,26 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Whether the function is declared conditionally.
         /// </summary>
-        public bool IsConditional => _syntax.IsConditional;
+        public bool IsConditional
+        {
+            get
+            {
+                return _syntax.IsConditional && (Flags & RoutineFlags.MarkedDeclaredUnconditionally) == 0;
+            }
+            set
+            {
+                if (value)
+                {
+                    Flags &= ~RoutineFlags.MarkedDeclaredUnconditionally;
+                    Debug.Assert(IsConditional);
+                }
+                else
+                {
+                    Flags |= RoutineFlags.MarkedDeclaredUnconditionally;
+                    Debug.Assert(IsConditional == false);
+                }
+            }
+        }
 
         public SourceFunctionSymbol(SourceFileSymbol file, FunctionDecl syntax)
         {
@@ -83,7 +103,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             if (this.QualifiedName == new QualifiedName(Devsense.PHP.Syntax.Name.AutoloadName))
             {
-                if (this.DeclaringCompilation.Options.ParseOptions?.LanguageVersion >= new Version(7,2))
+                if (this.DeclaringCompilation.Options.ParseOptions?.LanguageVersion >= new Version(7, 2))
                 {
                     // __autoload is deprecated
                     diagnostic.Add(this, _syntax, Errors.ErrorCode.WRN_SymbolDeprecated, string.Empty, this.QualifiedName, PhpResources.AutoloadDeprecatedMessage);
@@ -110,7 +130,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 var name = base.MetadataName;
 
-                if (_syntax.IsConditional)
+                if (IsConditional)
                 {
                     // ?order
                     name += "?" + _file.Functions.TakeWhile(f => f != this).Where(f => f.QualifiedName == this.QualifiedName).Count().ToString();   // index of this function within functions with the same name
