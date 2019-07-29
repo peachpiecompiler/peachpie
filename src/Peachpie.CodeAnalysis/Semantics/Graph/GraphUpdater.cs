@@ -340,7 +340,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return x.Update(
                 (BoundRoutineName)Accept(x.Name),
                 x.NameOpt,
-                VisitImmutableArray(x.ArgumentsInSourceOrder));
+                VisitImmutableArray(x.ArgumentsInSourceOrder),
+                VisitImmutableArray(x.TypeArguments));
         }
 
         public override object VisitInstanceFunctionCall(BoundInstanceFunctionCall x)

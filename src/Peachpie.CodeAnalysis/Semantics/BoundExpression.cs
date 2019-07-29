@@ -533,7 +533,7 @@ namespace Pchp.CodeAnalysis.Semantics
             _nameOpt = nameOpt;
         }
 
-        public BoundGlobalFunctionCall Update(BoundRoutineName name, QualifiedName? nameOpt, ImmutableArray<BoundArgument> arguments, ImmutableArray<IBoundTypeRef> typeArguments = default)
+        public BoundGlobalFunctionCall Update(BoundRoutineName name, QualifiedName? nameOpt, ImmutableArray<BoundArgument> arguments, ImmutableArray<IBoundTypeRef> typeArguments)
         {
             if (name == _name && nameOpt == _nameOpt && arguments == ArgumentsInSourceOrder && typeArguments == _typeargs)
             {
