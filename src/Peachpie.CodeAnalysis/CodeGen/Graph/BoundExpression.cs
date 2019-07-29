@@ -787,14 +787,14 @@ namespace Pchp.CodeAnalysis.Semantics
         }
 
         /// <summary>Emits <c>??</c> operator and returns the result type.</summary>
-        TypeSymbol EmitCoalesce(CodeGenerator cg)
+        TypeSymbol EmitCoalesce(CodeGenerator cg) => EmitCoalesce(cg, cg.Emit(this.Left), this.Left.TypeRefMask, this.Right);
+
+        internal static TypeSymbol EmitCoalesce(CodeGenerator cg, TypeSymbol left_type, FlowAnalysis.TypeRefMask left_type_mask, BoundExpression right)
         {
             object trueLbl = new object();
             object endLbl = new object();
 
             // Left ?? Right
-
-            var left_type = cg.Emit(this.Left);
 
             if (!cg.CanBeNull(left_type)) // in case we truly believe in our type analysis: || !cg.CanBeNull(this.Left.TypeRefMask))
             {
@@ -806,20 +806,20 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.Builder.EmitOpCode(ILOpCode.Dup);
             cg.Builder.EmitLocalStore(left_var);
 
-            cg.EmitNotNull(left_type, this.Left.TypeRefMask);
+            cg.EmitNotNull(left_type, left_type_mask);
             cg.Builder.EmitBranch(ILOpCode.Brtrue, trueLbl);
 
             // false:
-            var right_type = cg.Emit(this.Right);
+            var right_type = cg.Emit(right);
             var result_type = cg.DeclaringCompilation.Merge(left_type, right_type);
-            cg.EmitConvert(right_type, this.Right.TypeRefMask, result_type);
+            cg.EmitConvert(right_type, right.TypeRefMask, result_type);
             cg.Builder.EmitBranch(ILOpCode.Br, endLbl);
             cg.Builder.AdjustStack(-1);
 
             // trueLbl:
             cg.Builder.MarkLabel(trueLbl);
             cg.Builder.EmitLocalLoad(left_var);
-            cg.EmitConvert(left_type, this.Left.TypeRefMask, result_type);
+            cg.EmitConvert(left_type, left_type_mask, result_type);
 
             // endLbl:
             cg.Builder.MarkLabel(endLbl);
@@ -3659,6 +3659,9 @@ namespace Pchp.CodeAnalysis.Semantics
                     break;
                 case Operations.AssignSub:
                     result_type = BoundBinaryEx.EmitSub(cg, xtype, Value, target_place.Type);
+                    break;
+                case Operations.AssignCoalesce:
+                    result_type = BoundBinaryEx.EmitCoalesce(cg, xtype, 0, Value);
                     break;
                 default:
                     throw ExceptionUtilities.UnexpectedValue(this.Operation);

@@ -33,6 +33,7 @@ namespace Pchp.CodeAnalysis
                 case Operations.AssignShiftRight: return Operations.ShiftRight;
                 case Operations.AssignSub: return Operations.Sub;
                 case Operations.AssignXor: return Operations.BitXor;
+                case Operations.AssignCoalesce: return Operations.Coalesce;
                 default:
                     throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(op);
             }
@@ -54,6 +55,7 @@ namespace Pchp.CodeAnalysis
                 case Operations.ShiftRight: return Operations.AssignShiftRight;
                 case Operations.Sub: return Operations.AssignSub;
                 case Operations.BitXor: return Operations.AssignXor;
+                case Operations.Coalesce: return Operations.AssignCoalesce;
                 default:
                     throw Roslyn.Utilities.ExceptionUtilities.UnexpectedValue(op);
             }
