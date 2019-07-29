@@ -109,7 +109,7 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                return _ambiguities.SelectMany(a => DeclaringSyntaxReferences).ToImmutableArray();
+                return _ambiguities.SelectMany(a => a.DeclaringSyntaxReferences).ToImmutableArray();
             }
         }
 
