@@ -303,7 +303,7 @@ namespace Pchp.Core
             public override bool TryToIntStringKey(ref PhpValue me, out IntStringKey key) { key = new IntStringKey(me.Boolean ? 1 : 0); return true; }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => Operators.GetEmptyForeachEnumerator();
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.Boolean, right);
-            public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.IsBoolean(out bool by) && me.Boolean == by;
+            public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.IsBoolean(out bool by) && by == me.Boolean;
             public override object EnsureObject(ref PhpValue me)
             {
                 var obj = new stdClass();   // empty class
@@ -346,19 +346,7 @@ namespace Pchp.Core
             public override bool TryToIntStringKey(ref PhpValue me, out IntStringKey key) { key = Core.Convert.StringToArrayKey(me.String); return true; }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => Operators.GetEmptyForeachEnumerator();
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.String, right);
-            public override bool StrictEquals(ref PhpValue me, PhpValue right)
-            {
-                if (right.TypeCode == PhpTypeCode.String)
-                    return right.String == me.String;
-
-                if (right.TypeCode == PhpTypeCode.MutableString)
-                    return right.MutableString.ToString() == me.String;
-
-                if (right.TypeCode == PhpTypeCode.Alias)
-                    return StrictEquals(ref me, right.Alias.Value);
-
-                return false;
-            }
+            public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.IsString(out var sy) && sy == me.String;
             public override object EnsureObject(ref PhpValue me)
             {
                 var obj = ToClass(ref me);
@@ -414,19 +402,7 @@ namespace Pchp.Core
             public override bool TryToIntStringKey(ref PhpValue me, out IntStringKey key) { key = Core.Convert.StringToArrayKey(me.MutableString.ToString()); return true; }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => Operators.GetEmptyForeachEnumerator();
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.MutableString.ToString(), right);
-            public override bool StrictEquals(ref PhpValue me, PhpValue right)
-            {
-                if (right.TypeCode == PhpTypeCode.String)
-                    return right.String == me.MutableString.ToString();
-
-                if (right.TypeCode == PhpTypeCode.MutableString)
-                    return right.MutableString.ToString() == me.MutableString.ToString();
-
-                if (right.TypeCode == PhpTypeCode.Alias)
-                    return StrictEquals(ref me, right.Alias.Value);
-
-                return false;
-            }
+            public override bool StrictEquals(ref PhpValue me, PhpValue right) => right.IsString(out var sy) && sy.Length == me.MutableStringBlob.Length && sy == me.MutableStringBlob.ToString();
             public override object EnsureObject(ref PhpValue me)
             {
                 //var obj = PhpValue.Create(new stdClass(ctx));
@@ -523,9 +499,7 @@ namespace Pchp.Core
             public override int Compare(ref PhpValue me, PhpValue right) => Comparison.Compare(me.Object, right);
             public override bool StrictEquals(ref PhpValue me, PhpValue right)
             {
-                if (right.TypeCode == PhpTypeCode.Object) return right.Object == me.Object;
-                if (right.TypeCode == PhpTypeCode.Alias) return right.Alias.Value.Object == me.Object;
-                return false;
+                return right.Object == me.Object || (right.Object is PhpAlias alias && alias.Value.Object == me.Object);
             }
             public override object EnsureObject(ref PhpValue me) => me.Object;
             public override IPhpArray EnsureArray(ref PhpValue me) => Operators.EnsureArray(me.Object);

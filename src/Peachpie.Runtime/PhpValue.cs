@@ -346,9 +346,13 @@ namespace Pchp.Core
 
         public static bool operator >(PhpValue left, PhpValue right) => left.Compare(right) > 0;
 
-        public static bool operator ==(PhpValue left, string right) => Comparison.Compare(right, left) == 0;
+        public static bool operator ==(string left, PhpValue right) => Comparison.Ceq(left, right);
 
-        public static bool operator !=(PhpValue left, string right) => Comparison.Compare(right, left) != 0;
+        public static bool operator !=(string left, PhpValue right) => !(left == right);
+
+        public static bool operator ==(PhpValue left, string right) => right == left;
+
+        public static bool operator !=(PhpValue left, string right) => right != left;
 
         public static PhpValue operator ~(PhpValue x) => Operators.BitNot(ref x);
 

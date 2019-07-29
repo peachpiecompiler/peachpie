@@ -38,6 +38,48 @@ namespace Pchp.Core
         public static bool Ceq(string sx, long ly) => Equals(sx, ly);
         public static bool Ceq(string sx, double dy) => Equals(sx, dy);
         public static bool Ceq(string sx, bool by) => Convert.ToBoolean(sx) == by;
+        public static bool Ceq(string sx, string sy)
+        {
+            var info_x = Convert.StringToNumber(sx, out var lx, out var dx);
+
+            // an operand is not entirely convertable to numbers => string comparison is performed:
+            if ((info_x & Convert.NumberInfo.IsNumber) == 0)
+            {
+                return sx == sy;
+            }
+
+            var info_y = Convert.StringToNumber(sy, out var ly, out var dy);
+
+            // an operand is not entirely convertable to numbers => string comparison is performed:
+            if ((info_y & Convert.NumberInfo.IsNumber) == 0)
+            {
+                return sx == sy;
+            }
+
+            // numeric comparison
+            return (((info_x | info_y) & Convert.NumberInfo.Double) != 0)
+                ? (dx == dy)   // at least one operand has been converted to double:
+                : (lx == ly);  // compare integers:
+        }
+
+        public static bool Ceq(string sx, PhpValue y)
+        {
+            switch (y.TypeCode)
+            {
+                case PhpTypeCode.Boolean: return Convert.ToBoolean(sx) == y.Boolean;
+                case PhpTypeCode.Long: return Compare(sx, y.Long) == 0;
+                case PhpTypeCode.Double: return Compare(sx, y.Double) == 0;
+                case PhpTypeCode.PhpArray: return false;
+                case PhpTypeCode.String: return Ceq(sx, y.String);
+                case PhpTypeCode.MutableString: return Ceq(sx, y.MutableString.ToString());
+                case PhpTypeCode.Object: return CompareStringToObject(sx, y.Object) == 0;
+                case PhpTypeCode.Alias: return Ceq(sx, y.Alias.Value);
+                case PhpTypeCode.Null:
+                case PhpTypeCode.Undefined: return sx.Length == 0;
+            }
+
+            throw new NotImplementedException($"compare(String, {y.TypeCode})");
+        }
 
         public static bool CeqNull(PhpValue x)
         {
@@ -107,18 +149,18 @@ namespace Pchp.Core
         {
             switch (y.TypeCode)
             {
-                case PhpTypeCode.Double: return Compare(sx, y.Double);
-                case PhpTypeCode.Long: return Compare(sx, y.Long);
                 case PhpTypeCode.Boolean: return Compare(Convert.ToBoolean(sx), y.Boolean);
+                case PhpTypeCode.Long: return Compare(sx, y.Long);
+                case PhpTypeCode.Double: return Compare(sx, y.Double);
+                case PhpTypeCode.PhpArray: return -1;   // - 1 * (array.CompareTo(string))
                 case PhpTypeCode.String: return Compare(sx, y.String);
                 case PhpTypeCode.MutableString: return Compare(sx, y.MutableString.ToString());
-                case PhpTypeCode.Alias: return Compare(sx, y.Alias.Value);
-                case PhpTypeCode.PhpArray: return -1;   // - 1 * (array.CompareTo(string))
-                case PhpTypeCode.Null:
-                case PhpTypeCode.Undefined: return (sx.Length == 0) ? 0 : 1;
                 case PhpTypeCode.Object:
                     if (y.Object == null) goto case PhpTypeCode.Null;
                     else return CompareStringToObject(sx, y.Object);
+                case PhpTypeCode.Alias: return Compare(sx, y.Alias.Value);
+                case PhpTypeCode.Null:
+                case PhpTypeCode.Undefined: return (sx.Length == 0) ? 0 : 1;
             }
 
             throw new NotImplementedException($"compare(String, {y.TypeCode})");
@@ -350,7 +392,7 @@ namespace Pchp.Core
         public static int Compare(string/*!*/sx, double dy)
         {
             Debug.Assert(sx != null);
-            
+
             switch (Convert.StringToNumber(sx, out var lx, out var dx) & Convert.NumberInfo.TypeMask)
             {
                 case Convert.NumberInfo.Double: return Compare(dx, dy);
@@ -406,8 +448,10 @@ namespace Pchp.Core
         public static bool Ceq(long lx, PhpNumber y) => y.IsLong && lx == y.Long;
         public static bool Ceq(double dx, PhpValue y) => y.IsDouble(out var dy) && dx == dy;
         public static bool Ceq(double dx, PhpNumber y) => y.IsDouble && dx == y.Double;
+        public static bool Ceq(string sx, PhpValue y) => y.IsString(out var sy) && sy == sx;
 
         public static bool Ceq(PhpValue x, bool by) => x.IsBoolean(out var bx) && bx == by;
+        public static bool Ceq(PhpValue x, string sy) => x.IsString(out var sx) && sy == sx;
 
         public static bool Ceq(PhpValue x, PhpValue y) => x.StrictEquals(y);
 

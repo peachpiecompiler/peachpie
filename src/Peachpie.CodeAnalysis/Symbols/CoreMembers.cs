@@ -340,6 +340,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Ceq_string_long = ct.Comparison.Method("Ceq", ct.String, ct.Long);
                 Ceq_string_double = ct.Comparison.Method("Ceq", ct.String, ct.Double);
                 Ceq_string_bool = ct.Comparison.Method("Ceq", ct.String, ct.Boolean);
+                Ceq_string_string = ct.Comparison.Method("Ceq", ct.String, ct.String);
                 CeqNull_value = ct.Comparison.Method("CeqNull", ct.PhpValue);
                 Clt_long_double = ct.Comparison.Method("Clt", ct.Long, ct.Double);
                 Cgt_long_double = ct.Comparison.Method("Cgt", ct.Long, ct.Double);
@@ -362,7 +363,9 @@ namespace Pchp.CodeAnalysis.Symbols
                 StrictCeq_double_PhpValue = ct.StrictComparison.Method("Ceq", ct.Double, ct.PhpValue);
                 StrictCeq_double_PhpNumber = ct.StrictComparison.Method("Ceq", ct.Double, ct.PhpNumber);
                 StrictCeq_PhpValue_PhpValue = ct.StrictComparison.Method("Ceq", ct.PhpValue, ct.PhpValue);
+                StrictCeq_string_PhpValue = ct.StrictComparison.Method("Ceq", ct.String, ct.PhpValue);
                 StrictCeq_PhpValue_bool = ct.StrictComparison.Method("Ceq", ct.PhpValue, ct.Boolean);
+                StrictCeq_PhpValue_string = ct.StrictComparison.Method("Ceq", ct.PhpValue, ct.String);
                 StrictCeqNull_PhpValue = ct.StrictComparison.Method("CeqNull", ct.PhpValue);
 
                 Div_PhpValue_PhpValue = ct.PhpValue.Method(WellKnownMemberNames.DivisionOperatorName, ct.PhpValue, ct.PhpValue);
@@ -415,13 +418,13 @@ namespace Pchp.CodeAnalysis.Symbols
                 ReadConstant_Context_String_Int_String,
                 DeclareConstant_Context_string_int_PhpValue,
 
-                Ceq_long_double, Ceq_long_bool, Ceq_long_string, Ceq_double_string, Ceq_string_long, Ceq_string_double, Ceq_string_bool, CeqNull_value,
+                Ceq_long_double, Ceq_long_bool, Ceq_long_string, Ceq_double_string, Ceq_string_long, Ceq_string_double, Ceq_string_bool, Ceq_string_string, CeqNull_value,
                 Clt_long_double, Cgt_long_double,
                 Compare_bool_bool, Compare_number_value,
                 Compare_long_value, Compare_value_long, Compare_value_value, Compare_double_value, Compare_bool_value, Compare_string_string, Compare_string_long, Compare_string_double, Compare_string_value,
                 CompareNull_value,
 
-                StrictCeq_bool_PhpValue, StrictCeq_long_PhpValue, StrictCeq_long_PhpNumber, StrictCeq_double_PhpValue, StrictCeq_double_PhpNumber, StrictCeq_PhpValue_PhpValue,
+                StrictCeq_bool_PhpValue, StrictCeq_long_PhpValue, StrictCeq_long_PhpNumber, StrictCeq_double_PhpValue, StrictCeq_double_PhpNumber, StrictCeq_string_PhpValue, StrictCeq_PhpValue_string, StrictCeq_PhpValue_PhpValue,
                 StrictCeq_PhpValue_bool, StrictCeqNull_PhpValue,
 
                 Div_PhpValue_PhpValue, Div_long_PhpValue, Div_double_PhpValue,
@@ -444,6 +447,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 Eq_PhpValue_PhpValue = ct.PhpValue.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpValue, ct.PhpValue);
                 Eq_PhpValue_String = ct.PhpValue.Operator(WellKnownMemberNames.EqualityOperatorName, ct.PhpValue, ct.String);
+                Eq_String_PhpValue = ct.PhpValue.Operator(WellKnownMemberNames.EqualityOperatorName, ct.String, ct.PhpValue);
+
+                Ineq_PhpValue_PhpValue = ct.PhpValue.Operator(WellKnownMemberNames.InequalityOperatorName, ct.PhpValue, ct.PhpValue);
+                Ineq_PhpValue_String = ct.PhpValue.Operator(WellKnownMemberNames.InequalityOperatorName, ct.PhpValue, ct.String);
+                Ineq_String_PhpValue = ct.PhpValue.Operator(WellKnownMemberNames.InequalityOperatorName, ct.String, ct.PhpValue);
 
                 DeepCopy = ct.PhpValue.Method("DeepCopy");
                 GetValue = ct.PhpValue.Method("GetValue");
@@ -484,7 +492,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToString_Context, ToClass, EnsureObject, EnsureArray, EnsureAlias, GetArrayAccess, ToArray,
                 AsObject, AsString_Context,
                 DeepCopy, GetValue, PassValue, GetArray,
-                Eq_PhpValue_PhpValue, Eq_PhpValue_String,
+                Eq_PhpValue_PhpValue, Eq_PhpValue_String, Eq_String_PhpValue,
+                Ineq_PhpValue_PhpValue, Ineq_PhpValue_String, Ineq_String_PhpValue,
                 Create_Boolean, Create_Long, Create_Int, Create_Double, Create_String, Create_PhpString, Create_PhpNumber, Create_PhpAlias, Create_PhpArray, Create_IntStringKey,
                 FromClr_Object, FromClass_Object;
 

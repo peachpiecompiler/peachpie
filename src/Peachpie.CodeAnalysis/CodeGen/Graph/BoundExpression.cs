@@ -122,13 +122,25 @@ namespace Pchp.CodeAnalysis.Semantics
                 #region Comparing Operations
 
                 case Operations.Equal:
-                    returned_type = EmitEquality(cg);
+                    {
+                        bool negation = false;
+                        returned_type = EmitEquality(cg, ref negation);
+
+                        Debug.Assert(negation == false);
+                    }
                     break;
 
                 case Operations.NotEqual:
-                    EmitEquality(cg);
-                    cg.EmitLogicNegation();
-                    returned_type = cg.CoreTypes.Boolean;
+                    {
+                        bool negation = true;
+                        EmitEquality(cg, ref negation);
+                        returned_type = cg.CoreTypes.Boolean;
+
+                        if (negation)
+                        {
+                            cg.EmitLogicNegation();
+                        }
+                    }
                     break;
 
                 case Operations.GreaterThan:
@@ -890,36 +902,46 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Emits check for values equality.
         /// Lefts <c>bool</c> on top of evaluation stack.
         /// </summary>
-        TypeSymbol EmitEquality(CodeGenerator cg)
+        TypeSymbol EmitEquality(CodeGenerator cg, ref bool negation)
         {
             // x == y
-            return EmitEquality(cg, Left, Right);
+            return EmitEquality(cg, Left, Right, ref negation);
         }
 
         /// <summary>
         /// Emits check for values equality.
         /// Lefts <c>bool</c> on top of evaluation stack.
         /// </summary>
-        internal static TypeSymbol EmitEquality(CodeGenerator cg, BoundExpression left, BoundExpression right)
+        internal static TypeSymbol EmitEquality(CodeGenerator cg, TypeSymbol xtype, BoundExpression right)
+        {
+            bool negation = false;  // unused
+            return EmitEquality(cg, xtype, right, ref negation);
+        }
+
+        /// <summary>
+        /// Emits check for values equality.
+        /// Lefts <c>bool</c> on top of evaluation stack.
+        /// </summary>
+        internal static TypeSymbol EmitEquality(CodeGenerator cg, BoundExpression left, BoundExpression right, ref bool negation)
         {
             if (left.ConstantValue.IsNull())
             {
                 // null == right
-                return EmitEqualityToNull(cg, right);
+                return EmitEqualityToNull(cg, right, ref negation);
             }
             else if (right.ConstantValue.IsNull())
             {
                 // left == null
-                return EmitEqualityToNull(cg, left);
+                return EmitEqualityToNull(cg, left, ref negation);
             }
             else
             {
                 // left == right
-                return EmitEquality(cg, cg.Emit(left), right);
+                return EmitEquality(cg, cg.Emit(left), right, ref negation);
             }
         }
 
-        static TypeSymbol EmitEqualityToNull(CodeGenerator cg, BoundExpression expr)
+        static TypeSymbol EmitEqualityToNull(CodeGenerator cg, BoundExpression expr, ref bool negation)
         {
             // Template: <expr> == null
 
@@ -930,9 +952,18 @@ namespace Pchp.CodeAnalysis.Semantics
             switch (t.SpecialType)
             {
                 case SpecialType.System_Object:
-                    // object == null
                     il.EmitNullConstant();
-                    il.EmitOpCode(ILOpCode.Ceq);
+                    if (negation)
+                    {
+                        // object != null
+                        il.EmitOpCode(ILOpCode.Cgt_un);
+                        negation = false;   // handled
+                    }
+                    else
+                    {
+                        // object == null
+                        il.EmitOpCode(ILOpCode.Ceq);
+                    }
                     return cg.CoreTypes.Boolean;
 
                 case SpecialType.System_Double:
@@ -949,7 +980,15 @@ namespace Pchp.CodeAnalysis.Semantics
                 case SpecialType.System_Int64:
                     // i8 == 0
                     il.EmitLongConstant(0);
-                    il.EmitOpCode(ILOpCode.Ceq);
+                    if (negation)
+                    {
+                        il.EmitOpCode(ILOpCode.Cgt_un);
+                        negation = false; // handled
+                    }
+                    else
+                    {
+                        il.EmitOpCode(ILOpCode.Ceq);
+                    }
                     return cg.CoreTypes.Boolean;
 
                 case SpecialType.System_String:
@@ -986,7 +1025,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Emits check for values equality.
         /// Lefts <c>bool</c> on top of evaluation stack.
         /// </summary>
-        internal static TypeSymbol EmitEquality(CodeGenerator cg, TypeSymbol xtype, BoundExpression right)
+        internal static TypeSymbol EmitEquality(CodeGenerator cg, TypeSymbol xtype, BoundExpression right, ref bool negation)
         {
             TypeSymbol ytype;
 
@@ -1120,21 +1159,29 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
                     else if (ytype.SpecialType == SpecialType.System_String)
                     {
-                        // compare(string, string) == 0
-                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_string_string).Expect(SpecialType.System_Int32);
-                        cg.EmitLogicNegation();
-                        return cg.CoreTypes.Boolean;
+                        // Ceq(string, string)
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Ceq_string_string)
+                            .Expect(SpecialType.System_Boolean);
                     }
                     else
                     {
                         // value
                         ytype = cg.EmitConvertToPhpValue(ytype, 0);
 
-                        // compare(string, value) == 0
-                        cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.Compare_string_value);
-                        cg.EmitLogicNegation();
+                        if (negation)
+                        {
+                            // string != value
+                            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Ineq_String_PhpValue)
+                                .Expect(SpecialType.System_Boolean);
+                            negation = false;   // handled
+                        }
+                        else
+                        {
+                            // string == value
+                            cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Eq_String_PhpValue)
+                                .Expect(SpecialType.System_Boolean);
+                        }
                         return cg.CoreTypes.Boolean;
-
                     }
 
                 //case SpecialType.System_Object:
@@ -1181,18 +1228,38 @@ namespace Pchp.CodeAnalysis.Semantics
                         switch (ytype.SpecialType)
                         {
                             case SpecialType.System_String:
-                                // value == string
-                                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Eq_PhpValue_String)
-                                    .Expect(SpecialType.System_Boolean);
+                                if (negation)
+                                {
+                                    negation = false;   // handled
+                                    // value == string
+                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Ineq_PhpValue_String)
+                                        .Expect(SpecialType.System_Boolean);
+                                }
+                                else
+                                {
+                                    // value == string
+                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Eq_PhpValue_String)
+                                        .Expect(SpecialType.System_Boolean);
+                                }
 
                             // TODO: more types on right
 
                             default:
                                 ytype = cg.EmitConvertToPhpValue(ytype, right.TypeRefMask);
 
-                                // value == value
-                                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Eq_PhpValue_PhpValue)
-                                    .Expect(SpecialType.System_Boolean);
+                                if (negation)
+                                {
+                                    negation = false; // handled
+                                    // value == value
+                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Ineq_PhpValue_PhpValue)
+                                        .Expect(SpecialType.System_Boolean);
+                                }
+                                else
+                                {
+                                    // value == value
+                                    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.Eq_PhpValue_PhpValue)
+                                        .Expect(SpecialType.System_Boolean);
+                                }
                         }
                     }
             }
@@ -1303,9 +1370,9 @@ namespace Pchp.CodeAnalysis.Semantics
                     }
                     else if (
                         ytype.SpecialType == SpecialType.System_Boolean ||
-                        ytype.SpecialType == SpecialType.System_String ||
-                        ytype.SpecialType == SpecialType.System_Int64 ||
                         ytype.SpecialType == SpecialType.System_Int32 ||
+                        ytype.SpecialType == SpecialType.System_Int64 ||
+                        ytype.SpecialType == SpecialType.System_String ||
                         ytype.IsOfType(cg.CoreTypes.IPhpArray) ||
                         ytype == cg.CoreTypes.Object ||
                         ytype == cg.CoreTypes.PhpString)
@@ -1321,6 +1388,36 @@ namespace Pchp.CodeAnalysis.Semantics
                         // r8 == PhpValue
                         if (ytype != cg.CoreTypes.PhpValue) { cg.EmitConvertToPhpValue(ytype, right.TypeRefMask); }
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.StrictCeq_double_PhpValue)
+                            .Expect(SpecialType.System_Boolean);
+                    }
+
+                case SpecialType.System_String:
+                    // string === RValue
+                    ytype = cg.Emit(right);
+                    if (ytype.SpecialType == SpecialType.System_String)
+                    {
+                        // string === string
+                        return cg.EmitCall(ILOpCode.Call, (MethodSymbol)cg.DeclaringCompilation.GetSpecialTypeMember(SpecialMember.System_String__op_Equality));
+                    }
+                    else if (
+                        ytype.SpecialType == SpecialType.System_Boolean ||
+                        ytype.SpecialType == SpecialType.System_Int32 ||
+                        ytype.SpecialType == SpecialType.System_Int64 ||
+                        ytype.SpecialType == SpecialType.System_Double ||
+                        ytype.IsOfType(cg.CoreTypes.IPhpArray) ||
+                        ytype == cg.CoreTypes.Object)
+                    {
+                        // string == something else => false
+                        cg.EmitPop(ytype);
+                        cg.EmitPop(xtype);
+                        cg.Builder.EmitBoolConstant(false);
+                        return cg.CoreTypes.Boolean;
+                    }
+                    else
+                    {
+                        // string === value
+                        ytype = cg.EmitConvertToPhpValue(ytype, 0);
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.StrictCeq_string_PhpValue)
                             .Expect(SpecialType.System_Boolean);
                     }
 
@@ -1352,6 +1449,12 @@ namespace Pchp.CodeAnalysis.Semantics
                     {
                         // PhpValue == bool
                         return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.StrictCeq_PhpValue_bool)
+                            .Expect(SpecialType.System_Boolean);
+                    }
+                    else if (ytype.SpecialType == SpecialType.System_String)
+                    {
+                        // value === string
+                        return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.StrictCeq_PhpValue_string)
                             .Expect(SpecialType.System_Boolean);
                     }
                     else
