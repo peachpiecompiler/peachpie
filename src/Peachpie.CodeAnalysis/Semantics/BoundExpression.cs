@@ -1925,6 +1925,8 @@ namespace Pchp.CodeAnalysis.Semantics
             }
         }
 
+        public override bool IsDeeplyCopied => false;   // Emit() always creates an instance that does not need to be deepcopied again
+
         public override OperationKind Kind => OperationKind.ArrayCreation;
 
         public override bool RequiresContext => _items.Any(x => (x.Key != null && x.Key.RequiresContext) || x.Value.RequiresContext);
