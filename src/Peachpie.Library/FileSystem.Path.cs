@@ -112,17 +112,34 @@ namespace Pchp.Library
         /// <param name="path">The full path.</param>
         /// <param name="levels">The number of parent directories to go up. Must be greater than zero.</param>
         /// <returns>The directory portion of the given path.</returns>
+        [return: NotNull]
         public static string dirname(string path, int levels = 1)
         {
-            if (string.IsNullOrEmpty(path))
+            if (string.IsNullOrEmpty(path)) return string.Empty;
+            if (levels < 1) throw new ArgumentOutOfRangeException(nameof(levels));
+
+            var pathspan = path.AsSpan();
+
+            while (levels-- > 0)
             {
-                return null;
+                pathspan = dirname(pathspan);
             }
 
-            if (levels != 1)
+            //
+            return pathspan.ToString();
+        }
+
+        static ReadOnlySpan<char> dirname(ReadOnlySpan<char> path)
+        {
+            if (path.IsEmpty)
             {
-                // added in php 7.0
-                throw new NotImplementedException();
+                return ReadOnlySpan<char>.Empty;
+            }
+
+            if (path.IndexOfAny(CurrentPlatform.DirectorySeparator, CurrentPlatform.AltDirectorySeparator) < 0)
+            {
+                // If there are no slashes in path, a dot ('.') is returned, indicating the current directory
+                return ".".AsSpan();
             }
 
             int start = 0;
@@ -133,25 +150,28 @@ namespace Pchp.Library
             {
                 start = 2;
                 if (path.Length == 2)
+                {
                     return path;
+                }
             }
 
             // strip slashes from the end:
             while (end >= start && path[end].IsDirectorySeparator()) end--;
             if (end < start)
-                return path.Substring(0, end + 1) + PathUtils.AltDirectorySeparator;
+                return (path.Slice(0, end + 1).ToString() + CurrentPlatform.DirectorySeparator).AsSpan();
 
             // strip file name:
             while (end >= start && !path[end].IsDirectorySeparator()) end--;
             if (end < start)
-                return path.Substring(0, end + 1) + '.';
+                return (path.Slice(0, end + 1).ToString() + ".").AsSpan();
 
             // strip slashes from the end:
             while (end >= start && path[end].IsDirectorySeparator()) end--;
             if (end < start)
-                return path.Substring(0, end + 1) + PathUtils.AltDirectorySeparator;
+                return (path.Slice(0, end + 1).ToString() + CurrentPlatform.DirectorySeparator).AsSpan();
 
-            return path.Substring(0, end + 1);
+            // result:
+            return path.Slice(0, end + 1);
         }
 
         /// <summary>
@@ -304,7 +324,7 @@ namespace Pchp.Library
         /// The given <paramref name="path"/> combined with the current working directory or
         /// <B>false</B> if the path is invalid or doesn't exists.
         /// </returns>
-        [return:CastToFalse]
+        [return: CastToFalse]
         public static string realpath(Context ctx, string path)
         {
             if (path == null)
