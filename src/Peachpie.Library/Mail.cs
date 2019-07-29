@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Net.Mail;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -834,4 +835,40 @@ namespace Pchp.Library
 
         #endregion
     }
+
+    ////[PhpExtension("IMAP")] // uncomment when the extension is ready
+    //public static class Imap
+    //{
+    //    /// <summary>
+    //    /// Parses an address string.
+    //    /// </summary>
+    //    [return: NotNull]
+    //    public static PhpArray imap_rfc822_parse_adrlist(string addresses, string default_host = null)
+    //    {
+    //        if (string.IsNullOrEmpty(addresses))
+    //        {
+    //            return PhpArray.NewEmpty();
+    //        }
+
+    //        var collection = new MailAddressCollection();
+    //        collection.Add(addresses);
+
+    //        var arr = new PhpArray(collection.Count);
+    //        foreach (var addr in collection)
+    //        {
+    //            var item = new PhpArray(3)
+    //            {
+    //                { "mailbox", addr.User },
+    //                { "host", addr.Host ?? default_host },
+    //            };
+                
+    //            if (addr.DisplayName != null) item["personal"] = addr.DisplayName;
+
+    //            arr.Add(item.ToObject());
+    //        }
+
+    //        //
+    //        return arr;
+    //    }
+    //}
 }
