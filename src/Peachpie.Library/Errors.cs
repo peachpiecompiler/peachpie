@@ -119,9 +119,9 @@ namespace Pchp.Library
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="level">The new level.</param>
         /// <returns>The original level.</returns>
-        public static int error_reporting(Context ctx, int level)
+        public static int error_reporting(Context ctx, PhpError level)
         {
-            if ((level & (int)PhpErrorSets.All) == 0 && level != 0)
+            if ((level & (PhpError)PhpErrorSets.All) == 0 && level != 0)
             {
                 //PhpException.InvalidArgument("level");
                 throw new ArgumentException(nameof(level));
@@ -129,7 +129,7 @@ namespace Pchp.Library
 
             var errctx = GetErrorContext(ctx);
             var result = (int)errctx.ReportErrors;
-            errctx.ReportErrors = (PhpError)level & (PhpError)PhpErrorSets.All;
+            errctx.ReportErrors = level & (PhpError)PhpErrorSets.All;
             return result;
         }
 
