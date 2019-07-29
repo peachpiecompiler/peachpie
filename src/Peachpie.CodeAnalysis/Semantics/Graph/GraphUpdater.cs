@@ -70,9 +70,31 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             return alternate?.MoveToImmutable() ?? arr;
         }
 
+        protected ImmutableArray<T> VisitBlockImmutableArray<T>(ImmutableArray<T> arr) where T : BoundBlock
+        {
+            if (arr.IsDefaultOrEmpty)
+            {
+                return arr;
+            }
 
+            ImmutableArray<T>.Builder alternate = null;
+            for (int i = 0; i < arr.Length; i++)
+            {
+                var orig = arr[i];
+                var visited = orig?.Accept(this);
 
-        //protected ImmutableArray<T> VisitBlockImmutableArray<T>(ImmutableArray<T> arr) where T : BoundBlock => VisitImmutableArray(arr);
+                if (visited != orig)
+                {
+                    if (alternate == null)
+                    {
+                        alternate = arr.ToBuilder();
+                    }
+                    alternate[i] = (T)visited;
+                }
+            }
+
+            return alternate?.MoveToImmutable() ?? arr;
+        }
 
         protected ImmutableArray<KeyValuePair<T1, T2>> VisitImmutableArrayPairs<T1, T2>(ImmutableArray<KeyValuePair<T1, T2>> arr)
             where T1 : BoundOperation, IPhpOperation
@@ -205,7 +227,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             return x.Update(
                 (BoundBlock)Accept(x.BodyBlock),
-                VisitImmutableArray(x.CatchBlocks),
+                VisitBlockImmutableArray(x.CatchBlocks),
                 (BoundBlock)Accept(x.FinallyBlock),
                 (BoundBlock)Accept(x.NextBlock));
         }
@@ -255,7 +277,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             return x.Update(
                 (BoundExpression)Accept(x.SwitchValue),
-                VisitImmutableArray(x.CaseBlocks),
+                VisitBlockImmutableArray(x.CaseBlocks),
                 (BoundBlock)Accept(x.NextBlock));
         }
 
