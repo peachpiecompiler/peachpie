@@ -16,6 +16,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 {
     public partial class AnalysisWalker<T> : GraphWalker<T>
     {
+        #region Nested enum: AnalysisFlags
+
+        /// <summary>
+        /// Analysis progress flags.
+        /// </summary>
+        protected enum AnalysisFlags
+        {
+            /// <summary>
+            /// The analysis has been canceled since internal state has changed.
+            /// </summary>
+            IsCanceled = 1,
+        }
+
+        #endregion
+
         #region Fields
 
         /// <summary>
@@ -27,22 +42,22 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets current type context for type masks resolving.
         /// </summary>
-        internal TypeRefContext TypeCtx => _state.TypeRefContext;
+        internal TypeRefContext TypeCtx => State.TypeRefContext;
 
         /// <summary>
         /// Current flow state.
         /// </summary>
-        internal FlowState State
-        {
-            get { return _state; }
-            set { _state = value; }
-        }
-        FlowState _state;
+        internal FlowState State { get; private protected set; }
 
         /// <summary>
         /// Gets reference to current block.
         /// </summary>
         internal BoundBlock CurrentBlock { get; private set; }
+
+        /// <summary>
+        /// Gathered analysis progress.
+        /// </summary>
+        protected AnalysisFlags _flags;
 
         #endregion
 
@@ -67,7 +82,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         void AssertState()
         {
-            Debug.Assert(_state != null);
+            Debug.Assert(State != null);
         }
 
         /// <summary>
@@ -112,12 +127,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         /// <summary>
         /// Called to initialize <see cref="VisitCFGBlock"/> call.
-        /// Sets <see cref="_state"/> to known initial block state.
+        /// Sets <see cref="State"/> to known initial block state.
         /// </summary>
         protected virtual void VisitCFGBlockInit(BoundBlock/*!*/x)
         {
             Contract.ThrowIfNull(x.FlowState);   // state should be already set by previous edge
-            _state = x.FlowState.Clone();        // TFlowState for the statements in the block
+            State = x.FlowState.Clone();         // TFlowState for the statements in the block
 
             this.CurrentBlock = x;
         }
@@ -346,10 +361,22 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             return default;
         }
 
+        protected override T AcceptEdge(BoundBlock fromBlock, Edge edge)
+        {
+            if ((_flags & AnalysisFlags.IsCanceled) == 0)
+            {
+                return base.AcceptEdge(fromBlock, edge);
+            }
+            else
+            {
+                return default;
+            }
+        }
+
         public override T VisitCFGBlock(BoundBlock x)
         {
             VisitCFGBlockInit(x);
-            DefaultVisitBlock(x);   // modifies _state, traverses to the edge
+            DefaultVisitBlock(x);   // modifies State, traverses to the edge
 
             return default;
         }
@@ -369,15 +396,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             if (exit != null)
             {
                 bool wasNotAnalysed = false;
-                if (_state.Routine?.IsReturnAnalysed == false)
+                if (State.Routine?.IsReturnAnalysed == false)
                 {
                     wasNotAnalysed = true;
-                    _state.Routine.IsReturnAnalysed = true;
+                    State.Routine.IsReturnAnalysed = true;
                 }
 
                 // Ping the subscribers either if the return type has changed or
                 // it is the first time the analysis reached the routine exit
-                var rtype = _state.GetReturnType();
+                var rtype = State.GetReturnType();
                 if (rtype != exit._lastReturnTypeMask || wasNotAnalysed)
                 {
                     exit._lastReturnTypeMask = rtype;
@@ -428,7 +455,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override T VisitCFGSimpleEdge(SimpleEdge x)
         {
-            TraverseToBlock(x, _state, x.NextBlock);
+            TraverseToBlock(x, State, x.NextBlock);
 
             return default;
         }
@@ -436,17 +463,17 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public override T VisitCFGConditionalEdge(ConditionalEdge x)
         {
             // build state for TrueBlock and FalseBlock properly, take minimal evaluation into account
-            var state = _state;
+            var state = State;
 
             // true branch
-            _state = state.Clone();
+            State = state.Clone();
             VisitCondition(x.Condition, ConditionBranch.ToTrue);
-            TraverseToBlock(x, _state, x.TrueTarget);
+            TraverseToBlock(x, State, x.TrueTarget);
 
             // false branch
-            _state = state.Clone();
+            State = state.Clone();
             VisitCondition(x.Condition, ConditionBranch.ToFalse);
-            TraverseToBlock(x, _state, x.FalseTarget);
+            TraverseToBlock(x, State, x.FalseTarget);
 
             return default;
         }
@@ -461,13 +488,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override T VisitCFGForeachMoveNextEdge(ForeachMoveNextEdge x)
         {
-            var state = _state;
+            var state = State;
             // get type information from Enumeree to determine types value variable
             var elementType = HandleTraversableUse(x.EnumereeEdge.Enumeree);
             if (elementType.IsVoid) elementType = TypeRefMask.AnyType;
 
             // Body branch
-            _state = state.Clone();
+            State = state.Clone();
             // set key variable and value variable at current state
 
             var valueVar = x.ValueVariable;
@@ -483,11 +510,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 Visit(keyVar, keyVar.Access.WithWrite(TypeRefMask.AnyType));
             }
 
-            TraverseToBlock(x, _state, x.BodyBlock);
+            TraverseToBlock(x, State, x.BodyBlock);
 
             // End branch
-            _state = state.Clone();
-            TraverseToBlock(x, _state, x.NextBlock);
+            State = state.Clone();
+            TraverseToBlock(x, State, x.NextBlock);
 
             return default;
         }
@@ -496,7 +523,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             Accept(x.SwitchValue);
 
-            var state = _state;
+            var state = State;
 
             foreach (var c in x.CaseBlocks)
             {
@@ -514,7 +541,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public override T VisitCFGTryCatchEdge(TryCatchEdge x)
         {
-            var state = _state;
+            var state = State;
 
             // TODO: any expression inside try{} block can traverse to catch{} or finally{}.
 

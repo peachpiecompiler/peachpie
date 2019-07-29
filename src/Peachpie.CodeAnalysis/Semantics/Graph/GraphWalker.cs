@@ -16,12 +16,6 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     /// <remarks>Visitor does not implement infinite recursion prevention.</remarks>
     public abstract class GraphWalker<T> : GraphVisitor<T>
     {
-        #region Properties
-
-        protected bool IsEdgeVisitingStopped { get; set; } = false;
-
-        #endregion
-
         #region ControlFlowGraph
 
         public override T VisitCFG(ControlFlowGraph x)
@@ -50,10 +44,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             VisitCFGBlockStatements(x);
 
-            if (x.NextEdge != null && !IsEdgeVisitingStopped)
-                x.NextEdge.Accept(this);
+            AcceptEdge(x, x.NextEdge);
 
             return default;
+        }
+
+        protected virtual T AcceptEdge(BoundBlock fromBlock, Edge edge)
+        {
+            return edge != null ? edge.Accept(this) : default;
         }
 
         public override T VisitCFGBlock(BoundBlock x)

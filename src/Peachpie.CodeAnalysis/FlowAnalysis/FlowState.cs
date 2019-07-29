@@ -18,19 +18,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Gets flow context.
         /// </summary>
-        public FlowContext/*!*/FlowContext => _flowCtx;
-        readonly FlowContext _flowCtx;
+        public FlowContext/*!*/FlowContext { get; }
 
         /// <summary>
         /// Gets type context.
         /// </summary>
-        public TypeRefContext/*!*/TypeRefContext => _flowCtx.TypeRefContext;
+        public TypeRefContext/*!*/TypeRefContext => FlowContext.TypeRefContext;
 
         /// <summary>
         /// Source routine.
         /// Can be <c>null</c>.
         /// </summary>
-        public SourceRoutineSymbol Routine => _flowCtx.Routine;
+        public SourceRoutineSymbol Routine => FlowContext.Routine;
 
         /// <summary>
         /// Types of variables in this state.
@@ -50,8 +49,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// <summary>
         /// Version of the analysis this state was created for.
         /// </summary>
-        internal int Version => _version;
-        readonly int _version;
+        internal int Version { get; }
 
         #endregion
 
@@ -68,7 +66,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             Debug.Assert(state1.Version == state2.Version);
 
             //
-            _flowCtx = state1._flowCtx;
+            FlowContext = state1.FlowContext;
             _varsType = EnumeratorExtension.MergeArrays(state1._varsType, state2._varsType, MergeType);
             _initializedMask = state1._initializedMask | state2._initializedMask;
 
@@ -79,7 +77,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 _notes.Intersect(state2._notes);
             }
 
-            _version = state1.Version;
+            Version = state1.Version;
 
             //// merge variables kind,
             //// conflicting kinds are not allowed currently!
@@ -98,7 +96,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         {
             Contract.ThrowIfNull(flowCtx);
 
-            _flowCtx = flowCtx;
+            FlowContext = flowCtx;
             _initializedMask = (ulong)0;
 
             // initial size of the array
@@ -107,7 +105,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 : 0;
             _varsType = new TypeRefMask[countHint];
 
-            _version = flowCtx.Version;
+            Version = flowCtx.Version;
         }
 
         /// <summary>
@@ -125,7 +123,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 _notes = new HashSet<NoteData>(other._notes);
             }
 
-            _version = other._version;
+            Version = other.Version;
 
             //if (other._varKindMap != null)
             //{
@@ -141,9 +139,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
             Contract.ThrowIfNull(flowCtx);
             Contract.ThrowIfNull(varsType);
 
-            _flowCtx = flowCtx;
+            FlowContext = flowCtx;
             _varsType = (TypeRefMask[])varsType.Clone();
-            _version = flowCtx.Version;
+            Version = flowCtx.Version;
         }
 
         #endregion
@@ -156,7 +154,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 return true;
 
             if (other == null ||
-                other._flowCtx != _flowCtx ||
+                other.FlowContext != FlowContext ||
                 other._initializedMask != _initializedMask)
                 return false;
 
@@ -203,7 +201,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public VariableHandle/*!*/GetLocalHandle(VariableName varname)
         {
-            return _flowCtx.GetVarIndex(varname);
+            return FlowContext.GetVarIndex(varname);
         }
 
         /// <summary>
@@ -271,7 +269,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public void VisitLocal(VariableHandle handle)
         {
             handle.ThrowIfInvalid();
-            _flowCtx.SetUsed(handle);
+            FlowContext.SetUsed(handle);
         }
 
         /// <summary>
@@ -283,7 +281,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                 ? TypeRefMask.AnyType.WithRefFlag
                 : TypeRefMask.AnyType;
 
-            foreach (var v in _flowCtx.EnumerateVariables())
+            foreach (var v in FlowContext.EnumerateVariables())
             {
                 SetLocalType(v, tmask);
             }
@@ -304,7 +302,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
         public void FlowThroughReturn(TypeRefMask type)
         {
-            _flowCtx.ReturnType |= type;
+            FlowContext.ReturnType |= type;
         }
 
         public void SetVarInitialized(VariableHandle handle)
@@ -415,7 +413,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         /// </summary>
         public TypeRefMask GetReturnType()
         {
-            return _flowCtx.ReturnType;
+            return FlowContext.ReturnType;
         }
 
         /// <summary>

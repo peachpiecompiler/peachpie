@@ -1408,7 +1408,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         // note: continuing current block may be waste of time, but it might gather other called targets
 
                         // The next blocks will be analysed after this routine is re-enqueued due to the dependency
-                        IsEdgeVisitingStopped = true;
+                        _flags |= AnalysisFlags.IsCanceled;
                     }
                 }
 
@@ -1472,7 +1472,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                         if (Worklist.EnqueueRoutine(m, CurrentBlock, x))
                         {
                             // The next blocks will be analysed after this routine is re-enqueued due to the dependency
-                            IsEdgeVisitingStopped = true;
+                            _flags |= AnalysisFlags.IsCanceled;
                         }
 
                         r |= m.GetResultType(TypeCtx);
