@@ -868,6 +868,11 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
                 else
                 {
+                    if (x is AST.SpreadItem)
+                    {
+                        throw new NotImplementedException("'...' spread array operator");
+                    }
+
                     Debug.Assert(x is AST.RefItem || x is AST.ValueItem);
 
                     var boundIndex = (x.Index != null) ? BindExpression(x.Index, BoundAccess.Read) : null;
