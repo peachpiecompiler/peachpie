@@ -64,6 +64,11 @@ namespace Pchp.CodeAnalysis.DocumentationComments
 
         static void AppendParameters(ImmutableArray<ParameterSymbol> parameters, bool isVararg, StringBuilder builder)
         {
+            if (parameters.IsDefaultOrEmpty)
+            {
+                return; // no parameters do not even have "()"
+            }
+
             builder.Append('(');
             bool needsComma = false;
 

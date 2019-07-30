@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis;
 using Pchp.CodeAnalysis.Symbols;
 using System.Text;
 using Devsense.PHP.Syntax;
+using System.Diagnostics;
 
 namespace Pchp.CodeAnalysis.DocumentationComments
 {
@@ -26,6 +27,17 @@ namespace Pchp.CodeAnalysis.DocumentationComments
         readonly StreamWriter _writer;
         readonly DiagnosticBag _xmlDiagnostics;
         readonly CancellationToken _cancellationToken;
+
+        readonly Dictionary<string, object> _written = new Dictionary<string, object>(512);
+
+        bool AddToWritten(string id, object symbol)
+        {
+            var count = _written.Count;
+
+            _written[id] = symbol;
+
+            return count != _written.Count; // item has been added
+        }
 
         private DocumentationCommentCompiler(Stream xmlDocStream, DiagnosticBag xmlDiagnostics, CancellationToken cancellationToken)
         {
@@ -126,7 +138,9 @@ namespace Pchp.CodeAnalysis.DocumentationComments
 
             if (!string.IsNullOrEmpty(type))
             {
-                // type="int|string|bool"
+                // THIS IS A CUSTOM XML NOTATION, NOT SUPPORTED BY MS IDE
+
+                // type="int|string|bool" 
                 _writer.Write(" type=\"");
                 _writer.Write(XmlEncode(type));
                 _writer.Write('\"');
@@ -137,32 +151,70 @@ namespace Pchp.CodeAnalysis.DocumentationComments
             _writer.WriteLine("</param>");
         }
 
+        void WriteException(string[] types, string pdesc)
+        {
+            if (string.IsNullOrWhiteSpace(pdesc) || types == null)
+            {
+                return;
+            }
+
+            //
+            for (int i = 0; i < types.Length; i++)
+            {
+                var t = types[i];
+
+                _writer.Write("<exception cref=\"");
+                _writer.Write(XmlEncode(QualifiedName.Parse(t, true).ClrName()));   // TODO: CommentIdResolver.GetId(..)    // TODO: translate correctly using current naming context
+                _writer.Write('\"');
+                _writer.Write('>');
+                _writer.Write(XmlEncode(pdesc));
+                _writer.WriteLine("</exception>");
+            }
+        }
+
         void WriteRoutine(string id, SourceRoutineSymbol routine)
         {
+            if (!AddToWritten(id, routine))
+            {
+                // already written
+                return;
+            }
+
+            var phpdoc = routine.PHPDocBlock;
+            if (phpdoc == null)
+            {
+                // no documentation
+                return;
+            }
+
             _writer.WriteLine($"<member name=\"{id}\">");
 
             //var ps = routine.Parameters;
 
             // PHPDoc
-            var phpdoc = routine.PHPDocBlock;
-            if (phpdoc != null)
+            WriteSummary(phpdoc.Summary);
+
+            var elements = phpdoc.Elements;
+            for (int i = 0; i < elements.Length; i++)
             {
-                WriteSummary(phpdoc.Summary);
-
                 // user parameters
-                foreach (var p in phpdoc.Params)
+                if (elements[i] is PHPDocBlock.ParamTag p)
                 {
-                    // TODO: note the parameter type into Doc comment
-
                     if (p.VariableName != null)
                     {
                         WriteParam(p.VariableName.TrimStart('$'), p.Description, p.TypeNames);
                     }
                 }
-                var rtag = phpdoc.Returns;
-                if (rtag != null && !string.IsNullOrWhiteSpace(rtag.Description))
+                else if (elements[i] is PHPDocBlock.ReturnTag rtag)
                 {
-                    _writer.WriteLine("<returns>{0}</returns>", XmlEncode(rtag.Description));
+                    if (!string.IsNullOrWhiteSpace(rtag.Description))
+                    {
+                        _writer.WriteLine("<returns>{0}</returns>", XmlEncode(rtag.Description));
+                    }
+                }
+                else if (elements[i] is PHPDocBlock.ExceptionTag ex)
+                {
+                    WriteException(ex.TypeNamesArray, ex.Description);
                 }
             }
 
@@ -187,7 +239,12 @@ namespace Pchp.CodeAnalysis.DocumentationComments
             _writer.WriteLine("</member>");
         }
 
-        void WriteRoutine(SourceRoutineSymbol routine) => WriteRoutine(CommentIdResolver.GetId(routine), routine);
+        void WriteRoutine(SourceRoutineSymbol routine)
+        {
+            if (routine.IsGlobalScope) return;  // global code have no XML annotation
+            
+            WriteRoutine(CommentIdResolver.GetId(routine), routine);
+        }
 
         void WriteType(SourceTypeSymbol type)
         {
@@ -237,11 +294,19 @@ namespace Pchp.CodeAnalysis.DocumentationComments
             //
             // .ctor
             //
-            foreach (var ctor in type.InstanceConstructors)
+            var ctors = type.InstanceConstructors;
+            for (int i = 0; i < ctors.Length; i++)
             {
-                if (ctor is SynthesizedPhpCtorSymbol synctor && synctor.PhpConstructor is SourceRoutineSymbol phpctor)
+                /// find __construct()
+                if (ctors[i] is SynthesizedPhpCtorSymbol synctor && synctor.PhpConstructor is SourceRoutineSymbol php_construct)
                 {
-                    WriteRoutine(CommentIdResolver.GetId(synctor), phpctor);
+                    // annotate all generated .ctor() methods:
+                    for (int j = 0; j < ctors.Length; j++)
+                    {
+                        WriteRoutine(CommentIdResolver.GetId(ctors[j]), php_construct);
+                    }
+
+                    break;
                 }
             }
         }
