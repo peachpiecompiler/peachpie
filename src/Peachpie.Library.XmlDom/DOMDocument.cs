@@ -762,7 +762,7 @@ namespace Peachpie.Library.XmlDom
 
             var settings = new XmlWriterSettings()
             {
-                NewLineHandling = NewLineHandling.Replace,
+                NewLineHandling = NewLineHandling.None,
                 Encoding = Utils.GetNodeEncoding(ctx, xml_node),
                 Indent = _formatOutput,
                 OmitXmlDeclaration = omitXmlDeclaration
