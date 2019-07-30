@@ -78,6 +78,7 @@ namespace Pchp.CodeAnalysis.Symbols
         public static CoreField Field(this CoreType type, string name) => new CoreField(type, name);
         public static CoreOperator Operator(this CoreType type, string name, params CoreType[] ptypes) => new CoreOperator(type, name, ptypes);
         public static CoreConstructor Ctor(this CoreType type, params CoreType[] ptypes) => new CoreConstructor(type, ptypes);
+        public static CoreCast CastImplicit(this CoreType type, CoreType target) => new CoreCast(type, target, false);
     }
 
     /// <summary>

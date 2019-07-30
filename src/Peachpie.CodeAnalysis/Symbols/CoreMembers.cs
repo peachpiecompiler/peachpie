@@ -181,18 +181,39 @@ namespace Pchp.CodeAnalysis.Symbols
     {
         readonly CoreType _castTo;
 
-        public CoreCast(CoreType declaringClass, CoreType castTo, bool explicit_cast)
-            : base(declaringClass, explicit_cast ? WellKnownMemberNames.ExplicitConversionName : WellKnownMemberNames.ImplicitConversionName, declaringClass)
+        public CoreCast(CoreType castFrom, CoreType castTo, bool explicit_cast)
+            : base(castFrom, explicit_cast ? WellKnownMemberNames.ExplicitConversionName : WellKnownMemberNames.ImplicitConversionName, castFrom)
         {
-            _castTo = castTo;
+            _castTo = castTo ?? throw new ArgumentNullException(nameof(castTo));
+        }
+
+        static MethodSymbol ResolveMethod(NamedTypeSymbol declaringType, TypeSymbol castfrom, TypeSymbol castTo, string memberName)
+        {
+            var methods = declaringType.GetMembers(memberName);
+            for (int i = 0; i < methods.Length; i++)
+            {
+                if (methods[i] is MethodSymbol m &&
+                    m.HasSpecialName &&
+                    m.IsStatic &&
+                    m.ParameterCount == 1 &&
+                    m.Parameters[0].Type == castfrom &&
+                    m.ReturnType == castTo)
+                {
+                    return m;
+                }
+            }
+
+            return null;
         }
 
         protected override MethodSymbol ResolveSymbol(NamedTypeSymbol declaringType)
         {
-            return declaringType.GetMembers(MemberName)
-                .OfType<MethodSymbol>()
-                .Where(m => m.HasSpecialName && m.IsStatic && m.ParameterCount == 1 && m.Parameters[0].Type == declaringType && m.ReturnType == _castTo)
-                .FirstOrDefault();
+            // {castTo}.op_implicit({castFrom}) : {castTo}
+            // {castFrom}.op_implicit({castFrom}) : {castTo}
+
+            return
+                ResolveMethod(declaringType, declaringType, _castTo, MemberName) ??
+                ResolveMethod(_castTo, declaringType, _castTo, MemberName);
         }
     }
 
@@ -693,12 +714,17 @@ namespace Pchp.CodeAnalysis.Symbols
                 AsArray_PhpString = ct.PhpString.Method("AsArray", ct.PhpString);
 
                 IsNull_PhpString = ct.PhpString.Method("IsNull", ct.PhpString);
+
+                implicit_from_string = ct.String.CastImplicit(ct.PhpString);
             }
 
             public readonly CoreMethod
                 ToString_Context, ToNumber, ToBytes_Context,
                 EnsureWritable, AsWritable_PhpString, AsArray_PhpString,
                 IsNull_PhpString;
+
+            public readonly CoreCast
+                implicit_from_string;
         }
 
         public struct PhpStringBlobHolder
@@ -807,7 +833,6 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 PhpAlias_PhpValue_int = ct.PhpAlias.Ctor(ct.PhpValue, ct.Int32);
                 PhpString_Blob = ct.PhpString.Ctor(ct.PhpString_Blob);
-                PhpString_string = ct.PhpString.Ctor(ct.String);
                 PhpString_string_string = ct.PhpString.Ctor(ct.String, ct.String);
                 PhpString_PhpValue_Context = ct.PhpString.Ctor(ct.PhpValue, ct.Context);
                 PhpString_PhpString = ct.PhpString.Ctor(ct.PhpString);
@@ -834,7 +859,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreConstructor
                 PhpAlias_PhpValue_int,
                 PhpArray, PhpArray_int,
-                PhpString_Blob, PhpString_string, PhpString_PhpString, PhpString_string_string, PhpString_PhpValue_Context,
+                PhpString_Blob, PhpString_PhpString, PhpString_string_string, PhpString_PhpValue_Context,
                 Blob,
                 IntStringKey_int, IntStringKey_string,
                 ScriptAttribute_string, PhpTraitAttribute, PharAttribute_string, PhpTypeAttribute_string_string, PhpFieldsOnlyCtorAttribute, PhpHiddenAttribute, NotNullAttribute,

@@ -4464,8 +4464,8 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
                 else if (tArray == cg.CoreTypes.String)
                 {
-                    // Template: new PhpString(string)
-                    tArray = cg.EmitCall(ILOpCode.Newobj, cg.CoreMethods.Ctors.PhpString_string);
+                    // Template: (PhpString)string
+                    tArray = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpString.implicit_from_string);
                 }
                 else if (
                     tArray == cg.CoreTypes.Void ||

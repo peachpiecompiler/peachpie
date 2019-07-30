@@ -266,15 +266,15 @@ namespace Pchp.CodeAnalysis.CodeGen
             {
                 if (from.SpecialType == SpecialType.System_Void)
                 {
-                    // Template: new PhpString("")
+                    // Template: (PhpString)""
                     _il.EmitStringConstant(string.Empty);
-                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString_string);
+                    EmitCall(ILOpCode.Call, CoreMethods.PhpString.implicit_from_string);
                 }
                 else
                 {
-                    // new PhpString(string)
+                    // (PhpString)string
                     EmitConvertToString(from, fromHint);
-                    EmitCall(ILOpCode.Newobj, CoreMethods.Ctors.PhpString_string);
+                    EmitCall(ILOpCode.Call, CoreMethods.PhpString.implicit_from_string);
                 }
             }
             else
