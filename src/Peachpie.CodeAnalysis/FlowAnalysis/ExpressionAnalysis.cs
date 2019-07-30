@@ -1544,10 +1544,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             if (x.Name.IsDirect)
             {
-                var symbol = (MethodSymbol)_model.ResolveFunction(x.Name.NameValue);
+                var symbol = (MethodSymbol)DeclaringCompilation.ResolveFunction(x.Name.NameValue, Routine);
                 if (symbol.IsMissingMethod() && x.NameOpt.HasValue)
                 {
-                    symbol = (MethodSymbol)_model.ResolveFunction(x.NameOpt.Value);
+                    symbol = (MethodSymbol)DeclaringCompilation.ResolveFunction(x.NameOpt.Value, Routine);
                 }
 
                 var overloads = symbol is AmbiguousMethodSymbol ambiguous && ambiguous.IsOverloadable

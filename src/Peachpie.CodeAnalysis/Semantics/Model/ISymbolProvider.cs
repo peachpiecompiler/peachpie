@@ -42,10 +42,5 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Resolves single global constant valid in current context.
         /// </summary>
         IPhpValue ResolveConstant(string name);
-
-        /// <summary>
-        /// Gets enumeration of referenced extensions.
-        /// </summary>
-        IEnumerable<string> Extensions { get; }
     }
 }

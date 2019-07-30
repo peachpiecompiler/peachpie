@@ -43,6 +43,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         MarkedDeclaredUnconditionally = 512,
 
         /// <summary>
+        /// Internal. Marks whether the exit block or any block with a return statement was already processed at least once.
+        /// </summary>
+        IsReturnAnalysed = 1024,
+
+        /// <summary>
         /// Whether the routine has to define local variables as an array instead of native local variables.
         /// </summary>
         RequiresLocalsArray = HasEval | HasInclude | HasIndirectVar | UsesLocals | IsGenerator,

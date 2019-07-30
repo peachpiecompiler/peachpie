@@ -36,8 +36,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         public GlobalSymbolProvider(PhpCompilation compilation)
         {
-            Contract.ThrowIfNull(compilation);
-            _compilation = compilation;
+            _compilation = compilation ?? throw new ArgumentNullException(nameof(compilation));
             _next = new SourceSymbolProvider(compilation.SourceSymbolCollection);
         }
 

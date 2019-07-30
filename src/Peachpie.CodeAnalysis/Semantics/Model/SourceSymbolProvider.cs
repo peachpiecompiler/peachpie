@@ -16,8 +16,6 @@ namespace Pchp.CodeAnalysis.Semantics.Model
 
         public PhpCompilation Compilation => _table.Compilation;
 
-        public IEnumerable<string> Extensions => Enumerable.Empty<string>();
-
         public SourceSymbolProvider(SourceSymbolCollection table)
         {
             Contract.ThrowIfNull(table);

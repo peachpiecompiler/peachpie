@@ -189,10 +189,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     if (x.ArgumentsInSourceOrder.Length == 1 &&
                         x.ArgumentsInSourceOrder[0].Value.ConstantValue.TryConvertToString(out var ext_name))
                     {
-                        bool hasextension = DeclaringCompilation
-                            .GlobalSemantics
-                            .Extensions
-                            .Contains(ext_name, StringComparer.OrdinalIgnoreCase);
+                        bool hasextension = DeclaringCompilation.HasPhpExtenion(ext_name);
 
                         // CONSIDER: only when hasextension == True ? Can we add extensions in runtime ?
 
@@ -532,11 +529,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 // Template: (callable)"fnName"
                 // resolve the 'RoutineInfo' if possible
 
-                MethodSymbol routine = null;
+                MethodSymbol symbol = null;
                 var dc = fnName.IndexOf(Name.ClassMemberSeparator, StringComparison.Ordinal);
                 if (dc < 0)
                 {
-                    routine = (MethodSymbol)DeclaringCompilation.GlobalSemantics.ResolveFunction(QualifiedName.Parse(fnName, true));
+                    symbol = (MethodSymbol)DeclaringCompilation.ResolveFunction(QualifiedName.Parse(fnName, true), _routine);
                 }
                 else
                 {
@@ -548,11 +545,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     // parent::method
                 }
 
-                if (routine.IsValidMethod() || (routine is AmbiguousMethodSymbol a && a.IsOverloadable && a.Ambiguities.Length != 0)) // valid or ambiguous
+                if (symbol.IsValidMethod() || (symbol is AmbiguousMethodSymbol a && a.IsOverloadable && a.Ambiguities.Length != 0)) // valid or ambiguous
                 {
                     TransformationCount++;
                     x.Access = x.Access.WithRead(DeclaringCompilation.CoreTypes.String);    // read the literal as string, do not rewrite it to BoundCallableConvert again
-                    return new BoundCallableConvert(x, DeclaringCompilation) { TargetCallable = routine }.WithContext(x);
+                    return new BoundCallableConvert(x, DeclaringCompilation) { TargetCallable = symbol }.WithContext(x);
                 }
             }
 

@@ -39,6 +39,16 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Marks whether the exit block or any block with a return statement was already processed at least once.
         /// </summary>
-        internal bool IsReturnAnalysed { get; set; } = false;
+        internal bool IsReturnAnalysed
+        {
+            get => (Flags & RoutineFlags.IsReturnAnalysed) != 0;
+            set
+            {
+                if (value)
+                    Flags |= RoutineFlags.IsReturnAnalysed;
+                else
+                    Flags &= ~RoutineFlags.IsReturnAnalysed;
+            }
+        }
     }
 }
