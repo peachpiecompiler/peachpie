@@ -149,6 +149,21 @@ namespace Pchp.Library.Reflection
 
             PhpException.FunctionNotSupported(nameof(setAccessible));
         }
-        public virtual void setValue(Context ctx, object @object, PhpValue value) { _pinfo.SetValue(ctx, @object, value); }
+
+        /// <summary>
+        /// Set property value.
+        /// </summary>
+        /// <param name="ctx">Runtime context. Cannot be <c>null</c>.</param>
+        /// <param name="object">If the property is non-static, this is the object instance. Otherwise can be left <c>null</c>.</param>
+        /// <param name="value">New property value.</param>
+        public virtual void setValue(Context ctx, object @object, PhpValue value)
+        {
+            _pinfo.SetValue(ctx, @object, value);
+        }
+
+        /// <summary>
+        /// Sets static property value.
+        /// </summary>
+        public virtual void setValue(Context ctx, PhpValue value) => setValue(ctx, null, value);
     }
 }
