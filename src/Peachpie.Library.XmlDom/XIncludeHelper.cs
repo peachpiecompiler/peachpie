@@ -220,8 +220,7 @@ namespace Peachpie.Library.XmlDom
                         IncludeText(uri, includeElement);
                     }
                     else
-                    {
-                        
+                    {                       
                         if (valueOfXPoiner == String.Empty)
                         {
                             if (references.ContainsKey(uri)) //fatal error, cycle recursion
@@ -235,14 +234,13 @@ namespace Peachpie.Library.XmlDom
                                 references[absoluteUri] = uri;
                                 IncludeXml(uri, includeElement, null, null);
                             }
-
                         }
                         else
                         {
                             if (references.ContainsKey(uri + valueOfXPoiner)) // fatal error, cycle recursion
                             {
                                 PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, $"DOMDocument::xinclude(): detected a recursion in {absoluteUri} in {ctx.MainScriptFile.Path}", absoluteUri);
-                                return true;
+                                //return true;
                             }
                             else
                             {

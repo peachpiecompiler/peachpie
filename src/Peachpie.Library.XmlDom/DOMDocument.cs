@@ -587,7 +587,6 @@ namespace Peachpie.Library.XmlDom
                         settings.ValidationType = ValidationType.Auto;
 #pragma warning restore 618
                     }
-
                     XmlDocument.Load(XmlReader.Create(stream.RawStream, settings, XIncludeHelper.UriResolver(fileName, ctx.WorkingDirectory)));
                 }
                 catch (XmlException e)
@@ -763,6 +762,7 @@ namespace Peachpie.Library.XmlDom
 
             var settings = new XmlWriterSettings()
             {
+                NewLineHandling = NewLineHandling.Replace,
                 Encoding = Utils.GetNodeEncoding(ctx, xml_node),
                 Indent = _formatOutput,
                 OmitXmlDeclaration = omitXmlDeclaration
