@@ -5620,11 +5620,6 @@ namespace Pchp.Library
         /// <summary>
         /// Returns the length of a string.
         /// </summary>
-        public static int strlen(string x) => (x != null) ? x.Length : 0;
-
-        /// <summary>
-        /// Returns the length of a string.
-        /// </summary>
         public static int strlen(PhpString x) => x.Length;
 
         #endregion
