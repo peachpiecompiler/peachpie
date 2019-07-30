@@ -398,7 +398,9 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
                 type = (TypeSymbol)compilation.GlobalSemantics.ResolveType(_qname);
             }
 
-            if (type is AmbiguousErrorTypeSymbol ambiguous && _routine != null)
+            var containingFile = _routine?.ContainingFile ?? _self?.ContainingFile;
+
+            if (type is AmbiguousErrorTypeSymbol ambiguous && containingFile != null)
             {
                 TypeSymbol best = null;
 
@@ -407,7 +409,7 @@ namespace Pchp.CodeAnalysis.Semantics.TypeRef
                     .CandidateSymbols
                     .Cast<TypeSymbol>()
                     .Where(t => !t.IsUnreachable)
-                    .Where(x => x is SourceTypeSymbol srct && !srct.Syntax.IsConditional && srct.ContainingFile == _routine.ContainingFile))
+                    .Where(x => x is SourceTypeSymbol srct && !srct.Syntax.IsConditional && srct.ContainingFile == containingFile))
                 {
                     if (best == null)
                     {
