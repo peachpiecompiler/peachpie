@@ -122,7 +122,19 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     var argex = args[argi].Value;
                     if (argex.Access.IsRead && !argex.Access.IsReadRef)
                     {
-                        argex.Access = argex.Access.WithRead(ps[pi].Type);
+                        if (ps[pi].IsParams)
+                        {
+                            if (ps[pi].Type is ArrayTypeSymbol arrt)
+                            {
+                                argex.Access = argex.Access.WithRead(arrt.ElementType);
+                            }
+                            argi++;
+                            continue;   // do not increment {pi}
+                        }
+                        else
+                        {
+                            argex.Access = argex.Access.WithRead(ps[pi].Type);
+                        }
                     }
 
                     //// bind args[argi] -> ps[pi] // not used yet
