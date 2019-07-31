@@ -704,5 +704,12 @@ namespace Pchp.Library
         /// </summary>
         // [return: CastToFalse]
         public static bool/*string*/ php_ini_loaded_file() => false;
+
+        /// <summary>
+        /// Return a list of .ini files parsed from the additional ini dir or <c>FALSE</c>.
+        /// </summary>
+        /// <returns>Always FALSE on .NET.</returns>
+        // [return: CastToFalse]
+        public static bool/*|string*/ php_ini_scanned_files() => false;
     }
 }
