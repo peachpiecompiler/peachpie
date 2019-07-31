@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -283,51 +284,71 @@ namespace Peachpie.NET.Sdk.Tools
         // so we have our custom TextWriter that we pass to Log
         sealed class LogWriter : TextWriter
         {
+            TaskLoggingHelper Log { get; }
+
+            StringBuilder Buffer { get; } = new StringBuilder();
+
+            public override Encoding Encoding => Encoding.UTF8;
+
             public LogWriter(TaskLoggingHelper log)
             {
-                _log = log;
+                Debug.Assert(log != null);
+
+                this.Log = log;
                 this.NewLine = "\n";
             }
 
-            TaskLoggingHelper _log;
-            StringBuilder _text = new StringBuilder();
-            
-            public override Encoding Encoding => Encoding.UTF8;
-
-            bool _logLine()
+            bool TryLogCompleteMessage()
             {
-                for (int i = 0; i < _text.Length; i++)
+                string line = null;
+
+                lock (Buffer)   // accessed in parallel
                 {
-                    if (_text[i] == '\n')
+                    // get line from the buffer:
+                    for (int i = 0; i < Buffer.Length; i++)
                     {
-                        _logLine(_text.ToString(0, i));
-                        _text.Remove(0, i + 1);
-                        return true;
+                        if (Buffer[i] == '\n')
+                        {
+                            line = Buffer.ToString(0, i);
+
+                            Buffer.Remove(0, i + 1);
+                        }
                     }
                 }
 
-                return false;
+                //
+                return line != null && LogCompleteMessage(line);
             }
 
-            void _logLine(string line)
+            bool LogCompleteMessage(string line)
             {
-                _log.LogMessageFromText(line, MessageImportance.High);
+                // TODO: following logs only Warnings and Errors,
+                // to log Info diagnostics properly, parse it by ourselves
+
+                return this.Log.LogMessageFromText(line.Trim(), MessageImportance.High);
             }
 
             public override void Write(char value)
             {
-                _text.Append(value);
+                lock (Buffer) // accessed in parallel
+                {
+                    Buffer.Append(value);
+                }
 
                 if (value == '\n')
                 {
-                    _logLine();
+                    TryLogCompleteMessage();
                 }
             }
 
             public override void Write(string value)
             {
-                _text.Append(value);
-                _logLine();
+                lock (Buffer)
+                {
+                    Buffer.Append(value);
+                }
+
+                TryLogCompleteMessage();
             }
         }
     }
