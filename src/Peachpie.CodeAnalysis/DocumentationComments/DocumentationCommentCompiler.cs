@@ -297,7 +297,7 @@ namespace Pchp.CodeAnalysis.DocumentationComments
             var ctors = type.InstanceConstructors;
             for (int i = 0; i < ctors.Length; i++)
             {
-                /// find __construct()
+                // find __construct()
                 if (ctors[i] is SynthesizedPhpCtorSymbol synctor && synctor.PhpConstructor is SourceRoutineSymbol php_construct)
                 {
                     // annotate all generated .ctor() methods:
