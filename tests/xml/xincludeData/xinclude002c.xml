@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<IncludeFile xmlns:xi="http://www.w3.org/2001/XInclude" no="c">
+<p>Ok
+<xi:include href="xinclude002d.xml"/>
+</p>
+</IncludeFile>

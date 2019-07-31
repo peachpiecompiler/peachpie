@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<firstInclude xmlns:xi="http://www.w3.org/2001/XInclude" no="b">
+<p>Somthing...</p>
+<xi:include href="missing.xml">
+<xi:fallback>
+<xi:include href="xinclude004c.xml"/>
+</xi:fallback>
+</xi:include>
+</firstInclude>

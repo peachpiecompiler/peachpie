@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<root xmlns:xi="http://www.w3.org/2001/XInclude">
+<p>Include tag in root:</p>
+<xi:include href="xinclude001b.xml"/>
+<p>IncludeTag in some other tag:</p>
+<p>
+<xi:include href="xinclude001c.xml">Some text</xi:include>
+</p>
+</root>

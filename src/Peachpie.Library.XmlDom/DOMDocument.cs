@@ -587,8 +587,7 @@ namespace Peachpie.Library.XmlDom
                         settings.ValidationType = ValidationType.Auto;
 #pragma warning restore 618
                     }
-
-                    XmlDocument.Load(XmlReader.Create(stream.RawStream, settings));
+                    XmlDocument.Load(XmlReader.Create(stream.RawStream, settings, XIncludeHelper.UriResolver(fileName, ctx.WorkingDirectory)));
                 }
                 catch (XmlException e)
                 {
@@ -763,6 +762,7 @@ namespace Peachpie.Library.XmlDom
 
             var settings = new XmlWriterSettings()
             {
+                NewLineHandling = NewLineHandling.None,
                 Encoding = Utils.GetNodeEncoding(ctx, xml_node),
                 Indent = _formatOutput,
                 OmitXmlDeclaration = omitXmlDeclaration
@@ -936,13 +936,14 @@ namespace Peachpie.Library.XmlDom
         #region XInclude
 
         /// <summary>
-        /// Not implemented (TODO: need a XInclude implementation for this).
+        /// Substitutes XIncludes in a DOMDocument Object
         /// </summary>
-        public virtual void xinclude(int options = 0)
+        /// <returns>Returns the number of XIncludes in the document, -1 if some processing failed, or FALSE if there were no substitutions.</returns>
+        public virtual PhpValue xinclude(Context ctx, int options = 0)
         {
-            throw new NotImplementedException();
+            XIncludeHelper x = new XIncludeHelper(ctx);
+            return x.Include(XmlDocument);
         }
-
         #endregion
 
         #region Validation

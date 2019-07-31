@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<root xmlns:xi="http://www.w3.org/2001/XInclude">
+<p>First include(without other tags):</p>
+<xi:include href="missing.xml">
+<xi:fallback>
+<xi:include href="xinclude004b.xml"/>
+<xi:include href="xinclude004b.xml"/>
+</xi:fallback>
+</xi:include>
+
+<p>Missing file(with other tags):</p>
+<xi:include href="missing.xml">
+<xi:fallback>Substituted text for document...
+<xi:include href="xinclude004b.xml"/>
+</xi:fallback>
+</xi:include>
+</root>

@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<root xmlns:xi="http://www.w3.org/2001/XInclude">
+<p>Include tag in root, which has id 2:</p>
+<xi:include href="xinclude007b.xml" xpointer="xpointer(//p[@id='2'])"/>
+</root>

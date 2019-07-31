@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<firstInclude xmlns:xi="http://www.w3.org/2001/XInclude" no="b">
+<p>Recursive include</p>
+<p>
+<xi:include href="xinclude002c.xml"></xi:include>
+</p>
+</firstInclude>

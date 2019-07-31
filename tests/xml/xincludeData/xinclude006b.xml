@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<firstInclude xmlns:xi="http://www.w3.org/2001/XInclude">
+<xi:include href="xinclude006a.xml">
+</xi:include>
+<xi:include href="xinclude001b.xml"/>
+</firstInclude>
