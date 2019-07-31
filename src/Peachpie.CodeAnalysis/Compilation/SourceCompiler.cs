@@ -123,7 +123,7 @@ namespace Pchp.CodeAnalysis
             {
                 if (p.Initializer != null)
                 {
-                    EnqueueExpression(p.Initializer, routine.TypeRefContext, routine.GetNamingContext());
+                    EnqueueExpression(p.Initializer, routine.TypeRefContext);
                 }
             });
         }
@@ -131,7 +131,7 @@ namespace Pchp.CodeAnalysis
         /// <summary>
         /// Enqueues the standalone expression for analysis.
         /// </summary>
-        void EnqueueExpression(BoundExpression expression, TypeRefContext/*!*/ctx, NamingContext naming)
+        void EnqueueExpression(BoundExpression expression, TypeRefContext/*!*/ctx)
         {
             Contract.ThrowIfNull(expression);
             Contract.ThrowIfNull(ctx);
@@ -157,8 +157,7 @@ namespace Pchp.CodeAnalysis
                 {
                     EnqueueExpression(
                         f.Initializer,
-                        f.EnsureTypeRefContext(),
-                        NameUtils.GetNamingContext(type.Syntax));
+                        f.EnsureTypeRefContext());
                 }
             });
         }

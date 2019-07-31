@@ -60,7 +60,7 @@ namespace Pchp.CodeAnalysis
                     ndots++;
                 }
             }
-            
+
             // create name parts
             var names = new Name[ndots + 1];
 
@@ -128,10 +128,18 @@ namespace Pchp.CodeAnalysis
         /// </summary>
         public static NamingContext GetNamingContext(this SourceRoutineSymbol routine)
         {
-            var node = (LangElement)routine.Syntax;
-            return GetNamingContext(node.ContainingNamespace, node.ContainingSourceUnit);
+            var node = (LangElement)routine?.Syntax;
+            if (node != null)
+            {
+                return GetNamingContext(node.ContainingNamespace, node.ContainingSourceUnit);
+            }
+            else
+            {
+                Debug.Fail("Invalid routine - does not have syntax node");
+                return new NamingContext(null);
+            }
         }
-        
+
         /// <summary>
         /// Create naming context.
         /// </summary>
