@@ -3986,7 +3986,7 @@ namespace Pchp.CodeAnalysis.Semantics
 
         TypeSymbol IVariableReference.Type => DeclaringCompilation.CoreTypes.PhpValue;
 
-        bool IVariableReference.HasAddress => true;
+        bool IVariableReference.HasAddress => false;
 
         IPlace IVariableReference.Place => null;    // TODO: simple array access in case Array is System.Array and Key is int|long
 
@@ -4385,22 +4385,24 @@ namespace Pchp.CodeAnalysis.Semantics
 
         TypeSymbol IVariableReference.EmitLoadAddress(CodeGenerator cg, ref LhsStack lhs)
         {
-            EmitLoadPrepare(cg, ref lhs);
+            //EmitLoadPrepare(cg, ref lhs);
 
-            var stack = PopEmittedArray();
-            if (stack.tArray == cg.CoreTypes.PhpArray && stack.tIndex == cg.CoreTypes.IntStringKey)
-            {
-                // STACK: <PhpArray> <key>
+            //var stack = PopEmittedArray();
+            //if (stack.tArray == cg.CoreTypes.PhpArray && stack.tIndex == cg.CoreTypes.IntStringKey)
+            //{
+            //    // STACK: <PhpArray> <key>
 
-                // Template: ref PhpArray.GetItemRef(key)
-                Debug.Assert(cg.CoreMethods.PhpArray.GetItemRef_IntStringKey.Symbol.ReturnValueIsByRef);
-                return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.GetItemRef_IntStringKey);
-            }
-            else
-            {
-                PushEmittedArray(stack.tArray, stack.tIndex);
-                return null;    // TODO: IPhpArray if needed
-            }
+            //    // Template: ref PhpArray.GetItemRef(key)
+            //    Debug.Assert(cg.CoreMethods.PhpArray.GetItemRef_IntStringKey.Symbol.ReturnValueIsByRef);
+            //    return cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpArray.GetItemRef_IntStringKey);
+            //}
+            //else
+            //{
+            //    throw new NotSupportedException();
+            //    //PushEmittedArray(stack.tArray, stack.tIndex);
+            //    //return null;    // TODO: IPhpArray if needed
+            //}
+            throw ExceptionUtilities.Unreachable;
         }
 
         LhsStack IVariableReference.EmitStorePreamble(CodeGenerator cg, BoundAccess access)
