@@ -18,32 +18,48 @@ namespace Peachpie.Library.XmlDom
     class XIncludeHelper
     {
         #region Tags, atributes, namespaces
+
         // Namespaces
-        public const string nsOfXIncludeNew = "http://www.w3.org/2001/XInclude";
-        public const string nsOfXIncludeOld = "http://www.w3.org/2003/XInclude";
-        public const string nsOfXml = "http://www.w3.org/XML/1998/namespace";
-        
+        const string nsOfXIncludeNew = "http://www.w3.org/2001/XInclude";
+        const string nsOfXIncludeOld = "http://www.w3.org/2003/XInclude";
+        const string nsOfXml = "http://www.w3.org/XML/1998/namespace";
+
         // Elements in namespace http://www.w3.org/2001/XInclude
-        public const string etInclude = "include"; // prefix + :include
-        public const string etFallback = "fallback";
+        const string etInclude = "include"; // prefix + :include
+        const string etFallback = "fallback";
 
         // Atributes
-        public const string atHref = "href";
-        public const string atParse = "parse";
-        public const string atXPointer = "xpointer";
-        public const string atBase = "base";
-        public const string atLang = "lang";
-        public const string atEncoding = "encoding";
+        const string atHref = "href";
+        const string atParse = "parse";
+        const string atXPointer = "xpointer";
+        const string atBase = "base";
+        const string atLang = "lang";
+        const string atEncoding = "encoding";
+
         #endregion
-        
-        Stack<XmlDocument> documents = new Stack<XmlDocument>(); // When IncludeXml detects tag include, pushes curent document to documents stack and resolves next documents, after that, pulls previous document in other to includes probing document.
-        Dictionary<string, string> references = new Dictionary<string, string>(); // Keeps route of calling documents and controls loop
-        int replaceCount = 0; // Counts include replaces.
-        Context ctx;
+
+        /// <summary>
+        /// When IncludeXml detects tag include, pushes curent document to documents stack and resolves next documents,
+        /// after that, pulls previous document in other to includes probing document.
+        /// </summary>
+        Stack<XmlDocument> _documents;
+
+        /// <summary>
+        /// Keeps route of calling documents and controls loop.
+        /// </summary>
+        Dictionary<string, string> _references;
+
+        /// <summary>
+        /// Counts include replaces.
+        /// <c>-1</c> for failure.
+        /// </summary>
+        int _replaceCount = 0; // 
+
+        readonly Context _ctx;
 
         public XIncludeHelper(Context ctx)
         {
-            this.ctx = ctx;
+            _ctx = ctx;
         }
 
         /// <summary>
@@ -54,7 +70,10 @@ namespace Peachpie.Library.XmlDom
         {
             Uri result;
             if (!Uri.TryCreate(resolvingUri, UriKind.Absolute, out result)) // try, if resolvingUri is not absolute path
+            {
                 result = new Uri(new Uri("file://"), Path.Combine(absoluteUriOfDirectory, resolvingUri));
+            }
+
             return result.ToString();
         }
 
@@ -63,14 +82,14 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         public PhpValue Include(XmlDocument document)
         {
-            replaceCount = 0;
-            documents = new Stack<XmlDocument>();
-            references = new Dictionary<string, string>();
+            _replaceCount = 0;
+            _documents = new Stack<XmlDocument>();
+            _references = new Dictionary<string, string>();
             IncludeXml(document.BaseURI, null, document, "");
-            if (replaceCount == 0)
+            if (_replaceCount == 0)
                 return PhpValue.False;
             else
-                return PhpValue.Create(replaceCount);
+                return PhpValue.Create(_replaceCount);
         }
 
         /// <summary>
@@ -79,6 +98,7 @@ namespace Peachpie.Library.XmlDom
         /// <param name="absoluteUri">Uri of treated xml document.</param>
         /// <param name="includeNode">Node, which references to document, which Uri is absoluteUri</param>
         /// <param name="MasterDocument">Document, where Xinclude start</param>
+        /// <param name="xpointer">xpointer value, or null</param>
         void IncludeXml(string absoluteUri, XmlElement includeNode, XmlDocument MasterDocument, string xpointer)
         {
             XmlDocument document;
@@ -86,63 +106,68 @@ namespace Peachpie.Library.XmlDom
 
             if (MasterDocument == null)
             {
-                document = new XmlDocument();
-                document.PreserveWhitespace = true;
-                if (xpointer == null)
-                    document.Load(new XmlBaseAwareXmlReader(absoluteUri));
-                else
-                    document.Load((new XPointerReader(absoluteUri,xpointer)));
+                document = new XmlDocument()
+                {
+                    PreserveWhitespace = true,
+                };
+
+                document.Load(xpointer == null
+                    ? (XmlReader)new XmlBaseAwareXmlReader(absoluteUri)
+                    : new XPointerReader(absoluteUri, xpointer));
             }
             else
+            {
                 document = MasterDocument;
+            }
 
             // Recursion on nsPrefix resolver, decleration must be in root
             string nsPrefix = document.DocumentElement.GetPrefixOfNamespace(nsOfXIncludeNew);
-            string baseuri = document.DocumentElement.BaseURI;
-            if (nsPrefix == "")
-                nsPrefix = document.DocumentElement.GetPrefixOfNamespace(nsOfXIncludeOld);
-            if (nsPrefix != "")
+            if (string.IsNullOrEmpty(nsPrefix))
             {
-                XmlNamespaceManager nsm = new XmlNamespaceManager(document.NameTable);
+                nsPrefix = document.DocumentElement.GetPrefixOfNamespace(nsOfXIncludeOld);
+            }
+
+            if (!string.IsNullOrEmpty(nsPrefix))
+            {
+                var nsm = new XmlNamespaceManager(document.NameTable);
                 nsm.AddNamespace(nsPrefix, nsOfXIncludeNew);
-                
+
                 // Finds all include elements, which does not have ancestor element fallback.
                 XmlElement[] includeNodes = document.SelectNodes($"//{nsPrefix}:{etInclude}[ not( ancestor::{nsPrefix}:{etFallback} ) ]", nsm).OfType<XmlElement>().ToArray<XmlElement>();
-                checkingError=TreatIncludes(includeNodes, document, absoluteUri, nsPrefix, nsm);    
+                checkingError = TreatIncludes(includeNodes, document, absoluteUri, nsPrefix, nsm);
             }
             if (MasterDocument == null && !checkingError)
             {
                 // There are not any includes, insert root of this document to parent document 
-                XmlDocument parent = documents.Pop();
+                var parent = _documents.Pop();
                 // base uri fix.
                 //FixBaseUri(parent, document, includeNode);
                 // lang fix
                 Fixlang(parent, document);
 
-                XmlNode importedNode = parent.ImportNode(document.DocumentElement, true); //Import method changes baseuri instead of does not change
+                var importedNode = parent.ImportNode(document.DocumentElement, true); //Import method changes baseuri instead of does not change
                 includeNode.ParentNode.ReplaceChild(importedNode, includeNode);
-                replaceCount++;
-
-                return;
+                _replaceCount++;
             }
             else
-                replaceCount = -1;
-            return;
-        }
-
-        void FixBaseUri(XmlDocument parent, XmlDocument child, XmlElement includeNode)
-        {
-            if (child.DocumentElement.BaseURI != includeNode.ParentNode.BaseURI && child.DocumentElement.BaseURI != String.Empty)
             {
-                if (parent.DocumentElement.GetNamespaceOfPrefix("xml") != nsOfXml)
-                    parent.DocumentElement.SetAttribute("xmlns:xml", nsOfXml);
-
-                XmlAttribute baseUri = child.CreateAttribute("xml", atBase, nsOfXml);
-                baseUri.Value = child.DocumentElement.BaseURI;
-
-                child.DocumentElement.Attributes.Append(baseUri);
+                _replaceCount = -1;
             }
         }
+
+        //void FixBaseUri(XmlDocument parent, XmlDocument child, XmlElement includeNode)
+        //{
+        //    if (child.DocumentElement.BaseURI != includeNode.ParentNode.BaseURI && child.DocumentElement.BaseURI != String.Empty)
+        //    {
+        //        if (parent.DocumentElement.GetNamespaceOfPrefix("xml") != nsOfXml)
+        //            parent.DocumentElement.SetAttribute("xmlns:xml", nsOfXml);
+
+        //        var baseUri = child.CreateAttribute("xml", atBase, nsOfXml);
+        //        baseUri.Value = child.DocumentElement.BaseURI;
+
+        //        child.DocumentElement.Attributes.Append(baseUri);
+        //    }
+        //}
 
         void Fixlang(XmlDocument parent, XmlDocument child)
         {
@@ -161,17 +186,20 @@ namespace Peachpie.Library.XmlDom
 
         void IncludeText(string absoluteUri, XmlElement includeNode)
         {
-            // Reading xml as a text
-            StreamReader sr = new StreamReader(absoluteUri);
-            string includingText = sr.ReadToEnd();
-            sr.Close();
-            // Replacing text...
-            XmlNode parent = includeNode.ParentNode;
-            XmlDocument parentDocument = documents.Pop();
-            parent.ReplaceChild(parentDocument.CreateTextNode(includingText), includeNode);
-            replaceCount ++;
+            string includingText;
 
-            return;
+            // Reading xml as a text
+            using (var sr = new StreamReader(absoluteUri))
+            {
+                includingText = sr.ReadToEnd();
+            }
+
+            // Replacing text...
+            var parent = includeNode.ParentNode;
+            var parentDocument = _documents.Pop();
+            parent.ReplaceChild(parentDocument.CreateTextNode(includingText), includeNode);
+
+            _replaceCount++;
         }
         /// <summary>
         /// Treats all include tags, if there are bad reference on document, cathes exception and tries to find fallback, which is treated as document.
@@ -184,25 +212,27 @@ namespace Peachpie.Library.XmlDom
         /// <returns></returns>
         bool TreatIncludes(XmlElement[] includeNodes, XmlDocument document, string absoluteUri, string nsPrefix, XmlNamespaceManager nsm)
         {
-            foreach (XmlElement includeElement in includeNodes)
+            foreach (var includeElement in includeNodes)
             {
-                string valueOfXPoiner = includeElement.GetAttribute(atXPointer);
-                string valueOfHref = includeElement.GetAttribute(atHref);
+                var valueOfXPoiner = includeElement.GetAttribute(atXPointer);
+                var valueOfHref = includeElement.GetAttribute(atHref);
 
-                if (valueOfHref == String.Empty) // There must be xpointer Attribute, if not, fatal error.. 
+                if (string.IsNullOrEmpty(valueOfHref)) // There must be xpointer Attribute, if not, fatal error.. 
                 {
-                    if (valueOfXPoiner == String.Empty) 
+                    if (string.IsNullOrEmpty(valueOfXPoiner))
                     {
-                        PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, $"DOMDocument::xinclude(): detected a local recursion with no xpointer in {absoluteUri} in {ctx.MainScriptFile.Path}", absoluteUri);
+                        PhpLibXml.IssueXmlError(_ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, $"DOMDocument::xinclude(): detected a local recursion with no xpointer in {absoluteUri} in {_ctx.MainScriptFile.Path}", absoluteUri);
                         return true;
                     }
-                    documents.Push(document);
-                    if (references.ContainsKey(includeElement.BaseURI + valueOfXPoiner)) //fatal error, cycle recursion
+                    _documents.Push(document);
+                    var includeUri = includeElement.BaseURI + valueOfXPoiner;
+                    if (_references.ContainsKey(includeUri)) // fatal error, cycle recursion
                     {
-                        PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_WARNING,0,0,0, $"DOMDocument::xinclude(): detected a recursion in {absoluteUri} in {ctx.MainScriptFile.Path}", absoluteUri);
-                        return true; 
+                        PhpLibXml.IssueXmlError(_ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, $"DOMDocument::xinclude(): detected a recursion in {absoluteUri} in {_ctx.MainScriptFile.Path}", absoluteUri);
+                        return true;
                     }
-                    references[absoluteUri] = includeElement.BaseURI + valueOfXPoiner;
+                    _references[absoluteUri] = includeUri;
+
                     IncludeXml(includeElement.BaseURI, includeElement, null, valueOfXPoiner);
                     return false;
                 }
@@ -214,53 +244,36 @@ namespace Peachpie.Library.XmlDom
                 string typeOfParse = includeElement.GetAttribute(atParse);
                 try
                 {
-                    if (typeOfParse == "text")
+                    if (string.Equals(typeOfParse, "text", StringComparison.OrdinalIgnoreCase))
                     {
-                        documents.Push(document);
+                        _documents.Push(document);
                         IncludeText(uri, includeElement);
                     }
                     else
-                    {                       
-                        if (valueOfXPoiner == String.Empty)
+                    {
+                        if (_references.ContainsKey(uri + valueOfXPoiner)) // fatal error, cycle recursion
                         {
-                            if (references.ContainsKey(uri)) //fatal error, cycle recursion
-                            {
-                                PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, $"DOMDocument::xinclude(): detected a recursion in {absoluteUri} in {ctx.MainScriptFile.Path}", absoluteUri);
-                                //return true;
-                            }
-                            else
-                            {
-                                documents.Push(document);
-                                references[absoluteUri] = uri;
-                                IncludeXml(uri, includeElement, null, null);
-                            }
+                            PhpLibXml.IssueXmlError(_ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, $"DOMDocument::xinclude(): detected a recursion in {absoluteUri} in {_ctx.MainScriptFile.Path}", absoluteUri);
+                            //return true;
                         }
                         else
                         {
-                            if (references.ContainsKey(uri + valueOfXPoiner)) // fatal error, cycle recursion
-                            {
-                                PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, $"DOMDocument::xinclude(): detected a recursion in {absoluteUri} in {ctx.MainScriptFile.Path}", absoluteUri);
-                                //return true;
-                            }
-                            else
-                            {
-                                documents.Push(document);
-                                references[absoluteUri] = uri + valueOfXPoiner;
-                                IncludeXml(uri, includeElement, null, valueOfXPoiner);
-                            }
+                            _documents.Push(document);
+                            _references[absoluteUri] = uri + valueOfXPoiner;
+                            IncludeXml(uri, includeElement, null, string.IsNullOrEmpty(valueOfXPoiner) ? null : valueOfXPoiner);
                         }
                     }
                 }
                 catch (System.IO.FileNotFoundException)
                 {
-                    PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, $"DOMDocument::xinclude(): I/O warning : failed to load external entity &quot;{absoluteUri}&quot; in {ctx.MainScriptFile.Path}", absoluteUri);
-                    documents.Pop();
+                    PhpLibXml.IssueXmlError(_ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, $"DOMDocument::xinclude(): I/O warning : failed to load external entity &quot;{absoluteUri}&quot; in {_ctx.MainScriptFile.Path}", absoluteUri);
+                    _documents.Pop();
                     XmlElement[] fallbacks = includeElement.GetElementsByTagName(nsPrefix + ":" + etFallback).OfType<XmlElement>().ToArray<XmlElement>();
 
                     if (fallbacks.Length > 1) // fatal error
                     {
-                        PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, $"DOMDocument::xinclude(): include has multiple fallback children in {ctx.MainScriptFile.Path}", ctx.MainScriptFile.Path);
-                        return true; 
+                        PhpLibXml.IssueXmlError(_ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, $"DOMDocument::xinclude(): include has multiple fallback children in {_ctx.MainScriptFile.Path}", _ctx.MainScriptFile.Path);
+                        return true;
                     }
 
                     if (fallbacks.Length == 1)
@@ -278,11 +291,11 @@ namespace Peachpie.Library.XmlDom
                     }
                     else // error missing fallback
                     {
-                        PhpLibXml.IssueXmlError(ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, $"DOMDocument::xinclude(): could not load {absoluteUri}, and no fallback was found in {ctx.MainScriptFile.Path}", absoluteUri);
+                        PhpLibXml.IssueXmlError(_ctx, PhpLibXml.LIBXML_ERR_WARNING, 0, 0, 0, $"DOMDocument::xinclude(): could not load {absoluteUri}, and no fallback was found in {_ctx.MainScriptFile.Path}", absoluteUri);
                         return true;
                     }
                 }
-                references = new Dictionary<string, string>();
+                _references = new Dictionary<string, string>();
             }
             return false;
         }

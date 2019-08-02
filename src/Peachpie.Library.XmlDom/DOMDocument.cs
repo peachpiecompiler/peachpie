@@ -941,8 +941,9 @@ namespace Peachpie.Library.XmlDom
         /// <returns>Returns the number of XIncludes in the document, -1 if some processing failed, or FALSE if there were no substitutions.</returns>
         public virtual PhpValue xinclude(Context ctx, int options = 0)
         {
-            XIncludeHelper x = new XIncludeHelper(ctx);
-            return x.Include(XmlDocument);
+            // TODO: xinclude options
+
+            return new XIncludeHelper(ctx).Include(XmlDocument);
         }
         #endregion
 
