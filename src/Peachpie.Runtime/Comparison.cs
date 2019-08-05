@@ -448,10 +448,18 @@ namespace Pchp.Core
         public static bool Ceq(long lx, PhpNumber y) => y.IsLong && lx == y.Long;
         public static bool Ceq(double dx, PhpValue y) => y.IsDouble(out var dy) && dx == dy;
         public static bool Ceq(double dx, PhpNumber y) => y.IsDouble && dx == y.Double;
-        public static bool Ceq(string sx, PhpValue y) => y.IsString(out var sy) && sy == sx;
+        public static bool Ceq(string sx, PhpValue y)
+        {
+            y.IsString(out var sy);
+            return sx == sy;
+        }
 
         public static bool Ceq(PhpValue x, bool by) => x.IsBoolean(out var bx) && bx == by;
-        public static bool Ceq(PhpValue x, string sy) => x.IsString(out var sx) && sy == sx;
+        public static bool Ceq(PhpValue x, string sy)
+        {
+            x.IsString(out var sx);
+            return sx == sy;
+        }
 
         public static bool Ceq(PhpValue x, PhpValue y) => x.StrictEquals(y);
 

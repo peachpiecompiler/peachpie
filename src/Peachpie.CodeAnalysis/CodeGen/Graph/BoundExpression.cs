@@ -1404,14 +1404,21 @@ namespace Pchp.CodeAnalysis.Semantics
                         ytype.SpecialType == SpecialType.System_Int32 ||
                         ytype.SpecialType == SpecialType.System_Int64 ||
                         ytype.SpecialType == SpecialType.System_Double ||
-                        ytype.IsOfType(cg.CoreTypes.IPhpArray) ||
-                        ytype == cg.CoreTypes.Object)
+                        ytype.IsOfType(cg.CoreTypes.IPhpArray))
                     {
                         // string == something else => false
                         cg.EmitPop(ytype);
                         cg.EmitPop(xtype);
                         cg.Builder.EmitBoolConstant(false);
                         return cg.CoreTypes.Boolean;
+                    }
+                    else if (ytype.SpecialType == SpecialType.System_Object && right.ConstantValue.IsNull())
+                    {
+                        // comparison to NULL
+                        // string === NULL
+                        // Template: ReferenceEquals( string, object )
+                        return cg.EmitCall(ILOpCode.Call, (MethodSymbol)cg.DeclaringCompilation.GetSpecialTypeMember(SpecialMember.System_Object__ReferenceEquals))
+                            .Expect(SpecialType.System_Boolean);
                     }
                     else
                     {
