@@ -29,6 +29,7 @@ namespace Pchp.Core
 
         /// <summary>
         /// Gets references count.
+        /// If greater than zero, the <see cref="PhpAlias"/> acts like a reference.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         public int ReferenceCount { get; private set; }
@@ -53,17 +54,20 @@ namespace Pchp.Core
 
         #region Methods
 
-        public void AddRef()
+        internal PhpAlias AddRef()
         {
             ReferenceCount++;
+            return this;
         }
 
-        public void ReleaseRef()
+        public PhpAlias ReleaseRef()
         {
             if (--ReferenceCount == 0)
             {
                 // TODO: dispose implicitly
             }
+
+            return this;
         }
 
         /// <summary>
@@ -77,6 +81,12 @@ namespace Pchp.Core
         /// Cannot be <c>null</c>.
         /// </summary>
         public IPhpArray EnsureArray() => Value.EnsureArray();
+
+        /// <summary>
+        /// Performs deep copy of the value.
+        /// If the value is referenced, the method returns this instance of <see cref="PhpAlias"/>, otherwise the value is copied.
+        /// </summary>
+        public PhpValue DeepCopy() => ReferenceCount > 0 ? this.AddRef() : Value.DeepCopy();
 
         #endregion
 

@@ -534,12 +534,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 EnsureObject = ct.PhpAlias.Method("EnsureObject");
                 EnsureArray = ct.PhpAlias.Method("EnsureArray");
+                ReleaseRef = ct.PhpAlias.Method("ReleaseRef");
             }
 
             public readonly CoreField
                 Value;
 
             public readonly CoreMethod
+                ReleaseRef,
                 EnsureObject, EnsureArray;
         }
 

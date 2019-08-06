@@ -685,10 +685,11 @@ namespace Pchp.Core
             public override object EnsureObject(ref PhpValue me) => me.Alias.Value.EnsureObject();
             public override IPhpArray EnsureArray(ref PhpValue me) => me.Alias.Value.EnsureArray();
             public override IPhpArray GetArrayAccess(ref PhpValue me) => me.Alias.Value.GetArrayAccess();
-            public override PhpAlias EnsureAlias(ref PhpValue me) => me.Alias;
+            public override PhpAlias EnsureAlias(ref PhpValue me) => me.Alias.AddRef();
             public override PhpValue GetArrayItem(ref PhpValue me, PhpValue index, bool quiet) => me.Alias.Value.GetArrayItem(index, quiet);
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) => me.Alias.Value.EnsureItemAlias(index, quiet);
-            public override void PassValue(ref PhpValue me) => me = me.Alias.Value.DeepCopy();
+            public override void PassValue(ref PhpValue me) => me = me.Alias.ReleaseRef().Value.DeepCopy();
+            public override PhpValue DeepCopy(ref PhpValue me) => me.Alias.DeepCopy();
             public override PhpArray ToArray(ref PhpValue me) => me.Alias.Value.ToArray();
             public override PhpArray GetArray(ref PhpValue me) => me.Alias.Value.GetArray();
             public override object AsObject(ref PhpValue me) => me.Alias.Value.AsObject();

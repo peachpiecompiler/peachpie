@@ -315,14 +315,39 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     partial class ForeachEnumereeEdge
     {
         CodeGenerator.TemporaryLocalDefinition _enumeratorLoc;
+        LocalDefinition _aliasedValueLoc;
         MethodSymbol _moveNextMethod, _disposeMethod;
         PropertySymbol _currentValue, _currentKey, _current;
+
+        void EmitReleaseRef(CodeGenerator cg)
+        {
+            if (_aliasedValueLoc != null)
+            {
+                Debug.Assert((TypeSymbol)_aliasedValueLoc.Type == cg.CoreTypes.PhpAlias);
+                // This is temporary workaround introducing a simple reference counting (https://github.com/peachpiecompiler/peachpie/issues/345)
+                // Note: it is not correct but it works in the way PHP developers thinks it works :)
+
+                // <_aliasedValue>?.ReleaseRef();
+                cg.Builder.EmitLocalLoad(_aliasedValueLoc);
+
+                var lbl_end = new object();
+
+                cg.Builder.EmitBranch(ILOpCode.Brfalse, lbl_end);
+                cg.Builder.EmitLocalLoad(_aliasedValueLoc);
+                cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpAlias.ReleaseRef));
+                cg.Builder.MarkLabel(lbl_end);
+            }
+        }
 
         internal void EmitMoveNext(CodeGenerator cg)
         {
             Debug.Assert(_enumeratorLoc.IsValid);
             Debug.Assert(_moveNextMethod != null);
             Debug.Assert(_moveNextMethod.IsStatic == false);
+
+            // leaving scope of `foreach` body
+
+            EmitReleaseRef(cg);
 
             if (_enumeratorLoc.Type.IsValueType)
             {
@@ -339,6 +364,34 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 .Expect(SpecialType.System_Boolean);
         }
 
+        TypeSymbol EmitGetCurrentHelper(CodeGenerator cg)
+        {
+            Debug.Assert(_currentValue != null || _current != null);
+
+            var t = (_currentValue ?? _current).EmitLoadValue(cg, _enumeratorLoc);
+
+            if (_aliasedValueLoc != null && (TypeSymbol)_aliasedValueLoc.Type == t)
+            {
+                // <_aliasedValue> = <STACK>
+                cg.Builder.EmitOpCode(ILOpCode.Dup);
+                cg.Builder.EmitLocalStore(_aliasedValueLoc);
+            }
+
+            return t;
+        }
+
+        internal void EmitPrepare(CodeGenerator cg)
+        {
+            if (_currentValue != null && _aliasedValues && _currentValue.Type == cg.CoreTypes.PhpAlias &&
+                cg.GeneratorStateMachineMethod == null)
+            {
+                _aliasedValueLoc = cg.GetTemporaryLocal(_currentValue.Type, immediateReturn: false);
+
+                cg.Builder.EmitNullConstant();
+                cg.Builder.EmitLocalStore(_aliasedValueLoc);
+            }
+        }
+
         internal void EmitGetCurrent(CodeGenerator cg, BoundReferenceExpression valueVar, BoundReferenceExpression keyVar)
         {
             Debug.Assert(_enumeratorLoc.IsValid);
@@ -350,7 +403,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // special PhpArray enumerator
 
                 cg.EmitSequencePoint(valueVar.PhpSyntax);
-                valueVar.BindPlace(cg).EmitStore(cg, new PropertyPlace(_enumeratorLoc, _currentValue, cg.Module), valueVar.Access);
+                valueVar.BindPlace(cg).EmitStore(cg, () => EmitGetCurrentHelper(cg), valueVar.Access);
 
                 if (keyVar != null)
                 {
@@ -399,7 +452,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 else
                 {
                     cg.EmitSequencePoint(valueVar.PhpSyntax);
-                    valueVar.BindPlace(cg).EmitStore(cg, new PropertyPlace(_enumeratorLoc, _current, cg.Module), valueVar.Access);
+                    valueVar.BindPlace(cg).EmitStore(cg, () => EmitGetCurrentHelper(cg), valueVar.Access);
 
                     if (keyVar != null)
                     {
@@ -437,6 +490,12 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             //}
 
             //
+            if (_aliasedValueLoc != null)
+            {
+                cg.ReturnTemporaryLocal(_aliasedValueLoc);
+                _aliasedValueLoc = null;
+            }
+
             cg.ReturnTemporaryLocal(_enumeratorLoc);
             _enumeratorLoc = null;
 
@@ -557,6 +616,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         void EmitBody(CodeGenerator cg)
         {
             Debug.Assert(NextBlock.NextEdge is ForeachMoveNextEdge);
+            this.EmitPrepare(cg);
             cg.GenerateScope(NextBlock, NextBlock.NextEdge.NextBlock.Ordinal);
             cg.Builder.EmitBranch(ILOpCode.Br, NextBlock.NextEdge.NextBlock);
         }
