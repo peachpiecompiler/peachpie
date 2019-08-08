@@ -491,7 +491,7 @@ namespace Pchp.Core
 
                 if (throwOnError)
                 {
-                    throw new ArgumentException(cause);
+                    throw new ScriptIncludeException(path);
                 }
 
                 return PhpValue.False;
@@ -602,10 +602,10 @@ namespace Pchp.Core
         /// <returns>Value indicating the exception was handled.</returns>
         public virtual bool OnUnhandledException(Exception exception)
         {
-            if (Configuration.Core.UserExceptionHandler != null)
+            var handler = Configuration.Core.UserExceptionHandler;
+            if (handler != null)
             {
-                Configuration.Core.UserExceptionHandler.Invoke(this, PhpValue.FromClass(exception));
-
+                handler.Invoke(this, PhpValue.FromClass(exception));
                 return true;
             }
             else
@@ -749,16 +749,14 @@ namespace Pchp.Core
                     FinalizeBufferedOutput();
 
                     //// additional disposal action
-                    //if (this.TryDispose != null)
-                    //    this.TryDispose();
+                    //this.TryDispose?.Invoke();
                 }
                 finally
                 {
                     DeleteTemporaryFiles();
 
                     //// additional disposal action
-                    //if (this.FinallyDispose != null)
-                    //    this.FinallyDispose();
+                    //this.FinallyDispose?.Invoke();
 
                     //
                     IsDisposed = true;

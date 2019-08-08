@@ -54,7 +54,7 @@ namespace Pchp.Core.Utilities
         }
 
         /// <summary>
-        /// Gets last string character or <c>\0</c>.
+        /// Gets last string character or <c>\0</c> if the given string is <c>null</c> or empty.
         /// </summary>
         public static char LastChar(this string str) => string.IsNullOrEmpty(str) ? '\0' : str[str.Length - 1];
 

@@ -72,4 +72,22 @@ namespace Pchp.Core
             }
         }
     }
+
+    /// <summary>
+    /// Thrown when a script couldn't be included because it was not found.
+    /// See <see cref="Path"/> for the script file path.
+    /// </summary>
+    public sealed class ScriptIncludeException : ArgumentException
+    {
+        /// <summary>
+        /// Original path to the script that failed to be included.
+        /// </summary>
+        public string Path { get; }
+
+        internal ScriptIncludeException(string path)
+            : base(string.Format(Resources.ErrResources.script_not_found, path))
+        {
+            this.Path = path;
+        }
+    }
 }
