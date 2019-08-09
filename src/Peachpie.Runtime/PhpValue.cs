@@ -525,6 +525,28 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Dereference the value in-place.
+        /// Called when this has been passed by value and only inplace dereferencing is necessary, not copying.
+        /// </summary>
+        [DebuggerNonUserCode, DebuggerStepThrough]
+        public void PassValueNoCopy()
+        {
+            if (_type != null)
+            {
+                // dereference if applicable
+                if (IsAlias)
+                {
+                    this = Alias.Value;
+                }
+            }
+            else
+            {
+                // ensure the value is not default(PhpValue)
+                _type = Null._type;
+            }
+        }
+
+        /// <summary>
         /// Outputs current value to <see cref="Context"/>.
         /// Handles byte (8bit) strings and allows for chunked text to be streamed without costly concatenation.
         /// </summary>
