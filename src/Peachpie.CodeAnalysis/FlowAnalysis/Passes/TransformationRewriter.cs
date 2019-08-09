@@ -18,6 +18,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
     {
         private readonly DelayedTransformations _delayedTransformations;
         private readonly SourceRoutineSymbol _routine;
+        private readonly VariableInfos _varInfos;
 
         protected PhpCompilation DeclaringCompilation => _routine.DeclaringCompilation;
         protected BoundTypeRefFactory BoundTypeRefFactory => DeclaringCompilation.TypeRefFactory;
@@ -210,6 +211,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         {
             _delayedTransformations = delayedTransformations;
             _routine = routine ?? throw ExceptionUtilities.ArgumentNull(nameof(routine));
+
+            // Gather variable information not present in the previous analysis
+            _varInfos = VariableInfoWalker.Analyze(_routine);
         }
 
         protected override void OnVisitCFG(ControlFlowGraph x)
