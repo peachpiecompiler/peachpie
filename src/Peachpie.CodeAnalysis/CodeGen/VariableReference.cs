@@ -871,6 +871,9 @@ namespace Pchp.CodeAnalysis.Semantics
             /// <summary>Inplace copies the parameter.</summary>
             void EmitPass(CodeGenerator cg);
 
+            /// <summary>Dereferences the value of a possible alias.</summary>
+            void EmitDereference(CodeGenerator cg);
+
             /// <summary>Loads copied parameter value.</summary>
             TypeSymbol EmitLoad(CodeGenerator cg);
         }
@@ -953,6 +956,17 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitDeepCopy(_place.EmitLoad(cg.Builder), nullcheck: !_notNull);
 
                     _place.EmitStore(cg.Builder);
+                }
+            }
+
+            public void EmitDereference(CodeGenerator cg)
+            {
+                // Only PhpValue or PhpAlias may contain aliases, while the latter is used only
+                // if we explicitly want the parameter to be a reference
+                if (_place.Type == cg.CoreTypes.PhpValue)
+                {
+                    _place.EmitLoadAddress(cg.Builder);
+                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.PassValueNoCopy);
                 }
             }
 
@@ -1052,6 +1066,8 @@ namespace Pchp.CodeAnalysis.Semantics
             }
 
             public void EmitPass(CodeGenerator cg) => throw ExceptionUtilities.Unreachable;
+
+            public void EmitDereference(CodeGenerator cg) => throw ExceptionUtilities.Unreachable;
 
             public void EmitTypeCheck(CodeGenerator cg, SourceParameterSymbol srcp)
             {
@@ -1162,9 +1178,14 @@ namespace Pchp.CodeAnalysis.Semantics
             if (source == target)
             {
                 // 2a. (source == target): Pass (inplace copy and dereference)
-                if (!SkipCopy || srcparam.Type == cg.CoreTypes.PhpValue)        // TODO: Emit only dereferencing in case of PhpValue (for unintentional aliases)
+                if (!SkipCopy)
                 {
                     source.EmitPass(cg);
+                }
+                else
+                {
+                    // Even if the copy is unnecessary, we still need to dereference unintentional aliases
+                    source.EmitDereference(cg);
                 }
             }
             else
