@@ -38,7 +38,6 @@ namespace Pchp.Core.Utilities
         /// <exception cref="NotSupportedException">Instance of <see cref="Context"/> cannot be provided.</exception>
         public static Context CurrentContext => CurrentContextProvider() ?? throw new NotSupportedException();
 
-
         /// <summary>
         /// Gets or sets a context provider to provide an instance of <see cref="Context"/> to PHP classes instantiated without given <see cref="Context"/>.
         /// </summary>
