@@ -38,9 +38,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             var currentCFG = routine.ControlFlowGraph;
             var updatedCFG = (ControlFlowGraph)rewriter.VisitCFG(currentCFG);
 
+            rewriter.TryTransformParameters();
             routine.ControlFlowGraph = updatedCFG;
 
-            Debug.Assert((rewriter.TransformationCount != 0) == (updatedCFG != currentCFG)); // transformations <=> cfg updated                                                                                 //
+            Debug.Assert(updatedCFG == currentCFG || rewriter.TransformationCount != 0); // cfg updated => transformations (not <= due to parameter transformations)
             return updatedCFG != currentCFG;
         }
 
@@ -214,6 +215,21 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             // Gather variable information not present in the previous analysis
             _varInfos = VariableInfoWalker.Analyze(_routine);
+        }
+
+        private void TryTransformParameters()
+        {
+            foreach (var parameter in _routine.LocalsTable.Variables.OfType<ParameterReference>())
+            {
+                var varindex = _routine.ControlFlowGraph.FlowContext.GetVarIndex(parameter.BoundName.NameValue);
+                var paramType = parameter.Parameter.Type;
+                if (!_varInfos.GetMightChange(varindex))
+                {
+                    // It is unnecessary to copy a parameter whose value cannot change in the routine
+                    parameter.SkipCopy = true;
+                    TransformationCount++;
+                }
+            }
         }
 
         protected override void OnVisitCFG(ControlFlowGraph x)

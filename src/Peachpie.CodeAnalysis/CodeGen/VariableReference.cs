@@ -1090,6 +1090,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
         #endregion
 
+        /// <summary>
+        /// Whether to skip calling the in-place copy during the initialization (potential aliases must be dereferenced nevertheless).
+        /// </summary>
+        public bool SkipCopy { get; set; }
+
         public ParameterSymbol Parameter => (ParameterSymbol)Symbol;
 
         public override TypeSymbol Type => Place != null ? Place.Type : base.Type;
@@ -1156,8 +1161,11 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (source == target)
             {
-                // 2a. (source == target): Pass (inplace copy)
-                source.EmitPass(cg);
+                // 2a. (source == target): Pass (inplace copy and dereference)
+                if (!SkipCopy || srcparam.Type == cg.CoreTypes.PhpValue)        // TODO: Emit only dereferencing in case of PhpValue (for unintentional aliases)
+                {
+                    source.EmitPass(cg);
+                }
             }
             else
             {
