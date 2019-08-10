@@ -144,14 +144,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         private BoundBlock TryGetNewVersion(BoundBlock block)
         {
-            if (_updatedBlocks == null || !_updatedBlocks.TryGetValue(block, out var mappedBlock))
-            {
-                return block;
-            }
-            else
-            {
-                return mappedBlock;
-            }
+            return _updatedBlocks != null && _updatedBlocks.TryGetValue(block, out var mappedBlock) ? mappedBlock : block;
         }
 
         private void MapToNewVersion(BoundBlock oldBlock, BoundBlock newBlock)
@@ -163,7 +156,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 _updatedBlocks = new Dictionary<BoundBlock, BoundBlock>();
             }
 
-            _updatedBlocks.Add(oldBlock, newBlock);
+            _updatedBlocks[oldBlock] = newBlock;
         }
 
         private BoundBlock MapIfUpdated(BoundBlock original, BoundBlock updated)
@@ -221,7 +214,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 // Rescan and repair nodes and edges if any blocks were modified
                 var repairer = new GraphRepairer(this);
                 updatedStart = (StartBlock)updatedStart.Accept(repairer);
-                updatedExit = _updatedBlocks[x.Exit];                       // It must have been updated by repairer
+                updatedExit = TryGetNewVersion(x.Exit);
 
                 // Handle newly unreachable blocks
                 var newlyUnreachableBlocks =
