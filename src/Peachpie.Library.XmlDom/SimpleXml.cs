@@ -504,12 +504,14 @@ namespace Peachpie.Library.XmlDom
             }
 
             // protected .ctor( Context ctx ) // does not call __construct
-            var instance = (SimpleXMLElement)Activator.CreateInstance(
-                type.Type,
-                bindingAttr: System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly,
-                binder: null,
-                args: new object[] { ctx },
-                culture: System.Globalization.CultureInfo.InvariantCulture);
+            var instance = (SimpleXMLElement)type.GetUninitializedInstance(ctx);
+
+            //var instance = (SimpleXMLElement)Activator.CreateInstance(
+            //    type.Type,
+            //    bindingAttr: System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly,
+            //    binder: null,
+            //    args: new object[] { ctx },
+            //    culture: System.Globalization.CultureInfo.InvariantCulture);
 
             instance.className = className;
 
@@ -552,7 +554,10 @@ namespace Peachpie.Library.XmlDom
         /// <returns>A new <see cref="SimpleXMLElement"/> or a derived class.</returns>
         internal static SimpleXMLElement Create(Context ctx, string className, XmlElement/*!*/ xmlElement, IterationType iterationType)
         {
-            if (className == null) return new SimpleXMLElement(ctx, xmlElement, iterationType);
+            if (className == null)
+            {
+                return new SimpleXMLElement(ctx, xmlElement, iterationType);
+            }
 
             var instance = Create(ctx, className);
             instance.XmlElement = xmlElement;

@@ -262,8 +262,10 @@ namespace Peachpie.Library.XmlDom
 
         public DOMDocument(string version = null, string encoding = null)
         {
-            this.XmlDocument = new XmlDocument();
-            this.XmlDocument.PreserveWhitespace = true;
+            this.XmlDocument = new XmlDocument()
+            {
+                PreserveWhitespace = true,
+            };
 
             __construct(version, encoding);
         }
@@ -284,8 +286,7 @@ namespace Peachpie.Library.XmlDom
             }
 
             // append the corresponding XML declaration to the document
-            if (version == null) version = "1.0";
-            XmlDocument.AppendChild(XmlDocument.CreateXmlDeclaration(version, encoding, String.Empty));
+            XmlDocument.AppendChild(XmlDocument.CreateXmlDeclaration(version ?? "1.0", encoding, string.Empty));
         }
 
         #endregion
