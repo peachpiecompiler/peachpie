@@ -678,6 +678,37 @@ namespace Peachpie.Library.Graphics
             return img.AlphaBlending ? FromRGBA(col) : FromRGB(col);
         }
 
+        /// <summary>
+        /// Can be 1, 2, 3, 4, 5 for built-in fonts in latin2 encoding (where higher numbers corresponding to larger fonts) or any of your own font identifiers registered with imageloadfont().
+        /// </summary>
+        static Font CreateFontById(int fontInd)
+        {
+            // Get the first available of specified sans serif system fonts
+            FontFamily fontFamily = null;
+            var result = SystemFonts.TryFind("Consolas", out fontFamily) || SystemFonts.TryFind("Lucida Console", out fontFamily) || SystemFonts.TryFind("Arial", out fontFamily) || SystemFonts.TryFind("Verdana", out fontFamily) || SystemFonts.TryFind("Tahoma", out fontFamily);
+
+            // Counl'd find the system font.
+            if (!result)
+                return null;
+
+            // Use Bold if required and available
+            var fontStyle = FontStyle.Regular;
+            if (fontInd == 3 || fontInd >= 5)
+            {
+                if (fontFamily.IsStyleAvailable(FontStyle.Bold))
+                {
+                    fontStyle = FontStyle.Bold;
+                }
+            }
+
+            // Make the font size equivalent to the original PHP version
+            int fontSize = 8;
+            if (fontInd > 1) fontSize += 4;
+            if (fontInd > 3) fontSize += 4;
+
+            return fontFamily.CreateFont(fontSize, fontStyle);
+        }
+
         #endregion
 
         /// <summary>
@@ -1047,6 +1078,24 @@ namespace Peachpie.Library.Graphics
             };
         }
 
+        /// <summary>
+        /// Give the bounding box of a markerName using fonts via freetype2
+        /// </summary>
+        public static PhpArray imageftbbox(double size, double angle, string font_file, string text, PhpArray extrainfo = null)
+        {
+            PhpException.FunctionNotSupported(nameof(imageftbbox));
+            return null;
+        }
+
+        /// <summary>
+        /// Give the bounding box of a markerName using fonts via freetype2
+        /// </summary>
+        public static PhpArray imagettfbbox(double size, double angle, string font_file, string text)
+        {
+            PhpException.FunctionNotSupported(nameof(imagettfbbox));
+            return null;
+        }
+
         #endregion
 
         /// <summary>
@@ -1377,15 +1426,6 @@ namespace Peachpie.Library.Graphics
 
         #endregion
 
-        /// <summary>
-        /// Give the bounding box of a markerName using fonts via freetype2
-        /// </summary>
-        public static PhpArray imageftbbox(double size, double angle, string font_file, string text/*, PhpArray extrainfo*/)
-        {
-            PhpException.FunctionNotSupported(nameof(imageftbbox));
-            return null;
-        }
-
         #region imagecolorexact
 
         /// <summary>
@@ -1475,38 +1515,48 @@ namespace Peachpie.Library.Graphics
             if (x < 0 || y < 0) return true;
             if (x > img.Image.Width || y > img.Image.Height) return true;
 
-
-            // Get the first available of specified sans serif system fonts
-            FontFamily fontFamily = null;
-            var result = SystemFonts.TryFind("Consolas", out fontFamily) || SystemFonts.TryFind("Lucida Console", out fontFamily) || SystemFonts.TryFind("Arial", out fontFamily) || SystemFonts.TryFind("Verdana", out fontFamily) || SystemFonts.TryFind("Tahoma", out fontFamily);
-
-            // Counl'd find the system font.
-            if (!result)
-                return false;
-
-            // Use Bold if required and available
-            var fontStyle = FontStyle.Regular;
-            if (fontInd == 3 || fontInd >= 5)
-            {
-                if (fontFamily.IsStyleAvailable(FontStyle.Bold))
-                {
-                    fontStyle = FontStyle.Bold;
-                }
-            }
-
+            var font = CreateFontById(fontInd);
             var color = FromRGBA(col);
-
-            // Make the font size equivalent to the original PHP version
-            int fontSize = 8;
-            if (fontInd > 1) fontSize += 4;
-            if (fontInd > 3) fontSize += 4;
-
-            var font = fontFamily.CreateFont(fontSize, fontStyle);
 
             img.Image.Mutate<Rgba32>(context => context.DrawText<Rgba32>(text, font, color, new PointF(x, y)));
 
             return true;
         }
+
+        /// <summary>
+        /// Returns the pixel width of a character in the specified font.
+        /// </summary>
+        public static int imagefontwidth(int fontInd)
+        {
+            var font = CreateFontById(fontInd);
+            if (font != null)
+            {
+                var size = TextMeasurer.Measure("X", new RendererOptions(font));
+                return (int)size.Width;
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        /// <summary>
+        /// Returns the pixel height of a character in the specified font.
+        /// </summary>
+        public static int imagefontheight(int fontInd)
+        {
+            var font = CreateFontById(fontInd);
+            if (font != null)
+            {
+                var size = TextMeasurer.Measure("X", new RendererOptions(font));
+                return (int)size.Height;
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+
         #endregion
 
         #region imagefill
