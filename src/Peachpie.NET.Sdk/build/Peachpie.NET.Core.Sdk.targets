@@ -17,7 +17,7 @@
   <!-- default Compile and None -->
   <ItemGroup>
     <Compile Include="**/*.phar;**/*.php" Exclude="obj/**;bin/**" Condition=" '$(EnableDefaultPeachpieCompileItems)'=='true' " />
-    <Compile Remove="**/.phpstorm.meta.php" />
+    <Compile Remove="**/.phpstorm.meta.php/**;**/.phpstorm.meta.php" />
   </ItemGroup>
 
   <ItemGroup>
