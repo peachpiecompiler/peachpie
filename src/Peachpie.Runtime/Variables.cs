@@ -548,6 +548,12 @@ namespace Pchp.Core
         /// Checks the value is of type <c>string</c> or <c>&amp;string</c> and gets its value.
         /// Single-byte strings are decoded using <c>UTF-8</c>.
         /// </summary>
+        public static bool IsPhpArray(this PhpValue value, out PhpArray array) => (array = value.AsArray()) != null;
+
+        /// <summary>
+        /// Checks the value is of type <c>string</c> or <c>&amp;string</c> and gets its value.
+        /// Single-byte strings are decoded using <c>UTF-8</c>.
+        /// </summary>
         public static bool IsString(this PhpValue value, out string @string) => value.IsStringImpl(out @string);
 
         /// <summary>
@@ -570,6 +576,37 @@ namespace Pchp.Core
 
                 case PhpTypeCode.Alias:
                     return value.Alias.Value.IsBinaryString(out @string);
+
+                default:
+                    @string = default;
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets value indicating the variable is Unicode string value.
+        /// </summary>
+        public static bool IsUnicodeString(this PhpValue value, out string @string)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.String:
+                    @string = value.String;
+                    return true;
+
+                case PhpTypeCode.MutableString:
+                    if (value.MutableStringBlob.ContainsBinaryData)
+                    {
+                        goto default;
+                    }
+                    else
+                    {
+                        @string = value.MutableStringBlob.ToString();
+                        return true;
+                    }
+
+                case PhpTypeCode.Alias:
+                    return value.Alias.Value.IsUnicodeString(out @string);
 
                 default:
                     @string = default;
