@@ -1555,11 +1555,48 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         public static int imagefontwidth(int fontInd)
         {
+            return (int)imagefontsize(fontInd).Width;
+        }
+
+        /// <summary>
+        /// Returns the pixel height of a character in the specified font.
+        /// </summary>
+        public static int imagefontheight(int fontInd)
+        {
+            return (int)imagefontsize(fontInd).Height;
+        }
+
+        /// <summary>
+        /// Returns the pixel size of a character in the specified font.
+        /// </summary>
+        static SizeF imagefontsize(int fontInd)
+        {
+            if (fontInd <= 0)
+            {
+                return SizeF.Empty;
+            }
+
+            var arr = _imagefontsize;
+            if (arr != null && fontInd < arr.Length && arr[fontInd] != default)
+            {
+                return arr[fontInd];
+            }
+
+            // measure
             var font = CreateFontById(fontInd);
             if (font != null)
             {
                 var size = TextMeasurer.Measure("X", new RendererOptions(font));
-                return (int)size.Width;
+
+                if (arr == null || arr.Length <= fontInd)
+                {
+                    Array.Resize(ref arr, fontInd + 1);
+                    _imagefontsize = arr;
+                }
+
+                arr[fontInd] = size;
+
+                return size;
             }
             else
             {
@@ -1568,21 +1605,9 @@ namespace Peachpie.Library.Graphics
         }
 
         /// <summary>
-        /// Returns the pixel height of a character in the specified font.
+        /// Cached pixel sizes of a built-in font character.
         /// </summary>
-        public static int imagefontheight(int fontInd)
-        {
-            var font = CreateFontById(fontInd);
-            if (font != null)
-            {
-                var size = TextMeasurer.Measure("X", new RendererOptions(font));
-                return (int)size.Height;
-            }
-            else
-            {
-                throw new NotSupportedException();
-            }
-        }
+        static SizeF[] _imagefontsize;
 
         #endregion
 
