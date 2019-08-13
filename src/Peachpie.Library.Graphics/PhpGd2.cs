@@ -683,6 +683,8 @@ namespace Peachpie.Library.Graphics
         /// </summary>
         static Font CreateFontById(int fontInd)
         {
+            // TODO: cache statically
+
             // Get the first available of specified sans serif system fonts
             FontFamily fontFamily = null;
             var result = SystemFonts.TryFind("Consolas", out fontFamily) || SystemFonts.TryFind("Lucida Console", out fontFamily) || SystemFonts.TryFind("Arial", out fontFamily) || SystemFonts.TryFind("Verdana", out fontFamily) || SystemFonts.TryFind("Tahoma", out fontFamily);
@@ -707,6 +709,70 @@ namespace Peachpie.Library.Graphics
             if (fontInd > 3) fontSize += 4;
 
             return fontFamily.CreateFont(fontSize, fontStyle);
+        }
+
+        static Font CreateFontByFontFile(Context ctx, string font_file, double size)
+        {
+            if (string.IsNullOrEmpty(font_file))
+            {
+                PhpException.Throw(PhpError.Warning, Resources.filename_cannot_be_empty);
+                return null;
+            }
+
+            var font_stream = PhpStream.Open(ctx, font_file, "rb");
+            if (font_stream == null)
+            {
+                PhpException.Throw(PhpError.Warning, Resources.invalid_font_filename, font_file);
+                return null;
+            }
+
+            // Font preparation
+            FontFamily family;
+
+            try
+            {
+                family = new FontCollection().Install(font_stream.RawStream); // TODO: perf: global font collection cache
+
+                if (family == null)
+                {
+                    throw new InvalidDataException();
+                }
+            }
+            catch
+            {
+                PhpException.Throw(PhpError.Warning, Resources.invalid_font_filename, font_file);
+                return null;
+            }
+            finally
+            {
+                font_stream.Dispose();
+            }
+
+            FontStyle style;
+
+            if (family.IsStyleAvailable(FontStyle.Regular))
+            {
+                style = FontStyle.Regular;
+            }
+            else if (family.IsStyleAvailable(FontStyle.Bold))
+            {
+                style = FontStyle.Bold;
+            }
+            else if (family.IsStyleAvailable(FontStyle.Italic))
+            {
+                style = FontStyle.Italic;
+            }
+            else if (family.IsStyleAvailable(FontStyle.BoldItalic))
+            {
+                style = FontStyle.BoldItalic;
+            }
+            else
+            {
+                throw new InvalidDataException();
+            }
+
+            //
+            return family.CreateFont((float)size, style);
         }
 
         #endregion
@@ -952,77 +1018,14 @@ namespace Peachpie.Library.Graphics
 
         #region imagettftext
 
-        /// <summary>
-        /// Write text to the image using a TrueType font
-        /// </summary> 
-        [return: CastToFalse]
-        public static PhpArray imagettftext(Context ctx, PhpResource im, double size, double angle, int x, int y, long color, string font_file, string text)
+        static PhpArray/*[8]*/imagettf(Context ctx, PhpGdImageResource img, double size, double angle, int x, int y, long color, string font_file, string text)
         {
-            var img = PhpGdImageResource.ValidImage(im);
-            if (img == null)
+            var font = CreateFontByFontFile(ctx, font_file, size);
+
+            if (font == null)
             {
                 return null;
             }
-
-            if (string.IsNullOrEmpty(font_file))
-            {
-                PhpException.Throw(PhpError.Warning, Resources.filename_cannot_be_empty);
-                return null;
-            }
-
-            var font_stream = PhpStream.Open(ctx, font_file, "rb");
-            if (font_stream == null)
-            {
-                PhpException.Throw(PhpError.Warning, Resources.invalid_font_filename, font_file);
-                return null;
-            }
-
-            // Font preparation
-            FontFamily family;
-
-            try
-            {
-                family = new FontCollection().Install(font_stream.RawStream); // TODO: perf: global font collection cache
-
-                if (ReferenceEquals(family, null))
-                {
-                    throw new InvalidOperationException();
-                }
-            }
-            catch
-            {
-                PhpException.Throw(PhpError.Warning, Resources.invalid_font_filename, font_file);
-                return null;
-            }
-            finally
-            {
-                font_stream.Dispose();
-            }
-
-            FontStyle style;
-
-            if (family.IsStyleAvailable(FontStyle.Regular))
-            {
-                style = FontStyle.Regular;
-            }
-            else if (family.IsStyleAvailable(FontStyle.Bold))
-            {
-                style = FontStyle.Bold;
-            }
-            else if (family.IsStyleAvailable(FontStyle.Italic))
-            {
-                style = FontStyle.Italic;
-            }
-            else if (family.IsStyleAvailable(FontStyle.BoldItalic))
-            {
-                style = FontStyle.BoldItalic;
-            }
-            else
-            {
-                return null;
-            }
-
-            var font = new Font(family, (float)size, style);
 
             var rendererOptions = new RendererOptions(font);
             var textsize = TextMeasurer.Measure(text, rendererOptions);
@@ -1031,21 +1034,23 @@ namespace Peachpie.Library.Graphics
             var matrix = (angle == 0.0) ? Matrix3x2.Identity : Matrix3x2.CreateRotation((float)(angle * -2.0 * Math.PI / 360.0f));
             matrix.Translation = new Vector2(x, y);
 
-
             // draw the text:
-            // TODO: col < 0 => turn off antialiasing
-            var rgbaColor = FromRGBA(Math.Abs(color));
-            if (angle == 0.0)
+            if (img != null)
             {
-                // Horizontal version is optimized by ImageSharp
-                img.Image.Mutate(o => o.DrawText(text, font, rgbaColor, new PointF(x, y - font.Size)));
-            }
-            else
-            {
-                // Obtain and fill the particular glyphs if rotated
-                var path = new PathBuilder(matrix).AddLine(0, 0, textsize.Width, 0).Build();
-                var glyphs = TextBuilder.GenerateGlyphs(text, path, rendererOptions);
-                img.Image.Mutate(o => o.Fill(rgbaColor, glyphs));
+                // TODO: col < 0 => turn off antialiasing
+                var rgbaColor = FromRGBA(Math.Abs(color));
+                if (angle == 0.0)
+                {
+                    // Horizontal version is optimized by ImageSharp
+                    img.Image.Mutate(o => o.DrawText(text, font, rgbaColor, new PointF(x, y - font.Size)));
+                }
+                else
+                {
+                    // Obtain and fill the particular glyphs if rotated
+                    var path = new PathBuilder(matrix).AddLine(0, 0, textsize.Width, 0).Build();
+                    var glyphs = TextBuilder.GenerateGlyphs(text, path, rendererOptions);
+                    img.Image.Mutate(o => o.Fill(rgbaColor, glyphs));
+                }
             }
 
             // calculate drawen text boundaries:
@@ -1079,21 +1084,43 @@ namespace Peachpie.Library.Graphics
         }
 
         /// <summary>
-        /// Give the bounding box of a markerName using fonts via freetype2
-        /// </summary>
-        public static PhpArray imageftbbox(double size, double angle, string font_file, string text, PhpArray extrainfo = null)
+        /// Write text to the image using a TrueType font
+        /// </summary> 
+        [return: CastToFalse]
+        public static PhpArray imagettftext(Context ctx, PhpResource im, double size, double angle, int x, int y, long color, string font_file, string text)
         {
-            PhpException.FunctionNotSupported(nameof(imageftbbox));
-            return null;
+            var img = PhpGdImageResource.ValidImage(im);
+            if (img != null)
+            {
+                return imagettf(ctx, img, size, angle, x, y, color, font_file, text);
+            }
+            else
+            {
+                return null;
+            }
         }
 
         /// <summary>
         /// Give the bounding box of a markerName using fonts via freetype2
         /// </summary>
-        public static PhpArray imagettfbbox(double size, double angle, string font_file, string text)
+        [return: NotNull]
+        public static PhpArray imageftbbox(Context ctx, double size, double angle, string font_file, string text, PhpArray extrainfo = null)
         {
-            PhpException.FunctionNotSupported(nameof(imagettfbbox));
-            return null;
+            if (extrainfo != null && extrainfo.TryGetValue("linespacing", out var linespacing))
+            {
+                PhpException.ArgumentValueNotSupported(nameof(extrainfo), "linespacing");
+            }
+
+            return imagettf(ctx, null, size, angle, 0, 0, 0, font_file, text) ?? throw new ArgumentException();
+        }
+
+        /// <summary>
+        /// Give the bounding box of a markerName using fonts via freetype2
+        /// </summary>
+        [return: NotNull]
+        public static PhpArray imagettfbbox(Context ctx, double size, double angle, string font_file, string text)
+        {
+            return imagettf(ctx, null, size, angle, 0, 0, 0, font_file, text) ?? throw new ArgumentException();
         }
 
         #endregion
