@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Pchp.Core;
+using Pchp.Core.Reflection;
 using static Pchp.Library.StandardPhpOptions;
 
 namespace Pchp.Library
@@ -30,7 +31,7 @@ namespace Pchp.Library
             public string ExtensionName => MultiByteString.ExtensionName;
 
             /// <summary><see cref="mb_detect_order"/></summary>
-            public List<Encoding> DetectOrder { get; set; } = new List<Encoding>(2) { Encoding.ASCII, Encoding.UTF8 };
+            public Encoding[] DetectOrder { get; set; } = new[] { Encoding.ASCII, Encoding.UTF8 };
 
             /// <summary>
             /// Gets or sets a value of a legacy configuration option.
@@ -138,6 +139,22 @@ namespace Pchp.Library
                 return null;
             }
 
+            public static bool IsUtfEncoding(string name)
+            {
+                return
+                    name.EqualsOrdinalIgnoreCase("UTF-8") ||
+                    name.EqualsOrdinalIgnoreCase("UTF-16") ||
+                    name.EqualsOrdinalIgnoreCase("UTF-16LE") ||
+                    name.EqualsOrdinalIgnoreCase("UTF-16BE") ||
+                    name.EqualsOrdinalIgnoreCase("Unicode") ||
+                    name.EqualsOrdinalIgnoreCase("UTF");
+            }
+
+            public static bool IsUtfEncoding(Encoding enc)
+            {
+                return enc is UnicodeEncoding || enc == Encoding.UTF8 || enc == Encoding.UTF32;
+            }
+
             public override Encoding GetEncoding(string name)
             {
                 // encoding names used in PHP
@@ -218,13 +235,22 @@ namespace Pchp.Library
                     return Encoding.GetEncoding(codepage);
                 }
 
+                // Codepage - {CodePage}
+                const string CodepagePrefix = "Codepage - ";
+                if (name.StartsWith(CodepagePrefix, StringComparison.OrdinalIgnoreCase) &&
+                    name.Length > CodepagePrefix.Length &&
+                    int.TryParse(name.Substring(CodepagePrefix.Length), out codepage))
+                {
+                    return Encoding.GetEncoding(codepage);
+                }
+
                 //
                 return null;
             }
         }
 
         /// <summary>
-        /// Get encoding based on the PHP name. Can return null is such encoding is not defined.
+        /// Get encoding based on the PHP name. Can return <c>null</c> if such encoding is not defined.
         /// </summary>
         /// <param name="encodingName"></param>
         /// <returns></returns>
@@ -677,7 +703,127 @@ namespace Pchp.Library
 
         #endregion
 
-        #region mb_convert_encoding
+        #region mb_convert_encoding, mb_convert_variables
+
+        static bool TryGetEncodingsFromStringOrArray(PhpValue from_encoding, out Encoding enc, out Encoding[] enc_array)
+        {
+            enc = null;
+            enc_array = null;
+            int invalid = 0;
+
+            if (from_encoding.IsString(out var str))
+            {
+                // TODO: "auto"
+
+                if (str.IndexOf(',') >= 0)
+                {
+                    // comma separated list (string)
+                    var split = str.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (split.Length != 0)
+                    {
+                        enc_array = new Encoding[split.Length];
+                        for (int i = 0; i < split.Length; i++)
+                        {
+                            var x = GetEncoding(split[i].Trim());
+                            if (x == null) invalid++;
+
+                            enc_array[i] = x;
+                        }
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    // string
+                    enc = GetEncoding(str.Trim());
+                    return enc != null;
+                }
+            }
+            else if (from_encoding.IsPhpArray(out var arr))
+            {
+                if (arr.Count == 0)
+                {
+                    // empty array
+                    return false;
+                }
+                else
+                {
+                    var e = arr.GetFastEnumerator();
+                    if (arr.Count == 1)
+                    {
+                        enc = e.MoveNext() ? GetEncoding(e.CurrentValue.ToString().Trim()) : null;
+                        return enc != null;
+                    }
+                    else
+                    {
+                        enc_array = new Encoding[arr.Count];
+                        int i = 0;
+                        while (e.MoveNext())
+                        {
+                            var x = GetEncoding(e.CurrentValue.ToString().Trim());
+                            if (x == null) invalid++;
+                            enc_array[i++] = x;
+                        }
+                        Debug.Assert(i == arr.Count);
+                    }
+                }
+            }
+
+            //
+            if (enc_array != null && enc_array.Length != 0)
+            {
+                if (invalid == 0)
+                {
+                    return true;
+                }
+                else
+                {
+                    enc_array = enc_array.Where(x => x != null).ToArray();
+                    return enc_array.Length != 0;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        static bool TryDetectEncoding(PhpString value, Encoding[] encodings, out Encoding detectedEncoding, out string convertedValue)
+        {
+            if (encodings != null)
+            {
+                for (int i = 0; i < encodings.Length; i++)
+                {
+                    var enc = encodings[i];
+                    if (enc != null)
+                    {
+                        try
+                        {
+                            // NOTE: See DetectByteOrderMarkAsync() function here for possible solution:
+                            // https://github.com/AngleSharp/AngleSharp/blob/master/src/AngleSharp/TextSource.cs
+
+                            convertedValue = value.ToString(Encoding.GetEncoding(enc.CodePage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback));
+
+                            // succeeded
+                            detectedEncoding = enc;
+                            return true;
+                        }
+                        catch
+                        {
+                            // nope
+                        }
+                    }
+                }
+            }
+
+            //
+            detectedEncoding = default;
+            convertedValue = default;
+            return false;
+        }
 
         /// <summary>
         /// Converts the character encoding of <paramref name="str"/> to <paramref name="to_encoding"/>.
@@ -697,77 +843,18 @@ namespace Pchp.Library
             if (str.ContainsBinaryData)
             {
                 // source encoding
-                Encoding from_enc = null;
-                IEnumerable<Encoding> from_encs = null;
-
-                if (Operators.IsSet(from_encoding))
+                if (!TryGetEncodingsFromStringOrArray(from_encoding, out var from_enc, out var from_encs))
                 {
-                    PhpArray from_arr;
-                    var from_str = from_encoding.AsString();
-                    if (from_str != null)
-                    {
-                        // TODO: "auto"
-
-                        if (from_str.IndexOf(',') >= 0)
-                        {
-                            // comma separated list (string)
-                            from_encs = from_str.Split(',').Select(name => name.Trim()).Select(GetEncoding);
-                        }
-                        else
-                        {
-                            // string
-                            from_enc = GetEncoding(from_str);
-                        }
-                    }
-                    else if ((from_arr = from_encoding.AsArray()) != null)
-                    {
-                        // array
-                        from_encs = from_arr.Values.Select(val => val.ToString().Trim()).Select(GetEncoding);
-                    }
-                    else
-                    {
-                        throw new ArgumentException(nameof(from_encoding));
-                    }
-                }
-                else
-                {
-                    // from_encoding is default or NULL:
-                    from_enc = GetConfig(ctx).InternalEncoding ?? ctx.StringEncoding;
+                    throw new ArgumentException(nameof(from_encoding));
                 }
 
                 if (from_enc != null)
                 {
                     decoded = str.ToString(from_enc);
                 }
-                else if (from_encs != null)
+                else if (!TryDetectEncoding(str, from_encs, out from_enc, out decoded))
                 {
-                    decoded = null;
-
-                    // autodetect encoding
-                    foreach (var enc in from_encs)
-                    {
-                        if (enc != null)
-                        {
-                            try
-                            {
-                                decoded = str.ToString(Encoding.GetEncoding(enc.CodePage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback));
-                                break;
-                            }
-                            catch
-                            {
-                                // continue;
-                            }
-                        }
-                    }
-
-                    if (decoded == null)
-                    {
-                        throw new ArgumentException();
-                    }
-                }
-                else
-                {
-                    throw new InvalidOperationException();
+                    throw new ArgumentException(nameof(from_encoding));
                 }
             }
             else
@@ -777,8 +864,9 @@ namespace Pchp.Library
             }
 
             // target encoding:
+            // only convert non-unicode encodings, otherwise keep the `System.String`
             var target_enc = GetEncoding(to_encoding);
-            if (target_enc == null)
+            if (target_enc == null || PhpEncodingProvider.IsUtfEncoding(target_enc))
             {
                 return new PhpString(decoded);
             }
@@ -786,6 +874,146 @@ namespace Pchp.Library
             {
                 return new PhpString(target_enc.GetBytes(decoded));
             }
+        }
+
+        static PhpValue convert_variable(PhpValue value, PhpValue from_encoding, ref Encoding from_enc, ref Encoding[] from_encs, Encoding to_enc, ref HashSet<object> visited)
+        {
+            object obj;
+
+            if (value.IsUnicodeString(out var str))
+            {
+                return (to_enc != null) // change from Unicode string to single-byte string
+                    ? PhpValue.Create(new PhpString(to_enc.GetBytes(str)))
+                    : PhpValue.Create(str);
+            }
+            else if (value.IsBinaryString(out var phpstr))
+            {
+                // we need from_encoding
+
+                if (from_enc == default && from_encs == default && !TryGetEncodingsFromStringOrArray(from_encoding, out from_enc, out from_encs))
+                {
+                    throw new ArgumentException(nameof(from_encoding));
+                }
+
+                if (from_enc == null)
+                {
+                    // detect encoding & decode
+                    if (TryDetectEncoding(phpstr, from_encs, out from_enc, out var decoded))
+                    {
+                        return to_enc != null
+                            ? PhpValue.Create(new PhpString(to_enc.GetBytes(decoded)))
+                            : PhpValue.Create(decoded);
+                    }
+                    else
+                    {
+                        throw new ArgumentException(nameof(from_encoding)); // cannot detect encoding or encodings not provided
+                    }
+                }
+                else
+                {
+                    // decode
+                    var decoded = phpstr.ToString(from_enc);
+                    return to_enc != null
+                        ? PhpValue.Create(new PhpString(to_enc.GetBytes(decoded)))
+                        : PhpValue.Create(decoded);
+                }
+            }
+            else if (value.IsPhpArray(out var arr))
+            {
+                if (visited == null)
+                    visited = new HashSet<object>();
+
+                if (visited.Add(arr))
+                {
+                    // TODO: arr.EnsureWritable() !!
+
+                    var e = arr.GetFastEnumerator();
+                    while (e.MoveNext())
+                    {
+                        ref var oldvalue = ref e.CurrentValue;
+                        var newvalue = convert_variable(oldvalue, from_encoding, ref from_enc, ref from_encs, to_enc, ref visited);
+
+                        Operators.SetValue(ref oldvalue, newvalue);
+                    }
+                }
+
+                //
+                return arr;
+            }
+            else if ((obj = value.AsObject()) != null && !(obj is PhpResource))
+            {
+                if (visited == null)
+                    visited = new HashSet<object>();
+
+                if (visited.Add(obj))
+                {
+                    var tinfo = obj.GetPhpTypeInfo();
+                    foreach (var p in tinfo.GetDeclaredProperties())
+                    {
+                        if (p.IsStatic) continue;
+
+                        var oldvalue = p.GetValue(null/*only for static properties*/, obj);
+                        var newvalue = convert_variable(oldvalue, from_encoding, ref from_enc, ref from_encs, to_enc, ref visited);
+                        if (oldvalue.IsAlias)
+                        {
+                            oldvalue.Alias.Value = newvalue;
+                        }
+                        else
+                        {
+                            p.SetValue(null, obj, newvalue);
+                        }
+                    }
+
+                    var runtimefields = tinfo.GetRuntimeFields(obj);
+                    if (runtimefields != null && runtimefields.Count != 0)
+                    {
+                        convert_variable(runtimefields, from_encoding, ref from_enc, ref from_encs, to_enc, ref visited);
+                    }
+                }
+
+                return value;
+            }
+            else
+            {
+                throw new ArgumentException(nameof(value));
+            }
+        }
+
+        /// <summary>
+        /// Convert character code in variables.
+        /// </summary>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="to_encoding">The encoding that the string is being converted to.</param>
+        /// <param name="from_encoding">Array or comma separated list of encodings. If <c>NULL</c>, the <c>detect_order</c> is used.</param>
+        /// <param name="vars">Reference to the variable being converted. String, Array and Object are accepted.</param>
+        /// <returns>The character encoding before conversion for success, or <c>FALSE</c> for failure.</returns>
+        [return: CastToFalse]
+        public static string mb_convert_variables(Context ctx, string to_encoding, PhpValue from_encoding, params PhpAlias[] vars)
+        {
+            // source encoding,
+            // initialized when first needed (when there is non-unicode string)
+            Encoding from_enc = null;
+            Encoding[] from_encs = Operators.IsSet(from_encoding) ? null : GetConfig(ctx).DetectOrder;
+
+            HashSet<object> visited = null;
+
+            // only convert non-unicode encodings, otherwise keep the `System.String`
+            var to_enc = string.IsNullOrEmpty(to_encoding) || PhpEncodingProvider.IsUtfEncoding(to_encoding)
+                ? null
+                : (ctx.StringEncoding.WebName == to_encoding/*internal encoding might not be registered but it's there*/ ? ctx.StringEncoding : GetEncoding(to_encoding));
+
+            for (int i = 0; i < vars.Length; i++)
+            {
+                var obj = vars[i];
+
+                if (obj != null)
+                {
+                    obj.Value = convert_variable(obj.Value, from_encoding, ref from_enc, ref from_encs, to_enc, ref visited);
+                }
+            }
+
+            //
+            return from_enc != null ? from_enc.WebName : ctx.StringEncoding.WebName;
         }
 
         #endregion
@@ -1132,57 +1360,32 @@ namespace Pchp.Library
         /// </remarks>
         public static PhpValue mb_detect_order(Context ctx, PhpValue encoding_list = default)
         {
+            Encoding[] encodings;
+
             if (Operators.IsSet(encoding_list))
             {
-                var newlist = ResolveEncodingList(ctx, encoding_list);
-
-                if (newlist != null)
-                {
-                    GetConfig(ctx).DetectOrder = newlist;
-                    return PhpValue.True;
-                }
-                else
+                if (!TryGetEncodingsFromStringOrArray(encoding_list, out var encoding, out encodings))
                 {
                     return PhpValue.False;
                 }
+
+                GetConfig(ctx).DetectOrder = encodings ?? new[] { encoding };
+                return PhpValue.True;
             }
             else
             {
-                return new PhpArray(GetConfig(ctx).DetectOrder.Select(enc => enc.WebName));
+                return mb_detect_order(ctx);
             }
         }
 
-        static List<Encoding> ResolveEncodingList(Context ctx, PhpValue encoding_list, bool ignoreInvalid = false)
+        /// <summary>
+        /// Get character encoding detection order.
+        /// </summary>
+        /// <returns>An ordered array of the encodings is returned.</returns>
+        [return: NotNull]
+        public static PhpArray/*!*/mb_detect_order(Context ctx)
         {
-            IEnumerable<string> enc_names;
-
-            var newlist = new List<Encoding>(4);
-            var arrlist = encoding_list.AsArray();
-
-            if (arrlist != null)
-            {
-                enc_names = arrlist.Values.Select(x => x.ToString(ctx));
-            }
-            else
-            {
-                var strlist = encoding_list.ToString(ctx);
-                enc_names = strlist.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-            }
-
-            foreach (var n in enc_names)
-            {
-                var enc = GetEncoding(n.Trim());
-                if (enc == null)
-                {
-                    if (ignoreInvalid) continue;
-
-                    return null;
-                }
-
-                newlist.Add(enc);
-            }
-
-            return newlist;
+            return new PhpArray(GetConfig(ctx).DetectOrder.Select(enc => enc.WebName));
         }
 
         /// <summary>
@@ -1201,28 +1404,34 @@ namespace Pchp.Library
         {
             if (str.ContainsBinaryData)
             {
-                var encodings = Operators.IsSet(encoding_list)
-                    ? ResolveEncodingList(ctx, encoding_list, ignoreInvalid: true)
-                    : GetConfig(ctx).DetectOrder;
+                Encoding encoding;
+                Encoding[] encodings;
 
-                var bytes = str.ToBytes(ctx);
-
-                foreach (var enc in encodings)
+                if (!Operators.IsSet(encoding_list))
                 {
-                    // NOTE: See DetectByteOrderMarkAsync() function here for possible solution: https://github.com/AngleSharp/AngleSharp/blob/master/src/AngleSharp/TextSource.cs
-
-                    try
+                    encodings = GetConfig(ctx).DetectOrder;
+                }
+                else
+                {
+                    if (!TryGetEncodingsFromStringOrArray(encoding_list, out encoding, out encodings))
                     {
-                        enc.GetString(bytes);
-                        return enc.WebName;
+                        return null;
                     }
-                    catch
+
+                    if (encodings == null && encoding != null)
                     {
-                        // nope
+                        encodings = new[] { encoding };
                     }
                 }
 
-                return null; // FALSE
+                if (TryDetectEncoding(str, encodings, out encoding, out var _))
+                {
+                    return encoding.WebName;
+                }
+                else
+                {
+                    return null;
+                }
             }
             else
             {
