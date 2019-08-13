@@ -117,6 +117,9 @@ namespace Pchp.Library
                     return (PhpValue)GetSet(ref config.Core.AllowUrlFopen, true, value, action);
                 case "include_path":
                     return (PhpValue)GetSet(ref config.Core.IncludePaths, ".", value, action);
+                case "allow_url_include":
+                    AssertGet(option, action);
+                    return PhpValue.False;
 
                 case "disable_functions":
                 case "disable_classes":
@@ -196,8 +199,8 @@ namespace Pchp.Library
 
             //
 
-            Register("allow_call_time_pass_reference", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
             Register("allow_url_fopen", IniFlags.Supported | IniFlags.Local, gsrcore);
+            Register("allow_url_include", IniFlags.Supported | IniFlags.Global, gsrcore);
             Register("allow_webdav_methods", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
             Register("always_populate_raw_post_data", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
             Register("arg_separator.input", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
@@ -265,8 +268,6 @@ namespace Pchp.Library
             Register("post_max_size", IniFlags.Supported | IniFlags.Global | IniFlags.Http, gsrcore);
             Register("precision", IniFlags.Supported | IniFlags.Local, gsrcore);
             Register("register_argc_argv", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
-            Register("register_globals", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
-            Register("register_long_arrays", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
             Register("report_memleaks", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
             Register("safe_mode", IniFlags.Supported | IniFlags.Global, s_emptyGsr);
             Register("safe_mode_allowed_env_vars", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
@@ -295,8 +296,6 @@ namespace Pchp.Library
             Register("variables_order", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
             Register("warn_plus_overloading", IniFlags.Unsupported | IniFlags.Global, s_emptyGsr);
             Register("xbithack", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
-            Register("y2k_compliance", IniFlags.Unsupported | IniFlags.Local, s_emptyGsr);
-            Register("zend.ze1_compatibility_mode", IniFlags.Supported | IniFlags.Local, s_emptyGsr);
 
             // mail
             Register("SMTP", IniFlags.Supported | IniFlags.Local, gsrmail);
