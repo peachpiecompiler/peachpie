@@ -2655,14 +2655,22 @@ namespace Pchp.Library
                             pom = opt.GetItemValue(new IntStringKey("cost"));
                             if (pom.IsInteger())
                                 cost = pom.ToInt();
+                                {
+                                    PhpException.Throw(PhpError.Warning, $"Invalid bcrypt cost parameter specified: {pom1Int})");
+                                    return result;
+                                }
+                            }
                             else
-                                PhpException.Throw(PhpError.Warning, $"Use of undefined constant {pom.ToString()} (this will throw an Error in a future version of PHP)"); // invalid value of cost  
+                            {
+                                PhpException.Throw(PhpError.Warning, $"Use of undefined constant {pom1.ToString()} (this will throw an Error in a future version of PHP)"); // invalid value of cost
+                                return result;
+                            }
                         }
                         if (opt.ContainsKey("salt"))
                         {
                             PhpException.Throw(PhpError.E_DEPRECATED, "Use of the 'salt' option to password_hash is deprecated");
-                            pom = $"$2y${cost}${opt.GetItemValue(new IntStringKey("salt"))}";
-                            pom.IsString(out salt);
+                            pom1 = $"$2y${cost}${opt.GetItemValue(new IntStringKey("salt"))}";
+                            pom1.IsString(out salt);
                         }
                     }
                     try
@@ -2674,9 +2682,80 @@ namespace Pchp.Library
                     break;
                 //Argon2i
                 case 2:
-                    break;
-                //Argon2id
                 case 3:
+                    PhpValue pom2;
+                    int memory_cost = memory_costDefault;
+                    int time_cost = costDefault;
+                    int threads = threadsDefault;
+                    if (opt != null)
+                    {
+                        if (opt.ContainsKey("memory_cost"))
+                        {
+                            pom2 = opt.GetItemValue(new IntStringKey("memory_cost"));
+                            if (pom2.IsInteger())
+                            {
+                                int pom2Int = pom2.ToInt();
+                                if (pom2Int >= 4)
+                                    memory_cost = pom2Int;
+                                else
+                                {
+                                    PhpException.Throw(PhpError.Warning, "Memory cost is outside of allowed memory range");
+                                    return result;
+                                }
+                            }
+                            else
+                            {
+                                PhpException.Throw(PhpError.Warning, "Memory cost is outside of allowed memory range");
+                                return result;
+                            }
+                        }
+                        if (opt.ContainsKey("time_cost"))
+                        {
+                            pom2 = opt.GetItemValue(new IntStringKey("time_cost"));
+                            if (pom2.IsInteger())
+                            {
+                                int pom2Int = pom2.ToInt();
+                                if (pom2Int >= 1)
+                                    time_cost = pom2Int;
+                                else
+                                {
+                                    PhpException.Throw(PhpError.Warning, "Time cost is outside of allowed time range");
+                                    return result;
+                                }
+                            }
+                            else
+                            {
+                                PhpException.Throw(PhpError.Warning, "Time cost is outside of allowed time range");
+                                return result;
+                            }
+                        }
+                        if (opt.ContainsKey("threads"))
+                        {
+                            pom2 = opt.GetItemValue(new IntStringKey("threads"));
+                            if (pom2.IsInteger())
+                            {
+                                int pom2Int = pom2.ToInt();
+                                if (pom2Int >= 1)
+                                    threads = pom2Int;
+                                else
+                                {
+                                    PhpException.Throw(PhpError.Warning, "Invalid number of threads");
+                                    return result;
+                                }
+                            }
+                            else
+                            {
+                                PhpException.Throw(PhpError.Warning, "Invalid number of threads");
+                                return result;
+                            }
+                        }
+                    }
+                    try
+                    {
+                        result = (algo == 2) ? hash_argon2(password,time_cost,memory_cost,threads,true) : hash_argon2(password, time_cost, memory_cost, threads, false);
+                    }
+                    catch (Exception)
+                    { }
                     break;
                 //Unknown algorithm
                 default:
@@ -2689,7 +2768,9 @@ namespace Pchp.Library
         /// Verifies that a password matches a hash.
         /// </summary>
         public static bool password_verify(string password, string hash)
-        {          
+        {
+            if (hash.Substring(1, 7) == "argon2i")
+                return Argon2.Verify(hash, password);
             return crypt(password, hash) == hash;
         }
 
