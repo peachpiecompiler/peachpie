@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Library.Streams;
+using BCrypt.Net;
 
 namespace Pchp.Library
 {
@@ -2620,11 +2621,75 @@ namespace Pchp.Library
 
         #region password_hash, password_verify
 
+        #region password_hash (Constants)
+
+        const int costDefault = 10;
+        const int threadsDefault = 1;
+        const int memory_costDefault = 4;
+
+        #endregion
+
+        /// <summary>
+        /// Creates a password hash
+        /// </summary>
+        /// <param name="password">The user's password.</param>
+        /// <param name="algo">A password algorithm constant denoting the algorithm to use when hashing the password. 0 - Default, 1 - Blowfish, 2 - Argon2i, 3 - Argon2id</param>
+        /// <param name="opt">See the password algorithm constants. If omitted, a random salt will be created and the default cost will be used.</param>
+        /// <returns>Returns the hashed password, or FALSE on failure.</returns>
+        public static PhpValue password_hash(string password, int algo, PhpArray opt = null)
+        {
+            PhpValue result = PhpValue.False;
+            switch (algo)
+            {
+                // Default
+                case 0:
+                // Blowfish
+                case 1:
+                    PhpValue pom;
+                    int cost = costDefault;
+                    string salt = BCrypt.Net.BCrypt.GenerateSalt(cost);
+                    if (opt != null)
+                    {
+                        if (opt.ContainsKey("cost"))
+                        {
+                            pom = opt.GetItemValue(new IntStringKey("cost"));
+                            if (pom.IsInteger())
+                                cost = pom.ToInt();
+                            else
+                                PhpException.Throw(PhpError.Warning, $"Use of undefined constant {pom.ToString()} (this will throw an Error in a future version of PHP)"); // invalid value of cost  
+                        }
+                        if (opt.ContainsKey("salt"))
+                        {
+                            PhpException.Throw(PhpError.E_DEPRECATED, "Use of the 'salt' option to password_hash is deprecated");
+                            pom = $"$2y${cost}${opt.GetItemValue(new IntStringKey("salt"))}";
+                            pom.IsString(out salt);
+                        }
+                    }
+                    try
+                    {
+                        result = PhpValue.Create(BCrypt.Net.BCrypt.HashPassword(password, salt));
+                    }
+                    catch (Exception)
+                    { }
+                    break;
+                //Argon2i
+                case 2:
+                    break;
+                //Argon2id
+                case 3:
+                    break;
+                //Unknown algorithm
+                default:
+                    break;
+            }
+            return result;
+        }
+
         /// <summary>
         /// Verifies that a password matches a hash.
         /// </summary>
         public static bool password_verify(string password, string hash)
-        {
+        {          
             return crypt(password, hash) == hash;
         }
 
@@ -2679,10 +2744,17 @@ namespace Pchp.Library
                             // SHA512
                         }
                     }
-
                     if (salt[1] == '2' && salt.Length >= 4 && salt[3] == '$') // $2 $
                     {
-                        // blowfish
+                        //bcrypt
+                        try
+                        {
+                            return (salt[5] == '$') ? BCrypt.Net.BCrypt.HashPassword(str, salt.Substring(0, 28)) : BCrypt.Net.BCrypt.HashPassword(str, salt.Substring(0, 29));
+                        }
+                        catch (Exception)
+                        {
+                            return "";
+                        }
                     }
                 }
             }
