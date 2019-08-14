@@ -2720,7 +2720,7 @@ namespace Pchp.Library
         {
             if (string.IsNullOrEmpty(salt))
             {
-                throw new ArgumentException();
+               //MD5
             }
 
             if (salt.Length >= 3)
