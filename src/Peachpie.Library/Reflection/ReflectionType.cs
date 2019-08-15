@@ -67,6 +67,11 @@ namespace Pchp.Library.Reflection
                 name = PhpArray.PhpTypeName;
                 builtin = true;
             }
+            else if (type == typeof(void))
+            {
+                name = PhpVariable.TypeNameVoid;
+                builtin = true;
+            }
             else if (type == typeof(PhpAlias) || type == typeof(PhpValue))
             {
                 name = null;
