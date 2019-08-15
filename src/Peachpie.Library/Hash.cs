@@ -7,7 +7,9 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Library.Streams;
+using Isopoh.Cryptography.Argon2;
 using BCrypt.Net;
+using Isopoh.Cryptography.SecureArray;
 
 namespace Pchp.Library
 {
@@ -2619,6 +2621,38 @@ namespace Pchp.Library
 
         #endregion
 
+        #region hash_argon2i, hash_argon2id
+
+        private static readonly RandomNumberGenerator Rng = System.Security.Cryptography.RandomNumberGenerator.Create();
+        private static string hash_argon2(string password, int time_cost, int memory_cost, int threads, bool argon2i_id)
+        {
+            byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
+            byte[] salt = new byte[16];
+
+            Rng.GetBytes(salt);
+
+            var config = new Argon2Config
+            {
+                Type = argon2i_id ? Argon2Type.DataIndependentAddressing : Argon2Type.HybridAddressing,
+                Version = Argon2Version.Nineteen,
+                TimeCost = time_cost,
+                MemoryCost = memory_cost,
+                Threads = threads,
+                Password = passwordBytes,
+                Salt=salt
+            };
+            var argon = new Argon2(config);
+
+            string hashString;
+            using (SecureArray<byte> hash = argon.Hash())
+            {
+                hashString = config.EncodeString(hash.Buffer);
+            }
+            return hashString;
+        }
+
+        #endregion
+
         #region password_hash, password_verify
 
         #region password_hash (Constants)
@@ -2645,16 +2679,20 @@ namespace Pchp.Library
                 case 0:
                 // Blowfish
                 case 1:
-                    PhpValue pom;
+                    PhpValue pom1;
                     int cost = costDefault;
                     string salt = BCrypt.Net.BCrypt.GenerateSalt(cost);
                     if (opt != null)
                     {
                         if (opt.ContainsKey("cost"))
                         {
-                            pom = opt.GetItemValue(new IntStringKey("cost"));
-                            if (pom.IsInteger())
-                                cost = pom.ToInt();
+                            pom1 = opt.GetItemValue(new IntStringKey("cost"));
+                            if (pom1.IsInteger())
+                            {
+                                int pom1Int = pom1.ToInt();
+                                if (pom1Int >= 4 && pom1Int <= 31)
+                                    cost = pom1Int;
+                                else
                                 {
                                     PhpException.Throw(PhpError.Warning, $"Invalid bcrypt cost parameter specified: {pom1Int})");
                                     return result;
