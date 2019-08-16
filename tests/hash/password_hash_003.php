@@ -11,8 +11,8 @@ $options = [
     'memory_cost' => $memory_cost,
 ];
 
-$hashAllModifieded = password_hash( $password, 2, $options);
-$hash = password_hash( $password, 2);
+$hashAllModifieded = password_hash( $password, PASSWORD_ARGON2I, $options);
+$hash = password_hash( $password, PASSWORD_ARGON2I);
 
 echo 'Verify hash with cost : ' . password_verify( $password, $hashAllModifieded) . "\n";
 echo 'Verify hash without cost : ' . password_verify( $password, $hash) . "\n";
