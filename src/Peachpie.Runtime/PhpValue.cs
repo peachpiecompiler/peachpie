@@ -661,6 +661,16 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Checks the value is of type <c>string</c> (both unicode and single-byte) or an alias to a string.
+        /// </summary>
+        internal bool IsStringImpl()
+        {
+            return ReferenceEquals(_type, TypeTable.StringTable) ||
+                   ReferenceEquals(_type, TypeTable.MutableStringTable) ||
+                   (IsAlias && _obj.alias.Value.IsStringImpl());
+        }
+
+        /// <summary>
         /// Converts current value to <see cref="PhpString"/> and gets mutable access to the value.
         /// </summary>
         /// <returns>Object on which edit operations can be performed. Cannot be <c>null</c>.</returns>
