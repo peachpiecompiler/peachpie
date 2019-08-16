@@ -85,7 +85,12 @@ namespace Peachpie.Library.Scripting
             var list = types.Distinct().Select(ass => ass.GetTypeInfo().Assembly).ToList();
             var set = new HashSet<Assembly>(list);
 
-            list.Add(System.Reflection.Assembly.GetEntryAssembly());
+            // Add entry assembly if its loadable
+            var entryAssembly = System.Reflection.Assembly.GetEntryAssembly();
+
+            if (!entryAssembly.IsDynamic && entryAssembly.Location.Length != 0) {
+                list.Add(entryAssembly);
+            }
 
             for (int i = 0; i < list.Count; i++)
             {
