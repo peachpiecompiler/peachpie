@@ -141,7 +141,7 @@ namespace Pchp.Core
                 _method = method;
             }
 
-            public override PhpValue ToPhpValue() => PhpValue.Create(new PhpArray(2) { (PhpValue)_class, (PhpValue)_method });
+            public override PhpValue ToPhpValue() => $"{_class}::{_method}";
 
             PhpCallable BindCore(PhpTypeInfo tinfo)
             {
@@ -194,26 +194,26 @@ namespace Pchp.Core
         [DebuggerDisplay("{DebuggerDisplay,nq}")]
         sealed class ArrayCallback : PhpCallback
         {
-            string DebuggerDisplay => $"[{_item1.DisplayString}, {_item2.DisplayString}]()";
+            string DebuggerDisplay => $"[{_obj.DisplayString}, {_method}]()";
 
-            readonly PhpValue _item1, _item2;
+            readonly PhpValue _obj;
+            readonly string _method;
             readonly RuntimeTypeHandle _callerCtx;
 
-            public ArrayCallback(PhpValue item1, PhpValue item2, RuntimeTypeHandle callerCtx)
+            public ArrayCallback(PhpValue item1, string method, RuntimeTypeHandle callerCtx)
             {
-                _item1 = item1;
-                _item2 = item2;
+                _obj = item1;
+                _method = method ?? throw new ArgumentNullException(nameof(method));
                 _callerCtx = callerCtx;
             }
 
-            public override PhpValue ToPhpValue() => PhpValue.Create(new PhpArray(2) { _item1, _item2 });
+            public override PhpValue ToPhpValue() => PhpValue.Create(new PhpArray(2) { _obj, _method });
 
             PhpCallable BindCore(Context ctx, PhpTypeInfo tinfo, object target)
             {
                 if (tinfo != null)
                 {
-                    var method = _item2.ToString(ctx);
-                    var routine = (PhpMethodInfo)tinfo.GetVisibleMethod(method, _callerCtx);
+                    var routine = (PhpMethodInfo)tinfo.GetVisibleMethod(_method, _callerCtx);
                     if (routine != null)
                     {
                         if (target != null)
@@ -246,7 +246,7 @@ namespace Pchp.Core
 
                         if (routine != null)
                         {
-                            return routine.PhpInvokable.BindMagicCall(target, method);
+                            return routine.PhpInvokable.BindMagicCall(target, _method);
                         }
                     }
                 }
@@ -256,19 +256,19 @@ namespace Pchp.Core
 
             void ResolveType(Context ctx, out PhpTypeInfo tinfo, out object target)
             {
-                if ((target = _item1.AsObject()) != null)
+                if ((target = _obj.AsObject()) != null)
                 {
                     tinfo = target.GetPhpTypeInfo();
                 }
                 else
                 {
-                    tinfo = ctx.ResolveType(_item1.ToString(ctx), _callerCtx, true);
+                    tinfo = ctx.ResolveType(_obj.ToString(ctx), _callerCtx, true);
                 }
             }
 
             protected override PhpCallable BindCore(Context ctx)
             {
-                ResolveType(ctx, out PhpTypeInfo tinfo, out object target);
+                ResolveType(ctx, out var tinfo, out object target);
                 return BindCore(ctx, tinfo, target);
             }
 
@@ -289,7 +289,7 @@ namespace Pchp.Core
             }
 
             public override bool Equals(PhpCallback other) => base.Equals(other) || Equals(other as ArrayCallback);
-            bool Equals(ArrayCallback other) => other != null && EqualsObj(other._item1, _item1) && other._item2 == _item2;
+            bool Equals(ArrayCallback other) => other != null && EqualsObj(other._obj, _obj) && other._method == _method;
 
             static bool EqualsObj(PhpValue a, PhpValue b)
             {
@@ -365,9 +365,23 @@ namespace Pchp.Core
             return CreateInvalid();
         }
 
-        public static PhpCallback Create(PhpValue item1, PhpValue item2, RuntimeTypeHandle callerCtx = default(RuntimeTypeHandle)) => new ArrayCallback(item1.GetValue(), item2.GetValue(), callerCtx);  // creates callback to an array, array entries must be dereferenced so they cannot be changed gainst
+        public static PhpCallback Create(PhpValue item1, PhpValue item2, RuntimeTypeHandle callerCtx = default)
+        {
+            if (item2.IsString(out var method))
+            {
+                if (item1.AsObject() != null || item1.IsString())
+                {
+                    // creates callback from an array,
+                    // array entries must be dereferenced so they cannot be changed gainst
+                    return new ArrayCallback(item1.GetValue(), method, callerCtx);
+                }
+            }
 
-        public static PhpCallback Create(object targetInstance, string methodName, RuntimeTypeHandle callerCtx = default(RuntimeTypeHandle)) => new ArrayCallback(PhpValue.FromClass(targetInstance), (PhpValue)methodName, callerCtx);
+            //
+            return CreateInvalid();
+        }
+
+        public static PhpCallback Create(object targetInstance, string methodName, RuntimeTypeHandle callerCtx = default) => new ArrayCallback(PhpValue.FromClass(targetInstance), methodName, callerCtx);
 
         public static PhpCallback CreateInvalid() => new InvalidCallback();
 

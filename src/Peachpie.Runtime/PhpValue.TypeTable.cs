@@ -643,21 +643,16 @@ namespace Pchp.Core
             {
                 if (me.Array.Count == 2)
                 {
-                    PhpValue a, b;
-
-                    var e = me.Array.GetFastEnumerator();
-                    e.MoveNext();
-                    a = e.CurrentValue;
-                    e.MoveNext();
-                    b = e.CurrentValue;
-
-                    // [ class => object|string, methodname => string ]
-                    return PhpCallback.Create(a, b, callerCtx);
+                    if (me.Array.TryGetValue(0, out var obj) &&
+                        me.Array.TryGetValue(1, out var method))
+                    {
+                        // [ class => object|string, methodname => string ]
+                        return PhpCallback.Create(obj, method, callerCtx);
+                    }
                 }
-                else
-                {
-                    return base.AsCallable(ref me, callerCtx);
-                }
+
+                // invalid
+                return base.AsCallable(ref me, callerCtx);
             }
             public override string DisplayString(ref PhpValue me) => "array(length = " + me.Array.Count.ToString() + ")";
             public override void Output(ref PhpValue me, Context ctx) => ctx.Echo(me.Array.ToStringOrThrow(ctx));
