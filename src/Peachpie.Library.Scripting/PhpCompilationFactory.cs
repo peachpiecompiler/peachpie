@@ -85,6 +85,8 @@ namespace Peachpie.Library.Scripting
             var list = types.Distinct().Select(ass => ass.GetTypeInfo().Assembly).ToList();
             var set = new HashSet<Assembly>(list);
 
+            list.Add(System.Reflection.Assembly.GetEntryAssembly());
+
             for (int i = 0; i < list.Count; i++)
             {
                 var assembly = list[i];
