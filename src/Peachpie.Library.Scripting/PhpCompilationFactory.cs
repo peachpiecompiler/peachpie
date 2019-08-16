@@ -85,12 +85,8 @@ namespace Peachpie.Library.Scripting
             var list = types.Distinct().Select(ass => ass.GetTypeInfo().Assembly).ToList();
             var set = new HashSet<Assembly>(list);
 
-            // Add entry assembly if its loadable
-            var entryAssembly = System.Reflection.Assembly.GetEntryAssembly();
-
-            if (!entryAssembly.IsDynamic && entryAssembly.Location.Length != 0) {
-                list.Add(entryAssembly);
-            }
+            // Add entry assembly
+            list.Add(System.Reflection.Assembly.GetEntryAssembly());
 
             for (int i = 0; i < list.Count; i++)
             {
@@ -98,10 +94,14 @@ namespace Peachpie.Library.Scripting
                 var refs = assembly.GetReferencedAssemblies();
                 foreach (var refname in refs)
                 {
-                    var refassembly = Assembly.Load(refname);
-                    if (refassembly != null && set.Add(refassembly))
-                    {
-                        list.Add(refassembly);
+                    try {
+                        var refassembly = Assembly.Load(refname);
+                        if (refassembly != null && set.Add(refassembly))
+                        {
+                            list.Add(refassembly);
+                        }
+                    } catch {
+                        // ignore issues related to loading the assembly
                     }
                 }
             }
