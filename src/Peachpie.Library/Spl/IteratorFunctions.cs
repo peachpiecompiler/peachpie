@@ -42,35 +42,49 @@ namespace Pchp.Library.Spl
         /// <param name="iterator">The iterator being copied.</param>
         /// <param name="use_keys">Whether to use the iterator element keys as index.</param>
         /// <returns>An array containing the elements of the iterator.</returns>
-        public static PhpArray iterator_to_array(Iterator iterator, bool use_keys = true)
+        public static PhpArray iterator_to_array(Traversable iterator, bool use_keys = true)
         {
+            // NULL
             if (iterator == null)
             {
                 throw new ArgumentNullException(nameof(iterator));
             }
 
-            var array = new PhpArray();
-
-            iterator.rewind();
-
-            while (iterator.valid())
+            // Iterator:
+            if (iterator is Iterator real_iterator)
             {
-                var value = iterator.current();
-                if (use_keys)
+                var array = new PhpArray();
+
+                real_iterator.rewind();
+
+                while (real_iterator.valid())
                 {
-                    array.Add(iterator.key().ToIntStringKey(), value);
-                }
-                else
-                {
-                    array.Add(value);
+                    var value = real_iterator.current();
+                    if (use_keys)
+                    {
+                        array.Add(real_iterator.key().ToIntStringKey(), value);
+                    }
+                    else
+                    {
+                        array.Add(value);
+                    }
+
+                    //
+                    real_iterator.next();
                 }
 
                 //
-                iterator.next();
+                return array;
             }
 
-            //
-            return array;
+            // IteratorAggregate
+            if (iterator is IteratorAggregate aggr)
+            {
+                return iterator_to_array(aggr.getIterator(), use_keys: use_keys);
+            }
+
+            // invalid argument
+            throw new ArgumentException();
         }
 
         /// <summary>
