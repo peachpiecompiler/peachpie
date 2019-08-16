@@ -5601,7 +5601,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The string to convert.</param>
         /// <returns>The lowercased string or empty string if <paramref name="str"/> is null.</returns>
-        public static string strtolower(string str) => str.ToLowerInvariant();
+        public static string strtolower(string str) => str != null ? str.ToLowerInvariant() : string.Empty;
         //{
         //    // TODO: Locale: return (str == null) ? string.Empty : str.ToLower(Locale.GetCulture(Locale.Category.CType));
         //}
@@ -5612,7 +5612,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The string to convert.</param>
         /// <returns>The uppercased string or empty string if <paramref name="str"/> is null.</returns>
-        public static string strtoupper(string str) => str.ToUpperInvariant();
+        public static string strtoupper(string str) => str != null ? str.ToUpperInvariant() : string.Empty;
         //{
         //    // TODO: Locale: return (str == null) ? string.Empty : str.ToUpper(Locale.GetCulture(Locale.Category.CType));
         //}
