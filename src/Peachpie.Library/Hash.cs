@@ -2624,7 +2624,7 @@ namespace Pchp.Library
         #region hash_argon2i, hash_argon2id
 
         private static readonly RandomNumberGenerator Rng = System.Security.Cryptography.RandomNumberGenerator.Create();
-        private static string hash_argon2(string password, int time_cost, int memory_cost, int threads, bool argon2i_id)
+        private static string HashArgon2(string password, int time_cost, int memory_cost, int threads, bool argon2i_id)
         {
             byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
             byte[] salt = new byte[16];
@@ -2660,8 +2660,112 @@ namespace Pchp.Library
         const int costDefault = 10;
         const int threadsDefault = 1;
         const int memory_costDefault = 4;
+        public const int PASSWORD_DEFAULT = 0;
+        public const int PASSWORD_BCRYPT = 1;
+        public const int PASSWORD_ARGON2I = 2;
+        public const int PASSWORD_ARGON2ID = 3;
 
         #endregion
+
+        private static bool CostCheck(PhpValue value, int lowerBound, int upperBound, string warnParseFail, string warnBoundFail, out int checkedValue)
+        {
+            if (value.IsInteger())
+            {
+                checkedValue = value.ToInt();
+                if (checkedValue >= lowerBound && checkedValue <= upperBound)
+                    return true;
+                else
+                {
+                    PhpException.Throw(PhpError.Warning, warnBoundFail);
+                    return false;
+                }
+            }
+            else
+            {
+                checkedValue = -1;
+                PhpException.Throw(PhpError.Warning, warnParseFail);
+                return false;
+            }
+        }
+        private static PhpValue Argon2Helper(string password, PhpArray opt, bool argon2i_id)
+        {
+            // Default setting for argon2
+            int memory_cost = memory_costDefault;
+            int time_cost = costDefault;
+            int threads = threadsDefault;
+
+            if (opt != null)
+            {
+                // Argument memory cost for argon2
+                if ((opt.ContainsKey("memory_cost")) && (!CostCheck(opt.GetItemValue(new IntStringKey("memory_cost")), 4, int.MaxValue, Resources.LibResources.argon2_memory, Resources.LibResources.argon2_memory, out memory_cost)))
+                    return PhpValue.False;
+
+                // Argument time cost for argon2
+                if ((!opt.ContainsKey("time_cost")) && !CostCheck(opt.GetItemValue(new IntStringKey("time_cost")), 1, int.MaxValue, Resources.LibResources.argon2_time, Resources.LibResources.argon2_time, out time_cost))
+                    return PhpValue.False;
+
+                // Argument threads for argon2
+                if (!opt.ContainsKey("threads") && !CostCheck(opt.GetItemValue(new IntStringKey("threads")), 1, int.MaxValue, Resources.LibResources.argon2_threads, Resources.LibResources.argon2_threads, out threads))
+                    return PhpValue.False;
+            }
+            try
+            {
+                return HashArgon2(password, time_cost, memory_cost, threads, argon2i_id);
+            }
+            catch (Exception) { }
+
+            return PhpValue.False;
+        }
+        private static PhpValue BlowfishHelper(string password,PhpArray opt)
+        {          
+            // Default setting for bcrypt
+            int cost = costDefault;
+            string salt = BCrypt.Net.BCrypt.GenerateSalt(cost);
+
+            if (opt != null)
+            {
+                PhpValue pom;
+
+                // Argument cost for bcrypt
+                if (opt.ContainsKey("cost"))
+                {
+                    pom = opt.GetItemValue(new IntStringKey("cost"));
+                    if (pom.IsInteger()) // Check right value of argument
+                    {
+                        int pomInt = pom.ToInt();
+                        if (pomInt >= 4 && pomInt <= 31)
+                            cost = pomInt;
+                        else
+                        {
+                            PhpException.Throw(PhpError.Warning, Resources.LibResources.bcrypt_invalid_cost, pomInt.ToString());
+                            return PhpValue.False;
+                        }
+                    }
+                    else
+                    {
+                        PhpException.Throw(PhpError.Warning, Resources.LibResources.bcrypt_undefined_const, pom.ToString()); // invalid value of cost
+                        return PhpValue.False;
+                    }
+                }
+                
+                // Argument salt for bcrypt
+                if (opt.ContainsKey("salt"))
+                {
+                    PhpException.Throw(PhpError.E_DEPRECATED, Resources.LibResources.bcrypt_salt_deprecated);
+                    pom = opt.GetItemValue(new IntStringKey("salt"));
+                    if (pom.IsString(out salt))
+                        salt = $"$2y${cost}${salt}";
+                }
+            }
+
+            try // Try to create hash 
+            {
+                return PhpValue.Create(BCrypt.Net.BCrypt.HashPassword(password, salt));
+            }
+            catch (Exception) { }
+
+            return PhpValue.False;
+        }
 
         /// <summary>
         /// Creates a password hash
@@ -2672,134 +2776,21 @@ namespace Pchp.Library
         /// <returns>Returns the hashed password, or FALSE on failure.</returns>
         public static PhpValue password_hash(string password, int algo, PhpArray opt = null)
         {
-            PhpValue result = PhpValue.False;
             switch (algo)
             {
                 // Default
                 case 0:
                 // Blowfish
                 case 1:
-                    PhpValue pom1;
-                    int cost = costDefault;
-                    string salt = BCrypt.Net.BCrypt.GenerateSalt(cost);
-                    if (opt != null)
-                    {
-                        if (opt.ContainsKey("cost"))
-                        {
-                            pom1 = opt.GetItemValue(new IntStringKey("cost"));
-                            if (pom1.IsInteger())
-                            {
-                                int pom1Int = pom1.ToInt();
-                                if (pom1Int >= 4 && pom1Int <= 31)
-                                    cost = pom1Int;
-                                else
-                                {
-                                    PhpException.Throw(PhpError.Warning, $"Invalid bcrypt cost parameter specified: {pom1Int})");
-                                    return result;
-                                }
-                            }
-                            else
-                            {
-                                PhpException.Throw(PhpError.Warning, $"Use of undefined constant {pom1.ToString()} (this will throw an Error in a future version of PHP)"); // invalid value of cost
-                                return result;
-                            }
-                        }
-                        if (opt.ContainsKey("salt"))
-                        {
-                            PhpException.Throw(PhpError.E_DEPRECATED, "Use of the 'salt' option to password_hash is deprecated");
-                            pom1 = $"$2y${cost}${opt.GetItemValue(new IntStringKey("salt"))}";
-                            pom1.IsString(out salt);
-                        }
-                    }
-                    try
-                    {
-                        result = PhpValue.Create(BCrypt.Net.BCrypt.HashPassword(password, salt));
-                    }
-                    catch (Exception)
-                    { }
-                    break;
-                //Argon2i
+                    return BlowfishHelper(password, opt);
+                // Argon2i
                 case 2:
                 case 3:
-                    PhpValue pom2;
-                    int memory_cost = memory_costDefault;
-                    int time_cost = costDefault;
-                    int threads = threadsDefault;
-                    if (opt != null)
-                    {
-                        if (opt.ContainsKey("memory_cost"))
-                        {
-                            pom2 = opt.GetItemValue(new IntStringKey("memory_cost"));
-                            if (pom2.IsInteger())
-                            {
-                                int pom2Int = pom2.ToInt();
-                                if (pom2Int >= 4)
-                                    memory_cost = pom2Int;
-                                else
-                                {
-                                    PhpException.Throw(PhpError.Warning, "Memory cost is outside of allowed memory range");
-                                    return result;
-                                }
-                            }
-                            else
-                            {
-                                PhpException.Throw(PhpError.Warning, "Memory cost is outside of allowed memory range");
-                                return result;
-                            }
-                        }
-                        if (opt.ContainsKey("time_cost"))
-                        {
-                            pom2 = opt.GetItemValue(new IntStringKey("time_cost"));
-                            if (pom2.IsInteger())
-                            {
-                                int pom2Int = pom2.ToInt();
-                                if (pom2Int >= 1)
-                                    time_cost = pom2Int;
-                                else
-                                {
-                                    PhpException.Throw(PhpError.Warning, "Time cost is outside of allowed time range");
-                                    return result;
-                                }
-                            }
-                            else
-                            {
-                                PhpException.Throw(PhpError.Warning, "Time cost is outside of allowed time range");
-                                return result;
-                            }
-                        }
-                        if (opt.ContainsKey("threads"))
-                        {
-                            pom2 = opt.GetItemValue(new IntStringKey("threads"));
-                            if (pom2.IsInteger())
-                            {
-                                int pom2Int = pom2.ToInt();
-                                if (pom2Int >= 1)
-                                    threads = pom2Int;
-                                else
-                                {
-                                    PhpException.Throw(PhpError.Warning, "Invalid number of threads");
-                                    return result;
-                                }
-                            }
-                            else
-                            {
-                                PhpException.Throw(PhpError.Warning, "Invalid number of threads");
-                                return result;
-                            }
-                        }
-                    }
-                    try
-                    {
-                        result = (algo == 2) ? hash_argon2(password,time_cost,memory_cost,threads,true) : hash_argon2(password, time_cost, memory_cost, threads, false);
-                    }
-                    catch (Exception)
-                    { }
-                    break;
-                //Unknown algorithm
+                    return (algo == 2) ? Argon2Helper(password, opt, true) : Argon2Helper(password, opt, false);
+                // Unknown algorithm
                 default:
-                    break;
+                    return PhpValue.False;
             }
-            return result;
         }
 
         /// <summary>
@@ -2807,8 +2798,15 @@ namespace Pchp.Library
         /// </summary>
         public static bool password_verify(string password, string hash)
         {
-            if (hash.Substring(1, 7) == "argon2i")
-                return Argon2.Verify(hash, password);
+            try
+            {
+                if (hash.Substring(1, 7) == "argon2i")
+                    return Argon2.Verify(hash, password);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
             return crypt(password, hash) == hash;
         }
 
