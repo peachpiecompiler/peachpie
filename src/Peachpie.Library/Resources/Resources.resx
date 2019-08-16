@@ -663,4 +663,22 @@
   <data name="file_cannot_delete" xml:space="preserve">
     <value>Cannot delete file '{0}'</value>
   </data>
+  <data name="argon2_memory" xml:space="preserve">
+    <value>Memory cost is outside of allowed memory range</value>
+  </data>
+  <data name="argon2_threads" xml:space="preserve">
+    <value>Invalid number of threads</value>
+  </data>
+  <data name="argon2_time" xml:space="preserve">
+    <value>Time cost is outside of allowed time range</value>
+  </data>
+  <data name="bcrypt_invalid_cost" xml:space="preserve">
+    <value>Invalid bcrypt cost parameter specified: {0})</value>
+  </data>
+  <data name="bcrypt_salt_deprecated" xml:space="preserve">
+    <value>Use of the 'salt' option to password_hash is deprecated</value>
+  </data>
+  <data name="bcrypt_undefined_const" xml:space="preserve">
+    <value>Use of undefined constant {0} (this will throw an Error in a future version of PHP)</value>
+  </data>
 </root>
