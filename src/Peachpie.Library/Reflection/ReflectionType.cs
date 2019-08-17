@@ -62,7 +62,7 @@ namespace Pchp.Library.Reflection
                 name = PhpVariable.TypeNameString;
                 builtin = true;
             }
-            else if (type == typeof(PhpArray))
+            else if (type == typeof(PhpArray) || type.IsArray)
             {
                 name = PhpArray.PhpTypeName;
                 builtin = true;
