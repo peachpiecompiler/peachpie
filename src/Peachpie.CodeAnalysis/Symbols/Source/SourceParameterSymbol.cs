@@ -223,6 +223,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         internal override IEnumerable<AttributeData> GetCustomAttributesToEmit(CommonModuleCompilationState compilationState)
         {
+            // [param]   
             if (IsParams)
             {
                 yield return new SynthesizedAttributeData(
@@ -230,14 +231,37 @@ namespace Pchp.CodeAnalysis.Symbols
                     ImmutableArray<TypedConstant>.Empty, ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
             }
 
+            // [NotNull]
             if (IsNotNull && Type.IsReferenceType)
             {
-                // [NotNull]
                 yield return new SynthesizedAttributeData(
                     DeclaringCompilation.CoreMethods.Ctors.NotNullAttribute,
                     ImmutableArray<TypedConstant>.Empty, ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
             }
 
+            // [DefaultValue]
+            if (this.Initializer is BoundArrayEx arr)
+            {
+                var typeParameter = new KeyValuePair<string, TypedConstant>("Type", new TypedConstant(DeclaringCompilation.CoreTypes.DefaultValueType.Symbol, TypedConstantKind.Enum, 1/*PhpArray*/));
+                var namedparameters = ImmutableArray.Create(typeParameter);
+
+                if (arr.Items.Length != 0)
+                {
+                    var byteSymbol = DeclaringCompilation.GetSpecialType(SpecialType.System_Byte);
+                    var serializedValue = Encoding.UTF8.GetBytes(arr.PhpSerializeOrThrow());
+                    var p = new KeyValuePair<string, TypedConstant>(
+                        "SerializedValue",
+                        new TypedConstant(DeclaringCompilation.CreateArrayTypeSymbol(byteSymbol), serializedValue.Select(b => new TypedConstant(byteSymbol, TypedConstantKind.Primitive, b)).AsImmutable()));
+
+                    namedparameters = namedparameters.Add(p);
+                }
+
+                yield return new SynthesizedAttributeData(
+                    DeclaringCompilation.CoreMethods.Ctors.DefaultValueAttribute,
+                    ImmutableArray<TypedConstant>.Empty, namedparameters);
+            }
+
+            //
             yield break;
         }
 
