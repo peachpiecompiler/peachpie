@@ -42,7 +42,7 @@ namespace Pchp.Library.Reflection
         [PhpFieldsOnlyCtor]
         protected ReflectionParameter() { }
 
-        internal ReflectionParameter(ReflectionFunctionAbstract function, int index, Type type, bool allowsNull, bool isVariadic, string name, PhpValue defaultValue = default(PhpValue))
+        internal ReflectionParameter(ReflectionFunctionAbstract function, int index, Type type, bool allowsNull, bool isVariadic, string name, PhpValue defaultValue = default)
         {
             Debug.Assert(function != null);
             Debug.Assert(index >= 0);

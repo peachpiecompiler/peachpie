@@ -30,7 +30,6 @@ namespace Pchp.Library
 
             public string ExtensionName => MultiByteString.ExtensionName;
 
-            /// <summary><see cref="mb_detect_order"/></summary>
             public Encoding[] DetectOrder { get; set; } = new[] { Encoding.ASCII, Encoding.UTF8 };
 
             /// <summary>
