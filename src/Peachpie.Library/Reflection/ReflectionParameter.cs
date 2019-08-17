@@ -197,7 +197,7 @@ namespace Pchp.Library.Reflection
 
         public override string ToString() => __toString();
 
-        static bool hasTypeInternal(Type t) => t != null && t != typeof(PhpValue) && t != typeof(PhpAlias);
+        static bool hasTypeInternal(Type t) => t != null && t != typeof(PhpValue) && t != typeof(PhpAlias) && t != typeof(PhpValue[]) && t != typeof(PhpAlias[]);
 
         string _debugTypeName => string.Empty; // TODO: " {typename}{or NULL}"
         string _debugDefaultValue => _defaultValue.IsSet ? $" = {_defaultValue.DisplayString}" : string.Empty;
