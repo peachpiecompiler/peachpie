@@ -380,13 +380,18 @@ namespace Pchp.CodeAnalysis.Semantics
             return reference.EmitLoadValue(cg, ref lhs, access);
         }
 
-        public static TypeSymbol EmitLoadValue(this PropertySymbol property, CodeGenerator cg, IPlace receiver)
+        public static TypeSymbol EmitLoadValue(CodeGenerator cg, MethodSymbol method, IPlace receiverOpt)
         {
-            using (var lhs = EmitReceiver(cg, receiver))
+            using (var lhs = EmitReceiver(cg, receiverOpt))
             {
                 // TOOD: PhpValue.FromClr
-                return cg.EmitCall(ILOpCode.Callvirt/*changed to .call by EmitCall if possible*/, property.GetMethod);
+                return cg.EmitCall(ILOpCode.Callvirt/*changed to .call by EmitCall if possible*/, method);
             }
+        }
+
+        public static TypeSymbol EmitLoadValue(this PropertySymbol property, CodeGenerator cg, IPlace receiver)
+        {
+            return EmitLoadValue(cg, property.GetMethod, receiver);
         }
 
         public static void EmitStore(this IVariableReference target, CodeGenerator cg, LocalDefinition local, BoundAccess access)
