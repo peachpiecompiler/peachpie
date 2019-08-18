@@ -381,6 +381,22 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             var t = VariableReferenceExtensions.EmitLoadValue(cg, getter, _enumeratorLoc);
 
+            if (t.Is_PhpValue())
+            {
+                if (_aliasedValues)  // current() may get PhpAlias wrapped in PhpValue, make it PhpAlias again so it is handled properly
+                {
+                    // .EnsureAlias()
+                    cg.EmitPhpValueAddr();
+                    t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureAlias);
+                }
+                else
+                {
+                    // .GetValue()
+                    cg.EmitPhpValueAddr();
+                    t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.GetValue);
+                }
+            }
+
             if (_aliasedValueLoc != null && (TypeSymbol)_aliasedValueLoc.Type == t)
             {
                 // <_aliasedValue> = <STACK>
@@ -411,7 +427,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             if (_currentValue != null && _currentKey != null)
             {
-                // special PhpArray enumerator
+                // PhpArray enumerator or Iterator
 
                 cg.EmitSequencePoint(valueVar.PhpSyntax);
                 valueVar.BindPlace(cg).EmitStore(cg, () => EmitGetCurrentHelper(cg), valueVar.Access);
