@@ -933,7 +933,8 @@ namespace Pchp.Core
 
             public bool MoveFirst()
             {
-                throw new NotImplementedException();
+                Reset();
+                return MoveNext();
             }
 
             public bool MoveLast()
@@ -948,12 +949,12 @@ namespace Pchp.Core
 
             public bool MovePrevious()
             {
-                throw new NotImplementedException();
+                throw new NotSupportedException();
             }
 
             public void Reset()
             {
-                throw new NotImplementedException();
+                throw new NotSupportedException();
             }
         }
 
