@@ -94,19 +94,14 @@ namespace Pchp.CodeAnalysis.Symbols
         {
             get
             {
-                if (_syntax.TypeHint != null)
+                // when providing type hint, only allow null if explicitly specified:
+                if (_syntax.TypeHint == null || _syntax.TypeHint is NullableTypeRef || DefaultsToNull)
                 {
-                    // when providing type hint, only allow null if explicitly specified:
-                    if (_syntax.TypeHint is NullableTypeRef || DefaultsToNull)
-                    {
-                        return false;
-                    }
-
-                    return true;
+                    return false;
                 }
 
                 //
-                return false;
+                return true;
             }
         }
 
@@ -204,6 +199,11 @@ namespace Pchp.CodeAnalysis.Symbols
         public override bool IsParams => _syntax.IsVariadic;
 
         public override int Ordinal => _relindex + _routine.ImplicitParameters.Length;
+        
+        /// <summary>
+        /// Zero-based index of the source parameter.
+        /// </summary>
+        public int ParameterIndex => _relindex;
 
         public override ImmutableArray<Location> Locations
         {

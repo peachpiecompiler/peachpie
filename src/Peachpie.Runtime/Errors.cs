@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Pchp.Core
@@ -93,6 +94,8 @@ namespace Pchp.Core
 
     public static class PhpException
     {
+        static Type _TypeError;
+
         public static void Throw(PhpError error, string message)
         {
             Context.DefaultErrorHandler?.Throw(error, message);
@@ -101,6 +104,22 @@ namespace Pchp.Core
         public static void Throw(PhpError error, string formatString, params string[] args)
         {
             Context.DefaultErrorHandler?.Throw(error, formatString, args);
+        }
+
+        public static Exception TypeErrorException(string message)
+        {
+            if (_TypeError == null)
+            {
+                // remember the TypeError class
+                _TypeError = Type.GetType("Pchp.Library.Spl.TypeError,Peachpie.Library", throwOnError: false) ?? typeof(System.ArgumentException);
+            }
+
+            return (Exception)Activator.CreateInstance(
+                _TypeError,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance | BindingFlags.OptionalParamBinding,
+                null,
+                new[] { message },
+                null);
         }
 
         /// <summary>
@@ -146,9 +165,15 @@ namespace Pchp.Core
         /// <summary>
         /// Argument type mismatch error.
         /// </summary>
-        public static void ArgumentNullError(string argument)
+        public static void ThrowIfArgumentNull(object value, int arg)
         {
-            throw new ArgumentNullException(argument);
+            if (ReferenceEquals(value, null))
+            {
+                // PHP: TypeError: Argument {arg} passed to {methodname} must be an instance of {expected}, null given
+                
+                // throw new TypeError
+                throw TypeErrorException(string.Format(ErrResources.argument_null, arg));
+            }
         }
 
         internal static Exception ClassNotFoundException(string classname)

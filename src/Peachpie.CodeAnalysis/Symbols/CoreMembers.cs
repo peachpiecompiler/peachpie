@@ -314,6 +314,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Echo_Bool = ct.Context.Method("Echo", ct.Boolean);
 
                 NormalizePath_string = ct.Operators.Method("NormalizePath", ct.String);
+                ThrowIfArgumentNull_object_int = ct.PhpException.Method("ThrowIfArgumentNull", ct.Object, ct.Int32);
 
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle = ct.Operators.Method("GetForeachEnumerator", ct.PhpValue, ct.Boolean, ct.RuntimeTypeHandle);
                 GetForeachEnumerator_Iterator = ct.Operators.Method("GetForeachEnumerator", ct.Iterator);
@@ -415,6 +416,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32, Echo_Bool,
 
                 NormalizePath_string,
+                ThrowIfArgumentNull_object_int,
 
                 GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle,
                 GetForeachEnumerator_Iterator,

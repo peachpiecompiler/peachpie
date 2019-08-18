@@ -839,24 +839,25 @@ namespace Pchp.CodeAnalysis.Semantics
             // check NotNull
             if (srcparam.IsNotNull)
             {
-                if (valueplace.Type.IsReferenceType && valueplace.Type != cg.CoreTypes.PhpAlias)
+                if ((valueplace.Type.IsReferenceType /*|| valueplace.Type.Is_PhpValue()*/) && valueplace.Type != cg.CoreTypes.PhpAlias)
                 {
                     cg.EmitSequencePoint(srcparam.Syntax);
 
-                    // Template: if (<param> == null) { PhpException.ArgumentNullError(param_name); }
-                    var lbl_notnull = new object();
-                    cg.EmitNotNull(valueplace);
-                    cg.Builder.EmitBranch(ILOpCode.Brtrue_s, lbl_notnull);
-
-                    // PhpException.ArgumentNullError(param_name);
-                    // Consider: just Debug.Assert(<param> != null) for private methods
-                    cg.Builder.EmitStringConstant(srcparam.Name);
-                    cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreTypes.PhpException.Method("ArgumentNullError", cg.CoreTypes.String)));
-
-                    //
-                    cg.Builder.EmitOpCode(ILOpCode.Nop);
-
-                    cg.Builder.MarkLabel(lbl_notnull);
+                    // Template: PhpException.ArgumentNullError( value, arg )
+                    if (valueplace.Type.IsReferenceType)
+                    {
+                        valueplace.EmitLoad(cg.Builder);
+                    }
+                    else if (valueplace.Type.Is_PhpValue())
+                    {
+                        cg.CoreMethods.PhpValue.Object.Symbol.EmitLoadValue(cg, valueplace);
+                    }
+                    else
+                    {
+                        throw ExceptionUtilities.Unreachable;
+                    }
+                    cg.Builder.EmitIntConstant(srcparam.ParameterIndex + 1);
+                    cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.ThrowIfArgumentNull_object_int));
                 }
             }
         }
