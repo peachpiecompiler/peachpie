@@ -68,7 +68,7 @@ namespace Peachpie.Library.Scripting
             {
                 // candidate requires that all its dependencies were loaded into context
                 // TODO: resolve the compiled code dependencies - referenced types and declared functions - instead of "DependingSubmissions"
-                if (c.DependingSubmissions.All(context.Submissions.Contains))
+                if (c.DependingSubmissions?.All(context.Submissions.Contains) == true)
                 {
                     return c;
                 }
