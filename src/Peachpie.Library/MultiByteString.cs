@@ -429,7 +429,7 @@ namespace Pchp.Library
         #region mb_substr, mb_strcut
 
         [return: CastToFalse]
-        public static string mb_substr(Context ctx, PhpValue str, int start, int length = -1, string encoding = null)
+        public static string mb_substr(Context ctx, PhpString str, int start, int length = -1, string encoding = null)
             => SubString(ctx, str, start, length, encoding);
 
         /// <summary>
@@ -443,30 +443,21 @@ namespace Pchp.Library
         /// <returns></returns>
         /// <remarks>in PHP it behaves differently, but in .NET it is an alias for mb_substr</remarks>
         [return: CastToFalse]
-        public static string mb_strcut(Context ctx, PhpValue str, int start, int length = -1, string encoding = null)
+        public static string mb_strcut(Context ctx, PhpString str, int start, int length = -1, string encoding = null)
             => SubString(ctx, str, start, length, encoding);
 
-        static string SubString(Context ctx, PhpValue str, int start, int length, string encoding)
+        static string SubString(Context ctx, PhpString str, int start, int length, string encoding)
         {
-            // get the Unicode representation of the string
-            string ustr = ToString(ctx, str, encoding);
+            var ustr = ToString(ctx, str, encoding);
 
-            // start counting from the end of the string
-            if (start < 0)
-                start = ustr.Length + start;    // can result in negative start again -> invalid
-
-            if (length == -1)
-                length = ustr.Length;
-
-            // check boundaries
-            if (start >= ustr.Length || length < 0 || start < 0)
-                return null;
-
-            if (length == 0)
-                return string.Empty;
-
-            // return the substring
-            return (start + length > ustr.Length) ? ustr.Substring(start) : ustr.Substring(start, length);
+            if (PhpMath.AbsolutizeRange(ref start, ref length, ustr.Length))
+            {
+                return ustr.Substring(start, length);
+            }
+            else
+            {
+                return null; // FALSE
+            }
         }
 
         #endregion
