@@ -164,6 +164,10 @@ namespace Pchp.Core.Reflection
                 }
 
                 // TODO: CLR properties
+                //foreach (var p in t.DeclaredFields.InstanceClrProperties)
+                //{
+
+                //}
             }
 
             // PhpArray __runtime_fields
