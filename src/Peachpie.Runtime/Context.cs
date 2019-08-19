@@ -86,9 +86,15 @@ namespace Pchp.Core
             /// <remarks>Not thread safe.</remarks>
             public static void AddScriptReference(Assembly assembly)
             {
-                if (assembly == null || !s_processedAssemblies.Add(assembly))
+                if (assembly == null)
                 {
                     throw new ArgumentNullException(nameof(assembly));
+                }
+
+                if (!s_processedAssemblies.Add(assembly) || assembly.GetType(ScriptInfo.ScriptTypeName) == null)
+                {
+                    // nothing to reflect
+                    return;
                 }
 
                 // remember the assembly for class map:
@@ -101,7 +107,10 @@ namespace Pchp.Core
                 // PhpPackageReferenceAttribute
                 foreach (var r in module.GetCustomAttributes<PhpPackageReferenceAttribute>())
                 {
-                    Context.AddScriptReference(r.ScriptType.Assembly);
+                    if (r.ScriptType != null) // always true
+                    {
+                        AddScriptReference(r.ScriptType.Assembly);
+                    }
                 }
 
                 // ImportPhpTypeAttribute
@@ -233,13 +242,9 @@ namespace Pchp.Core
         /// Load PHP scripts and referenced symbols from PHP assembly.
         /// </summary>
         /// <param name="assembly">PHP assembly containing special <see cref="ScriptInfo.ScriptTypeName"/> class.</param>
+        /// <exception cref="ArgumentNullException">In case given assembly is a <c>null</c> reference.</exception>
         public static void AddScriptReference(Assembly assembly)
         {
-            if (assembly == null)
-            {
-                throw new ArgumentNullException(nameof(assembly));
-            }
-
             DllLoaderImpl.AddScriptReference(assembly);            
         }
 
