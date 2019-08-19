@@ -68,48 +68,25 @@ namespace Pchp.Core
 
         #region Symbols
 
-        /// <summary>
-        /// Helper class called one-time from compiled DLL static .cctor.
-        /// </summary>
-        /// <typeparam name="TScript">Type of module's script class.</typeparam>
-        public static class DllLoader<TScript>
+        static class DllLoaderImpl
         {
-            /// <summary>
-            /// Called once per DLL (ensured by JIT).
-            /// </summary>
-            static DllLoader()
-            {
-                Trace.WriteLine($"DLL '{typeof(TScript).Assembly.FullName}' being loaded ...");
-
-                if (typeof(TScript).Name == ScriptInfo.ScriptTypeName)
-                {
-                    AddScriptReference(typeof(TScript).Assembly);
-                }
-                else
-                {
-                    Trace.TraceError($"Type '{typeof(TScript).Assembly.FullName}' is not expected! Use '{ScriptInfo.ScriptTypeName}' instead.");
-                }
-            }
-
             static readonly HashSet<Type> s_processedConstantsContainers = new HashSet<Type>();
 
             /// <summary>
-            /// Dummy method, nop.
+            /// Set of reflected script assemblies.
             /// </summary>
-            public static void Bootstrap()
-            {
-                // do nothing,
-                // the loader is being ensured from a static .cctor of a PHP script or a PHP type
-            }
+            public static IEnumerable<Assembly> ProcessedAssemblies => s_processedAssemblies;
+            static readonly HashSet<Assembly> s_processedAssemblies = new HashSet<Assembly>();
 
             /// <summary>
             /// Reflects given assembly for PeachPie compiler specifics - compiled scripts, references to other assemblies, declared functions and classes.
             /// Scripts and declarations are loaded into application context (static).
             /// </summary>
             /// <param name="assembly">PeachPie compiler generated assembly.</param>
-            static void AddScriptReference(Assembly assembly)
+            /// <remarks>Not thread safe.</remarks>
+            public static void AddScriptReference(Assembly assembly)
             {
-                if (assembly == null)
+                if (assembly == null || !s_processedAssemblies.Add(assembly))
                 {
                     throw new ArgumentNullException(nameof(assembly));
                 }
@@ -124,7 +101,7 @@ namespace Pchp.Core
                 // PhpPackageReferenceAttribute
                 foreach (var r in module.GetCustomAttributes<PhpPackageReferenceAttribute>())
                 {
-                    Context.AddScriptReference(r.ScriptType);
+                    Context.AddScriptReference(r.ScriptType.Assembly);
                 }
 
                 // ImportPhpTypeAttribute
@@ -203,6 +180,39 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Helper class called one-time from compiled DLL static .cctor.
+        /// </summary>
+        /// <typeparam name="TScript">Type of module's script class.</typeparam>
+        public static class DllLoader<TScript>
+        {
+            /// <summary>
+            /// Called once per DLL (ensured by JIT).
+            /// </summary>
+            static DllLoader()
+            {
+                Trace.WriteLine($"DLL '{typeof(TScript).Assembly.FullName}' being loaded ...");
+
+                if (typeof(TScript).Name == ScriptInfo.ScriptTypeName)
+                {
+                    DllLoaderImpl.AddScriptReference(typeof(TScript).Assembly);
+                }
+                else
+                {
+                    Trace.TraceError($"Type '{typeof(TScript).Assembly.FullName}' is not expected! Use '{ScriptInfo.ScriptTypeName}' instead.");
+                }
+            }
+
+            /// <summary>
+            /// Dummy method, nop.
+            /// </summary>
+            public static void Bootstrap()
+            {
+                // do nothing,
+                // the loader is being ensured from a static .cctor of a PHP script or a PHP type
+            }
+        }
+
+        /// <summary>
         /// Map of global functions.
         /// </summary>
         readonly RoutinesTable _functions;
@@ -220,13 +230,6 @@ namespace Pchp.Core
         readonly ScriptsMap _scripts = new ScriptsMap();
 
         /// <summary>
-        /// Internal method to be used by loader to load referenced symbols.
-        /// </summary>
-        /// <typeparam name="TScript"><c>&lt;Script&gt;</c> type in compiled assembly. The type contains static methods for enumerating referenced symbols.</typeparam>
-        [Obsolete]
-        public static void AddScriptReference<TScript>() => DllLoader<TScript>.Bootstrap();
-
-        /// <summary>
         /// Load PHP scripts and referenced symbols from PHP assembly.
         /// </summary>
         /// <param name="assembly">PHP assembly containing special <see cref="ScriptInfo.ScriptTypeName"/> class.</param>
@@ -237,20 +240,15 @@ namespace Pchp.Core
                 throw new ArgumentNullException(nameof(assembly));
             }
 
-            AddScriptReference(assembly.GetType(ScriptInfo.ScriptTypeName));
-            
+            DllLoaderImpl.AddScriptReference(assembly);            
         }
 
-        static void AddScriptReference(Type scriptType)
-        {
-            if (scriptType != null)
-            {
-                typeof(DllLoader<>)
-                    .MakeGenericType(scriptType)   // let JIT to manage .cctor gets called just once
-                    .GetMethod("Bootstrap")
-                    .Invoke(null, Array.Empty<object>());
-            }
-        }
+        /// <summary>
+        /// Internal.
+        /// Gets enumeration of <see cref="Assembly"/> representing script assemblies that were reflected.
+        /// </summary>
+        /// <returns>Enumeration of assemblies. This collection is not thread-safe and may be changed by calling <see cref="AddScriptReference"/> or by <c>eval</c> functionality.</returns>
+        public static IEnumerable<Assembly> GetScriptReferences() => DllLoaderImpl.ProcessedAssemblies;
 
         /// <summary>
         /// Declare a runtime user function.
