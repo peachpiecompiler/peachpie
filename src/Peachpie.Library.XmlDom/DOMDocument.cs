@@ -21,8 +21,14 @@ namespace Peachpie.Library.XmlDom
 
         internal XmlDocument XmlDocument
         {
-            get { return (XmlDocument)XmlNode; }
-            set { XmlNode = value; }
+            get
+            {
+                return XmlNode as XmlDocument ?? XmlNode?.OwnerDocument;
+            }
+            set
+            {
+                XmlNode = value;
+            }
         }
 
         private bool _formatOutput;
@@ -521,7 +527,7 @@ namespace Peachpie.Library.XmlDom
             throw new NotImplementedException();
         }
 
-        private XmlDeclaration GetXmlDeclaration() => (XmlNode.FirstChild as XmlDeclaration);
+        private XmlDeclaration GetXmlDeclaration() => (XmlDocument.FirstChild as XmlDeclaration);
 
         /// <summary>
         /// Register extended class used to create base node type.
@@ -750,7 +756,7 @@ namespace Peachpie.Library.XmlDom
         {
             XmlNode xml_node;
 
-            if (node == null) xml_node = XmlNode;
+            if (node == null) xml_node = XmlDocument;
             else
             {
                 xml_node = node.XmlNode;

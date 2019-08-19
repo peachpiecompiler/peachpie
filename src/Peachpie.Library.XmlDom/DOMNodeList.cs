@@ -18,12 +18,14 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// List of the nodes.
         /// </summary>
-        private List<DOMNode>/*!*/ _list;
+        [PhpHidden]
+        readonly List<DOMNode>/*!*/ _list;
 
         /// <summary>
         /// Current element index.
         /// </summary>
-        private int _element;
+        [PhpHidden]
+        int _element;
 
         /// <summary>
         /// The number of nodes in the list. The range of valid child node indices is 0 to length - 1 inclusive.
