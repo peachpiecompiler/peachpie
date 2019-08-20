@@ -658,41 +658,9 @@ namespace Pchp.Library
             {
                 case CaseConstants.MB_CASE_UPPER: return str.ToUpper();
                 case CaseConstants.MB_CASE_LOWER: return str.ToLower();
-                case CaseConstants.MB_CASE_TITLE: return CaseTitle(str);
+                case CaseConstants.MB_CASE_TITLE: return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(str);
                 default: throw new ArgumentException();
             }
-        }
-
-        static string CaseTitle(string str)
-        {
-            var culture = CultureInfo.CurrentCulture;
-
-            var result = new StringBuilder(str.Length);
-            var upper = true;
-
-            for (int i = 0; i < str.Length; i++)
-            {
-                var ch = str[i];
-
-                if (char.IsWhiteSpace(ch) || char.IsSeparator(ch))
-                {
-                    upper = true;
-                }
-                else if (upper)
-                {
-                    upper = false;
-                    ch = char.ToUpper(ch, culture);
-                }
-                else
-                {
-                    ch = char.ToLower(ch, culture);
-                }
-
-                result.Append(ch);
-            }
-
-            //
-            return result.ToString();
         }
 
         #endregion
