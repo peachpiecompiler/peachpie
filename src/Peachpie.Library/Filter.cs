@@ -711,6 +711,16 @@ namespace Pchp.Library
                         return @default;
                     }
 
+                case FILTER_CALLBACK:
+                    // options = ['options' => $callback]
+                    if (options_arr != null &&
+                        options_arr.TryGetValue("options", out var callbackvar))
+                    {
+                        return callbackvar.AsCallable().Invoke(ctx, variable);
+                    }
+
+                    return @default;
+
                 default:
                     PhpException.ArgumentValueNotSupported(nameof(filter), filter);
                     break;
