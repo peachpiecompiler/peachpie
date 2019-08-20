@@ -1070,11 +1070,13 @@ namespace Pchp.Library
         /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> and <paramref name="length"/>.
         /// </remarks>
         [return: CastToFalse]
-        public static PhpString substr(PhpString str, int offset, int length = int.MaxValue)
+        public static PhpString substr(PhpString str, int offset, int? length = default)
         {
-            if (PhpMath.AbsolutizeRange(ref offset, ref length, str.Length))
+            var ilength = length.HasValue ? length.Value : int.MaxValue;
+
+            if (PhpMath.AbsolutizeRange(ref offset, ref ilength, str.Length))
             {
-                return str.Substring(offset, length);
+                return str.Substring(offset, ilength);
             }
             else
             {

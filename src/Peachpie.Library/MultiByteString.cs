@@ -429,8 +429,8 @@ namespace Pchp.Library
         #region mb_substr, mb_strcut
 
         [return: CastToFalse]
-        public static string mb_substr(Context ctx, PhpString str, int start, int length = -1, string encoding = null)
-            => SubString(ctx, str, start, length, encoding);
+        public static string mb_substr(Context ctx, PhpString str, int start, int? length = default, string encoding = null)
+            => SubString(ctx, str, start, length.HasValue ? length.Value : int.MaxValue, encoding);
 
         /// <summary>
         ///
@@ -443,8 +443,8 @@ namespace Pchp.Library
         /// <returns></returns>
         /// <remarks>in PHP it behaves differently, but in .NET it is an alias for mb_substr</remarks>
         [return: CastToFalse]
-        public static string mb_strcut(Context ctx, PhpString str, int start, int length = -1, string encoding = null)
-            => SubString(ctx, str, start, length, encoding);
+        public static string mb_strcut(Context ctx, PhpString str, int start, int? length = default, string encoding = null)
+            => SubString(ctx, str, start, length.HasValue ? length.Value : -1, encoding);
 
         static string SubString(Context ctx, PhpString str, int start, int length, string encoding)
         {
