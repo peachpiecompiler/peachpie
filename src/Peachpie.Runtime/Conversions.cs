@@ -1095,12 +1095,13 @@ namespace Pchp.Core
         /// <returns>The double stored in the <paramref name="str"/>.</returns>
         public static double SubstringToDouble(string/*!*/str, int length, ref int position)
         {
-            Debug.Assert(str != null && position + length <= str.Length);
+            Debug.Assert(str != null && position <= str.Length);
 
-            int l;
-            long lval;
-            double dval;
-            IsNumber(str, position + length, position, out l, out position, out lval, out dval);
+            // calculate max index the parse operation can reach
+            // note: {length} can be {Int.MaxValue} which would result in an overflow operation when added with {position}
+            int limit = length < str.Length ? Math.Min(str.Length, position + length) : str.Length;
+
+            IsNumber(str, limit, position, out var l, out position, out var lval, out var dval);
 
             return dval;
         }
