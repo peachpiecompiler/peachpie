@@ -75,8 +75,9 @@ namespace Pchp.Core
             /// <summary>
             /// Set of reflected script assemblies.
             /// </summary>
-            public static IEnumerable<Assembly> ProcessedAssemblies => s_processedAssemblies;
+            public static IReadOnlyCollection<Assembly> ProcessedAssemblies => s_processedAssembliesArr;
             static readonly HashSet<Assembly> s_processedAssemblies = new HashSet<Assembly>();
+            static Assembly[] s_processedAssembliesArr = Array.Empty<Assembly>();
 
             /// <summary>
             /// Reflects given assembly for PeachPie compiler specifics - compiled scripts, references to other assemblies, declared functions and classes.
@@ -96,6 +97,8 @@ namespace Pchp.Core
                     // nothing to reflect
                     return;
                 }
+
+                s_processedAssembliesArr = ArrayUtils.AppendRange(assembly, s_processedAssembliesArr);    // TODO: ImmutableArray<T>
 
                 // remember the assembly for class map:
                 s_assClassMap.AddPhpAssemblyNoLock(assembly);
@@ -252,8 +255,7 @@ namespace Pchp.Core
         /// Internal.
         /// Gets enumeration of <see cref="Assembly"/> representing script assemblies that were reflected.
         /// </summary>
-        /// <returns>Enumeration of assemblies. This collection is not thread-safe and may be changed by calling <see cref="AddScriptReference"/> or by <c>eval</c> functionality.</returns>
-        public static IEnumerable<Assembly> GetScriptReferences() => DllLoaderImpl.ProcessedAssemblies;
+        public static IReadOnlyCollection<Assembly> GetScriptReferences() => DllLoaderImpl.ProcessedAssemblies;
 
         /// <summary>
         /// Declare a runtime user function.
