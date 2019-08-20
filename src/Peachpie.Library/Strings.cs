@@ -1034,37 +1034,9 @@ namespace Pchp.Library
         /// <summary>
         /// Retrieves a substring from the given string.
         /// </summary>
-        /// <param name="str">The source string (unicode).</param>
-        /// <param name="offset">The relativized offset of the first item of the slice.</param>
-        /// <param name="length">The relativized length of the slice.</param>
-        /// <returns>The substring of the <paramref name="str"/>.</returns>
-        /// <remarks>
-        /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> and <paramref name="length"/>.
-        /// </remarks>
-        [return: CastToFalse]
-        public static string substr(string str, int offset, int length = int.MaxValue)
-        {
-            if (str == null)
-            {
-                str = string.Empty;
-            }
-
-            if (PhpMath.AbsolutizeRange(ref offset, ref length, str.Length))
-            {
-                return str.Substring(offset, length);
-            }
-            else
-            {
-                return null; // FALSE
-            }
-        }
-
-        /// <summary>
-        /// Retrieves a substring from the given string.
-        /// </summary>
         /// <param name="str">The source string.</param>
         /// <param name="offset">The relativized offset of the first item of the slice.</param>
-        /// <param name="length">The relativized length of the slice.</param>
+        /// <param name="length">The relativized length of the slice. If not specified, the maximum length is assumed.</param>
         /// <returns>The substring of the <paramref name="str"/>.</returns>
         /// <remarks>
         /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> and <paramref name="length"/>.
@@ -1080,7 +1052,7 @@ namespace Pchp.Library
             }
             else
             {
-                return default(PhpString); // FALSE
+                return default; // FALSE
             }
         }
 
