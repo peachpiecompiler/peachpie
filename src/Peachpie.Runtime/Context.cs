@@ -91,7 +91,7 @@ namespace Pchp.Core
                     throw new ArgumentNullException(nameof(assembly));
                 }
 
-                if (!s_processedAssemblies.Add(assembly) || assembly.GetType(ScriptInfo.ScriptTypeName) == null)
+                if (assembly.GetType(ScriptInfo.ScriptTypeName) == null || !s_processedAssemblies.Add(assembly))
                 {
                     // nothing to reflect
                     return;
