@@ -98,8 +98,9 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
-        #region Methods
+        #region Helpers
 
+        [PhpHidden]
         internal static System_DateTime StrToTime(Context ctx, string timestr, System_DateTime time)
         {
             if (string.IsNullOrEmpty(timestr) || timestr.EqualsOrdinalIgnoreCase("now"))
@@ -111,11 +112,31 @@ namespace Pchp.Library.DateTime
             return (result >= 0) ? DateTimeUtils.UnixTimeStampToUtc(result) : System_DateTime.UtcNow;
         }
 
+        #endregion
+
+        #region Methods
+
+        public virtual void __wakeup()
+        {
+
+        }
+
+        /// <summary>
+        /// Returns a new instance of a DateTime object.
+        /// </summary>
+        /// <param name="array">Initialization array.</param>
+        [return: NotNull]
+        public static DateTime __set_state(PhpArray array)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Adds an amount of days, months, years, hours, minutes and seconds to a DateTime object.
         /// </summary>
         /// <returns>Returns the <see cref="DateTime"/> object for method chaining or <c>FALSE</c> on failure.</returns>
         //[return: CastToFalse]
+        [return: NotNull]
         public virtual DateTime add(DateInterval interval)
         {
             Time = Time.Add(interval.AsTimeSpan());
@@ -127,6 +148,7 @@ namespace Pchp.Library.DateTime
         /// Subtracts an amount of days, months, years, hours, minutes and seconds from a DateTime object.
         /// </summary>
         //[return: CastToFalse]
+        [return: NotNull]
         public virtual DateTime sub(DateInterval interval)
         {
             Time = Time.Subtract(interval.AsTimeSpan());
@@ -136,8 +158,10 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Returns the difference between two DateTime objects
         /// </summary>
+        [return: NotNull]
         public virtual DateInterval diff(DateTimeInterface datetime2, bool absolute = false) => DateTimeFunctions.date_diff(this, datetime2, absolute);
 
+        [return: NotNull]
         public virtual DateTime setTimezone(DateTimeZone timezone)
         {
             if (timezone == null)
@@ -179,14 +203,17 @@ namespace Pchp.Library.DateTime
             return (long)this.TimeZone.BaseUtcOffset.TotalSeconds;
         }
 
+        [return: NotNull]
         public virtual DateTimeZone getTimezone()
         {
             return new DateTimeZone(this.TimeZone);
         }
 
         /// <summary>Returns the warnings and errors</summary>
+        [return: NotNull]
         public static PhpArray getLastErrors(Context ctx) => throw new NotImplementedException();
 
+        [return: NotNull]
         public virtual DateTime modify(string modify)
         {
             if (modify == null)
@@ -331,6 +358,7 @@ namespace Pchp.Library.DateTime
             }
         }
 
+        [return: NotNull]
         public virtual DateTime setDate(int year, int month, int day)
         {
             try
@@ -353,6 +381,7 @@ namespace Pchp.Library.DateTime
             return this;
         }
 
+        [return: NotNull]
         public virtual DateTime setISODate(int year, int week, int day = 1)
         {
             var jan1 = new System_DateTime(year, 1, 1);
@@ -394,6 +423,7 @@ namespace Pchp.Library.DateTime
             return this;
         }
 
+        [return: NotNull]
         public virtual DateTime setTime(int hour, int minute, int second)
         {
             try
@@ -422,15 +452,11 @@ namespace Pchp.Library.DateTime
         /// Sets the date and time based on an Unix timestamp.
         /// </summary>
         /// <returns>Returns the <see cref="DateTime"/> object for method chaining.</returns>
+        [return: NotNull]
         public DateTime setTimestamp(long unixtimestamp)
         {
             this.Time = DateTimeUtils.UnixTimeStampToUtc(unixtimestamp);
             return this;
-        }
-
-        public virtual void __wakeup()
-        {
-
         }
 
         #endregion
@@ -443,6 +469,7 @@ namespace Pchp.Library.DateTime
 
         #region IPhpCloneable
 
+        [PhpHidden]
         public object Clone() => new DateTime(_ctx)
         {
             Time = Time,

@@ -152,6 +152,7 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Returns the difference between two DateTime objects.
         /// </summary>
+        [return: NotNull]
         public static DateInterval date_diff(DateTimeInterface datetime1, DateTimeInterface datetime2, bool absolute = false)
         {
             var interval = new DateInterval(TimeFromInterface(datetime1) - TimeFromInterface(datetime2));
