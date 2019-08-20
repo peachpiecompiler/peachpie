@@ -683,6 +683,10 @@ namespace Pchp.Library
                     upper = false;
                     ch = char.ToUpper(ch, culture);
                 }
+                else
+                {
+                    ch = char.ToLower(ch, culture);
+                }
 
                 result.Append(ch);
             }
