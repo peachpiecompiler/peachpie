@@ -144,7 +144,7 @@ namespace Pchp.Library.Reflection
             return (sep < 0) ? name : name.Substring(sep + 1);
         }
         public PhpArray getStaticVariables() { throw new NotImplementedException(); }
-        public bool hasReturnType()
+        public virtual bool hasReturnType()
         {
             return ResolveReturnType(out var _, out var _);
         }

@@ -144,5 +144,20 @@ namespace Pchp.Library.Reflection
         public bool isPublic() => _routine.Methods.Any(m => m.IsPublic);
         public bool isStatic() => _routine.Methods.Any(m => m.IsStatic);
         public void setAccessible(bool accessible) { throw new NotImplementedException(); }
+        public override bool hasReturnType()
+        {
+            if (base.hasReturnType())
+            {
+                // magic methods that can't have declared return type:
+                if (_routine.Name != "__construct" &&
+                    _routine.Name != "__destruct")
+                {
+                    return true;
+                }
+            }
+
+            //
+            return false;
+        }
     }
 }
