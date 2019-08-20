@@ -85,7 +85,7 @@ namespace Pchp.Core
         /// <summary>
         /// The list of LevelElements.
         /// </summary>
-        private List<LevelElement> _levels;
+        readonly List<LevelElement> _levels;
 
         // the current level of buffering (usually the last one); null iff the buffering is disabled
         private LevelElement _level;
@@ -108,15 +108,14 @@ namespace Pchp.Core
         private Stream _byteSink;
 
         /// <summary>
-        /// Encoding used by <see cref="GetContentAsString"/> converting binary data to a string.
+        /// Encoding used to convert between single-byte string and Unicode string.
         /// </summary>
         public override Encoding Encoding { get { return _ctx.StringEncoding; } }
         
         /// <summary>
         /// The buffered binary stream used as for loading binary data to buffers.
         /// </summary>
-        public BufferedOutputStream Stream { get { return _stream; } }
-        private BufferedOutputStream _stream;
+        public BufferedOutputStream Stream { get; }
 
         /// <summary>
         /// Runtime context.
@@ -152,7 +151,7 @@ namespace Pchp.Core
             _ctx = ctx;
             _charSink = charSink;
             _byteSink = byteSink;
-            _stream = new BufferedOutputStream(this);
+            Stream = new BufferedOutputStream(this);
             _levels = new List<LevelElement>();
 
             if (enableBuffering)
@@ -535,7 +534,7 @@ namespace Pchp.Core
                         // checks whether the filtered data are binary at first; if not so, converts them to a string:
                         if (bytes != null)
                         {
-                            _stream.Write(bytes);
+                            Stream.Write(bytes);
                         }
                         else
                         {
