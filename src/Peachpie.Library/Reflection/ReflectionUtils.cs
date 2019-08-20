@@ -29,8 +29,7 @@ namespace Pchp.Library.Reflection
         {
             object instance;
 
-            var classname = @class.ToStringOrNull();
-            if (classname != null)
+            if (@class.IsString(out var classname))
             {
                 return ctx.GetDeclaredType(classname, true)
                     ?? throw new ReflectionException(string.Format(Resources.Resources.class_does_not_exist, classname));
