@@ -171,6 +171,20 @@ namespace Pchp.Library.Reflection
         public ReflectionMethod getMethod(string name)
         {
             var routine = _tinfo.RuntimeMethods[name];
+
+            if (routine == null && _tinfo.IsInterface)
+            {
+                // look into interface interfaces (CLR does not do that in RuntimeMethods)
+                foreach (var t in _tinfo.Type.ImplementedInterfaces)
+                {
+                    if ((routine = t.GetPhpTypeInfo().RuntimeMethods[name]) != null)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            //
             return (routine != null)
                 ? new ReflectionMethod(_tinfo, routine)
                 : throw new ReflectionException();
@@ -178,9 +192,27 @@ namespace Pchp.Library.Reflection
 
         public PhpArray getMethods(long filter = -1)
         {
+            IEnumerable<RoutineInfo> routines = _tinfo.RuntimeMethods;
+
+            if (_tinfo.IsInterface)
+            {
+                // enumerate all the interface and collect their methods:
+                foreach (var t in _tinfo.Type.ImplementedInterfaces)
+                {
+                    routines = routines.Concat(t.GetPhpTypeInfo().RuntimeMethods);
+                }
+
+                // TODO: remove duplicit names
+            }
+            else
+            {
+                // routines are already merged from all the type hierarchy:
+            }
+
+            //
             var result = new PhpArray();
 
-            foreach (var routine in _tinfo.RuntimeMethods)
+            foreach (var routine in routines)
             {
                 var rmethod = new ReflectionMethod(_tinfo, routine);
                 if (filter == -1 || ((int)rmethod.getModifiers() & filter) != 0)
