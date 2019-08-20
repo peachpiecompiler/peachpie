@@ -791,9 +791,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
         internal static TypeSymbol EmitCoalesce(CodeGenerator cg, TypeSymbol left_type, FlowAnalysis.TypeRefMask left_type_mask, BoundExpression right)
         {
-            object trueLbl = new object();
-            object endLbl = new object();
-
             // Left ?? Right
 
             if (!cg.CanBeNull(left_type)) // in case we truly believe in our type analysis: || !cg.CanBeNull(this.Left.TypeRefMask))
@@ -801,6 +798,9 @@ namespace Pchp.CodeAnalysis.Semantics
                 return left_type;
             }
 
+            object trueLbl = new object();
+            object endLbl = new object();
+            
             // <stack> = <left_var> = Left
             var left_var = cg.GetTemporaryLocal(left_type);
             cg.Builder.EmitOpCode(ILOpCode.Dup);

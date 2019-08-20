@@ -657,9 +657,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                 }
                 else if (to.IsNullableType(out var ttype))
                 {
-                    // Template: new Nullable<T>( (T)from )
-                    EmitConvert(from, fromHint, ttype);
-                    EmitCall(ILOpCode.Newobj, ((NamedTypeSymbol)to).InstanceConstructors[0]);
+                    EmitConvertToNullable_T(from, fromHint, to, ttype);
                 }
                 else if (to.SpecialType == SpecialType.System_DateTime)
                 {
@@ -670,6 +668,51 @@ namespace Pchp.CodeAnalysis.CodeGen
                     throw this.NotImplementedException($"Conversion from '{from}' to '{to}'");
                 }
             }
+        }
+
+        TypeSymbol EmitConvertToNullable_T(TypeSymbol from, TypeRefMask fromHint, TypeSymbol nullabletype, TypeSymbol ttype)
+        {
+            Debug.Assert(nullabletype.IsValueType);
+
+            if (!CanBeNull(from) || !CanBeNull(fromHint))
+            {
+                // new Nullable<T>((T)from)
+                EmitConvert(from, fromHint, ttype);
+                return EmitCall(ILOpCode.Newobj, ((NamedTypeSymbol)nullabletype).InstanceConstructors[0]);
+            }
+
+            // Template: {NotNull(from)} ? new Nullable<T>((T)from) : default
+
+            object trueLbl = new object();
+            object endLbl = new object();
+
+            // <stack> = <left_var> = Left
+            var from_var = GetTemporaryLocal(from);
+            _il.EmitOpCode(ILOpCode.Dup);
+            _il.EmitLocalStore(from_var);
+
+            EmitNotNull(from, fromHint);
+            _il.EmitBranch(ILOpCode.Brtrue, trueLbl);
+
+            // false:
+            EmitLoadDefaultOfValueType(nullabletype);   // default(Nullable<T>)
+            _il.EmitBranch(ILOpCode.Br, endLbl);
+            _il.AdjustStack(-1);
+
+            // trueLbl:
+            _il.MarkLabel(trueLbl);
+            _il.EmitLocalLoad(from_var);
+            EmitConvert(from, fromHint, ttype);
+            EmitCall(ILOpCode.Newobj, ((NamedTypeSymbol)nullabletype).InstanceConstructors[0]); // new Nullable<T>( STACK )
+
+            // endLbl:
+            _il.MarkLabel(endLbl);
+
+            //
+            ReturnTemporaryLocal(from_var);
+
+            //
+            return nullabletype;
         }
     }
 }
