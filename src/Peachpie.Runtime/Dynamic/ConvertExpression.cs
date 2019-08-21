@@ -176,8 +176,8 @@ namespace Pchp.Core.Dynamic
             // Template: arg.IsNull || arg.IsFalse
             Debug.Assert(arg.Type == typeof(PhpValue));
             return Expression.OrElse(
-                Expression.Property(arg, Cache.Operators.PhpValue_IsNull),
-                Expression.Property(arg, Cache.Operators.PhpValue_IsFalse));
+                Expression.Property(arg, Cache.Properties.PhpValue_IsNull),
+                Expression.Property(arg, Cache.Properties.PhpValue_IsFalse));
         }
 
         static Expression BindToNullable(Expression arg, Type target, Type nullable_t, Expression ctx)
@@ -441,6 +441,22 @@ namespace Pchp.Core.Dynamic
 
         public static Expression BindToValue(Expression expr)
         {
+            // knmown constants:
+            if (expr is ConstantExpression ce)
+            {
+                if (ce.Value == null)
+                {
+                    // PhpValue.Null
+                    return Expression.Field(null, Cache.Properties.PhpValue_Null);
+                }
+                else if (ce.Value is bool b)
+                {
+                    return Expression.Field(null, b ? Cache.Properties.PhpValue_True : Cache.Properties.PhpValue_False);
+                }
+            }
+
+            //
+
             var source = expr.Type;
 
             //
