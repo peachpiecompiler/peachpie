@@ -261,6 +261,16 @@ namespace Pchp.Library
             ALLOW_SCIENTIFIC = 16384,
 
             /// <summary>
+            /// Require scheme in "validate_url" filter.
+            /// </summary>
+            SCHEME_REQUIRED = 65536,
+
+            /// <summary>
+            /// Require host in "validate_url" filter.
+            /// </summary>
+            HOST_REQUIRED = 131072,
+
+            /// <summary>
             /// Require path in "validate_url" filter.
             /// </summary>
             PATH_REQUIRED = 262144,
@@ -361,6 +371,16 @@ namespace Pchp.Library
         /// Allow scientific notation (e, E) in "number_float" filter.
         /// </summary>
         public const int FILTER_FLAG_ALLOW_SCIENTIFIC = (int)FilterFlag.ALLOW_SCIENTIFIC;
+
+        /// <summary>
+        /// Require scheme in "validate_url" filter.
+        /// </summary>
+        public const int FILTER_FLAG_SCHEME_REQUIRED = (int)FilterFlag.SCHEME_REQUIRED;
+
+        /// <summary>
+        /// Require host in "validate_url" filter.
+        /// </summary>
+        public const int FILTER_FLAG_HOST_REQUIRED = (int)FilterFlag.HOST_REQUIRED;
 
         /// <summary>
         /// Require path in "validate_url" filter.
@@ -585,16 +605,27 @@ namespace Pchp.Library
                 //
 
                 case (int)FilterValidate.URL:
-                    return Uri.TryCreate(variable.ToString(ctx), UriKind.Absolute, out var uri)
-                        ? (PhpValue)uri.AbsoluteUri
-                        : PhpValue.False;
+
+                    // TODO: protocol may be ommited, try to add "http://" if fails
+
+                    if (Uri.TryCreate(variable.ToString(ctx), UriKind.Absolute, out var uri))
+                    {
+                        if (flags != 0)
+                        {
+                            // CONSIDER: rather use `Web.parse_url()` ...
+                            var uriflags = (FilterFlag)flags;
+                            //if ((uriflags & FilterFlag.PATH_REQUIRED) == FilterFlag.PATH_REQUIRED && ...)
+                        }
+
+                        return uri.AbsoluteUri;
+                    }
+                    return @default;
 
                 case (int)FilterValidate.EMAIL:
                     {
-                        var str = variable.ToString(ctx);
-                        return RegexUtilities.IsValidEmail(str)
+                        return variable.IsString(out var str) && RegexUtilities.IsValidEmail(str)
                             ? (PhpValue)str
-                            : PhpValue.False;
+                            : @default;
                     }
                 case (int)FilterValidate.IP:
                     if (System.Net.IPAddress.TryParse(variable.ToString(ctx), out var addr))
