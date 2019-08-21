@@ -18,6 +18,10 @@ $ip_tests = [
     ["127.0.0.1", FILTER_VALIDATE_IP, FILTER_FLAG_IPV6],
     ["::1", FILTER_VALIDATE_IP, FILTER_FLAG_IPV6],
     ["invalid-ip", FILTER_VALIDATE_IP, FILTER_FLAG_IPV6],
+	
+    ["/test.php", FILTER_VALIDATE_URL],
+    ["http://localhost/test.php", FILTER_VALIDATE_URL],
+    ["http:///test.php", FILTER_VALIDATE_URL],
 ];
 
 foreach ($ip_tests as $index => $test) {
