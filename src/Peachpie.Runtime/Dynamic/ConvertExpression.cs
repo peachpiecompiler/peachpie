@@ -473,6 +473,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(PhpNumber)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpNumber), expr);
             if (source == typeof(PhpArray)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpArray), expr);
             if (source == typeof(PhpAlias)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpAlias), expr);   // PhpValue.Create(PhpAlias)
+            if (source == typeof(IndirectLocal)) return Expression.Property(expr, Cache.IndirectLocal.Value);   // IndirectLocal.Value
 
             if (source.GetTypeInfo().IsValueType)
             {
