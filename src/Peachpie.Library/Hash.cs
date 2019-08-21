@@ -2837,7 +2837,8 @@ namespace Pchp.Library
         {
             if (string.IsNullOrEmpty(salt))
             {
-               //MD5
+                //MD5
+                throw new NotImplementedException();
             }
 
             if (salt.Length >= 3)
@@ -2848,17 +2849,20 @@ namespace Pchp.Library
                     {
                         if (salt[1] == '1') // $1$
                         {
-                            // MD5                            
+                            // MD5
+                            throw new NotImplementedException();
                         }
 
                         if (salt[1] == '5') // $5$
                         {
                             // SHA256
+                            throw new NotImplementedException();
                         }
 
                         if (salt[1] == '6') // $6$
                         {
                             // SHA512
+                            throw new NotImplementedException();
                         }
                     }
                     if (salt[1] == '2' && salt.Length >= 4 && salt[3] == '$') // $2 $
@@ -2883,6 +2887,7 @@ namespace Pchp.Library
             else
             {
                 // DES
+                throw new NotImplementedException();
             }
 
             // failure
