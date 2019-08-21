@@ -464,11 +464,11 @@ namespace Pchp.Core
 
         public static double ToDouble(string value) => StringToDouble(value);
 
-        public static int ToInt(this IPhpArray value) => value.Count;
+        //public static int ToInt(this IPhpArray value) => value.Count;
 
-        public static int ToLong(this IPhpArray value) => ToInt(value);
+        //public static int ToLong(this IPhpArray value) => ToInt(value);
 
-        public static int ToDouble(this IPhpArray value) => ToInt(value);
+        //public static int ToDouble(this IPhpArray value) => ToInt(value);
 
         #endregion
 

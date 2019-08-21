@@ -354,7 +354,7 @@ namespace Pchp.Library.Database
             var array = FetchAssocArray();
 
             return array != null
-                ? (stdClass)array.ToClass()
+                ? array.ToObject()
                 : null;
         }
 

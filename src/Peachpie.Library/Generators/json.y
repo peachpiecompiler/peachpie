@@ -62,7 +62,7 @@ object:
 			}
 			else
 			{
-				$$.value = PhpValue.FromClass(arr.ToClass());
+				$$.value = PhpValue.FromClass(arr.ToObject());
 			}
 		}
 	|	OBJECT_OPEN OBJECT_CLOSE	{ $$.value = PhpValue.FromClass(new stdClass()); }

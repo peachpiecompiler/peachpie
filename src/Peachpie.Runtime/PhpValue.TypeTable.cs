@@ -606,15 +606,15 @@ namespace Pchp.Core
         {
             public override PhpTypeCode Type => PhpTypeCode.PhpArray;
             public override bool IsEmpty(ref PhpValue me) => me.Array.IsEmpty();
-            public override object ToClass(ref PhpValue me) => me.Array.ToClass();
+            public override object ToClass(ref PhpValue me) => me.Array.ToObject();
             public override string ToStringQuiet(ref PhpValue me) => PhpArray.PrintablePhpTypeName;
-            public override string ToString(ref PhpValue me, Context ctx) => me.Array.ToStringOrThrow(ctx);
-            public override string ToStringOrThrow(ref PhpValue me, Context ctx) => me.Array.ToStringOrThrow(ctx);
-            public override string AsString(ref PhpValue me, Context ctx) => me.Array.ToStringOrThrow(ctx);
-            public override long ToLong(ref PhpValue me) => me.Array.ToLong();
-            public override double ToDouble(ref PhpValue me) => me.Array.ToDouble();
-            public override bool ToBoolean(ref PhpValue me) => me.Array.ToBoolean();
-            public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => me.Array.ToNumber(out number);
+            public override string ToString(ref PhpValue me, Context ctx) => ((IPhpConvertible)me.Array).ToStringOrThrow(ctx);          // TODO: explicit or implicit?
+            public override string ToStringOrThrow(ref PhpValue me, Context ctx) => ((IPhpConvertible)me.Array).ToStringOrThrow(ctx);   // TODO: explicit or implicit?
+            public override string AsString(ref PhpValue me, Context ctx) => ((IPhpConvertible)me.Array).ToStringOrThrow(ctx);          // TODO: explicit or implicit?
+            public override long ToLong(ref PhpValue me) => ((IPhpConvertible)me.Array).ToLong();       // TODO: explicit or implicit?
+            public override double ToDouble(ref PhpValue me) => ((IPhpConvertible)me.Array).ToDouble(); // TODO: explicit or implicit?
+            public override bool ToBoolean(ref PhpValue me) => ((IPhpConvertible)me.Array).ToBoolean(); // TODO: explicit or implicit?
+            public override Convert.NumberInfo ToNumber(ref PhpValue me, out PhpNumber number) => ((IPhpConvertible)me.Array).ToNumber(out number); // TODO: explicit or implicit?
             public override bool TryToIntStringKey(ref PhpValue me, out IntStringKey key) { key = default(IntStringKey); return false; }
             public override IPhpEnumerator GetForeachEnumerator(ref PhpValue me, bool aliasedValues, RuntimeTypeHandle caller) => me.Array.GetForeachEnumerator(aliasedValues);
             public override int Compare(ref PhpValue me, PhpValue right) => me.Array.Compare(right);
@@ -655,7 +655,7 @@ namespace Pchp.Core
                 return base.AsCallable(ref me, callerCtx);
             }
             public override string DisplayString(ref PhpValue me) => "array(length = " + me.Array.Count.ToString() + ")";
-            public override void Output(ref PhpValue me, Context ctx) => ctx.Echo(me.Array.ToStringOrThrow(ctx));
+            public override void Output(ref PhpValue me, Context ctx) => ctx.Echo((string)me.Array);
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Array);
         }
 

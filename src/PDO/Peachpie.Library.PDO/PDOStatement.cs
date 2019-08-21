@@ -950,7 +950,7 @@ namespace Peachpie.Library.PDO
 
         private PhpValue ReadObj()
         {
-            return PhpValue.FromClass(this.ReadArray(true, false).ToClass());
+            return PhpValue.FromClass(this.ReadArray(true, false).ToObject());
         }
 
         private PhpValue ReadColumn(int column)
