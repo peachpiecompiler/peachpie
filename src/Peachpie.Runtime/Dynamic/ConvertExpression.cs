@@ -13,7 +13,7 @@ using Pchp.Core.Reflection;
 namespace Pchp.Core.Dynamic
 {
     /// <summary>
-    /// Helper methods for converting expressions.
+    /// Helper methods for converting expressions (implicit conversions).
     /// </summary>
     internal static class ConvertExpression
     {
@@ -254,16 +254,17 @@ namespace Pchp.Core.Dynamic
             }
 
             if (source == typeof(PhpNumber)) return Expression.Call(expr, typeof(PhpNumber).GetMethod("ToLong", Cache.Types.Empty));
-            if (source == typeof(PhpArray)) return Expression.Call(expr, typeof(PhpArray).GetMethod("ToLong", Cache.Types.Empty));
+            //TypeError//if (source == typeof(PhpArray)) return Expression.Call(expr, typeof(PhpArray).GetMethod("ToLong", Cache.Types.Empty));
             if (source == typeof(string)) return Expression.Call(Cache.Operators.ToLong_String, expr);
             if (source == typeof(PhpString)) return Expression.Call(expr, typeof(PhpString).GetMethod("ToLong", Cache.Types.Empty));
             if (source == typeof(void)) return VoidAsConstant(expr, 0L, typeof(long));
             if (source == typeof(bool)) return Expression.Call(typeof(System.Convert).GetMethod("ToInt64", Cache.Types.Bool), expr);
             if (source == typeof(long)) return expr;    // unreachable
 
-            // TODO: following conversions may fail, we should report it failed and throw an error
+            // TODO: following conversions may fail, we should report it failed and throw TypeError exception
             if (source == typeof(PhpValue)) return Expression.Call(expr, typeof(PhpValue).GetMethod("ToLong", Cache.Types.Empty));
 
+            // TODO: throw new TypeError exception
             throw new NotImplementedException($"{source.FullName} -> long");
         }
 
@@ -931,9 +932,6 @@ namespace Pchp.Core.Dynamic
                 case PhpTypeCode.MutableString:
                 case PhpTypeCode.String:
                     return ConversionCost.LoosingPrecision;
-
-                case PhpTypeCode.PhpArray:
-                    return ConversionCost.Warning;
 
                 default:
                     return ConversionCost.NoConversion;
