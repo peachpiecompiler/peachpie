@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Pchp.Library
@@ -16,36 +17,20 @@ namespace Pchp.Library
     {
         #region Per-request Random Number Generators
 
+        // since 7.1: rand() aliases to mt_rand() and corr.
         /// <summary>
         /// Gets an initialized random number generator associated with the current thread.
         /// </summary>
-        internal static Random Generator
-        {
-            get
-            {
-                if (_generator == null)
-                    _generator = new Random(unchecked((int)System.DateTime.UtcNow.ToFileTime()));
-
-                return _generator;
-            }
-        }
-        [ThreadStatic]
-        private static Random _generator;   // TODO: move to Context
+        internal static Random Generator => MTGenerator;
+        //readonly static ThreadLocal<Random> _generator = new ThreadLocal<Random>(
+        //    () => new Random(unchecked((int)System.DateTime.UtcNow.ToFileTimeUtc())));
 
         /// <summary>
 		/// Gets an initialized Mersenne Twister random number generator associated with the current thread.
 		/// </summary>
-		internal static MersenneTwister MTGenerator
-        {
-            get
-            {
-                if (_mtGenerator == null)
-                    _mtGenerator = new MersenneTwister(unchecked((uint)System.DateTime.UtcNow.ToFileTime()));
-                return _mtGenerator;
-            }
-        }
-        [ThreadStatic]
-        private static MersenneTwister _mtGenerator;    // TODO: move to Context
+		internal static MersenneTwister MTGenerator => _mtGenerator.Value;   // lazily creates the value using the factory method once
+        readonly static ThreadLocal<MersenneTwister> _mtGenerator = new ThreadLocal<MersenneTwister>(
+            () => new MersenneTwister(unchecked((uint)System.DateTime.UtcNow.ToFileTimeUtc())));
 
         #endregion
 
@@ -146,47 +131,27 @@ namespace Pchp.Library
         #region rand, srand, getrandmax, uniqid, lcg_value, random_int, random_bytes
 
         /// <summary>
-        /// Gets <c>0</c> or <c>1</c> randomly.
-        /// </summary>
-        static int Random01()
-        {
-            return (int)Math.Round(Generator.NextDouble());
-        }
-
-        /// <summary>
         /// Seed the random number generator. No return value.
         /// </summary>
-        public static void srand()
-        {
-            _generator = new Random();
-        }
+        public static void srand() => mt_srand();
 
         /// <summary>
         /// Seed the random number generator. No return value.
         /// </summary>
         /// <param name="seed">Optional seed value.</param>
-        public static void srand(int seed)
-        {
-            _generator = new Random(seed);
-        }
+        public static void srand(int seed) => mt_srand(seed);
 
         /// <summary>
         /// Show largest possible random value.
         /// </summary>
         /// <returns>The largest possible random value returned by rand().</returns>
-		public static int getrandmax()
-        {
-            return Int32.MaxValue;
-        }
+		public static int getrandmax() => mt_getrandmax();
 
         /// <summary>
         /// Generate a random integer.
         /// </summary>
         /// <returns>A pseudo random value between 0 and getrandmax(), inclusive.</returns>
-        public static int rand()
-        {
-            return Generator.Next() + Random01();
-        }
+        public static int rand() => mt_rand();
 
         /// <summary>
         /// Generate a random integer.
@@ -194,19 +159,7 @@ namespace Pchp.Library
         /// <param name="min">The lowest value to return.</param>
         /// <param name="max">The highest value to return.</param>
         /// <returns>A pseudo random value between min and max, inclusive. </returns>
-        public static int rand(int min, int max)
-        {
-            if (min > max)
-                return rand(max, min);
-
-            if (min == max)
-                return min;
-
-            if (max == int.MaxValue)
-                return Generator.Next(min, int.MaxValue) + Random01();
-
-            return Generator.Next(min, max + 1);
-        }
+        public static int rand(int min, int max) => mt_rand(min, max);
 
         /// <summary>
         /// Generate a unique ID.
@@ -244,7 +197,7 @@ namespace Pchp.Library
         {
             // Note that Ticks specify time in 100nanoseconds but it is raised each 100144 
             // ticks which is around 10 times a second (the same for Milliseconds).
-            string ticks = string.Format("{0:X}", System.DateTime.UtcNow.Ticks + Generator.Next());
+            string ticks = string.Format("{0:X}", System.DateTime.UtcNow.Ticks + MTGenerator.Next());
 
             ticks = ticks.Substring(ticks.Length - 13);
             if (prefix == null) prefix = "";
@@ -265,10 +218,7 @@ namespace Pchp.Library
         /// which may or may not be the same generator as the PHP one (L(CG(2^31 - 85),CG(2^31 - 249))).
         /// </remarks>
         /// <returns></returns>
-        public static double lcg_value()
-        {
-            return Generator.NextDouble();
-        }
+        public static double lcg_value() => MTGenerator.NextDouble();
 
         /// <summary>
         /// Generates cryptographically secure pseudo-random integers.
@@ -282,7 +232,7 @@ namespace Pchp.Library
             {
                 throw new ArgumentOutOfRangeException();
             }
-
+            
             // TODO: use mcrypt, int64
             return rand((int)min, (int)max);
         }
@@ -330,7 +280,7 @@ namespace Pchp.Library
         /// </summary>
         public static void mt_srand()
         {
-            mt_srand(Generator.Next());
+            mt_srand(unchecked((int)System.DateTime.UtcNow.Ticks));
         }
 
         /// <summary>
