@@ -1,4 +1,4 @@
 <?php
 $name = 'Felipe';
 
-echo @(unset) $name, $name, "Done.";
+echo @((unset)$name), $name, "Done.";

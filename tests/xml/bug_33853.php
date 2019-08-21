@@ -1,13 +1,12 @@
 <?php
 
-function __autoload($className) 
-{
+function __autoload($className) {
   echo $className;
   exit();
 }
 
 function test() {
-  $xsl = new DomDocument();
+  $xsl = @new DomDocument();
   $xsl->loadXML('<?xml version="1.0" encoding="iso-8859-1" ?>
   <xsl:stylesheet version="1.0"
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -16,11 +15,11 @@ function test() {
   <xsl:value-of select="php:function(\'TeSt::dateLang\')" />
   </xsl:template>
   </xsl:stylesheet>');
-  $inputdom = new DomDocument();
+  $inputdom = @new DomDocument();
   $inputdom->loadXML('<?xml version="1.0" encoding="iso-8859-1" ?>
   <today></today>');
 
-  $proc = new XsltProcessor();
+  $proc = @new XsltProcessor();
   $proc->registerPhpFunctions();
   $xsl = $proc->importStylesheet($xsl);
   $newdom = $proc->transformToDoc($inputdom);
