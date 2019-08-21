@@ -610,6 +610,12 @@ namespace Pchp.Library
 
                     if (Uri.TryCreate(variable.ToString(ctx), UriKind.Absolute, out var uri))
                     {
+                        if (uri.IsFile && !uri.OriginalString.StartsWith(uri.Scheme, StringComparison.OrdinalIgnoreCase))
+                        {
+                            // quick check the file:// was just added on linux impl. of Uri.Parse
+                            return @default;
+                        }
+
                         if (flags != 0)
                         {
                             // CONSIDER: rather use `Web.parse_url()` ...
