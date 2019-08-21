@@ -110,6 +110,8 @@ namespace Pchp.Core.Dynamic
             // 
             if (target.IsValueType == false)
             {
+                Debug.Assert(typeof(Nullable<bool>).IsValueType);
+
                 return BindAsReferenceType(arg, target);
             }
             else
@@ -125,7 +127,6 @@ namespace Pchp.Core.Dynamic
                 {
                     return BindToDateTime(arg, ctx);
                 }
-
                 // Nullable<T>
                 if (target.IsNullable_T(out T))
                 {
@@ -170,9 +171,24 @@ namespace Pchp.Core.Dynamic
             }
         }
 
+        static Expression PhpValueIsNullOrFalse(Expression arg)
+        {
+            // Template: arg.IsNull || arg.IsFalse
+            Debug.Assert(arg.Type == typeof(PhpValue));
+            return Expression.OrElse(
+                Expression.Property(arg, Cache.Operators.PhpValue_IsNull),
+                Expression.Property(arg, Cache.Operators.PhpValue_IsFalse));
+        }
+
         static Expression BindToNullable(Expression arg, Type target, Type nullable_t, Expression ctx)
         {
             Debug.Assert(target.IsNullable_T(out var tmp_t) && nullable_t == tmp_t);
+
+            // special cases: constants NULL -> default(Nullable<T>)
+            if (arg is ConstantExpression ce && (ce.Value == null))
+            {
+                return Expression.Default(target);
+            }
 
             // Template: new Nullable<T>( (T)arg )
             Expression new_nullable = null;
@@ -202,7 +218,7 @@ namespace Pchp.Core.Dynamic
                 else if (arg.Type == typeof(PhpValue))
                 {
                     // (bool)arg // implicit bool operator
-                    hasValueCheck = Expression.Convert(arg, typeof(bool));
+                    hasValueCheck = Expression.IsFalse(PhpValueIsNullOrFalse(arg));
                 }
             }
 
@@ -627,6 +643,21 @@ namespace Pchp.Core.Dynamic
 
             if (target.IsNullable_T(out var nullable_t))
             {
+                if (!t.IsValueType)
+                {
+                    // object -> Nullable<T> // only NULL is accepted
+                    return Expression.Call(typeof(CostOf).GetMethod("ToNullable", Cache.Types.Object), arg);
+                }
+
+                if (t == typeof(PhpValue))
+                {
+                    // value is null|false ? PassCostly : costof(value -> T)
+                    return Expression.Condition(
+                        PhpValueIsNullOrFalse(arg),
+                        Expression.Constant(ConversionCost.PassCostly),
+                        BindCost(arg, nullable_t));
+                }
+
                 return BindCost(arg, nullable_t);
             }
 
@@ -717,7 +748,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(PhpValue)) return (ConversionCost.PassCostly);
             if (target == typeof(string) || target == typeof(PhpString)) return (ConversionCost.ImplicitCast);
             if (target == typeof(PhpArray)) return (ConversionCost.Warning);
-            
+
             //throw new NotImplementedException($"costof(double -> {target})");
             return ConversionCost.NoConversion;
         }
@@ -1124,6 +1155,11 @@ namespace Pchp.Core.Dynamic
         {
             // TODO: once we'll be able to store structs
             return ConversionCost.NoConversion;
+        }
+
+        public static ConversionCost ToNullable(object obj)
+        {
+            return obj == null ? ConversionCost.PassCostly : ConversionCost.NoConversion;
         }
 
         #endregion
