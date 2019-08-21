@@ -254,7 +254,7 @@ namespace Pchp.Core.Reflection
 
             Func<Context, object> candidate = null;
 
-            if (!tinfo.IsInterface && !tinfo.IsTrait)
+            if (!tinfo.IsInterface && !tinfo.IsTrait && !tinfo.Type.IsAbstract)
             {
                 var ctors = tinfo.Type.DeclaredConstructors;
 

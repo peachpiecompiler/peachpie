@@ -328,8 +328,39 @@ namespace Pchp.Library.Reflection
         public bool implementsInterface(string @interface) => _tinfo.Type.GetInterface(@interface.Replace("\\", ".")) != null;
         public bool inNamespace() => this.name.IndexOf(ReflectionUtils.NameSeparator) >= 0;
         public bool isAbstract() => _tinfo.Type.IsAbstract;
-        public bool isAnonymous() => _tinfo.Type.IsSealed && _tinfo.Type.IsNotPublic && _tinfo.Type.Name.StartsWith("class@anonymous", StringComparison.Ordinal); // internal sealed 'class@anonymous...' {}
-        public bool isCloneable() { throw new NotImplementedException(); }
+        public bool isAnonymous() => _tinfo.Type.IsSealed && _tinfo.Type.IsNotPublic && _tinfo.Type.Name.StartsWith("class@anonymous", StringComparison.Ordinal); // internal sealed 'class@anonymous...' {}=
+
+        /// <summary>
+        /// Determines whether the class can be cloned.
+        /// </summary>
+        public bool isCloneable()
+        {
+            if (_tinfo.IsInterface || _tinfo.IsTrait || _tinfo.Type.IsAbstract)
+            {
+                return false;
+            }
+
+            if (typeof(IPhpCloneable).IsAssignableFrom(_tinfo.Type))
+            {
+                // internal: implements IPhpCloneable
+                return true;
+            }
+
+            var __clone = _tinfo.RuntimeMethods[TypeMethods.MagicMethods.__clone];
+            if (__clone != null && !__clone.Methods.All(m => m.IsPublic))
+            {
+                return false;
+            }
+
+            if (!_tinfo.Type.DeclaredConstructors.Any(c => !c.IsStatic && !c.IsPrivate))
+            {
+                // no available .ctor
+                return false;
+            }
+
+            //
+            return true;
+        }
         public bool isFinal() => _tinfo.Type.IsSealed;
         public bool isInstance(object @object) => _tinfo.Type.IsInstanceOfType(@object);
         public bool isInstantiable() => !object.ReferenceEquals(_tinfo.Creator, PhpTypeInfo.InaccessibleCreator);

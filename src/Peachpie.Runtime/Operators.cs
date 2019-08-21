@@ -1298,6 +1298,7 @@ namespace Pchp.Core
                     value = newobj;
 
                     // __clone()
+                    // TODO: only if __clone() is public
                     tinfo.RuntimeMethods[TypeMethods.MagicMethods.__clone]?.Invoke(ctx, value);
                 }
                 else
