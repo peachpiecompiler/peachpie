@@ -1,6 +1,7 @@
 <?php
 
-function __autoload($className) {
+function __autoload($className) 
+{
   echo $className;
   exit();
 }
