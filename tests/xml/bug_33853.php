@@ -1,9 +1,11 @@
 <?php
 
-function __autoload($className) {
+function my_autoloader($class) {
   echo $className;
   exit();
 }
+
+spl_autoload_register('my_autoloader');
 
 function test() {
   $xsl = @new DomDocument();
