@@ -20,7 +20,13 @@ namespace Pchp.CodeAnalysis.Symbols
         /// <summary>
         /// Optional. Gets the initializer.
         /// </summary>
-        public virtual BoundExpression Initializer => null;
+        public virtual BoundExpression Initializer
+        {
+            get
+            {
+                return PhpOperationExtensions.FromDefaultValueAttribute(this.DefaultValueAttribute);
+            }
+        }
 
         public virtual bool IsOptional => false;
 
@@ -85,6 +91,25 @@ namespace Pchp.CodeAnalysis.Symbols
         /// (i.e. even non-optional parameters can have default values).
         /// </remarks>
         internal abstract ConstantValue ExplicitDefaultConstantValue { get; }
+
+        internal virtual AttributeData DefaultValueAttribute
+        {
+            get
+            {
+                //if (OriginalSymbolDefinition != this)
+                //{
+                //    return ((ParameterSymbol)OriginalSymbolDefinition).DefaultValueAttribute;
+                //}
+
+                return this.GetAttribute("Pchp.Core.DefaultValueAttribute");
+            }
+        }
+
+        /// <summary>
+        /// Gets value indicating the parameter has default value that is not supported by CLR metadata.
+        /// The default value will be then stored within [<see cref="DefaultValueAttribute"/>] as array of bytes (the original object serialized using PHP serialization).
+        /// </summary>
+        internal bool HasUnmappedDefaultValue => this is SourceParameterSymbol sp ? sp.Initializer != null && sp.ExplicitDefaultConstantValue == null : DefaultValueAttribute != null;
 
         /// <summary>
         /// Returns data decoded from Obsolete attribute or null if there is no Obsolete attribute.

@@ -187,8 +187,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 var ps = phpconstruct.Parameters;
                 for (int i = 0; i < ps.Length; i++)
                 {
-                    var p = ps[i] as SourceParameterSymbol;
-                    if (p != null && p.Initializer != null && p.ExplicitDefaultConstantValue == null)   // => ConstantValue couldn't be resolved for optional parameter
+                    if (ps[i].HasUnmappedDefaultValue)
                     {
                         yield return new SynthesizedPhpCtorSymbol(type, phpconstruct.DeclaredAccessibility, fieldsinitctor, phpconstruct, i);
                     }

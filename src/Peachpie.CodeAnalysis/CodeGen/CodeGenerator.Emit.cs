@@ -2388,29 +2388,32 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else if ((boundinitializer = (targetp as IPhpValue)?.Initializer) != null)
             {
-                // TODO: use `boundinitializer.Parent` instead of following
-                // magically determine the source routine corresponding to the initializer expression:
-                SourceRoutineSymbol srcr = null;
-                for (var r = targetp.ContainingSymbol;
-                     srcr == null && r != null; // we still don't have to original SourceRoutineSymbol, but we have "r"
-                     r = (r as SynthesizedMethodSymbol)?.ForwardedCall?.OriginalDefinition) // dig in and find original SourceRoutineSymbol wrapped by this synthesized stub
-                {
-                    srcr = r as SourceRoutineSymbol;
-                }
+                var cg = this;
 
-                Debug.Assert(srcr != null, "!srcr");
-
-                if (srcr != null)
+                if (targetp.OriginalDefinition is SourceParameterSymbol)
                 {
-                    using (var cg = new CodeGenerator(this, srcr))
+                    // emit using correct TypeRefContext:
+
+                    // TODO: use `boundinitializer.Parent` instead of following
+                    // magically determine the source routine corresponding to the initializer expression:
+                    SourceRoutineSymbol srcr = null;
+                    for (var r = targetp.ContainingSymbol;
+                         srcr == null && r != null; // we still don't have to original SourceRoutineSymbol, but we have "r"
+                         r = (r as SynthesizedMethodSymbol)?.ForwardedCall?.OriginalDefinition) // dig in and find original SourceRoutineSymbol wrapped by this synthesized stub
                     {
-                        cg.EmitConvert(boundinitializer, ptype = targetp.Type);
+                        srcr = r as SourceRoutineSymbol;
+                    }
+
+                    Debug.Assert(srcr != null, "!srcr");
+
+                    if (srcr != null)
+                    {
+                        cg = new CodeGenerator(this, srcr);
                     }
                 }
-                else
-                {   // should not happen
-                    ptype = EmitLoadDefault(targetp.Type, 0);
-                }
+                
+                //
+                cg.EmitConvert(boundinitializer, ptype = targetp.Type);
             }
             else if (targetp.IsParams)
             {

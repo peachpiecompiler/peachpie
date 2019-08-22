@@ -1,7 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using Devsense.PHP.Syntax.Ast;
+using Microsoft.CodeAnalysis;
+using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -39,7 +44,7 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 result.Append('s');
                 result.Append(':');
-                result.Append(s.Length);
+                result.Append(s.Length);    // TODO: encode to byte[] first
                 result.Append(':');
                 result.Append('"');
                 result.Append(s);
@@ -109,6 +114,129 @@ namespace Pchp.CodeAnalysis.Semantics
             var result = new StringBuilder(16);
             PhpSerialize(result, array);
             return result.ToString();
+        }
+
+        /// <summary>
+        /// Simple unserialize PHP object. Supports only arrays and literals.
+        /// </summary>
+        static BoundExpression PhpUnserializeOrThrow(ImmutableArray<byte> bytes)
+        {
+            var arr = new byte[bytes.Length];
+            bytes.CopyTo(arr);
+
+            int start = 0;
+            var obj = PhpUnserializeOrThrow(arr, ref start);
+            Debug.Assert(start == arr.Length);
+            return obj;
+        }
+
+        static BoundExpression PhpUnserializeOrThrow(byte[] bytes, ref int start)
+        {
+            if (bytes == null) throw ExceptionUtilities.ArgumentNull(nameof(bytes));
+            if (bytes.Length == 0) throw ExceptionUtilities.UnexpectedValue(bytes);
+            if (start >= bytes.Length) throw new ArgumentOutOfRangeException();
+
+            char t = (char)bytes[start++];
+
+            switch (t)
+            {
+                case 'a':   // array
+                    if (bytes[start++] != (byte)':') throw null;
+                    var from = start;
+                    while (bytes[start++] != (byte)':') { }
+                    var length = int.Parse(Encoding.UTF8.GetString(bytes, from, start - from - 1));
+                    if (bytes[start++] != (byte)'{') throw null;
+                    var items = new List<KeyValuePair<BoundExpression, BoundExpression>>(length);
+                    while (length-- > 0)
+                    {
+                        items.Add(new KeyValuePair<BoundExpression, BoundExpression>(
+                            PhpUnserializeOrThrow(bytes, ref start),
+                            PhpUnserializeOrThrow(bytes, ref start)));
+                    }
+                    if (bytes[start++] != (byte)'}') throw null;
+                    return new BoundArrayEx(items).WithAccess(BoundAccess.Read);
+
+                case 'N':   // NULL
+                    if (bytes[start++] != (byte)';') throw null;
+                    return new BoundLiteral(null).WithAccess(BoundAccess.Read);
+
+                case 'b':   // bool
+                    if (bytes[start++] != (byte)':') throw null;
+                    var b = bytes[start++];
+                    if (bytes[start++] != (byte)';') throw null;
+                    return new BoundLiteral((b != 0).AsObject()).WithAccess(BoundAccess.Read);
+
+                case 'i':   // int
+                case 'd':   // double
+                    if (bytes[start++] != (byte)':') throw null;
+                    from = start;
+                    while (bytes[start++] != (byte)';') { }
+                    var value = Encoding.UTF8.GetString(bytes, from, start - from - 1);
+                    var literal = (t == 'i') ? long.Parse(value) : double.Parse(value, CultureInfo.InvariantCulture);
+                    return new BoundLiteral(literal).WithAccess(BoundAccess.Read);
+
+                case 's':   // string
+                    if (bytes[start++] != (byte)':') throw null;
+                    from = start;
+                    while (bytes[start++] != (byte)':') { }
+                    length = int.Parse(Encoding.UTF8.GetString(bytes, from, start - from - 1));
+                    if (bytes[start++] != (byte)'"') throw null;
+                    from = start;   // from points after the first "
+                    start += length;
+                    while (bytes[start++] != (byte)'"') { } // start points after the closing " // even we know the length, just look for the " to be sure (UTF8 etc..)
+                    value = Encoding.UTF8.GetString(bytes, from, start - from - 1);
+                    if (bytes[start++] != (byte)';') throw null;
+                    return new BoundLiteral(value).WithAccess(BoundAccess.Read);
+
+                default:
+                    throw ExceptionUtilities.UnexpectedValue(t);
+            }
+        }
+
+        /// <summary>
+        /// Decodes [DefaultValueAttribute].
+        /// </summary>
+        public static BoundExpression FromDefaultValueAttribute(AttributeData defaultValueAttribute)
+        {
+            if (defaultValueAttribute == null || defaultValueAttribute.NamedArguments.IsDefaultOrEmpty)
+            {
+                return null;
+            }
+
+            //[DefaultValue(Type = PhpArray, SerializedValue = new byte[]{ ... })]
+            var p = defaultValueAttribute.NamedArguments;
+
+            // SerializedValue?
+            for (int i = 0; i < p.Length; i++)
+            {
+                if (p[i].Key == "SerializedValue" && !p[i].Value.IsNull)
+                {
+                    var data = p[i].Value.Values.SelectAsArray(c => (byte)c.Value);
+                    if (data.Length != 0)
+                    {
+                        // unserialize {bytes}
+                        return PhpUnserializeOrThrow(data);
+                    }
+                }
+            }
+
+            // Type?
+            for (int i = 0; i < p.Length; i++)
+            {
+                if (p[i].Key == "Type" && p[i].Value.Value is int itype)
+                {
+                    switch (itype)
+                    {
+                        case 1: // PhpArray
+                            return new BoundArrayEx(Array.Empty<KeyValuePair<BoundExpression, BoundExpression>>()).WithAccess(BoundAccess.Read);
+                        default:
+                            throw new ArgumentException();
+                    }
+                }
+            }
+
+            //
+            throw new ArgumentException();
         }
     }
 }
