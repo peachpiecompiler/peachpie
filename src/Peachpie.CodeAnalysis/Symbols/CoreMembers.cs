@@ -297,8 +297,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToPhpString_PhpValue_Context = ct.Convert.Method("ToPhpString", ct.PhpValue, ct.Context);
                 ToClass_PhpValue = ct.Convert.Method("ToClass", ct.PhpValue);
                 ToClass_IPhpArray = ct.Convert.Method("ToClass", ct.IPhpArray);
-                AsCallable_PhpValue_RuntimeTypeHandle = ct.Convert.Method("AsCallable", ct.PhpValue, ct.RuntimeTypeHandle);
-                AsCallable_String_RuntimeTypeHandle = ct.Convert.Method("AsCallable", ct.String, ct.RuntimeTypeHandle);
+                AsCallable_PhpValue_RuntimeTypeHandle_Object = ct.Convert.Method("AsCallable", ct.PhpValue, ct.RuntimeTypeHandle, ct.Object);
+                AsCallable_String_RuntimeTypeHandle_Object = ct.Convert.Method("AsCallable", ct.String, ct.RuntimeTypeHandle, ct.Object);
                 GetArrayAccess_PhpValue = ct.Operators.Method("GetArrayAccess", ct.PhpValue);
                 IsInstanceOf_Object_PhpTypeInfo = ct.Convert.Method("IsInstanceOf", ct.Object, ct.PhpTypeInfo);
                 ToIntStringKey_PhpValue = ct.Convert.Method("ToIntStringKey", ct.PhpValue);
@@ -410,7 +410,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToString_Bool, ToString_Long, ToString_Int32, ToString_Double_Context, Long_ToString,
                 ToChar_String,
                 ToNumber_PhpValue, ToNumber_String,
-                AsObject_PhpValue, AsArray_PhpValue, ToArray_PhpValue, GetArrayAccess_PhpValue, ToPhpString_PhpValue_Context, ToClass_PhpValue, ToClass_IPhpArray, AsCallable_PhpValue_RuntimeTypeHandle, AsCallable_String_RuntimeTypeHandle,
+                AsObject_PhpValue, AsArray_PhpValue, ToArray_PhpValue, GetArrayAccess_PhpValue, ToPhpString_PhpValue_Context, ToClass_PhpValue, ToClass_IPhpArray, AsCallable_PhpValue_RuntimeTypeHandle_Object, AsCallable_String_RuntimeTypeHandle_Object,
                 IsInstanceOf_Object_PhpTypeInfo,
                 ToIntStringKey_PhpValue,
                 Echo_Object, Echo_String, Echo_PhpString, Echo_PhpNumber, Echo_PhpValue, Echo_Double, Echo_Long, Echo_Int32, Echo_Bool,

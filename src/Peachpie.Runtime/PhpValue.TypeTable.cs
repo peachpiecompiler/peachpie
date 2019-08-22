@@ -138,8 +138,9 @@ namespace Pchp.Core
             /// </summary>
             /// <param name="me"></param>
             /// <param name="callerCtx">Current caller type.</param>
+            /// <param name="callerObj">Current caller <c>$this</c>. Used to resolve <c>parent</c> and <c>self</c> instances.</param>
             /// <returns>Instance of a callable object, cannot be <c>null</c>, can be invalid.</returns>
-            public virtual IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx) => PhpCallback.CreateInvalid();
+            public virtual IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx, object callerObj) => PhpCallback.CreateInvalid();
 
             /// <summary>
             /// Creates a deep copy of PHP variable.
@@ -381,7 +382,7 @@ namespace Pchp.Core
             }
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) { throw new NotSupportedException(); } // TODO: Err
             public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me);
-            public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx) => PhpCallback.Create(me.String, callerCtx);
+            public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx, object callerObj) => PhpCallback.Create(me.String, callerCtx);
             public override string DisplayString(ref PhpValue me) => "'" + me.String + "'";
             public override void Output(ref PhpValue me, Context ctx) => ctx.Echo(me.String);
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.String);
@@ -441,7 +442,7 @@ namespace Pchp.Core
             public override PhpValue DeepCopy(ref PhpValue me) => new PhpValue(me.MutableStringBlob.AddRef());
             public override void PassValue(ref PhpValue me) => me = new PhpValue(me.MutableStringBlob.AddRef());    // ~ DeepCopy
             public override PhpArray ToArray(ref PhpValue me) => me.MutableString.ToArray();
-            public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx) => PhpCallback.Create(me.MutableStringBlob.ToString(Encoding.UTF8), callerCtx);
+            public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx, object callerObj) => PhpCallback.Create(me.MutableStringBlob.ToString(Encoding.UTF8), callerCtx);
             public override string DisplayString(ref PhpValue me) => "'" + me.MutableStringBlob.ToString(Encoding.UTF8) + "'";
             public override void Output(ref PhpValue me, Context ctx) => me.MutableStringBlob.Output(ctx);
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.MutableString);
@@ -576,7 +577,7 @@ namespace Pchp.Core
                 return base.GetArray(ref me);
             }
             public override object AsObject(ref PhpValue me) => me.Object;
-            public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx)
+            public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx, object callerObj)
             {
                 var obj = me.Object;
 
@@ -639,7 +640,7 @@ namespace Pchp.Core
                 return me.Array;
             }
             public override PhpArray GetArray(ref PhpValue me) => me.Array;
-            public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx)
+            public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx, object callerObj)
             {
                 if (me.Array.Count == 2)
                 {
@@ -647,12 +648,12 @@ namespace Pchp.Core
                         me.Array.TryGetValue(1, out var method))
                     {
                         // [ class => object|string, methodname => string ]
-                        return PhpCallback.Create(obj, method, callerCtx);
+                        return PhpCallback.Create(obj, method, callerCtx, callerObj);
                     }
                 }
 
                 // invalid
-                return base.AsCallable(ref me, callerCtx);
+                return base.AsCallable(ref me, callerCtx, callerObj);
             }
             public override string DisplayString(ref PhpValue me) => "array(length = " + me.Array.Count.ToString() + ")";
             public override void Output(ref PhpValue me, Context ctx) => ctx.Echo((string)me.Array);
@@ -688,7 +689,7 @@ namespace Pchp.Core
             public override PhpArray ToArray(ref PhpValue me) => me.Alias.Value.ToArray();
             public override PhpArray GetArray(ref PhpValue me) => me.Alias.Value.GetArray();
             public override object AsObject(ref PhpValue me) => me.Alias.Value.AsObject();
-            public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx) => me.Alias.Value.AsCallable(callerCtx);
+            public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx, object callerObj) => me.Alias.Value.AsCallable(callerCtx, callerObj);
             public override string DisplayString(ref PhpValue me) => "&" + me.Alias.Value.DisplayString;
             public override void Output(ref PhpValue me, Context ctx) => me.Alias.Value.Output(ctx);
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.Alias);

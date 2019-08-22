@@ -183,6 +183,23 @@ namespace Pchp.CodeAnalysis.CodeGen
             return null;
         }
 
+        /// <summary>
+        /// Emits value of <c>$this</c>.
+        /// Available only within source routines.
+        /// In case no $this is available, <c>NULL</c> is loaded on stack instead.
+        /// </summary>
+        public TypeSymbol EmitPhpThisOrNull()
+        {
+            var t = EmitPhpThis();
+            if (t == null)
+            {
+                _il.EmitNullConstant();
+                t = CoreTypes.Object;
+            }
+
+            return t;
+        }
+
         public TypeSymbol EmitGeneratorInstance()
         {
             Contract.ThrowIfNull(this.GeneratorStateMachineMethod);

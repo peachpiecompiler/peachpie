@@ -134,6 +134,11 @@ namespace Pchp.Core
             readonly string _class, _method;
             readonly RuntimeTypeHandle _callerCtx;
 
+            /// <summary>
+            /// Target object instance.
+            /// </summary>
+            public object Target { get; set; }
+
             public MethodCallback(string @class, string method, RuntimeTypeHandle callerCtx)
             {
                 _class = @class;
@@ -147,17 +152,24 @@ namespace Pchp.Core
             {
                 if (tinfo != null)
                 {
+                    var target = Target != null && tinfo.Type.IsAssignableFrom(Target.GetType()) ? Target : null;
+
                     var routine = (PhpMethodInfo)tinfo.GetVisibleMethod(_method, _callerCtx);
                     if (routine != null)
                     {
-                        return routine.PhpInvokable.Bind(null);
+                        return routine.PhpInvokable.Bind(target);
                     }
                     else
                     {
-                        routine = (PhpMethodInfo)tinfo.RuntimeMethods[TypeMethods.MagicMethods.__callstatic];
+                        routine = (PhpMethodInfo)tinfo.RuntimeMethods[target != null ? TypeMethods.MagicMethods.__call : TypeMethods.MagicMethods.__callstatic];
+                        if (routine == null && target != null)
+                        {
+                            routine = (PhpMethodInfo)tinfo.RuntimeMethods[TypeMethods.MagicMethods.__callstatic];
+                        }
+
                         if (routine != null)
                         {
-                            return routine.PhpInvokable.BindMagicCall(null, _method);
+                            return routine.PhpInvokable.BindMagicCall(target, _method);
                         }
                     }
                 }
@@ -200,6 +212,11 @@ namespace Pchp.Core
             readonly string _method;
             readonly RuntimeTypeHandle _callerCtx;
 
+            /// <summary>
+            /// Target object instance as provided.
+            /// </summary>
+            public object Target { get; set; }
+
             public ArrayCallback(PhpValue item1, string method, RuntimeTypeHandle callerCtx)
             {
                 _obj = item1;
@@ -213,6 +230,11 @@ namespace Pchp.Core
             {
                 if (tinfo != null)
                 {
+                    if (Target != null && tinfo.Type.IsAssignableFrom(Target.GetType()))
+                    {
+                        target = this.Target;
+                    }
+
                     var routine = (PhpMethodInfo)tinfo.GetVisibleMethod(_method, _callerCtx);
                     if (routine != null)
                     {
@@ -348,24 +370,24 @@ namespace Pchp.Core
 
         public static PhpCallback Create(PhpCallable callable) => new CallableCallback(callable);
 
-        public static PhpCallback Create(string function, RuntimeTypeHandle callerCtx = default(RuntimeTypeHandle))
+        public static PhpCallback Create(string function, RuntimeTypeHandle callerCtx = default(RuntimeTypeHandle), object callerObj = null)
         {
             if (function != null)
             {
                 int idx;
 
-                return 
+                return
                     (function.Length <= 3 ||
-                    (idx = function.IndexOf(':', 1, function.Length - 2)) < 0 || 
+                    (idx = function.IndexOf(':', 1, function.Length - 2)) < 0 ||
                     (function[idx + 1] != ':'))
                         ? (PhpCallback)new FunctionCallback(function)   // "::" not found in a valid position
-                        : new MethodCallback(function.Remove(idx), function.Substring(idx + 2), callerCtx);
+                        : new MethodCallback(function.Remove(idx), function.Substring(idx + 2), callerCtx) { Target = callerObj };
             }
 
             return CreateInvalid();
         }
 
-        public static PhpCallback Create(PhpValue item1, PhpValue item2, RuntimeTypeHandle callerCtx = default)
+        public static PhpCallback Create(PhpValue item1, PhpValue item2, RuntimeTypeHandle callerCtx = default, object callerObj = null)
         {
             if (item2.IsString(out var method))
             {
@@ -373,7 +395,7 @@ namespace Pchp.Core
                 {
                     // creates callback from an array,
                     // array entries must be dereferenced so they cannot be changed gainst
-                    return new ArrayCallback(item1.GetValue(), method, callerCtx);
+                    return new ArrayCallback(item1.GetValue(), method, callerCtx) { Target = callerObj };
                 }
             }
 

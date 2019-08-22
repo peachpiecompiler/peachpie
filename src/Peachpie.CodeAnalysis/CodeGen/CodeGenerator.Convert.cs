@@ -381,7 +381,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 if (from.SpecialType == SpecialType.System_String)
                 {
                     EmitLoadToken(this.CallerType, null);
-                    EmitCall(ILOpCode.Call, CoreMethods.Operators.AsCallable_String_RuntimeTypeHandle);
+                    EmitThisOrNull();
+                    EmitCall(ILOpCode.Call, CoreMethods.Operators.AsCallable_String_RuntimeTypeHandle_Object);
                 }
                 else if (
                     from.SpecialType == SpecialType.System_Int64 ||
@@ -394,7 +395,8 @@ namespace Pchp.CodeAnalysis.CodeGen
                 {
                     EmitConvertToPhpValue(from, fromHint);
                     EmitLoadToken(this.CallerType, null);
-                    EmitCall(ILOpCode.Call, CoreMethods.Operators.AsCallable_PhpValue_RuntimeTypeHandle);
+                    EmitThisOrNull();
+                    EmitCall(ILOpCode.Call, CoreMethods.Operators.AsCallable_PhpValue_RuntimeTypeHandle_Object);
                 }
             }
         }
