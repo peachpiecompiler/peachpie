@@ -1188,6 +1188,12 @@ namespace Peachpie.Library.PDO
                 return -1;
             }
 
+            if (m_pdo.Driver.Name == "sqlite")
+            {
+                // This method returns "0" (zero) with the SQLite driver at all times
+                return 0;
+            }
+
             var statement = m_pdo.query("SELECT ROW_COUNT()");
             var rowCount = statement.fetchColumn(0);
 
