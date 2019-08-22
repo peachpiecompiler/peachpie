@@ -485,7 +485,7 @@ namespace Pchp.Core.Dynamic
                         else if (targetparam.GetCustomAttribute<DefaultValueAttribute>() != null)
                         {
                             // TODO: DefaultValueAttribute 
-                            Debug.Fail("default value lost");
+                            //Debug.Fail("default value lost");
                         }
                     }
 
@@ -615,7 +615,7 @@ namespace Pchp.Core.Dynamic
                             else if (targetparam.GetCustomAttribute<DefaultValueAttribute>() != null)
                             {
                                 // TODO: DefaultValueAttribute 
-                                Debug.Fail("default value lost");
+                                //Debug.Fail("default value lost");
                             }
 
                             return ConvertExpression.BindDefault(targetparam.ParameterType);
