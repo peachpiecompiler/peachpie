@@ -230,7 +230,7 @@ namespace Pchp.Core
             {
                 if (tinfo != null)
                 {
-                    if (Target != null && tinfo.Type.IsAssignableFrom(Target.GetType()))
+                    if (target == null && Target != null && tinfo.Type.IsAssignableFrom(Target.GetType()))
                     {
                         target = this.Target;
                     }
