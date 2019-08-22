@@ -382,7 +382,7 @@ namespace Pchp.Core
             }
             public override PhpAlias EnsureItemAlias(ref PhpValue me, PhpValue index, bool quiet) { throw new NotSupportedException(); } // TODO: Err
             public override PhpArray ToArray(ref PhpValue me) => PhpArray.New(me);
-            public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx, object callerObj) => PhpCallback.Create(me.String, callerCtx);
+            public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx, object callerObj) => PhpCallback.Create(me.String, callerCtx, callerObj);
             public override string DisplayString(ref PhpValue me) => "'" + me.String + "'";
             public override void Output(ref PhpValue me, Context ctx) => ctx.Echo(me.String);
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.String);
@@ -442,7 +442,7 @@ namespace Pchp.Core
             public override PhpValue DeepCopy(ref PhpValue me) => new PhpValue(me.MutableStringBlob.AddRef());
             public override void PassValue(ref PhpValue me) => me = new PhpValue(me.MutableStringBlob.AddRef());    // ~ DeepCopy
             public override PhpArray ToArray(ref PhpValue me) => me.MutableString.ToArray();
-            public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx, object callerObj) => PhpCallback.Create(me.MutableStringBlob.ToString(Encoding.UTF8), callerCtx);
+            public override IPhpCallable AsCallable(ref PhpValue me, RuntimeTypeHandle callerCtx, object callerObj) => PhpCallback.Create(me.MutableStringBlob.ToString(Encoding.UTF8), callerCtx, callerObj);
             public override string DisplayString(ref PhpValue me) => "'" + me.MutableStringBlob.ToString(Encoding.UTF8) + "'";
             public override void Output(ref PhpValue me, Context ctx) => me.MutableStringBlob.Output(ctx);
             public override void Accept(ref PhpValue me, PhpVariableVisitor visitor) => visitor.Accept(me.MutableString);
@@ -581,7 +581,7 @@ namespace Pchp.Core
             {
                 var obj = me.Object;
 
-                if (obj is IPhpCallable) return (IPhpCallable)obj;  // classes with __invoke() magic method implements IPhpCallable
+                if (obj is IPhpCallable callable) return callable;  // classes with __invoke() magic method implements IPhpCallable
                 if (obj is Delegate d) return RoutineInfo.CreateUserRoutine(d.GetMethodInfo().Name, d);
 
                 return PhpCallback.CreateInvalid();
