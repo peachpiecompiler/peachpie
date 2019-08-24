@@ -1451,6 +1451,12 @@ namespace Pchp.CodeAnalysis.CodeGen
                         EmitCall(ILOpCode.Call, ctor);      // op_Implicit
                         break;
 
+                    case SpecialParameterSymbol.QueryValueTypes.ThisVariable:
+                        this.EmitPhpThisOrNull();           // object
+                        Debug.Assert(ctor.MethodKind == MethodKind.Constructor);
+                        EmitCall(ILOpCode.Newobj, ctor);    // .ctor(object)
+                        break;
+
                     case SpecialParameterSymbol.QueryValueTypes.DummyFieldsOnlyCtor:
                         return EmitLoadDefaultOfValueType(p.Type);  // default()
                 }

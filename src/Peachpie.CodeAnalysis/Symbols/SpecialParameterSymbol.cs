@@ -81,6 +81,7 @@ namespace Pchp.CodeAnalysis.Symbols
             CallerScript,
             CallerArgs,
             LocalVariables,
+            ThisVariable,
             DummyFieldsOnlyCtor,
         }
 

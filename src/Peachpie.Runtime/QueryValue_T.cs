@@ -79,6 +79,25 @@ namespace Pchp.Core.QueryValue
     }
 
     /// <summary>
+    /// Contains a value of <c>$this</c> variable or <c>null</c> if variable is not defined.
+    /// </summary>
+    public struct ThisVariable
+    {
+        /// <summary>
+        /// Reference to <c>$this</c>.
+        /// </summary>
+        public object This { get; set; }
+
+        /// <summary>
+        /// Implicit construction operator.
+        /// </summary>
+        public ThisVariable(object value)
+        {
+            This = value;
+        }
+    }
+
+    /// <summary>
     /// Dummy struct denotating <c>.ctor</c> used as the class fields initializer.
     /// For more information see <see cref="PhpFieldsOnlyCtorAttribute"/>.
     /// </summary>
