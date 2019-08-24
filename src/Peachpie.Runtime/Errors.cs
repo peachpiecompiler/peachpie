@@ -106,6 +106,8 @@ namespace Pchp.Core
             Context.DefaultErrorHandler?.Throw(error, formatString, args);
         }
 
+        public static Exception TypeErrorException() => TypeErrorException("");
+
         public static Exception TypeErrorException(string message)
         {
             if (_TypeError == null)

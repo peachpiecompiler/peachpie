@@ -35,7 +35,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo IsSet_PhpValue = typeof(Core.Operators).GetMethod("IsSet", Types.PhpValue);
 
             public static MethodInfo ToString_Double_Context = typeof(Core.Convert).GetMethod("ToString", typeof(double), typeof(Context));
-            public static MethodInfo ToLong_String = typeof(Core.Convert).GetMethod("StringToLongInteger", typeof(string));
+            public static MethodInfo ToLongOrThrow_String = typeof(Core.Convert).GetMethod("ToLongOrThrow", typeof(string));
             public static MethodInfo ToDouble_String = typeof(Core.Convert).GetMethod("StringToDouble", typeof(string));
             public static MethodInfo ToPhpString_PhpValue_Context = typeof(Core.Convert).GetMethod("ToPhpString", Types.PhpValue, typeof(Context));
             public static MethodInfo ToPhpNumber_String = typeof(Core.Convert).GetMethod("ToNumber", Types.String[0]);

@@ -1480,7 +1480,7 @@ namespace Pchp.Core
 
         public double ToDouble() => Convert.StringToDouble(ToString());
 
-        public long ToLong() => Convert.StringToLongInteger(ToString());
+        public long ToLong() => Convert.ToLong(ToString());
 
         public Convert.NumberInfo ToNumber(out PhpNumber number)
         {
@@ -1658,6 +1658,12 @@ namespace Pchp.Core
         public byte[] ToBytes(Context ctx) => ToBytes(ctx.StringEncoding);
 
         public byte[] ToBytes(Encoding encoding) => IsEmpty ? Array.Empty<byte>() : _data is Blob b ? b.ToBytes(encoding) : encoding.GetBytes((string)_data);
+
+        /// <summary>
+        /// Implicit conversion to <see cref="long"/>.
+        /// Throws <c>TypeError</c> in case the implicit conversion cannot be done.
+        /// </summary>
+        public long ToLongOrThrow() => Convert.ToLongOrThrow(ToString());
 
         public PhpNumber ToNumber()
         {
