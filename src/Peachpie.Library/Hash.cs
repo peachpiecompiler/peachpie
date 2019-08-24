@@ -2839,8 +2839,8 @@ namespace Pchp.Library
         {
             if (string.IsNullOrEmpty(salt))
             {
-                //MD5
-                throw new NotImplementedException();
+                // MD5
+                PhpException.ArgumentValueNotSupported(nameof(salt), salt);
             }
 
             if (salt.Length >= 3)
@@ -2852,32 +2852,29 @@ namespace Pchp.Library
                         if (salt[1] == '1') // $1$
                         {
                             // MD5
-                            throw new NotImplementedException();
+                            PhpException.ArgumentValueNotSupported(nameof(salt), "$1$");
                         }
 
                         if (salt[1] == '5') // $5$
                         {
                             // SHA256
-                            throw new NotImplementedException();
+                            PhpException.ArgumentValueNotSupported(nameof(salt), "$5$");
                         }
 
                         if (salt[1] == '6') // $6$
                         {
                             // SHA512
-                            throw new NotImplementedException();
+                            PhpException.ArgumentValueNotSupported(nameof(salt), "$6$");
                         }
                     }
                     if (salt[1] == '2' && salt.Length >= 4 && salt[3] == '$') // $2 $
                     {
-                        //bcrypt
+                        // bcrypt
                         try
                         {
                             return (salt[5] == '$') ? BCrypt.Net.BCrypt.HashPassword(str, salt.Substring(0, 28)) : BCrypt.Net.BCrypt.HashPassword(str, salt.Substring(0, 29));
                         }
-                        catch (Exception)
-                        {
-                            return "";
-                        }
+                        catch (Exception) { } // failure
                     }
                 }
             }
