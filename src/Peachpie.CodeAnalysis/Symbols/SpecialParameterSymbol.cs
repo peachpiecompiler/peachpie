@@ -81,6 +81,7 @@ namespace Pchp.CodeAnalysis.Symbols
             CallerScript,
             CallerArgs,
             LocalVariables,
+            DummyFieldsOnlyCtor,
         }
 
         /// <summary>
@@ -108,7 +109,7 @@ namespace Pchp.CodeAnalysis.Symbols
             if (p != null && p.Type is NamedTypeSymbol named && named.Arity == 1 && named.MetadataName == "QueryValue") // TODO: && namespace == Pchp.Core.
             {
                 var container = (NamedTypeSymbol)named.TypeArguments[0];
-                containerCtor = container.LookupMember<MethodSymbol>(WellKnownMemberNames.ImplicitConversionName) ?? container.InstanceConstructors.Single();
+                containerCtor = container.LookupMember<MethodSymbol>(WellKnownMemberNames.ImplicitConversionName) ?? container.InstanceConstructors.SingleOrDefault();
                 return Enum.TryParse<SpecialParameterSymbol.QueryValueTypes>(container.MetadataName, out valueEnum);
             }
 

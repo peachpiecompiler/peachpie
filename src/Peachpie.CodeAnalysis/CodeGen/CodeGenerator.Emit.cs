@@ -1427,8 +1427,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             // QueryValue<T>
             else if (SpecialParameterSymbol.IsQueryValueParameter(p, out var ctor, out var container))
             {
-                Debug.Assert(ctor != null);
-
                 switch (container)
                 {
                     case SpecialParameterSymbol.QueryValueTypes.CallerScript:
@@ -1452,6 +1450,9 @@ namespace Pchp.CodeAnalysis.CodeGen
                             .Expect(CoreTypes.PhpArray);    // PhpArray
                         EmitCall(ILOpCode.Call, ctor);      // op_Implicit
                         break;
+
+                    case SpecialParameterSymbol.QueryValueTypes.DummyFieldsOnlyCtor:
+                        return EmitLoadDefaultOfValueType(p.Type);  // default()
                 }
 
                 // Template: QueryValue<T>.op_Implicit( {STACK} )
@@ -1840,6 +1841,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             var givenps = thismethod.Parameters;
             var arguments = new List<BoundArgument>(givenps.Length);
             BoundTypeRef staticTypeRef = null;
+
             for (int i = 0; i < givenps.Length; i++)
             {
                 var p = givenps[i];

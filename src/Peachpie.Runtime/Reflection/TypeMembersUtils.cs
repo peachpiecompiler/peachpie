@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Pchp.Core.Dynamic;
+using Pchp.Core.QueryValue;
 using Pchp.Core.Utilities;
 
 namespace Pchp.Core.Reflection
@@ -248,7 +250,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Builds delegate that creates uninitialized class instance for purposes of deserialization.
         /// </summary>
-        internal static Func<Context, object> BuildCreateEmptyObjectFunc(PhpTypeInfo tinfo)
+        internal static bool TryBuildCreateEmptyObjectFunc(PhpTypeInfo tinfo, out Func<Context, object> activator)
         {
             Debug.Assert(tinfo != null);
 
@@ -260,29 +262,37 @@ namespace Pchp.Core.Reflection
 
                 foreach (var c in ctors)
                 {
-                    if (c.IsStatic || c.IsPhpHidden())
+                    if (c.IsStatic || c.IsPrivate || c.IsPhpHidden())
                     {
                         continue;
                     }
 
+                    var ps = c.GetParameters();
+
+                    // .ctor()
+                    if (ps.Length == 0)
+                        candidate = (_ctx) => c.Invoke(Array.Empty<object>());
+
+                    // .ctor(Context)
+                    if (ps.Length == 1 && ps[0].IsContextParameter())
+                        candidate = (_ctx) => c.Invoke(new object[] { _ctx });
+
+                    // [PhpFieldsOnly] .ctor(Context, Dummy)
+                    if (ps.Length == 2 && ps[0].IsContextParameter() && ps[1].ParameterType == typeof(QueryValue<DummyFieldsOnlyCtor>))
+                        candidate = (_ctx) => c.Invoke(new object[] { _ctx, default(QueryValue<DummyFieldsOnlyCtor>) });
+
+                    //
                     if (c.IsPhpFieldsOnlyCtor())
                     {
-                        // we want this one:
-                        return (_ctx) => c.Invoke(new object[] { _ctx });
+                        Debug.Assert(candidate != null);
+                        break; // candidate found
                     }
-
-                    var ps = c.GetParameters();
-                    if (ps.Length == 0) candidate = (_ctx) => c.Invoke(Array.Empty<object>());
-                    if (ps.Length == 1 && ps[0].ParameterType == typeof(Context)) candidate = (_ctx) => c.Invoke(new object[] { _ctx });
                 }
             }
 
-            return candidate
-                ?? ((_ctx) =>
-                {
-                    Debug.Fail(string.Format(Resources.ErrResources.construct_not_supported, tinfo.Name));
-                    return null;
-                });
+            //
+            activator = candidate;
+            return activator != null;
         }
 
         /// <summary>

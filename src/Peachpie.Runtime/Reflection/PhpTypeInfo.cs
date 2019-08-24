@@ -86,7 +86,18 @@ namespace Pchp.Core.Reflection
         {
             if (_lazyEmptyCreator == null)
             {
-                _lazyEmptyCreator = TypeMembersUtils.BuildCreateEmptyObjectFunc(this);
+                if (TypeMembersUtils.TryBuildCreateEmptyObjectFunc(this, out var activator))
+                {
+                    _lazyEmptyCreator = activator;
+                }
+                else
+                {
+                    _lazyEmptyCreator = (_ctx) =>
+                    {
+                        Debug.Fail(string.Format(Resources.ErrResources.construct_not_supported, this.Name));
+                        return null;
+                    };
+                }
             }
 
             return _lazyEmptyCreator(ctx);

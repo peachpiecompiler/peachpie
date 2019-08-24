@@ -78,6 +78,14 @@ namespace Pchp.Core.QueryValue
         public static implicit operator LocalVariables(PhpArray value) => new LocalVariables { Locals = value };
     }
 
+    /// <summary>
+    /// Dummy struct denotating <c>.ctor</c> used as the class fields initializer.
+    /// For more information see <see cref="PhpFieldsOnlyCtorAttribute"/>.
+    /// </summary>
+    public struct DummyFieldsOnlyCtor
+    {
+    }
+
     //
     // FOLLOWING IS NOT IN USE YET:
     //
