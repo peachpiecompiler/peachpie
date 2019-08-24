@@ -329,4 +329,7 @@
   <data name="ERR_CannotAssignToThis" xml:space="preserve">
     <value>Cannot re-assign $this</value>
   </data>
+  <data name="AutoloadDeprecatedMessage" xml:space="preserve">
+    <value>Use spl_autoload_register() instead.</value>
+  </data>
 </root>

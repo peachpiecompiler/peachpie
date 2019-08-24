@@ -117,9 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="AutoloadDeprecatedMessage" xml:space="preserve">
-    <value>Use spl_autoload_register() instead.</value>
-  </data>
   <data name="IDS_Help" xml:space="preserve">
     <value>
                             PeachPie PHP Compiler Options
@@ -199,5 +196,8 @@
   </data>
   <data name="IDS_ToolName" xml:space="preserve">
     <value>PeachPie PHP Compiler</value>
+  </data>
+  <data name="XmlDoc_FieldsOnlyCtor" xml:space="preserve">
+    <value>Initializes the class without calling its '__construct' method.</value>
   </data>
 </root>

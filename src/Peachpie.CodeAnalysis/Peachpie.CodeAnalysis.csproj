@@ -36,12 +36,21 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>ErrorStrings.resx</DependentUpon>
     </Compile>
+    <Compile Update="PhpResources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>PhpResources.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Update="Errors\ErrorStrings.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>ErrorStrings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="PhpResources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>PhpResources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
 

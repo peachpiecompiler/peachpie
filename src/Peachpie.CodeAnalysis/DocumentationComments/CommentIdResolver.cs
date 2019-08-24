@@ -28,28 +28,40 @@ namespace Pchp.CodeAnalysis.DocumentationComments
 
         static string TypeId(TypeSymbol type)
         {
+            string id;
+
             if (type is ArrayTypeSymbol)
             {
                 var arrtype = (ArrayTypeSymbol)type;
-                return TypeId(arrtype.ElementType) + "[]";  // TODO: MDSize
+                id = TypeId(arrtype.ElementType) + "[]";  // TODO: MDSize
             }
             else if (type.ContainingType != null) // nested type
             {
-                return TypeId(type.ContainingType) + "." + TypeNameId(type);
+                id = TypeId(type.ContainingType) + "." + TypeNameId(type);
             }
             else
             {
-                var ns = ((NamedTypeSymbol)type).NamespaceName.Replace("<", "&lt;").Replace(">", "&gt;");
+                var ns = ((NamedTypeSymbol)type.OriginalDefinition).NamespaceName.Replace("<", "&lt;").Replace(">", "&gt;");
                 var name = TypeNameId(type);
-                return string.IsNullOrEmpty(ns) ? name : (ns + "." + name);
+
+                id = string.IsNullOrEmpty(ns) ? name : (ns + "." + name);
             }
 
-            // todo: generics `N
+            //
+            return id;
         }
 
         static string TypeNameId(TypeSymbol type)
         {
-            return GetEscapedMetadataName(type.MetadataName);
+            var name = GetEscapedMetadataName(type.MetadataName);
+
+            if (type is NamedTypeSymbol ntype && ntype.Arity > 0)
+            {
+                // name{t1, t2, ..}
+                name = name + "{" + string.Join(",", ntype.TypeArguments.Select(TypeId)) + "}";
+            }
+
+            return name;
         }
 
         static string MethodSignatureId(MethodSymbol routine)
