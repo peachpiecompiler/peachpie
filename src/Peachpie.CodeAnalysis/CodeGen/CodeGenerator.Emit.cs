@@ -3186,6 +3186,27 @@ namespace Pchp.CodeAnalysis.CodeGen
                                     return DeclaringCompilation.GetSpecialType(SpecialType.System_Char);
                                 }
                                 break;
+                            case SpecialType.System_Int32:
+                                if (int.TryParse(str, out i))
+                                {
+                                    Builder.EmitIntConstant(i);
+                                    return targetOpt;
+                                }
+                                break;
+                            case SpecialType.System_Int64:
+                                if (long.TryParse(str, out l))
+                                {
+                                    Builder.EmitLongConstant(l);
+                                    return targetOpt;
+                                }
+                                break;
+                            case SpecialType.System_Double:
+                                if (double.TryParse(str, out var d))
+                                {
+                                    Builder.EmitDoubleConstant(d);
+                                    return targetOpt;
+                                }
+                                break;
                         }
                     }
 
