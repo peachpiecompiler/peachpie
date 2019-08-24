@@ -35,6 +35,10 @@ namespace Pchp.CodeAnalysis.DocumentationComments
                 var arrtype = (ArrayTypeSymbol)type;
                 id = TypeId(arrtype.ElementType) + "[]";  // TODO: MDSize
             }
+            else if (type.IsTypeParameter())
+            {
+                id = type.MetadataName;
+            }
             else if (type.ContainingType != null) // nested type
             {
                 id = TypeId(type.ContainingType) + "." + TypeNameId(type);
@@ -57,8 +61,16 @@ namespace Pchp.CodeAnalysis.DocumentationComments
 
             if (type is NamedTypeSymbol ntype && ntype.Arity > 0)
             {
-                // name{t1, t2, ..}
-                name = name + "{" + string.Join(",", ntype.TypeArguments.Select(TypeId)) + "}";
+                if (ntype.TypeSubstitution == null)
+                {
+                    // name`N
+                    name = name + "`" + ntype.Arity;
+                }
+                else
+                {
+                    // name{t1, t2, ..}
+                    name = name + "{" + string.Join(",", ntype.TypeArguments.Select(TypeId)) + "}";
+                }
             }
 
             return name;
