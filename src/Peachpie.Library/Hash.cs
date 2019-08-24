@@ -2623,6 +2623,7 @@ namespace Pchp.Library
 
         #region hash_argon2i, hash_argon2id
 
+        [ThreadStatic]
         private static readonly RandomNumberGenerator Rng = System.Security.Cryptography.RandomNumberGenerator.Create();
         private static string HashArgon2(string password, int time_cost, int memory_cost, int threads, bool argon2i_id)
         {
