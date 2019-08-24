@@ -2625,7 +2625,8 @@ namespace Pchp.Library
 
         [ThreadStatic]
         private static readonly RandomNumberGenerator Rng = System.Security.Cryptography.RandomNumberGenerator.Create();
-        private static string HashArgon2(string password, int time_cost, int memory_cost, int threads, bool argon2i_id)
+
+        private static string DoArgon2(string password, int time_cost, int memory_cost, int threads, bool argon2i_id)
         {
             byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
             byte[] salt = new byte[16];
@@ -2668,7 +2669,7 @@ namespace Pchp.Library
 
         #endregion
 
-        private static bool CostCheck(PhpValue value, int lowerBound, int upperBound, string warnParseFail, string warnBoundFail, out int checkedValue)
+        private static bool CheckCost(PhpValue value, int lowerBound, int upperBound, string warnParseFail, string warnBoundFail, out int checkedValue)
         {
             if (value.IsInteger())
             {
@@ -2688,7 +2689,7 @@ namespace Pchp.Library
                 return false;
             }
         }
-        private static PhpValue Argon2Helper(string password, PhpArray opt, bool argon2i_id)
+        private static PhpValue DoHash_Argon2(string password, PhpArray opt, bool argon2i_id)
         {
             // Default setting for argon2
             int memory_cost = memory_costDefault;
@@ -2698,26 +2699,26 @@ namespace Pchp.Library
             if (opt != null)
             {
                 // Argument memory cost for argon2
-                if ((opt.ContainsKey("memory_cost")) && (!CostCheck(opt.GetItemValue(new IntStringKey("memory_cost")), 4, int.MaxValue, Resources.LibResources.argon2_memory, Resources.LibResources.argon2_memory, out memory_cost)))
+                if ((opt.ContainsKey("memory_cost")) && (!CheckCost(opt.GetItemValue(new IntStringKey("memory_cost")), 4, int.MaxValue, Resources.LibResources.argon2_memory, Resources.LibResources.argon2_memory, out memory_cost)))
                     return PhpValue.False;
 
                 // Argument time cost for argon2
-                if ((!opt.ContainsKey("time_cost")) && !CostCheck(opt.GetItemValue(new IntStringKey("time_cost")), 1, int.MaxValue, Resources.LibResources.argon2_time, Resources.LibResources.argon2_time, out time_cost))
+                if ((!opt.ContainsKey("time_cost")) && !CheckCost(opt.GetItemValue(new IntStringKey("time_cost")), 1, int.MaxValue, Resources.LibResources.argon2_time, Resources.LibResources.argon2_time, out time_cost))
                     return PhpValue.False;
 
                 // Argument threads for argon2
-                if (!opt.ContainsKey("threads") && !CostCheck(opt.GetItemValue(new IntStringKey("threads")), 1, int.MaxValue, Resources.LibResources.argon2_threads, Resources.LibResources.argon2_threads, out threads))
+                if (!opt.ContainsKey("threads") && !CheckCost(opt.GetItemValue(new IntStringKey("threads")), 1, int.MaxValue, Resources.LibResources.argon2_threads, Resources.LibResources.argon2_threads, out threads))
                     return PhpValue.False;
             }
             try
             {
-                return HashArgon2(password, time_cost, memory_cost, threads, argon2i_id);
+                return DoArgon2(password, time_cost, memory_cost, threads, argon2i_id);
             }
             catch (Exception) { }
 
             return PhpValue.False;
         }
-        private static PhpValue BlowfishHelper(string password,PhpArray opt)
+        private static PhpValue DoHash_Blowfish(string password,PhpArray opt)
         {          
             // Default setting for bcrypt
             int cost = costDefault;
@@ -2783,11 +2784,11 @@ namespace Pchp.Library
                 case 0:
                 // Blowfish
                 case 1:
-                    return BlowfishHelper(password, opt);
+                    return DoHash_Blowfish(password, opt);
                 // Argon2i
                 case 2:
                 case 3:
-                    return (algo == 2) ? Argon2Helper(password, opt, true) : Argon2Helper(password, opt, false);
+                    return (algo == 2) ? DoHash_Argon2(password, opt, true) : DoHash_Argon2(password, opt, false);
                 // Unknown algorithm
                 default:
                     return PhpValue.False;
