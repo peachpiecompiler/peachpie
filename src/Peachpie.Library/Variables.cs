@@ -1355,8 +1355,8 @@ namespace Pchp.Library
                 {
                     var flds = TypeMembersUtils.EnumerateInstanceFieldsForDump(obj).ToList();
 
-                    // Template: object(NAME)#ID (COUNT) {
-                    _output.Append($"object({obj.GetPhpTypeInfo().Name})#{unchecked((uint)obj.GetHashCode())} ({flds.Count}) {{");
+                    // Template: class NAME#ID (COUNT) {
+                    _output.Append($"class {obj.GetPhpTypeInfo().Name}#{unchecked((uint)obj.GetHashCode())} ({flds.Count}) {{");
                     _indent++;
 
                     // object members
