@@ -151,6 +151,11 @@ namespace Pchp.CodeAnalysis.Symbols
             return false;
         }
 
+        public static bool IsAssignableFrom(this TypeSymbol t, TypeSymbol fromtype)
+        {
+            return fromtype.IsOfType(t) || (fromtype.IsInterfaceType() && t.IsObjectType());
+        }
+
         //public static bool IsNonNullableValueType(this TypeSymbol typeArgument)
         //{
         //    if (!typeArgument.IsValueType)
@@ -199,14 +204,14 @@ namespace Pchp.CodeAnalysis.Symbols
             }
         }
 
-        //public static TypeSymbol GetNullableUnderlyingType(this TypeSymbol type)
-        //{
-        //    Debug.Assert((object)type != null);
-        //    Debug.Assert(IsNullableType(type));
-        //    Debug.Assert(type is NamedTypeSymbol);  //not testing Kind because it may be an ErrorType
+        public static TypeSymbol GetNullableUnderlyingType(this TypeSymbol type)
+        {
+            Debug.Assert((object)type != null);
+            Debug.Assert(IsNullableType(type));
+            Debug.Assert(type is NamedTypeSymbol);  //not testing Kind because it may be an ErrorType
 
-        //    return ((NamedTypeSymbol)type).TypeArgumentsNoUseSiteDiagnostics[0];
-        //}
+            return ((NamedTypeSymbol)type).TypeArgumentsNoUseSiteDiagnostics[0];
+        }
 
         //public static TypeSymbol StrippedType(this TypeSymbol type)
         //{
