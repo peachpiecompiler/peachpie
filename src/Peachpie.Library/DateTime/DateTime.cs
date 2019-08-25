@@ -58,13 +58,18 @@ namespace Pchp.Library.DateTime
 
         [PhpFieldsOnlyCtor]
         protected DateTime(Context ctx)
+            : this(ctx, System_DateTime.UtcNow, PhpTimeZone.GetCurrentTimeZone(ctx))
+        {
+        }
+
+        private DateTime(Context ctx, System_DateTime time, TimeZoneInfo timezone)
         {
             Debug.Assert(ctx != null);
 
             _ctx = ctx;
 
-            this.Time = System_DateTime.UtcNow;
-            this.TimeZone = PhpTimeZone.GetCurrentTimeZone(ctx);
+            this.Time = time;
+            this.TimeZone = timezone ?? throw new ArgumentNullException(nameof(timezone));
         }
 
         // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
@@ -470,11 +475,17 @@ namespace Pchp.Library.DateTime
         #region IPhpCloneable
 
         [PhpHidden]
-        public object Clone() => new DateTime(_ctx)
+        public object Clone()
         {
-            Time = Time,
-            TimeZone = TimeZone,
-        };
+            if (GetType() == typeof(DateTime))
+            {
+                return new DateTime(_ctx, Time, TimeZone);
+            }
+            else
+            {
+                return Operators.CloneRaw(_ctx, this);
+            }
+        }
 
         #endregion
 
