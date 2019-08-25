@@ -181,6 +181,7 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Returns the warnings and errors.
         /// </summary>
+        [return: CastToFalse]
         public static PhpArray date_get_last_errors(Context ctx) => DateTime.getLastErrors(ctx);
 
         #endregion

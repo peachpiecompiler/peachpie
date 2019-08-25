@@ -12,6 +12,36 @@ using System_DateTime = System.DateTime;
 namespace Pchp.Library.DateTime
 {
     /// <summary>
+    /// Internal container for last datetime parse operation errors.
+    /// </summary>
+    sealed class DateTimeErrors
+    {
+        public IEnumerable<string> Warnings { get; set; }
+        public IEnumerable<string> Errors { get; set; }
+
+        public PhpArray ToPhpArray()
+        {
+            if (Warnings == null && Errors == null)
+            {
+                return null; // FALSE
+            }
+
+            //
+
+            var warnings = new PhpArray(Warnings);
+            var errors = new PhpArray(Errors);
+
+            return new PhpArray(4)
+            {
+                { "warning_count", warnings.Count },
+                { "warnings", warnings },
+                { "error_count", errors.Count },
+                { "errors", errors },
+            };
+        }
+    }
+
+    /// <summary>
     /// Representation of date and time.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
@@ -215,8 +245,8 @@ namespace Pchp.Library.DateTime
         }
 
         /// <summary>Returns the warnings and errors</summary>
-        [return: NotNull]
-        public static PhpArray getLastErrors(Context ctx) => throw new NotImplementedException();
+        [return: CastToFalse]
+        public static PhpArray getLastErrors(Context ctx) => ctx.TryGetStatic<DateTimeErrors>(out var e) && e != null ? e.ToPhpArray() : null;
 
         [return: NotNull]
         public virtual DateTime modify(string modify)
@@ -608,6 +638,7 @@ namespace Pchp.Library.DateTime
         public virtual DateTimeImmutable add(DateInterval interval) => new DateTimeImmutable(_ctx, Time.Add(interval.AsTimeSpan()), TimeZone);
         public static DateTimeImmutable createFromFormat(string format, string time, DateTimeZone timezone = null) => throw new NotImplementedException();
         public static DateTimeImmutable createFromMutable(DateTime datetime) => throw new NotImplementedException();
+        [return: CastToFalse]
         public static PhpArray getLastErrors(Context ctx) => DateTime.getLastErrors(ctx);
         public static DateTimeImmutable __set_state(PhpArray array) => throw new NotImplementedException();
         public virtual DateTimeImmutable setDate(int year, int month, int day) => throw new NotImplementedException();
