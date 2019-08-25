@@ -113,7 +113,7 @@ namespace Pchp.Library.Reflection
         {
             var routine = _tinfo.RuntimeMethods[Pchp.Core.Reflection.ReflectionUtils.PhpConstructorName];
             return (routine != null)
-                ? new ReflectionMethod(_tinfo, routine)
+                ? new ReflectionMethod(routine)
                 : null;
         }
 
@@ -186,7 +186,7 @@ namespace Pchp.Library.Reflection
 
             //
             return (routine != null)
-                ? new ReflectionMethod(_tinfo, routine)
+                ? new ReflectionMethod(routine)
                 : throw new ReflectionException();
         }
 
@@ -214,7 +214,7 @@ namespace Pchp.Library.Reflection
 
             foreach (var routine in routines)
             {
-                var rmethod = new ReflectionMethod(_tinfo, routine);
+                var rmethod = new ReflectionMethod(routine);
                 if (filter == -1 || ((int)rmethod.getModifiers() & filter) != 0)
                 {
                     result.Add(rmethod);

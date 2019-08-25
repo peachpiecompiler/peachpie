@@ -125,8 +125,8 @@ namespace Pchp.Library.Reflection
             if (routine != null)
             {
                 var func = (declaringclass == null)
-                ? (ReflectionFunctionAbstract)new ReflectionFunction(routine)
-                : new ReflectionMethod(declaringclass, routine);
+                    ? (ReflectionFunctionAbstract)new ReflectionFunction(routine)
+                    : new ReflectionMethod(declaringclass, routine);
 
                 // resolve parameter:
                 var parameters = ReflectionUtils.ResolveReflectionParameters(func, routine.Methods);

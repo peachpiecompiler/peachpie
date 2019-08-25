@@ -19,7 +19,7 @@ namespace Pchp.Library.Resources {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -984,6 +984,15 @@ namespace Pchp.Library.Resources {
         public static string method_does_not_exist {
             get {
                 return ResourceManager.GetString("method_does_not_exist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Method {0}::{1} does not have a prototype.
+        /// </summary>
+        public static string method_doesnt_have_prototype {
+            get {
+                return ResourceManager.GetString("method_doesnt_have_prototype", resourceCulture);
             }
         }
         

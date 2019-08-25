@@ -34,7 +34,7 @@ namespace Pchp.Library.Reflection
         /// Underlaying routine information.
         /// Cannot be <c>null</c>.
         /// </summary>
-        internal protected RoutineInfo _routine;
+        private protected RoutineInfo _routine;
 
         #endregion
 
