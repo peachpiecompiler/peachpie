@@ -18,9 +18,9 @@ namespace Pchp.Core.Reflection
         public static IEnumerable<KeyValuePair<string, PhpValue>> EnumerateSerializableProperties(object/*!*/ instance, PhpTypeInfo tinfo)
         {
             return TypeMembersUtils.EnumerateInstanceFields(instance,
-                (f, d) => Serialization.FormatSerializedPropertyName(new PhpPropertyInfo.ClrFieldProperty(tinfo, f), d),
+                (m, d) => FormatSerializedPropertyName(m is FieldInfo f ? (PhpPropertyInfo)new PhpPropertyInfo.ClrFieldProperty(tinfo, f) : new PhpPropertyInfo.ClrProperty(tinfo, (PropertyInfo)m), d),
                 (k) => k.ToString(),
-                (f) => true);
+                (m) => true);
         }
 
         /// <summary>
@@ -39,9 +39,18 @@ namespace Pchp.Core.Reflection
             Debug.Assert(source.GetType() == tinfo.Type.AsType());
 
             // copy CLR fields, skipping runtime fields
-            foreach (var fldvalue in TypeMembersUtils.EnumerateInstanceFields(source, (f, d) => f, null, null, true))
+            foreach (var prop in TypeMembersUtils.EnumerateInstanceFields(source, (m, d) => m, null, null, true))
             {
-                fldvalue.Key.SetValue(target, fldvalue.Value.DeepCopy());
+                var value = prop.Value.DeepCopy();
+
+                if (prop.Key is FieldInfo f)
+                {
+                    f.SetValue(target, value.ToClr(f.FieldType));
+                }
+                else if (prop.Key is PropertyInfo p)
+                {
+                    p.SetValue(target, value.ToClr(p.PropertyType));
+                }
             }
 
             // fast copy of runtime fields

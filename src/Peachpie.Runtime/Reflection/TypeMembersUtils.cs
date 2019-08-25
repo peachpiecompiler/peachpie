@@ -74,12 +74,12 @@ namespace Pchp.Core.Reflection
         /// <param name="instance">Object which fields will be enumerated.</param>
         /// <param name="caller">Current class context for field visibility check.</param>
         /// <returns>Enumeration of fields and their values, including runtime fields.</returns>
-        public static IEnumerable<KeyValuePair<IntStringKey, PhpValue>> EnumerateVisibleInstanceFields(object instance, RuntimeTypeHandle caller = default(RuntimeTypeHandle))
+        public static IEnumerable<KeyValuePair<IntStringKey, PhpValue>> EnumerateVisibleInstanceFields(object instance, RuntimeTypeHandle caller = default)
         {
             return EnumerateInstanceFields(instance,
                 (f, d) => new IntStringKey(f.Name),
                 FuncExtensions.Identity<IntStringKey>(),
-                (f) => IsVisible(f, caller));
+                (m) => s_notInternalFieldsPredicate(m) && IsVisible(m, caller));
         }
 
         /// <summary>
@@ -97,19 +97,49 @@ namespace Pchp.Core.Reflection
 
         static readonly Func<IntStringKey, string> s_keyToString = new Func<IntStringKey, string>(k => k.ToString());
 
-        static readonly Func<FieldInfo, bool> s_notInternalFieldsPredicate = new Func<FieldInfo, bool>(f =>
+        static readonly Func<MemberInfo, bool> s_notInternalFieldsPredicate = new Func<MemberInfo, bool>(m =>
         {
-            var access = f.Attributes & FieldAttributes.FieldAccessMask;
-            return
-                access != FieldAttributes.Assembly && access != FieldAttributes.FamANDAssem &&  // ignore "internal" and "private protected" fields
-                !f.FieldType.IsPointer;
+            // ignore "internal" and "private protected" fields
+            // ignore pointer types
+
+            if (m is FieldInfo f)
+            {
+                var access = f.Attributes & FieldAttributes.FieldAccessMask;
+                return
+                    access != FieldAttributes.Assembly && access != FieldAttributes.FamANDAssem &&
+                    !f.FieldType.IsPointer;
+            }
+            else if (m is PropertyInfo p)
+            {
+                var access = p.GetMethod.Attributes & MethodAttributes.MemberAccessMask;
+                return
+                    access != MethodAttributes.Assembly && access != MethodAttributes.FamANDAssem &&
+                    !p.PropertyType.IsPointer;
+            }
+            else
+            {
+                return false;
+            }
         });
 
-        static readonly Func<FieldInfo, PhpTypeInfo, string> s_formatPropertyNameForPrint = new Func<FieldInfo, PhpTypeInfo, string>((f, declarer) =>
+        static readonly Func<MemberInfo, PhpTypeInfo, string> s_formatPropertyNameForPrint = new Func<MemberInfo, PhpTypeInfo, string>((m, declarer) =>
         {
-            if (f.IsPublic) return f.Name;
-            if (f.IsPrivate) return string.Concat(f.Name, ":", declarer.Name, ":private");
-            return f.Name + ":protected";
+            if (m is FieldInfo f)
+            {
+                if (f.IsPublic) return f.Name;
+                if (f.IsPrivate) return string.Concat(f.Name, ":", declarer.Name, ":private");
+                return f.Name + ":protected";
+            }
+            else if (m is PropertyInfo p)
+            {
+                if (p.GetMethod.IsPublic) return p.Name;
+                if (p.GetMethod.IsPrivate) return string.Concat(p.Name, ":", declarer.Name, ":private");
+                return p.Name + ":protected";
+            }
+            else
+            {
+                throw new ArgumentException();
+            }
         });
 
         /// <summary>
@@ -125,25 +155,39 @@ namespace Pchp.Core.Reflection
                 s_notInternalFieldsPredicate);
         }
 
-        static readonly Func<FieldInfo, PhpTypeInfo, string> s_formatPropertyNameForDump = new Func<FieldInfo, PhpTypeInfo, string>((f, declarer) =>
+        static readonly Func<MemberInfo, PhpTypeInfo, string> s_formatPropertyNameForDump = new Func<MemberInfo, PhpTypeInfo, string>((m, declarer) =>
         {
-            var name = "\"" + f.Name + "\"";
-            if (f.IsPublic) return name;
-            if (f.IsPrivate) return string.Concat(name, ":\"", declarer.Name, "\":private");
-            return name + ":protected";
+            var name = "\"" + m.Name + "\"";
+
+            if (m is FieldInfo f)
+            {
+                if (f.IsPublic) return name;
+                if (f.IsPrivate) return string.Concat(name, ":\"", declarer.Name, "\":private");
+                return name + ":protected";
+            }
+            else if (m is PropertyInfo p)
+            {
+                if (p.GetMethod.IsPublic) return name;
+                if (p.GetMethod.IsPrivate) return string.Concat(name, ":\"", declarer.Name, "\":private");
+                return name + ":protected";
+            }
+            else
+            {
+                throw new ArgumentException();
+            }
         });
 
         /// <summary>
         /// Enumerates instance fields of given object.
         /// </summary>
         /// <param name="instance">Object which fields will be enumerated.</param>
-        /// <param name="keyFormatter">Function converting field to a <typeparamref name="TKey"/>.</param>
+        /// <param name="keyFormatter">Function converting field/property to a <typeparamref name="TKey"/>.</param>
         /// <param name="keyFormatter2">Function converting </param>
         /// <param name="predicate">Optional. Predicate filtering instance fields.</param>
         /// <param name="ignoreRuntimeFields">Whether to ignore listing runtime fields.</param>
         /// <returns>Enumeration of fields and their values, including runtime fields.</returns>
         /// <typeparam name="TKey">Enumerated pairs key. Usually <see cref="IntStringKey"/>.</typeparam>
-        public static IEnumerable<KeyValuePair<TKey, PhpValue>> EnumerateInstanceFields<TKey>(object instance, Func<FieldInfo, PhpTypeInfo, TKey> keyFormatter, Func<IntStringKey, TKey> keyFormatter2, Func<FieldInfo, bool> predicate = null, bool ignoreRuntimeFields = false)
+        public static IEnumerable<KeyValuePair<TKey, PhpValue>> EnumerateInstanceFields<TKey>(object instance, Func<MemberInfo, PhpTypeInfo, TKey> keyFormatter, Func<IntStringKey, TKey> keyFormatter2, Func<MemberInfo, bool> predicate = null, bool ignoreRuntimeFields = false)
         {
             Debug.Assert(instance != null);
 
@@ -165,11 +209,16 @@ namespace Pchp.Core.Reflection
                     }
                 }
 
-                // TODO: CLR properties
-                //foreach (var p in t.DeclaredFields.InstanceClrProperties)
-                //{
-
-                //}
+                foreach (var p in t.DeclaredFields.InstanceClrProperties)
+                {
+                    // perform visibility check
+                    if (predicate == null || predicate(p))
+                    {
+                        yield return new KeyValuePair<TKey, PhpValue>(
+                            keyFormatter(p, t),
+                            PhpValue.FromClr(p.GetValue(instance)));
+                    }
+                }
             }
 
             // PhpArray __runtime_fields
@@ -325,6 +374,23 @@ namespace Pchp.Core.Reflection
 
             //
             return count;
+        }
+
+        static bool IsVisible(this MemberInfo m, RuntimeTypeHandle caller)
+        {
+            if (m is FieldInfo f) return IsVisible(f, caller);
+            if (m is PropertyInfo p) return IsVisible(p, caller);
+            if (m is MethodBase b) return IsVisible(b, Type.GetTypeFromHandle(caller));
+
+            return false;
+        }
+
+        static bool IsVisible(this PropertyInfo p, RuntimeTypeHandle caller)
+        {
+            return
+                (p.GetMethod.IsPublic) ||
+                (p.GetMethod.IsPrivate && p.DeclaringType.TypeHandle.Equals(caller)) ||
+                (p.GetMethod.IsFamily && IsVisible(p.DeclaringType, caller));
         }
 
         static bool IsVisible(this FieldInfo f, RuntimeTypeHandle caller)
