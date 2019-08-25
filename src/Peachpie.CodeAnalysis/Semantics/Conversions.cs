@@ -111,6 +111,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
             for (int ext = -1; ext < extensions.Length; ext++)
             {
+                // TODO: go through interfaces
+
                 for (var container = ext < 0 ? receiver : extensions[ext]; container != null; container = container.IsStatic ? null : container.BaseType)
                 {
                     if (container.SpecialType == SpecialType.System_ValueType) continue; //

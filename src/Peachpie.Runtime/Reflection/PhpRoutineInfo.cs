@@ -290,7 +290,7 @@ namespace Pchp.Core.Reflection
                 }
 
                 // reuse PhpMethodInfo from base type if possible
-                if (AllDeclaredInBase(methods, callertype.Type.AsType()) &&
+                if (AllDeclaredInBase(methods, callertype.Type) &&
                     callertype.BaseType != null &&
                     callertype.BaseType.RuntimeMethods[name] is PhpMethodInfo frombase)
                 {

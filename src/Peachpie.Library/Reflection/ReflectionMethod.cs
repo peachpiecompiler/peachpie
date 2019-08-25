@@ -72,6 +72,9 @@ namespace Pchp.Library.Reflection
             {
                 __construct(ctx, @class.AsString(ctx));
             }
+
+            // get the real declaring type from routine:
+            _tinfo = _routine.Methods[0].DeclaringType.GetPhpTypeInfo();
         }
 
         public void __construct(Context ctx, string class_method)
