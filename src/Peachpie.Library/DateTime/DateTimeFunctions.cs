@@ -75,34 +75,49 @@ namespace Pchp.Library.DateTime
         }
 
         /// <summary>
-        /// Alias of new <see cref="DateTime"/>
+        /// Alias of new <see cref="DateTime"/> but not throwing exception.
         /// </summary>
-        //[return: CastToFalse]
-        public static DateTime date_create(Context/*!*/context, string time = null, DateTimeZone timezone = null)
+        [return: CastToFalse]
+        public static DateTime date_create(Context/*!*/ctx, string time = null, DateTimeZone timezone = null)
         {
-            return new Library.DateTime.DateTime(context, time, timezone);
+            try
+            {
+                return new Library.DateTime.DateTime(ctx, time, timezone);
+            }
+            catch (Spl.Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>
-        /// Alias of new <see cref="DateTimeImmutable"/>.
+        /// Alias of new <see cref="DateTimeImmutable"/> but not throwing exception.
         /// </summary>
-        public static DateTimeImmutable date_create_immutable(Context/*!*/context, string time = null, DateTimeZone timezone = null)
+        [return: CastToFalse]
+        public static DateTimeImmutable date_create_immutable(Context/*!*/ctx, string time = null, DateTimeZone timezone = null)
         {
-            return new Library.DateTime.DateTimeImmutable(context, time, timezone);
+            try
+            {
+                return new Library.DateTime.DateTimeImmutable(ctx, time, timezone);
+            }
+            catch (Spl.Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>
         /// Returns new DateTime object formatted according to the specified format.
         /// </summary>
-        /// <param name="context"><see cref="ScriptContext"/> reference.</param>
+        /// <param name="ctx"><see cref="ScriptContext"/> reference.</param>
         /// <param name="format">The format that the passed in string should be in.</param>
         /// <param name="time">String representing the time.</param>
         /// <param name="timezone">A DateTimeZone object representing the desired time zone.</param>
         /// <returns></returns>
         [return: CastToFalse]
-        public static DateTime date_create_from_format(Context/*!*/context, string format, string time, DateTimeZone timezone = null)
+        public static DateTime date_create_from_format(Context/*!*/ctx, string format, string time, DateTimeZone timezone = null)
         {
-            return DateTime.createFromFormat(context, format, time, timezone);
+            return DateTime.createFromFormat(ctx, format, time, timezone);
         }
 
         /// <summary>
@@ -1502,21 +1517,24 @@ namespace Pchp.Library.DateTime
 
         /// <summary>
         /// Implementation of <see cref="StringToTime(string,int)"/> function.
+        /// Returns unix timestamp or <c>-1</c> (FALSE) if time cannot be parsed.
         /// </summary>
         static long StringToTime(Context ctx, string time, System_DateTime startUtc)
         {
-            if (time == null) return -1;
-            time = time.Trim();
-            if (time.Length == 0) return -1;
+            if (string.IsNullOrWhiteSpace(time))
+            {
+                // no warning
+                return -1;  // FALSE
+            }
 
-            string error = null;
-            var result = DateInfo.Parse(ctx, time, startUtc, out error);
+            var result = DateInfo.Parse(ctx, time.Trim(), startUtc, out var error);
             if (error != null)
             {
                 PhpException.Throw(PhpError.Warning, error);
-                return -1;
+                return -1;  // FALSE
             }
 
+            //
             return result;
         }
 

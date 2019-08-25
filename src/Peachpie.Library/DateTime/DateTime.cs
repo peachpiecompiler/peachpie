@@ -16,18 +16,13 @@ namespace Pchp.Library.DateTime
     /// </summary>
     sealed class DateTimeErrors
     {
+        public static DateTimeErrors Empty { get; } = new DateTimeErrors();
+
         public IEnumerable<string> Warnings { get; set; }
         public IEnumerable<string> Errors { get; set; }
 
         public PhpArray ToPhpArray()
         {
-            if (Warnings == null && Errors == null)
-            {
-                return null; // FALSE
-            }
-
-            //
-
             var warnings = new PhpArray(Warnings);
             var errors = new PhpArray(Errors);
 
@@ -106,6 +101,7 @@ namespace Pchp.Library.DateTime
         public DateTime(Context ctx, string time = null, DateTimeZone timezone = null)
             : this(ctx)
         {
+            ctx.SetProperty(DateTimeErrors.Empty);
             __construct(time, timezone);
         }
 
@@ -135,16 +131,26 @@ namespace Pchp.Library.DateTime
 
         #region Helpers
 
+        /// <summary>
+        /// Parses time and returns <see cref="System_DateTime"/>.
+        /// In case error or warning occur, <see cref="DateTimeErrors"/> is set accordingly.
+        /// </summary>
         [PhpHidden]
         internal static System_DateTime StrToTime(Context ctx, string timestr, System_DateTime time)
         {
-            if (string.IsNullOrEmpty(timestr) || timestr.EqualsOrdinalIgnoreCase("now"))
+            if (string.IsNullOrWhiteSpace(timestr) || (timestr = timestr.Trim()).EqualsOrdinalIgnoreCase("now"))
             {
                 return System_DateTime.UtcNow;
             }
 
-            var result = DateTimeFunctions.strtotime(ctx, timestr, DateTimeUtils.UtcToUnixTimeStamp(time));
-            return (result >= 0) ? DateTimeUtils.UnixTimeStampToUtc(result) : System_DateTime.UtcNow;
+            var result = DateInfo.Parse(ctx, timestr, time, out var error);
+            if (error != null)
+            {
+                ctx.SetProperty<DateTimeErrors>(new DateTimeErrors { Errors = new[] { error } });
+                throw new Spl.Exception(error);
+            }
+
+            return DateTimeUtils.UnixTimeStampToUtc(result);
         }
 
         #endregion
@@ -246,7 +252,7 @@ namespace Pchp.Library.DateTime
 
         /// <summary>Returns the warnings and errors</summary>
         [return: CastToFalse]
-        public static PhpArray getLastErrors(Context ctx) => ctx.TryGetStatic<DateTimeErrors>(out var e) && e != null ? e.ToPhpArray() : null;
+        public static PhpArray getLastErrors(Context ctx) => ctx.TryGetProperty<DateTimeErrors>()?.ToPhpArray();
 
         [return: NotNull]
         public virtual DateTime modify(string modify)
@@ -560,6 +566,8 @@ namespace Pchp.Library.DateTime
         public DateTimeImmutable(Context ctx, string time = null, DateTimeZone timezone = null)
         {
             Debug.Assert(ctx != null);
+
+            ctx.SetProperty(DateTimeErrors.Empty);
 
             this.TimeZone = (timezone == null)
                 ? PhpTimeZone.GetCurrentTimeZone(ctx)
