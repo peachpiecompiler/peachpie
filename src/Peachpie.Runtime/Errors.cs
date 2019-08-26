@@ -101,8 +101,9 @@ namespace Pchp.Core
         static string PeachpieLibraryAssembly => "Peachpie.Library";
         static string ErrorClass => "Pchp.Library.Spl.Error";
         static string TypeErrorClass => "Pchp.Library.Spl.TypeError";
+        static string AssertionErrorClass => "Pchp.Library.Spl.AssertionError";
 
-        static Type _Error, _TypeError;
+        static Type _Error, _TypeError, _AssertionError;
 
         static Exception Exception(ref Type _type, string _typename, string message)
         {
@@ -125,15 +126,26 @@ namespace Pchp.Core
 
         public static Exception TypeErrorException(string message) => Exception(ref _TypeError, TypeErrorClass, message);
 
+        public static Exception AssertionErrorException(string message) => Exception(ref _AssertionError, AssertionErrorClass, message);
+
         public static void Throw(PhpError error, string message)
         {
-            Context.DefaultErrorHandler?.Throw(error, message);
+            Trace.WriteLine(message, $"PHP ({error})");
+
+            if ((error & (PhpError)PhpErrorSets.Fatal) != 0)
+            {
+                LogEventSource.Log.HandleFatal(message);
+
+                // terminate the script
+                throw new InvalidOperationException(message);
+            }
+            else
+            {
+                LogEventSource.Log.HandleWarning(message);
+            }
         }
 
-        public static void Throw(PhpError error, string formatString, params string[] args)
-        {
-            Context.DefaultErrorHandler?.Throw(error, formatString, args);
-        }
+        public static void Throw(PhpError error, string formatString, params string[] args) => Throw(error, string.Format(formatString, args));
 
         /// <summary>
         /// Invalid argument error.
