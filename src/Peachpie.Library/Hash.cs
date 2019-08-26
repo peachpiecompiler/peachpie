@@ -2728,20 +2728,18 @@ namespace Pchp.Library
 
             if (opt != null)
             {
-                PhpValue pom;
-
                 // Argument cost for bcrypt
                 if (opt.ContainsKey("cost"))
                 {
-                    pom = opt.GetItemValue(new IntStringKey("cost"));
-                    if (pom.IsInteger()) // Check right value of argument
+                    PhpValue costValue = opt.GetItemValue(new IntStringKey("cost"));
+                    if (costValue.IsInteger()) // Check right value of argument
                     {
-                        int pomInt = pom.ToInt();
-                        if (pomInt >= 4 && pomInt <= 31)
-                            cost = pomInt;
+                        int costInt = costValue.ToInt();
+                        if (costInt >= 4 && costInt <= 31)
+                            cost = costInt;
                         else
                         {
-                            PhpException.Throw(PhpError.Warning, Resources.LibResources.bcrypt_invalid_cost, pomInt.ToString());
+                            PhpException.Throw(PhpError.Warning, Resources.LibResources.bcrypt_invalid_cost, costInt.ToString());
                             return PhpValue.False;
                         }
                     }
@@ -2756,8 +2754,8 @@ namespace Pchp.Library
                 if (opt.ContainsKey("salt"))
                 {
                     PhpException.Throw(PhpError.E_DEPRECATED, Resources.LibResources.bcrypt_salt_deprecated);
-                    pom = opt.GetItemValue(new IntStringKey("salt"));
-                    if (pom.IsString(out salt))
+                    PhpValue saltValue = opt.GetItemValue(new IntStringKey("salt"));
+                    if (saltValue.IsString(out salt))
                         salt = $"$2y${cost}${salt}";
                 }
             }
