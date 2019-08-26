@@ -26,5 +26,3 @@ if (password_verify($password, $hash)) {
     }
     // Log user in
 }
-
-?>

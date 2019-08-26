@@ -13,4 +13,3 @@ $hashB = @password_hash($password,PASSWORD_BCRYPT,$options);
 
 echo "PASSWORD_DEFAULT : $hashD\n";
 echo "PASSWORD_BCRYPT : $hashB\n";
-?>
