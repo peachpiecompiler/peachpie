@@ -10,6 +10,7 @@ using Pchp.Library.Streams;
 using Isopoh.Cryptography.Argon2;
 using BCrypt.Net;
 using Isopoh.Cryptography.SecureArray;
+using System.Text.RegularExpressions;
 
 namespace Pchp.Library
 {
@@ -2655,7 +2656,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region password_hash, password_verify
+        #region password_hash, password_verify, password_needs_rehash
 
         #region password_hash (Constants)
 
@@ -2810,6 +2811,72 @@ namespace Pchp.Library
             return crypt(password, hash) == hash;
         }
 
+        /// <summary>
+        /// This function checks to see if the supplied hash implements the algorithm and options provided. If not, it is assumed that the hash needs to be rehashed.
+        /// </summary>
+        /// <param name="hash">A hash created by password_hash()</param>
+        /// <param name="algo">A password algorithm constant denoting the algorithm to use when hashing the password. 0 - Default, 1 - Blowfish, 2 - Argon2i, 3 - Argon2id</param>
+        /// <param name="opt">See the password algorithm constants. If omitted, a random salt will be created and the default cost will be used.</param>
+        /// <returns>Returns TRUE if the hash should be rehashed to match the given algo and options, or FALSE otherwise.</returns>
+        public static bool password_needs_rehash(string hash, int algo, PhpArray opt = null)
+        {
+            bool result = false;
+
+            switch (algo)
+            {
+                // Default
+                case 0:
+                // BCrypt
+                case 1:
+                    string[] hashParts = hash.Split('$');
+
+                    if (hashParts.Length >= 3 && hashParts[1][0] == '2' && hashParts[1].Length >= 2) // $2 $ Right algorithm
+                    {
+
+                        if (opt != null && opt.ContainsKey("cost")) // Check options
+                        {
+                            PhpValue pom = opt.GetItemValue(new IntStringKey("cost"));
+                            result = !(hashParts[2] == pom.ToString());
+                        }
+
+                    }
+                    else
+                        result = true;
+                    break;
+                // Argon2i
+                case 2:
+                // Argon2id
+                case 3:
+                    Regex reg = new Regex(@"^\$(argon2id|argon2id)\$v=\d+\$m=(\d+),t=(\d+),p=(\d+)\$.+\$.+$");
+                    Match match = reg.Match(hash);
+                    
+                    if (match != null && (algo == 2 && match.Groups[1].Value == "argon2i") || (algo == 3 && match.Groups[1].Value == "argon2id")) // Check right algorithm
+                    {
+                        if (opt != null) // Check options
+                        {
+
+                            if (opt.ContainsKey("memory_cost"))
+                                result = !(opt.GetItemValue(new IntStringKey("memory_cost")) == match.Groups[2].Value);
+
+                            if (opt.ContainsKey("time_cost"))
+                                result = result || !(opt.GetItemValue(new IntStringKey("time_cost")) == match.Groups[3].Value);
+
+                            if (opt.ContainsKey("time_cost"))
+                                result = result || !(opt.GetItemValue(new IntStringKey("threads")) == match.Groups[4].Value);
+
+                        }
+                    }
+                    else
+                        result = true;
+                    break;
+                // Unknown algorithm
+                default:
+                    result = true;
+                    break;
+            }
+
+            return result;
+        }
         #endregion
 
         #region crypt (Constants)
