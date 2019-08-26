@@ -2622,17 +2622,17 @@ namespace Pchp.Library
 
         #endregion
 
-        #region hash_argon2i, hash_argon2id
+        #region Argon2
 
         [ThreadStatic]
-        private static readonly RandomNumberGenerator Rng = System.Security.Cryptography.RandomNumberGenerator.Create();
+        private static readonly RandomNumberGenerator RandomGenerator = RandomNumberGenerator.Create();
 
-        private static string DoArgon2(string password, int time_cost, int memory_cost, int threads, bool argon2i_id)
+        private static string HashArgon2(string password, int time_cost, int memory_cost, int threads, bool argon2i_id)
         {
             byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
             byte[] salt = new byte[16];
 
-            Rng.GetBytes(salt);
+            RandomGenerator.GetBytes(salt);
 
             var config = new Argon2Config
             {
@@ -2647,7 +2647,7 @@ namespace Pchp.Library
             var argon = new Argon2(config);
 
             string hashString;
-            using (SecureArray<byte> hash = argon.Hash())
+            using (var hash = argon.Hash())
             {
                 hashString = config.EncodeString(hash.Buffer);
             }
@@ -2656,19 +2656,20 @@ namespace Pchp.Library
 
         #endregion
 
-        #region password_hash, password_verify, password_needs_rehash
-
         #region password_hash (Constants)
 
-        const int costDefault = 10;
-        const int threadsDefault = 1;
-        const int memory_costDefault = 4;
+        private const int costDefault = 10;
+        private const int threadsDefault = 1;
+        private const int memory_costDefault = 4;
+
         public const int PASSWORD_DEFAULT = 0;
         public const int PASSWORD_BCRYPT = 1;
         public const int PASSWORD_ARGON2I = 2;
         public const int PASSWORD_ARGON2ID = 3;
 
         #endregion
+
+        #region password_hash, password_verify, password_needs_rehash
 
         private static bool CheckCost(PhpValue value, int lowerBound, int upperBound, string warnParseFail, string warnBoundFail, out int checkedValue)
         {
@@ -2690,7 +2691,8 @@ namespace Pchp.Library
                 return false;
             }
         }
-        private static PhpValue DoHash_Argon2(string password, PhpArray opt, bool argon2i_id)
+
+        private static PhpValue HashPasswordArgon2(string password, PhpArray opt, bool argon2i_id)
         {
             // Default setting for argon2
             int memory_cost = memory_costDefault;
@@ -2711,13 +2713,14 @@ namespace Pchp.Library
             }
             try
             {
-                return DoArgon2(password, time_cost, memory_cost, threads, argon2i_id);
+                return HashArgon2(password, time_cost, memory_cost, threads, argon2i_id);
             }
             catch (Exception) { }
 
             return PhpValue.False;
         }
-        private static PhpValue DoHash_Blowfish(string password,PhpArray opt)
+
+        private static PhpValue HashPasswordBlowfish(string password,PhpArray opt)
         {          
             // Default setting for bcrypt
             int cost = costDefault;
@@ -2783,11 +2786,11 @@ namespace Pchp.Library
                 case 0:
                 // Blowfish
                 case 1:
-                    return DoHash_Blowfish(password, opt);
+                    return HashPasswordBlowfish(password, opt);
                 // Argon2i
                 case 2:
                 case 3:
-                    return (algo == 2) ? DoHash_Argon2(password, opt, true) : DoHash_Argon2(password, opt, false);
+                    return HashPasswordArgon2(password, opt, algo == 2);
                 // Unknown algorithm
                 default:
                     return PhpValue.False;
@@ -2877,6 +2880,7 @@ namespace Pchp.Library
 
             return result;
         }
+
         #endregion
 
         #region crypt (Constants)

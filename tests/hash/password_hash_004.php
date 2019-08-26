@@ -16,4 +16,3 @@ $hash = @password_hash( $password, PASSWORD_ARGON2ID);
 
 echo 'Verify hash with cost : ' . password_verify( $password, $hashAllModifieded) . "\n";
 echo 'Verify hash without cost : ' . password_verify( $password, $hash) . "\n";
-?>
