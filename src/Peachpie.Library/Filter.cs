@@ -261,6 +261,16 @@ namespace Pchp.Library
             ALLOW_SCIENTIFIC = 16384,
 
             /// <summary>
+            /// Require scheme in "validate_url" filter.
+            /// </summary>
+            SCHEME_REQUIRED = 65536,
+
+            /// <summary>
+            /// Require host in "validate_url" filter.
+            /// </summary>
+            HOST_REQUIRED = 131072,
+
+            /// <summary>
             /// Require path in "validate_url" filter.
             /// </summary>
             PATH_REQUIRED = 262144,
@@ -361,6 +371,16 @@ namespace Pchp.Library
         /// Allow scientific notation (e, E) in "number_float" filter.
         /// </summary>
         public const int FILTER_FLAG_ALLOW_SCIENTIFIC = (int)FilterFlag.ALLOW_SCIENTIFIC;
+
+        /// <summary>
+        /// Require scheme in "validate_url" filter.
+        /// </summary>
+        public const int FILTER_FLAG_SCHEME_REQUIRED = (int)FilterFlag.SCHEME_REQUIRED;
+
+        /// <summary>
+        /// Require host in "validate_url" filter.
+        /// </summary>
+        public const int FILTER_FLAG_HOST_REQUIRED = (int)FilterFlag.HOST_REQUIRED;
 
         /// <summary>
         /// Require path in "validate_url" filter.
@@ -535,7 +555,7 @@ namespace Pchp.Library
 
             // process options
 
-            if (options.IsSet)
+            if (Operators.IsSet(options))
             {
                 options_arr = options.AsArray();
                 if (options_arr != null)
@@ -546,13 +566,15 @@ namespace Pchp.Library
                         flagsval.IsLong(out flags);
                     }
 
-                    // [default]
-                    if (options_arr.TryGetValue("default", out var defaultval))
+                    // [options] => { "min_range" => ??, "default" => ?? }
+                    if (options_arr.TryGetValue("options", out var optionsval) && optionsval.IsPhpArray(out var opts_arr))
                     {
-                        @default = defaultval;
+                        // [default]
+                        if (opts_arr.TryGetValue("default", out var defaultval))
+                        {
+                            @default = defaultval;
+                        }
                     }
-
-                    // ...
                 }
                 else
                 {
@@ -583,16 +605,70 @@ namespace Pchp.Library
                 //
 
                 case (int)FilterValidate.URL:
-                    return Uri.TryCreate(variable.ToString(ctx), UriKind.Absolute, out var uri)
-                        ? (PhpValue)uri.AbsoluteUri
-                        : PhpValue.False;
+
+                    // TODO: protocol may be ommited, try to add "http://" if fails
+
+                    if (Uri.TryCreate(variable.ToString(ctx), UriKind.Absolute, out var uri))
+                    {
+                        if (uri.IsFile && !uri.OriginalString.StartsWith(uri.Scheme, StringComparison.OrdinalIgnoreCase))
+                        {
+                            // quick check the file:// was just added on linux impl. of Uri.Parse
+                            return @default;
+                        }
+
+                        if (flags != 0)
+                        {
+                            // CONSIDER: rather use `Web.parse_url()` ...
+                            var uriflags = (FilterFlag)flags;
+                            //if ((uriflags & FilterFlag.PATH_REQUIRED) == FilterFlag.PATH_REQUIRED && ...)
+                        }
+
+                        return uri.AbsoluteUri;
+                    }
+                    return @default;
 
                 case (int)FilterValidate.EMAIL:
                     {
-                        var str = variable.ToString(ctx);
-                        return RegexUtilities.IsValidEmail(str)
+                        return variable.IsString(out var str) && RegexUtilities.IsValidEmail(str)
                             ? (PhpValue)str
-                            : PhpValue.False;
+                            : @default;
+                    }
+                case (int)FilterValidate.IP:
+                    if (System.Net.IPAddress.TryParse(variable.ToString(ctx), out var addr))
+                    {
+                        if (flags != 0)
+                        {
+                            // validate flags:
+                            if ((addr.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6 && (flags & (int)FilterFlag.IPV6) == 0) ||
+                                (addr.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork && (flags & (int)FilterFlag.IPV4) == 0))
+                            {
+                                return @default;
+                            }
+
+                            if ((flags & (int)FilterFlag.NO_PRIV_RANGE) == (int)FilterFlag.NO_PRIV_RANGE)
+                            {
+                                /*
+                                 * Fails validation for the IPv4 ranges: 10.0.0.0/8, 172.16.0.0/12 and 192.168.0.0/16.
+                                 * Fails validation for the IPv6 addresses starting with FD or FC.
+                                 */
+                                throw new NotImplementedException();
+                            }
+
+                            if ((flags & (int)FilterFlag.NO_PRIV_RANGE) == (int)FilterFlag.NO_RES_RANGE)
+                            {
+                                /*
+                                 * Fails validation for IPv4 ranges: 0.0.0.0/8, 169.254.0.0/16, 127.0.0.0/8 and 240.0.0.0/4.
+                                 * Fails validation for IPv6 ranges: ::1/128, ::/128, ::ffff:0:0/96 and fe80::/10.
+                                 */
+                                throw new NotImplementedException();
+                            }
+                        }
+
+                        return addr.ToString();
+                    }
+                    else
+                    {
+                        return @default;
                     }
 
                 case (int)FilterValidate.INT:
@@ -669,8 +745,18 @@ namespace Pchp.Library
                             PhpException.InvalidArgument("options", string.Format(Resources.LibResources.option_missing, "regexp"));
                         }
 
-                        return PhpValue.False;
+                        return @default;
                     }
+
+                case FILTER_CALLBACK:
+                    // options = ['options' => $callback]
+                    if (options_arr != null &&
+                        options_arr.TryGetValue("options", out var callbackvar))
+                    {
+                        return callbackvar.AsCallable().Invoke(ctx, variable);
+                    }
+
+                    return @default;
 
                 default:
                     PhpException.ArgumentValueNotSupported(nameof(filter), filter);
@@ -727,7 +813,8 @@ namespace Pchp.Library
         /// <summary>
         /// Remove all characters not valid by given <paramref name="predicate"/>.
         /// </summary>
-        private static string FilterSanitizeString(string str, Predicate<char>/*!*/predicate)
+        private static string FilterSanitizeString(string str, Predicate<char>/*!*/
+                                predicate)
         {
             Debug.Assert(predicate != null);
 

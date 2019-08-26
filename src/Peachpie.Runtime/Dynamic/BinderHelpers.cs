@@ -931,6 +931,15 @@ namespace Pchp.Core.Dynamic
                             // TODO: report it might get wrong
                             // TODO: if we create IPhpCallback in compile-time, we know the routine needs the locals, ...
                         }
+                        else if (p.ParameterType == typeof(QueryValue<ThisVariable>))
+                        {
+                            // $this is unknown, get NULL
+                            boundargs[i] = Expression.Default(p.ParameterType);
+                        }
+                        else if (p.ParameterType == typeof(QueryValue<DummyFieldsOnlyCtor>))
+                        {
+                            boundargs[i] = Expression.Default(p.ParameterType);
+                        }
                     }
                     else if (p.IsLateStaticParameter())
                     {

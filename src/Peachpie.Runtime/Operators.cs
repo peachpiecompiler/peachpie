@@ -11,7 +11,7 @@ using Pchp.Core.Reflection;
 
 namespace Pchp.Core
 {
-    [DebuggerNonUserCode]
+    [DebuggerNonUserCode, DebuggerStepThrough]
     public static class Operators
     {
         #region Numeric
@@ -933,7 +933,8 @@ namespace Pchp.Core
 
             public bool MoveFirst()
             {
-                throw new NotImplementedException();
+                Reset();
+                return MoveNext();
             }
 
             public bool MoveLast()
@@ -948,12 +949,12 @@ namespace Pchp.Core
 
             public bool MovePrevious()
             {
-                throw new NotImplementedException();
+                throw new NotSupportedException();
             }
 
             public void Reset()
             {
-                throw new NotImplementedException();
+                throw new NotSupportedException();
             }
         }
 
@@ -1285,24 +1286,7 @@ namespace Pchp.Core
             }
             else if (value != null)
             {
-                var tinfo = value.GetPhpTypeInfo();
-
-                // memberwise clone
-                var newobj = tinfo.GetUninitializedInstance(ctx);
-                if (newobj != null)
-                {
-                    Serialization.MemberwiseClone(tinfo, value, newobj);
-
-                    //
-                    value = newobj;
-
-                    // __clone()
-                    tinfo.RuntimeMethods[TypeMethods.MagicMethods.__clone]?.Invoke(ctx, value);
-                }
-                else
-                {
-                    PhpException.Throw(PhpError.Error, Resources.ErrResources.class_instantiation_failed, tinfo.Name);
-                }
+                value = CloneRaw(ctx, value);
             }
             else
             {
@@ -1311,6 +1295,37 @@ namespace Pchp.Core
 
             //
 
+            return value;
+        }
+
+        /// <summary>
+        /// Performs memberwise clone of the object, calling <c>__clone</c> eventually.
+        /// </summary>
+        public static object CloneRaw(Context ctx, object value)
+        {
+            if (value == null) throw new ArgumentNullException(nameof(value));
+
+            var tinfo = value.GetPhpTypeInfo();
+
+            // memberwise clone
+            var newobj = tinfo.GetUninitializedInstance(ctx);
+            if (newobj != null)
+            {
+                Serialization.MemberwiseClone(tinfo, value, newobj);
+
+                //
+                value = newobj;
+
+                // __clone()
+                // TODO: only if __clone() is public
+                tinfo.RuntimeMethods[TypeMethods.MagicMethods.__clone]?.Invoke(ctx, value);
+            }
+            else
+            {
+                PhpException.Throw(PhpError.Error, Resources.ErrResources.class_instantiation_failed, tinfo.Name);
+            }
+
+            //
             return value;
         }
 

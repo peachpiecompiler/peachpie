@@ -64,7 +64,7 @@ namespace Pchp.Core.Reflection
             }
 
             // skip [PhpHidden] methods
-            methods = methods.Where(s_notPhpHidden);
+            methods = methods.Where(s_phpvisible);
 
             // collect available methods (including methods on base classes)
             foreach (var m in methods.ToLookup(_MethodName, StringComparer.OrdinalIgnoreCase))
@@ -118,7 +118,7 @@ namespace Pchp.Core.Reflection
 
         static readonly Func<MethodInfo, bool> s_notObjectMember = m => m.DeclaringType != typeof(object);
 
-        static readonly Func<MethodInfo, bool> s_notPhpHidden = m => !ReflectionUtils.IsPhpHidden(m);
+        static readonly Func<MethodInfo, bool> s_phpvisible = m => !m.IsSpecialName && !ReflectionUtils.IsPhpHidden(m);
 
         static void SelectVisibleOverrides(List<MethodInfo> overrides)
         {

@@ -269,26 +269,7 @@ namespace Pchp.Core.Text
         /// The operation safely maintains single byte and unicode characters, and reuses existing underlaying chunks of text.
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">The start index is less than zero.</exception>
-        public static PhpString Substring(this PhpString str, int startIndex, int length)
-        {
-            if (str.IsDefault || length < 0)
-            {
-                return default(PhpString); // FALSE
-            }
-
-            if (length == 0)
-            {
-                return new PhpString(string.Empty);
-            }
-
-            //
-
-            var blob = new PhpString.Blob();
-
-            str.CopyTo(blob, startIndex, length);
-
-            return new PhpString(blob);
-        }
+        public static PhpString Substring(this PhpString str, int startIndex, int length) => str.SubstringInternal(startIndex, length);
     }
 
     #endregion
@@ -1499,7 +1480,7 @@ namespace Pchp.Core
 
         public double ToDouble() => Convert.StringToDouble(ToString());
 
-        public long ToLong() => Convert.StringToLongInteger(ToString());
+        public long ToLong() => Convert.ToLong(ToString());
 
         public Convert.NumberInfo ToNumber(out PhpNumber number)
         {
@@ -1550,6 +1531,38 @@ namespace Pchp.Core
         /// Operator that checks the string is default/uninitialized not containing any value.
         /// </summary>
         public static bool IsNull(PhpString value) => value.IsDefault;
+
+        /// <summary>
+        /// Gets substring of this instance.
+        /// The operation safely maintains single byte and unicode characters, and reuses existing underlaying chunks of text.
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">The start index is less than zero.</exception>
+        internal PhpString SubstringInternal(int startIndex, int length)
+        {
+            if (IsDefault || length < 0)
+            {
+                return default(PhpString); // FALSE
+            }
+
+            if (length == 0)
+            {
+                return new PhpString(string.Empty);
+            }
+
+            if (_data is string str)
+            {
+                var end = Math.Min(str.Length, startIndex + length);
+                return end > startIndex ? str.Substring(startIndex, end - startIndex) : string.Empty;
+            }
+
+            //
+
+            var blob = new PhpString.Blob();
+
+            CopyTo(blob, startIndex, length);
+
+            return new PhpString(blob);
+        }
 
         /// <summary>
         /// Copies portion of this instance to the target string.
@@ -1645,6 +1658,12 @@ namespace Pchp.Core
         public byte[] ToBytes(Context ctx) => ToBytes(ctx.StringEncoding);
 
         public byte[] ToBytes(Encoding encoding) => IsEmpty ? Array.Empty<byte>() : _data is Blob b ? b.ToBytes(encoding) : encoding.GetBytes((string)_data);
+
+        /// <summary>
+        /// Implicit conversion to <see cref="long"/>.
+        /// Throws <c>TypeError</c> in case the implicit conversion cannot be done.
+        /// </summary>
+        public long ToLongOrThrow() => Convert.ToLongOrThrow(ToString());
 
         public PhpNumber ToNumber()
         {

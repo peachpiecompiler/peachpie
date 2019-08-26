@@ -23,7 +23,7 @@ namespace Pchp.Library.Reflection
         /// </summary>
         public static ReflectionReference fromArrayElement(PhpArray array, IntStringKey/*int|string*/key)
         {
-            if (array != null && array.TryGetValue(key, out var value) && value.Object is PhpAlias alias)
+            if (array != null && array.TryGetValue(key, out var value) && value.Object is PhpAlias alias && alias.ReferenceCount > 0)
             {
                 return new ReflectionReference(alias);
             }

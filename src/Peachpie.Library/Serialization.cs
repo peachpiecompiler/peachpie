@@ -574,6 +574,7 @@ namespace Pchp.Library
             internal sealed class ObjectReader
             {
                 readonly Context _ctx;
+                readonly Encoding _encoding;
                 readonly Stream _stream;
                 readonly RuntimeTypeHandle _caller;
 
@@ -593,11 +594,17 @@ namespace Pchp.Library
                 }
 
                 public ObjectReader(Context ctx, Stream stream, RuntimeTypeHandle caller)
+                    : this(ctx, ctx.StringEncoding, stream, caller)
                 {
-                    Debug.Assert(ctx != null);
+                }
+
+                public ObjectReader(Context ctx, Encoding encoding, Stream stream, RuntimeTypeHandle caller)
+                {
+                    Debug.Assert(encoding != null);
                     Debug.Assert(stream != null);
 
                     _ctx = ctx;
+                    _encoding = encoding;
                     _stream = stream;
                     _caller = caller;
                 }
@@ -805,7 +812,7 @@ namespace Pchp.Library
                         try
                         {
                             // unicode string
-                            return PhpValue.Create(_ctx.StringEncoding.GetString(bytes));
+                            return PhpValue.Create(_encoding.GetString(bytes));
                         }
                         catch (DecoderFallbackException)
                         {
@@ -1007,12 +1014,14 @@ namespace Pchp.Library
                 /// <param name="serializable">If <B>true</B>, the last token eaten was <B>C</B>, otherwise <B>O</B>.</param>
                 object ParseObject(bool serializable)
                 {
+                    Debug.Assert(_ctx != null);
+
                     var seq = AddSeq();
 
                     // :{length}:"{classname}":
                     Consume(Tokens.Colon);  // :
                     string class_name = ReadString().AsString();   // <length>:"classname"
-                    var tinfo = _ctx.GetDeclaredType(class_name, true);
+                    var tinfo = _ctx?.GetDeclaredType(class_name, true);
 
                     // :{count}:
                     Consume(Tokens.Colon);  // :

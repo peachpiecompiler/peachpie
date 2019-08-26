@@ -34,7 +34,7 @@ namespace Pchp.Library.Reflection
         /// Underlaying routine information.
         /// Cannot be <c>null</c>.
         /// </summary>
-        internal protected RoutineInfo _routine;
+        private protected RoutineInfo _routine;
 
         #endregion
 
@@ -144,7 +144,7 @@ namespace Pchp.Library.Reflection
             return (sep < 0) ? name : name.Substring(sep + 1);
         }
         public PhpArray getStaticVariables() { throw new NotImplementedException(); }
-        public bool hasReturnType()
+        public virtual bool hasReturnType()
         {
             return ResolveReturnType(out var _, out var _);
         }

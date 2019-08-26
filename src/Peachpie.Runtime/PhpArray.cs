@@ -323,37 +323,56 @@ namespace Pchp.Core
 
         #endregion
 
+        #region Conversion operators
+
+        /// <summary>
+        /// Explicit cast of array to <see cref="int"/>.
+        /// Gets number of items in the array.
+        /// </summary>
+        public static explicit operator int(PhpArray array) => array.Count;
+
+        /// <summary>
+        /// Explicit cast of array to <see cref="string"/>.
+        /// Always returns <c>"Array"</c> string literal.
+        /// </summary>
+        public static explicit operator string(PhpArray _)
+        {
+            PhpException.Throw(PhpError.Notice, ErrResources.array_to_string_conversion);
+            return PrintablePhpTypeName;
+        }
+
+        /// <summary>
+        /// Explicit cast of array to <see cref="bool"/>.
+        /// Gets <c>true</c> if array contains any elements.
+        /// </summary>
+        public static explicit operator bool(PhpArray array) => array != null && array.Count != 0;
+
+        #endregion
+
         #region IPhpConvertible
 
         public PhpTypeCode TypeCode => PhpTypeCode.PhpArray;
 
-        public double ToDouble() => Count;
+        double IPhpConvertible.ToDouble() => Count;
 
-        public long ToLong() => Count;
+        long IPhpConvertible.ToLong() => Count;
 
-        public bool ToBoolean() => Count != 0;
+        bool IPhpConvertible.ToBoolean() => Count != 0;
 
-        public Convert.NumberInfo ToNumber(out PhpNumber number)
+        Convert.NumberInfo IPhpConvertible.ToNumber(out PhpNumber number)
         {
             number = PhpNumber.Create(Count);
             return Convert.NumberInfo.IsPhpArray | Convert.NumberInfo.LongInteger;
         }
 
-        public string ToString(Context ctx)
-        {
-            return PrintablePhpTypeName;
-        }
+        string IPhpConvertible.ToString(Context ctx) => (string)this;
 
-        public string ToStringOrThrow(Context ctx)
-        {
-            PhpException.Throw(PhpError.Notice, ErrResources.array_to_string_conversion);
-            return ToString(ctx);
-        }
+        string IPhpConvertible.ToStringOrThrow(Context ctx) => (string)this;
 
         /// <summary>
         /// Creates <see cref="stdClass"/> with runtime instance fields copied from entries of this array.
         /// </summary>
-        public object ToClass() => ToObject();
+        object IPhpConvertible.ToClass() => ToObject();
 
         public stdClass ToObject() => new stdClass()
         {

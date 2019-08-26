@@ -950,7 +950,7 @@ namespace Peachpie.Library.PDO
 
         private PhpValue ReadObj()
         {
-            return PhpValue.FromClass(this.ReadArray(true, false).ToClass());
+            return PhpValue.FromClass(this.ReadArray(true, false).ToObject());
         }
 
         private PhpValue ReadColumn(int column)
@@ -1186,6 +1186,12 @@ namespace Peachpie.Library.PDO
             {
                 m_pdo.HandleError(new PDOException("The associated PDO object cannot be null."));
                 return -1;
+            }
+
+            if (m_pdo.Driver.Name == "sqlite")
+            {
+                // This method returns "0" (zero) with the SQLite driver at all times
+                return 0;
             }
 
             var statement = m_pdo.query("SELECT ROW_COUNT()");

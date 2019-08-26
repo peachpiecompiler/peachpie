@@ -13,7 +13,7 @@ using Pchp.Core.Reflection;
 namespace Pchp.Core.Dynamic
 {
     /// <summary>
-    /// Helper methods for converting expressions.
+    /// Helper methods for converting expressions (implicit conversions).
     /// </summary>
     internal static class ConvertExpression
     {
@@ -110,6 +110,8 @@ namespace Pchp.Core.Dynamic
             // 
             if (target.IsValueType == false)
             {
+                Debug.Assert(typeof(Nullable<bool>).IsValueType);
+
                 return BindAsReferenceType(arg, target);
             }
             else
@@ -125,7 +127,6 @@ namespace Pchp.Core.Dynamic
                 {
                     return BindToDateTime(arg, ctx);
                 }
-
                 // Nullable<T>
                 if (target.IsNullable_T(out T))
                 {
@@ -170,9 +171,24 @@ namespace Pchp.Core.Dynamic
             }
         }
 
+        static Expression PhpValueIsNullOrFalse(Expression arg)
+        {
+            // Template: arg.IsNull || arg.IsFalse
+            Debug.Assert(arg.Type == typeof(PhpValue));
+            return Expression.OrElse(
+                Expression.Property(arg, Cache.Properties.PhpValue_IsNull),
+                Expression.Property(arg, Cache.Properties.PhpValue_IsFalse));
+        }
+
         static Expression BindToNullable(Expression arg, Type target, Type nullable_t, Expression ctx)
         {
             Debug.Assert(target.IsNullable_T(out var tmp_t) && nullable_t == tmp_t);
+
+            // special cases: constants NULL -> default(Nullable<T>)
+            if (arg is ConstantExpression ce && (ce.Value == null))
+            {
+                return Expression.Default(target);
+            }
 
             // Template: new Nullable<T>( (T)arg )
             Expression new_nullable = null;
@@ -202,7 +218,7 @@ namespace Pchp.Core.Dynamic
                 else if (arg.Type == typeof(PhpValue))
                 {
                     // (bool)arg // implicit bool operator
-                    hasValueCheck = Expression.Convert(arg, typeof(bool));
+                    hasValueCheck = Expression.IsFalse(PhpValueIsNullOrFalse(arg));
                 }
             }
 
@@ -238,16 +254,17 @@ namespace Pchp.Core.Dynamic
             }
 
             if (source == typeof(PhpNumber)) return Expression.Call(expr, typeof(PhpNumber).GetMethod("ToLong", Cache.Types.Empty));
-            if (source == typeof(PhpArray)) return Expression.Call(expr, typeof(PhpArray).GetMethod("ToLong", Cache.Types.Empty));
-            if (source == typeof(string)) return Expression.Call(Cache.Operators.ToLong_String, expr);
-            if (source == typeof(PhpString)) return Expression.Call(expr, typeof(PhpString).GetMethod("ToLong", Cache.Types.Empty));
+            //TypeError//if (source == typeof(PhpArray)) return Expression.Call(expr, typeof(PhpArray).GetMethod("ToLong", Cache.Types.Empty));
+            if (source == typeof(string)) return Expression.Call(Cache.Operators.ToLongOrThrow_String, expr);
+            if (source == typeof(PhpString)) return Expression.Call(expr, typeof(PhpString).GetMethod("ToLongOrThrow", Cache.Types.Empty));
             if (source == typeof(void)) return VoidAsConstant(expr, 0L, typeof(long));
             if (source == typeof(bool)) return Expression.Call(typeof(System.Convert).GetMethod("ToInt64", Cache.Types.Bool), expr);
             if (source == typeof(long)) return expr;    // unreachable
+            if (source == typeof(PhpValue)) return Expression.Call(expr, typeof(PhpValue).GetMethod("ToLongOrThrow", Cache.Types.Empty));
 
-            // TODO: following conversions may fail, we should report it failed and throw an error
-            if (source == typeof(PhpValue)) return Expression.Call(expr, typeof(PhpValue).GetMethod("ToLong", Cache.Types.Empty));
+            // TODO: following conversions may fail, we should report it failed and throw TypeError exception
 
+            // TODO: throw new TypeError exception
             throw new NotImplementedException($"{source.FullName} -> long");
         }
 
@@ -425,6 +442,22 @@ namespace Pchp.Core.Dynamic
 
         public static Expression BindToValue(Expression expr)
         {
+            // knmown constants:
+            if (expr is ConstantExpression ce)
+            {
+                if (ce.Value == null)
+                {
+                    // PhpValue.Null
+                    return Expression.Field(null, Cache.Properties.PhpValue_Null);
+                }
+                else if (ce.Value is bool b)
+                {
+                    return Expression.Field(null, b ? Cache.Properties.PhpValue_True : Cache.Properties.PhpValue_False);
+                }
+            }
+
+            //
+
             var source = expr.Type;
 
             //
@@ -440,6 +473,7 @@ namespace Pchp.Core.Dynamic
             if (source == typeof(PhpNumber)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpNumber), expr);
             if (source == typeof(PhpArray)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpArray), expr);
             if (source == typeof(PhpAlias)) return Expression.Call(typeof(PhpValue).GetMethod("Create", Cache.Types.PhpAlias), expr);   // PhpValue.Create(PhpAlias)
+            if (source == typeof(IndirectLocal)) return Expression.Property(expr, Cache.IndirectLocal.Value);   // IndirectLocal.Value
 
             if (source.GetTypeInfo().IsValueType)
             {
@@ -541,7 +575,7 @@ namespace Pchp.Core.Dynamic
 
             if (typeof(IPhpCallable).IsAssignableFrom(source)) return expr;
 
-            return Expression.Call(BindToValue(expr), Cache.Operators.PhpValue_AsCallable_RuntimeTypeHandle, Expression.Default(typeof(RuntimeTypeHandle)));    // TODO: call context instead of default()
+            return Expression.Call(BindToValue(expr), Cache.Operators.PhpValue_AsCallable_RuntimeTypeHandle_Object, Expression.Default(typeof(RuntimeTypeHandle)), Expression.Default(typeof(object)));    // TODO: call context instead of default()
         }
 
         private static Expression BindToVoid(Expression expr)
@@ -627,6 +661,21 @@ namespace Pchp.Core.Dynamic
 
             if (target.IsNullable_T(out var nullable_t))
             {
+                if (!t.IsValueType)
+                {
+                    // object -> Nullable<T> // only NULL is accepted
+                    return Expression.Call(typeof(CostOf).GetMethod("ToNullable", Cache.Types.Object), arg);
+                }
+
+                if (t == typeof(PhpValue))
+                {
+                    // value is null|false ? PassCostly : costof(value -> T)
+                    return Expression.Condition(
+                        PhpValueIsNullOrFalse(arg),
+                        Expression.Constant(ConversionCost.PassCostly),
+                        BindCost(arg, nullable_t));
+                }
+
                 return BindCost(arg, nullable_t);
             }
 
@@ -717,7 +766,7 @@ namespace Pchp.Core.Dynamic
             if (target == typeof(PhpValue)) return (ConversionCost.PassCostly);
             if (target == typeof(string) || target == typeof(PhpString)) return (ConversionCost.ImplicitCast);
             if (target == typeof(PhpArray)) return (ConversionCost.Warning);
-            
+
             //throw new NotImplementedException($"costof(double -> {target})");
             return ConversionCost.NoConversion;
         }
@@ -884,9 +933,6 @@ namespace Pchp.Core.Dynamic
                 case PhpTypeCode.MutableString:
                 case PhpTypeCode.String:
                     return ConversionCost.LoosingPrecision;
-
-                case PhpTypeCode.PhpArray:
-                    return ConversionCost.Warning;
 
                 default:
                     return ConversionCost.NoConversion;
@@ -1124,6 +1170,11 @@ namespace Pchp.Core.Dynamic
         {
             // TODO: once we'll be able to store structs
             return ConversionCost.NoConversion;
+        }
+
+        public static ConversionCost ToNullable(object obj)
+        {
+            return obj == null ? ConversionCost.PassCostly : ConversionCost.NoConversion;
         }
 
         #endregion

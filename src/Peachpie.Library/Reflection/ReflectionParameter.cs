@@ -42,7 +42,7 @@ namespace Pchp.Library.Reflection
         [PhpFieldsOnlyCtor]
         protected ReflectionParameter() { }
 
-        internal ReflectionParameter(ReflectionFunctionAbstract function, int index, Type type, bool allowsNull, bool isVariadic, string name, PhpValue defaultValue = default(PhpValue))
+        internal ReflectionParameter(ReflectionFunctionAbstract function, int index, Type type, bool allowsNull, bool isVariadic, string name, PhpValue defaultValue = default)
         {
             Debug.Assert(function != null);
             Debug.Assert(index >= 0);
@@ -125,8 +125,8 @@ namespace Pchp.Library.Reflection
             if (routine != null)
             {
                 var func = (declaringclass == null)
-                ? (ReflectionFunctionAbstract)new ReflectionFunction(routine)
-                : new ReflectionMethod(declaringclass, routine);
+                    ? (ReflectionFunctionAbstract)new ReflectionFunction(routine)
+                    : new ReflectionMethod(declaringclass, routine);
 
                 // resolve parameter:
                 var parameters = ReflectionUtils.ResolveReflectionParameters(func, routine.Methods);
@@ -159,9 +159,10 @@ namespace Pchp.Library.Reflection
 
         public static string export(string function, string parameter, bool @return = false) { throw new NotImplementedException(); }
 
-        public ReflectionClass getClass() => (_type != null && Core.Reflection.ReflectionUtils.IsPhpClassType(_type.GetTypeInfo()))
-            ? new ReflectionClass(_type.GetPhpTypeInfo())
-            : null;
+        public ReflectionClass getClass() =>
+            (hasTypeInternal(_type) && Core.Reflection.ReflectionUtils.IsPhpClassType(_type.GetTypeInfo()))
+                ? new ReflectionClass(_type.GetPhpTypeInfo())
+                : null;
 
         public ReflectionClass getDeclaringClass() => (_function is ReflectionMethod m) ? new ReflectionClass(m._tinfo) : null;
 
@@ -197,7 +198,7 @@ namespace Pchp.Library.Reflection
 
         public override string ToString() => __toString();
 
-        static bool hasTypeInternal(Type t) => t != null && t != typeof(PhpValue) && t != typeof(PhpAlias);
+        static bool hasTypeInternal(Type t) => t != null && t != typeof(PhpValue) && t != typeof(PhpAlias) && t != typeof(PhpValue[]) && t != typeof(PhpAlias[]);
 
         string _debugTypeName => string.Empty; // TODO: " {typename}{or NULL}"
         string _debugDefaultValue => _defaultValue.IsSet ? $" = {_defaultValue.DisplayString}" : string.Empty;

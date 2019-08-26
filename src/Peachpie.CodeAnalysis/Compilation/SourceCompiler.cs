@@ -119,7 +119,7 @@ namespace Pchp.CodeAnalysis
             _worklist.Enqueue(routine.ControlFlowGraph?.Start);
 
             // enqueue routine parameter default values
-            routine.Parameters.OfType<SourceParameterSymbol>().Foreach(p =>
+            routine.SourceParameters.Foreach(p =>
             {
                 if (p.Initializer != null)
                 {

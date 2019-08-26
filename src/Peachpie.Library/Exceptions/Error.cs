@@ -19,7 +19,10 @@ namespace Pchp.Library.Spl
         [PhpHidden]
         private PhpArray _trace;
 
-        private Throwable previous;
+        protected string message;
+        protected long code;
+        protected string file;
+        protected int line;
 
         /// <summary>
         /// This property is used by some PHP frameworks
@@ -31,10 +34,7 @@ namespace Pchp.Library.Spl
             set => _trace = value;
         }
 
-        protected string message;
-        protected long code;
-        protected string file;
-        protected int line;
+        private Throwable previous;
 
         [PhpFieldsOnlyCtor]
         protected Error()

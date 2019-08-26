@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using Pchp.Core;
 using Pchp.Core.Reflection;
@@ -27,8 +29,7 @@ namespace Pchp.Library.Reflection
         {
             object instance;
 
-            var classname = @class.ToStringOrNull();
-            if (classname != null)
+            if (@class.IsString(out var classname))
             {
                 return ctx.GetDeclaredType(classname, true)
                     ?? throw new ReflectionException(string.Format(Resources.Resources.class_does_not_exist, classname));
@@ -40,6 +41,33 @@ namespace Pchp.Library.Reflection
             else
             {
                 throw new ReflectionException(string.Format(ErrResources.invalid_argument_type, nameof(@class), "string or object"));
+            }
+        }
+
+        /// <summary>
+        /// TODO: move to Peachpie.Runtime
+        /// Creates PhpValue from this attribute.
+        /// </summary>
+        public static PhpValue ResolveDefaultValueAttribute(this DefaultValueAttribute attr)
+        {
+            if (attr.SerializedValue != null && attr.SerializedValue.Length != 0)
+            {
+                using (var stream = new MemoryStream(attr.SerializedValue))
+                {
+                    var reader = new PhpSerialization.PhpSerializer.ObjectReader(null, Encoding.UTF8, stream, default);
+                    return reader.Deserialize();
+                }
+            }
+            else
+            {
+                switch (attr.Type)
+                {
+                    case DefaultValueAttribute.DefaultValueType.PhpArray:
+                        return PhpArray.NewEmpty();
+                    default:
+                        Debug.Fail("Unexpected data.");
+                        return default;
+                }
             }
         }
 
@@ -58,8 +86,23 @@ namespace Pchp.Library.Reflection
                     var p = ps[pi];
 
                     var allowsNull = p.IsNullable();
-                    var defaultValue = p.HasDefaultValue ? PhpValue.FromClr(p.RawDefaultValue) : default(PhpValue);
                     var isVariadic = p.GetCustomAttribute<ParamArrayAttribute>() != null;
+
+                    PhpValue defaultValue;
+                    DefaultValueAttribute defaultValueAttr;
+
+                    if (p.HasDefaultValue)
+                    {
+                        defaultValue = PhpValue.FromClr(p.RawDefaultValue);
+                    }
+                    else if ((defaultValueAttr = p.GetCustomAttribute<DefaultValueAttribute>()) != null)
+                    {
+                        defaultValue = ResolveDefaultValueAttribute(defaultValueAttr);
+                    }
+                    else
+                    {
+                        defaultValue = default;
+                    }
 
                     int index = pi - implicitps;
                     if (index == parameters.Count)

@@ -39,7 +39,12 @@ namespace Pchp.Library.Reflection
             //}
         }
 
-        internal PhpTypeInfo _tinfo;
+        /// <summary>
+        /// The declaring type.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        [PhpHidden]
+        internal protected PhpTypeInfo _tinfo;
 
         #endregion
 
@@ -47,6 +52,12 @@ namespace Pchp.Library.Reflection
 
         [PhpFieldsOnlyCtor]
         protected ReflectionMethod() { }
+
+        internal ReflectionMethod(RoutineInfo routine)
+        {
+            _routine = routine ?? throw new ArgumentNullException(nameof(routine));
+            _tinfo = routine.DeclaringType ?? throw new ArgumentException();
+        }
 
         internal ReflectionMethod(PhpTypeInfo tinfo, RoutineInfo routine)
         {
@@ -72,6 +83,9 @@ namespace Pchp.Library.Reflection
             {
                 __construct(ctx, @class.AsString(ctx));
             }
+
+            // get the real declaring type from routine:
+            _tinfo = _routine.DeclaringType ?? _tinfo;
         }
 
         public void __construct(Context ctx, string class_method)
@@ -132,7 +146,46 @@ namespace Pchp.Library.Reflection
 
             return flags;
         }
-        public ReflectionMethod getPrototype() { throw new NotImplementedException(); }
+
+        /// <summary>
+        /// Gets the method prototype (if there is one).
+        /// </summary>
+        /// <returns><see cref="ReflectionMethod"/> of the prototype.</returns>
+        /// <exception cref="ReflectionException">If the method does not have a prototype.</exception>
+        [return: NotNull]
+        public ReflectionMethod getPrototype()
+        {
+            // NOTE: not the same as _routine.Methods[0].GetBaseDefinition()
+
+            if (!_tinfo.IsInterface)
+            {
+                // first look in interfaces:
+                foreach (var t in _tinfo.Type.ImplementedInterfaces)
+                {
+                    var r = t.GetPhpTypeInfo().RuntimeMethods[name];
+                    if (r != null)
+                    {
+                        return new ReflectionMethod(r);
+                    }
+                }
+            }
+
+            // then base classes:
+            RoutineInfo prototype = null;
+            for (var t = _tinfo.BaseType; t != null; t = t.BaseType)
+            {
+                var r = t.RuntimeMethods[name];
+                if (r != null)
+                {
+                    prototype = r;
+                }
+            }
+
+            return prototype != null && prototype.DeclaringType != _tinfo
+                ? new ReflectionMethod(prototype)
+                : throw new ReflectionException(string.Format(Resources.Resources.method_doesnt_have_prototype, _tinfo.Name, name));
+        }
+
         public PhpValue invoke(Context ctx, object @object, params PhpValue[] args) => _routine.Invoke(ctx, @object, args);
         public PhpValue invokeArgs(Context ctx, object @object, PhpArray args) => _routine.Invoke(ctx, @object, args.GetValues());
         public bool isAbstract() => _routine.Methods.Any(m => m.IsAbstract);
@@ -144,5 +197,20 @@ namespace Pchp.Library.Reflection
         public bool isPublic() => _routine.Methods.Any(m => m.IsPublic);
         public bool isStatic() => _routine.Methods.Any(m => m.IsStatic);
         public void setAccessible(bool accessible) { throw new NotImplementedException(); }
+        public override bool hasReturnType()
+        {
+            if (base.hasReturnType())
+            {
+                // magic methods that can't have declared return type:
+                if (_routine.Name != "__construct" &&
+                    _routine.Name != "__destruct")
+                {
+                    return true;
+                }
+            }
+
+            //
+            return false;
+        }
     }
 }

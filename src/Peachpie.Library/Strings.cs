@@ -1034,51 +1034,25 @@ namespace Pchp.Library
         /// <summary>
         /// Retrieves a substring from the given string.
         /// </summary>
-        /// <param name="str">The source string (unicode).</param>
-        /// <param name="offset">The relativized offset of the first item of the slice.</param>
-        /// <param name="length">The relativized length of the slice.</param>
-        /// <returns>The substring of the <paramref name="str"/>.</returns>
-        /// <remarks>
-        /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> and <paramref name="length"/>.
-        /// </remarks>
-        [return: CastToFalse]
-        public static string substr(string str, int offset, int length = int.MaxValue)
-        {
-            if (str == null)
-            {
-                str = string.Empty;
-            }
-
-            if (PhpMath.AbsolutizeRange(ref offset, ref length, str.Length))
-            {
-                return str.Substring(offset, length);
-            }
-            else
-            {
-                return null; // FALSE
-            }
-        }
-
-        /// <summary>
-        /// Retrieves a substring from the given string.
-        /// </summary>
         /// <param name="str">The source string.</param>
         /// <param name="offset">The relativized offset of the first item of the slice.</param>
-        /// <param name="length">The relativized length of the slice.</param>
+        /// <param name="length">The relativized length of the slice. If not specified, the maximum length is assumed.</param>
         /// <returns>The substring of the <paramref name="str"/>.</returns>
         /// <remarks>
         /// See <see cref="PhpMath.AbsolutizeRange"/> for details about <paramref name="offset"/> and <paramref name="length"/>.
         /// </remarks>
         [return: CastToFalse]
-        public static PhpString substr(PhpString str, int offset, int length = int.MaxValue)
+        public static PhpString substr(PhpString str, int offset, int? length = default)
         {
-            if (PhpMath.AbsolutizeRange(ref offset, ref length, str.Length))
+            var ilength = length.HasValue ? length.Value : int.MaxValue;
+
+            if (PhpMath.AbsolutizeRange(ref offset, ref ilength, str.Length))
             {
-                return str.Substring(offset, length);
+                return str.Substring(offset, ilength);
             }
             else
             {
-                return default(PhpString); // FALSE
+                return default; // FALSE
             }
         }
 
@@ -5601,7 +5575,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The string to convert.</param>
         /// <returns>The lowercased string or empty string if <paramref name="str"/> is null.</returns>
-        public static string strtolower(string str) => str.ToLowerInvariant();
+        public static string strtolower(string str) => str != null ? str.ToLowerInvariant() : string.Empty;
         //{
         //    // TODO: Locale: return (str == null) ? string.Empty : str.ToLower(Locale.GetCulture(Locale.Category.CType));
         //}
@@ -5612,7 +5586,7 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="str">The string to convert.</param>
         /// <returns>The uppercased string or empty string if <paramref name="str"/> is null.</returns>
-        public static string strtoupper(string str) => str.ToUpperInvariant();
+        public static string strtoupper(string str) => str != null ? str.ToUpperInvariant() : string.Empty;
         //{
         //    // TODO: Locale: return (str == null) ? string.Empty : str.ToUpper(Locale.GetCulture(Locale.Category.CType));
         //}

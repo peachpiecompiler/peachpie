@@ -50,7 +50,7 @@ namespace Pchp.Library
     /// <summary>
     /// Mersanne Twister random generator.
     /// </summary>
-    internal sealed class MersenneTwister
+    internal sealed class MersenneTwister : Random
     {
         // period parameters:
         private const int N = 624;
@@ -65,19 +65,20 @@ namespace Pchp.Library
         // the array for the state vector:
         private readonly uint[] mt = new uint[N];
 
-        /// <summary>
-        /// Create a new instance of <see cref="MersenneTwister"/> using a default seed.
-        /// </summary>
-        public MersenneTwister()
-        {
-            Seed(5489U);
-        }
+        ///// <summary>
+        ///// Create a new instance of <see cref="MersenneTwister"/> using a default seed.
+        ///// </summary>
+        //public MersenneTwister()
+        //    : this(5489U)
+        //{
+        //}
 
         /// <summary>
         /// Create a new instance of <see cref="MersenneTwister"/> using a specified seed.
         /// </summary>
         /// <param name="seed">The seed.</param>
         public MersenneTwister(uint seed)
+            : base(0/*avoid calling base GenerateSeed() method*/)
         {
             Seed(seed);
         }
@@ -155,7 +156,7 @@ namespace Pchp.Library
         /// Generates a random signed integer value.
         /// </summary>
         /// <returns>The generated number.</returns>
-        public int Next()
+        public override int Next()
         {
             return unchecked((int)(NextUnsigned() >> 1));
         }
@@ -164,7 +165,7 @@ namespace Pchp.Library
         /// Generates a random number from interval [min,max).
         /// </summary>
         /// <returns>The generated number.</returns>
-        public int Next(int min, int max)
+        public override int Next(int min, int max)
         {
             if (min > max)
                 throw new ArgumentOutOfRangeException("min");
@@ -189,7 +190,22 @@ namespace Pchp.Library
         /// Generates a random double value from interval [0,1).
         /// </summary>
         /// <returns>The generated number.</returns>
-        double NextDouble()
+        public override double NextDouble()
+        {
+            return Sample();
+        }
+
+        public override int Next(int maxValue) => Next(0, maxValue);
+
+        public override void NextBytes(byte[] buffer)
+        {
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                buffer[i] = (byte)(NextUnsigned() & 0xff);
+            }
+        }
+
+        protected override double Sample()
         {
             return (double)NextUnsigned() * (1.0 / (double)UInt32.MaxValue);
         }

@@ -456,15 +456,22 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         internal MethodSymbol ResolvePhpCtor(bool recursive = false)
         {
-            var ctor = 
-                this.GetMembersByPhpName(Devsense.PHP.Syntax.Name.SpecialMethodNames.Construct.Value).OfType<MethodSymbol>().FirstOrDefault() ??
-                this.GetMembersByPhpName(this.Name).OfType<MethodSymbol>().FirstOrDefault();
+            // resolve __construct()
+            var ctor = GetMembersByPhpName(Devsense.PHP.Syntax.Name.SpecialMethodNames.Construct.Value).OfType<MethodSymbol>().FirstOrDefault();
 
+            // resolve PHP$-like constructor (if the class is not namespaced)
+            if (ctor == null && this.PhpQualifiedName().IsSimpleName)
+            {
+                ctor = this.GetMembersByPhpName(this.Name).OfType<MethodSymbol>().FirstOrDefault();
+            }
+
+            // if method was not resolved, look into parent
             if (ctor == null && recursive)
             {
                 ctor = this.BaseType?.ResolvePhpCtor(true);
             }
 
+            //
             return ctor;
         }
 

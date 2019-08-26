@@ -35,7 +35,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo IsSet_PhpValue = typeof(Core.Operators).GetMethod("IsSet", Types.PhpValue);
 
             public static MethodInfo ToString_Double_Context = typeof(Core.Convert).GetMethod("ToString", typeof(double), typeof(Context));
-            public static MethodInfo ToLong_String = typeof(Core.Convert).GetMethod("StringToLongInteger", typeof(string));
+            public static MethodInfo ToLongOrThrow_String = typeof(Core.Convert).GetMethod("ToLongOrThrow", typeof(string));
             public static MethodInfo ToDouble_String = typeof(Core.Convert).GetMethod("StringToDouble", typeof(string));
             public static MethodInfo ToPhpString_PhpValue_Context = typeof(Core.Convert).GetMethod("ToPhpString", Types.PhpValue, typeof(Context));
             public static MethodInfo ToPhpNumber_String = typeof(Core.Convert).GetMethod("ToNumber", Types.String[0]);
@@ -56,7 +56,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpValue_ToArray = Types.PhpValue.GetMethod("ToArray", Types.Empty);
             /// <summary>Get the underlaying PhpArray, or <c>null</c>. Throws in case of a scalar or object.</summary>
             public static MethodInfo PhpValue_GetArray = Types.PhpValue.GetMethod("GetArray", Types.Empty);
-            public static MethodInfo PhpValue_AsCallable_RuntimeTypeHandle = Types.PhpValue.GetMethod("AsCallable", typeof(RuntimeTypeHandle));
+            public static MethodInfo PhpValue_AsCallable_RuntimeTypeHandle_Object = Types.PhpValue.GetMethod("AsCallable", typeof(RuntimeTypeHandle), typeof(object));
             public static MethodInfo PhpValue_AsObject = Types.PhpValue.GetMethod("AsObject", Types.Empty);
             public static MethodInfo PhpValue_AsString_Context = Types.PhpValue.GetMethod("AsString", typeof(Context));
             public static MethodInfo PhpValue_ToIntStringKey = Types.PhpValue.GetMethod("ToIntStringKey");
@@ -87,6 +87,8 @@ namespace Pchp.Core.Dynamic
             public static readonly FieldInfo PhpValue_False = Types.PhpValue.GetTypeInfo().GetDeclaredField("False");
             public static readonly FieldInfo PhpValue_True = Types.PhpValue.GetTypeInfo().GetDeclaredField("True");
             public static readonly FieldInfo PhpNumber_Default = Types.PhpNumber[0].GetTypeInfo().GetDeclaredField("Default");
+            public static readonly PropertyInfo PhpValue_IsNull = Types.PhpValue.GetProperty("IsNull");
+            public static readonly PropertyInfo PhpValue_IsFalse = Types.PhpValue.GetProperty("IsFalse");
         }
 
         public static class PhpString

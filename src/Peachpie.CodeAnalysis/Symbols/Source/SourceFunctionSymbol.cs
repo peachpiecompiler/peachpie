@@ -12,6 +12,7 @@ using Devsense.PHP.Syntax.Ast;
 using Devsense.PHP.Syntax;
 using Pchp.CodeAnalysis.CodeGen;
 using System.Diagnostics;
+using Peachpie.CodeAnalysis;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
@@ -106,7 +107,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 if (this.DeclaringCompilation.Options.ParseOptions?.LanguageVersion >= new Version(7, 2))
                 {
                     // __autoload is deprecated
-                    diagnostic.Add(this, _syntax, Errors.ErrorCode.WRN_SymbolDeprecated, string.Empty, this.QualifiedName, PhpResources.AutoloadDeprecatedMessage);
+                    diagnostic.Add(this, _syntax, Errors.ErrorCode.WRN_SymbolDeprecated, string.Empty, this.QualifiedName, Peachpie.CodeAnalysis.Errors.ErrorStrings.AutoloadDeprecatedMessage);
                 }
 
                 // __autoload must have exactly one parameter

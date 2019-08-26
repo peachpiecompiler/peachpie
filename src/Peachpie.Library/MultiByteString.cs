@@ -30,7 +30,6 @@ namespace Pchp.Library
 
             public string ExtensionName => MultiByteString.ExtensionName;
 
-            /// <summary><see cref="mb_detect_order"/></summary>
             public Encoding[] DetectOrder { get; set; } = new[] { Encoding.ASCII, Encoding.UTF8 };
 
             /// <summary>
@@ -430,8 +429,8 @@ namespace Pchp.Library
         #region mb_substr, mb_strcut
 
         [return: CastToFalse]
-        public static string mb_substr(Context ctx, PhpValue str, int start, int length = -1, string encoding = null)
-            => SubString(ctx, str, start, length, encoding);
+        public static string mb_substr(Context ctx, PhpString str, int start, int? length = default, string encoding = null)
+            => SubString(ctx, str, start, length.HasValue ? length.Value : int.MaxValue, encoding);
 
         /// <summary>
         ///
@@ -444,30 +443,21 @@ namespace Pchp.Library
         /// <returns></returns>
         /// <remarks>in PHP it behaves differently, but in .NET it is an alias for mb_substr</remarks>
         [return: CastToFalse]
-        public static string mb_strcut(Context ctx, PhpValue str, int start, int length = -1, string encoding = null)
-            => SubString(ctx, str, start, length, encoding);
+        public static string mb_strcut(Context ctx, PhpString str, int start, int? length = default, string encoding = null)
+            => SubString(ctx, str, start, length.HasValue ? length.Value : -1, encoding);
 
-        static string SubString(Context ctx, PhpValue str, int start, int length, string encoding)
+        static string SubString(Context ctx, PhpString str, int start, int length, string encoding)
         {
-            // get the Unicode representation of the string
-            string ustr = ToString(ctx, str, encoding);
+            var ustr = ToString(ctx, str, encoding);
 
-            // start counting from the end of the string
-            if (start < 0)
-                start = ustr.Length + start;    // can result in negative start again -> invalid
-
-            if (length == -1)
-                length = ustr.Length;
-
-            // check boundaries
-            if (start >= ustr.Length || length < 0 || start < 0)
-                return null;
-
-            if (length == 0)
-                return string.Empty;
-
-            // return the substring
-            return (start + length > ustr.Length) ? ustr.Substring(start) : ustr.Substring(start, length);
+            if (PhpMath.AbsolutizeRange(ref start, ref length, ustr.Length))
+            {
+                return ustr.Substring(start, length);
+            }
+            else
+            {
+                return null; // FALSE
+            }
         }
 
         #endregion
@@ -668,37 +658,9 @@ namespace Pchp.Library
             {
                 case CaseConstants.MB_CASE_UPPER: return str.ToUpper();
                 case CaseConstants.MB_CASE_LOWER: return str.ToLower();
-                case CaseConstants.MB_CASE_TITLE: return CaseTitle(str);
+                case CaseConstants.MB_CASE_TITLE: return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(str);
                 default: throw new ArgumentException();
             }
-        }
-
-        static string CaseTitle(string str)
-        {
-            var culture = CultureInfo.CurrentCulture;
-
-            var result = new StringBuilder(str.Length);
-            var upper = true;
-
-            for (int i = 0; i < str.Length; i++)
-            {
-                var ch = str[i];
-
-                if (char.IsWhiteSpace(ch) || char.IsSeparator(ch))
-                {
-                    upper = true;
-                }
-                else if (upper)
-                {
-                    upper = false;
-                    ch = char.ToUpper(ch, culture);
-                }
-
-                result.Append(ch);
-            }
-
-            //
-            return result.ToString();
         }
 
         #endregion

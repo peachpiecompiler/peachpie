@@ -69,17 +69,31 @@ namespace Peachpie.Library.XmlDom
         /// <summary>
         /// Returns all children of the node.
         /// </summary>
+        [NotNull]
         public DOMNodeList childNodes
         {
             get
             {
-                DOMNodeList list = new DOMNodeList();
-                if (IsAssociated || GetType() == typeof(DOMNode))
+                var list = new DOMNodeList();
+                if (this is DOMDocument doc)
+                {
+                    // DOMDocument always ignores white nodes and XmlDeclaration
+                    // returning just the single root node
+                    var node = Create(doc.XmlDocument?.DocumentElement);
+                    if (node != null)
+                    {
+                        list.AppendNode(node);
+                    }
+                }
+                else if (IsAssociated || GetType() == typeof(DOMNode))
                 {
                     foreach (XmlNode child in XmlNode.ChildNodes)
                     {
                         var node = Create(child);
-                        if (node != null) list.AppendNode(node);
+                        if (node != null)
+                        {
+                            list.AppendNode(node);
+                        }
                     }
                 }
                 return list;
@@ -93,8 +107,30 @@ namespace Peachpie.Library.XmlDom
         {
             get
             {
-                if (!IsAssociated && GetType() != typeof(DOMNode)) return null;
-                return Create(XmlNode.FirstChild);
+                // according to "childNodes"
+
+                if (this is DOMDocument doc)
+                {
+                    // always the single root node or NULL
+                    return Create(doc.XmlDocument?.DocumentElement);
+                }
+                else if (IsAssociated || GetType() == typeof(DOMNode))
+                {
+                    // convert first node to DOMNode,
+                    // skip eventual XmlDeclaration(s):
+
+                    for (var n = XmlNode.FirstChild; n != null; n = n.NextSibling)
+                    {
+                        var dn = Create(n);
+                        if (dn != null)
+                        {
+                            return dn;
+                        }
+                    }
+                }
+
+                //
+                return null;
             }
         }
 
@@ -594,5 +630,5 @@ namespace Peachpie.Library.XmlDom
         }
 
         #endregion
-}
+    }
 }

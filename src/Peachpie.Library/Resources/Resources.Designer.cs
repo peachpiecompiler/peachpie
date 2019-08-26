@@ -1042,6 +1042,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Method {0}::{1} does not have a prototype.
+        /// </summary>
+        public static string method_doesnt_have_prototype {
+            get {
+                return ResourceManager.GetString("method_doesnt_have_prototype", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Ignoring unsupported pattern modifier &apos;{0}&apos; in perl regular expression.
         /// </summary>
         public static string modifier_not_supported {

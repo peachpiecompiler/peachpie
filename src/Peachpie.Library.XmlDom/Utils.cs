@@ -34,12 +34,11 @@ namespace Peachpie.Library.XmlDom
 
         internal static Encoding/*!*/ GetNodeEncoding(Context ctx, XmlNode xmlNode)
         {
-            XmlDocument xml_document = xmlNode.OwnerDocument;
-            if (xml_document == null) xml_document = (XmlDocument)xmlNode;
-
+            var xml_document = xmlNode as XmlDocument ?? xmlNode.OwnerDocument;
+            
             Encoding encoding;
 
-            if (xml_document.FirstChild is XmlDeclaration decl && !string.IsNullOrEmpty(decl.Encoding))
+            if (xml_document != null && xml_document.FirstChild is XmlDeclaration decl && !string.IsNullOrEmpty(decl.Encoding))
             {
                 encoding = Encoding.GetEncoding(decl.Encoding);
             }

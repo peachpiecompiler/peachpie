@@ -279,12 +279,38 @@ namespace Pchp.Core
     }
 
     /// <summary>
-    /// Compiler generated attribute denoting that associated value cannot be <c>null</c>.
+    /// Attribute denoting that associated value cannot be <c>null</c>.
     /// </summary>
     [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.ReturnValue | AttributeTargets.Field | AttributeTargets.Property)]
     public sealed class NotNullAttribute : Attribute
     {
 
+    }
+
+    /// <summary>
+    /// Attribute specifying the parameter default if cannot be stored in standard metadata.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Field)]
+    public sealed class DefaultValueAttribute : Attribute
+    {
+        /// <summary>
+        /// Denotates the type of the value.
+        /// </summary>
+        public enum DefaultValueType
+        {
+            None = 0,
+            PhpArray = 1,
+        }
+
+        /// <summary>
+        /// The type of the default value.
+        /// </summary>
+        public DefaultValueType Type { get; set; }
+
+        /// <summary>
+        /// Optional serialized data using PHP serialization.
+        /// </summary>
+        public byte[] SerializedValue { get; set; }
     }
 
     /// <summary>

@@ -133,7 +133,7 @@ internal  partial class Parser: ShiftReduceParser<SemanticValueType,Position>
 			}
 			else
 			{
-				yyval.value = PhpValue.FromClass(arr.ToClass());
+				yyval.value = PhpValue.FromClass(arr.ToObject());
 			}
 		}
         return;

@@ -133,7 +133,7 @@ namespace Pchp.Library
                 case "post_max_size":
                 case "upload_max_filesize":
                     AssertGet(option, action);
-                    return (PhpValue)ctx.HttpPhpContext.MaxRequestSize;
+                    return ctx.HttpPhpContext != null ? ctx.HttpPhpContext.MaxRequestSize : (8_000_000/*cli mode, just return something*/);
 
                 case "docref_root":
                     return (PhpValue)GetSet(ref config.Core.docref_root, "", value, action);

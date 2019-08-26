@@ -66,6 +66,8 @@ namespace Peachpie.Library.Scripting
         {
             foreach (var c in candidates)
             {
+                Debug.Assert(c.DependingSubmissions != null);
+
                 // candidate requires that all its dependencies were loaded into context
                 // TODO: resolve the compiled code dependencies - referenced types and declared functions - instead of "DependingSubmissions"
                 if (c.DependingSubmissions.All(context.Submissions.Contains))

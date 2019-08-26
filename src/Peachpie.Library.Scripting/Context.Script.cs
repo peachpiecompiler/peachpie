@@ -26,6 +26,7 @@ namespace Peachpie.Library.Scripting
         /// Set of dependency submissions.
         /// Can be empty.
         /// These scripts are expected to be evaluated when running this script.
+        /// Cannot be <c>null</c>.
         /// </summary>
         readonly Script[] _previousSubmissions;
 
@@ -53,7 +54,7 @@ namespace Peachpie.Library.Scripting
         /// Refernces to scripts that preceeds this one.
         /// Current script requires these to be evaluated first.
         /// </summary>
-        public IEnumerable<Script> DependingSubmissions => _previousSubmissions;    // TODO: resolve the compiled code dependencies - referenced types and declared functions. Also, this might cause a huge memory leak.
+        public IReadOnlyList<Script> DependingSubmissions => _previousSubmissions;    // TODO: resolve the compiled code dependencies - referenced types and declared functions. Also, this might cause a huge memory leak.
 
         /// <summary>
         /// Gets the assembly content.
@@ -117,6 +118,7 @@ namespace Peachpie.Library.Scripting
             _entryPoint = entryPoint;
             _assemblyName = new AssemblyName();
             _image = ImmutableArray<byte>.Empty;
+            _previousSubmissions = Array.Empty<Script>();
         }
 
         /// <summary>

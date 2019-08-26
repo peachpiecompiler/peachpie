@@ -12,6 +12,31 @@ using System_DateTime = System.DateTime;
 namespace Pchp.Library.DateTime
 {
     /// <summary>
+    /// Internal container for last datetime parse operation errors.
+    /// </summary>
+    sealed class DateTimeErrors
+    {
+        public static DateTimeErrors Empty { get; } = new DateTimeErrors();
+
+        public IEnumerable<string> Warnings { get; set; }
+        public IEnumerable<string> Errors { get; set; }
+
+        public PhpArray ToPhpArray()
+        {
+            var warnings = new PhpArray(Warnings);
+            var errors = new PhpArray(Errors);
+
+            return new PhpArray(4)
+            {
+                { "warning_count", warnings.Count },
+                { "warnings", warnings },
+                { "error_count", errors.Count },
+                { "errors", errors },
+            };
+        }
+    }
+
+    /// <summary>
     /// Representation of date and time.
     /// </summary>
     [PhpType(PhpTypeAttribute.InheritName)]
@@ -58,19 +83,25 @@ namespace Pchp.Library.DateTime
 
         [PhpFieldsOnlyCtor]
         protected DateTime(Context ctx)
+            : this(ctx, System_DateTime.UtcNow, PhpTimeZone.GetCurrentTimeZone(ctx))
+        {
+        }
+
+        private DateTime(Context ctx, System_DateTime time, TimeZoneInfo timezone)
         {
             Debug.Assert(ctx != null);
 
             _ctx = ctx;
 
-            this.Time = System_DateTime.UtcNow;
-            this.TimeZone = PhpTimeZone.GetCurrentTimeZone(ctx);
+            this.Time = time;
+            this.TimeZone = timezone ?? throw new ArgumentNullException(nameof(timezone));
         }
 
         // public __construct ([ string $time = "now" [, DateTimeZone $timezone = NULL ]] )
         public DateTime(Context ctx, string time = null, DateTimeZone timezone = null)
             : this(ctx)
         {
+            ctx.SetProperty(DateTimeErrors.Empty);
             __construct(time, timezone);
         }
 
@@ -98,17 +129,47 @@ namespace Pchp.Library.DateTime
 
         #endregion
 
-        #region Methods
+        #region Helpers
 
+        /// <summary>
+        /// Parses time and returns <see cref="System_DateTime"/>.
+        /// In case error or warning occur, <see cref="DateTimeErrors"/> is set accordingly.
+        /// </summary>
+        [PhpHidden]
         internal static System_DateTime StrToTime(Context ctx, string timestr, System_DateTime time)
         {
-            if (string.IsNullOrEmpty(timestr) || timestr.EqualsOrdinalIgnoreCase("now"))
+            if (string.IsNullOrWhiteSpace(timestr) || (timestr = timestr.Trim()).EqualsOrdinalIgnoreCase("now"))
             {
                 return System_DateTime.UtcNow;
             }
 
-            var result = DateTimeFunctions.strtotime(ctx, timestr, DateTimeUtils.UtcToUnixTimeStamp(time));
-            return (result >= 0) ? DateTimeUtils.UnixTimeStampToUtc(result) : System_DateTime.UtcNow;
+            var result = DateInfo.Parse(ctx, timestr, time, out var error);
+            if (error != null)
+            {
+                ctx.SetProperty<DateTimeErrors>(new DateTimeErrors { Errors = new[] { error } });
+                throw new Spl.Exception(error);
+            }
+
+            return DateTimeUtils.UnixTimeStampToUtc(result);
+        }
+
+        #endregion
+
+        #region Methods
+
+        public virtual void __wakeup()
+        {
+
+        }
+
+        /// <summary>
+        /// Returns a new instance of a DateTime object.
+        /// </summary>
+        /// <param name="array">Initialization array.</param>
+        [return: NotNull]
+        public static DateTime __set_state(PhpArray array)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -116,6 +177,7 @@ namespace Pchp.Library.DateTime
         /// </summary>
         /// <returns>Returns the <see cref="DateTime"/> object for method chaining or <c>FALSE</c> on failure.</returns>
         //[return: CastToFalse]
+        [return: NotNull]
         public virtual DateTime add(DateInterval interval)
         {
             Time = Time.Add(interval.AsTimeSpan());
@@ -127,6 +189,7 @@ namespace Pchp.Library.DateTime
         /// Subtracts an amount of days, months, years, hours, minutes and seconds from a DateTime object.
         /// </summary>
         //[return: CastToFalse]
+        [return: NotNull]
         public virtual DateTime sub(DateInterval interval)
         {
             Time = Time.Subtract(interval.AsTimeSpan());
@@ -136,8 +199,10 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Returns the difference between two DateTime objects
         /// </summary>
+        [return: NotNull]
         public virtual DateInterval diff(DateTimeInterface datetime2, bool absolute = false) => DateTimeFunctions.date_diff(this, datetime2, absolute);
 
+        [return: NotNull]
         public virtual DateTime setTimezone(DateTimeZone timezone)
         {
             if (timezone == null)
@@ -179,14 +244,17 @@ namespace Pchp.Library.DateTime
             return (long)this.TimeZone.BaseUtcOffset.TotalSeconds;
         }
 
+        [return: NotNull]
         public virtual DateTimeZone getTimezone()
         {
             return new DateTimeZone(this.TimeZone);
         }
 
         /// <summary>Returns the warnings and errors</summary>
-        public static PhpArray getLastErrors(Context ctx) => throw new NotImplementedException();
+        [return: CastToFalse]
+        public static PhpArray getLastErrors(Context ctx) => ctx.TryGetProperty<DateTimeErrors>()?.ToPhpArray();
 
+        [return: NotNull]
         public virtual DateTime modify(string modify)
         {
             if (modify == null)
@@ -331,6 +399,7 @@ namespace Pchp.Library.DateTime
             }
         }
 
+        [return: NotNull]
         public virtual DateTime setDate(int year, int month, int day)
         {
             try
@@ -353,6 +422,7 @@ namespace Pchp.Library.DateTime
             return this;
         }
 
+        [return: NotNull]
         public virtual DateTime setISODate(int year, int week, int day = 1)
         {
             var jan1 = new System_DateTime(year, 1, 1);
@@ -394,6 +464,7 @@ namespace Pchp.Library.DateTime
             return this;
         }
 
+        [return: NotNull]
         public virtual DateTime setTime(int hour, int minute, int second)
         {
             try
@@ -422,15 +493,11 @@ namespace Pchp.Library.DateTime
         /// Sets the date and time based on an Unix timestamp.
         /// </summary>
         /// <returns>Returns the <see cref="DateTime"/> object for method chaining.</returns>
+        [return: NotNull]
         public DateTime setTimestamp(long unixtimestamp)
         {
             this.Time = DateTimeUtils.UnixTimeStampToUtc(unixtimestamp);
             return this;
-        }
-
-        public virtual void __wakeup()
-        {
-
         }
 
         #endregion
@@ -443,11 +510,18 @@ namespace Pchp.Library.DateTime
 
         #region IPhpCloneable
 
-        public object Clone() => new DateTime(_ctx)
+        [PhpHidden]
+        public object Clone()
         {
-            Time = Time,
-            TimeZone = TimeZone,
-        };
+            if (GetType() == typeof(DateTime))
+            {
+                return new DateTime(_ctx, Time, TimeZone);
+            }
+            else
+            {
+                return Operators.CloneRaw(_ctx, this);
+            }
+        }
 
         #endregion
 
@@ -492,6 +566,8 @@ namespace Pchp.Library.DateTime
         public DateTimeImmutable(Context ctx, string time = null, DateTimeZone timezone = null)
         {
             Debug.Assert(ctx != null);
+
+            ctx.SetProperty(DateTimeErrors.Empty);
 
             this.TimeZone = (timezone == null)
                 ? PhpTimeZone.GetCurrentTimeZone(ctx)
@@ -570,6 +646,7 @@ namespace Pchp.Library.DateTime
         public virtual DateTimeImmutable add(DateInterval interval) => new DateTimeImmutable(_ctx, Time.Add(interval.AsTimeSpan()), TimeZone);
         public static DateTimeImmutable createFromFormat(string format, string time, DateTimeZone timezone = null) => throw new NotImplementedException();
         public static DateTimeImmutable createFromMutable(DateTime datetime) => throw new NotImplementedException();
+        [return: CastToFalse]
         public static PhpArray getLastErrors(Context ctx) => DateTime.getLastErrors(ctx);
         public static DateTimeImmutable __set_state(PhpArray array) => throw new NotImplementedException();
         public virtual DateTimeImmutable setDate(int year, int month, int day) => throw new NotImplementedException();

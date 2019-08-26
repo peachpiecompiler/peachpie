@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Pchp.CodeAnalysis.Semantics;
 using Roslyn.Utilities;
 using System;
 using System.Collections.Generic;
@@ -53,15 +54,11 @@ namespace Pchp.CodeAnalysis.Symbols
 
         #region Forwarded
 
-        internal override TypeSymbol Type
-        {
-            get { return underlyingParameter.Type; }
-        }
+        public override BoundExpression Initializer => underlyingParameter.Initializer;
 
-        public sealed override RefKind RefKind
-        {
-            get { return underlyingParameter.RefKind; }
-        }
+        internal override TypeSymbol Type => underlyingParameter.Type;
+
+        public sealed override RefKind RefKind => underlyingParameter.RefKind;
 
         //internal sealed override bool IsMetadataIn
         //{

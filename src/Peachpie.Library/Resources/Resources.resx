@@ -663,6 +663,9 @@
   <data name="file_cannot_delete" xml:space="preserve">
     <value>Cannot delete file '{0}'</value>
   </data>
+  <data name="method_doesnt_have_prototype" xml:space="preserve">
+    <value>Method {0}::{1} does not have a prototype</value>
+  </data>
   <data name="argon2_memory" xml:space="preserve">
     <value>Memory cost is outside of allowed memory range</value>
   </data>

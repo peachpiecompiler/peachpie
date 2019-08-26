@@ -140,14 +140,14 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public readonly CoreType
             Context, Operators, Convert, Comparison, StrictComparison, PhpException,
-            ScriptAttribute, PhpTraitAttribute, PharAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, NotNullAttribute, PhpMemberVisibilityAttribute,
+            ScriptAttribute, PhpTraitAttribute, PharAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, NotNullAttribute, DefaultValueAttribute, DefaultValueType, PhpMemberVisibilityAttribute,
             ScriptDiedException,
             IStaticInit, RoutineInfo, IndirectLocal,
             BinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
             Dynamic_NameParam_T, Dynamic_TargetTypeParam, Dynamic_CallerTypeParam, Dynamic_UnpackingParam_T,
             PhpTypeInfoExtension, PhpTypeInfo, CommonPhpArrayKeys,
             PhpNumber, PhpValue, PhpAlias, PhpString, PhpArray, PhpResource, IPhpArray, IPhpEnumerable, IPhpCallable, IPhpConvertible, PhpString_Blob,
-            IntStringKey, PhpHashtable,
+            IntStringKey, PhpHashtable, QueryValue_T, QueryValue_DummyFieldsOnlyCtor,
             Void, Object, Int32, Long, Double, Boolean, String, Exception,
             RuntimeTypeHandle, RuntimeMethodHandle,
             stdClass, ArrayAccess, Closure, Generator, Iterator, Traversable, GeneratorStateMachineDelegate, MainDelegate, IntPtr;
@@ -182,6 +182,8 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpString_Blob = Create("PhpString+Blob");
             IntStringKey = Create("IntStringKey");
             PhpHashtable = Create("PhpHashtable");
+            QueryValue_T = Create("QueryValue`1");
+            QueryValue_DummyFieldsOnlyCtor = Create("QueryValue.DummyFieldsOnlyCtor");
             ScriptDiedException = Create("ScriptDiedException");
             Context = Create("Context");
             Operators = Create("Operators");
@@ -196,6 +198,8 @@ namespace Pchp.CodeAnalysis.Symbols
             PhpHiddenAttribute = Create("PhpHiddenAttribute");
             PhpFieldsOnlyCtorAttribute = Create(PhpFieldsOnlyCtorAttributeName);
             NotNullAttribute = Create("NotNullAttribute");
+            DefaultValueAttribute = Create("DefaultValueAttribute");
+            DefaultValueType = Create("DefaultValueAttribute+DefaultValueType");
             PhpMemberVisibilityAttribute = Create(PhpMemberVisibilityAttributeName);
             IStaticInit = Create("IStaticInit");
             RoutineInfo = Create("Reflection.RoutineInfo");

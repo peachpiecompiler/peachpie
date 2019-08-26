@@ -17,6 +17,7 @@ using Devsense.PHP.Syntax.Ast;
 using System.Reflection;
 using Pchp.CodeAnalysis.Utilities;
 using Microsoft.CodeAnalysis.Collections;
+using Peachpie.CodeAnalysis;
 
 namespace Pchp.CodeAnalysis.CommandLine
 {

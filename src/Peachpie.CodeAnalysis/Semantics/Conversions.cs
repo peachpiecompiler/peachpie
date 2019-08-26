@@ -111,6 +111,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
             for (int ext = -1; ext < extensions.Length; ext++)
             {
+                // TODO: go through interfaces
+
                 for (var container = ext < 0 ? receiver : extensions[ext]; container != null; container = container.IsStatic ? null : container.BaseType)
                 {
                     if (container.SpecialType == SpecialType.System_ValueType) continue; //
@@ -253,7 +255,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 case SpecialType.System_Byte:
                 case SpecialType.System_SByte:
                 case SpecialType.System_Int32: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsInt", "ToInt", "ToLong" };
-                case SpecialType.System_Int64: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsLong", "ToLong" };
+                case SpecialType.System_Int64: return new[] { WellKnownMemberNames.ImplicitConversionName, "ToLongOrThrow" };
                 case SpecialType.System_Single:
                 case SpecialType.System_Double: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsDouble", "ToDouble" };
                 case SpecialType.System_Decimal: return new[] { WellKnownMemberNames.ImplicitConversionName, "ToDecimal" };

@@ -703,6 +703,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 if (boundTarget == null)
                 {
+                    if (fname.IsGetArgsOrArgsNumFunctionName() && Routine != null)
+                    {
+                        // remember we need varargs:
+                        Routine.Flags |= RoutineFlags.UsesArgs;
+                    }
+
                     if (fname.IsAssertFunctionName())
                     {
                         // Template: assert(...)

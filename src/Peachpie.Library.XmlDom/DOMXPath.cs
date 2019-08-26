@@ -30,10 +30,29 @@ namespace Peachpie.Library.XmlDom
         /// </summary>
         internal XmlNamespaceManager NamespaceManagerExplicit;
 
+        internal protected XmlDocument OriginalXmlDocument
+        {
+            get
+            {
+                if (XPathNavigator.UnderlyingObject is XmlDocument xmldoc)
+                {
+                    return xmldoc;
+                }
+                else if (XPathNavigator.UnderlyingObject is XmlNode xmlnode)
+                {
+                    return xmlnode.OwnerDocument;
+                }
+                else
+                {
+                    throw new NotSupportedException();
+                }
+            }
+        }
+
         /// <summary>
         /// Returns the <see cref="DOMDocument"/> associated with this object.
         /// </summary>
-        public DOMDocument document => new DOMDocument((XmlDocument)XPathNavigator.UnderlyingObject);
+        public DOMDocument document => new DOMDocument(OriginalXmlDocument);
 
         #endregion
 
@@ -72,7 +91,7 @@ namespace Peachpie.Library.XmlDom
 
         public void __construct(DOMDocument document)
         {
-            this.XPathNavigator = document.XmlDocument.CreateNavigator();
+            this.XPathNavigator = document.XmlDocument.DocumentElement.CreateNavigator();
             InitNamespaceManagers(document._isHtmlDocument);
         }
 
@@ -198,7 +217,7 @@ namespace Peachpie.Library.XmlDom
             {
                 XmlNode node = context.XmlNode;
 
-                if (node.OwnerDocument != (XmlDocument)XPathNavigator.UnderlyingObject)
+                if (node.OwnerDocument != OriginalXmlDocument)
                 {
                     DOMException.Throw(ExceptionCode.WrongDocument);
                     return null;

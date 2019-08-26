@@ -8,11 +8,10 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Pchp.CodeAnalysis {
+namespace Peachpie.CodeAnalysis {
     using System;
-    using System.Reflection;
-
-
+    
+    
     /// <summary>
     ///   A strongly-typed resource class, for looking up localized strings, etc.
     /// </summary>
@@ -20,7 +19,7 @@ namespace Pchp.CodeAnalysis {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class PhpResources {
@@ -40,7 +39,7 @@ namespace Pchp.CodeAnalysis {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Peachpie.CodeAnalysis.PhpResources", typeof(PhpResources).GetTypeInfo().Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Peachpie.CodeAnalysis.PhpResources", typeof(PhpResources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -61,32 +60,21 @@ namespace Pchp.CodeAnalysis {
             }
         }
         
-        /// <summary>
-        ///   Looks up a localized string similar to Use spl_autoload_register() instead..
-        /// </summary>
-        internal static string AutoloadDeprecatedMessage {
-            get {
-                return ResourceManager.GetString("AutoloadDeprecatedMessage", resourceCulture);
-            }
-        }
-        
         internal static string IDS_Help {
             get {
                 return ResourceManager.GetString("IDS_Help", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Language versions:.
         /// </summary>
-        internal static string IDS_LangVersions
-        {
-            get
-            {
+        internal static string IDS_LangVersions {
+            get {
                 return ResourceManager.GetString("IDS_LangVersions", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to {0} version {1}.
         /// </summary>
@@ -102,6 +90,15 @@ namespace Pchp.CodeAnalysis {
         internal static string IDS_ToolName {
             get {
                 return ResourceManager.GetString("IDS_ToolName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Initializes the class without calling its &apos;__construct&apos; method..
+        /// </summary>
+        internal static string XmlDoc_FieldsOnlyCtor {
+            get {
+                return ResourceManager.GetString("XmlDoc_FieldsOnlyCtor", resourceCulture);
             }
         }
     }

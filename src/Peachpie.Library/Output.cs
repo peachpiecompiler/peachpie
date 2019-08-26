@@ -139,32 +139,36 @@ namespace Pchp.Library
         /// Gets the contents of the current buffer and cleans it.
         /// </summary>
         /// <returns>The content of type <see cref="string"/> or <see cref="byte"/> or <c>false</c>.</returns>
-        public static PhpValue ob_get_clean(Context ctx)
+        [return: CastToFalse]
+        public static PhpString ob_get_clean(Context ctx)
         {
-            BufferedOutput bo = ctx.BufferedOutput;
+            var bo = ctx.BufferedOutput;
 
             var result = bo.GetContent();
             bo.Clean();
             EndInternal(ctx, true);
-            return result;
+
+            return result;  // string or FALSE
         }
 
         /// <summary>
         /// Gets the content of the current buffer.
         /// </summary>
         /// <returns>The content of type <see cref="string"/> or <see cref="byte"/> or <c>false</c>.</returns>
-        public static PhpValue ob_get_contents(Context ctx)
+        [return: CastToFalse]
+        public static PhpString ob_get_contents(Context ctx)
         {
-            return ctx.BufferedOutput.GetContent();
+            return ctx.BufferedOutput.GetContent(); // string or FALSE
         }
 
         /// <summary>
         /// Gets the content of the current buffer and decreases the level of buffering.
         /// </summary>
         /// <returns>The content of the buffer.</returns>
-        public static PhpValue ob_get_flush(Context ctx)
+        [return: CastToFalse]
+        public static PhpString ob_get_flush(Context ctx)
         {
-            BufferedOutput bo = ctx.BufferedOutput;
+            var bo = ctx.BufferedOutput;
 
             var result = bo.GetContent();
             EndInternal(ctx, true);
@@ -271,7 +275,7 @@ namespace Pchp.Library
         /// </summary>
         public static void ob_flush(Context ctx)
         {
-            ctx.BufferedOutput.Flush();
+            ctx.BufferedOutput.FlushLevel();
         }
 
         #endregion

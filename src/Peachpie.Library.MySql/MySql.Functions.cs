@@ -930,7 +930,7 @@ namespace Peachpie.Library.MySql
             //objFields.Add("zerofill", ((flags & ColumnFlags.ZERO_FILL) != 0) /*((bool)info["ZeroFill"])*/ ? 1 : 0);
 
             // create new stdClass with runtime fields initialized above:
-            return (stdClass)objFields.ToClass();
+            return objFields.ToObject();
         }
 
         /// <summary>

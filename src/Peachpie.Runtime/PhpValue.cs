@@ -269,11 +269,11 @@ namespace Pchp.Core
 
         public static explicit operator long(PhpValue value) => value.ToLong();
 
-        public static explicit operator ushort(PhpValue value) => checked((ushort)value.ToLong());
+        public static explicit operator ushort(PhpValue value) => checked((ushort)(long)value);
 
-        public static explicit operator int(PhpValue value) => checked((int)value.ToLong());
+        public static explicit operator int(PhpValue value) => checked((int)(long)value);
 
-        public static explicit operator uint(PhpValue value) => checked((uint)value.ToLong());
+        public static explicit operator uint(PhpValue value) => checked((uint)(long)value);
 
         public static explicit operator double(PhpValue value) => value.ToDouble();
 
@@ -303,6 +303,13 @@ namespace Pchp.Core
         /// Conversion to <see cref="int"/>.
         /// </summary>
         public int ToInt() => (int)this;
+
+        /// <summary>
+        /// Implicit conversion to <see cref="long"/>.
+        /// Throws <c>TypeError</c> in case the implicit conversion cannot be done.
+        /// </summary>
+        /// <returns></returns>
+        public long ToLongOrThrow() => _type.ToLongOrThrow(ref this);
 
         /// <summary>
         /// Gets underlaying class instance or <c>null</c>.
@@ -461,7 +468,7 @@ namespace Pchp.Core
         /// <summary>
         /// Gets callable wrapper for the object dynamic invocation.
         /// </summary>
-        public IPhpCallable AsCallable(RuntimeTypeHandle callerCtx = default(RuntimeTypeHandle)) => _type.AsCallable(ref this, callerCtx);
+        public IPhpCallable AsCallable(RuntimeTypeHandle callerCtx = default(RuntimeTypeHandle), object callerObj = null) => _type.AsCallable(ref this, callerCtx, callerObj);
 
         public object EnsureObject() => _type.EnsureObject(ref this);
 
@@ -564,9 +571,9 @@ namespace Pchp.Core
             if (type == typeof(PhpValue)) return this;
             if (type == typeof(PhpAlias)) return this.EnsureAlias();
 
-            if (type == typeof(long)) return this.ToLong();
-            if (type == typeof(int)) return (int)this.ToLong();
-            if (type == typeof(uint)) return (uint)this.ToLong();
+            if (type == typeof(long)) return (long)this;
+            if (type == typeof(int)) return (int)(long)this;
+            if (type == typeof(uint)) return (uint)(long)this;
             if (type == typeof(double)) return this.ToDouble();
             if (type == typeof(float)) return (float)this.ToDouble();
             if (type == typeof(bool)) return this.ToBoolean();
@@ -658,6 +665,16 @@ namespace Pchp.Core
                 str = default;
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Checks the value is of type <c>string</c> (both unicode and single-byte) or an alias to a string.
+        /// </summary>
+        internal bool IsStringImpl()
+        {
+            return ReferenceEquals(_type, TypeTable.StringTable) ||
+                   ReferenceEquals(_type, TypeTable.MutableStringTable) ||
+                   (IsAlias && _obj.alias.Value.IsStringImpl());
         }
 
         /// <summary>

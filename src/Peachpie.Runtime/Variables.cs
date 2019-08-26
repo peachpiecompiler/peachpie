@@ -557,6 +557,11 @@ namespace Pchp.Core
         public static bool IsString(this PhpValue value, out string @string) => value.IsStringImpl(out @string);
 
         /// <summary>
+        /// Checks the value is of type <c>string</c> (both unicode and single-byte) or an alias to a string.
+        /// </summary>
+        public static bool IsString(this PhpValue value) => value.IsStringImpl();
+
+        /// <summary>
         /// Gets value indicating the variable contains a single-byte string value.
         /// </summary>
         public static bool IsBinaryString(this PhpValue value, out PhpString @string)

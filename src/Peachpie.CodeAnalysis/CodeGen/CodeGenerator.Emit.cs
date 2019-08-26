@@ -183,6 +183,23 @@ namespace Pchp.CodeAnalysis.CodeGen
             return null;
         }
 
+        /// <summary>
+        /// Emits value of <c>$this</c>.
+        /// Available only within source routines.
+        /// In case no $this is available, <c>NULL</c> is loaded on stack instead.
+        /// </summary>
+        public TypeSymbol EmitPhpThisOrNull()
+        {
+            var t = EmitPhpThis();
+            if (t == null)
+            {
+                _il.EmitNullConstant();
+                t = CoreTypes.Object;
+            }
+
+            return t;
+        }
+
         public TypeSymbol EmitGeneratorInstance()
         {
             Contract.ThrowIfNull(this.GeneratorStateMachineMethod);
@@ -1410,8 +1427,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             // QueryValue<T>
             else if (SpecialParameterSymbol.IsQueryValueParameter(p, out var ctor, out var container))
             {
-                Debug.Assert(ctor != null);
-
                 switch (container)
                 {
                     case SpecialParameterSymbol.QueryValueTypes.CallerScript:
@@ -1435,6 +1450,15 @@ namespace Pchp.CodeAnalysis.CodeGen
                             .Expect(CoreTypes.PhpArray);    // PhpArray
                         EmitCall(ILOpCode.Call, ctor);      // op_Implicit
                         break;
+
+                    case SpecialParameterSymbol.QueryValueTypes.ThisVariable:
+                        this.EmitPhpThisOrNull();           // object
+                        Debug.Assert(ctor.MethodKind == MethodKind.Constructor);
+                        EmitCall(ILOpCode.Newobj, ctor);    // .ctor(object)
+                        break;
+
+                    case SpecialParameterSymbol.QueryValueTypes.DummyFieldsOnlyCtor:
+                        return EmitLoadDefaultOfValueType(p.Type);  // default()
                 }
 
                 // Template: QueryValue<T>.op_Implicit( {STACK} )
@@ -1823,6 +1847,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             var givenps = thismethod.Parameters;
             var arguments = new List<BoundArgument>(givenps.Length);
             BoundTypeRef staticTypeRef = null;
+
             for (int i = 0; i < givenps.Length; i++)
             {
                 var p = givenps[i];
@@ -2388,29 +2413,32 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else if ((boundinitializer = (targetp as IPhpValue)?.Initializer) != null)
             {
-                // TODO: use `boundinitializer.Parent` instead of following
-                // magically determine the source routine corresponding to the initializer expression:
-                SourceRoutineSymbol srcr = null;
-                for (var r = targetp.ContainingSymbol;
-                     srcr == null && r != null; // we still don't have to original SourceRoutineSymbol, but we have "r"
-                     r = (r as SynthesizedMethodSymbol)?.ForwardedCall?.OriginalDefinition) // dig in and find original SourceRoutineSymbol wrapped by this synthesized stub
-                {
-                    srcr = r as SourceRoutineSymbol;
-                }
+                var cg = this;
 
-                Debug.Assert(srcr != null, "!srcr");
-
-                if (srcr != null)
+                if (targetp.OriginalDefinition is SourceParameterSymbol)
                 {
-                    using (var cg = new CodeGenerator(this, srcr))
+                    // emit using correct TypeRefContext:
+
+                    // TODO: use `boundinitializer.Parent` instead of following
+                    // magically determine the source routine corresponding to the initializer expression:
+                    SourceRoutineSymbol srcr = null;
+                    for (var r = targetp.ContainingSymbol;
+                         srcr == null && r != null; // we still don't have to original SourceRoutineSymbol, but we have "r"
+                         r = (r as SynthesizedMethodSymbol)?.ForwardedCall?.OriginalDefinition) // dig in and find original SourceRoutineSymbol wrapped by this synthesized stub
                     {
-                        cg.EmitConvert(boundinitializer, ptype = targetp.Type);
+                        srcr = r as SourceRoutineSymbol;
+                    }
+
+                    Debug.Assert(srcr != null, "!srcr");
+
+                    if (srcr != null)
+                    {
+                        cg = new CodeGenerator(this, srcr);
                     }
                 }
-                else
-                {   // should not happen
-                    ptype = EmitLoadDefault(targetp.Type, 0);
-                }
+                
+                //
+                cg.EmitConvert(boundinitializer, ptype = targetp.Type);
             }
             else if (targetp.IsParams)
             {
@@ -3156,6 +3184,27 @@ namespace Pchp.CodeAnalysis.CodeGen
                                 {
                                     Builder.EmitCharConstant(str[0]);
                                     return DeclaringCompilation.GetSpecialType(SpecialType.System_Char);
+                                }
+                                break;
+                            case SpecialType.System_Int32:
+                                if (int.TryParse(str, out i))
+                                {
+                                    Builder.EmitIntConstant(i);
+                                    return targetOpt;
+                                }
+                                break;
+                            case SpecialType.System_Int64:
+                                if (long.TryParse(str, out l))
+                                {
+                                    Builder.EmitLongConstant(l);
+                                    return targetOpt;
+                                }
+                                break;
+                            case SpecialType.System_Double:
+                                if (double.TryParse(str, out var d))
+                                {
+                                    Builder.EmitDoubleConstant(d);
+                                    return targetOpt;
                                 }
                                 break;
                         }
