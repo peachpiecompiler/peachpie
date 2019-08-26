@@ -2639,7 +2639,7 @@ namespace Pchp.Library
                 Version = Argon2Version.Nineteen,
                 TimeCost = time_cost,
                 MemoryCost = memory_cost,
-                Threads = threads,
+                Lanes = threads,
                 Password = passwordBytes,
                 Salt=salt
             };
@@ -2699,15 +2699,13 @@ namespace Pchp.Library
             if (opt != null)
             {
                 // Argument memory cost for argon2
-                if ((opt.ContainsKey("memory_cost")) && (!CheckCost(opt.GetItemValue(new IntStringKey("memory_cost")), 4, int.MaxValue, Resources.LibResources.argon2_memory, Resources.LibResources.argon2_memory, out memory_cost)))
+                if (opt.ContainsKey("memory_cost") && (!CheckCost(opt.GetItemValue(new IntStringKey("memory_cost")), 4, int.MaxValue, Resources.LibResources.argon2_memory, Resources.LibResources.argon2_memory, out memory_cost)))
                     return PhpValue.False;
-
                 // Argument time cost for argon2
-                if ((!opt.ContainsKey("time_cost")) && !CheckCost(opt.GetItemValue(new IntStringKey("time_cost")), 1, int.MaxValue, Resources.LibResources.argon2_time, Resources.LibResources.argon2_time, out time_cost))
+                if (opt.ContainsKey("time_cost") && !CheckCost(opt.GetItemValue(new IntStringKey("time_cost")), 1, int.MaxValue, Resources.LibResources.argon2_time, Resources.LibResources.argon2_time, out time_cost))
                     return PhpValue.False;
-
                 // Argument threads for argon2
-                if (!opt.ContainsKey("threads") && !CheckCost(opt.GetItemValue(new IntStringKey("threads")), 1, int.MaxValue, Resources.LibResources.argon2_threads, Resources.LibResources.argon2_threads, out threads))
+                if (opt.ContainsKey("threads") && !CheckCost(opt.GetItemValue(new IntStringKey("threads")), 1, int.MaxValue, Resources.LibResources.argon2_threads, Resources.LibResources.argon2_threads, out threads))
                     return PhpValue.False;
             }
             try
