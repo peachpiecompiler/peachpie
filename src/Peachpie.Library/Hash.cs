@@ -2745,7 +2745,7 @@ namespace Pchp.Library
                     }
                     else
                     {
-                        PhpException.Throw(PhpError.Warning, Resources.LibResources.bcrypt_undefined_const, pom.ToString()); // invalid value of cost
+                        PhpException.Throw(PhpError.Warning, Core.Resources.ErrResources.constant_not_found, costValue.ToString()); // invalid value of cost
                         return PhpValue.False;
                     }
                 }
