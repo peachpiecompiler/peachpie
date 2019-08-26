@@ -906,6 +906,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
         public bool IsObject(TypeRefMask mask) { return (mask.Mask & _isObjectMask) != 0; }
 
         /// <summary>
+        /// Gets value indicating whether given type mask represents only object(s).
+        /// </summary>
+        public bool IsObjectOnly(TypeRefMask mask) { return IsObject(mask) && (mask.TypesMask & ~_isObjectMask) == 0; }
+
+        /// <summary>
         /// Gets value indicating whether given type mask represents an array.
         /// </summary>
         public bool IsArray(TypeRefMask mask) { return (mask.Mask & _isArrayMask) != 0; }

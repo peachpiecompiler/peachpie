@@ -136,21 +136,22 @@ namespace Pchp.Core.Dynamic
         /// <remarks>Necessary restriction are already resolved within returned <paramref name="instance"/>.</remarks>
         public static bool TryTargetAsObject(DynamicMetaObject target, out DynamicMetaObject instance)
         {
+            var expr = target.Expression;
             var value = target.Value;
+
             if (value == null)
             {
                 instance = new DynamicMetaObject(
-                    target.Expression,
-                    target.Restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.ReferenceEqual(target.Expression, Expression.Constant(null)))),
+                    expr,
+                    target.Restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.ReferenceEqual(expr, Expression.Constant(null)))),
                     null);
 
                 return false;
             }
 
-            var expr = target.Expression;
 
             // dereference PhpAlias first:
-            if (target.LimitType == typeof(PhpAlias))
+            if (expr.Type == typeof(PhpAlias))
             {
                 expr = Expression.Field(expr, Cache.PhpAlias.Value);
                 value = ((PhpAlias)value).Value;
@@ -161,8 +162,18 @@ namespace Pchp.Core.Dynamic
                     out instance);
             }
 
+            if (value is PhpAlias alias)
+            {
+                // PhpAlias is provided but typed as System.Object
+                // create restriction and retry with properly typed {expr:PhpAlias}
+
+                return TryTargetAsObject(
+                    new DynamicMetaObject(Expression.Convert(expr, typeof(PhpAlias)), target.Restrictions.Merge(BindingRestrictions.GetTypeRestriction(expr, typeof(PhpAlias))), value),
+                    out instance);
+            }
+
             // unwrap PhpValue
-            if (target.LimitType == typeof(PhpValue))
+            if (expr.Type == typeof(PhpValue))
             {
                 var phpvalue = (PhpValue)value;
                 if (phpvalue.IsAlias)
