@@ -2814,6 +2814,8 @@ namespace Pchp.Library
             return crypt(password, hash) == hash;
         }
 
+        private static Regex expressionHashArgon2 = new Regex(@"^\$(argon2id|argon2id)\$v=\d+\$m=(\d+),t=(\d+),p=(\d+)\$.+\$.+$");
+
         /// <summary>
         /// This function checks to see if the supplied hash implements the algorithm and options provided. If not, it is assumed that the hash needs to be rehashed.
         /// </summary>
@@ -2850,8 +2852,7 @@ namespace Pchp.Library
                 case 2:
                 // Argon2id
                 case 3:
-                    Regex reg = new Regex(@"^\$(argon2id|argon2id)\$v=\d+\$m=(\d+),t=(\d+),p=(\d+)\$.+\$.+$");
-                    Match match = reg.Match(hash);
+                    Match match = expressionHashArgon2.Match(hash);
                     
                     if (match != null && (algo == 2 && match.Groups[1].Value == "argon2i") || (algo == 3 && match.Groups[1].Value == "argon2id")) // Check right algorithm
                     {
