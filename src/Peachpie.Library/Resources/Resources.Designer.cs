@@ -268,15 +268,6 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Use of undefined constant {0} (this will throw an Error in a future version of PHP).
-        /// </summary>
-        public static string bcrypt_undefined_const {
-            get {
-                return ResourceManager.GetString("bcrypt_undefined_const", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Type &apos;{0}&apos;: binary data length has overflown integer size.
         /// </summary>
         public static string binary_data_overflown {

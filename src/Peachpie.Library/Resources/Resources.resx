@@ -681,7 +681,4 @@
   <data name="bcrypt_salt_deprecated" xml:space="preserve">
     <value>Use of the 'salt' option to password_hash is deprecated</value>
   </data>
-  <data name="bcrypt_undefined_const" xml:space="preserve">
-    <value>Use of undefined constant {0} (this will throw an Error in a future version of PHP)</value>
-  </data>
 </root>
