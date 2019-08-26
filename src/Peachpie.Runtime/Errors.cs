@@ -89,12 +89,41 @@ namespace Pchp.Core
     }
 
     #endregion
-
+       
     #region PhpException
 
+    /// <summary>
+    /// Provides standard PHP errors.
+    /// </summary>
+    [DebuggerNonUserCode, DebuggerStepThrough]
     public static class PhpException
     {
-        static Type _TypeError;
+        static string PeachpieLibraryAssembly => "Peachpie.Library";
+        static string ErrorClass => "Pchp.Library.Spl.Error";
+        static string TypeErrorClass => "Pchp.Library.Spl.TypeError";
+
+        static Type _Error, _TypeError;
+
+        static Exception Exception(ref Type _type, string _typename, string message)
+        {
+            if (_type == null)
+            {
+                _type = Type.GetType(Assembly.CreateQualifiedName(PeachpieLibraryAssembly, _typename), throwOnError: false) ?? typeof(Exception);
+            }
+
+            return (Exception)Activator.CreateInstance(
+                _type,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance | BindingFlags.OptionalParamBinding,
+                null,
+                new[] { message },
+                null);
+        }
+
+        public static Exception ErrorException(string message) => Exception(ref _Error, ErrorClass, message);
+
+        public static Exception TypeErrorException() => TypeErrorException(string.Empty);
+
+        public static Exception TypeErrorException(string message) => Exception(ref _TypeError, TypeErrorClass, message);
 
         public static void Throw(PhpError error, string message)
         {
@@ -104,24 +133,6 @@ namespace Pchp.Core
         public static void Throw(PhpError error, string formatString, params string[] args)
         {
             Context.DefaultErrorHandler?.Throw(error, formatString, args);
-        }
-
-        public static Exception TypeErrorException() => TypeErrorException("");
-
-        public static Exception TypeErrorException(string message)
-        {
-            if (_TypeError == null)
-            {
-                // remember the TypeError class
-                _TypeError = Type.GetType("Pchp.Library.Spl.TypeError,Peachpie.Library", throwOnError: false) ?? typeof(System.ArgumentException);
-            }
-
-            return (Exception)Activator.CreateInstance(
-                _TypeError,
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance | BindingFlags.OptionalParamBinding,
-                null,
-                new[] { message },
-                null);
         }
 
         /// <summary>
@@ -270,16 +281,22 @@ namespace Pchp.Core
         /// <param name="methodName">The method name.</param>
         public static void MethodOnNonObject(string methodName)
         {
-            Throw(PhpError.Error, ErrResources.method_called_on_non_object, methodName);
+            throw ErrorException(string.Format(ErrResources.method_called_on_non_object, methodName));
         }
 
-        /// <summary>
-        /// Throws PHP ERROR: Undefined function called.
-        /// </summary>
+        /// <summary>new Error("Call to undefined function {<paramref name="funcName"/>}()")</summary>
         /// <param name="funcName">The function name.</param>
         public static void UndefinedFunctionCalled(string funcName)
         {
-            Throw(PhpError.Error, ErrResources.undefined_function_called, funcName);
+            throw ErrorException(string.Format(ErrResources.undefined_function_called, funcName));
+        }
+
+        /// <summary>new Error("Call to undefined function {<paramref name="funcName"/>}()")</summary>
+        /// <param name="typeName">Class name.</param>
+        /// <param name="funcName">The function name.</param>
+        public static void UndefinedMethodCalled(string typeName, string funcName)
+        {
+            throw ErrorException(string.Format(ErrResources.undefined_method_called, typeName, funcName));
         }
 
         /// <summary>

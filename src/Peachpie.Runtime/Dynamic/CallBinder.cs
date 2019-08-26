@@ -40,10 +40,13 @@ namespace Pchp.Core.Dynamic
         protected virtual Expression BindMissingMethod(CallSiteContext bound)
         {
             /* Template:
-             * PhpException.UndefinedFunctionCalled(name); // aka PhpException.Throw(Error, undefined_function_called, name)
+             * PhpException.UndefinedFunctionCalled(name);
              * return NULL;
             */
-            var throwcall = Expression.Call(typeof(PhpException), "UndefinedFunctionCalled", Array.Empty<Type>(), bound.IndirectName ?? Expression.Constant(bound.Name));
+            var throwcall = bound.TargetType != null
+                ? Expression.Call(typeof(PhpException), "UndefinedMethodCalled", Array.Empty<Type>(), Expression.Constant(bound.TargetType.Name), bound.IndirectName ?? Expression.Constant(bound.Name))
+                : Expression.Call(typeof(PhpException), "UndefinedFunctionCalled", Array.Empty<Type>(), bound.IndirectName ?? Expression.Constant(bound.Name));
+
             return Expression.Block(throwcall, ConvertExpression.BindDefault(this.ReturnType));
         }
 

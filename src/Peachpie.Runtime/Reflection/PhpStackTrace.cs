@@ -167,14 +167,16 @@ namespace Pchp.Core.Reflection
                         return false;
                     }
                 }
-                else if (tokenkey == "b77a5c561934e089" || tokenkey == "b03f5f7f11d50a3a")    // System
+                else if (tokenkey == "b77a5c561934e089" || tokenkey == "b03f5f7f11d50a3a" || tokenkey == "7cec85d7bea7798e")    // System
                 {
                     return false;
                 }
             }
 
-            // [DebuggerNonUserCodeAttribute] or [DebuggerHiddenAttribute]
-            if (method.GetCustomAttribute<DebuggerNonUserCodeAttribute>() != null || method.GetCustomAttribute<DebuggerHiddenAttribute>() != null ||
+            // [DebuggerNonUserCodeAttribute] or [DebuggerHiddenAttribute] or [PhpHiddenAttribute]
+            if (method.GetCustomAttribute<DebuggerNonUserCodeAttribute>() != null ||
+                method.GetCustomAttribute<DebuggerHiddenAttribute>() != null ||
+                method.GetCustomAttribute<PhpHiddenAttribute>() != null ||
                 tinfo.GetCustomAttribute<DebuggerNonUserCodeAttribute>() != null)
             {
                 return false;
@@ -187,6 +189,8 @@ namespace Pchp.Core.Reflection
         public string GetFilename() => (_frames.Length != 0 && _frames[0].HasLocation) ? _frames[0].FileName : string.Empty;
 
         public int GetLine() => (_frames.Length != 0 && _frames[0].HasLocation) ? _frames[0].Line : 0;
+
+        public int GetColumn() => (_frames.Length != 0 && _frames[0].HasLocation) ? _frames[0].Column : 0;
 
         /// <summary>
         /// Stack trace text formatted as PHP stack trace.
@@ -239,7 +243,7 @@ namespace Pchp.Core.Reflection
 
         public bool HasLocation => FileName != null;
 
-        public int Line => _clrframe.GetFileLineNumber() - 1;
+        public int Line => _clrframe.GetFileLineNumber();
 
         public int Column => _clrframe.GetFileColumnNumber() - 1;
 
