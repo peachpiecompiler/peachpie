@@ -193,10 +193,12 @@ namespace Peachpie.Library.Scripting
                 PhpParseOptions.Default,
                 options.Location.Path);
 
-
             var diagnostics = tree.Diagnostics;
             if (!HasErrors(diagnostics))
             {
+                // TODO: collect required types from {tree}, remember as a script dependencies
+                // TODO: perform class autoload (now before compilation, and then always before invocation)
+
                 // unique in-memory assembly name
                 var name = builder.GetNewSubmissionName();
 
@@ -264,16 +266,13 @@ namespace Peachpie.Library.Scripting
         /// <summary>
         /// Initializes an invalid script that throws diagnostics upon invoking.
         /// </summary>
-        /// <param name="diagnostics"></param>
-        /// <returns></returns>
-        private static Script CreateInvalid(IEnumerable<Diagnostic> diagnostics)
+        private static Script CreateInvalid(ImmutableArray<Diagnostic> diagnostics)
         {
+            string errors = string.Join(Environment.NewLine, diagnostics.Select(d => $"{d.Severity} {d.Id}: {d.GetMessage()}"));
+
             return new Script((ctx, locals, @this, self) =>
             {
-                foreach (var d in diagnostics)
-                {
-                    PhpException.Throw(PhpError.Error, d.GetMessage());
-                }
+                PhpException.Throw(PhpError.Error, string.Format("The script cannot be compiled due to following errors:\n{0}", errors));
 
                 //
                 return PhpValue.Void;
