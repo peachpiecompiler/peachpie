@@ -2723,18 +2723,16 @@ namespace Pchp.Library
         private static PhpValue HashPasswordBlowfish(string password,PhpArray opt)
         {          
             // Default setting for bcrypt
-            int cost = costDefault;
-            string salt = BCrypt.Net.BCrypt.GenerateSalt(cost);
+            long cost = costDefault;
+            string salt = BCrypt.Net.BCrypt.GenerateSalt((int)cost);
 
             if (opt != null)
             {
                 // Argument cost for bcrypt
-                if (opt.ContainsKey("cost"))
+                if (opt.TryGetValue("cost", out var costValue))
                 {
-                    PhpValue costValue = opt.GetItemValue(new IntStringKey("cost"));
-                    if (costValue.IsInteger()) // Check right value of argument
+                    if (costValue.IsLong(out var costInt)) // Check right value of argument
                     {
-                        int costInt = costValue.ToInt();
                         if (costInt >= 4 && costInt <= 31)
                             cost = costInt;
                         else
@@ -2751,10 +2749,9 @@ namespace Pchp.Library
                 }
                 
                 // Argument salt for bcrypt
-                if (opt.ContainsKey("salt"))
+                if (opt.TryGetValue("salt", out var saltValue))
                 {
                     PhpException.Throw(PhpError.E_DEPRECATED, Resources.LibResources.bcrypt_salt_deprecated);
-                    PhpValue saltValue = opt.GetItemValue(new IntStringKey("salt"));
                     if (saltValue.IsString(out salt))
                         salt = $"$2y${cost}${salt}";
                 }
@@ -2836,11 +2833,8 @@ namespace Pchp.Library
                     if (hashParts.Length >= 3 && hashParts[1][0] == '2' && hashParts[1].Length >= 2) // $2 $ Right algorithm
                     {
 
-                        if (opt != null && opt.ContainsKey("cost")) // Check options
-                        {
-                            PhpValue pom = opt.GetItemValue(new IntStringKey("cost"));
-                            result = !(hashParts[2] == pom.ToString());
-                        }
+                        if (opt != null && opt.TryGetValue("cost", out var costValue)) // Check options
+                            result = !(hashParts[2] == costValue);
 
                     }
                     else
@@ -2857,14 +2851,14 @@ namespace Pchp.Library
                         if (opt != null) // Check options
                         {
 
-                            if (opt.ContainsKey("memory_cost"))
-                                result = !(opt.GetItemValue(new IntStringKey("memory_cost")) == match.Groups[2].Value);
+                            if (opt.TryGetValue("memory_cost", out var memoryValue))
+                                result = !(memoryValue == match.Groups[2].Value);
 
-                            if (opt.ContainsKey("time_cost"))
-                                result = result || !(opt.GetItemValue(new IntStringKey("time_cost")) == match.Groups[3].Value);
+                            if (opt.TryGetValue("time_cost", out var timeValue))
+                                result = result || !(timeValue == match.Groups[3].Value);
 
-                            if (opt.ContainsKey("time_cost"))
-                                result = result || !(opt.GetItemValue(new IntStringKey("threads")) == match.Groups[4].Value);
+                            if (opt.TryGetValue("threads", out var threadsValue))
+                                result = result || !(threadsValue == match.Groups[4].Value);
 
                         }
                     }
