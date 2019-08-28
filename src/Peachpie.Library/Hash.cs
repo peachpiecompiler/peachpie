@@ -2797,16 +2797,11 @@ namespace Pchp.Library
         /// </summary>
         public static bool password_verify(string password, string hash)
         {
-            try
-            {
-                if (hash.Substring(1, 7) == "argon2i")
-                    return Argon2.Verify(hash, password);
-            }
-            catch (Exception)
-            {
+            if (String.IsNullOrEmpty(password) || String.IsNullOrEmpty(hash))
                 return false;
-            }
-            return crypt(password, hash) == hash;
+            else
+                return hash.StartsWith("$argon2i") ? Argon2.Verify(hash, password) : crypt(password, hash) == hash;
+
         }
 
         private static Regex expressionHashArgon2 = new Regex(@"^\$(argon2id|argon2id)\$v=\d+\$m=(\d+),t=(\d+),p=(\d+)\$.+\$.+$");
