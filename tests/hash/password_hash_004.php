@@ -2,8 +2,8 @@
 /**Test PASSWORD_ARGON2ID with options. */
 $password = "rasmuslerdorf";
 $memory_cost = 512;
-$time_cost = 4;
-$threads = 3;
+$time_cost = 4.3;
+$threads = "3";
 
 $options = [
     'threads' => $threads,

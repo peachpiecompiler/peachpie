@@ -259,11 +259,29 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Non-string salt parameter supplied.
+        /// </summary>
+        public static string bcrypt_nonstring_salt {
+            get {
+                return ResourceManager.GetString("bcrypt_nonstring-salt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Use of the &apos;salt&apos; option to password_hash is deprecated.
         /// </summary>
         public static string bcrypt_salt_deprecated {
             get {
                 return ResourceManager.GetString("bcrypt_salt_deprecated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Provided salt is too short: {0} expecting 22.
+        /// </summary>
+        public static string bcrypt_salt_too_short {
+            get {
+                return ResourceManager.GetString("bcrypt_salt_too_short", resourceCulture);
             }
         }
         

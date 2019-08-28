@@ -2671,23 +2671,14 @@ namespace Pchp.Library
 
         #region password_hash, password_verify, password_needs_rehash
 
-        private static bool CheckCost(PhpValue value, int lowerBound, int upperBound, string warnParseFail, string warnBoundFail, out int checkedValue)
+        private static bool CheckCost(PhpValue value, int lowerBound, int upperBound, string warnBoundFail, out int checkedValue)
         {
-            if (value.IsInteger())
-            {
-                checkedValue = value.ToInt();
-                if (checkedValue >= lowerBound && checkedValue <= upperBound)
-                    return true;
-                else
-                {
-                    PhpException.Throw(PhpError.Warning, warnBoundFail);
-                    return false;
-                }
-            }
+            checkedValue = value.ToInt();
+            if (checkedValue >= lowerBound && checkedValue <= upperBound)
+                return true;
             else
             {
-                checkedValue = -1;
-                PhpException.Throw(PhpError.Warning, warnParseFail);
+                PhpException.Throw(PhpError.Warning, warnBoundFail);
                 return false;
             }
         }
@@ -2698,52 +2689,40 @@ namespace Pchp.Library
             int memory_cost = memory_costDefault;
             int time_cost = costDefault;
             int threads = threadsDefault;
-
             if (opt != null)
             {
                 // Argument memory cost for argon2
-                if (opt.ContainsKey("memory_cost") && (!CheckCost(opt.GetItemValue(new IntStringKey("memory_cost")), 4, int.MaxValue, Resources.LibResources.argon2_memory, Resources.LibResources.argon2_memory, out memory_cost)))
+                if (opt.ContainsKey("memory_cost") && (!CheckCost(opt.GetItemValue(new IntStringKey("memory_cost")), 4, int.MaxValue, Resources.LibResources.argon2_memory, out memory_cost)))
                     return PhpValue.False;
                 // Argument time cost for argon2
-                if (opt.ContainsKey("time_cost") && !CheckCost(opt.GetItemValue(new IntStringKey("time_cost")), 1, int.MaxValue, Resources.LibResources.argon2_time, Resources.LibResources.argon2_time, out time_cost))
+                if (opt.ContainsKey("time_cost") && !CheckCost(opt.GetItemValue(new IntStringKey("time_cost")), 1, int.MaxValue, Resources.LibResources.argon2_time, out time_cost))
                     return PhpValue.False;
                 // Argument threads for argon2
-                if (opt.ContainsKey("threads") && !CheckCost(opt.GetItemValue(new IntStringKey("threads")), 1, int.MaxValue, Resources.LibResources.argon2_threads, Resources.LibResources.argon2_threads, out threads))
+                if (opt.ContainsKey("threads") && !CheckCost(opt.GetItemValue(new IntStringKey("threads")), 1, int.MaxValue, Resources.LibResources.argon2_threads, out threads))
                     return PhpValue.False;
             }
-            try
-            {
-                return HashArgon2(password, time_cost, memory_cost, threads, argon2i_id);
-            }
-            catch (Exception) { }
 
-            return PhpValue.False;
+            return HashArgon2(password == null ? "" : password, time_cost, memory_cost, threads, argon2i_id);
         }
 
         private static PhpValue HashPasswordBlowfish(string password,PhpArray opt)
         {          
             // Default setting for bcrypt
-            long cost = costDefault;
-            string salt = BCrypt.Net.BCrypt.GenerateSalt((int)cost);
+            int cost = costDefault;
+            string salt = BCrypt.Net.BCrypt.GenerateSalt(cost);
 
             if (opt != null)
             {
                 // Argument cost for bcrypt
                 if (opt.TryGetValue("cost", out var costValue))
                 {
-                    if (costValue.IsLong(out var costInt)) // Check right value of argument
-                    {
-                        if (costInt >= 4 && costInt <= 31)
+                    int costInt = costValue.ToInt();
+
+                    if (costInt >= 4 && costInt <= 31) // Check  right value
                             cost = costInt;
-                        else
-                        {
-                            PhpException.Throw(PhpError.Warning, Resources.LibResources.bcrypt_invalid_cost, costInt.ToString());
-                            return PhpValue.False;
-                        }
-                    }
                     else
                     {
-                        PhpException.Throw(PhpError.Warning, Core.Resources.ErrResources.constant_not_found, costValue.ToString()); // invalid value of cost
+                        PhpException.Throw(PhpError.Warning, Resources.LibResources.bcrypt_invalid_cost, costInt.ToString());
                         return PhpValue.False;
                     }
                 }
@@ -2752,18 +2731,29 @@ namespace Pchp.Library
                 if (opt.TryGetValue("salt", out var saltValue))
                 {
                     PhpException.Throw(PhpError.E_DEPRECATED, Resources.LibResources.bcrypt_salt_deprecated);
-                    if (saltValue.IsString(out salt))
-                        salt = $"$2y${cost}${salt}";
+                    if (saltValue.IsString(out salt)) // Check value
+                    {
+
+                        if (salt.Length < 22)
+                        {
+                            PhpException.Throw(PhpError.E_DEPRECATED, Resources.LibResources.bcrypt_salt_too_short, salt.Length.ToString());
+                            return PhpValue.False;
+                        }
+                        else if (salt.Length == 22)
+                            salt = $"$2y${cost}${salt}";
+                        else
+                            salt = $"$2y${cost}${salt.Substring(0,22)}";
+
+                    }
+                    else
+                    {
+                        PhpException.Throw(PhpError.E_DEPRECATED, Resources.LibResources.bcrypt_nonstring_salt);
+                        return PhpValue.False;
+                    }
                 }
             }
 
-            try // Try to create hash 
-            {
-                return PhpValue.Create(BCrypt.Net.BCrypt.HashPassword(password, salt));
-            }
-            catch (Exception) { }
-
-            return PhpValue.False;
+            return PhpValue.Create(BCrypt.Net.BCrypt.HashPassword(password == null ? "" : password, salt));
         }
 
         /// <summary>
@@ -2797,11 +2787,10 @@ namespace Pchp.Library
         /// </summary>
         public static bool password_verify(string password, string hash)
         {
-            if (String.IsNullOrEmpty(password) || String.IsNullOrEmpty(hash))
+            if (String.IsNullOrEmpty(hash))
                 return false;
             else
                 return hash.StartsWith("$argon2i") ? Argon2.Verify(hash, password) : crypt(password, hash) == hash;
-
         }
 
         private static Regex expressionHashArgon2 = new Regex(@"^\$(argon2id|argon2id)\$v=\d+\$m=(\d+),t=(\d+),p=(\d+)\$.+\$.+$");
@@ -2832,7 +2821,7 @@ namespace Pchp.Library
                     {
 
                         if (opt != null && opt.TryGetValue("cost", out var costValue)) // Check options
-                            result = !(hashParts[2] == costValue);
+                            result = !(hashParts[2] == costValue.ToInt().ToString());
 
                     }
                     else
@@ -2850,13 +2839,13 @@ namespace Pchp.Library
                         {
 
                             if (opt.TryGetValue("memory_cost", out var memoryValue))
-                                result = !(memoryValue == match.Groups[2].Value);
+                                result = !(memoryValue.ToInt().ToString() == match.Groups[2].Value);
 
                             if (opt.TryGetValue("time_cost", out var timeValue))
-                                result = result || !(timeValue == match.Groups[3].Value);
+                                result = result || !(timeValue.ToInt().ToString() == match.Groups[3].Value);
 
                             if (opt.TryGetValue("threads", out var threadsValue))
-                                result = result || !(threadsValue == match.Groups[4].Value);
+                                result = result || !(threadsValue.ToInt().ToString() == match.Groups[4].Value);
 
                         }
                     }
