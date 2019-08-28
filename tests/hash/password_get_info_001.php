@@ -18,9 +18,8 @@ $hashBCrypt = @password_hash($password,PASSWORD_DEFAULT,$options);
 $hashArgon2ID = @password_hash( $password, PASSWORD_ARGON2ID, $options);
 $hashArgon2I= @password_hash( $password, PASSWORD_ARGON2I, $options);
 $hash = "UnKnownAlgorithm";
-
-echo var_dump(password_get_info($hash)) . "\n";
-echo var_dump(password_get_info($hashBCrypt)) . "\n";
-echo var_dump(password_get_info($hashArgon2ID)) . "\n";
-echo var_dump(password_get_info($hashArgon2I)) . "\n";
+print_r(password_get_info($hash));
+print_r(password_get_info($hashBCrypt));
+print_r(password_get_info($hashArgon2ID));
+print_r(password_get_info($hashArgon2I));
 
