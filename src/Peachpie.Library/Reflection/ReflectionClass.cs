@@ -254,7 +254,7 @@ namespace Pchp.Library.Reflection
             foreach (var p in _tinfo.GetDeclaredProperties())
             {
                 var pinfo = new ReflectionProperty(p);
-                if (filter == 0 || ((int)pinfo.getModifiers() | filter) != 0)
+                if (filter == 0 || ((int)pinfo.getModifiers() & filter) != 0)
                 {
                     result.Add(PhpValue.FromClass(pinfo));
                 }
