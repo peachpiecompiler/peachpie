@@ -2817,6 +2817,9 @@ namespace Pchp.Library
         {
             bool result = false;
 
+            if (String.IsNullOrEmpty(hash))
+                return true;
+
             switch (algo)
             {
                 // Default

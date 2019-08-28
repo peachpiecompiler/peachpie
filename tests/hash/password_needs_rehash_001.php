@@ -19,5 +19,13 @@ if (password_verify($password, $hash)) {
     {
         echo 'Failed';
     }
+    if (password_needs_rehash(null, PASSWORD_DEFAULT, $options)) {
+        // If so, create a new hash, and replace the old one
+        echo 'Success';
+    }
+    else
+    {
+        echo 'Failed';
+    }
     // Log user in
 }
