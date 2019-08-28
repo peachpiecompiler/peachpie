@@ -7,6 +7,10 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Pchp.Library.Streams;
+using Isopoh.Cryptography.Argon2;
+using BCrypt.Net;
+using Isopoh.Cryptography.SecureArray;
+using System.Text.RegularExpressions;
 
 namespace Pchp.Library
 {
@@ -2618,14 +2622,243 @@ namespace Pchp.Library
 
         #endregion
 
-        #region password_hash, password_verify
+        #region Argon2
+
+        [ThreadStatic]
+        private static readonly RandomNumberGenerator RandomGenerator = RandomNumberGenerator.Create();
+
+        private static string HashArgon2(string password, int time_cost, int memory_cost, int threads, bool argon2i_id)
+        {
+            byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
+            byte[] salt = new byte[16];
+
+            RandomGenerator.GetBytes(salt);
+
+            var config = new Argon2Config
+            {
+                Type = argon2i_id ? Argon2Type.DataIndependentAddressing : Argon2Type.HybridAddressing,
+                Version = Argon2Version.Nineteen,
+                TimeCost = time_cost,
+                MemoryCost = memory_cost,
+                Lanes = threads,
+                Password = passwordBytes,
+                Salt=salt
+            };
+            var argon = new Argon2(config);
+
+            string hashString;
+            using (var hash = argon.Hash())
+            {
+                hashString = config.EncodeString(hash.Buffer);
+            }
+            return hashString;
+        }
+
+        #endregion
+
+        #region password_hash (Constants)
+
+        private const int costDefault = 10;
+        private const int threadsDefault = 1;
+        private const int memory_costDefault = 4;
+
+        public const int PASSWORD_DEFAULT = 0;
+        public const int PASSWORD_BCRYPT = 1;
+        public const int PASSWORD_ARGON2I = 2;
+        public const int PASSWORD_ARGON2ID = 3;
+
+        #endregion
+
+        #region password_hash, password_verify, password_needs_rehash
+
+        private static bool CheckCost(PhpValue value, int lowerBound, int upperBound, string warnBoundFail, out int checkedValue)
+        {
+            checkedValue = value.ToInt();
+            if (checkedValue >= lowerBound && checkedValue <= upperBound)
+                return true;
+            else
+            {
+                PhpException.Throw(PhpError.Warning, warnBoundFail);
+                return false;
+            }
+        }
+
+        private static PhpValue HashPasswordArgon2(string password, PhpArray opt, bool argon2i_id)
+        {
+            // Default setting for argon2
+            int memory_cost = memory_costDefault;
+            int time_cost = costDefault;
+            int threads = threadsDefault;
+            if (opt != null)
+            {
+                // Argument memory cost for argon2
+                if (opt.ContainsKey("memory_cost") && (!CheckCost(opt.GetItemValue(new IntStringKey("memory_cost")), 4, int.MaxValue, Resources.LibResources.argon2_memory, out memory_cost)))
+                    return PhpValue.False;
+                // Argument time cost for argon2
+                if (opt.ContainsKey("time_cost") && !CheckCost(opt.GetItemValue(new IntStringKey("time_cost")), 1, int.MaxValue, Resources.LibResources.argon2_time, out time_cost))
+                    return PhpValue.False;
+                // Argument threads for argon2
+                if (opt.ContainsKey("threads") && !CheckCost(opt.GetItemValue(new IntStringKey("threads")), 1, int.MaxValue, Resources.LibResources.argon2_threads, out threads))
+                    return PhpValue.False;
+            }
+
+            return HashArgon2(password == null ? "" : password, time_cost, memory_cost, threads, argon2i_id);
+        }
+
+        private static PhpValue HashPasswordBlowfish(string password,PhpArray opt)
+        {          
+            // Default setting for bcrypt
+            int cost = costDefault;
+            string salt = BCrypt.Net.BCrypt.GenerateSalt(cost);
+
+            if (opt != null)
+            {
+                // Argument cost for bcrypt
+                if (opt.TryGetValue("cost", out var costValue))
+                {
+                    int costInt = costValue.ToInt();
+
+                    if (costInt >= 4 && costInt <= 31) // Check  right value
+                            cost = costInt;
+                    else
+                    {
+                        PhpException.Throw(PhpError.Warning, Resources.LibResources.bcrypt_invalid_cost, costInt.ToString());
+                        return PhpValue.False;
+                    }
+                }
+                
+                // Argument salt for bcrypt
+                if (opt.TryGetValue("salt", out var saltValue))
+                {
+                    PhpException.Throw(PhpError.E_DEPRECATED, Resources.LibResources.bcrypt_salt_deprecated);
+                    if (saltValue.IsString(out salt)) // Check value
+                    {
+
+                        if (salt.Length < 22)
+                        {
+                            PhpException.Throw(PhpError.E_DEPRECATED, Resources.LibResources.bcrypt_salt_too_short, salt.Length.ToString());
+                            return PhpValue.False;
+                        }
+                        else if (salt.Length == 22)
+                            salt = $"$2y${cost}${salt}";
+                        else
+                            salt = $"$2y${cost}${salt.Substring(0,22)}";
+
+                    }
+                    else
+                    {
+                        PhpException.Throw(PhpError.E_DEPRECATED, Resources.LibResources.bcrypt_nonstring_salt);
+                        return PhpValue.False;
+                    }
+                }
+            }
+
+            return PhpValue.Create(BCrypt.Net.BCrypt.HashPassword(password == null ? "" : password, salt));
+        }
+
+        /// <summary>
+        /// Creates a password hash
+        /// </summary>
+        /// <param name="password">The user's password.</param>
+        /// <param name="algo">A password algorithm constant denoting the algorithm to use when hashing the password. 0 - Default, 1 - Blowfish, 2 - Argon2i, 3 - Argon2id</param>
+        /// <param name="opt">See the password algorithm constants. If omitted, a random salt will be created and the default cost will be used.</param>
+        /// <returns>Returns the hashed password, or FALSE on failure.</returns>
+        public static PhpValue password_hash(string password, int algo, PhpArray opt = null)
+        {
+            switch (algo)
+            {
+                // Default
+                case 0:
+                // Blowfish
+                case 1:
+                    return HashPasswordBlowfish(password, opt);
+                // Argon2i
+                case 2:
+                case 3:
+                    return HashPasswordArgon2(password, opt, algo == 2);
+                // Unknown algorithm
+                default:
+                    return PhpValue.False;
+            }
+        }
 
         /// <summary>
         /// Verifies that a password matches a hash.
         /// </summary>
         public static bool password_verify(string password, string hash)
         {
-            return crypt(password, hash) == hash;
+            if (String.IsNullOrEmpty(hash))
+                return false;
+            else
+                return hash.StartsWith("$argon2i") ? Argon2.Verify(hash, password) : crypt(password, hash) == hash;
+        }
+
+        private static Regex expressionHashArgon2 = new Regex(@"^\$(argon2id|argon2id)\$v=\d+\$m=(\d+),t=(\d+),p=(\d+)\$.+\$.+$");
+
+        /// <summary>
+        /// This function checks to see if the supplied hash implements the algorithm and options provided. If not, it is assumed that the hash needs to be rehashed.
+        /// </summary>
+        /// <param name="hash">A hash created by password_hash()</param>
+        /// <param name="algo">A password algorithm constant denoting the algorithm to use when hashing the password. 0 - Default, 1 - Blowfish, 2 - Argon2i, 3 - Argon2id</param>
+        /// <param name="opt">See the password algorithm constants. If omitted, a random salt will be created and the default cost will be used.</param>
+        /// <returns>Returns TRUE if the hash should be rehashed to match the given algo and options, or FALSE otherwise.</returns>
+        public static bool password_needs_rehash(string hash, int algo, PhpArray opt = null)
+        {
+            bool result = false;
+
+            if (String.IsNullOrEmpty(hash))
+                return true;
+
+            switch (algo)
+            {
+                // Default
+                case 0:
+                // BCrypt
+                case 1:
+                    string[] hashParts = hash.Split('$');
+
+                    if (hashParts.Length >= 3 && hashParts[1][0] == '2' && hashParts[1].Length >= 2) // $2 $ Right algorithm
+                    {
+
+                        if (opt != null && opt.TryGetValue("cost", out var costValue)) // Check options
+                            result = !(hashParts[2] == costValue.ToInt().ToString());
+
+                    }
+                    else
+                        result = true;
+                    break;
+                // Argon2i
+                case 2:
+                // Argon2id
+                case 3:
+                    Match match = expressionHashArgon2.Match(hash);
+                    
+                    if (match != null && (algo == 2 && match.Groups[1].Value == "argon2i") || (algo == 3 && match.Groups[1].Value == "argon2id")) // Check right algorithm
+                    {
+                        if (opt != null) // Check options
+                        {
+
+                            if (opt.TryGetValue("memory_cost", out var memoryValue))
+                                result = !(memoryValue.ToInt().ToString() == match.Groups[2].Value);
+
+                            if (opt.TryGetValue("time_cost", out var timeValue))
+                                result = result || !(timeValue.ToInt().ToString() == match.Groups[3].Value);
+
+                            if (opt.TryGetValue("threads", out var threadsValue))
+                                result = result || !(threadsValue.ToInt().ToString() == match.Groups[4].Value);
+
+                        }
+                    }
+                    else
+                        result = true;
+                    break;
+                // Unknown algorithm
+                default:
+                    result = true;
+                    break;
+            }
+
+            return result;
         }
 
         #endregion
@@ -2655,7 +2888,8 @@ namespace Pchp.Library
         {
             if (string.IsNullOrEmpty(salt))
             {
-                throw new ArgumentException();
+                // MD5
+                PhpException.ArgumentValueNotSupported(nameof(salt), salt);
             }
 
             if (salt.Length >= 3)
@@ -2666,23 +2900,30 @@ namespace Pchp.Library
                     {
                         if (salt[1] == '1') // $1$
                         {
-                            // MD5                            
+                            // MD5
+                            PhpException.ArgumentValueNotSupported(nameof(salt), "$1$");
                         }
 
                         if (salt[1] == '5') // $5$
                         {
                             // SHA256
+                            PhpException.ArgumentValueNotSupported(nameof(salt), "$5$");
                         }
 
                         if (salt[1] == '6') // $6$
                         {
                             // SHA512
+                            PhpException.ArgumentValueNotSupported(nameof(salt), "$6$");
                         }
                     }
-
                     if (salt[1] == '2' && salt.Length >= 4 && salt[3] == '$') // $2 $
                     {
-                        // blowfish
+                        // bcrypt
+                        try
+                        {
+                            return (salt[5] == '$') ? BCrypt.Net.BCrypt.HashPassword(str, salt.Substring(0, 28)) : BCrypt.Net.BCrypt.HashPassword(str, salt.Substring(0, 29));
+                        }
+                        catch (Exception) { } // failure
                     }
                 }
             }
@@ -2694,6 +2935,7 @@ namespace Pchp.Library
             else
             {
                 // DES
+                throw new NotImplementedException();
             }
 
             // failure

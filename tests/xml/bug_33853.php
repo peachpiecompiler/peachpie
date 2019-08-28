@@ -1,11 +1,14 @@
 <?php
 
-function __autoload($className) {
+function my_autoloader($className) {
   echo $className;
   exit();
 }
 
+spl_autoload_register('my_autoloader');
+
 function test() {
+  
   $xsl = new DomDocument();
   $xsl->loadXML('<?xml version="1.0" encoding="iso-8859-1" ?>
   <xsl:stylesheet version="1.0"

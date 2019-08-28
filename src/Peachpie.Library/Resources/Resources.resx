@@ -666,4 +666,25 @@
   <data name="method_doesnt_have_prototype" xml:space="preserve">
     <value>Method {0}::{1} does not have a prototype</value>
   </data>
+  <data name="argon2_memory" xml:space="preserve">
+    <value>Memory cost is outside of allowed memory range</value>
+  </data>
+  <data name="argon2_threads" xml:space="preserve">
+    <value>Invalid number of threads</value>
+  </data>
+  <data name="argon2_time" xml:space="preserve">
+    <value>Time cost is outside of allowed time range</value>
+  </data>
+  <data name="bcrypt_invalid_cost" xml:space="preserve">
+    <value>Invalid bcrypt cost parameter specified: {0})</value>
+  </data>
+  <data name="bcrypt_salt_deprecated" xml:space="preserve">
+    <value>Use of the 'salt' option to password_hash is deprecated</value>
+  </data>
+  <data name="bcrypt_nonstring-salt" xml:space="preserve">
+    <value>Non-string salt parameter supplied</value>
+  </data>
+  <data name="bcrypt_salt_too_short" xml:space="preserve">
+    <value>Provided salt is too short: {0} expecting 22</value>
+  </data>
 </root>
