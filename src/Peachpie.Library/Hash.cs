@@ -2793,7 +2793,7 @@ namespace Pchp.Library
                 return hash.StartsWith("$argon2i") ? Argon2.Verify(hash, password) : crypt(password, hash) == hash;
         }
 
-        private static Regex expressionHashArgon2 = new Regex(@"^\$(argon2id|argon2id)\$v=\d+\$m=(\d+),t=(\d+),p=(\d+)\$.+\$.+$");
+        private static Regex expressionHashArgon2 = new Regex(@"^\$(argon2i|argon2id)\$v=\d+\$m=(\d+),t=(\d+),p=(\d+)\$.+\$.+$");
 
         /// <summary>
         /// This function checks to see if the supplied hash implements the algorithm and options provided. If not, it is assumed that the hash needs to be rehashed.
@@ -2856,6 +2856,62 @@ namespace Pchp.Library
                 default:
                     result = true;
                     break;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// When passed in a valid hash created by an algorithm supported by password_hash(), this function will return an array of information about that hash.
+        /// </summary>
+        /// <param name="hash">A hash created by password_hash().</param>
+        /// <returns>Returns an associative array with three elements:algo, algoName, options</returns>
+        public static PhpArray password_get_info(string hash)
+        {
+            PhpArray result = new PhpArray();
+
+            if (String.IsNullOrEmpty(hash))
+            {
+                // Unkonwn algorithm
+                result.Add("algo", 0);
+                result.Add("algoName", "unknown");
+                result.Add("options", new PhpArray());
+            }
+            else
+            {
+                try
+                {
+                    var info = BCrypt.Net.BCrypt.InterrogateHash(hash);
+                    //  Option array
+                    PhpArray opt = new PhpArray();
+                    opt.Add("cost", Core.Convert.ToLong(info.WorkFactor));
+
+                    result.Add("algo", 1);
+                    result.Add("algoName", "bcrypt");
+                    result.Add("options", opt);
+                }
+                catch (HashInformationException) // If fail, test argon2i
+                {
+                    Match argon = expressionHashArgon2.Match(hash);
+
+                    if (argon.Success)
+                    {
+                        PhpArray opt = new PhpArray();
+                        opt.Add("memory_cost", Core.Convert.ToLong(argon.Groups[2].Value));
+                        opt.Add("time_cost", Core.Convert.ToLong(argon.Groups[3].Value));
+                        opt.Add("threads", Core.Convert.ToLong(argon.Groups[4].Value));
+
+                        result.Add("algo", argon.Groups[1].Value == "argon2i" ? 2 : 3);
+                        result.Add("algoName", argon.Groups[1].Value);
+                        result.Add("options", opt);
+                    }
+                    else // Unknown algorthm
+                    {
+                        result.Add("algo", 0);
+                        result.Add("algoName", "unknown");
+                        result.Add("options", new PhpArray());
+                    }
+                }
             }
 
             return result;
