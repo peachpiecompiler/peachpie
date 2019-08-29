@@ -160,7 +160,7 @@ namespace Pchp.Library.Reflection
         public static string export(string function, string parameter, bool @return = false) { throw new NotImplementedException(); }
 
         public ReflectionClass getClass() =>
-            (hasTypeInternal(_type) && Core.Reflection.ReflectionUtils.IsPhpClassType(_type.GetTypeInfo()))
+            (hasTypeInternal(_type) && Core.Reflection.ReflectionUtils.IsPhpClassType(_type))
                 ? new ReflectionClass(_type.GetPhpTypeInfo())
                 : null;
 
