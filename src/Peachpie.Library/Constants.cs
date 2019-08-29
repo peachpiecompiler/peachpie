@@ -1,4 +1,5 @@
 ﻿using Pchp.Core;
+using Pchp.Core.QueryValue;
 using Pchp.Core.Reflection;
 using System;
 using System.Collections.Generic;
@@ -26,43 +27,80 @@ namespace Pchp.Library
             => ctx.DefineConstant(name, value, caseInsensitive);
 
         /// <summary>
-        /// Determines whether a constant is defined.
+        /// Resolves the constant and gets its value if possible.
         /// </summary>
-        /// <param name="ctx">Current runtime context.</param>
-        /// <param name="callerCtx">type of caller class. Used to resolve reserved type names if used in <paramref name="name"/>.</param>
-        /// <param name="name">The name of the constant.</param>
-        /// <returns>Whether the constant is defined.</returns>
-        public static bool defined(Context ctx, [ImportCallerClass]RuntimeTypeHandle callerCtx, string name)
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="callerCtx">Current class scope.</param>
+        /// <param name="this">Current <c>$this</c> value. Used to resolve <c>static::</c>.</param>
+        /// <param name="name">The name of the constant. Might be a class constant.</param>
+        /// <param name="value">The constant value or <see cref="PhpValue.Void"/> if constant was not resolved.</param>
+        /// <returns>Whether the constant was resolved.</returns>
+        /// <exception cref="Exception">(Error) if <c>static::</c> used out of the class scope.</exception>
+        static bool TryGetConstant(Context ctx, [ImportCallerClass]RuntimeTypeHandle callerCtx, object @this, string name, out PhpValue value)
         {
-            if (string.IsNullOrEmpty(name))
+            if (!string.IsNullOrEmpty(name))
             {
-                return false;
-            }
-
-            var sepidx = name.IndexOf(':');
-            if (sepidx < 0)
-            {
-                // a global constant
-                return ctx.IsConstantDefined(name);
-            }
-            else
-            {
-                // a class constant
-                if (sepidx + 1 < name.Length && name[sepidx + 1] == ':')
+                var sepidx = name.IndexOf(':');
+                if (sepidx < 0)
                 {
-                    var tname = name.Remove(sepidx);
+                    // a global constant
+                    return ctx.TryGetConstant(name, out value);
+                }
+                else if (sepidx + 1 < name.Length && name[sepidx + 1] == ':')
+                {
+                    // a class constant:
 
-                    var tinfo = ctx.ResolveType(tname, callerCtx, true);
+                    // cut the type name only, 
+                    // eventually trim the leading backslash:
+                    var tname = name[0] == '\\' ? name.Substring(1, sepidx - 1) : name.Remove(sepidx);
+
+                    PhpTypeInfo tinfo;
+
+                    if (tname.EqualsOrdinalIgnoreCase("static"))
+                    {
+                        if (@this != null)
+                        {
+                            tinfo = @this.GetPhpTypeInfo();
+                        }
+                        else
+                        {
+                            // TODO: when called in a static class, we falsely report the error
+                            throw PhpException.ErrorException(Core.Resources.ErrResources.static_used_out_of_class);
+                        }
+                    }
+                    else
+                    {
+                        tinfo = ctx.ResolveType(tname, callerCtx, true);
+                    }
+
                     if (tinfo != null)
                     {
-                        var cname = name.Substring(sepidx + 2);
-                        return tinfo.GetDeclaredConstant(cname) != null;
+                        var p = tinfo.GetDeclaredConstant(name.Substring(sepidx + 2));
+                        if (p != null)
+                        {
+                            value = p.GetValue(ctx, null);
+                            return true;
+                        }
                     }
                 }
             }
 
             //
+            value = PhpValue.Void;
             return false;
+        }
+
+        /// <summary>
+        /// Determines whether a constant is defined.
+        /// </summary>
+        /// <param name="ctx">Current runtime context.</param>
+        /// <param name="callerCtx">type of caller class. Used to resolve reserved type names if used in <paramref name="name"/>.</param>
+        /// <param name="this">Optional. Reference to <c>$this</c> object. Used to resolve <c>static::</c> type reference.</param>
+        /// <param name="name">The name of the constant. Might be a class constant.</param>
+        /// <returns>Whether the constant is defined.</returns>
+        public static bool defined(Context ctx, [ImportCallerClass]RuntimeTypeHandle callerCtx, QueryValue<ThisVariable> @this, string name)
+        {
+            return TryGetConstant(ctx, callerCtx, @this.Value.This, name, out _);
         }
 
         /// <summary>
@@ -71,46 +109,17 @@ namespace Pchp.Library
         /// <param name="ctx">Current runtime context.</param>
         /// <param name="callerCtx">type of caller class. Used to resolve reserved type names if used in <paramref name="name"/>.</param>
         /// <param name="name">The name of the constant.</param>
+        /// <param name="this">Optional. Reference to <c>$this</c> object. Used to resolve <c>static::</c> type reference.</param>
         /// <returns>The value.</returns>
-        public static PhpValue constant(Context ctx, [ImportCallerClass]RuntimeTypeHandle callerCtx, string name)
+        public static PhpValue constant(Context ctx, [ImportCallerClass]RuntimeTypeHandle callerCtx, QueryValue<ThisVariable> @this, string name)
         {
-            if (name == null)
+            if (!TryGetConstant(ctx, callerCtx, @this.Value.This, name, out var value))
             {
-                // TODO: invalid arg
-            }
-
-            var sepidx = name.IndexOf(':');
-            if (sepidx < 0)
-            {
-                // a global constant
-                PhpValue value;
-                if (ctx.TryGetConstant(name, out value))
-                {
-                    return value;
-                }
-            }
-            else
-            {
-                // a class constant
-                if (sepidx + 1 < name.Length && name[sepidx + 1] == ':')
-                {
-                    var tname = name.Remove(sepidx);
-
-                    var tinfo = ctx.ResolveType(tname, callerCtx, true);
-                    if (tinfo != null)
-                    {
-                        var p = tinfo.GetDeclaredConstant(name.Substring(sepidx + 2));
-                        if (p != null)
-                        {
-                            return p.GetValue(ctx, null);
-                        }
-                    }
-                }
+                PhpException.Throw(PhpError.Warning, Core.Resources.ErrResources.constant_not_found, name);
             }
 
             //
-            PhpException.Throw(PhpError.Warning, Core.Resources.ErrResources.constant_not_found, name);
-            return PhpValue.Void;
+            return value;
         }
 
         /// <summary>

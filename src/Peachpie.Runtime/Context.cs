@@ -357,6 +357,11 @@ namespace Pchp.Core
         {
             Debug.Assert(name != null);
 
+            if (name.Length != 0 && name[0] == '\\')
+            {
+                name = name.Substring(1);
+            }
+
             // reserved type names: parent, self, static
             if (name.Length == 6)
             {
