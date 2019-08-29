@@ -62,7 +62,22 @@ namespace Peachpie.Library.PDO.Sqlite
         }
 
         /// <inheritDoc />
+        public override string Quote(string str, PDO.PARAM param)
+        {
+            // Template: sqlite3_snprintf("'%q'", unquoted);
+            // - %q doubles every '\'' character
 
+            if (string.IsNullOrEmpty(str))
+            {
+                return "''";
+            }
+            else
+            {
+                return $"'{str.Replace("'", "''")}'";
+            }
+        }
+
+        /// <inheritDoc />
         public override string GetLastInsertId(PDO pdo, string name)
         {
             Debug.Fail("last_insert_id not implemented");
