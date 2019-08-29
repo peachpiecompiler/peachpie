@@ -482,7 +482,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 ToArray = ct.PhpValue.Method("ToArray");
                 AsObject = ct.PhpValue.Method("AsObject");
                 AsString_Context = ct.PhpValue.Method("AsString", ct.Context);
-                GetArray = ct.PhpValue.Method("GetArray");
+                ToArrayOrThrow = ct.PhpValue.Method("ToArrayOrThrow");
 
                 Long = ct.PhpValue.Property("Long");
                 Double = ct.PhpValue.Property("Double");
@@ -514,7 +514,7 @@ namespace Pchp.CodeAnalysis.Symbols
             public readonly CoreMethod
                 ToString_Context, ToClass, EnsureObject, EnsureArray, EnsureAlias, GetArrayAccess, ToArray,
                 AsObject, AsString_Context,
-                DeepCopy, GetValue, PassValue, GetArray,
+                DeepCopy, GetValue, PassValue, ToArrayOrThrow,
                 Eq_PhpValue_PhpValue, Eq_PhpValue_String, Eq_String_PhpValue,
                 Ineq_PhpValue_PhpValue, Ineq_PhpValue_String, Ineq_String_PhpValue,
                 Create_Boolean, Create_Long, Create_Int, Create_Double, Create_String, Create_PhpString, Create_PhpNumber, Create_PhpAlias, Create_PhpArray, Create_IntStringKey,

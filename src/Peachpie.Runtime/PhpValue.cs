@@ -462,8 +462,8 @@ namespace Pchp.Core
         /// Anything else than <c>NULL</c> or <see cref="PhpArray"/> causes an exception.
         /// </summary>
         /// <returns><see cref="PhpArray"/> instance or a<c>null</c> reference.</returns>
-        /// <exception cref="InvalidCastException">Value is neither <see cref="PhpArray"/> or <c>null</c>.</exception>
-        public PhpArray GetArray() => _type.GetArray(ref this);
+        /// <exception cref="Exception">(PHP's TypeError) Value is neither <see cref="PhpArray"/> or <c>null</c>.</exception>
+        public PhpArray ToArrayOrThrow() => _type.ArrayOrThrow(ref this);
 
         /// <summary>
         /// Gets callable wrapper for the object dynamic invocation.
