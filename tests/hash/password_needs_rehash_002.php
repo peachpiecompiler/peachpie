@@ -1,4 +1,5 @@
 <?php
+
 $password = "rasmuslerdorf";
 $memory_cost = 512;
 $time_cost = 11;
@@ -17,12 +18,9 @@ if (password_verify($password, $hash)) {
     // or the cost has changed
     $options['time_cost'] =  11.3;
     if (password_needs_rehash($hash, PASSWORD_ARGON2ID, $options)) {
-        // If so, create a new hash, and replace the old one
-        echo 'Success';
+        echo 'Rehash';
     }
-    else
-    {
-        echo 'Failed';
+    else {
+        echo 'Ok';
     }
-    // Log user in
 }
