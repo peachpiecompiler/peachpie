@@ -160,21 +160,29 @@ namespace Pchp.Core.Reflection
         /// <returns><see cref="RoutineInfo"/> instance or <c>null</c> if routine with given name is not declared.</returns>
         public RoutineInfo GetDeclaredRoutine(string name)
         {
-            int index;
-            if (_nameToIndex.TryGetValue(name, out index))
+            if (!string.IsNullOrEmpty(name))
             {
-                if (index > 0)
+                if (name[0] == '\\')
                 {
-                    var routines = _contextRoutines;
-                    if (index <= routines.Length)
-                    {
-                        return routines[index - 1];
-                    }
+                    name = name.Substring(1);
                 }
-                else
+
+                int index;
+                if (_nameToIndex.TryGetValue(name, out index))
                 {
-                    Debug.Assert(index != 0);
-                    return _appRoutines[-index - 1];
+                    if (index > 0)
+                    {
+                        var routines = _contextRoutines;
+                        if (index <= routines.Length)
+                        {
+                            return routines[index - 1];
+                        }
+                    }
+                    else
+                    {
+                        Debug.Assert(index != 0);
+                        return _appRoutines[-index - 1];
+                    }
                 }
             }
 
