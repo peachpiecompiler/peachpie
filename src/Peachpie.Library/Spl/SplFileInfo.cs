@@ -116,7 +116,27 @@ namespace Pchp.Library.Spl
         public virtual string getRealPath(Context ctx) => ResolvedInfo.FullName;
 
         public virtual long getSize() => (ResolvedInfo is FileInfo finfo) ? finfo.Length : 0;
-        public virtual string getType() { throw new NotImplementedException(); }
+
+        /// <summary>
+        /// Returns the type of the file referenced.
+        /// </summary>
+        /// <returns>A string representing the type of the entry. May be one of <c>file</c>, <c>link</c>, or <c>dir</c>.</returns>
+        /// <exception cref="RuntimeException">Throws a RuntimeException on error.</exception>
+        [return: NotNull]
+        public virtual string getType()
+        {
+            if (ResolvedInfo.Exists)
+            {
+                //var attrs = ResolvedInfo.Attributes;
+                //if ((attrs & FileAttributes.Directory) != 0) return "dir";
+                if (ResolvedInfo is FileInfo) return "file";
+                if (ResolvedInfo is DirectoryInfo) return "dir";
+                // TODO: symbolic link
+            }
+
+            throw new RuntimeException();
+        }
+
         public virtual bool isDir() => ResolvedInfo.Exists && ResolvedInfo is DirectoryInfo;
         public virtual bool isExecutable() { throw new NotImplementedException(); }
         public virtual bool isFile() => ResolvedInfo.Exists && ResolvedInfo is FileInfo;
