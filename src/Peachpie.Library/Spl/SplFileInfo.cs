@@ -169,7 +169,7 @@ namespace Pchp.Library.Spl
         public virtual bool isDir() => ResolvedInfo.Exists && ResolvedInfo is DirectoryInfo;
         public virtual bool isExecutable() { throw new NotImplementedException(); }
         public virtual bool isFile() => ResolvedInfo.Exists && ResolvedInfo is FileInfo;
-        public virtual bool isLink() { throw new NotImplementedException(); }
+        public virtual bool isLink() => ResolvedInfo.Exists && (ResolvedInfo.Attributes & FileAttributes.ReparsePoint) != 0; // TODO: review determining symbolic links, ReparsePoint is usually right (at least on NTFS)
         public virtual bool isReadable() => ResolvedInfo.Exists;
         public virtual bool isWritable() => ResolvedInfo.Exists && !(ResolvedInfo is FileInfo && ResolvedInfo.Attributes.HasFlag(FileAttributes.ReadOnly));
         public virtual SplFileObject openFile(Context ctx, string open_mode = "r", bool use_include_path = false, PhpResource context = null)
