@@ -87,9 +87,38 @@ namespace Pchp.Library.Spl
             _fullpath = FileSystemUtils.AbsolutePath(ctx, file_name);
         }
 
-        public virtual long getATime() { throw new NotImplementedException(); }
         public virtual string getBasename(string suffix = null) => PhpPath.basename(_fullpath, suffix);
-        public virtual long getCTime() { throw new NotImplementedException(); }
+
+        public virtual long getATime()
+        {
+            if (ResolvedInfo.Exists)
+            {
+                return DateTimeUtils.UtcToUnixTimeStamp(ResolvedInfo.LastAccessTimeUtc);
+            }
+
+            throw new RuntimeException();
+        }
+
+        public virtual long getCTime()
+        {
+            if (ResolvedInfo.Exists)
+            {
+                return DateTimeUtils.UtcToUnixTimeStamp(ResolvedInfo.CreationTimeUtc);
+            }
+
+            throw new RuntimeException();
+        }
+
+        public virtual long getMTime()
+        {
+            if (ResolvedInfo.Exists)
+            {
+                return DateTimeUtils.UtcToUnixTimeStamp(ResolvedInfo.LastWriteTimeUtc);
+            }
+
+            throw new RuntimeException();
+        }
+
         public virtual string getExtension()
         {
             var ext = ResolvedInfo.Extension;
@@ -100,12 +129,12 @@ namespace Pchp.Library.Spl
             Debug.Assert(ext[0] == '.');
             return ext.Substring(1);
         }
+
         public virtual SplFileInfo getFileInfo(Context ctx, string class_name = null) => CreateFileInfo(ctx, class_name ?? _info_class, _fullpath);
         public virtual string getFilename() => PhpPath.basename(_relativePath);
         public virtual long getGroup() { throw new NotImplementedException(); }
         public virtual long getInode() { throw new NotImplementedException(); }
         public virtual string getLinkTarget() { throw new NotImplementedException(); }
-        public virtual long getMTime() { throw new NotImplementedException(); }
         public virtual long getOwner() { throw new NotImplementedException(); }
         public virtual string getPath() => PhpPath.dirname(_relativePath);
         public virtual SplFileInfo getPathInfo(Context ctx, string class_name = null) => CreateFileInfo(ctx, class_name ?? _info_class, PhpPath.dirname(_fullpath));
