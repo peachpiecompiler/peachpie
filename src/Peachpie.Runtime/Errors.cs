@@ -89,7 +89,7 @@ namespace Pchp.Core
     }
 
     #endregion
-       
+
     #region PhpException
 
     /// <summary>
@@ -119,6 +119,8 @@ namespace Pchp.Core
                 new[] { message },
                 null);
         }
+
+        public static Exception ErrorException(string formatstring, string arg1) => ErrorException(string.Format(formatstring, arg1));
 
         public static Exception ErrorException(string message) => Exception(ref _Error, ErrorClass, message);
 
@@ -195,7 +197,7 @@ namespace Pchp.Core
             if (ReferenceEquals(value, null))
             {
                 // PHP: TypeError: Argument {arg} passed to {methodname} must be an instance of {expected}, null given
-                
+
                 // throw new TypeError
                 throw TypeErrorException(string.Format(ErrResources.argument_null, arg));
             }

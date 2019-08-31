@@ -363,7 +363,7 @@ namespace Pchp.Library.Reflection
         }
         public bool isFinal() => _tinfo.Type.IsSealed;
         public bool isInstance(object @object) => _tinfo.Type.IsInstanceOfType(@object);
-        public bool isInstantiable() => !object.ReferenceEquals(_tinfo.Creator, PhpTypeInfo.InaccessibleCreator);
+        public bool isInstantiable() => _tinfo.isInstantiable;
         public bool isInterface() => _tinfo.IsInterface;
         public bool isInternal() => !isUserDefined();
         public bool isIterateable() => _tinfo.Type.IsSubclassOf(typeof(Iterator)) || _tinfo.Type.IsSubclassOf(typeof(IteratorAggregate)) || _tinfo.Type.IsSubclassOf(typeof(System.Collections.IEnumerable));

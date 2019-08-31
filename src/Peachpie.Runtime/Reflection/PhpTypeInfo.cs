@@ -39,7 +39,7 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets value indicating the type is a trait.
         /// </summary>
-        public bool IsTrait => !IsInterface && _type.IsSealed && _type.GetCustomAttribute<PhpTraitAttribute>(false) != null;
+        public bool IsTrait => !IsInterface && _type.IsSealed && _type.IsGenericTypeDefinition && _type.GetCustomAttribute<PhpTraitAttribute>(false) != null;
 
         /// <summary>
         /// Gets value indicating the type was declared within a PHP code.
@@ -80,6 +80,12 @@ namespace Pchp.Core.Reflection
         public TObjectCreator Creator => _lazyCreator ?? BuildCreator();
 
         /// <summary>
+        /// Gets value indicating the type can be publically instantiated.
+        /// If <c>true</c>, the class is not-abstract, not-trait, not-interface and has a public constructor.
+        /// </summary>
+        public bool isInstantiable => this.Creator != null /*ensures flags initialized */ && (_flags & Flags.InstantiationNotAllowed) == 0;
+
+        /// <summary>
         /// Creates instance of the class without invoking its constructor.
         /// </summary>
         public object GetUninitializedInstance(Context ctx)
@@ -111,7 +117,6 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// A delegate used for representing an inaccessible class constructor.
         /// </summary>
-        public static TObjectCreator InaccessibleCreator => s_inaccessibleCreator;
         static readonly TObjectCreator s_inaccessibleCreator = (ctx, _) => { throw new MethodAccessException(); };
 
         /// <summary>
@@ -169,14 +174,27 @@ namespace Pchp.Core.Reflection
             {
                 if (_lazyCreator == null)
                 {
-                    var ctors = _type.DeclaredConstructors.Where(c => c.IsPublic && !c.IsStatic && !c.IsPhpHidden()).ToArray();
-                    if (ctors.Length != 0)
+                    if (ReflectionUtils.IsInstantiable(_type) && !IsTrait)
                     {
-                        _lazyCreator = Dynamic.BinderHelpers.BindToCreator(_type.AsType(), ctors);
+                        var ctors = _type.DeclaredConstructors.Where(c => c.IsPublic && !c.IsStatic && !c.IsPhpHidden()).ToArray();
+                        if (ctors.Length != 0)
+                        {
+                            _lazyCreator = Dynamic.BinderHelpers.BindToCreator(_type.AsType(), ctors);
+                        }
+                        else
+                        {
+                            _flags |= Flags.InstantiationNotAllowed;
+                            _lazyCreator = s_inaccessibleCreator;
+                        }
                     }
                     else
                     {
-                        _lazyCreator = s_inaccessibleCreator;
+                        _flags |= Flags.InstantiationNotAllowed;
+                        _lazyCreator = (_1, _2) => throw PhpException.ErrorException(
+                            this.IsInterface ? Resources.ErrResources.interface_instantiated :
+                            this.IsTrait ? Resources.ErrResources.trait_instantiated :
+                            /*this.IsAbstract*/ Resources.ErrResources.abstract_class_instantiated, // or static class
+                            this.Name);
                     }
                 }
             }
@@ -193,19 +211,28 @@ namespace Pchp.Core.Reflection
             {
                 if (_lazyCreatorPrivate == null)
                 {
-                    var ctorsList = new List<ConstructorInfo>();
-                    bool hasPrivate = false;
-                    foreach (var c in _type.DeclaredConstructors)
+                    if (ReflectionUtils.IsInstantiable(_type) && !IsTrait)
                     {
-                        if (!c.IsStatic && !c.IsPhpFieldsOnlyCtor() && !c.IsPhpHidden())
+                        List<ConstructorInfo> ctorsList = null;
+                        bool hasPrivate = false;
+                        foreach (var c in _type.DeclaredConstructors)
                         {
-                            ctorsList.Add(c);
-                            hasPrivate |= c.IsPrivate;
+                            if (!c.IsStatic && !c.IsPhpFieldsOnlyCtor() && !c.IsPhpHidden())
+                            {
+                                if (ctorsList == null) ctorsList = new List<ConstructorInfo>(1);
+                                ctorsList.Add(c);
+                                hasPrivate |= c.IsPrivate;
+                            }
                         }
+                        _lazyCreatorPrivate = hasPrivate
+                            ? Dynamic.BinderHelpers.BindToCreator(_type.AsType(), ctorsList.ToArray())
+                            : this.Creator_protected;
                     }
-                    _lazyCreatorPrivate = hasPrivate
-                        ? Dynamic.BinderHelpers.BindToCreator(_type.AsType(), ctorsList.ToArray())
-                        : this.Creator_protected;
+                    else
+                    {
+                        _flags |= Flags.InstantiationNotAllowed;
+                        _lazyCreatorPrivate = this.Creator;
+                    }
                 }
             }
 
@@ -221,19 +248,28 @@ namespace Pchp.Core.Reflection
             {
                 if (_lazyCreatorProtected == null)
                 {
-                    var ctorsList = new List<ConstructorInfo>();
-                    bool hasProtected = false;
-                    foreach (var c in _type.DeclaredConstructors)
+                    if (ReflectionUtils.IsInstantiable(_type) && !IsTrait)
                     {
-                        if (!c.IsStatic && !c.IsPrivate && !c.IsPhpFieldsOnlyCtor() && !c.IsPhpHidden())
+                        List<ConstructorInfo> ctorsList = null;
+                        bool hasProtected = false;
+                        foreach (var c in _type.DeclaredConstructors)
                         {
-                            ctorsList.Add(c);
-                            hasProtected |= c.IsFamily;
+                            if (!c.IsStatic && !c.IsPrivate && !c.IsPhpFieldsOnlyCtor() && !c.IsPhpHidden())
+                            {
+                                if (ctorsList == null) ctorsList = new List<ConstructorInfo>(1);
+                                ctorsList.Add(c);
+                                hasProtected |= c.IsFamily;
+                            }
                         }
+                        _lazyCreatorProtected = hasProtected
+                            ? Dynamic.BinderHelpers.BindToCreator(_type.AsType(), ctorsList.ToArray())
+                            : this.Creator;
                     }
-                    _lazyCreatorProtected = hasProtected
-                        ? Dynamic.BinderHelpers.BindToCreator(_type.AsType(), ctorsList.ToArray())
-                        : this.Creator;
+                    else
+                    {
+                        _flags |= Flags.InstantiationNotAllowed;
+                        _lazyCreatorProtected = this.Creator;
+                    }
                 }
             }
 
@@ -305,6 +341,11 @@ namespace Pchp.Core.Reflection
         {
             BaseTypePopulated = 64,
             RuntimeFieldsHolderPopulated = 128,
+
+            /// <summary>
+            /// Marks the type that the class cannot be instantiated publically.
+            /// </summary>
+            InstantiationNotAllowed = 256,
         }
 
         Flags _flags;

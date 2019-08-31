@@ -1628,4 +1628,7 @@ Additional information:
   <data name="try_without_catch_or_finally" xml:space="preserve">
     <value>Cannot use try without catch or finally</value>
   </data>
+  <data name="trait_instantiated" xml:space="preserve">
+    <value>Cannot instantiate trait {0}</value>
+  </data>
 </root>
