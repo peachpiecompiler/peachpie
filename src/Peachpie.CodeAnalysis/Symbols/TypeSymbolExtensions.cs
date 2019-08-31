@@ -46,7 +46,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public static bool IsTraitType(this TypeSymbol type)
         {
-            return type is IPhpTypeSymbol phpt && phpt.IsTrait;
+            return type != null && type.OriginalDefinition is IPhpTypeSymbol phpt && phpt.IsTrait;
         }
 
         /// <summary>
