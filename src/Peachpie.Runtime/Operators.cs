@@ -1431,20 +1431,28 @@ namespace Pchp.Core
         public static void Unpack(List<PhpValue> stack, Traversable traversable, ulong byrefs)
         {
             Debug.Assert(traversable != null);
-            Debug.Assert(traversable is Iterator, "Iterator expected.");
 
-            var iterator = (Iterator)traversable;
-
-            iterator.rewind();
-            while (iterator.valid())
+            if (traversable is IteratorAggregate aggr)
             {
-                Debug.Assert((byrefs & (1ul << stack.Count)) == 0, "Cannot pass by-reference when unpacking a Traversable");
-                //{
-                //    // TODO: Warning: Cannot pass by-reference argument {stack.Count + 1} of {function_name}() by unpacking a Traversable, passing by-value instead
-                //}
+                Unpack(stack, aggr.getIterator(), byrefs);
+            }
+            else if (traversable is Iterator iterator)
+            {
+                iterator.rewind();
+                while (iterator.valid())
+                {
+                    Debug.Assert((byrefs & (1ul << stack.Count)) == 0, "Cannot pass by-reference when unpacking a Traversable");
+                    //{
+                    //    // TODO: Warning: Cannot pass by-reference argument {stack.Count + 1} of {function_name}() by unpacking a Traversable, passing by-value instead
+                    //}
 
-                stack.Add(iterator.current());
-                iterator.next();
+                    stack.Add(iterator.current());
+                    iterator.next();
+                }
+            }
+            else
+            {
+                throw new ArgumentException();
             }
         }
 
