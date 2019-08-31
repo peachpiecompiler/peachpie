@@ -655,6 +655,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Function {0}() does not exist.
+        /// </summary>
+        public static string function_does_not_exist {
+            get {
+                return ResourceManager.GetString("function_does_not_exist", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Header &apos;{0}&apos; not supported and has been ignored.
         /// </summary>
         public static string header_not_supported {
