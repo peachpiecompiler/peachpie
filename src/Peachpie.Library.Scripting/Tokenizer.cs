@@ -461,6 +461,11 @@ namespace Peachpie.Library.Scripting
         {
             var tokens = new PhpArray();
 
+            if (string.IsNullOrEmpty(source))
+            {
+                return tokens;
+            }
+
             Tokens t;
             var lines = LineBreaks.Create(source);
             using (var tokenizer = new Lexer(new StringReader(source), Encoding.UTF8))
