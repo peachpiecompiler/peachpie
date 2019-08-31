@@ -577,7 +577,28 @@ namespace Pchp.Library.DateTime
         public virtual DateTimeImmutable setDate(int year, int month, int day) => throw new NotImplementedException();
         public virtual DateTimeImmutable setISODate(int year, int week, int day = 1) => throw new NotImplementedException();
         public virtual DateTimeImmutable setTime(int hour, int minute, int second = 0, int microseconds = 0) => throw new NotImplementedException();
-        public virtual DateTimeImmutable setTimezone(DateTimeZone timezone) => throw new NotImplementedException();
+
+        [return: NotNull]
+        public virtual DateTimeImmutable setTimezone(DateTimeZone timezone)
+        {
+            if (timezone == null)
+            {
+                PhpException.ArgumentNull(nameof(timezone));
+                return this;
+            }
+
+            if (timezone._timezone == this.TimeZone)
+            {
+                return this;
+            }
+            else
+            {
+                // convert this.Time from old TZ to new TZ
+                var time = TimeZoneInfo.ConvertTime(new System_DateTime(this.Time.Ticks, DateTimeKind.Unspecified), this.TimeZone, timezone._timezone);
+
+                return new DateTimeImmutable(_ctx, time, timezone._timezone);
+            }
+        }
         public virtual DateTimeImmutable sub(DateInterval interval) => new DateTimeImmutable(_ctx, Time.Subtract(interval.AsTimeSpan()), TimeZone);
 
         /// <summary>
