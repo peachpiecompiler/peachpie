@@ -155,6 +155,8 @@ namespace Pchp.Library.DateTime
             return DateTimeUtils.UnixTimeStampToUtc(result);
         }
 
+        internal DateTimeImmutable AsDateTimeImmutable() => new DateTimeImmutable(_ctx, this.Time, this.TimeZone);
+
         #endregion
 
         #region Methods
@@ -538,8 +540,37 @@ namespace Pchp.Library.DateTime
         #endregion
 
         public virtual DateTimeImmutable add(DateInterval interval) => new DateTimeImmutable(_ctx, Time.Add(interval.AsTimeSpan()), TimeZone);
-        public static DateTimeImmutable createFromFormat(string format, string time, DateTimeZone timezone = null) => throw new NotImplementedException();
-        public static DateTimeImmutable createFromMutable(DateTime datetime) => throw new NotImplementedException();
+        [return: CastToFalse]
+        public static DateTimeImmutable createFromFormat(Context ctx, string format, string time, DateTimeZone timezone = null)
+        {
+            // arguments
+            var tz = (timezone != null) ? timezone._timezone : PhpTimeZone.GetCurrentTimeZone(ctx);
+
+            var dateinfo = DateInfo.ParseFromFormat(format, time, out var errors);
+
+            ctx.SetProperty<DateTimeErrors>(errors);
+
+            if (errors != null && errors.HasErrors)
+            {
+                return null;
+            }
+
+            return new DateTimeImmutable(ctx, dateinfo.GetDateTime(ctx, System_DateTime.UtcNow), tz); // TODO: dateinfo.TimeZones
+        }
+
+        public static DateTimeImmutable createFromMutable(DateTime datetime)
+        {
+            if (datetime == null)
+            {
+                PhpException.ArgumentNull(nameof(datetime));
+                return null;
+            }
+            else
+            {
+                return datetime.AsDateTimeImmutable();
+            }
+        }
+
         [return: CastToFalse]
         public static PhpArray getLastErrors(Context ctx) => DateTime.getLastErrors(ctx);
         public static DateTimeImmutable __set_state(PhpArray array) => throw new NotImplementedException();
