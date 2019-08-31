@@ -167,10 +167,11 @@ namespace Pchp.Core.Dynamic
             {
                 // PhpAlias is provided but typed as System.Object
                 // create restriction and retry with properly typed {expr:PhpAlias}
+                restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(expr, typeof(PhpAlias)));
                 expr = Expression.Convert(expr, typeof(PhpAlias));
 
                 return TryTargetAsObject(
-                    new DynamicMetaObject(expr, restrictions.Merge(BindingRestrictions.GetTypeRestriction(expr, typeof(PhpAlias))), alias),
+                    new DynamicMetaObject(expr, restrictions, alias),
                     out instance);
             }
 
