@@ -120,8 +120,23 @@ namespace Pchp.Library.Reflection
         public PhpArray getDefaultProperties() { throw new NotImplementedException(); }
         [return: CastToFalse]
         public string getDocComment() => null;
-        //public ReflectionExtension getExtension() { throw new NotImplementedException(); }
-        public string getExtensionName() => _tinfo.Extensions.FirstOrDefault() ?? string.Empty;
+
+        public ReflectionExtension getExtension()
+        {
+            var exts = _tinfo.Extensions;
+            return exts.Length != 0
+                ? new ReflectionExtension(exts[0])
+                : null; // NULL
+        }
+
+        [return: CastToFalse]
+        public string getExtensionName()
+        {
+            var exts = _tinfo.Extensions;
+            return exts.Length != 0
+                ? exts[0]
+                : null; // FALSE
+        }
 
         /// <summary>Gets the filename of the file in which the class has been defined</summary>
         /// <param name="ctx">Current runtime context</param>
