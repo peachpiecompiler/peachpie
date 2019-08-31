@@ -909,12 +909,12 @@ namespace Pchp.Core.Dynamic
                         if (p.ParameterType == typeof(QueryValue<CallerScript>))
                         {
                             // we don't have this info
-                            throw new NotSupportedException();
+                            throw new NotSupportedException("Pass <CallerScript> dynamically.");
                         }
                         else if (p.ParameterType == typeof(QueryValue<CallerArgs>))
                         {
                             // we don't have this info
-                            throw new NotImplementedException();    // TODO: empty array & report warning
+                            throw new NotSupportedException("Pass <CallerArgs> dynamically.");    // TODO: empty array & report warning
                         }
                         else if (p.ParameterType == typeof(QueryValue<LocalVariables>))
                         {
@@ -955,7 +955,7 @@ namespace Pchp.Core.Dynamic
                     }
                     else if (p.IsImportCallerStaticClassParameter())
                     {
-                        throw new NotSupportedException(); // we don't know current late static bound type
+                        throw new NotSupportedException("ImportCallerStaticClassAttribute dynamically."); // we don't know current late static bound type
                     }
                     else if (p.IsClosureParameter())
                     {
