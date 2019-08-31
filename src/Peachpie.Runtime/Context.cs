@@ -339,13 +339,7 @@ namespace Pchp.Core
         /// </summary>
         public PhpTypeInfo GetDeclaredTypeOrThrow(string name, bool autoload = false)
         {
-            var tinfo = GetDeclaredType(name, autoload);
-            if (tinfo == null)
-            {
-                PhpException.ClassNotFound(name);
-            }
-
-            return tinfo;
+            return GetDeclaredType(name, autoload) ?? throw PhpException.ClassNotFoundException(name);
         }
 
         /// <summary>

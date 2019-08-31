@@ -130,6 +130,8 @@ namespace Pchp.Core
 
         public static Exception AssertionErrorException(string message) => Exception(ref _AssertionError, AssertionErrorClass, message);
 
+        internal static Exception ClassNotFoundException(string classname) => ErrorException(ErrResources.class_not_found, classname);
+
         public static void Throw(PhpError error, string message)
         {
             Trace.WriteLine(message, $"PHP ({error})");
@@ -201,18 +203,6 @@ namespace Pchp.Core
                 // throw new TypeError
                 throw TypeErrorException(string.Format(ErrResources.argument_null, arg));
             }
-        }
-
-        internal static Exception ClassNotFoundException(string classname)
-        {
-            return new InvalidOperationException(string.Format(Resources.ErrResources.class_not_found, classname));
-        }
-
-        public static void ClassNotFound(string classname)
-        {
-            // PhpException.Throw(PhpError.Error, Resources.ErrResources.class_not_found, classname);
-
-            throw ClassNotFoundException(classname);
         }
 
         /// <summary>

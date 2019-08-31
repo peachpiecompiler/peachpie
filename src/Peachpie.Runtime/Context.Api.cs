@@ -100,7 +100,7 @@ namespace Pchp.Core
         /// <exception cref="InvalidOperationException">If the class is not declared.</exception>
         public object Create([ImportCallerClass]RuntimeTypeHandle caller, string classname, params PhpValue[] arguments)
         {
-            var tinfo = this.GetDeclaredType(classname, true) ?? throw PhpException.ClassNotFoundException(classname);
+            var tinfo = this.GetDeclaredTypeOrThrow(classname, true);
             return Create(caller, tinfo, arguments);
         }
 
