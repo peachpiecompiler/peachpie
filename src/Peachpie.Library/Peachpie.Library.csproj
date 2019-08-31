@@ -31,6 +31,11 @@
   </ItemGroup>
  
   <ItemGroup>
+    <Compile Update="Resources\DateResources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>DateResources.resx</DependentUpon>
+    </Compile>
     <Compile Update="Resources\InfoResources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -44,6 +49,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Update="Resources\DateResources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>DateResources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
     <EmbeddedResource Update="Resources\InfoResources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>InfoResources.Designer.cs</LastGenOutput>

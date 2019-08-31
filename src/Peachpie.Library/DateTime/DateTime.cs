@@ -18,8 +18,10 @@ namespace Pchp.Library.DateTime
     {
         public static DateTimeErrors Empty { get; } = new DateTimeErrors();
 
-        public IEnumerable<string> Warnings { get; set; }
-        public IEnumerable<string> Errors { get; set; }
+        public IList<string> Warnings { get; set; }
+        public IList<string> Errors { get; set; }
+
+        public bool HasErrors => Errors != null && Errors.Count != 0;
 
         public PhpArray ToPhpArray()
         {
@@ -269,134 +271,26 @@ namespace Pchp.Library.DateTime
             return this;
         }
 
+        [return: CastToFalse]
         public static DateTime createFromFormat(Context ctx, string format, string time, DateTimeZone timezone = null)
         {
             // arguments
             var tz = (timezone != null) ? timezone._timezone : PhpTimeZone.GetCurrentTimeZone(ctx);
 
-            if (format == null)
+            var dateinfo = DateInfo.ParseFromFormat(format, time, out var errors);
+
+            ctx.SetProperty<DateTimeErrors>(errors);
+
+            if (errors != null && errors.HasErrors)
             {
-                //PhpException.InvalidArgument("format");
-                //return false;
-                throw new ArgumentNullException();
+                return null;
             }
 
-            if (time == null)
+            return new DateTime(ctx)
             {
-                //PhpException.InvalidArgument("time");
-                //return false;
-                throw new ArgumentNullException();
-            }
-
-            if (format == "U")
-            {
-                long seconds = 0;
-                if (Int64.TryParse(time, out seconds))
-                {
-                    DateTimeOffset offset = DateTimeOffset.FromUnixTimeSeconds(seconds);
-                    return new DateTime(ctx)
-                    {
-                        Time = offset.UtcDateTime,
-                        // TODO should be set as UTC ?
-                        TimeZone = TimeZoneInfo.Utc
-                    };
-                }
-                else
-                {
-                    throw new ArgumentException("The time argument could not be parsed as an integer.");
-                }
-            }
-
-            var builder = new StringBuilder();
-
-            //used to replace 24 hour H character with 12 hour format h if needed
-            bool twelveHour = false;
-
-            //flag to reset the datetime to base Unix DateTime (1.1.1970)
-            //bool resetUnixDateTime = false;
-
-            // create DateTime from format+time
-            for (int i = 0; i < format.Length; i++)
-            {
-                var c = format[i];
-
-                switch (c)
-                {
-                    case 'd':
-                    case 'j':
-                        builder.Append("dd");
-                        break;
-                    case 'D':
-                    case 'l':
-                        builder.Append("ddd");
-                        break;
-                    case 'F':
-                    case 'M':
-                        builder.Append("MMM");
-                        break;
-                    case 'm':
-                    case 'n':
-                        builder.Append("MM");
-                        break;
-                    case 'Y':
-                        builder.Append("yyyy");
-                        break;
-                    case 'a':
-                    case 'A':
-                        builder.Append("tt");
-                        twelveHour = true;
-                        break;
-                    case 'g':
-                    case 'G':
-                    case 'h':
-                    case 'H':
-                        builder.Append("HH");
-                        break;
-                    case 'i':
-                        builder.Append("mm");
-                        break;
-                    case 's':
-                        builder.Append("ss");
-                        break;
-                    case '!':
-                    //resetUnixDateTime = true;
-                    //throw new NotImplementedException("Unix time resetting is not implemented.");
-                    case '?':
-                    case '/':
-                    case '*':
-                    case '+':
-                    case '#':
-                    case 'U':
-                    case 'S':
-                    case 'z':
-                    case 'e':
-                    case 'O':
-                    case 'P':
-                    case 'T':
-                        throw new NotImplementedException($"Format modifier '{c}' at position {i}.");
-                    default:
-                        builder.Append(c);
-                        break;
-                }
-            }
-
-            if (twelveHour)
-            {
-                builder.Replace('H', 'h');
-            }
-
-            var csStyleFormat = builder.ToString();
-
-            var success = System_DateTime.TryParseExact(time, csStyleFormat, CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.AssumeLocal, out var dateTime);
-
-            if (success)
-            {
-                return new DateTime(ctx) { Time = dateTime };
-            }
-            else
-            {
-                throw new NotImplementedException("Given datetime format string is not supported or it is invalid.");
-            }
+                Time = dateinfo.GetDateTime(ctx, System_DateTime.UtcNow),
+                TimeZone = tz, // TODO: dateinfo.TimeZone
+            };
         }
 
         [return: NotNull]
