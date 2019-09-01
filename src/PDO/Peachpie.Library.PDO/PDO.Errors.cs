@@ -57,10 +57,10 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public string errorCode() => _errorCode;
+        public virtual string errorCode() => _errorCode;
 
         /// <inheritDoc />
-        public PhpArray errorInfo() => new PhpArray(3)
+        public virtual PhpArray errorInfo() => new PhpArray(3)
         {
             _errorSqlState, _errorCode, _errorMessage,
         };

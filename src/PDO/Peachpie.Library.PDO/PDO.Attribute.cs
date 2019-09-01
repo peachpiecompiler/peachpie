@@ -9,7 +9,7 @@ namespace Peachpie.Library.PDO
     partial class PDO
     {
         /// <inheritDoc />
-        public PhpValue getAttribute(int attribute)
+        public virtual PhpValue getAttribute(int attribute)
         {
             if (Enum.IsDefined(typeof(PDO_ATTR), attribute))
             {
@@ -44,7 +44,7 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public bool setAttribute(int attribute, PhpValue value)
+        public virtual bool setAttribute(int attribute, PhpValue value)
         {
             //if (Enum.IsDefined(typeof(PDO_ATTR), attribute))
             //{

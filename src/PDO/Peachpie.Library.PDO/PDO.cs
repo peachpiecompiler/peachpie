@@ -61,13 +61,20 @@ namespace Peachpie.Library.PDO
         /// <param name="username">The user name for the DSN string.</param>
         /// <param name="password">The password for the DSN string.</param>
         /// <param name="options">A key=&gt;value array of driver-specific connection options.</param>
-        public PDO(Context ctx, string dsn, string username = null, string password = null, PhpArray options = null) : this(ctx)
+        public PDO(Context ctx, string dsn, string username = null, string password = null, PhpArray options = null)
+            : this(ctx)
         {
-            this.__construct(dsn, username, password, options);
+            construct(dsn, username, password, options);
         }
 
         /// <inheritDoc />
-        public void __construct(string dsn, string username = null, string password = null, PhpArray options = null)
+        public virtual void __construct(string dsn, string username = null, string password = null, PhpArray options = null)
+        {
+            construct(dsn, username, password, options);
+        }
+
+        [PhpHidden]
+        void construct(string dsn, string username = null, string password = null, PhpArray options = null)
         {
             this.SetDefaultAttributes();
 
@@ -172,7 +179,7 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public PhpValue exec(string statement)
+        public virtual PhpValue exec(string statement)
         {
             this.ClearError();
 
@@ -194,7 +201,7 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public bool beginTransaction()
+        public virtual bool beginTransaction()
         {
             if (this.m_tx != null)
                 throw new PDOException("Transaction already active");
@@ -204,7 +211,7 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public bool commit()
+        public virtual bool commit()
         {
             if (this.m_tx == null)
                 throw new PDOException("No active transaction");
@@ -214,7 +221,7 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public bool rollBack()
+        public virtual bool rollBack()
         {
             if (this.m_tx == null)
                 throw new PDOException("No active transaction");
@@ -224,7 +231,7 @@ namespace Peachpie.Library.PDO
         }
 
         /// <inheritDoc />
-        public string lastInsertId(string name = null)
+        public virtual string lastInsertId(string name = null)
         {
             return this.m_driver.GetLastInsertId(this, name);
         }
@@ -250,7 +257,7 @@ namespace Peachpie.Library.PDO
 
         /// <inheritDoc />
         [return: CastToFalse]
-        public PDOStatement prepare(string statement, PhpArray driver_options = null)
+        public virtual PDOStatement prepare(string statement, PhpArray driver_options = null)
         {
             try
             {
@@ -267,7 +274,7 @@ namespace Peachpie.Library.PDO
 
         /// <inheritDoc />
         [return: CastToFalse]
-        public PDOStatement query(string statement, params PhpValue[] args)
+        public virtual PDOStatement query(string statement, params PhpValue[] args)
         {
             var stmt = lastExecutedStatement = new PDOStatement(_ctx, this, statement, null);
 
@@ -296,7 +303,7 @@ namespace Peachpie.Library.PDO
 
         /// <inheritDoc />
         [return: CastToFalse]
-        public string quote(string str, PARAM parameter_type = PARAM.PARAM_STR)
+        public virtual string quote(string str, PARAM parameter_type = PARAM.PARAM_STR)
         {
             return m_driver?.Quote(str, parameter_type);
         }
