@@ -100,6 +100,8 @@ namespace Pchp.CodeAnalysis.Semantics
                     PhpSerialize(result, nestedArr);
                 else if (item.Value.ConstantValue.HasValue)
                     PhpSerialize(result, item.Value.ConstantValue.Value);
+                else if (item.Value is BoundCopyValue copy)
+                    PhpSerialize(result, copy.Expression);
                 else
                     throw ExceptionUtilities.UnexpectedValue(item.Value);
             }
