@@ -247,13 +247,20 @@ namespace Pchp.CodeAnalysis.Symbols
 
                 if (arr.Items.Length != 0)
                 {
-                    var byteSymbol = DeclaringCompilation.GetSpecialType(SpecialType.System_Byte);
-                    var serializedValue = Encoding.UTF8.GetBytes(arr.PhpSerializeOrThrow());
-                    var p = new KeyValuePair<string, TypedConstant>(
-                        "SerializedValue",
-                        new TypedConstant(DeclaringCompilation.CreateArrayTypeSymbol(byteSymbol), serializedValue.Select(b => new TypedConstant(byteSymbol, TypedConstantKind.Primitive, b)).AsImmutable()));
+                    try
+                    {
+                        var byteSymbol = DeclaringCompilation.GetSpecialType(SpecialType.System_Byte);
+                        var serializedValue = Encoding.UTF8.GetBytes(arr.PhpSerializeOrThrow());
+                        var p = new KeyValuePair<string, TypedConstant>(
+                            "SerializedValue",
+                            new TypedConstant(DeclaringCompilation.CreateArrayTypeSymbol(byteSymbol), serializedValue.Select(b => new TypedConstant(byteSymbol, TypedConstantKind.Primitive, b)).AsImmutable()));
 
-                    namedparameters = namedparameters.Add(p);
+                        namedparameters = namedparameters.Add(p);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidOperationException($"Cannot construct serialized parameter default value. Routine '{Routine.Name}' in {Routine.ContainingFile.RelativeFilePath}, {ex.Message}.", ex);
+                    }
                 }
 
                 yield return new SynthesizedAttributeData(
