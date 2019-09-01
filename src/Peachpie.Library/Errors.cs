@@ -196,7 +196,7 @@ namespace Pchp.Library
                 GetErrorContext(ctx).StoreErrorHandler(new ErrorHandlerRecord(oldhandler, oldtypes));
             }
 
-            config.UserErrorHandler = oldhandler;
+            config.UserErrorHandler = newHandler;
             config.UserErrorTypes = (PhpError)errorTypes;
 
             // returns the previous handler:
