@@ -75,7 +75,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                throw new ArgumentException();
+                throw ExceptionUtilities.UnexpectedValue(value);
             }
 
             result.Append(';');
@@ -101,7 +101,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 else if (item.Value.ConstantValue.HasValue)
                     PhpSerialize(result, item.Value.ConstantValue.Value);
                 else
-                    throw new ArgumentException();
+                    throw ExceptionUtilities.UnexpectedValue(item.Value);
             }
             result.Append('}');
         }
