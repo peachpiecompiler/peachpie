@@ -221,6 +221,12 @@ namespace Pchp.Core
         /// </summary>
         public IPhpCallable UserExceptionHandler { get; set; } = null;
 
+        /// <summary>
+        /// An error handler
+        /// </summary>
+        public IPhpCallable UserErrorHandler { get; set; } = null;
+        public PhpError UserErrorTypes { get; set; } = 0;
+
         #endregion
     }
 
