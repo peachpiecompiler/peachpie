@@ -288,17 +288,23 @@ namespace Pchp.Library
         /// or with a user defined function that has been set as the new error handler (set_error_handler()).
         /// This function is useful when you need to generate a particular response to an exception at runtime.
         /// </remarks>
-        public static bool trigger_error(Context ctx, string error_msg, int error_type = E_USER_NOTICE)
+        public static bool trigger_error(Context ctx, string error_msg, PhpError error_type = PhpError.E_USER_NOTICE)
         {
-            // not implemented
+            if ((error_type & (PhpError)PhpErrorSets.User) == 0)
+            {
+                return false;
+            }
 
+            PhpException.TriggerError(ctx, error_type, error_msg);
+
+            //
             return true;
         }
 
         /// <summary>
         /// Alias of <see cref="trigger_error"/>.
         /// </summary>
-        public static bool user_error(Context ctx, string error_msg, int error_type = E_USER_NOTICE) => trigger_error(ctx, error_msg, error_type);
+        public static bool user_error(Context ctx, string error_msg, PhpError error_type = PhpError.E_USER_NOTICE) => trigger_error(ctx, error_msg, error_type);
 
         public const int DEBUG_BACKTRACE_PROVIDE_OBJECT = 1;
         public const int DEBUG_BACKTRACE_IGNORE_ARGS = 2;

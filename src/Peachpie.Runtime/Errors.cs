@@ -95,7 +95,7 @@ namespace Pchp.Core
     /// <summary>
     /// Provides standard PHP errors.
     /// </summary>
-    [DebuggerNonUserCode, DebuggerStepThrough]
+    [DebuggerNonUserCode]
     public static class PhpException
     {
         static string PeachpieLibraryAssembly => "Peachpie.Library";
@@ -131,6 +131,39 @@ namespace Pchp.Core
         public static Exception AssertionErrorException(string message) => Exception(ref _AssertionError, AssertionErrorClass, message);
 
         internal static Exception ClassNotFoundException(string classname) => ErrorException(ErrResources.class_not_found, classname);
+
+        /// <summary>
+        /// Triggers the error by passing it to
+        /// the user handler first (<see cref="PhpCoreConfiguration.UserErrorHandler"/> and then to
+        /// the internal handler (<see cref="Throw(PhpError, string)"/>.
+        /// </summary>
+        public static void TriggerError(Context ctx, PhpError error, string message)
+        {
+            if (ctx == null)
+            {
+                throw new ArgumentNullException(nameof(ctx));
+            }
+
+            if (message == null)
+            {
+                message = string.Empty;
+            }
+
+            // try the user handler
+            var config = ctx.Configuration.Core;
+            if (config.UserErrorHandler != null && (config.UserErrorTypes & error) != 0)
+            {
+                var trace = new PhpStackTrace();
+
+                if (!config.UserErrorHandler.Invoke(ctx, (int)error, message, trace.GetFilename(), trace.GetLine(), PhpValue.Null).IsFalse)
+                {
+                    return;
+                }
+            }
+
+            // fallback to internal handler
+            Throw(error, message);
+        }
 
         public static void Throw(PhpError error, string message)
         {
