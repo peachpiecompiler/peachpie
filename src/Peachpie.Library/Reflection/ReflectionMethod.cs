@@ -196,7 +196,11 @@ namespace Pchp.Library.Reflection
         public bool isProtected() => _routine.Methods.All(m => m.IsFamily);
         public bool isPublic() => _routine.Methods.Any(m => m.IsPublic);
         public bool isStatic() => _routine.Methods.Any(m => m.IsStatic);
-        public void setAccessible(bool accessible) { throw new NotImplementedException(); }
+        public void setAccessible(bool accessible)
+        {
+            // silently ignore,
+            // invoke() does not check accessibility
+        }
         public override bool hasReturnType()
         {
             if (base.hasReturnType())

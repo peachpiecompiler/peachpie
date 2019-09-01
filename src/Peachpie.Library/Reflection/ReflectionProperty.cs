@@ -144,10 +144,8 @@ namespace Pchp.Library.Reflection
         public virtual bool isStatic() => _pinfo.IsStatic;
         public virtual void setAccessible(bool accessible)
         {
-            // silently ignore the function call,
-            // some frameworks use it in combination with reflection which works just fine in .NET
-
-            PhpException.FunctionNotSupported(nameof(setAccessible));
+            // silently ignore,
+            // setValue/getValue do not check accessibility
         }
 
         /// <summary>
