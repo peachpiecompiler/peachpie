@@ -103,7 +103,7 @@ namespace ScriptsTest
         static string Interpret(string path)
         {
             // Run PHP hiding any errors from the output (we don't compare them with ours)
-            return RunProcess("php", $"-d display_errors=Off {Path.GetFileName(path)}", Path.GetDirectoryName(path));
+            return RunProcess("php", $"-d display_errors=Off -d log_errors=Off {Path.GetFileName(path)}", Path.GetDirectoryName(path));
         }
 
         static string RunProcess(string exe, string args, string cwd)
