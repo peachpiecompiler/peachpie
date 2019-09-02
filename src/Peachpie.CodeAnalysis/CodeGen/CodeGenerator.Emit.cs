@@ -1249,6 +1249,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Gets source element index and delegate that emits the LOAD of source element.</param>
         public void EmitEnumerateArray(IPlace arrplace, int startindex, Action<LocalDefinition, Func<TypeSymbol>> bodyemit)
         {
+            if (arrplace == null) throw new ArgumentNullException(nameof(arrplace));
+
             Debug.Assert(arrplace.Type.IsSZArray());
 
             var arr_element = ((ArrayTypeSymbol)arrplace.Type).ElementType;
@@ -1773,16 +1775,80 @@ namespace Pchp.CodeAnalysis.CodeGen
                     Debug.Assert(parameters.Length == param_index + 1); // p is last one
                     Debug.Assert(p.Type.IsArray());
 
+                    var p_element = ((ArrayTypeSymbol)p.Type).ElementType;
+
                     if (arg_params_index >= 0)
                     {
-                        // we have to load { arg_i, ..., arg_params[] }
-                        throw new NotImplementedException();
-                    }
+                        // we have to load remaining arguments into an array and unroll the arg_params
+                        // { arg_i, ..., arg_params[] }
 
-                    // wrap remaining arguments to array
-                    var values = (arg_index < arguments.Length) ? arguments.Skip(arg_index).AsImmutable() : ImmutableArray<BoundArgument>.Empty;
-                    arg_index += values.Length;
-                    Emit_NewArray(((ArrayTypeSymbol)p.Type).ElementType, values);
+                        #region LOAD new Array( ..., ...params )
+
+                        /*
+                         * Template:
+                         * params = new PhpValue[ {arguments.Length - arg_index - 1} +  {arguments[arg_params_index]}.Length ]
+                         * params[0] = arg_i
+                         * params[1] = ..
+                         * Array.Copy( params, arguments[arg_params_index] )
+                         */
+
+                        int arr_size1 = arguments.Length - arg_index - 1; // remaining arguments without arg_params
+                        var arg_params = arguments[arg_params_index].Value as BoundVariableRef;
+                        Debug.Assert(arg_params != null);
+
+                        // <params> = new [arr_size1 + arg_params.Length]
+
+                        _il.EmitIntConstant(arr_size1);
+                        arguments[arg_params_index].Value.Emit(this); // {args}
+                        EmitArrayLength();
+                        _il.EmitOpCode(ILOpCode.Add);
+
+                        _il.EmitOpCode(ILOpCode.Newarr);
+                        EmitSymbolToken(p_element, null);
+
+                        var params_loc = GetTemporaryLocal(p.Type, false);
+                        _il.EmitLocalStore(params_loc);
+
+                        // { arg_i, ..., arg_(n-1) }
+                        for (int i = 0; i < arr_size1; i++)
+                        {
+                            _il.EmitLocalLoad(params_loc);  // <params>
+                            _il.EmitIntConstant(i);         // [i]
+                            EmitConvert(arguments[arg_index + i].Value, p_element);
+                            _il.EmitOpCode(ILOpCode.Stelem);
+                            EmitSymbolToken(p_element, null);
+                        }
+
+                        // { ... arg_params } // TODO: use Array.Copy() if element types match
+                        EmitEnumerateArray(arg_params.Place(), 0, (loc_i, loader) =>
+                        {
+                            _il.EmitLocalLoad(params_loc);  // <params>
+
+                            _il.EmitIntConstant(arr_size1);         // arr_size1
+                            _il.EmitLocalLoad(loc_i);               // {i}
+                            _il.EmitOpCode(ILOpCode.Add);           // +
+
+                            EmitConvert(loader(), 0, p_element);
+                            _il.EmitOpCode(ILOpCode.Stelem);
+                            EmitSymbolToken(p_element, null);
+                        });
+
+                        // params : PhpValue[]
+                        _il.EmitLocalLoad(params_loc);
+                        ReturnTemporaryLocal(params_loc);
+
+                        arg_index = arguments.Length;
+
+                        #endregion
+                    }
+                    else
+                    {
+                        // easy case,
+                        // wrap remaining arguments to array
+                        var values = (arg_index < arguments.Length) ? arguments.Skip(arg_index).AsImmutable() : ImmutableArray<BoundArgument>.Empty;
+                        arg_index += values.Length;
+                        Emit_NewArray(p_element, values);
+                    }
 
                     break;  // p is last one
                 }
@@ -2436,7 +2502,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         cg = new CodeGenerator(this, srcr);
                     }
                 }
-                
+
                 //
                 cg.EmitConvert(boundinitializer, ptype = targetp.Type);
             }
