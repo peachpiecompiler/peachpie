@@ -1906,9 +1906,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             // real.NET static member (CLR static fields) or
                             // the field may be contained in special __statics container (fields & constants)
                             x.BoundReference = new FieldReference(null, field);
+                            x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, field.Type).WithIsRef(field.Type.CanBePhpAlias());
                         }
 
-                        x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, field.Type).WithIsRef(field.Type.CanBePhpAlias());
                         x.ResultType = field.Type;
                         return default;
                     }

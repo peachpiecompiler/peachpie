@@ -81,6 +81,18 @@ namespace Pchp.CodeAnalysis.Semantics
             result.Append(';');
         }
 
+        static void PhpSerialize(StringBuilder result, BoundExpression expr)
+        {
+            if (expr is BoundArrayEx nestedArr)
+                PhpSerialize(result, nestedArr);
+            else if (expr.ConstantValue.HasValue)
+                PhpSerialize(result, expr.ConstantValue.Value);
+            else if (expr is BoundCopyValue copy)
+                PhpSerialize(result, copy.Expression);
+            else
+                throw ExceptionUtilities.UnexpectedValue(expr);
+        }
+
         static void PhpSerialize(StringBuilder result, BoundArrayEx array)
         {
             int idx = 0;
@@ -96,14 +108,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 PhpSerialize(result, item.Key != null ? item.Key.ConstantValue.Value : (idx++));
 
                 // value
-                if (item.Value is BoundArrayEx nestedArr)
-                    PhpSerialize(result, nestedArr);
-                else if (item.Value.ConstantValue.HasValue)
-                    PhpSerialize(result, item.Value.ConstantValue.Value);
-                else if (item.Value is BoundCopyValue copy)
-                    PhpSerialize(result, copy.Expression);
-                else
-                    throw ExceptionUtilities.UnexpectedValue(item.Value);
+                PhpSerialize(result, item.Value);
             }
             result.Append('}');
         }
