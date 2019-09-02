@@ -59,7 +59,8 @@ namespace Pchp.CodeAnalysis.Semantics
         /// Returns whether the expression can possibly have any side effects.
         /// </summary>
         public static bool CanHaveSideEffects(this BoundExpression expr) =>  // TODO: Make more precise and less defensive
-            !(expr is BoundVariableRef varExpr && varExpr.Name.IsDirect
+            !(expr.ConstantValue.HasValue
+              || expr is BoundVariableRef varExpr && varExpr.Name.IsDirect
               || expr is BoundLiteral);
     }
 }
