@@ -973,7 +973,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             bool isStrict = (cmpExpr.Operation == Operations.Identical || cmpExpr.Operation == Operations.NotIdentical);
 
-            if (isStrict)
+            if (isStrict && !cmpExpr.Left.CanHaveSideEffects() && !cmpExpr.Right.CanHaveSideEffects())
             {
                 // Always returns false if checked for strict equality and the operands are of different types (and vice versa for strict non-eq)
                 bool isPositive = (cmpExpr.Operation == Operations.Equal || cmpExpr.Operation == Operations.Identical);
