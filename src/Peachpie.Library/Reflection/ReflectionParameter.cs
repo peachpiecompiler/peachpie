@@ -200,7 +200,7 @@ namespace Pchp.Library.Reflection
 
         static bool hasTypeInternal(Type t) => t != null && t != typeof(PhpValue) && t != typeof(PhpAlias) && t != typeof(PhpValue[]) && t != typeof(PhpAlias[]);
 
-        string _debugTypeName => string.Empty; // TODO: " {typename}{or NULL}"
-        string _debugDefaultValue => _defaultValue.IsSet ? $" = {_defaultValue.DisplayString}" : string.Empty;
+        private protected string _debugTypeName => string.Empty; // TODO: " {typename}{or NULL}"
+        private protected string _debugDefaultValue => _defaultValue.IsSet ? $" = {_defaultValue.DisplayString}" : string.Empty;
     }
 }
