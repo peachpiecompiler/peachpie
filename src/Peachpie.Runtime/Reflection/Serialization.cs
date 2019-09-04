@@ -20,7 +20,7 @@ namespace Pchp.Core.Reflection
             return TypeMembersUtils.EnumerateInstanceFields(instance,
                 (m, d) => FormatSerializedPropertyName(m is FieldInfo f ? (PhpPropertyInfo)new PhpPropertyInfo.ClrFieldProperty(tinfo, f) : new PhpPropertyInfo.ClrProperty(tinfo, (PropertyInfo)m), d),
                 (k) => k.ToString(),
-                (m) => true);
+                (m) => (m is PropertyInfo p ? p.SetMethod != null : true) && TypeMembersUtils.s_notInternalFieldsPredicate(m));
         }
 
         /// <summary>

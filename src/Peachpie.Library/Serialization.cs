@@ -392,8 +392,7 @@ namespace Pchp.Library
                     byte[] serializedBytes = null;
                     List<KeyValuePair<string, PhpValue>> serializedProperties = null;
 
-                    var serializable = obj as global::Serializable;
-                    if (serializable != null)
+                    if (obj is global::Serializable serializable)
                     {
                         var res = serializable.serialize();
                         if (res.IsDefault)

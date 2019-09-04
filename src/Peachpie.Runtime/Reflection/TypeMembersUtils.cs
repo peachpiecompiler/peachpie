@@ -97,7 +97,7 @@ namespace Pchp.Core.Reflection
 
         static readonly Func<IntStringKey, string> s_keyToString = new Func<IntStringKey, string>(k => k.ToString());
 
-        static readonly Func<MemberInfo, bool> s_notInternalFieldsPredicate = new Func<MemberInfo, bool>(m =>
+        public static readonly Func<MemberInfo, bool> s_notInternalFieldsPredicate = new Func<MemberInfo, bool>(m =>
         {
             // ignore "internal" and "private protected" fields
             // ignore pointer types
