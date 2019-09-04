@@ -1149,10 +1149,16 @@ namespace Pchp.Library
             {
                 if (Enter(obj))
                 {
+                    if (_indent != 0)
+                    {
+                        _output.Append(_nl);
+                        OutputIndent();
+                    }
+
                     // array (
                     _output.Append(PhpArray.PhpTypeName);
                     _output.Append(" (");
-                    _output.Append(_nl);
+                    NewLine();
 
                     _indent++;
 
@@ -1168,7 +1174,8 @@ namespace Pchp.Library
                 else
                 {
                     // NULL
-                    _output.Append(PhpVariable.TypeNameNull);
+                    PhpException.Throw(PhpError.Warning, Resources.Resources.var_export_circular_reference);
+                    AcceptNull();
                 }
             }
 
@@ -1179,34 +1186,81 @@ namespace Pchp.Library
 
                 Accept(PhpValue.Create(entry.Key));
                 _output.Append(" => ");
-                if (entry.Value.IsArray || entry.Value.IsObject && !entry.Value.IsNull)
-                {
-                    _output.Append(_nl);
-                    OutputIndent();
-                }
                 Accept(entry.Value);
 
                 _output.Append(",");
-                _output.Append(_nl);
+                NewLine();
+            }
+
+            void AcceptObjectMembers(PhpArray array)
+            {
+                // array(
+                _output.Append(PhpArray.PhpTypeName);
+                _output.Append("(");
+                NewLine();
+                _indent++;
+
+                var e = array.GetFastEnumerator();
+                while (e.MoveNext())
+                {
+                    AcceptArrayItem(new KeyValuePair<IntStringKey, PhpValue>(new IntStringKey(e.CurrentKey.ToString()), e.CurrentValue));
+                }
+
+                _indent--;
+                _output.Append(")");
             }
 
             public override void AcceptObject(object obj)
             {
-                if (obj is PhpResource res)
+                if (obj is PhpResource)
                 {
                     // NULL
-                    _output.Append(PhpVariable.TypeNameNull);
+                    AcceptNull();
+                }
+                else if (Enter(obj))
+                {
+                    if (_indent != 0)
+                    {
+                        _output.Append(_nl);
+                        OutputIndent();
+                    }
+
+                    if (obj is stdClass std)
+                    {
+                        // (object) array(
+                        //   [key] => value,
+                        // )
+                        _output.Append($"({PhpVariable.TypeNameObject}) ");
+                        AcceptObjectMembers(std.GetRuntimeFields()); // array()
+                    }
+                    else
+                    {
+                        // {ClassName}::__set_state(array(
+                        //   [key] => value,
+                        // ))
+
+                        var tinfo = obj.GetPhpTypeInfo();
+                        _output.Append(tinfo.Name);
+                        _output.Append("::");
+                        _output.Append("__set_state(");
+
+                        var array = new PhpArray();
+                        foreach (var pair in TypeMembersUtils.EnumerateInstanceFieldsForExport(obj))
+                        {
+                            array[pair.Key] = pair.Value;
+                        }
+                        AcceptObjectMembers(array);
+                        _output.Append(")");
+                    }
+
+                    //
+                    Leave(obj);
                 }
                 else
                 {
-                    // {ClassName}::__set_state(array(
-                    //   [key] => value,
-                    // ))
-
-                    throw new NotImplementedException();
+                    PhpException.Throw(PhpError.Warning, Resources.Resources.var_export_circular_reference);
+                    AcceptNull();
                 }
-
-                NewLine();
             }
         }
 

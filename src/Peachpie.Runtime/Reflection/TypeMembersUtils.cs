@@ -155,6 +155,21 @@ namespace Pchp.Core.Reflection
                 s_notInternalFieldsPredicate);
         }
 
+        /// <summary>
+        /// Enumerates instance fields of given object, transforms field names according to <c>var_export</c> notation.
+        /// </summary>
+        /// <param name="instance">Object which fields will be enumerated.</param>
+        /// <returns>Enumeration of fields and their values, including runtime fields.</returns>
+        public static IEnumerable<KeyValuePair<string, PhpValue>> EnumerateInstanceFieldsForExport(object instance)
+        {
+            return EnumerateInstanceFields(instance,
+                s_formatPropertyNameForExport,
+                s_keyToString,
+                s_notInternalFieldsPredicate);
+        }
+
+        static readonly Func<MemberInfo, PhpTypeInfo, string> s_formatPropertyNameForExport = new Func<MemberInfo, PhpTypeInfo, string>((m, declarer) => m.Name);
+
         static readonly Func<MemberInfo, PhpTypeInfo, string> s_formatPropertyNameForDump = new Func<MemberInfo, PhpTypeInfo, string>((m, declarer) =>
         {
             var name = "\"" + m.Name + "\"";

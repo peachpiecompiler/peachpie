@@ -690,4 +690,7 @@
   <data name="function_does_not_exist" xml:space="preserve">
     <value>Function {0}() does not exist</value>
   </data>
+  <data name="var_export_circular_reference" xml:space="preserve">
+    <value>var_export does not handle circular references</value>
+  </data>
 </root>

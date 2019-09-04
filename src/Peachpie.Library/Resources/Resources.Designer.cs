@@ -1717,6 +1717,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to var_export does not handle circular references.
+        /// </summary>
+        public static string var_export_circular_reference {
+            get {
+                return ResourceManager.GetString("var_export_circular_reference", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Web server is required for this feature..
         /// </summary>
         public static string web_server_not_available {
