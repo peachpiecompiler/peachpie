@@ -117,7 +117,29 @@ namespace Pchp.Library.Reflection
                 : null;
         }
 
-        public PhpArray getDefaultProperties() { throw new NotImplementedException(); }
+        [return: NotNull]
+        public PhpArray getDefaultProperties(Context ctx)
+        {
+            if (_tinfo.isInstantiable)
+            {
+                var inst = _tinfo.GetUninitializedInstance(ctx);
+                if (inst != null)
+                {
+                    var array = new PhpArray();
+
+                    foreach (var p in TypeMembersUtils.GetDeclaredProperties(_tinfo))
+                    {
+                        array[p.PropertyName] = p.GetValue(ctx, inst);
+                    }
+
+                    return array;
+                }
+            }
+
+            //
+            throw new NotSupportedException("not instantiable type");
+        }
+
         [return: CastToFalse]
         public string getDocComment() => null;
 
@@ -305,10 +327,36 @@ namespace Pchp.Library.Reflection
             return -1;
         }
 
-        public PhpArray getStaticProperties() { throw new NotImplementedException(); }
-        public PhpValue getStaticPropertyValue(string name) { throw new NotImplementedException(); }
-        public PhpValue getStaticPropertyValue(string name, PhpAlias def_value) { throw new NotImplementedException(); }
+        [return: NotNull]
+        public PhpArray getStaticProperties(Context ctx)
+        {
+            var array = new PhpArray();
+
+            foreach (var p in TypeMembersUtils.GetDeclaredProperties(_tinfo))
+            {
+                if (p.IsStatic)
+                {
+                    array[p.PropertyName] = p.GetValue(ctx);
+                }
+            }
+
+            return array;
+        }
+
+        public PhpValue getStaticPropertyValue(Context ctx, string name)
+        {
+            var prop = _tinfo.GetDeclaredProperty(name) ?? throw new ReflectionException();
+            return prop.GetValue(ctx);
+        }
+
+        public void setStaticPropertyValue(Context ctx, string name, PhpAlias def_value)
+        {
+            var prop = _tinfo.GetDeclaredProperty(name) ?? throw new ReflectionException();
+            prop.SetValue(ctx, null, def_value);
+        }
+
         public PhpArray getTraitAliases() { throw new NotImplementedException(); }
+
         public PhpArray getTraitNames()
         {
             var result = new PhpArray();
