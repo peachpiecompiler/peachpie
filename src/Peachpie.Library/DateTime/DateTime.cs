@@ -41,7 +41,7 @@ namespace Pchp.Library.DateTime
     /// <summary>
     /// Representation of date and time.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("date")]
     public class DateTime : DateTimeInterface, IPhpComparable, IPhpCloneable
     {
         #region Constants
@@ -62,11 +62,6 @@ namespace Pchp.Library.DateTime
 
         #region Fields
 
-        // dont see what these are for, no fields/props on php DateTime obj?
-        //public PhpReference date = new PhpSmartReference();
-        //public PhpReference timezone_type = new PhpSmartReference();
-        //public PhpReference timezone = new PhpSmartReference();
-
         readonly protected Context _ctx;
 
         /// <summary>
@@ -78,6 +73,37 @@ namespace Pchp.Library.DateTime
         /// Get the time zone for this DateTime object
         /// </summary>
         internal TimeZoneInfo TimeZone { get; private set; }
+
+        // used for serialization:
+        // note: we incorrectly show following in reflection as well.
+
+        /// <summary>
+        /// For serialization purposes, gets current time in UTC in format <c>"yyyy-MM-dd HH:mm:ss.ffff"</c>.
+        /// Unlike in PHP it gets time converted to <see cref="TimeZone"/>.
+        /// </summary>
+        public string time
+        {
+            get => Time.ToString("yyyy-MM-dd HH:mm:ss.ffff");
+            set => Time = System_DateTime.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+        }
+
+        /// <summary>
+        /// Gets the timezone type, which is always 3 - specifying that <see cref="timezone"/> will be the timezone identifier.
+        /// </summary>
+        public int timezone_type
+        {
+            get => 3; // 3: A timezone identifier
+            set { } // ignore, but allow unserialize of this value
+        }
+
+        /// <summary>
+        /// Gets the timezone identifier.
+        /// </summary>
+        public string timezone
+        {
+            get => TimeZone.Id;
+            set => TimeZone = PhpTimeZone.GetTimeZone(value) ?? throw new ArgumentException();
+        }
 
         #endregion
 
@@ -169,11 +195,45 @@ namespace Pchp.Library.DateTime
         /// <summary>
         /// Returns a new instance of a DateTime object.
         /// </summary>
-        /// <param name="array">Initialization array.</param>
+        /// <param name="ctx">Runtime context.</param>
+        /// <param name="array">Initialization array <c>("date", "timezone_type", "timezone")</c>.</param>
         [return: NotNull]
-        public static DateTime __set_state(PhpArray array)
+        public static DateTime __set_state(Context ctx, PhpArray array)
         {
-            throw new NotImplementedException();
+            if (array == null || array.Count == 0)
+            {
+                return new DateTime(ctx);
+            }
+            else
+            {
+                // resolve UTC date/time
+                var date = array.TryGetValue("date", out var dateval) && dateval.IsString(out var datestr)
+                    ? System_DateTime.Parse(datestr, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal)
+                    : System_DateTime.UtcNow;
+
+                // resolve timezone or current
+                TimeZoneInfo timezone;
+
+                if (array.TryGetValue("timezone", out var tzval) && tzval.IsString(out var tz))
+                {
+                    if (array.TryGetValue("timezone_type", out var typeval) && typeval.IsLong(out var type) && type == 1)
+                    {
+                        // UTC offset
+                        // timezone = ...
+                        throw new NotSupportedException("timezone_type == 1 (UTC offset) from " + tz);
+                    }
+                    else
+                    {
+                        timezone = PhpTimeZone.GetTimeZone(tz);
+                    }
+                }
+                else
+                {
+                    timezone = PhpTimeZone.GetCurrentTimeZone(ctx);
+                }
+
+                return new DateTime(ctx, date, timezone);
+            }
         }
 
         /// <summary>
@@ -434,7 +494,7 @@ namespace Pchp.Library.DateTime
     /// <summary>
     /// Representation of date and time.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("date")]
     public class DateTimeImmutable : DateTimeInterface, IPhpComparable, IPhpCloneable
     {
         readonly protected Context _ctx;
