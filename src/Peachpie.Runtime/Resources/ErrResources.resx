@@ -523,7 +523,7 @@ Additional information:
     <value>Creating default object from empty value</value>
   </data>
   <data name="undefined_method_called" xml:space="preserve">
-    <value>Call to undefined method: {0}::{1}()</value>
+    <value>Call to undefined method {0}::{1}()</value>
   </data>
   <data name="protected_method_called" xml:space="preserve">
     <value>Call to protected method {0}::{1}() from context '{2}'</value>
@@ -757,7 +757,7 @@ Additional information:
     <value>Function is not supported</value>
   </data>
   <data name="undefined_function_called" xml:space="preserve">
-    <value>Call to undefined function: '{0}'</value>
+    <value>Call to undefined function {0}()</value>
   </data>
   <data name="undefined_external_function_called" xml:space="preserve">
     <value>Call to undefined external function '{0}', extension '{1}' - check configuration</value>

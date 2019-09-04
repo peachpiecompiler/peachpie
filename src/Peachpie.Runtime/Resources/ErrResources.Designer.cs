@@ -4284,7 +4284,7 @@ namespace Pchp.Core.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Call to undefined function: &apos;{0}&apos;.
+        ///   Looks up a localized string similar to Call to undefined function {0}().
         /// </summary>
         public static string undefined_function_called {
             get {
@@ -4302,7 +4302,7 @@ namespace Pchp.Core.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Call to undefined method: {0}::{1}().
+        ///   Looks up a localized string similar to Call to undefined method {0}::{1}().
         /// </summary>
         public static string undefined_method_called {
             get {
