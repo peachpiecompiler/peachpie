@@ -422,7 +422,12 @@ namespace Pchp.Core.Reflection
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
+            }
+
+            if (type.IsByRef)
+            {
+                type = type.GetElementType();
             }
 
             PhpTypeInfo result = null;
