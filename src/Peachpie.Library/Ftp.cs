@@ -170,18 +170,12 @@ namespace Pchp.Library
 
             try
             {
-                return resource.Client.UploadFile(local_file, remote_file, FtpExists.Overwrite); // napsany pomoci returnu
+                return resource.Client.UploadFile(local_file, remote_file, FtpExists.Overwrite);
             }
-            catch (FtpException e)
+            catch (FtpException ex)
             {
-                // FtpException everytime wraps other exceptions. https://github.com/robinrodricks/FluentFTP/blob/master/FluentFTP/Client/FtpClient_HighLevelUpload.cs#L595                    
-                switch (e.InnerException)
-                {
-
-
-                    default:
-                        break;
-                }
+                // FtpException everytime wraps other exceptions (Message from server). https://github.com/robinrodricks/FluentFTP/blob/master/FluentFTP/Client/FtpClient_HighLevelUpload.cs#L595                    
+                PhpException.Throw(PhpError.Warning, ex.InnerException.Message);
 
                 return false;
             }
