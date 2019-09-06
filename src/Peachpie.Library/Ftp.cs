@@ -5,23 +5,22 @@ using System.Net;
 using Pchp.Core;
 using FluentFTP;
 using System.IO;
+using System.Net.Sockets;
 
 namespace Pchp.Library
 {
-    [PhpExtension("FTP")]
+    [PhpExtension("ftp")]
     /// <summary>
     /// Class implements client access to files servers speaking the File Transfer Protocol (FTP)
     /// </summary>
     public static class Ftp
     {
-
-        #region Ftp(Constants)
+        #region Constants
 
         public const int FTP_ASCII = 1;
         public const int FTP_TEXT = FTP_ASCII; // Alias of FTP_ASCII
         public const int FTP_BINARY = 2;
         public const int FTP_IMAGE = FTP_BINARY; // Alias of FTP_BINARY
-        public const string resourceType = "FTP Buffer";
 
         #endregion
 
@@ -30,22 +29,44 @@ namespace Pchp.Library
         /// <summary>
         /// Context of ftp session
         /// </summary>
-        public class FtpResource : PhpResource
+        internal class FtpResource : PhpResource
         {
-            FtpClient client;
-
-            public FtpResource(string resourceTypeName,FtpClient client) : base(resourceTypeName)
+            public FtpResource(FtpClient client) : base("FTP Buffer")
             {
                 Client = client; 
             }
 
-            public FtpClient Client { get => client; set => client = value; }
+            public FtpClient Client { get; } //  nastaveni property samostatne settery
+
+            protected override void FreeManaged()
+            {
+                Client.Dispose();
+                base.FreeManaged();
+            }
+        }
+
+        /// <summary>
+        /// Gets instance of <see cref="FtpResource"/> or <c>null</c>.
+        /// If given argument is not an instance of <see cref="FtpResource"/>, PHP warning is reported.
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        static FtpResource ValidateFtpResource(PhpResource context)
+        {
+            var h = context as FtpResource;
+            if (h == null || !h.IsValid)
+            {
+                PhpException.InvalidArgumentType(nameof(context), PhpResource.PhpTypeName);
+            }
+
+            return h;
         }
 
         #endregion
 
         #region ftp_connect, ftp_login, ftp_put, ftp_close
 
+        [return:CastToFalse]
         /// <summary>
         /// ftp_connect() opens an FTP connection to the specified host.
         /// </summary>
@@ -58,21 +79,25 @@ namespace Pchp.Library
             FtpClient client = new FtpClient(host);
             client.ConnectTimeout = timeout;
             client.Port = port;
+            client.Credentials = null; // Disable anonymous login
 
             try // Try to connect, if excetion, return false
             {
                 client.Connect();
             }
-            catch ( FtpAuthenticationException )
+            catch(Exception ex)
             {
-                return new FtpResource(resourceType, client);
-            }
-            catch ( Exception )
-            {
-                return null;
+                // ftp_connect does not throw any warnings
+                // These exception are thrown, when is problem with connection SocketException - Active refuse of connection, FtpCommandException - Server is locked, AggregateException - Unrecognised hostname
+                if (ex is SocketException || ex is FtpCommandException || ex is AggregateException || ex is TimeoutException)
+                {
+                    return null;
+                }
+
+                throw ex;
             }
 
-            return new FtpResource(resourceType, client);
+            return new FtpResource(client);
         }
 
         /// <summary>
@@ -82,30 +107,27 @@ namespace Pchp.Library
         /// <param name="username">The username (USER).</param>
         /// <param name="password">The password (PASS).</param>
         /// <returns>Returns TRUE on success or FALSE on failure. If login fails, PHP will also throw a warning.</returns>
-        public static bool ftp_login(FtpResource ftp_stream, string username, string password)
+        public static bool ftp_login(PhpResource ftp_stream, string username, string password)
         {
-            if (ftp_stream == null) // Warning, invalid type
-            {
-                PhpException.Throw(PhpError.Warning, Resources.Resources.invalid_argument, "ftp_stream");
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
                 return false;
-            }
 
-            if (ftp_stream.TypeName != resourceType || !ftp_stream.IsValid ) // Warning, invalid resource
-            {
-                PhpException.Throw(PhpError.Warning, Resources.Resources.invalid_resource, resourceType);
-                return false;
-            }
-
-            NetworkCredential credential = new NetworkCredential(username, password);
-            ftp_stream.Client.Credentials = credential;
+            resource.Client.Credentials = new NetworkCredential(username, password);
 
             try
             {
-                ftp_stream.Client.Connect();
+                FtpReply reply;
+
+                if (!(reply = resource.Client.Execute($"USER {username}")).Success)
+                    throw new FtpAuthenticationException(reply);
+
+                if (reply.Type == FtpResponseType.PositiveIntermediate && !(reply = resource.Client.Execute($"PASS {password}")).Success)
+                    throw new FtpAuthenticationException(reply);
             }
-            catch ( FluentFTP.FtpAuthenticationException ) // Warning, Wrong password or name
+            catch (FtpAuthenticationException) // Warning, Wrong password or login
             {
-                PhpException.Throw(PhpError.Warning, Resources.Resources.incorrect_pass_or_login, resourceType);
+                PhpException.Throw(PhpError.Warning, Resources.Resources.incorrect_pass_or_login);
                 return false;
             }
 
@@ -121,17 +143,15 @@ namespace Pchp.Library
         /// <param name="mode">The transfer mode. Must be either FTP_ASCII or FTP_BINARY.</param>
         /// <param name="startpos">The position in the remote file to start uploading to.</param>
         /// <returns>Returns TRUE on success or FALSE on failure.</returns>
-        public static bool ftp_put(FtpResource ftp_stream, string remote_file, string local_file, int mode = FTP_IMAGE, int startpos = 0)
+        public static bool ftp_put(PhpResource ftp_stream, string remote_file, string local_file, int mode = FTP_IMAGE, int startpos = 0)
         {
-            if (ftp_stream == null) // Warning, invalid type
-            {
-                PhpException.Throw(PhpError.Warning, Resources.Resources.invalid_argument, "ftp_stream");
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
                 return false;
-            }
 
-            if (ftp_stream.TypeName != resourceType || !ftp_stream.IsValid) // Warning, invalid resource
+            if (remote_file.IsBlank())
             {
-                PhpException.Throw(PhpError.Warning, Resources.Resources.invalid_resource, resourceType);
+                PhpException.Throw(PhpError.Warning, Resources.Resources.file_not_exists, remote_file);
                 return false;
             }
 
@@ -141,22 +161,30 @@ namespace Pchp.Library
                 return false;
             }
 
-            ftp_stream.Client.UploadDataType = (mode == 1) ? FtpDataType.ASCII : FtpDataType.Binary;
-            //Startpos https://github.com/php/php-src/blob/a1479fbbd9d4ad53fb6b0ed027548ea078558f5b/ext/ftp/ftp.c??
+            // Two types of data transfer
+            resource.Client.UploadDataType = (mode == 1) ? FtpDataType.ASCII : FtpDataType.Binary;
 
-            bool result = true;
+
+            if (startpos == 0) // https://github.com/php/php-src/blob/a1479fbbd9d4ad53fb6b0ed027548ea078558f5b/ext/ftp/ftp.c
+                throw new NotSupportedException();
+
             try
             {
-                result = ftp_stream.Client.UploadFile(local_file, remote_file, FtpExists.Overwrite);
+                return resource.Client.UploadFile(local_file, remote_file, FtpExists.Overwrite); // napsany pomoci returnu
             }
-            catch (FluentFTP.FtpException e)
+            catch (FtpException e)
             {
-                if (e.InnerException != null)
-                    PhpException.Throw(PhpError.Warning, e.InnerException.Message);
-                result = false;
-            }
+                // FtpException everytime wraps other exceptions. https://github.com/robinrodricks/FluentFTP/blob/master/FluentFTP/Client/FtpClient_HighLevelUpload.cs#L595                    
+                switch (e.InnerException)
+                {
 
-            return result;
+
+                    default:
+                        break;
+                }
+
+                return false;
+            }
         }
 
         /// <summary>
@@ -164,21 +192,12 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
         /// <returns>Returns TRUE on success or FALSE on failure.</returns>
-        public static bool ftp_close(FtpResource ftp_stream)
+        public static bool ftp_close(PhpResource ftp_stream)
         {
-            if (ftp_stream == null) // Warning, invalid type
-            {
-                PhpException.Throw(PhpError.Warning, Resources.Resources.invalid_argument, "ftp_stream");
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
                 return false;
-            }
 
-            if (ftp_stream.TypeName != resourceType || !ftp_stream.IsValid) // Warning, invalid resource
-            {
-                PhpException.Throw(PhpError.Warning, Resources.Resources.invalid_resource, resourceType);
-                return false;
-            }
-
-            ftp_stream.Client.Dispose();
             ftp_stream.Dispose();
 
             return true;
