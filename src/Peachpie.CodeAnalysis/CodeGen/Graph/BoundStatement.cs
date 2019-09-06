@@ -182,7 +182,10 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.Module.SynthesizedManager.AddNestedType(holder.ContainingType, holder);
 
             // add [PhpStaticLocalAttribute] to the routines attributes
-            cg.Routine.Syntax.AddCustomAttribute(cg.DeclaringCompilation.CreatePhpStaticLocalAttribute(holder, Declaration.Name));
+            if (!holder.IsGenericType)
+            {
+                cg.Routine.Syntax.AddCustomAttribute(cg.DeclaringCompilation.CreatePhpStaticLocalAttribute(holder, Declaration.Name));
+            }
 
             // Context.GetStatic<H>()
             var getmethod = cg.CoreMethods.Context.GetStatic_T.Symbol.Construct(holder);

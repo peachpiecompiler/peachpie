@@ -1199,15 +1199,15 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers()
         {
-            var result = new List<NamedTypeSymbol>();
+            var result = ImmutableArray<NamedTypeSymbol>.Empty;
 
             if (!_staticsContainer.IsEmpty)
             {
-                result.Add(_staticsContainer);
+                result = result.Add(_staticsContainer);
             }
 
             //
-            return result.AsImmutable();
+            return result;
         }
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name)

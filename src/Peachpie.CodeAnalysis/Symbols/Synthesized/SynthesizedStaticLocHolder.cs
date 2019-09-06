@@ -28,6 +28,8 @@ namespace Pchp.CodeAnalysis.Symbols
         public IMethodSymbol DeclaringMethod => _routine;
         readonly SourceRoutineSymbol _routine;
 
+        public override NamedTypeSymbol ContainingType => base.ContainingType;
+
         /// <summary>
         /// Name of the local variable.
         /// </summary>
@@ -138,7 +140,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsSerializable => false;
 
-        public override string Name => _locName + "<>`" + _routine.Name.Replace('.', '\\');
+        public override string Name => _routine.Name.Replace('.', '-') + "$" + _locName;
 
         public override TypeKind TypeKind => TypeKind.Class;
 

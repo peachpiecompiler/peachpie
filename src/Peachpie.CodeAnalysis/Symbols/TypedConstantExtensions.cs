@@ -12,7 +12,7 @@ using Microsoft.CodeAnalysis.PooledObjects;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    public static class TypedConstantExtensions
+    internal static class TypedConstantExtensions
     {
         /// <summary>
         /// Returns the System.String that represents the current TypedConstant.
