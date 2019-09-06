@@ -39,6 +39,11 @@ namespace Pchp.CodeAnalysis.Symbols
                 return smethod.IsPhpHidden;
             }
 
+            if (s is SourceRoutineSymbol)
+            {
+                return false;
+            }
+
             var attrs = s.GetAttributes();
             if (attrs.Length != 0)
             {
