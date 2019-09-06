@@ -11,6 +11,7 @@ using Ast = Devsense.PHP.Syntax.Ast;
 using Microsoft.CodeAnalysis.Text;
 using Devsense.PHP.Syntax;
 using Pchp.CodeAnalysis.Symbols;
+using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.Semantics
 {
@@ -402,9 +403,17 @@ namespace Pchp.CodeAnalysis.Semantics
         internal StaticVarDecl Declaration => _variable;
         readonly StaticVarDecl _variable;
 
-        internal BoundStaticVariableStatement(StaticVarDecl variable)
+        /// <summary>
+        /// Synthesized type containing <c>value</c> field with the actual value.
+        /// Cannot be <c>null</c>.
+        /// </summary>
+        internal NamedTypeSymbol HolderClass => _holderClass;
+        readonly SynthesizedStaticLocHolder _holderClass;
+
+        internal BoundStaticVariableStatement(StaticVarDecl variable, SynthesizedStaticLocHolder holder)
         {
             _variable = variable;
+            _holderClass = holder ?? throw ExceptionUtilities.ArgumentNull(nameof(holder));
         }
 
         internal BoundStaticVariableStatement Update(StaticVarDecl variable)
@@ -415,7 +424,7 @@ namespace Pchp.CodeAnalysis.Semantics
             }
             else
             {
-                return new BoundStaticVariableStatement(variable);
+                return new BoundStaticVariableStatement(variable, _holderClass);
             }
         }
 

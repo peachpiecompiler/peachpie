@@ -178,8 +178,12 @@ namespace Pchp.CodeAnalysis.Semantics
             cg.EmitSequencePoint(this.PhpSyntax);
 
             // synthesize the holder class H { PhpAlias value }
-            var holder = cg.Factory.DeclareStaticLocalHolder(this.Declaration.Name, cg.CoreTypes.PhpAlias); // (TypeSymbol)((ILocalSymbol)this.Declaration.Variable.Symbol).Type);
-            
+            var holder = _holderClass;
+            cg.Module.SynthesizedManager.AddNestedType(holder.ContainingType, holder);
+
+            // add [PhpStaticLocalAttribute] to the routines attributes
+            cg.Routine.Syntax.AddCustomAttribute(cg.DeclaringCompilation.CreatePhpStaticLocalAttribute(holder, Declaration.Name));
+
             // Context.GetStatic<H>()
             var getmethod = cg.CoreMethods.Context.GetStatic_T.Symbol.Construct(holder);
 

@@ -710,5 +710,68 @@ namespace Pchp.Core.Reflection
         }
 
         #endregion
+
+        /// <summary>
+        /// Gets routine static local variables and its value in given <see cref="Context"/>.
+        /// </summary>
+        /// <param name="routine">The routine.</param>
+        /// <param name="ctx">Runtime context, variables value will be read with respect to this context.</param>
+        public static KeyValuePair<string, PhpAlias>[] GetStaticLocals(this RoutineInfo routine, Context ctx)
+        {
+            Dictionary<string, PhpStaticLocalAttribute> locals = null;
+
+            // collect [PhpStaticLocalAttribute]
+            var methods = routine.Methods;
+            for (int i = 0; i < methods.Length; i++)
+            {
+                var attrs = methods[i].GetCustomAttributes(typeof(PhpStaticLocalAttribute), inherit: false);
+                for (int j = 0; j < attrs.Length; j++)
+                {
+                    var local = (PhpStaticLocalAttribute)attrs[j];
+                    if (local.Holder == null || string.IsNullOrEmpty(local.Name))
+                    {
+                        continue;
+                    }
+
+                    if (locals == null)
+                    {
+                        locals = new Dictionary<string, PhpStaticLocalAttribute>();
+                    }
+
+                    locals[local.Name] = local;
+                }
+            }
+
+            // invoke an resolve static locals value:
+            if (locals != null)
+            {
+                // PhpStaticLocalAttribute.Holder is a class with "value" field with actual static local value
+                // PhpStaticLocalAttribute.Holder instance gets resolved using "Context.GetStatic<Holder>()" API
+
+                var GetStatic_T = typeof(Context).GetMethod("GetStatic", Cache.Types.Empty);
+                var result = new KeyValuePair<string, PhpAlias>[locals.Count];
+                int i = 0;
+                foreach (var local in locals.Values)
+                {
+                    // holder.value : PhpAlias
+                    var holder = GetStatic_T.MakeGenericMethod(local.Holder).Invoke(ctx, Array.Empty<object>());
+                    var value = local.Holder.GetField("value").GetValue(holder);
+                    var alias = value as PhpAlias;
+
+                    if (alias == null)
+                    {
+                        Debug.Fail("Unexpected value of type " + (holder != null ? holder.GetType().Name : PhpVariable.TypeNameNull));
+                    }
+
+                    result[i++] = new KeyValuePair<string, PhpAlias>(local.Name, alias);
+                }
+
+                return result;
+            }
+            else
+            {
+                return Array.Empty<KeyValuePair<string, PhpAlias>>();
+            }
+        }
     }
 }

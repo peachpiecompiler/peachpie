@@ -1221,8 +1221,8 @@ namespace Pchp.CodeAnalysis.Symbols
             attrs = attrs.Add(new SynthesizedAttributeData(
                     DeclaringCompilation.CoreMethods.Ctors.PhpTypeAttribute_string_string,
                     ImmutableArray.Create(
-                        new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, FullName.ToString()),
-                        new TypedConstant(DeclaringCompilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, ContainingFile.RelativeFilePath.ToString())),
+                        DeclaringCompilation.CreateTypedConstant(FullName.ToString()),
+                        DeclaringCompilation.CreateTypedConstant(ContainingFile.RelativeFilePath.ToString())),
                     ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
 
             // attributes from syntax node

@@ -36,8 +36,9 @@ namespace Pchp.CodeAnalysis.Symbols
 
         /// <summary>
         /// Type of local variable.
+        /// <c>PhpAlias</c> by default.
         /// </summary>
-        public TypeSymbol ValueType => _locType;
+        public TypeSymbol ValueType => _locType ?? DeclaringCompilation.CoreTypes.PhpAlias;
         readonly TypeSymbol _locType;
 
         public override bool IsImplicitlyDeclared => true;
@@ -59,7 +60,7 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 if (_valueField == null)
                 {
-                    var valueField = new SynthesizedFieldSymbol(this, _locType, "value", Accessibility.Public, false);
+                    var valueField = new SynthesizedFieldSymbol(this, ValueType, "value", Accessibility.Public, false);
                     Interlocked.CompareExchange(ref _valueField, valueField, null);
                 }
 
@@ -98,10 +99,9 @@ namespace Pchp.CodeAnalysis.Symbols
         }
         SynthesizedMethodSymbol _initMethod;
 
-        public SynthesizedStaticLocHolder(SourceRoutineSymbol routine, string locName, TypeSymbol locType)
+        public SynthesizedStaticLocHolder(SourceRoutineSymbol routine, string locName, TypeSymbol locType = null)
         {
             Contract.ThrowIfNull(routine);
-            Contract.ThrowIfNull(locType);
 
             _routine = routine;
             _locName = locName ?? "?";

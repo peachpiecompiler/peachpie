@@ -29,9 +29,20 @@ namespace Pchp.CodeAnalysis.Symbols
             return new SynthesizedAttributeData(
                 (MethodSymbol)compilation.GetWellKnownTypeMember(WellKnownMember.System_ObsoleteAttribute__ctor),
                     ImmutableArray.Create(
-                        new TypedConstant(compilation.CoreTypes.String.Symbol, TypedConstantKind.Primitive, deprecated.Version/*NOTE:Version contains the message*/),
-                        new TypedConstant(compilation.CoreTypes.Boolean.Symbol, TypedConstantKind.Primitive, false/*isError*/)),
+                        compilation.CreateTypedConstant(deprecated.Version/*NOTE:Version contains the message*/),
+                        compilation.CreateTypedConstant(false/*isError*/)),
                     ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
+        }
+
+        public static AttributeData CreatePhpStaticLocalAttribute(this PhpCompilation compilation, ITypeSymbol holder, string name)
+        {
+            return new SynthesizedAttributeData(
+                compilation.CoreMethods.Ctors.PhpStaticLocalAttribute,
+                ImmutableArray<TypedConstant>.Empty,
+                ImmutableArray.Create(
+                    new KeyValuePair<string, TypedConstant>("Holder", compilation.CreateTypedConstant(holder)),
+                    new KeyValuePair<string, TypedConstant>("Name", compilation.CreateTypedConstant(name))
+                ));
         }
     }
 }

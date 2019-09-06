@@ -138,9 +138,14 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public const string PhpMemberVisibilityAttributeName = "PhpMemberVisibilityAttribute";
 
+        /// <summary>
+        /// Name of <c>PhpStaticLocalAttribute</c> class.
+        /// </summary>
+        public const string PhpStaticLocalAttributeName = "PhpStaticLocalAttribute";
+
         public readonly CoreType
             Context, Operators, Convert, Comparison, StrictComparison, PhpException,
-            ScriptAttribute, PhpTraitAttribute, PharAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, NotNullAttribute, DefaultValueAttribute, DefaultValueType, PhpMemberVisibilityAttribute,
+            ScriptAttribute, PhpTraitAttribute, PharAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, NotNullAttribute, DefaultValueAttribute, DefaultValueType, PhpMemberVisibilityAttribute, PhpStaticLocalAttribute,
             ScriptDiedException,
             IStaticInit, RoutineInfo, IndirectLocal,
             BinderFactory, GetClassConstBinder, GetFieldBinder, SetFieldBinder, AccessMask,
@@ -201,6 +206,7 @@ namespace Pchp.CodeAnalysis.Symbols
             DefaultValueAttribute = Create("DefaultValueAttribute");
             DefaultValueType = Create("DefaultValueAttribute+DefaultValueType");
             PhpMemberVisibilityAttribute = Create(PhpMemberVisibilityAttributeName);
+            PhpStaticLocalAttribute = Create(PhpStaticLocalAttributeName);
             IStaticInit = Create("IStaticInit");
             RoutineInfo = Create("Reflection.RoutineInfo");
             IndirectLocal = Create("IndirectLocal");
@@ -236,7 +242,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         readonly Dictionary<string, CoreType> _table;
         readonly Dictionary<TypeSymbol, CoreType> _typetable = new Dictionary<TypeSymbol, CoreType>();
-        readonly Dictionary<SpecialType, CoreType> _specialTypes = new Dictionary<SpecialType, CoreType>();
+        //readonly Dictionary<SpecialType, CoreType> _specialTypes = new Dictionary<SpecialType, CoreType>();
 
         CoreType Create(string name) => CreateFromFullName("Pchp.Core." + name);
 
@@ -271,15 +277,15 @@ namespace Pchp.CodeAnalysis.Symbols
             return t;
         }
 
-        /// <summary>
-        /// Gets special core type.
-        /// </summary>
-        public CoreType GetSpecialType(SpecialType type)
-        {
-            CoreType t;
-            _specialTypes.TryGetValue(type, out t);
-            return t;
-        }
+        ///// <summary>
+        ///// Gets special core type.
+        ///// </summary>
+        //public CoreType GetSpecialType(SpecialType type)
+        //{
+        //    CoreType t;
+        //    _specialTypes.TryGetValue(type, out t);
+        //    return t;
+        //}
 
         internal void Update(AssemblySymbol coreass)
         {
@@ -311,8 +317,8 @@ namespace Pchp.CodeAnalysis.Symbols
                         _typetable[symbol] = t;
                         t.Update(symbol);
 
-                        if (symbol.SpecialType != SpecialType.None)
-                            _specialTypes[symbol.SpecialType] = t;
+                        //if (symbol.SpecialType != SpecialType.None)
+                        //    _specialTypes[symbol.SpecialType] = t;
                     }
                 }
             }
