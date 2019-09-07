@@ -33,7 +33,7 @@ namespace Pchp.Library
         {
             public FtpResource(FtpClient client) : base("FTP Buffer")
             {
-                Client = client; 
+                Client = client;
             }
 
             public FtpClient Client { get; } //  nastaveni property samostatne settery
@@ -66,7 +66,7 @@ namespace Pchp.Library
 
         #region ftp_connect, ftp_login, ftp_put, ftp_close
 
-        [return:CastToFalse]
+        [return: CastToFalse]
         /// <summary>
         /// ftp_connect() opens an FTP connection to the specified host.
         /// </summary>
@@ -85,7 +85,7 @@ namespace Pchp.Library
             {
                 client.Connect();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 // ftp_connect does not throw any warnings
                 // These exception are thrown, when is problem with connection SocketException - Active refuse of connection, FtpCommandException - Server is locked, AggregateException - Unrecognised hostname
@@ -149,12 +149,6 @@ namespace Pchp.Library
             if (resource == null)
                 return false;
 
-            if (remote_file.IsBlank())
-            {
-                PhpException.Throw(PhpError.Warning, Resources.Resources.file_not_exists, remote_file);
-                return false;
-            }
-
             if (!File.Exists(local_file))
             {
                 PhpException.Throw(PhpError.Warning, Resources.Resources.file_not_exists, local_file);
@@ -176,7 +170,11 @@ namespace Pchp.Library
             {
                 // FtpException everytime wraps other exceptions (Message from server). https://github.com/robinrodricks/FluentFTP/blob/master/FluentFTP/Client/FtpClient_HighLevelUpload.cs#L595                    
                 PhpException.Throw(PhpError.Warning, ex.InnerException.Message);
-
+                return false;
+            }
+            catch (ArgumentException ex)
+            {
+                PhpException.Throw(PhpError.Warning, Resources.Resources.file_not_exists, ex.ParamName);
                 return false;
             }
         }
