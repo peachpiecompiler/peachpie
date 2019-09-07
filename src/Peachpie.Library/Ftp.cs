@@ -196,5 +196,84 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        #region ftp_delete, ftp_rmdir, ftp_mkdir
+
+        //TODO: zkontrolovat funkcionalitu
+
+        private delegate void CommandFunction(string path);
+
+        /// <summary>
+        /// Execute specific command
+        /// </summary>
+        private static bool FtpCommand(string path, CommandFunction func)
+        {
+            try
+            {
+                func(path);
+            }
+            catch (FtpCommandException ex)
+            {
+                PhpException.Throw(PhpError.Warning, ex.Message);
+                return false;
+            }
+            catch (ArgumentException)
+            {
+                PhpException.Throw(PhpError.Warning, Resources.Resources.file_not_exists, path);
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// ftp_delete() deletes the file specified by path from the FTP server.
+        /// </summary>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <param name="path">The file to delete.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool ftp_delete(PhpResource ftp_stream, string path)
+        {
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+                return false;
+
+            return FtpCommand(path, resource.Client.DeleteFile);
+        }
+
+        /// <summary>
+        /// Removes the specified directory on the FTP server.
+        /// </summary>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <param name="path">The directory to delete. This must be either an absolute or relative path to an empty directory.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool ftp_rmdir(PhpResource ftp_stream, string path)
+        {
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+                return false;
+
+            return FtpCommand(path, resource.Client.DeleteDirectory);
+        }
+
+        /// <summary>
+        /// Creates the specified directory on the FTP server.
+        /// </summary>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <param name="directory">The name of the directory that will be created.</param>
+        /// <returns>Returns the newly created directory name on success or FALSE on error.</returns>
+        public static PhpValue ftp_mkdir(PhpResource ftp_stream, string directory)
+        {
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+                return PhpValue.False;
+
+            if (FtpCommand(directory, resource.Client.CreateDirectory))
+                return PhpValue.Create(directory);
+            else
+                return PhpValue.False;
+        }
+
+        #endregion
     }
 }
