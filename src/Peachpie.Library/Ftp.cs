@@ -199,8 +199,6 @@ namespace Pchp.Library
 
         #region ftp_delete, ftp_rmdir, ftp_mkdir
 
-        //TODO: zkontrolovat funkcionalitu
-
         private delegate void CommandFunction(string path);
 
         /// <summary>
