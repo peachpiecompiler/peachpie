@@ -138,11 +138,6 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public const string PhpMemberVisibilityAttributeName = "PhpMemberVisibilityAttribute";
 
-        /// <summary>
-        /// Name of <c>PhpStaticLocalAttribute</c> class.
-        /// </summary>
-        public const string PhpStaticLocalAttributeName = "PhpStaticLocalAttribute";
-
         public readonly CoreType
             Context, Operators, Convert, Comparison, StrictComparison, PhpException,
             ScriptAttribute, PhpTraitAttribute, PharAttribute, PhpTypeAttribute, PhpHiddenAttribute, PhpFieldsOnlyCtorAttribute, NotNullAttribute, DefaultValueAttribute, DefaultValueType, PhpMemberVisibilityAttribute, PhpStaticLocalAttribute,
@@ -206,7 +201,6 @@ namespace Pchp.CodeAnalysis.Symbols
             DefaultValueAttribute = Create("DefaultValueAttribute");
             DefaultValueType = Create("DefaultValueAttribute+DefaultValueType");
             PhpMemberVisibilityAttribute = Create(PhpMemberVisibilityAttributeName);
-            PhpStaticLocalAttribute = Create(PhpStaticLocalAttributeName);
             IStaticInit = Create("IStaticInit");
             RoutineInfo = Create("Reflection.RoutineInfo");
             IndirectLocal = Create("IndirectLocal");

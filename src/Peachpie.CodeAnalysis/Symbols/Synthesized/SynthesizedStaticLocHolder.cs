@@ -140,7 +140,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public override bool IsSerializable => false;
 
-        public override string Name => _routine.Name.Replace('.', '-') + "$" + _locName;
+        public override string Name => _routine.MetadataName.Replace('.', '-') + "$" + _locName;
 
         public override TypeKind TypeKind => TypeKind.Class;
 

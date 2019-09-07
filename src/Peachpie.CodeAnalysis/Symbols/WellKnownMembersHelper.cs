@@ -33,16 +33,5 @@ namespace Pchp.CodeAnalysis.Symbols
                         compilation.CreateTypedConstant(false/*isError*/)),
                     ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty);
         }
-
-        public static AttributeData CreatePhpStaticLocalAttribute(this PhpCompilation compilation, ITypeSymbol holder, string name)
-        {
-            return new SynthesizedAttributeData(
-                compilation.CoreMethods.Ctors.PhpStaticLocalAttribute,
-                ImmutableArray<TypedConstant>.Empty,
-                ImmutableArray.Create(
-                    new KeyValuePair<string, TypedConstant>("Holder", compilation.CreateTypedConstant(holder)),
-                    new KeyValuePair<string, TypedConstant>("Name", compilation.CreateTypedConstant(name))
-                ));
-        }
     }
 }

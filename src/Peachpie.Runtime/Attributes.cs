@@ -219,23 +219,6 @@ namespace Pchp.Core
     }
 
     /// <summary>
-    /// Denotates a static local variable declared within the function body.
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Method)]
-    public sealed class PhpStaticLocalAttribute : Attribute
-    {
-        /// <summary>
-        /// Type containing the local declaration throu its <c>Value</c> field.
-        /// </summary>
-        public Type Holder { get; set; }
-
-        /// <summary>
-        /// Local variable name, without the leading <c>'$'</c> character.
-        /// </summary>
-        public string Name { get; set; }
-    }
-
-    /// <summary>
     /// Denotates a function parameter that will be loaded with current class.
     /// The parameter must be of type <see cref="RuntimeTypeHandle"/>, <see cref="PhpTypeInfo"/> or <see cref="string"/>.
     /// </summary>

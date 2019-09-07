@@ -718,52 +718,65 @@ namespace Pchp.Core.Reflection
         /// <param name="ctx">Runtime context, variables value will be read with respect to this context.</param>
         public static KeyValuePair<string, PhpAlias>[] GetStaticLocals(this RoutineInfo routine, Context ctx)
         {
-            Dictionary<string, PhpStaticLocalAttribute> locals = null;
+            Dictionary<string, Type> locals = null;
 
-            // collect [PhpStaticLocalAttribute]
-            var methods = routine.Methods;
-            for (int i = 0; i < methods.Length; i++)
+            var method = routine.Methods[0];
+            var containingType = method.DeclaringType;
+            var nestedTypes = containingType.GetNestedTypes(BindingFlags.NonPublic);
+
+            if (nestedTypes.Length != 0)
             {
-                var attrs = methods[i].GetCustomAttributes(typeof(PhpStaticLocalAttribute), inherit: false);
-                for (int j = 0; j < attrs.Length; j++)
+                var metadataName = method.Name.Replace('.', '-');
+
+                for (int i= 0; i < nestedTypes.Length; i++)
                 {
-                    var local = (PhpStaticLocalAttribute)attrs[j];
-                    if (local.Holder == null || string.IsNullOrEmpty(local.Name))
-                    {
-                        continue;
-                    }
+                    // name: {MetadataName}${VariableName}
+                    var name = nestedTypes[i].Name;
+                    var dollar = name.LastIndexOf('$');
+                    if (dollar < 0 || dollar + 1 >= name.Length) continue;
 
-                    if (locals == null)
-                    {
-                        locals = new Dictionary<string, PhpStaticLocalAttribute>();
-                    }
+                    var varname = name.Substring(dollar + 1);
+                    var fncname = name.Remove(dollar);
 
-                    locals[local.Name] = local;
+                    if (fncname == metadataName)
+                    {
+                        if (locals == null)
+                        {
+                            locals = new Dictionary<string, Type>();
+                        }
+
+                        locals[varname] = nestedTypes[i];
+                    }
                 }
             }
 
             // invoke an resolve static locals value:
             if (locals != null)
             {
-                // PhpStaticLocalAttribute.Holder is a class with "value" field with actual static local value
-                // PhpStaticLocalAttribute.Holder instance gets resolved using "Context.GetStatic<Holder>()" API
+                // Holder is a class with "value" field with actual static local value
+                // Holder instance gets resolved using "Context.GetStatic<Holder>()" API
 
                 var GetStatic_T = typeof(Context).GetMethod("GetStatic", Cache.Types.Empty);
                 var result = new KeyValuePair<string, PhpAlias>[locals.Count];
                 int i = 0;
-                foreach (var local in locals.Values)
+                foreach (var local in locals)
                 {
-                    // holder.value : PhpAlias
-                    var holder = GetStatic_T.MakeGenericMethod(local.Holder).Invoke(ctx, Array.Empty<object>());
-                    var value = local.Holder.GetField("value").GetValue(holder);
-                    var alias = value as PhpAlias;
+                    PhpAlias alias = null;
 
-                    if (alias == null)
+                    // holder.value : PhpAlias
+                    var holder = GetStatic_T.MakeGenericMethod(local.Value).Invoke(ctx, Array.Empty<object>());
+                    var valueField = local.Value.GetField("value");
+                    if (valueField != null)
                     {
-                        Debug.Fail("Unexpected value of type " + (holder != null ? holder.GetType().Name : PhpVariable.TypeNameNull));
+                        alias = valueField.GetValue(holder) as PhpAlias;
+
+                        if (alias == null)
+                        {
+                            Debug.Fail("Unexpected value of type " + (holder != null ? holder.GetType().Name : PhpVariable.TypeNameNull));
+                        }
                     }
 
-                    result[i++] = new KeyValuePair<string, PhpAlias>(local.Name, alias);
+                    result[i++] = new KeyValuePair<string, PhpAlias>(local.Key, alias);
                 }
 
                 return result;
