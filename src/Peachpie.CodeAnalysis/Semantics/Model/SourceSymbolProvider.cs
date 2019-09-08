@@ -49,7 +49,7 @@ namespace Pchp.CodeAnalysis.Semantics.Model
             return _table.GetFile(path);
         }
 
-        public INamedTypeSymbol ResolveType(QualifiedName name) => _table.GetType(name);
+        public INamedTypeSymbol ResolveType(QualifiedName name, Dictionary<QualifiedName, INamedTypeSymbol> resolved) => _table.GetType(name, resolved);
 
         public IPhpRoutineSymbol ResolveFunction(QualifiedName name)
         {
