@@ -374,7 +374,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
             }
 
-            if (to.SpecialType == SpecialType.System_Object && (from.IsInterfaceType() || from.IsReferenceType))
+            if (to.SpecialType == SpecialType.System_Object && (from.IsInterfaceType() || (from.IsReferenceType && from.IsTypeParameter())))
             {
                 return ReferenceConversion;
             }
