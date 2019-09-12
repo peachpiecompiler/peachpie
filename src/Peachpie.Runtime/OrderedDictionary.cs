@@ -199,7 +199,7 @@ namespace Pchp.Core
         int _dataDeleted;       // number of deleted elements within (0.._dataUsed] => Count = _dataUsed - _dataDeleted
         uint _size;             // physical size of the table (power of 2, minimum 8)
         //int nInternalPointer;   // intrinsic enumerator pointer
-        int _nextFreeKey;       // the next integer key that will be used when inserting an element. It is one larger than the largest integer key that was ever used in this hashtable.
+        internal int _nextFreeKey;       // the next integer key that will be used when inserting an element. It is one larger than the largest integer key that was ever used in this hashtable.
 
         /// <summary>
         /// Additional references sharing this object.
