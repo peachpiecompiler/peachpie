@@ -721,12 +721,6 @@ namespace Pchp.Core
 
             if (table.TryRemoveLast(out var pair))
             {
-                // array_pop decrements the next free index if it removed the last record before it
-                if (pair.Key.IsInteger && pair.Key.Integer == table._nextFreeKey - 1)
-                {
-                    table._nextFreeKey--;
-                }
-
                 return pair;
             }
             else
