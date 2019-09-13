@@ -971,9 +971,6 @@ namespace Pchp.CodeAnalysis.CommandLine
                 return null;
             }
 
-            // Each file is stored under its relative path
-            resourceName = PhpFileUtilities.NormalizeSlashes(PhpFileUtilities.GetRelativePath(fullPath, baseDirectory));
-
             Func<Stream> dataProvider = () =>
             {
                 // Use FileShare.ReadWrite because the file could be opened by the current process.

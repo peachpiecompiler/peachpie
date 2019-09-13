@@ -49,7 +49,12 @@
           [OUT]
           @(EmbeddedResource) - EmbeddedResource items with metadata         
           
-      Peachpie stores each resource under its original relative path, no manifest is used.
+      Peachpie reuses the mechanism from C#, hence:
+      
+        Resources1.resx => RootNamespace.Resources1 => Build into main assembly
+        SubFolder\Resources1.resx => RootNamespace.SubFolder.Resources1 => Build into main assembly
+        Resources1.fr.resx => RootNamespace.Resources1.fr => Build into satellite assembly
+        Resources1.notaculture.resx => RootNamespace.Resources1.notaculture => Build into main assembly
       -->
   <!-- target CreateManifestResourceNames is required by .Common.target-->
   <PropertyGroup>
@@ -60,6 +65,38 @@
       Condition=" '@(EmbeddedResource)' != '' "
       DependsOnTargets="$(CreateManifestResourceNamesDependsOn)"
         >
+    
+        <ItemGroup>
+            <_Temporary Remove="@(_Temporary)" />
+        </ItemGroup>
+        
+        <!-- Create manifest names for culture and non-culture Resx files, and for non-culture Non-Resx resources -->
+        <CreateCSharpManifestResourceName
+              ResourceFiles="@(EmbeddedResource)"
+              RootNamespace="$(RootNamespace)"              
+              Condition="'%(EmbeddedResource.ManifestResourceName)' == '' and ('%(EmbeddedResource.WithCulture)' == 'false' or '%(EmbeddedResource.Type)' == 'Resx')">
+
+            <Output TaskParameter="ResourceFilesWithManifestResourceNames" ItemName="_Temporary" />
+
+        </CreateCSharpManifestResourceName>
+        
+        <!-- Create manifest names for all culture non-resx resources -->
+        <CreateCSharpManifestResourceName
+              ResourceFiles="@(EmbeddedResource)"
+              RootNamespace="$(RootNamespace)"
+              PrependCultureAsDirectory="false"
+              Condition="'%(EmbeddedResource.ManifestResourceName)' == '' and '%(EmbeddedResource.WithCulture)' == 'true' and '%(EmbeddedResource.Type)' == 'Non-Resx'">
+
+            <Output TaskParameter="ResourceFilesWithManifestResourceNames" ItemName="_Temporary" />
+
+        </CreateCSharpManifestResourceName>
+
+        <ItemGroup>
+            <EmbeddedResource Remove="@(EmbeddedResource)" Condition="'%(EmbeddedResource.ManifestResourceName)' == ''"/>
+            <EmbeddedResource Include="@(_Temporary)" />
+            <_Temporary Remove="@(_Temporary)" />
+        </ItemGroup>
+  
   </Target>
 
   <!-- processes composer.json file if available -->
