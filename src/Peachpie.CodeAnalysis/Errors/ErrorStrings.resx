@@ -332,4 +332,7 @@
   <data name="AutoloadDeprecatedMessage" xml:space="preserve">
     <value>Use spl_autoload_register() instead.</value>
   </data>
+  <data name="ERR_ResourceNotUnique" xml:space="preserve">
+    <value>Resource identifier '{0}' has already been used in this assembly</value>
+  </data>
 </root>

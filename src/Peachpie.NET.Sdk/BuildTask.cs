@@ -91,6 +91,9 @@ namespace Peachpie.NET.Sdk.Tools
         // TODO: embed
 
         /// <summary></summary>
+        public string[] Resources { get; set; }
+
+        /// <summary></summary>
         public override bool Execute()
         {
             _cancellation = new CancellationTokenSource();
@@ -162,6 +165,14 @@ namespace Peachpie.NET.Sdk.Tools
             else
             {
                 Log.LogWarning("No references specified.");
+            }
+
+            if (Resources != null)
+            {
+                foreach (var res in Resources)
+                {
+                    args.Add("/res:" + res);
+                }
             }
 
             // sources at the end:

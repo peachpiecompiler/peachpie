@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using Pchp.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.CommandLine
 {
@@ -969,6 +970,9 @@ namespace Pchp.CodeAnalysis.CommandLine
                 //AddDiagnostic(diagnostics, Errors.ErrorCode.FTL_InputFileNameTooLong, filePath);
                 return null;
             }
+
+            // Each file is stored under its relative path
+            resourceName = PhpFileUtilities.NormalizeSlashes(PhpFileUtilities.GetRelativePath(fullPath, baseDirectory));
 
             Func<Stream> dataProvider = () =>
             {

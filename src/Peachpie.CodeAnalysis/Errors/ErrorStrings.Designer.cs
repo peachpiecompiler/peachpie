@@ -385,6 +385,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Resource identifier &apos;{0}&apos; has already been used in this assembly.
+        /// </summary>
+        internal static string ERR_ResourceNotUnique {
+            get {
+                return ResourceManager.GetString("ERR_ResourceNotUnique", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Startup object matching &apos;{0}&apos; could not be resolved.
         /// </summary>
         internal static string ERR_StartupObjectNotFound {

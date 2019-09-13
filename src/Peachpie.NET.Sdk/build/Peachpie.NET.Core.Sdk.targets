@@ -49,7 +49,7 @@
           [OUT]
           @(EmbeddedResource) - EmbeddedResource items with metadata         
           
-      Resources are not used in PHP; therefore, the task throws an error.
+      Peachpie stores each resource under its original relative path, no manifest is used.
       -->
   <!-- target CreateManifestResourceNames is required by .Common.target-->
   <PropertyGroup>
@@ -60,9 +60,6 @@
       Condition=" '@(EmbeddedResource)' != '' "
       DependsOnTargets="$(CreateManifestResourceNamesDependsOn)"
         >
-
-    <Error Text="Resources are not allowed in PHP projects compiled by PeachPie" />
-
   </Target>
 
   <!-- processes composer.json file if available -->
@@ -211,6 +208,7 @@
                DefineConstants="@(DefineConstants)"
                ReferencePath="@(ReferencePath)"
                Compile="@(Compile)"
+               Resources="@(EmbeddedResource)"
                />
 
     <Copy SourceFiles="$(TempOutputDir)$(DocumentationFile)" DestinationFolder="$(OutputPath)" Condition=" '$(GenerateDocumentation)'=='true' " />
