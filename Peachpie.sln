@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27130.2036
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29306.81
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Compiler", "Compiler", "{0E870B29-09DB-43B4-A1DE-B0754EBED941}"
 EndProject
@@ -58,6 +58,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Runtime.Tests", "src\Tests\Peachpie.Runtime.Tests\Peachpie.Runtime.Tests.csproj", "{BD22AE7D-311C-46A2-B066-E937CBDD93EA}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.Test", "src\Tests\Peachpie.Test\Peachpie.Test.csproj", "{0057BE0D-9CA9-4867-9DF1-4313AE2CF1A6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{082CF8D4-9138-4CD3-AC39-076E5AF57B18} = {082CF8D4-9138-4CD3-AC39-076E5AF57B18}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Peachpie.ScriptTests", "src\Tests\Peachpie.ScriptTests\Peachpie.ScriptTests.csproj", "{AC8B71D2-59AF-42B0-8F85-BE0BA7D6E836}"
 EndProject
