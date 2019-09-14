@@ -1070,6 +1070,23 @@ namespace Pchp.CodeAnalysis.Symbols
                 .SingleOrDefault();
         }
 
+        /// <summary>
+        /// Gets <c>__destruct</c> method of class or <c>null</c>.
+        /// Gets <c>null</c> if the type is trait or interface or <c>__destruct</c> is not defined.
+        /// </summary>
+        MethodSymbol TryGetDestruct()
+        {
+            if (this.IsInterface || this.IsTrait)
+            {
+                return null;
+            }
+
+            return GetMembersByPhpName(Devsense.PHP.Syntax.Name.SpecialMethodNames.Destruct.Value)
+                .OfType<MethodSymbol>()
+                .Where(m => !m.IsStatic)
+                .SingleOrDefault();
+        }
+
         internal override bool HasTypeArgumentsCustomModifiers => false;
 
         public override ImmutableArray<CustomModifier> GetTypeArgumentCustomModifiers(int ordinal) => GetEmptyTypeArgumentCustomModifiers(ordinal);
@@ -1367,6 +1384,12 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 // __invoke => IPhpCallable
                 ifaces = ifaces.Add(DeclaringCompilation.CoreTypes.IPhpCallable);
+            }
+
+            if (TryGetDestruct() != null)
+            {
+                // __destruct => IDisposable
+                ifaces = ifaces.Add(DeclaringCompilation.GetSpecialType(SpecialType.System_IDisposable));
             }
 
             return ifaces;

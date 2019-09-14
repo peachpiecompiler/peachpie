@@ -33,6 +33,9 @@ namespace Pchp.CodeAnalysis.Symbols
             // IPhpCallable { Invoke, ToPhpValue }
             EmitPhpCallable(module, diagnostics);
 
+            // IDisposable { Dispose }
+            EmitDisposable(module, diagnostics);
+
             // .ctor
             EmitPhpCtors(this.InstanceConstructors, module, diagnostics);
 
@@ -121,7 +124,8 @@ namespace Pchp.CodeAnalysis.Symbols
             module.SetMethodBody(tophpvalue, MethodGenerator.GenerateMethodBody(module, tophpvalue, il =>
             {
                 var thisPlace = new ArgPlace(this, 0);
-                var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, this, new FieldPlace(thisPlace, this.ContextStore, module), thisPlace);
+                var ctxPlace = new FieldPlace(thisPlace, this.ContextStore, module);
+                var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, this, ctxPlace, thisPlace);
 
                 // return PhpValue.FromClass(this)
                 cg.EmitThis();
@@ -130,6 +134,40 @@ namespace Pchp.CodeAnalysis.Symbols
             }, null, diagnostics, false));
 
             module.SynthesizedManager.AddMethod(this, tophpvalue);
+        }
+
+        void EmitDisposable(Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
+        {
+            var __destruct = TryGetDestruct();
+            if (__destruct == null || (__destruct.OverriddenMethod != null && __destruct.OverriddenMethod.ContainingType.TypeKind != TypeKind.Interface))
+            {
+                // already implemented in a base class
+                return;
+            }
+
+            //
+            // IDisposable.Dispose()
+            //
+            var dispose = new SynthesizedMethodSymbol(this, "IDisposable.Dispose", false, true, DeclaringCompilation.GetSpecialType(SpecialType.System_Void), isfinal: false)
+            {
+                ExplicitOverride = (MethodSymbol)DeclaringCompilation.GetSpecialTypeMember(SpecialMember.System_IDisposable__Dispose),
+                ForwardedCall = __destruct,
+            };
+            
+            module.SetMethodBody(dispose, MethodGenerator.GenerateMethodBody(module, dispose, il =>
+            {
+                var thisPlace = new ArgPlace(this, 0);
+                var ctxPlace = new FieldPlace(thisPlace, this.ContextStore, module);
+                var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, this, ctxPlace, thisPlace)
+                {
+                    CallerType = this,
+                };
+
+                cg.EmitRet(cg.EmitForwardCall(__destruct, dispose, callvirt: true));
+
+            }, null, diagnostics, false));
+
+            module.SynthesizedManager.AddMethod(this, dispose);
         }
 
         void EmitPhpCtors(ImmutableArray<MethodSymbol> instancectors, Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
