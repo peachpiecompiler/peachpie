@@ -475,6 +475,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Use of &apos;__destruct&apos; is discouraged. Garbage collection is non-deterministic unlike in PHP..
+        /// </summary>
+        internal static string INF_DestructDiscouraged {
+            get {
+                return ResourceManager.GetString("INF_DestructDiscouraged", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Use of &apos;eval()&apos; is discouraged. Construct allows execution of arbitrary code and is subject to performance and memory overhead..
         /// </summary>
         internal static string INF_EvalDiscouraged {

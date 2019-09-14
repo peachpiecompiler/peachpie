@@ -92,6 +92,8 @@ namespace Pchp.CodeAnalysis.Symbols
                 }
                 else if (name.IsDestructName)    // __destruct()
                 {
+                    diagnostic.Add(this, _syntax.Name.Span.ToTextSpan(), Errors.ErrorCode.INF_DestructDiscouraged);
+
                     if (_syntax.Signature.FormalParams.Length != 0)
                     {
                         diagnostic.Add(DiagnosticBagExtensions.ParserDiagnostic(this, _syntax.ParametersSpan, Devsense.PHP.Errors.Errors.DestructCannotTakeArguments, _type.FullName.ToString()));
