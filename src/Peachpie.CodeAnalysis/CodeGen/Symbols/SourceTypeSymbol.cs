@@ -148,7 +148,7 @@ namespace Pchp.CodeAnalysis.Symbols
             //
             // IDisposable.Dispose()
             //
-            var dispose = new SynthesizedMethodSymbol(this, "IDisposable.Dispose", false, true, DeclaringCompilation.GetSpecialType(SpecialType.System_Void), isfinal: false)
+            var dispose = new SynthesizedMethodSymbol(this, "IDisposable.Dispose", false, true, DeclaringCompilation.GetSpecialType(SpecialType.System_Void), isfinal: true)
             {
                 ExplicitOverride = (MethodSymbol)DeclaringCompilation.GetSpecialTypeMember(SpecialMember.System_IDisposable__Dispose),
                 ForwardedCall = __destruct,
@@ -180,7 +180,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 disposedPlace.EmitStore(cg.Builder);
 
                 // __destruct()
-                cg.EmitRet(cg.EmitForwardCall(__destruct, dispose, callvirt: true));
+                cg.EmitPop(cg.EmitForwardCall(__destruct, dispose, callvirt: true));
+
+                // .ret
+                cg.EmitRet(DeclaringCompilation.GetSpecialType(SpecialType.System_Void));
 
             }, null, diagnostics, false));
 

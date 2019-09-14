@@ -41,7 +41,7 @@ namespace Pchp.CodeAnalysis.Symbols
 
         public sealed override MethodKind MethodKind => MethodKind.Destructor;
 
-        internal override bool IsExplicitInterfaceImplementation => false;
+        internal override bool IsExplicitInterfaceImplementation => true;
 
         internal override ObsoleteAttributeData ObsoleteAttributeData => null;
 
