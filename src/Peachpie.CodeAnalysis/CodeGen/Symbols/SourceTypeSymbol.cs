@@ -82,8 +82,11 @@ namespace Pchp.CodeAnalysis.Symbols
         void EmitPhpCallable(Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
         {
             var __invoke = TryGetMagicInvoke();
-            if (__invoke == null || (__invoke.OverriddenMethod != null && __invoke.OverriddenMethod.ContainingType.TypeKind != TypeKind.Interface))
+            if (__invoke == null ||
+                IsAlreadyImplemented(__invoke) ||
+                IsAlreadyImplemented(DeclaringCompilation.CoreTypes.IPhpCallable))
             {
+                // already implemented in a base class
                 return;
             }
 
@@ -136,10 +139,50 @@ namespace Pchp.CodeAnalysis.Symbols
             module.SynthesizedManager.AddMethod(this, tophpvalue);
         }
 
+        bool IsAlreadyImplemented(MethodSymbol method)
+        {
+            Debug.Assert(method != null);
+
+            if (method.OverriddenMethod != null && method.OverriddenMethod.ContainingType.TypeKind != TypeKind.Interface)
+            {
+                return true;
+            }
+
+            for (var b = this.BaseType; b != null; b = b.BaseType)
+            {
+                foreach (var m in b.GetMembersByPhpName(method.RoutineName).OfType<MethodSymbol>())
+                {
+                    if (m.IsStatic == method.IsStatic)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        bool IsAlreadyImplemented(NamedTypeSymbol iface)
+        {
+            Debug.Assert(iface != null && iface.IsInterface);
+
+            for (var b = this.BaseType; b != null; b = b.BaseType)
+            {
+                if (b.Interfaces.Contains(iface))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         void EmitDisposable(Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
         {
             var __destruct = TryGetDestruct();
-            if (__destruct == null || (__destruct.OverriddenMethod != null && __destruct.OverriddenMethod.ContainingType.TypeKind != TypeKind.Interface))
+            if (__destruct == null ||
+                IsAlreadyImplemented(__destruct) ||
+                IsAlreadyImplemented(DeclaringCompilation.GetSpecialType(SpecialType.System_IDisposable)))
             {
                 // already implemented in a base class
                 return;
