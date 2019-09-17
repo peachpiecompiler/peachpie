@@ -48,6 +48,11 @@ namespace Pchp.Library
         public const int PREG_OFFSET_CAPTURE = 256;
 
         /// <summary>
+        /// Unmatched subpatterns are reported as <c>NULL</c>, otherwise they are reported as an empty string.
+        /// </summary>
+        public const int PREG_UNMATCHED_AS_NULL = 512;
+
+        /// <summary>
         /// This flag tells preg_split() to return only non-empty pieces.
         /// </summary>
         public const int PREG_SPLIT_NO_EMPTY = 1;
@@ -309,7 +314,7 @@ namespace Pchp.Library
                 evaluator = (match) =>
                 {
                     var matches_arr = new PhpArray();
-                    GroupsToPhpArray(match.PcreGroups, false, matches_arr);
+                    GroupsToPhpArray(match.PcreGroups, false, false, matches_arr);
 
                     return callback
                         .Invoke(ctx, (PhpValue)matches_arr)
@@ -428,7 +433,7 @@ namespace Pchp.Library
 
                 if (!matchAll)
                 {
-                    GroupsToPhpArray(m.PcreGroups, (flags & PREG_OFFSET_CAPTURE) != 0, matches);
+                    GroupsToPhpArray(m.PcreGroups, (flags & PREG_OFFSET_CAPTURE) != 0, (flags & PREG_UNMATCHED_AS_NULL) != 0, matches);
                     return 1;
                 }
 
@@ -793,12 +798,13 @@ namespace Pchp.Library
             }
         }
 
-        static void GroupsToPhpArray(PerlRegex.PcreGroupCollection groups, bool offsetCapture, PhpArray result)
+        static void GroupsToPhpArray(PerlRegex.PcreGroupCollection groups, bool offsetCapture, bool unmatchedAsNull, PhpArray result)
         {
             for (int i = 0; i < groups.Count; i++)
             {
                 var g = groups[i];
-                var item = NewArrayItem(g.Value, g.Index, offsetCapture);
+                var value = (g.Success || !unmatchedAsNull) ? g.Value : null;
+                var item = NewArrayItem(value, g.Index, offsetCapture);
 
                 // All groups should be named.
                 if (g.IsNamedGroup)
