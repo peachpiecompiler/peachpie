@@ -386,10 +386,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 return true;
             }
 
-            if (visited != null)
-            {
-                visited.Add(FullName);
-            }
+            visited?.Add(FullName);
 
             if (_syntax.BaseClass != null || _syntax.ImplementsList.Length != 0 || HasTraitUses)
             {
@@ -564,6 +561,8 @@ namespace Pchp.CodeAnalysis.Symbols
                         resolved ?? new Dictionary<QualifiedName, INamedTypeSymbol>(),
                         this.DeclaringCompilation)
                     .ToArray();
+
+                    Debug.Assert(tsignature.Length >= 1 && tsignature.Skip(1).All(x => x.Symbol != null));  // all the types (except for the base) have bound symbol (it might be ErrorTypeSymbol but never null)
 
                     lock (_basetypes_sync) // critical section:
                     {
@@ -812,7 +811,7 @@ namespace Pchp.CodeAnalysis.Symbols
             var ambiguity = (types[i] as ErrorTypeSymbol).CandidateSymbols.Cast<T>().ToList();
 
             // in case there is an ambiguity that is declared in current scope unconditionally, pick this one and ignore the others
-            var best = ambiguity.FirstOrDefault(x => (object)x is SourceTypeSymbol srct && ReferenceEquals(srct.ContainingFile, containingFile) && !srct.Syntax.IsConditional);
+            var best = ambiguity.FirstOrDefault(x => x is SourceTypeSymbol srct && ReferenceEquals(srct.ContainingFile, containingFile) && !srct.Syntax.IsConditional);
             if (best != null)
             {
                 ambiguity = new List<T>(1) { best };
@@ -897,7 +896,7 @@ namespace Pchp.CodeAnalysis.Symbols
                         yield return new TypeRefSymbol()
                         {
                             TypeRef = i,
-                            Symbol = (NamedTypeSymbol)compilation.GlobalSemantics.ResolveType(qname, resolved),
+                            Symbol = (NamedTypeSymbol)compilation.GlobalSemantics.ResolveType(qname, resolved) ?? CreateInCycleErrorType(qname),
                             Attributes = PhpMemberAttributes.Interface,
                         };
                     }
