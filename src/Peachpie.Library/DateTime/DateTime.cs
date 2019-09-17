@@ -315,8 +315,15 @@ namespace Pchp.Library.DateTime
         }
 
         /// <summary>Returns the warnings and errors</summary>
-        [return: CastToFalse]
-        public static PhpArray getLastErrors(Context ctx) => ctx.TryGetProperty<DateTimeErrors>()?.ToPhpArray();
+        /// <remarks>Unlike in PHP, we never return <c>FALSE</c>, according to the documentation and for (our) sanity.</remarks>
+        [return: NotNull]
+        public static PhpArray/*!*/getLastErrors(Context ctx)
+        {
+            var errors = ctx.TryGetProperty<DateTimeErrors>();
+            return errors != null
+                ? errors.ToPhpArray()
+                : PhpArray.NewEmpty();
+        }
 
         [return: NotNull]
         public virtual DateTime modify(string modify)
@@ -631,8 +638,8 @@ namespace Pchp.Library.DateTime
             }
         }
 
-        [return: CastToFalse]
-        public static PhpArray getLastErrors(Context ctx) => DateTime.getLastErrors(ctx);
+        [return: NotNull]
+        public static PhpArray/*!*/getLastErrors(Context ctx) => DateTime.getLastErrors(ctx);
         public static DateTimeImmutable __set_state(PhpArray array) => throw new NotImplementedException();
         public virtual DateTimeImmutable setDate(int year, int month, int day) => throw new NotImplementedException();
         public virtual DateTimeImmutable setISODate(int year, int week, int day = 1) => throw new NotImplementedException();
