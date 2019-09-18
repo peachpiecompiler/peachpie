@@ -673,8 +673,8 @@ namespace Pchp.CodeAnalysis.Symbols
                     if (self)
                     {
                         _lazyBaseType = v_base;
-                        _lazyInterfacesType = v_interfaces;
                         _lazyTraitUses = SelectTraitUses(this, tsignature, v);
+                        _lazyInterfacesType = v_interfaces;
 
                         self = false;
                     }
@@ -711,8 +711,8 @@ namespace Pchp.CodeAnalysis.Symbols
             {
                 // default with unbound error types:
                 _lazyBaseType = tsignature[0].Symbol;
-                _lazyInterfacesType = tsignature.Where(x => x.Attributes.IsInterface()).Select(x => x.Symbol).AsImmutable();
                 _lazyTraitUses = ImmutableArray<TraitUse>.Empty;
+                _lazyInterfacesType = tsignature.Where(x => x.Attributes.IsInterface()).Select(x => x.Symbol).AsImmutable();
             }
             else
             {
