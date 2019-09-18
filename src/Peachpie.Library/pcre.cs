@@ -107,15 +107,14 @@ namespace Pchp.Library
         {
             if (input == null)
             {
+                PhpException.ArgumentNull(nameof(input));
                 return null;
             }
 
             var result = new PhpArray(input.Count);
 
-            if (input.Count != 0)
+            if (TryParseRegexp(pattern, out var regex))
             {
-                var regex = new PerlRegex.Regex(pattern);
-
                 var enumerator = input.GetFastEnumerator();
                 while (enumerator.MoveNext())
                 {
@@ -136,7 +135,7 @@ namespace Pchp.Library
         }
 
         public static PhpValue preg_replace(Context ctx, PhpValue pattern, PhpValue replacement, PhpValue subject, long limit = -1)
-            => preg_replace(ctx, pattern, replacement, subject, limit, out long count);
+            => preg_replace(ctx, pattern, replacement, subject, limit, out _);
 
         /// <summary>
         /// Perform a regular expression search and replace.
@@ -305,8 +304,11 @@ namespace Pchp.Library
 
         static PhpValue PregReplaceInternal(Context ctx, string pattern, string replacement, IPhpCallable callback, PhpValue subject, int limit, ref long count)
         {
-            var regex = new PerlRegex.Regex(pattern);
-
+            if (!TryParseRegexp(pattern, out var regex))
+            {
+                return PhpValue.Null;
+            }
+            
             // callback
             PerlRegex.MatchEvaluator evaluator = null;
             if (callback != null)
@@ -391,8 +393,7 @@ namespace Pchp.Library
         [return: CastToFalse]
         public static int preg_match(Context ctx, string pattern, string subject)
         {
-            var regex = new PerlRegex.Regex(pattern);
-            return regex.Match(subject ?? string.Empty).Success ? 1 : 0;
+            return TryParseRegexp(pattern, out var regex) && regex.Match(subject ?? string.Empty).Success ? 1 : 0;
         }
 
         /// <summary>
@@ -409,9 +410,14 @@ namespace Pchp.Library
         /// </summary>
         static int Match(Context ctx, string pattern, string subject, out PhpArray matches, int flags, long offset, bool matchAll)
         {
+            if (!TryParseRegexp(pattern, out var regex))
+            {
+                matches = PhpArray.NewEmpty();
+                return -1;
+            }
+
             subject = subject ?? string.Empty;
 
-            var regex = new PerlRegex.Regex(pattern);
             var m = regex.Match(subject, (offset < subject.Length) ? (int)offset : subject.Length);
 
             if ((regex.Options & PerlRegex.RegexOptions.PCRE_ANCHORED) != 0 && m.Success && m.Index != offset)
@@ -575,18 +581,12 @@ namespace Pchp.Library
             if (limit < -1) // for all other negative values it seems that is as limit == 1
                 limit = 1;
 
-            if (string.IsNullOrEmpty(pattern))
+            if (!TryParseRegexp(pattern ?? string.Empty, out var regex))
             {
                 return null; // FALSE
             }
 
-            if (subject == null)
-            {
-                subject = string.Empty;
-            }
-
-            var regex = new PerlRegex.Regex(pattern);
-            //if (!regex.IsValid) return null;
+            subject = subject ?? string.Empty;
 
             var m = regex.Match(subject);
 
@@ -660,6 +660,28 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        static bool TryParseRegexp(string pattern, out PerlRegex.Regex regex)
+        {
+            try
+            {
+                regex = new PerlRegex.Regex(pattern);
+            }
+            catch (PerlRegex.RegexParseException error)
+            {
+                PhpException.Throw(
+                    PhpError.Warning,
+                    error.Offset > 0 // .HasValue
+                        ? string.Format(LibResources.pcre_make_error, error.Message, error.Offset.ToString())
+                        : error.Message
+                );
+
+                regex = null;
+            }
+
+            //
+            return regex != null;
+        }
 
         static void AddGroupNameToResult(PerlRegex.Regex regex, PhpArray matches, int i, Action<PhpArray, string> action)
         {

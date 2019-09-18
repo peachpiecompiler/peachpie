@@ -1069,33 +1069,6 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Ignoring unsupported pattern modifier &apos;{0}&apos; in perl regular expression.
-        /// </summary>
-        public static string modifier_not_supported {
-            get {
-                return ResourceManager.GetString("modifier_not_supported", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Ignoring unknown pattern modifier &apos;{0}&apos; in perl regular expression.
-        /// </summary>
-        public static string modifier_unknown {
-            get {
-                return ResourceManager.GetString("modifier_unknown", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Pattern modifier &apos;{0}&apos; is ignored due to use of modifier &apos;{1}&apos; in perl regular expression.
-        /// </summary>
-        public static string modifiers_inconsistent {
-            get {
-                return ResourceManager.GetString("modifiers_inconsistent", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Type &apos;{0}&apos;: multi-byte characters are not supported.
         /// </summary>
         public static string multibyte_chars_unsupported {
@@ -1267,20 +1240,11 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to PREG_PATTERN_ORDER and PREG_SET_ORDER flags are mutually exclusive.
+        ///   Looks up a localized string similar to {0} at offset {1}.
         /// </summary>
-        public static string preg_match_pattern_set_order {
+        public static string pcre_make_error {
             get {
-                return ResourceManager.GetString("preg_match_pattern_set_order", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to No ending delimiter &apos;{0}&apos; found.
-        /// </summary>
-        public static string preg_no_end_delimiter {
-            get {
-                return ResourceManager.GetString("preg_no_end_delimiter", resourceCulture);
+                return ResourceManager.GetString("pcre_make_error", resourceCulture);
             }
         }
         
@@ -1353,24 +1317,6 @@ namespace Pchp.Library.Resources {
         public static string regexp_cannot_end_with_two_backslashes {
             get {
                 return ResourceManager.GetString("regexp_cannot_end_with_two_backslashes", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Nothing to repeat - duplicate quantifier at offset {0} in matching part of regular expression..
-        /// </summary>
-        public static string regexp_duplicate_quantifier {
-            get {
-                return ResourceManager.GetString("regexp_duplicate_quantifier", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Empty regular expression.
-        /// </summary>
-        public static string regular_expression_empty {
-            get {
-                return ResourceManager.GetString("regular_expression_empty", resourceCulture);
             }
         }
         
