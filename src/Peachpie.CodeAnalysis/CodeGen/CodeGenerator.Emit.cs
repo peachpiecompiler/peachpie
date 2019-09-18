@@ -1672,7 +1672,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             int arg_params_index = (arguments.Length != 0 && arguments[arguments.Length - 1].IsUnpacking) ? arguments.Length - 1 : -1; // index of params argument, otherwise -1
             int arg_params_consumed = 0; // count of items consumed from arg_params if any
 
-            Debug.Assert(arg_params_index < 0 || (arguments[arg_params_index].Value is BoundVariableRef v && v.Variable.Type.IsSZArray()));
+            Debug.Assert(arg_params_index < 0 || (arguments[arg_params_index].Value is BoundVariableRef v && v.Variable.Type.IsSZArray()), $"Argument for params is expected to be a variable of type array, at {method.ContainingType.PhpName()}::{method.Name}().");
 
             for (; param_index < parameters.Length; param_index++)
             {
@@ -1698,7 +1698,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     //
 
                     var arg_type = (ArrayTypeSymbol)arguments[arg_index].Value.Emit(this); // {args}
-                    Debug.Assert(arg_type.ElementType == CoreTypes.PhpValue);
+                    Debug.Assert(arg_type.ElementType == CoreTypes.PhpValue, $"Argument for params is expected to be of type PhpValue[], at {method.ContainingType.PhpName()}::{method.Name}().");
 
                     // {args} on STACK:
 
@@ -1772,8 +1772,8 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (p.IsParams)
                 {
-                    Debug.Assert(parameters.Length == param_index + 1); // p is last one
-                    Debug.Assert(p.Type.IsArray());
+                    Debug.Assert(parameters.Length == param_index + 1, $"params should be the last parameter, at {method.ContainingType.PhpName()}::{method.Name}()."); // p is last one
+                    Debug.Assert(p.Type.IsArray(), $"params should be of type array, at {method.ContainingType.PhpName()}::{method.Name}().");
 
                     var p_element = ((ArrayTypeSymbol)p.Type).ElementType;
 
@@ -1794,7 +1794,7 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                         int arr_size1 = arguments.Length - arg_index - 1; // remaining arguments without arg_params
                         var arg_params = arguments[arg_params_index].Value as BoundVariableRef;
-                        Debug.Assert(arg_params != null);
+                        Debug.Assert(arg_params != null, $"Argument for params is expected to be a variable reference expression, at {method.ContainingType.PhpName()}::{method.Name}().");
 
                         // <params> = new [arr_size1 + arg_params.Length]
 
