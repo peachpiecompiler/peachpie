@@ -1691,15 +1691,14 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (arg_index == arg_params_index) // arg is params
                 {
-                    #region LOAD params PhpValue[]
+                    #region LOAD params T[]
 
                     //
-                    // treat argument as "params PhpValue[]"
+                    // treat argument as "params T[]"
                     //
 
                     var arg_type = (ArrayTypeSymbol)arguments[arg_index].Value.Emit(this); // {args}
-                    Debug.Assert(arg_type.ElementType == CoreTypes.PhpValue, $"Argument for params is expected to be of type PhpValue[], at {method.ContainingType.PhpName()}::{method.Name}().");
-
+                    
                     // {args} on STACK:
 
                     if (p.IsParams)
@@ -1707,7 +1706,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         // Template: {args}
                         if (arg_type != p.Type || arg_params_consumed > 0)  // we need to create new array from args
                         {
-                            // PhpValue[] arrtmp = {arrtmp};
+                            // T[] arrtmp = {arrtmp};
                             var arrtmp = GetTemporaryLocal(arg_type, false);
                             _il.EmitLocalStore(arrtmp);
 
@@ -1737,7 +1736,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         arguments[arg_index].Value.Emit(this);      // <args>
                         _il.EmitIntConstant(arg_params_consumed);   // <i>
 
-                        if (p.Type == CoreTypes.PhpAlias)
+                        if (p.Type.Is_PhpAlias() && arg_type.ElementType.Is_PhpValue())
                         {
                             // {args}[i].EnsureAlias()
                             _il.EmitOpCode(ILOpCode.Ldelema);               // ref args[i]
