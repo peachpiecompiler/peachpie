@@ -223,7 +223,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             {
                 var varindex = _routine.ControlFlowGraph.FlowContext.GetVarIndex(parameter.BoundName.NameValue);
                 var paramType = parameter.Parameter.Type;
-                if (!_varInfos.GetMightChange(varindex))
+                if (!_varInfos.MightChange.Get(varindex))
                 {
                     // It is unnecessary to copy a parameter whose value cannot change in the routine
                     parameter.SkipCopy = true;
