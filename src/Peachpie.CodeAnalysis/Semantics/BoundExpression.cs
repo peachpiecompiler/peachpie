@@ -108,7 +108,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Gets value indicating the variable might be changed in context of the access.
         /// </summary>
-        public bool MightChange => IsWrite || IsUnset || IsEnsure;
+        public bool MightChange => IsWrite || IsUnset || IsEnsure || (IsQuiet && !IsIsSet);
 
         /// <summary>
         /// In case an alias will be written to the variable.
