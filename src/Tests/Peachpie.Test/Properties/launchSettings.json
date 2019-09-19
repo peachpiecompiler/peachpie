@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "run \"index.php\"": {
+      "commandName": "Project"
+    },
+    "build \"index.php\"": {
+      "commandName": "Executable",
+      "executablePath": "..\\..\\..\\..\\..\\Compiler\\peach\\bin\\Debug\\net461\\peach.exe",
+      "commandLineArgs": "/o- /xmldoc index.php"
+    }
+  }
+}

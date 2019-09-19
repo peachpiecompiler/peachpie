@@ -166,9 +166,14 @@ namespace Pchp.Core.Reflection
                     var flags = (FieldAttributes)0;
                     var attr = _property.GetMethod.Attributes;
 
-                    if ((attr & MethodAttributes.Public) != 0) flags |= FieldAttributes.Public;
-                    if ((attr & MethodAttributes.Private) != 0) flags |= FieldAttributes.Private;
-                    if ((attr & MethodAttributes.FamORAssem) != 0) flags |= FieldAttributes.FamORAssem;
+                    switch (attr & MethodAttributes.MemberAccessMask)
+                    {
+                        case MethodAttributes.Private: flags |= FieldAttributes.Private; break;
+                        case MethodAttributes.Assembly: flags |= FieldAttributes.Assembly; break;
+                        case MethodAttributes.Family: flags |= FieldAttributes.Family; break;
+                        case MethodAttributes.FamORAssem: flags |= FieldAttributes.FamORAssem; break;
+                        case MethodAttributes.Public: flags |= FieldAttributes.Public; break;
+                    }
                     if ((attr & MethodAttributes.Static) != 0) flags |= FieldAttributes.Static;
                     if ((_property.Attributes & PropertyAttributes.HasDefault) != 0) flags |= FieldAttributes.HasDefault;
 

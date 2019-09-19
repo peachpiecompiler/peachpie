@@ -30,7 +30,7 @@ namespace Pchp.CodeAnalysis.Semantics
         /// <summary>
         /// Calculates "cost" of conversion.
         /// </summary>
-        static int ConvCost(CommonConversion conv)
+        static int ConvCost(CommonConversion conv, TypeSymbol from, TypeSymbol to)
         {
             if (conv.Exists)
             {
@@ -39,11 +39,57 @@ namespace Pchp.CodeAnalysis.Semantics
                     return 0;
                 }
 
-                var cost = (conv.IsReference || conv.IsNumeric) ? 1
-                    : conv.IsUserDefined ?  4
-                    : 8;
+                // calculate magically the conversion cost
+                // TODO: unify with ConversionCost
 
-                return conv.IsImplicit ? (cost) : (cost * 2);
+                int cost;
+
+                if (conv.IsReference)
+                {
+                    cost = 1;
+                }
+                else if (conv.IsNumeric)
+                {
+                    cost = 1;
+
+                    var clfrom = ClassifyNumericType(from);
+                    var clto = ClassifyNumericType(to);
+
+                    if (clfrom.size == 1) // bool
+                    {
+                        cost += 128;    // bool -> {0|1} // only if there is nothing better!!!
+                    }
+
+                    // 
+                    cost += Math.Abs(clto.size / 16 - clfrom.size / 16) + (clfrom.floating != clto.floating ? 1 : 0);
+                }
+                else if (conv.IsUserDefined) // preferring user defined conversions
+                {
+                    // do not treat all the implicit conversios the same
+
+                    // PhpString <-> string
+                    if ((to.IsStringType() || from.IsStringType()) && (to.Is_PhpString() || from.Is_PhpString()))
+                    {
+                        cost = 2;
+                    }
+                    else
+                    {
+                        cost = 4;
+                    }
+                }
+                else
+                {
+                    cost = 8;
+                }
+
+                //
+                if (conv.IsImplicit == false)
+                {
+                    cost *= 2;
+                }
+
+                //
+                return cost;
             }
             else
             {
@@ -111,6 +157,8 @@ namespace Pchp.CodeAnalysis.Semantics
 
             for (int ext = -1; ext < extensions.Length; ext++)
             {
+                // TODO: go through interfaces
+
                 for (var container = ext < 0 ? receiver : extensions[ext]; container != null; container = container.IsStatic ? null : container.BaseType)
                 {
                     if (container.SpecialType == SpecialType.System_ValueType) continue; //
@@ -136,18 +184,7 @@ namespace Pchp.CodeAnalysis.Semantics
                                     var conv = ClassifyConversion(method.ReturnType, target, checkimplicit: false, checkexplicit: false);
                                     if (conv.Exists)    // TODO: chain the conversion, sum the cost
                                     {
-                                        if (conv.IsNumeric)
-                                        {
-                                            var clfrom = ClassifyNumericType(method.ReturnType);
-                                            var clto = ClassifyNumericType(target);
-
-                                            if (clfrom.size == 1) // bool
-                                                continue;
-
-                                            cost += Math.Abs(clto.size / 16 - clfrom.size / 16) + (clfrom.floating != clto.floating ? 1 : 0);
-                                        }
-
-                                        cost += ConvCost(conv);
+                                        cost += ConvCost(conv, method.ReturnType, target);
                                     }
                                     else
                                     {
@@ -173,7 +210,7 @@ namespace Pchp.CodeAnalysis.Semantics
                                         var conv = ClassifyConversion(receiver, pstype, checkexplicit: false, checkimplicit: false);
                                         if (conv.Exists)   // TODO: chain the conversion
                                         {
-                                            cost += ConvCost(conv);
+                                            cost += ConvCost(conv, receiver, pstype);
                                         }
                                         else
                                         {
@@ -199,7 +236,7 @@ namespace Pchp.CodeAnalysis.Semantics
                                         var conv = ClassifyConversion(operand, ps[pconsumed].Type, checkexplicit: false);
                                         if (conv.Exists)    // TODO: chain the conversion
                                         {
-                                            cost += ConvCost(conv);
+                                            cost += ConvCost(conv, operand, ps[pconsumed].Type);
                                         }
                                         else
                                         {
@@ -253,7 +290,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 case SpecialType.System_Byte:
                 case SpecialType.System_SByte:
                 case SpecialType.System_Int32: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsInt", "ToInt", "ToLong" };
-                case SpecialType.System_Int64: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsLong", "ToLong" };
+                case SpecialType.System_Int64: return new[] { WellKnownMemberNames.ImplicitConversionName, "ToLongOrThrow" };
                 case SpecialType.System_Single:
                 case SpecialType.System_Double: return new[] { WellKnownMemberNames.ImplicitConversionName, "AsDouble", "ToDouble" };
                 case SpecialType.System_Decimal: return new[] { WellKnownMemberNames.ImplicitConversionName, "ToDecimal" };
@@ -372,7 +409,7 @@ namespace Pchp.CodeAnalysis.Semantics
                 }
             }
 
-            if (to.SpecialType == SpecialType.System_Object && from.IsInterfaceType())
+            if (to.SpecialType == SpecialType.System_Object && (from.IsInterfaceType() || (from.IsReferenceType && from.IsTypeParameter())))
             {
                 return ReferenceConversion;
             }

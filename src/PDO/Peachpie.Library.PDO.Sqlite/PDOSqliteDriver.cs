@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Diagnostics;
+using Microsoft.Data.Sqlite;
 using Pchp.Core;
 using Peachpie.Library.PDO.Utilities;
 using ConnectionStringBuilder = Microsoft.Data.Sqlite.SqliteConnectionStringBuilder;
@@ -25,15 +27,24 @@ namespace Peachpie.Library.PDO.Sqlite
         /// <inheritDoc />
         protected override string BuildConnectionString(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
         {
-            // TODO: Sqlite connection string
-
             var csb = new ConnectionStringBuilder();
 
             csb.DataSource = dsn.ToString();
             csb.Add("Password", password);
-            csb.Add("UserId", password);
+            csb.Add("UserId", user);
 
+            
             return csb.ConnectionString;
+        }
+
+        /// <inheritDoc />
+        public override DbConnection OpenConnection(ReadOnlySpan<char> dsn, string user, string password, PhpArray options)
+        {
+            var connection = (SqliteConnection)base.OpenConnection(dsn, user, password, options);
+
+            new SqliteCommand("PRAGMA foreign_keys=OFF", connection).ExecuteNonQuery();
+
+            return connection;
         }
 
         /// <inheritDoc />
@@ -62,7 +73,22 @@ namespace Peachpie.Library.PDO.Sqlite
         }
 
         /// <inheritDoc />
+        public override string Quote(string str, PDO.PARAM param)
+        {
+            // Template: sqlite3_snprintf("'%q'", unquoted);
+            // - %q doubles every '\'' character
 
+            if (string.IsNullOrEmpty(str))
+            {
+                return "''";
+            }
+            else
+            {
+                return $"'{str.Replace("'", "''")}'";
+            }
+        }
+
+        /// <inheritDoc />
         public override string GetLastInsertId(PDO pdo, string name)
         {
             Debug.Fail("last_insert_id not implemented");

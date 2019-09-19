@@ -316,8 +316,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
     {
         CodeGenerator.TemporaryLocalDefinition _enumeratorLoc;
         LocalDefinition _aliasedValueLoc;
-        MethodSymbol _moveNextMethod, _disposeMethod;
-        PropertySymbol _currentValue, _currentKey, _current;
+        MethodSymbol _moveNextMethod, _disposeMethod, _currentValue, _currentKey, _current, _iterator_next;
+
+        internal object _lbl_MoveNext = new object();
 
         void EmitReleaseRef(CodeGenerator cg)
         {
@@ -336,6 +337,15 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 cg.Builder.EmitLocalLoad(_aliasedValueLoc);
                 cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpAlias.ReleaseRef));
                 cg.Builder.MarkLabel(lbl_end);
+            }
+        }
+
+        internal void EmitIteratorNext(CodeGenerator cg)
+        {
+            if (_iterator_next != null)
+            {
+                // Template: Iterator.next()
+                cg.EmitPop(VariableReferenceExtensions.EmitLoadValue(cg, _iterator_next, _enumeratorLoc));
             }
         }
 
@@ -366,9 +376,26 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         TypeSymbol EmitGetCurrentHelper(CodeGenerator cg)
         {
-            Debug.Assert(_currentValue != null || _current != null);
+            var getter = _currentValue ?? _current;
+            Debug.Assert(getter != null);
 
-            var t = (_currentValue ?? _current).EmitLoadValue(cg, _enumeratorLoc);
+            var t = VariableReferenceExtensions.EmitLoadValue(cg, getter, _enumeratorLoc);
+
+            if (t.Is_PhpValue())
+            {
+                if (_aliasedValues)  // current() may get PhpAlias wrapped in PhpValue, make it PhpAlias again so it is handled properly
+                {
+                    // .EnsureAlias()
+                    cg.EmitPhpValueAddr();
+                    t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.EnsureAlias);
+                }
+                else
+                {
+                    // .GetValue()
+                    cg.EmitPhpValueAddr();
+                    t = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.GetValue);
+                }
+            }
 
             if (_aliasedValueLoc != null && (TypeSymbol)_aliasedValueLoc.Type == t)
             {
@@ -382,10 +409,10 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
         internal void EmitPrepare(CodeGenerator cg)
         {
-            if (_currentValue != null && _aliasedValues && _currentValue.Type == cg.CoreTypes.PhpAlias &&
+            if (_currentValue != null && _aliasedValues && _currentValue.ReturnType == cg.CoreTypes.PhpAlias &&
                 cg.GeneratorStateMachineMethod == null)
             {
-                _aliasedValueLoc = cg.GetTemporaryLocal(_currentValue.Type, immediateReturn: false);
+                _aliasedValueLoc = cg.GetTemporaryLocal(_currentValue.ReturnType, immediateReturn: false);
 
                 cg.Builder.EmitNullConstant();
                 cg.Builder.EmitLocalStore(_aliasedValueLoc);
@@ -400,7 +427,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
 
             if (_currentValue != null && _currentKey != null)
             {
-                // special PhpArray enumerator
+                // PhpArray enumerator or Iterator
 
                 cg.EmitSequencePoint(valueVar.PhpSyntax);
                 valueVar.BindPlace(cg).EmitStore(cg, () => EmitGetCurrentHelper(cg), valueVar.Access);
@@ -408,15 +435,14 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 if (keyVar != null)
                 {
                     cg.EmitSequencePoint(keyVar.PhpSyntax);
-                    keyVar.BindPlace(cg).EmitStore(cg, new PropertyPlace(_enumeratorLoc, _currentKey, cg.Module), keyVar.Access);
+                    keyVar.BindPlace(cg).EmitStore(cg, () => VariableReferenceExtensions.EmitLoadValue(cg, _currentKey, _enumeratorLoc), keyVar.Access);
                 }
             }
             else
             {
                 Debug.Assert(_current != null);
-                Debug.Assert(_current.GetMethod != null);
 
-                var valuetype = _current.GetMethod.ReturnType;
+                var valuetype = _current.ReturnType;
 
                 // ValueTuple (key, value)
                 // TODO: KeyValuePair<key, value> // the same
@@ -424,7 +450,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 {
                     // tmp = current;
                     var tmp = cg.GetTemporaryLocal(valuetype);
-                    cg.EmitGetProperty(_enumeratorLoc, _current);
+                    VariableReferenceExtensions.EmitLoadValue(cg, _current, _enumeratorLoc);
                     cg.Builder.EmitLocalStore(tmp);
 
                     // TODO: ValueTuple Helper
@@ -505,6 +531,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             _currentValue = null;
             _currentKey = null;
             _current = null;
+            _iterator_next = null;
         }
 
         internal override void Generate(CodeGenerator cg)
@@ -532,7 +559,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             {
                 cg.Builder.EmitBoolConstant(_aliasedValues);
 
-                // PhpArray.GetForeachtEnumerator(bool)
+                // TODO: FastEnumerator if possible (addref on PhpArray ion readonly mode, not in generator, .. ) ?
+
+                // PhpArray.GetForeachEnumerator(bool)
                 enumeratorType = cg.EmitCall(ILOpCode.Callvirt, cg.CoreMethods.PhpArray.GetForeachEnumerator_Boolean);  // TODO: IPhpArray
             }
             else if (enumereeType.IsOfType(cg.CoreTypes.IPhpEnumerable))
@@ -546,7 +575,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
             else if (enumereeType.IsOfType(cg.CoreTypes.Iterator))
             {
-                enumeratorType = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetForeachEnumerator_Iterator);
+                // use Iterator directly,
+                // do not allocate additional wrappers
+                enumeratorType = cg.CoreTypes.Iterator; // cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetForeachEnumerator_Iterator);
             }
             // TODO: IPhpArray
             else if (getEnumeratorMethod != null && getEnumeratorMethod.ParameterCount == 0 && enumereeType.IsReferenceType)
@@ -564,20 +595,39 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
                 enumeratorType = cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.GetForeachEnumerator_PhpValue_Bool_RuntimeTypeHandle);
             }
 
-            //
-            _current = enumeratorType.LookupMember<PropertySymbol>(WellKnownMemberNames.CurrentPropertyName);   // TODO: Err if no Current
-            _currentValue = enumeratorType.LookupMember<PropertySymbol>(_aliasedValues ? "CurrentValueAliased" : "CurrentValue");
-            _currentKey = enumeratorType.LookupMember<PropertySymbol>("CurrentKey");
-            _disposeMethod = enumeratorType.LookupMember<MethodSymbol>("Dispose", m => m.ParameterCount == 0 && !m.IsStatic);
-
-            //
+            // store the enumerator:
             _enumeratorLoc = cg.GetTemporaryLocal(enumeratorType, longlive: true, immediateReturn: false);
             _enumeratorLoc.EmitStore();
 
-            // bind methods
-            _moveNextMethod = enumeratorType.LookupMember<MethodSymbol>(WellKnownMemberNames.MoveNextMethodName);    // TODO: Err if there is no MoveNext()
-            Debug.Assert(_moveNextMethod.ReturnType.SpecialType == SpecialType.System_Boolean);
-            Debug.Assert(_moveNextMethod.IsStatic == false);
+            //
+            if (enumeratorType == cg.CoreTypes.Iterator)
+            {
+                // if iterator is null, goto end
+                _enumeratorLoc.EmitLoad(cg.Builder);
+                cg.Builder.EmitBranch(ILOpCode.Brfalse, NextBlock.NextEdge.NextBlock);
+
+                // Template: iterator.rewind() : void
+                _enumeratorLoc.EmitLoad(cg.Builder);
+                cg.EmitPop(cg.EmitCall(ILOpCode.Callvirt, enumeratorType.LookupMember<MethodSymbol>("rewind")));
+
+                // bind methods
+                _iterator_next = enumeratorType.LookupMember<MethodSymbol>("next"); // next()
+                _current = _currentValue = enumeratorType.LookupMember<MethodSymbol>("current");    // current()
+                _currentKey = enumeratorType.LookupMember<MethodSymbol>("key");     // key()
+                _moveNextMethod = enumeratorType.LookupMember<MethodSymbol>("valid");   // valid() // use it as the loop's control expression (MoveNext)
+            }
+            else
+            {
+                // bind methods
+                _current = enumeratorType.LookupMember<PropertySymbol>(WellKnownMemberNames.CurrentPropertyName)?.GetMethod;   // TODO: Err if no Current
+                _currentValue = enumeratorType.LookupMember<PropertySymbol>(_aliasedValues ? "CurrentValueAliased" : "CurrentValue")?.GetMethod;
+                _currentKey = enumeratorType.LookupMember<PropertySymbol>("CurrentKey")?.GetMethod;
+                _disposeMethod = enumeratorType.LookupMember<MethodSymbol>("Dispose", m => m.ParameterCount == 0 && !m.IsStatic);
+
+                _moveNextMethod = enumeratorType.LookupMember<MethodSymbol>(WellKnownMemberNames.MoveNextMethodName);    // TODO: Err if there is no MoveNext()
+                Debug.Assert(_moveNextMethod.ReturnType.SpecialType == SpecialType.System_Boolean);
+                Debug.Assert(_moveNextMethod.IsStatic == false);
+            }
 
             if (_disposeMethod != null
                 && cg.GeneratorStateMachineMethod == null)  // Temporary workaround allowing "yield" inside foreach. Yield cannot be inside TRY block, so we don't generate TRY for state machines. Remove this condition once we manage to bind try/catch/yield somehow
@@ -617,6 +667,7 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         {
             Debug.Assert(NextBlock.NextEdge is ForeachMoveNextEdge);
             this.EmitPrepare(cg);
+            cg.Builder.EmitBranch(ILOpCode.Br, _lbl_MoveNext);
             cg.GenerateScope(NextBlock, NextBlock.NextEdge.NextBlock.Ordinal);
             cg.Builder.EmitBranch(ILOpCode.Br, NextBlock.NextEdge.NextBlock);
         }
@@ -652,6 +703,8 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             // if (enumerator.MoveNext())
             cg.EmitSequencePoint(_moveSpan);
             cg.Builder.MarkLabel(lblMoveNext);
+            this.EnumereeEdge.EmitIteratorNext(cg); // Iterator.next() : void (only if we are enumerating the Iterator directly)
+            cg.Builder.MarkLabel(this.EnumereeEdge._lbl_MoveNext);
             this.EnumereeEdge.EmitMoveNext(cg); // bool
             cg.Builder.EmitBranch(ILOpCode.Brtrue, lblBody);
 

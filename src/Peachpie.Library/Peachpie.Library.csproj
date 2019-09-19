@@ -24,11 +24,18 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
-    <PackageReference Include="Peachpie.Library.RegularExpressions" Version="1.0.4" />
+    <PackageReference Include="BCrypt.Net-Next" Version="3.1.3" />
+    <PackageReference Include="Isopoh.Cryptography.Argon2" Version="1.1.2" />
+    <PackageReference Include="Peachpie.Library.RegularExpressions" Version="1.0.9" />
     <PackageReference Include="System.IO.FileSystem.DriveInfo" Version="4.3.1" />
   </ItemGroup>
  
   <ItemGroup>
+    <Compile Update="Resources\DateResources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>DateResources.resx</DependentUpon>
+    </Compile>
     <Compile Update="Resources\InfoResources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -42,6 +49,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Update="Resources\DateResources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>DateResources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
     <EmbeddedResource Update="Resources\InfoResources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>InfoResources.Designer.cs</LastGenOutput>

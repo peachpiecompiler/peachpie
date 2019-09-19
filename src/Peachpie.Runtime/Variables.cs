@@ -515,6 +515,22 @@ namespace Pchp.Core
             }
         }
 
+        /// <summary>
+        /// In case given value contains a string (<see cref="string"/> or <see cref="PhpString"/>),
+        /// its string representation is returned.
+        /// Otherwise <c>null</c>.
+        /// </summary>
+        public static byte[] ToBytesOrNull(this PhpValue value, Context ctx)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.String: return Encoding.UTF8.GetBytes(value.String);
+                case PhpTypeCode.MutableString: return value.MutableString.ToBytes(ctx);
+                case PhpTypeCode.Alias: return ToBytesOrNull(value.Alias.Value, ctx);
+                default: return null;
+            }
+        }
+
         public static byte[] ToBytes(this PhpValue value, Context ctx)
         {
             switch (value.TypeCode)
@@ -548,7 +564,18 @@ namespace Pchp.Core
         /// Checks the value is of type <c>string</c> or <c>&amp;string</c> and gets its value.
         /// Single-byte strings are decoded using <c>UTF-8</c>.
         /// </summary>
+        public static bool IsPhpArray(this PhpValue value, out PhpArray array) => (array = value.AsArray()) != null;
+
+        /// <summary>
+        /// Checks the value is of type <c>string</c> or <c>&amp;string</c> and gets its value.
+        /// Single-byte strings are decoded using <c>UTF-8</c>.
+        /// </summary>
         public static bool IsString(this PhpValue value, out string @string) => value.IsStringImpl(out @string);
+
+        /// <summary>
+        /// Checks the value is of type <c>string</c> (both unicode and single-byte) or an alias to a string.
+        /// </summary>
+        public static bool IsString(this PhpValue value) => value.IsStringImpl();
 
         /// <summary>
         /// Gets value indicating the variable contains a single-byte string value.
@@ -570,6 +597,37 @@ namespace Pchp.Core
 
                 case PhpTypeCode.Alias:
                     return value.Alias.Value.IsBinaryString(out @string);
+
+                default:
+                    @string = default;
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets value indicating the variable is Unicode string value.
+        /// </summary>
+        public static bool IsUnicodeString(this PhpValue value, out string @string)
+        {
+            switch (value.TypeCode)
+            {
+                case PhpTypeCode.String:
+                    @string = value.String;
+                    return true;
+
+                case PhpTypeCode.MutableString:
+                    if (value.MutableStringBlob.ContainsBinaryData)
+                    {
+                        goto default;
+                    }
+                    else
+                    {
+                        @string = value.MutableStringBlob.ToString();
+                        return true;
+                    }
+
+                case PhpTypeCode.Alias:
+                    return value.Alias.Value.IsUnicodeString(out @string);
 
                 default:
                     @string = default;

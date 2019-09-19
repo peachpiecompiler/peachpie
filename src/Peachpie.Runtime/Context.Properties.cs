@@ -78,8 +78,9 @@ namespace Pchp.Core
             }
             set
             {
-                if (value == null) throw new ArgumentNullException();
-                _rootPath = CurrentPlatform.NormalizeSlashes(value).TrimEndSeparator();
+                _rootPath = CurrentPlatform
+                    .NormalizeSlashes(value ?? throw new ArgumentNullException())
+                    .TrimEndSeparator();
             }
         }
         string _rootPath = string.Empty;

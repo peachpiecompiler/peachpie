@@ -483,6 +483,10 @@ namespace Pchp.CodeAnalysis.Symbols
                 {
                     ImmutableInterlocked.InterlockedCompareExchange(ref _lazyParameters, SubstituteParameters(), default(ImmutableArray<ParameterSymbol>));
                 }
+                else
+                {
+                    Debug.Assert(_lazyParameters.Length == this.ParameterCount, "parameters of substitued method have changed!");
+                }
 
                 return _lazyParameters;
             }

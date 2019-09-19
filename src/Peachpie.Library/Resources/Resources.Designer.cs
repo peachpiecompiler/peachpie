@@ -19,7 +19,7 @@ namespace Pchp.Library.Resources {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Resources {
@@ -151,6 +151,33 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Memory cost is outside of allowed memory range.
+        /// </summary>
+        public static string argon2_memory {
+            get {
+                return ResourceManager.GetString("argon2_memory", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid number of threads.
+        /// </summary>
+        public static string argon2_threads {
+            get {
+                return ResourceManager.GetString("argon2_threads", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Time cost is outside of allowed time range.
+        /// </summary>
+        public static string argon2_time {
+            get {
+                return ResourceManager.GetString("argon2_time", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Argument #{0} should be an array.
         /// </summary>
         public static string argument_not_array {
@@ -219,6 +246,42 @@ namespace Pchp.Library.Resources {
         public static string bad_collating_el_at_first_endpoint_of_range {
             get {
                 return ResourceManager.GetString("bad_collating_el_at_first_endpoint_of_range", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid bcrypt cost parameter specified: {0}).
+        /// </summary>
+        public static string bcrypt_invalid_cost {
+            get {
+                return ResourceManager.GetString("bcrypt_invalid_cost", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Non-string salt parameter supplied.
+        /// </summary>
+        public static string bcrypt_nonstring_salt {
+            get {
+                return ResourceManager.GetString("bcrypt_nonstring-salt", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use of the &apos;salt&apos; option to password_hash is deprecated.
+        /// </summary>
+        public static string bcrypt_salt_deprecated {
+            get {
+                return ResourceManager.GetString("bcrypt_salt_deprecated", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Provided salt is too short: {0} expecting 22.
+        /// </summary>
+        public static string bcrypt_salt_too_short {
+            get {
+                return ResourceManager.GetString("bcrypt_salt_too_short", resourceCulture);
             }
         }
         
@@ -588,6 +651,15 @@ namespace Pchp.Library.Resources {
         public static string function_disallowed_in_web_context {
             get {
                 return ResourceManager.GetString("function_disallowed_in_web_context", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Function {0}() does not exist.
+        /// </summary>
+        public static string function_does_not_exist {
+            get {
+                return ResourceManager.GetString("function_does_not_exist", resourceCulture);
             }
         }
         
@@ -988,29 +1060,11 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Ignoring unsupported pattern modifier &apos;{0}&apos; in perl regular expression.
+        ///   Looks up a localized string similar to Method {0}::{1} does not have a prototype.
         /// </summary>
-        public static string modifier_not_supported {
+        public static string method_doesnt_have_prototype {
             get {
-                return ResourceManager.GetString("modifier_not_supported", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Ignoring unknown pattern modifier &apos;{0}&apos; in perl regular expression.
-        /// </summary>
-        public static string modifier_unknown {
-            get {
-                return ResourceManager.GetString("modifier_unknown", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Pattern modifier &apos;{0}&apos; is ignored due to use of modifier &apos;{1}&apos; in perl regular expression.
-        /// </summary>
-        public static string modifiers_inconsistent {
-            get {
-                return ResourceManager.GetString("modifiers_inconsistent", resourceCulture);
+                return ResourceManager.GetString("method_doesnt_have_prototype", resourceCulture);
             }
         }
         
@@ -1186,20 +1240,11 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to PREG_PATTERN_ORDER and PREG_SET_ORDER flags are mutually exclusive.
+        ///   Looks up a localized string similar to {0} at offset {1}.
         /// </summary>
-        public static string preg_match_pattern_set_order {
+        public static string pcre_make_error {
             get {
-                return ResourceManager.GetString("preg_match_pattern_set_order", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to No ending delimiter &apos;{0}&apos; found.
-        /// </summary>
-        public static string preg_no_end_delimiter {
-            get {
-                return ResourceManager.GetString("preg_no_end_delimiter", resourceCulture);
+                return ResourceManager.GetString("pcre_make_error", resourceCulture);
             }
         }
         
@@ -1272,24 +1317,6 @@ namespace Pchp.Library.Resources {
         public static string regexp_cannot_end_with_two_backslashes {
             get {
                 return ResourceManager.GetString("regexp_cannot_end_with_two_backslashes", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Nothing to repeat - duplicate quantifier at offset {0} in matching part of regular expression..
-        /// </summary>
-        public static string regexp_duplicate_quantifier {
-            get {
-                return ResourceManager.GetString("regexp_duplicate_quantifier", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Empty regular expression.
-        /// </summary>
-        public static string regular_expression_empty {
-            get {
-                return ResourceManager.GetString("regular_expression_empty", resourceCulture);
             }
         }
         
@@ -1632,6 +1659,15 @@ namespace Pchp.Library.Resources {
         public static string using_implicit_timezone {
             get {
                 return ResourceManager.GetString("using_implicit_timezone", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to var_export does not handle circular references.
+        /// </summary>
+        public static string var_export_circular_reference {
+            get {
+                return ResourceManager.GetString("var_export_circular_reference", resourceCulture);
             }
         }
         

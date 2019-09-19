@@ -369,7 +369,8 @@ namespace Pchp.CodeAnalysis.Semantics
             {
                 Variable = _locals.BindLocalVariable(decl.Variable, decl.Span.ToTextSpan()),
                 InitialValue = (decl.Initializer != null) ? BindExpression(decl.Initializer) : null,
-            });
+            },
+            new SynthesizedStaticLocHolder(this.Routine, decl.Variable.Value));
         }
 
         protected BoundStatement BindStaticStmt(AST.StaticStmt stmt)
@@ -703,6 +704,12 @@ namespace Pchp.CodeAnalysis.Semantics
 
                 if (boundTarget == null)
                 {
+                    if (fname.IsGetArgsOrArgsNumFunctionName() && Routine != null)
+                    {
+                        // remember we need varargs:
+                        Routine.Flags |= RoutineFlags.UsesArgs;
+                    }
+
                     if (fname.IsAssertFunctionName())
                     {
                         // Template: assert(...)

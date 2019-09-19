@@ -8,7 +8,7 @@ namespace Pchp.Library.DateTime
     /// <summary>
     /// DateTimeInterface is meant so that both DateTime and DateTimeImmutable can be type hinted for.
     /// </summary>
-    [PhpType(PhpTypeAttribute.InheritName)]
+    [PhpType(PhpTypeAttribute.InheritName), PhpExtension("date")]
     public interface DateTimeInterface
     {
         /// <summary>

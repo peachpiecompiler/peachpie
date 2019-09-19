@@ -26,15 +26,21 @@ namespace Pchp.Core
             /// <summary>
             /// Initializes the console context.
             /// </summary>
-            /// <param name="mainscript">Entry script file name.</param>
-            /// <param name="args">Command line arguments.</param>
-            public ConsoleContext(string mainscript, params string[] args)
+            public ConsoleContext(string mainscript, string rootPath, Stream output, params string[] args)
             {
-                RootPath = Directory.GetCurrentDirectory();
-                WorkingDirectory = RootPath;
+                RootPath = WorkingDirectory = rootPath ?? Directory.GetCurrentDirectory();
 
                 //
-                InitOutput(Console.OpenStandardOutput(), Console.Out);
+                if (output != null)
+                {
+                    // use provided output stream
+                    InitOutput(output);
+                }
+                else
+                {
+                    // use the default Console output stream
+                    InitOutput(Console.OpenStandardOutput(), Console.Out);
+                }
 
                 // Globals
                 InitSuperglobals();
@@ -76,9 +82,27 @@ namespace Pchp.Core
         /// <summary>
         /// Creates context to be used within a console application.
         /// </summary>
-        public static Context CreateConsole(string mainscript, params string[] args)
+        public static Context CreateConsole(string mainscript) => CreateConsole(mainscript, args: Array.Empty<string>());
+
+        /// <summary>
+        /// Creates context to be used within a console application.
+        /// </summary>
+        public static Context CreateConsole(string mainscript, params string[] args) => CreateConsole(mainscript, null, null, args);
+
+        /// <summary>
+        /// Creates context to be used within a console application.
+        /// </summary>
+        /// <param name="mainscript">Informational. Used for <c>PHP_SELF</c> global variable and related variables.</param>
+        /// <param name="rootPath">
+        /// The path to be recognized as the application root path.
+        /// Also used as the internal current working directory.
+        /// Can be changed by setting <see cref="Context.RootPath"/> and <see cref="Context.WorkingDirectory"/>.
+        /// </param>
+        /// <param name="output">Optional. The output stream.</param>
+        /// <param name="args">Optional. Application arguments. Used to set <c>$argv</c> and <c>$argc</c> global variable.</param>
+        public static Context CreateConsole(string mainscript, string rootPath, Stream output, params string[] args)
         {
-            return new ConsoleContext(mainscript, args);
+            return new ConsoleContext(mainscript, rootPath, output, args);
         }
     }
 }

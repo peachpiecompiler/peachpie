@@ -31,7 +31,7 @@ namespace Pchp.Core.Reflection
         /// </summary>
         public const string PeachpieAssemblyTokenKey = "5b4bee2bf1f98593";
 
-        readonly static char[] _disallowedNameChars = new char[] { '`', '<', '>', '.', '\'', '"', '#', '!', '?' };
+        readonly static char[] _disallowedNameChars = new char[] { '`', '<', '>', '.', '\'', '"', '#', '!', '?', '$', '-' };
 
         /// <summary>
         /// Determines whether given name is valid PHP field, function or class name.
@@ -79,14 +79,18 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Gets value indicating the given type is a type of a class instance excluding builtin PHP value types.
         /// </summary>
-        public static bool IsPhpClassType(TypeInfo tinfo)
+        public static bool IsPhpClassType(Type t)
         {
-            Debug.Assert(tinfo != null);
-            Debug.Assert(tinfo.AsType() != typeof(PhpAlias));
-
-            var t = tinfo.AsType();
-            return !tinfo.IsValueType && t != typeof(PhpArray) && t != typeof(string) && t != typeof(IPhpCallable);
+            Debug.Assert(t != null);
+            Debug.Assert(t != typeof(PhpAlias));
+            
+            return !t.IsValueType && !typeof(PhpArray).IsAssignableFrom(t) && t != typeof(string) && t != typeof(IPhpCallable);
         }
+
+        /// <summary>
+        /// Determines the type is not interface nor abstract.
+        /// </summary>
+        public static bool IsInstantiable(Type t) => t != null && !t.IsInterface && !t.IsAbstract; // => not static
 
         /// <summary>
         /// Determines whether given parametr allows <c>NULL</c> as the argument value.

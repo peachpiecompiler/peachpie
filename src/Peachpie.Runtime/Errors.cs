@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Pchp.Core
@@ -91,17 +92,99 @@ namespace Pchp.Core
 
     #region PhpException
 
+    /// <summary>
+    /// Provides standard PHP errors.
+    /// </summary>
+    [DebuggerNonUserCode]
     public static class PhpException
     {
-        public static void Throw(PhpError error, string message)
+        static string PeachpieLibraryAssembly => "Peachpie.Library";
+        static string ErrorClass => "Pchp.Library.Spl.Error";
+        static string TypeErrorClass => "Pchp.Library.Spl.TypeError";
+        static string AssertionErrorClass => "Pchp.Library.Spl.AssertionError";
+
+        static Type _Error, _TypeError, _AssertionError;
+
+        static Exception Exception(ref Type _type, string _typename, string message)
         {
-            Context.DefaultErrorHandler?.Throw(error, message);
+            if (_type == null)
+            {
+                _type = Type.GetType(Assembly.CreateQualifiedName(PeachpieLibraryAssembly, _typename), throwOnError: false) ?? typeof(Exception);
+            }
+
+            return (Exception)Activator.CreateInstance(
+                _type,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance | BindingFlags.OptionalParamBinding,
+                null,
+                new[] { message },
+                null);
         }
 
-        public static void Throw(PhpError error, string formatString, params string[] args)
+        public static Exception ErrorException(string formatstring, string arg1) => ErrorException(string.Format(formatstring, arg1));
+
+        public static Exception ErrorException(string formatstring, string arg1, string arg2) => ErrorException(string.Format(formatstring, arg1, arg2));
+
+        public static Exception ErrorException(string message) => Exception(ref _Error, ErrorClass, message);
+
+        public static Exception TypeErrorException() => TypeErrorException(string.Empty);
+
+        public static Exception TypeErrorException(string message) => Exception(ref _TypeError, TypeErrorClass, message);
+
+        public static Exception AssertionErrorException(string message) => Exception(ref _AssertionError, AssertionErrorClass, message);
+
+        internal static Exception ClassNotFoundException(string classname) => ErrorException(ErrResources.class_not_found, classname);
+
+        /// <summary>
+        /// Triggers the error by passing it to
+        /// the user handler first (<see cref="PhpCoreConfiguration.UserErrorHandler"/> and then to
+        /// the internal handler (<see cref="Throw(PhpError, string)"/>.
+        /// </summary>
+        public static void TriggerError(Context ctx, PhpError error, string message)
         {
-            Context.DefaultErrorHandler?.Throw(error, formatString, args);
+            if (ctx == null)
+            {
+                throw new ArgumentNullException(nameof(ctx));
+            }
+
+            if (message == null)
+            {
+                message = string.Empty;
+            }
+
+            // try the user handler
+            var config = ctx.Configuration.Core;
+            if (config.UserErrorHandler != null && (config.UserErrorTypes & error) != 0)
+            {
+                var trace = new PhpStackTrace();
+
+                if (!config.UserErrorHandler.Invoke(ctx, (int)error, message, trace.GetFilename(), trace.GetLine(), PhpValue.Null).IsFalse)
+                {
+                    return;
+                }
+            }
+
+            // fallback to internal handler
+            Throw(error, message);
         }
+
+        public static void Throw(PhpError error, string message)
+        {
+            Trace.WriteLine(message, $"PHP ({error})");
+
+            if ((error & (PhpError)PhpErrorSets.Fatal) != 0)
+            {
+                LogEventSource.Log.HandleFatal(message);
+
+                // terminate the script
+                throw new InvalidOperationException(message);
+            }
+            else
+            {
+                LogEventSource.Log.HandleWarning(message);
+            }
+        }
+
+        public static void Throw(PhpError error, string formatString, params string[] args) => Throw(error, string.Format(formatString, args));
 
         /// <summary>
         /// Invalid argument error.
@@ -146,21 +229,15 @@ namespace Pchp.Core
         /// <summary>
         /// Argument type mismatch error.
         /// </summary>
-        public static void ArgumentNullError(string argument)
+        public static void ThrowIfArgumentNull(object value, int arg)
         {
-            throw new ArgumentNullException(argument);
-        }
+            if (ReferenceEquals(value, null))
+            {
+                // PHP: TypeError: Argument {arg} passed to {methodname} must be an instance of {expected}, null given
 
-        internal static Exception ClassNotFoundException(string classname)
-        {
-            return new InvalidOperationException(string.Format(Resources.ErrResources.class_not_found, classname));
-        }
-
-        public static void ClassNotFound(string classname)
-        {
-            // PhpException.Throw(PhpError.Error, Resources.ErrResources.class_not_found, classname);
-
-            throw ClassNotFoundException(classname);
+                // throw new TypeError
+                throw TypeErrorException(string.Format(ErrResources.argument_null, arg));
+            }
         }
 
         /// <summary>
@@ -243,16 +320,22 @@ namespace Pchp.Core
         /// <param name="methodName">The method name.</param>
         public static void MethodOnNonObject(string methodName)
         {
-            Throw(PhpError.Error, ErrResources.method_called_on_non_object, methodName);
+            throw ErrorException(string.Format(ErrResources.method_called_on_non_object, methodName));
         }
 
-        /// <summary>
-        /// Throws PHP ERROR: Undefined function called.
-        /// </summary>
+        /// <summary>new Error("Call to undefined function {<paramref name="funcName"/>}()")</summary>
         /// <param name="funcName">The function name.</param>
         public static void UndefinedFunctionCalled(string funcName)
         {
-            Throw(PhpError.Error, ErrResources.undefined_function_called, funcName);
+            throw ErrorException(string.Format(ErrResources.undefined_function_called, funcName));
+        }
+
+        /// <summary>new Error("Call to undefined function {<paramref name="funcName"/>}()")</summary>
+        /// <param name="typeName">Class name.</param>
+        /// <param name="funcName">The function name.</param>
+        public static void UndefinedMethodCalled(string typeName, string funcName)
+        {
+            throw ErrorException(string.Format(ErrResources.undefined_method_called, typeName, funcName));
         }
 
         /// <summary>

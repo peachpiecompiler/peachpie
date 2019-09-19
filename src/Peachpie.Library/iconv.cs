@@ -587,10 +587,10 @@ namespace Pchp.Library
                 var encoding = ResolveEncoding(ctx, charset);
                 if (encoding == null) throw new NotSupportedException("charset not supported"); // TODO: PHP friendly warning
 
-                return Strings.substr(str.ToString(encoding), offset, length);
+                return Strings.substr(str.ToString(encoding), offset, length).ToString(ctx);
             }
 
-            return Strings.substr(str.ToString(ctx), offset, length);
+            return Strings.substr(str.ToString(ctx), offset, length).ToString(ctx);
         }
 
         /// <summary>

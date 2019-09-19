@@ -68,51 +68,37 @@ namespace Pchp.Core
 
         #region Symbols
 
-        /// <summary>
-        /// Helper class called one-time from compiled DLL static .cctor.
-        /// </summary>
-        /// <typeparam name="TScript">Type of module's script class.</typeparam>
-        public static class DllLoader<TScript>
+        static class DllLoaderImpl
         {
-            /// <summary>
-            /// Called once per DLL (ensured by JIT).
-            /// </summary>
-            static DllLoader()
-            {
-                Trace.WriteLine($"DLL '{typeof(TScript).Assembly.FullName}' being loaded ...");
-
-                if (typeof(TScript).Name == ScriptInfo.ScriptTypeName)
-                {
-                    AddScriptReference(typeof(TScript).Assembly);
-                }
-                else
-                {
-                    Trace.TraceError($"Type '{typeof(TScript).Assembly.FullName}' is not expected! Use '{ScriptInfo.ScriptTypeName}' instead.");
-                }
-            }
-
             static readonly HashSet<Type> s_processedConstantsContainers = new HashSet<Type>();
 
             /// <summary>
-            /// Dummy method, nop.
+            /// Set of reflected script assemblies.
             /// </summary>
-            public static void Bootstrap()
-            {
-                // do nothing,
-                // the loader is being ensured from a static .cctor of a PHP script or a PHP type
-            }
+            public static IReadOnlyCollection<Assembly> ProcessedAssemblies => s_processedAssembliesArr;
+            static readonly HashSet<Assembly> s_processedAssemblies = new HashSet<Assembly>();
+            static Assembly[] s_processedAssembliesArr = Array.Empty<Assembly>();
 
             /// <summary>
             /// Reflects given assembly for PeachPie compiler specifics - compiled scripts, references to other assemblies, declared functions and classes.
             /// Scripts and declarations are loaded into application context (static).
             /// </summary>
             /// <param name="assembly">PeachPie compiler generated assembly.</param>
-            static void AddScriptReference(Assembly assembly)
+            /// <remarks>Not thread safe.</remarks>
+            public static void AddScriptReference(Assembly assembly)
             {
                 if (assembly == null)
                 {
                     throw new ArgumentNullException(nameof(assembly));
                 }
+
+                if (assembly.GetType(ScriptInfo.ScriptTypeName) == null || !s_processedAssemblies.Add(assembly))
+                {
+                    // nothing to reflect
+                    return;
+                }
+
+                s_processedAssembliesArr = ArrayUtils.AppendRange(assembly, s_processedAssembliesArr);    // TODO: ImmutableArray<T>
 
                 // remember the assembly for class map:
                 s_assClassMap.AddPhpAssemblyNoLock(assembly);
@@ -124,7 +110,10 @@ namespace Pchp.Core
                 // PhpPackageReferenceAttribute
                 foreach (var r in module.GetCustomAttributes<PhpPackageReferenceAttribute>())
                 {
-                    Context.AddScriptReference(r.ScriptType);
+                    if (r.ScriptType != null) // always true
+                    {
+                        AddScriptReference(r.ScriptType.Assembly);
+                    }
                 }
 
                 // ImportPhpTypeAttribute
@@ -203,6 +192,39 @@ namespace Pchp.Core
         }
 
         /// <summary>
+        /// Helper class called one-time from compiled DLL static .cctor.
+        /// </summary>
+        /// <typeparam name="TScript">Type of module's script class.</typeparam>
+        public static class DllLoader<TScript>
+        {
+            /// <summary>
+            /// Called once per DLL (ensured by JIT).
+            /// </summary>
+            static DllLoader()
+            {
+                Trace.WriteLine($"DLL '{typeof(TScript).Assembly.FullName}' being loaded ...");
+
+                if (typeof(TScript).Name == ScriptInfo.ScriptTypeName)
+                {
+                    DllLoaderImpl.AddScriptReference(typeof(TScript).Assembly);
+                }
+                else
+                {
+                    Trace.TraceError($"Type '{typeof(TScript).Assembly.FullName}' is not expected! Use '{ScriptInfo.ScriptTypeName}' instead.");
+                }
+            }
+
+            /// <summary>
+            /// Dummy method, nop.
+            /// </summary>
+            public static void Bootstrap()
+            {
+                // do nothing,
+                // the loader is being ensured from a static .cctor of a PHP script or a PHP type
+            }
+        }
+
+        /// <summary>
         /// Map of global functions.
         /// </summary>
         readonly RoutinesTable _functions;
@@ -220,37 +242,20 @@ namespace Pchp.Core
         readonly ScriptsMap _scripts = new ScriptsMap();
 
         /// <summary>
-        /// Internal method to be used by loader to load referenced symbols.
-        /// </summary>
-        /// <typeparam name="TScript"><c>&lt;Script&gt;</c> type in compiled assembly. The type contains static methods for enumerating referenced symbols.</typeparam>
-        [Obsolete]
-        public static void AddScriptReference<TScript>() => DllLoader<TScript>.Bootstrap();
-
-        /// <summary>
         /// Load PHP scripts and referenced symbols from PHP assembly.
         /// </summary>
         /// <param name="assembly">PHP assembly containing special <see cref="ScriptInfo.ScriptTypeName"/> class.</param>
+        /// <exception cref="ArgumentNullException">In case given assembly is a <c>null</c> reference.</exception>
         public static void AddScriptReference(Assembly assembly)
         {
-            if (assembly == null)
-            {
-                throw new ArgumentNullException(nameof(assembly));
-            }
-
-            AddScriptReference(assembly.GetType(ScriptInfo.ScriptTypeName));
-            
+            DllLoaderImpl.AddScriptReference(assembly);            
         }
 
-        static void AddScriptReference(Type scriptType)
-        {
-            if (scriptType != null)
-            {
-                typeof(DllLoader<>)
-                    .MakeGenericType(scriptType)   // let JIT to manage .cctor gets called just once
-                    .GetMethod("Bootstrap")
-                    .Invoke(null, Array.Empty<object>());
-            }
-        }
+        /// <summary>
+        /// Internal.
+        /// Gets enumeration of <see cref="Assembly"/> representing script assemblies that were reflected.
+        /// </summary>
+        public static IReadOnlyCollection<Assembly> GetScriptReferences() => DllLoaderImpl.ProcessedAssemblies;
 
         /// <summary>
         /// Declare a runtime user function.
@@ -334,13 +339,7 @@ namespace Pchp.Core
         /// </summary>
         public PhpTypeInfo GetDeclaredTypeOrThrow(string name, bool autoload = false)
         {
-            var tinfo = GetDeclaredType(name, autoload);
-            if (tinfo == null)
-            {
-                PhpException.ClassNotFound(name);
-            }
-
-            return tinfo;
+            return GetDeclaredType(name, autoload) ?? throw PhpException.ClassNotFoundException(name);
         }
 
         /// <summary>
@@ -351,6 +350,11 @@ namespace Pchp.Core
         public PhpTypeInfo ResolveType(string name, RuntimeTypeHandle callerCtx, bool autoload = false)
         {
             Debug.Assert(name != null);
+
+            if (name.Length != 0 && name[0] == '\\')
+            {
+                name = name.Substring(1);
+            }
 
             // reserved type names: parent, self, static
             if (name.Length == 6)
@@ -455,7 +459,7 @@ namespace Pchp.Core
             if (FileSystemUtils.TryGetScheme(path, out var schemespan))
             {
                 // SCHEME://SOMETHING
-                script = HandleIncludeWithScheme(schemespan, cd, path.Substring(schemespan.Length + 3));
+                script = HandleIncludeWithScheme(schemespan, cd, path.AsSpan(schemespan.Length + 3));
             }
             else
             {
@@ -477,6 +481,8 @@ namespace Pchp.Core
 
         PhpValue HandleMissingScript(string cd, string path, bool throwOnError)
         {
+            // TODO: HandleIncludeWithScheme("file", cd, path); // let the StreamWrapper handle it
+
             if (TryIncludeFileContent(path))    // include non-compiled file (we do not allow dynamic compilation yet)
             {
                 return PhpValue.Null;
@@ -491,24 +497,25 @@ namespace Pchp.Core
 
                 if (throwOnError)
                 {
-                    throw new ArgumentException(cause);
+                    throw new ScriptIncludeException(path);
                 }
 
                 return PhpValue.False;
             }
         }
 
-        ScriptInfo HandleIncludeWithScheme(ReadOnlySpan<char> scheme, string cd, string path)
+        ScriptInfo HandleIncludeWithScheme(ReadOnlySpan<char> scheme, string cd, ReadOnlySpan<char> path)
         {
             // SCHEME://PATH
-            if (IncludeProvider.Instance.TryResolveSchemeIncluder(scheme.ToString(), out var resolver))
+            var wrapper = GetGlobalStreamWrapper(scheme.ToString());
+            if (wrapper != null && wrapper.ResolveInclude(this, cd, path.ToString(), out var script))
             {
-                return resolver.ResolveScript(this, cd, path);
+                return script;
             }
-
-            //
-
-            return default;
+            else
+            {
+                return ScriptInfo.Empty;
+            }
         }
 
         /// <summary>
@@ -523,7 +530,7 @@ namespace Pchp.Core
             {
                 Debug.WriteLine($"Note: file '{path}' has not been compiled.");
 
-                return fnc.PhpCallable(this, (PhpValue)path).ToLong() >= 0;
+                return fnc.PhpCallable(this, (PhpValue)path);
             }
             else
             {
@@ -602,10 +609,10 @@ namespace Pchp.Core
         /// <returns>Value indicating the exception was handled.</returns>
         public virtual bool OnUnhandledException(Exception exception)
         {
-            if (Configuration.Core.UserExceptionHandler != null)
+            var handler = Configuration.Core.UserExceptionHandler;
+            if (handler != null)
             {
-                Configuration.Core.UserExceptionHandler.Invoke(this, PhpValue.FromClass(exception));
-
+                handler.Invoke(this, PhpValue.FromClass(exception));
                 return true;
             }
             else
@@ -749,16 +756,14 @@ namespace Pchp.Core
                     FinalizeBufferedOutput();
 
                     //// additional disposal action
-                    //if (this.TryDispose != null)
-                    //    this.TryDispose();
+                    //this.TryDispose?.Invoke();
                 }
                 finally
                 {
                     DeleteTemporaryFiles();
 
                     //// additional disposal action
-                    //if (this.FinallyDispose != null)
-                    //    this.FinallyDispose();
+                    //this.FinallyDispose?.Invoke();
 
                     //
                     IsDisposed = true;

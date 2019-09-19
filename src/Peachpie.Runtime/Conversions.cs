@@ -389,12 +389,12 @@ namespace Pchp.Core
         /// <summary>
         /// Gets value as a callable object that can be invoked dynamically.
         /// </summary>
-        public static IPhpCallable AsCallable(PhpValue value, RuntimeTypeHandle callerCtx) => value.AsCallable(callerCtx);
+        public static IPhpCallable AsCallable(PhpValue value, RuntimeTypeHandle callerCtx, object callerObj) => value.AsCallable(callerCtx, callerObj);
 
         /// <summary>
         /// Creates a callable object from string value.
         /// </summary>
-        public static IPhpCallable AsCallable(string value, RuntimeTypeHandle callerCtx) => PhpCallback.Create(value, callerCtx);
+        public static IPhpCallable AsCallable(string value, RuntimeTypeHandle callerCtx, object callerObj) => PhpCallback.Create(value, callerCtx, callerObj);
 
         /// <summary>
         /// Resolves whether given instance <paramref name="obj"/> is of given type <paramref name="tinfo"/>.
@@ -458,17 +458,41 @@ namespace Pchp.Core
 
         #endregion
 
-        #region ToInt, ToLong, ToDouble
+        #region ToInt, ToLong, ToDouble, ToLongOrThrow
 
         public static long ToLong(string value) => StringToLongInteger(value);
 
         public static double ToDouble(string value) => StringToDouble(value);
 
-        public static int ToInt(this IPhpArray value) => value.Count;
+        /// <summary>
+        /// Implicit conversion to <see cref="long"/>.
+        /// Throws <c>TypeError</c> in case the implicit conversion cannot be done.
+        /// </summary>
+        public static long ToLongOrThrow(string value)
+        {
+            if (value != null)
+            {
+                var info = IsNumber(value, value.Length, 0, out _, out _, out var longValue, out _);
+                if ((info & NumberInfo.IsNumber) != 0)
+                {
+                    //if ((info & NumberInfo.IsNumber) == 0)
+                    //{
+                    //    // Notice: A non well formed numeric value encountered
+                    //    // TODO: PhpException
+                    //}
 
-        public static int ToLong(this IPhpArray value) => ToInt(value);
+                    return longValue;
+                }
+            }
 
-        public static int ToDouble(this IPhpArray value) => ToInt(value);
+            throw PhpException.TypeErrorException();
+        }
+
+        //public static int ToInt(this IPhpArray value) => value.Count;
+
+        //public static int ToLong(this IPhpArray value) => ToInt(value);
+
+        //public static int ToDouble(this IPhpArray value) => ToInt(value);
 
         #endregion
 
@@ -948,7 +972,7 @@ namespace Pchp.Core
                 p++;
             }
 
-        Done:
+            Done:
 
             // an exponent ends with 'e', 'E', '-', or '+':
             if (state == 4 || state == 5)
@@ -1038,7 +1062,7 @@ namespace Pchp.Core
 		/// <exception cref="ArgumentNullException"><paramref name="str"/> is a <B>null</B> reference.</exception>
 		public static NumberInfo StringToNumber(string str, out long longValue, out double doubleValue)
         {
-            return IsNumber(str, (str != null) ? str.Length : 0, 0, out var l, out var d, out longValue, out doubleValue);
+            return IsNumber(str, (str != null) ? str.Length : 0, 0, out _, out _, out longValue, out doubleValue);
         }
 
         /// <summary>
@@ -1048,7 +1072,7 @@ namespace Pchp.Core
         /// <returns>The result of conversion.</returns>
         public static long StringToLongInteger(string str)
         {
-            IsNumber(str, (str != null) ? str.Length : 0, 0, out var l, out var d, out var lval, out var dval);
+            IsNumber(str, (str != null) ? str.Length : 0, 0, out _, out _, out var lval, out _);
             return lval;
         }
 
@@ -1059,8 +1083,15 @@ namespace Pchp.Core
         /// <returns>The result of conversion.</returns>
         public static double StringToDouble(string str)
         {
-            IsNumber(str, (str != null) ? str.Length : 0, 0, out var l, out var d, out var lval, out var dval);
-            return dval;
+            if (str != null)
+            {
+                IsNumber(str, str.Length, 0, out _, out _, out _, out var dval);
+                return dval;
+            }
+            else
+            {
+                return 0.0;
+            }
         }
 
         /// <summary>
@@ -1075,10 +1106,7 @@ namespace Pchp.Core
         /// <returns>The integer stored in the <paramref name="str"/>.</returns>
         public static long SubstringToLongInteger(string str, int length, ref int position)
         {
-            int d;
-            long lval;
-            double dval;
-            IsNumber(str, position + length, position, out position, out d, out lval, out dval);
+            IsNumber(str, position + length, position, out position, out _, out var lval, out _);
 
             return lval;
         }
@@ -1095,12 +1123,13 @@ namespace Pchp.Core
         /// <returns>The double stored in the <paramref name="str"/>.</returns>
         public static double SubstringToDouble(string/*!*/str, int length, ref int position)
         {
-            Debug.Assert(str != null && position + length <= str.Length);
+            Debug.Assert(str != null && position <= str.Length);
 
-            int l;
-            long lval;
-            double dval;
-            IsNumber(str, position + length, position, out l, out position, out lval, out dval);
+            // calculate max index the parse operation can reach
+            // note: {length} can be {Int.MaxValue} which would result in an overflow operation when added with {position}
+            int limit = length < str.Length ? Math.Min(str.Length, position + length) : str.Length;
+
+            IsNumber(str, limit, position, out var l, out position, out _, out var dval);
 
             return dval;
         }

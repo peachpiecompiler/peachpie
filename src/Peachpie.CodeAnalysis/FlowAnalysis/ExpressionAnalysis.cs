@@ -973,7 +973,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
             bool isStrict = (cmpExpr.Operation == Operations.Identical || cmpExpr.Operation == Operations.NotIdentical);
 
-            if (isStrict)
+            if (isStrict && !cmpExpr.Left.CanHaveSideEffects() && !cmpExpr.Right.CanHaveSideEffects())
             {
                 // Always returns false if checked for strict equality and the operands are of different types (and vice versa for strict non-eq)
                 bool isPositive = (cmpExpr.Operation == Operations.Equal || cmpExpr.Operation == Operations.Identical);
@@ -1884,7 +1884,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
 
                 if (x.IsClassConstant)
                 {
-                    Debug.Assert(x.Access.IsRead);
+                    Debug.Assert(x.Access.IsRead || x.Access.IsNone);
                     Debug.Assert(!x.Access.IsEnsure && !x.Access.IsWrite && !x.Access.IsReadRef);
                 }
 
@@ -1906,9 +1906,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis
                             // real.NET static member (CLR static fields) or
                             // the field may be contained in special __statics container (fields & constants)
                             x.BoundReference = new FieldReference(null, field);
+                            x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, field.Type).WithIsRef(field.Type.CanBePhpAlias());
                         }
 
-                        x.TypeRefMask = TypeRefFactory.CreateMask(TypeCtx, field.Type).WithIsRef(field.Type.CanBePhpAlias());
                         x.ResultType = field.Type;
                         return default;
                     }

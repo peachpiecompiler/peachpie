@@ -630,7 +630,7 @@ namespace Peachpie.Library.MsSql
             arr.Add("numeric", result.IsNumericType(php_type) ? 1 : 0);
             arr.Add("type", php_type);
 
-            return (stdClass)arr.ToClass();
+            return arr.ToObject();
         }
 
         /// <summary>

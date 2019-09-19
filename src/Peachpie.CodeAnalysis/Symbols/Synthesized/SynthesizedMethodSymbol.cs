@@ -93,6 +93,9 @@ namespace Pchp.CodeAnalysis.Symbols
                     DeclaringCompilation.CoreMethods.Ctors.PhpFieldsOnlyCtorAttribute,
                     ImmutableArray<TypedConstant>.Empty,
                     ImmutableArray<KeyValuePair<string, TypedConstant>>.Empty));
+
+                // [CompilerGeneratedAttribute]
+                builder.Add(DeclaringCompilation.CreateCompilerGeneratedAttribute());
             }
 
             return builder.ToImmutable();

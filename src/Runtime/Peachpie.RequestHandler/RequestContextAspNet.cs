@@ -315,7 +315,7 @@ namespace Peachpie.RequestHandler
 
             _httpctx = httpcontext;
 
-            this.RootPath = HttpRuntime.AppDomainAppPath;
+            this.RootPath = httpcontext.Request.PhysicalApplicationPath; // == HttpRuntime.AppDomainAppPath;
 
             this.InitOutput(httpcontext.Response.OutputStream);
             this.InitSuperglobals();
@@ -622,7 +622,7 @@ namespace Peachpie.RequestHandler
             if (script.IsValid)
             {
                 this.MainScriptFile = script;
-                script.Evaluate(this, this.Globals, null, default(RuntimeTypeHandle));
+                script.Evaluate(this, locals: Globals, @this: null, self: default);
                 return true;
             }
             else

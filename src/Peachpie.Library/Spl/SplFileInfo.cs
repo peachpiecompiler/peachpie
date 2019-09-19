@@ -87,9 +87,38 @@ namespace Pchp.Library.Spl
             _fullpath = FileSystemUtils.AbsolutePath(ctx, file_name);
         }
 
-        public virtual long getATime() { throw new NotImplementedException(); }
         public virtual string getBasename(string suffix = null) => PhpPath.basename(_fullpath, suffix);
-        public virtual long getCTime() { throw new NotImplementedException(); }
+
+        public virtual long getATime()
+        {
+            if (ResolvedInfo.Exists)
+            {
+                return DateTimeUtils.UtcToUnixTimeStamp(ResolvedInfo.LastAccessTimeUtc);
+            }
+
+            throw new RuntimeException();
+        }
+
+        public virtual long getCTime()
+        {
+            if (ResolvedInfo.Exists)
+            {
+                return DateTimeUtils.UtcToUnixTimeStamp(ResolvedInfo.CreationTimeUtc);
+            }
+
+            throw new RuntimeException();
+        }
+
+        public virtual long getMTime()
+        {
+            if (ResolvedInfo.Exists)
+            {
+                return DateTimeUtils.UtcToUnixTimeStamp(ResolvedInfo.LastWriteTimeUtc);
+            }
+
+            throw new RuntimeException();
+        }
+
         public virtual string getExtension()
         {
             var ext = ResolvedInfo.Extension;
@@ -100,12 +129,12 @@ namespace Pchp.Library.Spl
             Debug.Assert(ext[0] == '.');
             return ext.Substring(1);
         }
+
         public virtual SplFileInfo getFileInfo(Context ctx, string class_name = null) => CreateFileInfo(ctx, class_name ?? _info_class, _fullpath);
         public virtual string getFilename() => PhpPath.basename(_relativePath);
         public virtual long getGroup() { throw new NotImplementedException(); }
         public virtual long getInode() { throw new NotImplementedException(); }
         public virtual string getLinkTarget() { throw new NotImplementedException(); }
-        public virtual long getMTime() { throw new NotImplementedException(); }
         public virtual long getOwner() { throw new NotImplementedException(); }
         public virtual string getPath() => PhpPath.dirname(_relativePath);
         public virtual SplFileInfo getPathInfo(Context ctx, string class_name = null) => CreateFileInfo(ctx, class_name ?? _info_class, PhpPath.dirname(_fullpath));
@@ -116,11 +145,31 @@ namespace Pchp.Library.Spl
         public virtual string getRealPath(Context ctx) => ResolvedInfo.FullName;
 
         public virtual long getSize() => (ResolvedInfo is FileInfo finfo) ? finfo.Length : 0;
-        public virtual string getType() { throw new NotImplementedException(); }
+
+        /// <summary>
+        /// Returns the type of the file referenced.
+        /// </summary>
+        /// <returns>A string representing the type of the entry. May be one of <c>file</c>, <c>link</c>, or <c>dir</c>.</returns>
+        /// <exception cref="RuntimeException">Throws a RuntimeException on error.</exception>
+        [return: NotNull]
+        public virtual string getType()
+        {
+            if (ResolvedInfo.Exists)
+            {
+                //var attrs = ResolvedInfo.Attributes;
+                //if ((attrs & FileAttributes.Directory) != 0) return "dir";
+                if (ResolvedInfo is FileInfo) return "file";
+                if (ResolvedInfo is DirectoryInfo) return "dir";
+                // TODO: symbolic link
+            }
+
+            throw new RuntimeException();
+        }
+
         public virtual bool isDir() => ResolvedInfo.Exists && ResolvedInfo is DirectoryInfo;
         public virtual bool isExecutable() { throw new NotImplementedException(); }
         public virtual bool isFile() => ResolvedInfo.Exists && ResolvedInfo is FileInfo;
-        public virtual bool isLink() { throw new NotImplementedException(); }
+        public virtual bool isLink() => ResolvedInfo.Exists && (ResolvedInfo.Attributes & FileAttributes.ReparsePoint) != 0; // TODO: review determining symbolic links, ReparsePoint is usually right (at least on NTFS)
         public virtual bool isReadable() => ResolvedInfo.Exists;
         public virtual bool isWritable() => ResolvedInfo.Exists && !(ResolvedInfo is FileInfo && ResolvedInfo.Attributes.HasFlag(FileAttributes.ReadOnly));
         public virtual SplFileObject openFile(Context ctx, string open_mode = "r", bool use_include_path = false, PhpResource context = null)

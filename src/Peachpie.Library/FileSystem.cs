@@ -325,7 +325,7 @@ namespace Pchp.Library
         /// <param name="escape_char">The escape character used in the CSV string.</param>
         /// <returns>Returns an indexed array containing the fields read.
         /// fgetcsv() returns NULL if an invalid handle is supplied or FALSE on other errors, including end of file.</returns>
-        public static PhpValue fgetcsv(PhpResource handle, int length, char delimiter = DefaultCsvDelimiter, char enclosure = DefaultCsvEnclosure, char escape_char = DefaultCsvEscape)
+        public static PhpValue fgetcsv(PhpResource handle, int length = 0, char delimiter = DefaultCsvDelimiter, char enclosure = DefaultCsvEnclosure, char escape_char = DefaultCsvEscape)
         {
             // check arguments
             PhpStream stream = PhpStream.GetValid(handle, FileAccess.Read);

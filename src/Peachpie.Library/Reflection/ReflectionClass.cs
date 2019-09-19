@@ -11,7 +11,7 @@ using Pchp.Core.Resources;
 namespace Pchp.Library.Reflection
 {
     [PhpType(PhpTypeAttribute.InheritName), PhpExtension(ReflectionUtils.ExtensionName)]
-    public class ReflectionClass : Reflector
+    public class ReflectionClass : Reflector, IPhpCloneable
     {
         #region Constants
 
@@ -113,15 +113,52 @@ namespace Pchp.Library.Reflection
         {
             var routine = _tinfo.RuntimeMethods[Pchp.Core.Reflection.ReflectionUtils.PhpConstructorName];
             return (routine != null)
-                ? new ReflectionMethod(_tinfo, routine)
+                ? new ReflectionMethod(routine)
                 : null;
         }
 
-        public PhpArray getDefaultProperties() { throw new NotImplementedException(); }
+        [return: NotNull]
+        public PhpArray getDefaultProperties(Context ctx)
+        {
+            if (_tinfo.isInstantiable)
+            {
+                var inst = _tinfo.GetUninitializedInstance(ctx);
+                if (inst != null)
+                {
+                    var array = new PhpArray();
+
+                    foreach (var p in TypeMembersUtils.GetDeclaredProperties(_tinfo))
+                    {
+                        array[p.PropertyName] = p.GetValue(ctx, inst);
+                    }
+
+                    return array;
+                }
+            }
+
+            //
+            throw new NotSupportedException("not instantiable type");
+        }
+
         [return: CastToFalse]
         public string getDocComment() => null;
-        //public ReflectionExtension getExtension() { throw new NotImplementedException(); }
-        public string getExtensionName() => _tinfo.Extensions.FirstOrDefault() ?? string.Empty;
+
+        public ReflectionExtension getExtension()
+        {
+            var exts = _tinfo.Extensions;
+            return exts.Length != 0
+                ? new ReflectionExtension(exts[0])
+                : null; // NULL
+        }
+
+        [return: CastToFalse]
+        public string getExtensionName()
+        {
+            var exts = _tinfo.Extensions;
+            return exts.Length != 0
+                ? exts[0]
+                : null; // FALSE
+        }
 
         /// <summary>Gets the filename of the file in which the class has been defined</summary>
         /// <param name="ctx">Current runtime context</param>
@@ -171,18 +208,50 @@ namespace Pchp.Library.Reflection
         public ReflectionMethod getMethod(string name)
         {
             var routine = _tinfo.RuntimeMethods[name];
+
+            if (routine == null && _tinfo.IsInterface)
+            {
+                // look into interface interfaces (CLR does not do that in RuntimeMethods)
+                foreach (var t in _tinfo.Type.ImplementedInterfaces)
+                {
+                    if ((routine = t.GetPhpTypeInfo().RuntimeMethods[name]) != null)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            //
             return (routine != null)
-                ? new ReflectionMethod(_tinfo, routine)
+                ? new ReflectionMethod(routine)
                 : throw new ReflectionException();
         }
 
         public PhpArray getMethods(long filter = -1)
         {
+            IEnumerable<RoutineInfo> routines = _tinfo.RuntimeMethods;
+
+            if (_tinfo.IsInterface)
+            {
+                // enumerate all the interface and collect their methods:
+                foreach (var t in _tinfo.Type.ImplementedInterfaces)
+                {
+                    routines = routines.Concat(t.GetPhpTypeInfo().RuntimeMethods);
+                }
+
+                // TODO: remove duplicit names
+            }
+            else
+            {
+                // routines are already merged from all the type hierarchy:
+            }
+
+            //
             var result = new PhpArray();
 
-            foreach (var routine in _tinfo.RuntimeMethods)
+            foreach (var routine in routines)
             {
-                var rmethod = new ReflectionMethod(_tinfo, routine);
+                var rmethod = new ReflectionMethod(routine);
                 if (filter == -1 || ((int)rmethod.getModifiers() & filter) != 0)
                 {
                     result.Add(rmethod);
@@ -222,7 +291,7 @@ namespace Pchp.Library.Reflection
             foreach (var p in _tinfo.GetDeclaredProperties())
             {
                 var pinfo = new ReflectionProperty(p);
-                if (filter == 0 || ((int)pinfo.getModifiers() | filter) != 0)
+                if (filter == 0 || ((int)pinfo.getModifiers() & filter) != 0)
                 {
                     result.Add(PhpValue.FromClass(pinfo));
                 }
@@ -258,10 +327,36 @@ namespace Pchp.Library.Reflection
             return -1;
         }
 
-        public PhpArray getStaticProperties() { throw new NotImplementedException(); }
-        public PhpValue getStaticPropertyValue(string name) { throw new NotImplementedException(); }
-        public PhpValue getStaticPropertyValue(string name, PhpAlias def_value) { throw new NotImplementedException(); }
+        [return: NotNull]
+        public PhpArray getStaticProperties(Context ctx)
+        {
+            var array = new PhpArray();
+
+            foreach (var p in TypeMembersUtils.GetDeclaredProperties(_tinfo))
+            {
+                if (p.IsStatic)
+                {
+                    array[p.PropertyName] = p.GetValue(ctx);
+                }
+            }
+
+            return array;
+        }
+
+        public PhpValue getStaticPropertyValue(Context ctx, string name)
+        {
+            var prop = _tinfo.GetDeclaredProperty(name) ?? throw new ReflectionException();
+            return prop.GetValue(ctx);
+        }
+
+        public void setStaticPropertyValue(Context ctx, string name, PhpAlias def_value)
+        {
+            var prop = _tinfo.GetDeclaredProperty(name) ?? throw new ReflectionException();
+            prop.SetValue(ctx, null, def_value);
+        }
+
         public PhpArray getTraitAliases() { throw new NotImplementedException(); }
+
         public PhpArray getTraitNames()
         {
             var result = new PhpArray();
@@ -296,11 +391,42 @@ namespace Pchp.Library.Reflection
         public bool implementsInterface(string @interface) => _tinfo.Type.GetInterface(@interface.Replace("\\", ".")) != null;
         public bool inNamespace() => this.name.IndexOf(ReflectionUtils.NameSeparator) >= 0;
         public bool isAbstract() => _tinfo.Type.IsAbstract;
-        public bool isAnonymous() => _tinfo.Type.IsSealed && _tinfo.Type.IsNotPublic && _tinfo.Type.Name.StartsWith("class@anonymous", StringComparison.Ordinal); // internal sealed 'class@anonymous...' {}
-        public bool isCloneable() { throw new NotImplementedException(); }
+        public bool isAnonymous() => _tinfo.Type.IsSealed && _tinfo.Type.IsNotPublic && _tinfo.Type.Name.StartsWith("class@anonymous", StringComparison.Ordinal); // internal sealed 'class@anonymous...' {}=
+
+        /// <summary>
+        /// Determines whether the class can be cloned.
+        /// </summary>
+        public bool isCloneable()
+        {
+            if (_tinfo.IsInterface || _tinfo.IsTrait || _tinfo.Type.IsAbstract)
+            {
+                return false;
+            }
+
+            if (typeof(IPhpCloneable).IsAssignableFrom(_tinfo.Type))
+            {
+                // internal: implements IPhpCloneable
+                return true;
+            }
+
+            var __clone = _tinfo.RuntimeMethods[TypeMethods.MagicMethods.__clone];
+            if (__clone != null && !__clone.Methods.All(m => m.IsPublic))
+            {
+                return false;
+            }
+
+            if (!_tinfo.Type.DeclaredConstructors.Any(c => !c.IsStatic && !c.IsPrivate))
+            {
+                // no available .ctor
+                return false;
+            }
+
+            //
+            return true;
+        }
         public bool isFinal() => _tinfo.Type.IsSealed;
         public bool isInstance(object @object) => _tinfo.Type.IsInstanceOfType(@object);
-        public bool isInstantiable() => !object.ReferenceEquals(_tinfo.Creator, PhpTypeInfo.InaccessibleCreator);
+        public bool isInstantiable() => _tinfo.isInstantiable;
         public bool isInterface() => _tinfo.IsInterface;
         public bool isInternal() => !isUserDefined();
         public bool isIterateable() => _tinfo.Type.IsSubclassOf(typeof(Iterator)) || _tinfo.Type.IsSubclassOf(typeof(IteratorAggregate)) || _tinfo.Type.IsSubclassOf(typeof(System.Collections.IEnumerable));
@@ -343,5 +469,7 @@ namespace Pchp.Library.Reflection
         }
 
         #endregion
+
+        object IPhpCloneable.Clone() => throw PhpException.ErrorException(ErrResources.uncloneable_cloned, nameof(ReflectionClass));
     }
 }

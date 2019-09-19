@@ -40,9 +40,14 @@ namespace Pchp.Library.Reflection
                 return false;
             }
 
+            if (type.IsByRef)
+            {
+                type = type.GetElementType();
+            }
+
             nullable = !type.IsValueType;
 
-            if (type == typeof(long) || type == typeof(int))
+            if (type == typeof(long) || type == typeof(int) || type.IsEnum)
             {
                 name = PhpVariable.TypeNameInt;
                 builtin = true;
@@ -62,9 +67,14 @@ namespace Pchp.Library.Reflection
                 name = PhpVariable.TypeNameString;
                 builtin = true;
             }
-            else if (type == typeof(PhpArray))
+            else if (type == typeof(PhpArray) || type.IsArray)
             {
                 name = PhpArray.PhpTypeName;
+                builtin = true;
+            }
+            else if (type == typeof(void))
+            {
+                name = PhpVariable.TypeNameVoid;
                 builtin = true;
             }
             else if (type == typeof(PhpAlias) || type == typeof(PhpValue))

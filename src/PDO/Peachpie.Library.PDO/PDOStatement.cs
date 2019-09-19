@@ -17,10 +17,9 @@ namespace Peachpie.Library.PDO
     /// <summary>
     /// PDOStatement class
     /// </summary>
-    /// <seealso cref="IPDOStatement" />
     [PhpType(PhpTypeAttribute.InheritName)]
     [PhpExtension(PDOConfiguration.PdoExtensionName)]
-    public class PDOStatement : IPDOStatement, IDisposable
+    public class PDOStatement : IDisposable
     {
         /// <summary>Runtime context. Cannot be <c>null</c>.</summary>
         protected readonly Context _ctx; // "_ctx" is a special name recognized by compiler. Will be reused by inherited classes.
@@ -31,16 +30,16 @@ namespace Peachpie.Library.PDO
 
         private readonly DbCommand m_cmd;
         private DbDataReader m_dr;
-        private readonly Dictionary<PDO.PDO_ATTR, PhpValue> m_attributes = new Dictionary<PDO.PDO_ATTR, PhpValue>();
+        private readonly Dictionary<PDO.PDO_ATTR, PhpValue> m_attributes = new Dictionary<PDO_ATTR, PhpValue>();
         private string[] m_dr_names;
 
         private bool m_positionalAttr = false;
         private bool m_namedAttr = false;
         private Dictionary<string, string> m_namedPlaceholders;
-        private List<String> m_positionalPlaceholders;
+        private List<string> m_positionalPlaceholders;
 
         private Dictionary<string, PhpAlias> m_boundParams;
-        private PDO.PDO_FETCH m_fetchStyle = PDO.PDO_FETCH.Default;
+        private PDO_FETCH m_fetchStyle = PDO_FETCH.Default;
 
         private PhpArray storedQueryResult = null;
         private int storedResultPosition = 0;
@@ -48,7 +47,7 @@ namespace Peachpie.Library.PDO
         /// <summary>
         /// Property telling whether there are any command parameter variables bound with bindParam.
         /// </summary>
-        bool HasParamsBound => (m_boundParams != null && m_boundParams.Count > 0);
+        bool HasParamsBound => m_boundParams != null && m_boundParams.Count != 0;
         /// <summary>
         /// Column Number property for FETCH_COLUMN fetching.
         /// </summary>
@@ -327,7 +326,7 @@ namespace Peachpie.Library.PDO
 
         private void OpenReader()
         {
-            if (this.m_dr == null)
+            if (m_dr == null)
             {
                 PDO.PDO_CURSOR cursor = (PDO.PDO_CURSOR)this.m_attributes[PDO.PDO_ATTR.ATTR_CURSOR].ToLong();
                 this.m_dr = this.m_pdo.Driver.OpenReader(this.m_pdo, this.m_cmd, cursor);
@@ -343,17 +342,33 @@ namespace Peachpie.Library.PDO
                         throw new InvalidProgramException();
                 }
 
-                initializeColumnNames();
+                InitializeColumnNames();
             }
         }
 
-        /// <inheritDoc />
-        public bool bindColumn(PhpValue colum, ref PhpValue param, int? type = default(int?), int? maxlen = default(int?), PhpValue? driverdata = default(PhpValue?))
+        /// <summary>
+        /// Bind a column to a PHP variable.
+        /// </summary>
+        /// <param name="colum">Number of the column (1-indexed) or name of the column in the result set. If using the column name, be aware that the name should match the case of the column, as returned by the driver</param>
+        /// <param name="param">Name of the PHP variable to which the column will be bound.</param>
+        /// <param name="type">Data type of the parameter, specified by the PDO::PARAM_* constants.</param>
+        /// <param name="maxlen">A hint for pre-allocation.</param>
+        /// <param name="driverdata">Optional parameter(s) for the driver.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure</returns>
+        public bool bindColumn(PhpValue colum, PhpAlias param, int? type = default(int?), int? maxlen = default(int?), PhpValue? driverdata = default(PhpValue?))
         {
             throw new NotImplementedException();
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Binds a parameter to the specified variable name
+        /// </summary>
+        /// <param name="parameter">Parameter identifier. For a prepared statement using named placeholders, this will be a parameter name of the form :name. For a prepared statement using question mark placeholders, this will be the 1-indexed position of the parameter.</param>
+        /// <param name="variable">Name of the PHP variable to bind to the SQL statement parameter.</param>
+        /// <param name="data_type">Explicit data type for the parameter using the PDO::PARAM_* constants. To return an INOUT parameter from a stored procedure, use the bitwise OR operator to set the PDO::PARAM_INPUT_OUTPUT bits for the data_type parameter.</param>
+        /// <param name="length">Length of the data type. To indicate that a parameter is an OUT parameter from a stored procedure, you must explicitly set the length.</param>
+        /// <param name="driver_options"></param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
         public bool bindParam(PhpValue parameter, PhpAlias variable, PDO.PARAM data_type = PDO.PARAM.PARAM_STR, int length = -1, PhpValue driver_options = default(PhpValue))
         {
             Debug.Assert(this.m_cmd != null);
@@ -362,7 +377,7 @@ namespace Peachpie.Library.PDO
             if (m_boundParams == null)
                 m_boundParams = new Dictionary<string, PhpAlias>();
 
-            IDbDataParameter param = null;
+            IDbDataParameter param;
 
             if (m_namedAttr)
             {
@@ -373,39 +388,41 @@ namespace Peachpie.Library.PDO
                     return false;
                 }
 
-                string key = parameter.AsString();
-                if (key == null)
+                if (parameter.IsString(out var key) && !string.IsNullOrEmpty(key))
+                {
+                    if (key.Length > 0 && key[0] == ':')
+                    {
+                        key = key.Substring(1);
+                    }
+
+                    //Store the bounded variable reference in the dictionary
+                    m_boundParams.Add(key, variable);
+
+                    param = m_cmd.Parameters[key];
+                }
+                else
                 {
                     m_pdo.HandleError(new PDOException("Supplied parameter name must be a string."));
                     return false;
                 }
-
-                if (key.Length > 0 && key[0] == ':')
-                {
-                    key = key.Substring(1);
-                }
-
-                //Store the bounded variable reference in the dictionary
-                m_boundParams.Add(key, variable);
-
-                param = m_cmd.Parameters[key];
-
             }
             else if (m_positionalAttr)
             {
-                if (!parameter.IsInteger())
+                if (parameter.IsLong(out var index))    // 1-based index
+                {
+                    index--;
+
+                    //Store the bounded variable.Value reference in the dictionary
+                    m_boundParams.Add(index.ToString(), variable);
+
+                    param = (index < m_positionalPlaceholders.Count)
+                        ? m_cmd.Parameters[(int)index]
+                        : null;
+                }
+                else
                 {
                     m_pdo.HandleError(new PDOException("Supplied parameter index must be an integer."));
                     return false;
-                }
-                int paramIndex = (int)parameter;
-
-                //Store the bounded variable.Value reference in the dictionary
-                m_boundParams.Add(paramIndex.ToString(), variable);
-
-                if (paramIndex < m_positionalPlaceholders.Count)
-                {
-                    param = m_cmd.Parameters[paramIndex];
                 }
             }
             else
@@ -435,8 +452,7 @@ namespace Peachpie.Library.PDO
                     break;
 
                 case PDO.PARAM.PARAM_STR:
-                    string str = null;
-                    if ((str = variable.Value.ToStringOrNull()) != null)
+                    if (variable.Value.IsString() || variable.Value.IsNull)
                     {
                         param.DbType = DbType.String;
                     }
@@ -459,8 +475,7 @@ namespace Peachpie.Library.PDO
                     break;
 
                 case PDO.PARAM.PARAM_LOB:
-                    byte[] bytes = null;
-                    if ((bytes = variable.Value.ToBytesOrNull()) != null)
+                    if (variable.Value.IsString() || variable.Value.IsNull)  // Unicode or byte[]
                     {
                         param.DbType = DbType.Binary;
                     }
@@ -480,12 +495,18 @@ namespace Peachpie.Library.PDO
             return true;
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Binds a value to a parameter.
+        /// </summary>
+        /// <param name="parameter">Parameter identifier. For a prepared statement using named placeholders, this will be a parameter name of the form :name. For a prepared statement using question mark placeholders, this will be the 1-indexed position of the parameter.</param>
+        /// <param name="value">The value to bind to the parameter.</param>
+        /// <param name="data_type">Explicit data type for the parameter using the PDO::PARAM_* constants.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure</returns>
         public bool bindValue(PhpValue parameter, PhpValue value, PDO.PARAM data_type = (PDO.PARAM)PDO.PARAM_STR)
         {
             Debug.Assert(this.m_cmd != null);
 
-            IDbDataParameter param = null;
+            IDbDataParameter param;
 
             if (m_namedAttr)
             {
@@ -496,45 +517,48 @@ namespace Peachpie.Library.PDO
                     return false;
                 }
 
-                string key = parameter.AsString();
-                if (key == null)
+                if (parameter.IsString(out var key))
+                {
+                    if (key.Length > 0 && key[0] == ':')
+                    {
+                        key = key.Substring(1);
+                    }
+
+                    param = m_cmd.Parameters[key];
+
+                    //rewrite the bounded params dictionary
+                    if (HasParamsBound)
+                    {
+                        m_boundParams.Remove(key);
+                    }
+                }
+                else
                 {
                     m_pdo.HandleError(new PDOException("Supplied parameter name must be a string."));
                     return false;
                 }
-
-                if (key.Length > 0 && key[0] == ':')
-                {
-                    key = key.Substring(1);
-                }
-
-                param = m_cmd.Parameters[key];
-
-                //rewrite the bounded params dictionary
-                if (HasParamsBound)
-                    if (m_boundParams.ContainsKey(key))
-                        m_boundParams.Remove(key);
-
             }
             else if (m_positionalAttr)
             {
-                if (!parameter.IsInteger())
+                if (parameter.IsLong(out var index)) // 1-based index
+                {
+                    index--;
+
+                    param = (index < m_positionalPlaceholders.Count)
+                        ? m_cmd.Parameters[(int)index]
+                        : null;
+
+                    //rewrite the bounded params dictionary
+                    if (HasParamsBound)
+                    {
+                        m_boundParams.Remove(index.ToString());
+                    }
+                }
+                else
                 {
                     m_pdo.HandleError(new PDOException("Supplied parameter index must be an integer."));
                     return false;
                 }
-                int paramIndex = ((int)parameter) - 1;
-
-                if (paramIndex < m_positionalPlaceholders.Count)
-                {
-                    param = m_cmd.Parameters[paramIndex];
-                }
-
-                //rewrite the bounded params dictionary
-                if (HasParamsBound)
-                    if (m_boundParams.ContainsKey(paramIndex.ToString()))
-                        m_boundParams.Remove(paramIndex.ToString());
-
             }
             else
             {
@@ -634,7 +658,10 @@ namespace Peachpie.Library.PDO
             return false;
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Closes the cursor, enabling the statement to be executed again.
+        /// </summary>
+        /// <returns>Returns TRUE on success or FALSE on failure</returns>
         public bool closeCursor()
         {
             if (this.m_dr != null)
@@ -646,7 +673,10 @@ namespace Peachpie.Library.PDO
             return false;
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Returns the number of columns in the result set
+        /// </summary>
+        /// <returns>Returns the number of columns in the result set represented by the PDOStatement object, even if the result set is empty. If there is no result set, PDOStatement::columnCount() returns 0</returns>
         public int columnCount()
         {
             if (CheckDataReader())
@@ -660,25 +690,37 @@ namespace Peachpie.Library.PDO
 
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Dump an SQL prepared command.
+        /// </summary>
         public void debugDumpParams()
         {
             throw new NotImplementedException();
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Fetch the SQLSTATE associated with the last operation on the statement handle
+        /// </summary>
+        /// <returns>Identical to PDO::errorCode(), except that PDOStatement::errorCode() only retrieves error codes for operations performed with PDOStatement objects</returns>
         public string errorCode()
         {
             throw new NotImplementedException();
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Fetch extended error information associated with the last operation on the statement handle.
+        /// </summary>
+        /// <returns>PDOStatement::errorInfo() returns an array of error information about the last operation performed by this statement handle.</returns>
         public PhpArray errorInfo()
         {
             throw new NotImplementedException();
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Executes a prepared statement
+        /// </summary>
+        /// <param name="input_parameters">An array of values with as many elements as there are bound parameters in the SQL statement being executed. All values are treated as PDO::PARAM_STR.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure</returns>
         public bool execute(PhpArray input_parameters = null)
         {
             // Sets PDO executed flag
@@ -687,7 +729,7 @@ namespace Peachpie.Library.PDO
             // Assign the bound variables from bindParam() function if any present
             if (HasParamsBound)
             {
-                foreach (KeyValuePair<string, PhpAlias> pair in m_boundParams)
+                foreach (var pair in m_boundParams)
                 {
                     IDbDataParameter param = null;
 
@@ -704,10 +746,7 @@ namespace Peachpie.Library.PDO
                     }
                     else if (m_positionalAttr)
                     {
-                        int index = -1;
-                        bool result = Int32.TryParse(pair.Key, out index);
-
-                        if (result)
+                        if (int.TryParse(pair.Key, out var index))
                         {
                             param = m_cmd.Parameters[index];
                         }
@@ -724,59 +763,77 @@ namespace Peachpie.Library.PDO
                         return false;
                     }
 
-                    switch (param.DbType)
+                    if (pair.Value.Value.IsNull)
                     {
-                        case DbType.Int32:
-                            if (pair.Value.Value.IsInteger())
-                            {
-                                param.Value = pair.Value.Value.ToLong();
-                            }
-                            else
-                            {
-                                m_pdo.HandleError(new PDOException("Parameter type does not match the declared type."));
-                                return false;
-                            }
-                            break;
+                        param.Value = DBNull.Value;
+                    }
+                    else
+                    {
+                        switch (param.DbType)
+                        {
+                            case DbType.Int32:
+                                if (pair.Value.Value.IsLong(out var l))
+                                {
+                                    param.Value = (int)l;
+                                }
+                                else
+                                {
+                                    m_pdo.HandleError(new PDOException("Parameter type does not match the declared type."));
+                                    return false;
+                                }
+                                break;
 
-                        case DbType.String:
-                            string str = null;
-                            if ((str = pair.Value.Value.ToStringOrNull()) != null)
-                            {
-                                param.Value = str;
-                            }
-                            else
-                            {
-                                m_pdo.HandleError(new PDOException("Parameter type does not match the declared type."));
-                                return false;
-                            }
-                            break;
-                        case DbType.Boolean:
-                            if (pair.Value.Value.IsBoolean())
-                            {
-                                param.Value = pair.Value.ToBoolean();
-                            }
-                            else
-                            {
-                                m_pdo.HandleError(new PDOException("Parameter type does not match the declared type."));
-                                return false;
-                            }
-                            break;
+                            case DbType.Int64:
+                                if (pair.Value.Value.IsLong(out l))
+                                {
+                                    param.Value = l;
+                                }
+                                else
+                                {
+                                    m_pdo.HandleError(new PDOException("Parameter type does not match the declared type."));
+                                    return false;
+                                }
+                                break;
 
-                        case DbType.Binary:
-                            byte[] bytes = null;
-                            if ((bytes = pair.Value.Value.ToBytesOrNull()) != null)
-                            {
-                                param.Value = bytes;
-                            }
-                            else
-                            {
-                                m_pdo.HandleError(new PDOException("Parameter type does not match the declared type."));
-                                return false;
-                            }
-                            break;
+                            case DbType.String:
+                                if (pair.Value.Value.IsString(out var str))
+                                {
+                                    param.Value = str;
+                                }
+                                else
+                                {
+                                    m_pdo.HandleError(new PDOException("Parameter type does not match the declared type."));
+                                    return false;
+                                }
+                                break;
+                            case DbType.Boolean:
+                                if (pair.Value.Value.IsBoolean(out var b))
+                                {
+                                    param.Value = b;
+                                }
+                                else
+                                {
+                                    m_pdo.HandleError(new PDOException("Parameter type does not match the declared type."));
+                                    return false;
+                                }
+                                break;
 
-                        default:
-                            throw new NotImplementedException();
+                            case DbType.Binary:
+                                var bytes = pair.Value.Value.ToBytesOrNull(_ctx);
+                                if (bytes != null || pair.Value.Value.IsNull)
+                                {
+                                    param.Value = bytes;
+                                }
+                                else
+                                {
+                                    m_pdo.HandleError(new PDOException("Parameter type does not match the declared type."));
+                                    return false;
+                                }
+                                break;
+
+                            default:
+                                throw new NotImplementedException();
+                        }
                     }
                 }
             }
@@ -851,7 +908,13 @@ namespace Peachpie.Library.PDO
             return true;
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Fetches the specified fetch style.
+        /// </summary>
+        /// <param name="fetch_style">Controls how the next row will be returned to the caller. This value must be one of the PDO::FETCH_* constants.</param>
+        /// <param name="cursor_orientation">This value determines which row will be returned to the caller.</param>
+        /// <param name="cursor_offet">Relative or absolute position move for the cursor.</param>
+        /// <returns>The return value of this function on success depends on the fetch type. In all cases, FALSE is returned on failure.</returns>
         public PhpValue fetch(PDO.PDO_FETCH fetch_style = PDO_FETCH.Default/*0*/, PDO_FETCH_ORI cursor_orientation = PDO_FETCH_ORI.FETCH_ORI_NEXT/*0*/, int cursor_offet = 0)
         {
             this.m_pdo.ClearError();
@@ -879,7 +942,7 @@ namespace Peachpie.Library.PDO
                     {
                         // Get the column schema, if possible,
                         // for the associative fetch
-                        initializeColumnNames();
+                        InitializeColumnNames();
                     }
 
                     var style = fetch_style != PDO_FETCH.Default ? fetch_style : m_fetchStyle;
@@ -950,7 +1013,7 @@ namespace Peachpie.Library.PDO
 
         private PhpValue ReadObj()
         {
-            return PhpValue.FromClass(this.ReadArray(true, false).ToClass());
+            return PhpValue.FromClass(this.ReadArray(true, false).ToObject());
         }
 
         private PhpValue ReadColumn(int column)
@@ -1002,14 +1065,17 @@ namespace Peachpie.Library.PDO
             return arr;
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Controls the contents of the returned array as documented in PDOStatement::fetch()
+        /// </summary>
+        /// <param name="fetch_style">The fetch style.</param>
+        /// <param name="fetch_argument">This argument has a different meaning depending on the value of the fetch_style parameter.</param>
+        /// <param name="ctor_args">Arguments of custom class constructor when the fetch_style parameter is PDO::FETCH_CLASS.</param>
+        /// <returns>An array containing all of the remaining rows in the result set. <c>FALSE</c> on failure.</returns>
         [return: CastToFalse]
         public PhpArray fetchAll(PDO.PDO_FETCH fetch_style = default, PhpValue fetch_argument = default, PhpArray ctor_args = null)
         {
-            if (!CheckDataReader())
-            {
-                return null;
-            }
+            // check parameters
 
             if (fetch_style == PDO.PDO_FETCH.FETCH_COLUMN)
             {
@@ -1024,11 +1090,17 @@ namespace Peachpie.Library.PDO
                 }
             }
 
+            if (!CheckDataReader())
+            {
+                // nothing to read from,
+                return null;
+            }
+
             if (m_dr_names == null)
             {
                 // Get the column schema, if possible,
                 // for the associative fetch
-                initializeColumnNames();
+                InitializeColumnNames();
             }
 
             var style = fetch_style != PDO_FETCH.Default ? fetch_style : m_fetchStyle;
@@ -1060,7 +1132,7 @@ namespace Peachpie.Library.PDO
 
                 default:
 
-                    for(; ; )
+                    for (; ; )
                     {
                         var value = fetch(style);
                         if (value.IsFalse)
@@ -1075,7 +1147,11 @@ namespace Peachpie.Library.PDO
             return result;
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Returns a single column from the next row of a result set.
+        /// </summary>
+        /// <param name="column_number">0-indexed number of the column you wish to retrieve from the row. If no value is supplied, PDOStatement::fetchColumn() fetches the first column</param>
+        /// <returns>Single column from the next row of a result set or FALSE if there are no more rows</returns>
         public PhpValue fetchColumn(int column_number = 0)
         {
             if (!CheckDataReader())
@@ -1092,7 +1168,12 @@ namespace Peachpie.Library.PDO
             return this.ReadArray(false, true)[column_number].GetValue();
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Fetches the next row and returns it as an object.
+        /// </summary>
+        /// <param name="class_name">Name of the created class.</param>
+        /// <param name="ctor_args">Elements of this array are passed to the constructor.</param>
+        /// <returns>Returns an instance of the required class with property names that correspond to the column names or FALSE on failure</returns>
         [return: CastToFalse]
         public object fetchObject(string class_name = nameof(stdClass), PhpArray ctor_args = null)
         {
@@ -1121,13 +1202,21 @@ namespace Peachpie.Library.PDO
             }
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Retrieve a statement attribute
+        /// </summary>
+        /// <param name="attribute"></param>
+        /// <returns>Returns the attribute value</returns>
         public PhpValue getAttribute(int attribute)
         {
             throw new NotImplementedException();
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Returns metadata for a column in a result set.
+        /// </summary>
+        /// <param name="column">The 0-indexed column in the result set.</param>
+        /// <returns>Returns an associative array containing the values representing the metadata for a single column</returns>
         [return: CastToFalse]
         public PhpArray getColumnMeta(int column)
         {
@@ -1145,7 +1234,7 @@ namespace Peachpie.Library.PDO
             // If the column names are not initialized, then initialize them
             if (m_dr_names == null)
             {
-                initializeColumnNames();
+                InitializeColumnNames();
             }
 
             PhpArray meta = new PhpArray();
@@ -1160,12 +1249,15 @@ namespace Peachpie.Library.PDO
             return meta;
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Advances to the next rowset in a multi-rowset statement handle.
+        /// </summary>
+        /// <returns>Returns TRUE on success or FALSE on failure</returns>
         public bool nextRowset()
         {
             if (CheckDataReader() && this.m_dr.NextResult())
             {
-                initializeColumnNames();
+                InitializeColumnNames();
                 return true;
             }
             else
@@ -1174,7 +1266,10 @@ namespace Peachpie.Library.PDO
             }
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Returns the number of rows affected by the last SQL statement
+        /// </summary>
+        /// <returns></returns>
         public int rowCount()
         {
             if (m_cmd == null)
@@ -1186,6 +1281,12 @@ namespace Peachpie.Library.PDO
             {
                 m_pdo.HandleError(new PDOException("The associated PDO object cannot be null."));
                 return -1;
+            }
+
+            if (m_pdo.Driver.Name == "sqlite")
+            {
+                // This method returns "0" (zero) with the SQLite driver at all times
+                return 0;
             }
 
             var statement = m_pdo.query("SELECT ROW_COUNT()");
@@ -1202,13 +1303,27 @@ namespace Peachpie.Library.PDO
             }
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Set a statement attribute.
+        /// </summary>
+        /// <param name="attribute">The attribute.</param>
+        /// <param name="value">The value.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure</returns>
         public bool setAttribute(int attribute, PhpValue value)
         {
             throw new NotImplementedException();
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Set the default fetch mode for this statement
+        /// 
+        /// </summary>
+        /// <param name="mode">The fetch mode.</param>
+        /// <param name="args">
+        /// args[0] For FETCH_COLUMN : column number. For FETCH_CLASS : the class name. For FETCH_INTO, the object.
+        /// args[1] For FETCH_CLASS : the constructor arguments.
+        /// </param>
+        /// <returns>Returns TRUE on success or FALSE on failure</returns>
         public bool setFetchMode(PDO_FETCH mode, params PhpValue[] args) => setFetchMode(mode, args.AsSpan());
 
         internal bool setFetchMode(PDO_FETCH mode, ReadOnlySpan<PhpValue> args)
@@ -1344,7 +1459,7 @@ namespace Peachpie.Library.PDO
         }
 
         // Initializes the column names by looping through the data reads columns or using the schema if it is available
-        private void initializeColumnNames()
+        private void InitializeColumnNames()
         {
             m_dr_names = new string[m_dr.FieldCount];
 

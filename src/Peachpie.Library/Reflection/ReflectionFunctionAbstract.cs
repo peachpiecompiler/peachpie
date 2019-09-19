@@ -34,7 +34,7 @@ namespace Pchp.Library.Reflection
         /// Underlaying routine information.
         /// Cannot be <c>null</c>.
         /// </summary>
-        internal protected RoutineInfo _routine;
+        private protected RoutineInfo _routine;
 
         #endregion
 
@@ -143,8 +143,21 @@ namespace Pchp.Library.Reflection
             var sep = name.LastIndexOf(ReflectionUtils.NameSeparator);
             return (sep < 0) ? name : name.Substring(sep + 1);
         }
-        public PhpArray getStaticVariables() { throw new NotImplementedException(); }
-        public bool hasReturnType()
+
+        [return: NotNull]
+        public PhpArray getStaticVariables(Context ctx)
+        {
+            var arr = new PhpArray();
+
+            var locals = _routine.GetStaticLocals(ctx);
+            foreach (var local in locals)
+            {
+                arr[local.Key] = (local.Value != null) ? local.Value.DeepCopy() : PhpValue.Null;
+            }
+
+            return arr;
+        }
+        public virtual bool hasReturnType()
         {
             return ResolveReturnType(out var _, out var _);
         }

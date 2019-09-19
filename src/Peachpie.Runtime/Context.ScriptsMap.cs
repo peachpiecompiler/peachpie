@@ -383,7 +383,13 @@ namespace Pchp.Core
             /// </summary>
             public IEnumerable<ScriptInfo> GetIncludedScripts()
             {
-                return _scripts.Take(_scriptsMap.Count).Where(IsIncluded);
+                for (int i = 0; i < _scriptsMap.Count; i++)
+                {
+                    if (IsIncluded(i))
+                    {
+                        yield return _scripts[i];
+                    }
+                }
             }
 
             /// <summary>

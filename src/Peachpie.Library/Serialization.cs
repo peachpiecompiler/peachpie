@@ -294,18 +294,36 @@ namespace Pchp.Library
 
                 public override void Accept(PhpArray value)
                 {
-                    serializedRefs[value] = ++_seq;
+                    ++_seq;
 
-                    Write(Tokens.Array);
-                    Write(Tokens.Colon);
-                    Write(value.Count.ToString());
-                    Write(Tokens.Colon);
-                    Write(Tokens.BraceOpen);
+                    if (serializedRefs.TryGetValue(value, out var seq))
+                    {
+                        // this shouldn't happen
+                        // an array was referenced twice without being enclosed within the same alias (PhpAlias)
 
-                    // write out array items in the correct order
-                    base.Accept(value);
+                        Debug.Fail("Multiple references to the same array instance!");
 
-                    Write(Tokens.BraceClose);
+                        // this reference has already been serialized -> write out its seq. number
+                        Write(Tokens.Reference);
+                        Write(Tokens.Colon);
+                        Write(seq.ToString());
+                        Write(Tokens.Semicolon);
+                    }
+                    else
+                    {
+                        serializedRefs[value] = _seq;
+
+                        Write(Tokens.Array);
+                        Write(Tokens.Colon);
+                        Write(value.Count.ToString());
+                        Write(Tokens.Colon);
+                        Write(Tokens.BraceOpen);
+
+                        // write out array items in the correct order
+                        base.Accept(value);
+
+                        Write(Tokens.BraceClose);
+                    }
                 }
 
                 public override void AcceptArrayItem(KeyValuePair<IntStringKey, PhpValue> entry)
@@ -392,8 +410,7 @@ namespace Pchp.Library
                     byte[] serializedBytes = null;
                     List<KeyValuePair<string, PhpValue>> serializedProperties = null;
 
-                    var serializable = obj as global::Serializable;
-                    if (serializable != null)
+                    if (obj is global::Serializable serializable)
                     {
                         var res = serializable.serialize();
                         if (res.IsDefault)
@@ -574,6 +591,7 @@ namespace Pchp.Library
             internal sealed class ObjectReader
             {
                 readonly Context _ctx;
+                readonly Encoding _encoding;
                 readonly Stream _stream;
                 readonly RuntimeTypeHandle _caller;
 
@@ -593,11 +611,17 @@ namespace Pchp.Library
                 }
 
                 public ObjectReader(Context ctx, Stream stream, RuntimeTypeHandle caller)
+                    : this(ctx, ctx.StringEncoding, stream, caller)
                 {
-                    Debug.Assert(ctx != null);
+                }
+
+                public ObjectReader(Context ctx, Encoding encoding, Stream stream, RuntimeTypeHandle caller)
+                {
+                    Debug.Assert(encoding != null);
                     Debug.Assert(stream != null);
 
                     _ctx = ctx;
+                    _encoding = encoding;
                     _stream = stream;
                     _caller = caller;
                 }
@@ -805,7 +829,7 @@ namespace Pchp.Library
                         try
                         {
                             // unicode string
-                            return PhpValue.Create(_ctx.StringEncoding.GetString(bytes));
+                            return PhpValue.Create(_encoding.GetString(bytes));
                         }
                         catch (DecoderFallbackException)
                         {
@@ -1007,12 +1031,14 @@ namespace Pchp.Library
                 /// <param name="serializable">If <B>true</B>, the last token eaten was <B>C</B>, otherwise <B>O</B>.</param>
                 object ParseObject(bool serializable)
                 {
+                    Debug.Assert(_ctx != null);
+
                     var seq = AddSeq();
 
                     // :{length}:"{classname}":
                     Consume(Tokens.Colon);  // :
                     string class_name = ReadString().AsString();   // <length>:"classname"
-                    var tinfo = _ctx.GetDeclaredType(class_name, true);
+                    var tinfo = _ctx?.GetDeclaredType(class_name, true);
 
                     // :{count}:
                     Consume(Tokens.Colon);  // :

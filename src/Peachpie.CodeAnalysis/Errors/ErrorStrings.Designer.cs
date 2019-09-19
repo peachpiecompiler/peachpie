@@ -19,7 +19,7 @@ namespace Peachpie.CodeAnalysis.Errors {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class ErrorStrings {
@@ -57,6 +57,15 @@ namespace Peachpie.CodeAnalysis.Errors {
             }
             set {
                 resourceCulture = value;
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use spl_autoload_register() instead..
+        /// </summary>
+        internal static string AutoloadDeprecatedMessage {
+            get {
+                return ResourceManager.GetString("AutoloadDeprecatedMessage", resourceCulture);
             }
         }
         
@@ -376,6 +385,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Resource identifier &apos;{0}&apos; has already been used in this assembly.
+        /// </summary>
+        internal static string ERR_ResourceNotUnique {
+            get {
+                return ResourceManager.GetString("ERR_ResourceNotUnique", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Startup object matching &apos;{0}&apos; could not be resolved.
         /// </summary>
         internal static string ERR_StartupObjectNotFound {
@@ -453,6 +471,15 @@ namespace Peachpie.CodeAnalysis.Errors {
         internal static string INF_ClassNameWrongCase {
             get {
                 return ResourceManager.GetString("INF_ClassNameWrongCase", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use of &apos;__destruct&apos; is discouraged. Garbage collection is non-deterministic unlike in PHP..
+        /// </summary>
+        internal static string INF_DestructDiscouraged {
+            get {
+                return ResourceManager.GetString("INF_DestructDiscouraged", resourceCulture);
             }
         }
         

@@ -482,6 +482,11 @@ namespace Pchp.Core.Dynamic
 
                             return value2.Expression;   // already converted to targetparam.ParameterType
                         }
+                        else if (targetparam.GetCustomAttribute<DefaultValueAttribute>() != null)
+                        {
+                            // TODO: DefaultValueAttribute 
+                            //Debug.Fail("default value lost");
+                        }
                     }
 
                     return (targetparam == null)
@@ -606,6 +611,11 @@ namespace Pchp.Core.Dynamic
                             if (targetparam.HasDefaultValue)
                             {
                                 return ConvertExpression.Bind(Expression.Constant(targetparam.DefaultValue), targetparam.ParameterType, _ctx);
+                            }
+                            else if (targetparam.GetCustomAttribute<DefaultValueAttribute>() != null)
+                            {
+                                // TODO: DefaultValueAttribute 
+                                //Debug.Fail("default value lost");
                             }
 
                             return ConvertExpression.BindDefault(targetparam.ParameterType);

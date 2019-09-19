@@ -179,6 +179,11 @@ namespace Peachpie.Library
             public List<LibXMLError> error_list;
 
             public Action<LibXMLError> error_handler;
+
+            /// <summary>
+            /// Disable the ability to load external entities.
+            /// </summary>
+            public bool DisableEntityLoader { get; set; }
         }
 
         /// <summary>
@@ -275,6 +280,20 @@ namespace Peachpie.Library
                 state.error_handler = null;   // outputs xml errors
                 state.error_list = null;
             }
+
+            return previousvalue;
+        }
+
+        /// <summary>
+        /// Disable/enable the ability to load external entities.
+        /// </summary>
+        /// <returns>Returns the previous value.</returns>
+        public static bool libxml_disable_entity_loader(Context ctx, bool disable = true)
+        {
+            var state = GetState(ctx);
+            var previousvalue = state.DisableEntityLoader;
+
+            state.DisableEntityLoader = disable;
 
             return previousvalue;
         }

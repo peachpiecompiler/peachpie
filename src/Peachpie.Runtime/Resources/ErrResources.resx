@@ -523,7 +523,7 @@ Additional information:
     <value>Creating default object from empty value</value>
   </data>
   <data name="undefined_method_called" xml:space="preserve">
-    <value>Call to undefined method: {0}::{1}()</value>
+    <value>Call to undefined method {0}::{1}()</value>
   </data>
   <data name="protected_method_called" xml:space="preserve">
     <value>Call to protected method {0}::{1}() from context '{2}'</value>
@@ -757,7 +757,7 @@ Additional information:
     <value>Function is not supported</value>
   </data>
   <data name="undefined_function_called" xml:space="preserve">
-    <value>Call to undefined function: '{0}'</value>
+    <value>Call to undefined function {0}()</value>
   </data>
   <data name="undefined_external_function_called" xml:space="preserve">
     <value>Call to undefined external function '{0}', extension '{1}' - check configuration</value>
@@ -1627,5 +1627,11 @@ Additional information:
   </data>
   <data name="try_without_catch_or_finally" xml:space="preserve">
     <value>Cannot use try without catch or finally</value>
+  </data>
+  <data name="trait_instantiated" xml:space="preserve">
+    <value>Cannot instantiate trait {0}</value>
+  </data>
+  <data name="uncloneable_cloned" xml:space="preserve">
+    <value>Trying to clone an uncloneable object of class {0}</value>
   </data>
 </root>

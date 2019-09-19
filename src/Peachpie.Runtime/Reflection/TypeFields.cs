@@ -80,10 +80,10 @@ namespace Pchp.Core.Reflection
         }
 
         static readonly Func<FieldInfo, bool> _isInstanceField = f => !f.IsStatic;
-        static readonly Func<FieldInfo, bool> _IsAllowedField = f => ReflectionUtils.IsAllowedPhpName(f.Name) && !ReflectionUtils.IsRuntimeFields(f) && !ReflectionUtils.IsContextField(f);
+        static readonly Func<FieldInfo, bool> _IsAllowedField = f => ReflectionUtils.IsAllowedPhpName(f.Name) && !ReflectionUtils.IsRuntimeFields(f) && !ReflectionUtils.IsContextField(f) && !f.IsPhpHidden();
         static readonly Func<FieldInfo, string> _FieldName = f => f.Name;
         static readonly Func<PropertyInfo, string> _PropertyName = p => p.Name;
-        static readonly Func<PropertyInfo, bool> _IsAllowedProperty = p => ReflectionUtils.IsAllowedPhpName(p.Name) && p.GetIndexParameters().Length == 0;
+        static readonly Func<PropertyInfo, bool> _IsAllowedProperty = p => ReflectionUtils.IsAllowedPhpName(p.Name) && p.GetIndexParameters().Length == 0 && !p.IsPhpHidden();
 
         static Func<Context, object> CreateStaticsGetter(Type _statics)
         {
@@ -116,6 +116,11 @@ namespace Pchp.Core.Reflection
         /// Gets enumeration of class instance fields excluding eventual <c>__runtime_fields</c>.
         /// </summary>
         public IEnumerable<FieldInfo> InstanceFields => (_fields != null) ? _fields.Values.Where(_isInstanceField) : Array.Empty<FieldInfo>();
+
+        /// <summary>
+        /// Gets enumeration of class instance properties.
+        /// </summary>
+        public IEnumerable<PropertyInfo> InstanceClrProperties => (_properties != null) ? _properties.Values.Where(p => !p.GetMethod.IsStatic) : Array.Empty<PropertyInfo>();
 
         /// <summary>
         /// Enumerates all the properties in the class excluding runtime fields.

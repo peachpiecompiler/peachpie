@@ -19,6 +19,7 @@ using System.IO;
 using System.Diagnostics;
 using Pchp.Core;
 using Pchp.Library.Resources;
+using System.Collections.Generic;
 
 namespace Pchp.Library.DateTime
 {
@@ -351,7 +352,15 @@ namespace Pchp.Library.DateTime
         /// </summary>
         public static int ParseUnsignedInt(string str, ref int pos, int maxDigits)          // PHP: timelib_get_nr
         {
-            int len = 0;
+            return ParseUnsignedInt(str, ref pos, maxDigits, out _);
+        }
+
+        /// <summary>
+        /// Parse unsigned integer of a specified maximal length.
+        /// </summary>
+        public static int ParseUnsignedInt(string str, ref int pos, int maxDigits, out int len)          // PHP: timelib_get_nr
+        {
+            len = 0;
 
             // skips non-digits:
             while (pos < str.Length && !Char.IsDigit(str, pos))
@@ -461,7 +470,7 @@ namespace Pchp.Library.DateTime
                 pos++;
             }
 
-            switch (str.Substring(begin, pos - begin))
+            switch (str.Substring(begin, pos - begin).ToLowerInvariant())
             {
                 case "jan": return 1;
                 case "feb": return 2;
@@ -545,6 +554,15 @@ namespace Pchp.Library.DateTime
             return 0;
         }
 
+
+        static void SkipSpaces(string str, ref int pos) // timelib_eat_spaces
+        {
+            while (pos < str.Length && char.IsWhiteSpace(str, pos))
+            {
+                pos++;
+            }
+        }
+
         /// <summary>
         /// Reads characters up to the first space.
         /// </summary>
@@ -555,6 +573,34 @@ namespace Pchp.Library.DateTime
                 pos++;
 
             return str.Substring(begin, pos - begin);
+        }
+
+        public static ReadOnlySpan<char> ReadToDelimiter(string str, ref int pos)
+        {
+            int start = pos;
+            int end = -1;
+            while (pos < str.Length && end < 0)
+            {
+                switch (str[pos])
+                {
+                    case ' ':
+                    case '\t':
+                    case ',':
+                    case ';':
+                    case ':':
+                    case '/':
+                    case '.':
+                    case '-':
+                    case '(':
+                    case ')':
+                        end = pos;
+                        continue;
+                }
+
+                pos++;
+            }
+
+            return end < 0 ? str.AsSpan(start) : str.AsSpan(start, end - start);
         }
 
         /// <summary>
@@ -616,7 +662,7 @@ namespace Pchp.Library.DateTime
                 relative.d += (amount > 0 ? amount - 1 : amount) * 7;
 
                 // TIMELIB_HAVE_WEEKDAY_RELATIVE
-                have_weekday_relative = 1;
+                HAVE_WEEKDAY_RELATIVE();
                 relative.weekday_behavior = behavior;
 
                 // TIMELIB_UNHAVE_TIME 
@@ -1027,6 +1073,22 @@ namespace Pchp.Library.DateTime
             return true;
         }
 
+        private static void AddWarning(ref DateTimeErrors errors, string message)
+        {
+            if (errors == null) errors = new DateTimeErrors();
+            if (errors.Warnings == null) errors.Warnings = new List<string>();
+
+            errors.Warnings.Add(message);
+        }
+
+        private static void AddError(ref DateTimeErrors errors, string message)
+        {
+            if (errors == null) errors = new DateTimeErrors();
+            if (errors.Errors == null) errors.Errors = new List<string>();
+
+            errors.Errors.Add(message);
+        }
+
         #endregion
 
         #region TryParseIso8601Duration
@@ -1255,6 +1317,292 @@ namespace Pchp.Library.DateTime
             return result;
         }
 
+        #endregion
+
+        #region ParseFromFormat
+
+        /// <summary>
+        /// This code should provide results similar to <c>timelib_parse_from_format</c> function.
+        /// Comments taken from their implementation in order to keep track of what it does.
+        /// </summary>
+        /// <param name="format">Format string.</param>
+        /// <param name="str">Time string.</param>
+        /// <param name="errors">Filled with errors or <c>null</c>.</param>
+        /// <returns>Parsed date information.</returns>
+        public static DateInfo ParseFromFormat(string format, string str, out DateTimeErrors errors)
+        {
+            if (format == null) throw new ArgumentNullException(nameof(format));
+            if (str == null) throw new ArgumentNullException(nameof(str));
+
+            errors = null;
+
+            var time = new DateInfo();
+            int len;
+
+            int si = 0; // str index
+            int fi = 0; // format index
+            var allow_extra = false;
+
+            for (; fi < format.Length && (si < str.Length || format[fi] == '!' || format[fi] == '|' || format[fi] == '+'); fi++)
+            {
+                switch (format[fi])
+                {
+                    case 'D': /* three letter day */
+                    case 'l': /* full day */
+                        if (time.SetWeekDay(ReadToDelimiter(str, ref si).ToString()))
+                        {
+                            time.HAVE_RELATIVE();
+                            time.HAVE_WEEKDAY_RELATIVE();
+                            time.relative.weekday_behavior = 1;
+                        }
+                        else
+                        {
+                            AddError(ref errors, DateResources.day_notfound);
+                        }
+                        break;
+                    case 'd': /* two digit day, with leading zero */
+                    case 'j': /* two digit day, without leading zero */
+                        //TIMELIB_CHECK_NUMBER;
+                        if ((time.d = ParseUnsignedInt(str, ref si, 2)) < 0)
+                        {
+                            AddError(ref errors, DateResources.two_digit_day_notfound);
+                        }
+                        break;
+                    case 'S': /* day suffix, ignored, nor checked */
+                        SkipDaySuffix(str, ref si);
+                        break;
+                    case 'z': /* day of year - resets month (0 based) - also initializes everything else to !TIMELIB_UNSET */
+                        //TIMELIB_CHECK_NUMBER;
+                        var days = ParseUnsignedInt(str, ref si, 3);
+                        if (days >= 0)
+                        {
+                            time.m = 1;
+                            time.d = days + 1;  // notmalized in GetDateTime()
+                        }
+                        else
+                        {
+                            AddError(ref errors, DateResources.three_digit_doy_notfound);
+                        }
+                        break;
+                    case 'm': /* two digit month, with leading zero */
+                    case 'n': /* two digit month, without leading zero */
+                        //TIMELIB_CHECK_NUMBER;
+                        if ((time.m = ParseUnsignedInt(str, ref si, 2)) < 0)
+                        {
+                            AddError(ref errors, DateResources.two_digit_month_notfound);
+                        }
+                        break;
+                    case 'M': /* three letter month */
+                    case 'F': /* full month */
+                        if ((time.m = ParseMonth(str, ref si)) == 0)
+                        {
+                            AddError(ref errors, DateResources.month_notfound);
+                        }
+                        break;
+                    case 'y': /* two digit year */
+                        //TIMELIB_CHECK_NUMBER;
+                        if ((time.y = ProcessYear(ParseUnsignedInt(str, ref si, 2))) < 0)
+                        {
+                            AddError(ref errors, DateResources.two_digit_year_notfound);
+                        }
+                        break;
+                    case 'Y': /* four digit year */
+                        //TIMELIB_CHECK_NUMBER;
+                        if ((time.y = ParseUnsignedInt(str, ref si, 4)) < 0)
+                        {
+                            AddError(ref errors, DateResources.four_digit_year_notfound);
+                        }
+                        break;
+                    case 'g': /* two digit hour, with leading zero */
+                    case 'h': /* two digit hour, without leading zero */
+                        //TIMELIB_CHECK_NUMBER;
+                        if ((time.h = ParseUnsignedInt(str, ref si, 2)) < 0)
+                        {
+                            AddError(ref errors, DateResources.two_digit_hour_notfound);
+                        }
+                        else if (time.h > 12)
+                        {
+                            AddError(ref errors, DateResources.hour_gt_12);
+                        }
+                        break;
+                    case 'G': /* two digit hour, with leading zero */
+                    case 'H': /* two digit hour, without leading zero */
+                        //TIMELIB_CHECK_NUMBER;
+                        if ((time.h = ParseUnsignedInt(str, ref si, 2)) < 0)
+                        {
+                            AddError(ref errors, DateResources.two_digit_hour_notfound);
+                        }
+                        break;
+                    case 'a': /* am/pm/a.m./p.m. */
+                    case 'A': /* AM/PM/A.M./P.M. */
+                        if (time.h < 0)
+                        {
+                            AddError(ref errors, DateResources.meridian_missing_hour);
+                        }
+                        else if (!time.SetMeridian(str, ref si))
+                        {
+                            AddError(ref errors, DateResources.meridian_notfound);
+                        }
+                        break;
+                    case 'i': /* two digit minute, with leading zero */
+                        //TIMELIB_CHECK_NUMBER;
+                        if ((time.i = ParseUnsignedInt(str, ref si, 2, out len)) < 0 || len != 2)
+                        {
+                            AddError(ref errors, DateResources.two_digit_min_notfound);
+                        }
+                        break;
+                    case 's': /* two digit second, with leading zero */
+                        //TIMELIB_CHECK_NUMBER;
+                        if ((time.s = ParseUnsignedInt(str, ref si, 2, out len)) < 0 || len != 2)
+                        {
+                            AddError(ref errors, DateResources.two_digit_sec_notfound);
+                        }
+                        break;
+                    case 'u': /* up to six digit millisecond */
+                        {
+                            //TIMELIB_CHECK_NUMBER;
+                            //tptr = ptr;
+                            var f = ParseUnsignedInt(str, ref si, 6, out len);
+                            if (f < 0 || len < 1)
+                            {
+                                AddError(ref errors, DateResources.six_digit_ms_notfound);
+                            }
+                            else
+                            {
+                                time.f = f / Math.Pow(10, len);
+                            }
+                        }
+                        break;
+                    case ' ': /* any sort of whitespace (' ' and \t) */
+                        SkipSpaces(str, ref si);
+                        break;
+                    case 'U': /* epoch seconds */
+                        //TIMELIB_CHECK_SIGNED_NUMBER;
+                        time.HAVE_RELATIVE();
+                        time.y = 1970;
+                        time.m = 1;
+                        time.d = 1;
+                        time.h = time.i = time.s = 0;
+                        time.relative.s += ParseUnsignedInt(str, ref si, 24);
+                        //time.is_localtime = 1;
+                        //time.zone_type = TIMELIB_ZONETYPE_OFFSET;
+                        time.z = 0;
+                        //time.dst = 0;
+                        break;
+                    case 'e': /* timezone */
+                    case 'P': /* timezone */
+                    case 'T': /* timezone */
+                    case 'O': /* timezone */
+                        {
+                            //int tz_not_found;
+                            //s->time->z = timelib_parse_zone((char**)&ptr, &s->time->dst, s->time, &tz_not_found, s->tzdb, tz_get_wrapper);
+                            //if (tz_not_found)
+                            {
+                                AddError(ref errors, DateResources.tz_notfound);
+                            }
+                        }
+                        break;
+                    case '#': /* separation symbol */
+                        switch (str[si])
+                        {
+                            case ';':
+                            case ':':
+                            case '/':
+                            case '.':
+                            case ',':
+                            case '-':
+                            case '(':
+                            case ')':
+                                si++;
+                                break;
+                            default:
+                                AddError(ref errors, string.Format(DateResources.separation_notfound, "[;:/.,-]"));
+                                break;
+                        }
+                        break;
+                    case ';':
+                    case ':':
+                    case '/':
+                    case '.':
+                    case ',':
+                    case '-':
+                    case '(':
+                    case ')':
+                        if (format[fi] == str[si])
+                        {
+                            si++;
+                        }
+                        else
+                        {
+                            AddError(ref errors, string.Format(DateResources.separation_notfound, format[fi].ToString()));
+                        }
+                        break;
+                    case '!': /* reset all fields to default */
+                        time.y = 1970;
+                        time.m = 1;
+                        time.d = 1;
+                        time.h = time.i = time.s = 0;
+                        time.f = 0.0;
+                        time.z = 0;
+                        break;
+                    case '|': /* reset all fields to default when not set */
+                        if (time.y < 0) time.y = 1970;
+                        if (time.m < 0) time.m = 1;
+                        if (time.d < 0) time.d = 1;
+                        if (time.h < 0) time.h = 0;
+                        if (time.i < 0) time.i = 0;
+                        if (time.s < 0) time.s = 0;
+                        if (time.f < 0) time.f = 0.0;
+                        break;
+
+                    case '?': /* random char */
+                        si++;
+                        break;
+
+                    case '\\': /* escaped char */
+                        if (++fi >= format.Length)
+                        {
+                            AddError(ref errors, DateResources.esc_char_expected);
+                            break;
+                        }
+                        
+                        if (format[fi] == str[si])
+                        {
+                            si++;
+                        }
+                        else
+                        {
+                            AddError(ref errors, DateResources.esc_char_notfound);
+                        }
+                        break;
+
+                    case '*': /* random chars until a separator or number ([ \t.,:;/-0123456789]) */
+                        do { si++; }
+                        while (si < str.Length && " \t.,:;/-0123456789".IndexOf(str[si]) < 0);
+                        break;
+                    case '+':
+                        allow_extra = true;
+                        break;
+
+                    default:
+                        if (format[fi] != str[si]) AddError(ref errors, DateResources.separator_does_not_match);
+                        si++;
+                        break;
+                }
+            }
+
+            //
+
+            if (si < str.Length)
+            {
+                if (allow_extra) AddWarning(ref errors, DateResources.trailing_data);
+                else AddError(ref errors, DateResources.trailing_data);
+            }
+
+            //
+
+            return time;
+        }
 
         #endregion
     }

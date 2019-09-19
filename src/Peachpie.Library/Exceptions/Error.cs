@@ -14,12 +14,15 @@ namespace Pchp.Library.Spl
     public class Error : System.Exception, Throwable
     {
         [PhpHidden]
-        private PhpStackTrace/*!*/_stacktrace;
+        readonly PhpStackTrace/*!*/_stacktrace = new PhpStackTrace();
 
         [PhpHidden]
         private PhpArray _trace;
 
-        private Throwable previous;
+        protected string message;
+        protected long code;
+        protected string file;
+        protected int line;
 
         /// <summary>
         /// This property is used by some PHP frameworks
@@ -31,22 +34,16 @@ namespace Pchp.Library.Spl
             set => _trace = value;
         }
 
-        protected string message;
-        protected long code;
-        protected string file;
-        protected int line;
+        private Throwable previous;
 
         [PhpFieldsOnlyCtor]
         protected Error()
         {
-            _stacktrace = new PhpStackTrace();
         }
 
         public Error(string message = "", long code = 0, Throwable previous = null)
             : base(message, previous as System.Exception)
         {
-            _stacktrace = new PhpStackTrace();
-
             this.file = _stacktrace.GetFilename();
             this.line = _stacktrace.GetLine();
 

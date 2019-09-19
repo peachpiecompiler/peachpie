@@ -242,7 +242,7 @@ namespace Pchp.CodeAnalysis.DocumentationComments
         void WriteRoutine(SourceRoutineSymbol routine)
         {
             if (routine.IsGlobalScope) return;  // global code have no XML annotation
-            
+
             WriteRoutine(CommentIdResolver.GetId(routine), routine);
         }
 
@@ -303,7 +303,19 @@ namespace Pchp.CodeAnalysis.DocumentationComments
                     // annotate all generated .ctor() methods:
                     for (int j = 0; j < ctors.Length; j++)
                     {
-                        WriteRoutine(CommentIdResolver.GetId(ctors[j]), php_construct);
+                        var ctor_id = CommentIdResolver.GetId(ctors[j]);
+
+                        if (ctors[j].IsFieldsOnlyConstructor())
+                        {
+                            // annotate special .ctor that initializes only fields
+                            _writer.WriteLine($"<member name=\"{ctor_id}\">");
+                            WriteSummary(Peachpie.CodeAnalysis.PhpResources.XmlDoc_FieldsOnlyCtor);
+                            _writer.WriteLine("</member>");
+                        }
+                        else
+                        {
+                            WriteRoutine(ctor_id, php_construct);
+                        }
                     }
 
                     break;

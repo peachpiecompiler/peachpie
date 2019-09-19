@@ -162,7 +162,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                     {
                         if (op != null)
                         {
-                            if (!from.IsOfType(ps[0].Type))
+                            if (!ps[0].Type.IsAssignableFrom(from))
                             {
                                 throw new ArgumentException(nameof(op));
                             }

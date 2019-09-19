@@ -1669,34 +1669,36 @@ namespace Pchp.Library
         private static bool SplitArraysAndComparers(int comparerCount, PhpArray array, PhpValue[] vars, out PhpArray[] arrays, out IPhpCallable cmp1, out IPhpCallable cmp2)
         {
             arrays = null;
-            cmp1 = cmp2 = null;
+            cmp2 = null;
+
+            Debug.Assert(comparerCount >= 1 && comparerCount <= 2);
 
             if (vars == null || vars.Length == 0)
             {
-                // TODO: PhpException.InvalidArgumentCount(null, null);
-                return false;
+                //PhpException.InvalidArgumentCount(null, null);
+                //return false;
+                throw new ArgumentException();
             }
 
             // the first callback:
-            cmp1 = vars[vars.Length - comparerCount].AsCallable(default(RuntimeTypeHandle));
-            if (PhpVariable.IsValidCallback(cmp1)) return false;
+            cmp1 = vars[vars.Length - comparerCount].AsCallable(default);
+            if (!PhpVariable.IsValidCallback(cmp1)) return false;
 
             // the second callback:
             if (comparerCount > 1)
             {
-                cmp2 = vars[vars.Length - 1].AsCallable(default(RuntimeTypeHandle));
+                cmp2 = vars[vars.Length - 1].AsCallable(default);
                 if (!PhpVariable.IsValidCallback(cmp2)) return false;
             }
 
             // remaining arguments should be arrays:
             arrays = new PhpArray[vars.Length - comparerCount + 1];
             arrays[0] = array;
-            for (int i = 0; i < vars.Length - comparerCount; i++)
+            for (int i = 1; i < arrays.Length; i++)
             {
-                var var = vars[i];
-                if ((arrays[i + 1] = vars[i].AsArray()) == null)
+                if ((arrays[i] = vars[i - 1].AsArray()) == null)
                 {
-                    PhpException.Throw(PhpError.Warning, LibResources.argument_not_array, (i + 3).ToString());
+                    PhpException.Throw(PhpError.Warning, LibResources.argument_not_array, (i + 2).ToString());
                     return false;
                 }
             }
@@ -1820,11 +1822,11 @@ namespace Pchp.Library
         /// Computes the difference of arrays using a specified comparer.
         /// </summary>
         //[return: PhpDeepCopy]
-        public static PhpArray array_udiff(Context ctx, PhpArray array, PhpArray array0, params PhpValue[] arraysAndComparer)
+        public static PhpArray array_udiff(Context ctx, PhpArray array1, PhpArray array2, params PhpValue[] arraysAndComparer)
         {
-            if (SplitArraysAndComparers(1, array0, arraysAndComparer, out var arrays, out var value_comparer, out var cmp))
+            if (SplitArraysAndComparers(1, array2, arraysAndComparer, out var arrays, out var value_comparer, out var cmp))
             {
-                return SetOperation(SetOperations.Difference, array, arrays, new ValueComparer(new PhpUserComparer(ctx, value_comparer), false));
+                return SetOperation(SetOperations.Difference, array1, arrays, new ValueComparer(new PhpUserComparer(ctx, value_comparer), false));
             }
 
             return null;

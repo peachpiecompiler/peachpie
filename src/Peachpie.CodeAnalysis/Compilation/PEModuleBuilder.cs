@@ -58,13 +58,16 @@ namespace Pchp.CodeAnalysis.Emit
 
                     if (_compilation.Options.OutputKind == OutputKind.ConsoleApplication)
                     {
-                        // CreateConsole(mainscript, args)
-                        MethodSymbol create_method = types.Context.Symbol.LookupMember<MethodSymbol>("CreateConsole");
+                        // CreateConsole(string mainscript, params string[] args)
+                        var create_method = types.Context.Symbol.LookupMember<MethodSymbol>("CreateConsole", m =>
+                        {
+                            return
+                                m.ParameterCount == 2 &&
+                                m.Parameters[0].Type == types.String &&     // string mainscript
+                                m.Parameters[1].Type == args_place.Type;    // params string[] args
+                        });
                         Debug.Assert(create_method != null);
-                        Debug.Assert(create_method.ParameterCount == 2);
-                        Debug.Assert(create_method.Parameters[0].Type == types.String);
-                        Debug.Assert(create_method.Parameters[1].Type == args_place.Type);
-
+                        
                         il.EmitStringConstant(EntryPointScriptName(method));    // mainscript
                         args_place.EmitLoad(il);                                // args
 

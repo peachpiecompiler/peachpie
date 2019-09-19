@@ -12,7 +12,7 @@ using Microsoft.CodeAnalysis.PooledObjects;
 
 namespace Pchp.CodeAnalysis.Symbols
 {
-    public static class TypedConstantExtensions
+    internal static class TypedConstantExtensions
     {
         /// <summary>
         /// Returns the System.String that represents the current TypedConstant.
@@ -209,6 +209,26 @@ namespace Pchp.CodeAnalysis.Symbols
 
             // Unable to decode the enum constant, just display the integral value
             return constant.Value.ToString();
+        }
+
+        public static TypedConstant CreateTypedConstant(this PhpCompilation compilation, ITypeSymbol typereference)
+        {
+            return new TypedConstant(compilation.GetWellKnownType(WellKnownType.System_Type), TypedConstantKind.Type, typereference);
+        }
+
+        public static TypedConstant CreateTypedConstant(this PhpCompilation compilation, string value)
+        {
+            return new TypedConstant(compilation.GetSpecialType(SpecialType.System_String), TypedConstantKind.Primitive, value);
+        }
+
+        public static TypedConstant CreateTypedConstant(this PhpCompilation compilation, byte value)
+        {
+            return new TypedConstant(compilation.GetSpecialType(SpecialType.System_Byte), TypedConstantKind.Primitive, value);
+        }
+
+        public static TypedConstant CreateTypedConstant(this PhpCompilation compilation, bool value)
+        {
+            return new TypedConstant(compilation.GetSpecialType(SpecialType.System_Boolean), TypedConstantKind.Primitive, value);
         }
     }
 }

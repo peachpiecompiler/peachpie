@@ -91,6 +91,9 @@ namespace Peachpie.NET.Sdk.Tools
         // TODO: embed
 
         /// <summary></summary>
+        public ITaskItem[] Resources { get; set; }
+
+        /// <summary></summary>
         public override bool Execute()
         {
             _cancellation = new CancellationTokenSource();
@@ -162,6 +165,14 @@ namespace Peachpie.NET.Sdk.Tools
             else
             {
                 Log.LogWarning("No references specified.");
+            }
+
+            if (Resources != null)
+            {
+                foreach (var res in Resources)
+                {
+                    args.Add(FormatArgFromItem(res, "res", "LogicalName", "Access"));
+                }
             }
 
             // sources at the end:
@@ -241,6 +252,26 @@ namespace Peachpie.NET.Sdk.Tools
 
             args.Add("/" + optionName + ":" + optionValue);
             return true;
+        }
+
+        private string FormatArgFromItem(ITaskItem item, string switchName, params string[] metadataNames)
+        {
+            var arg = new StringBuilder($"/{switchName}:{item.ItemSpec}");
+
+            foreach (string name in metadataNames)
+            {
+                string value = item.GetMetadata(name);
+                if (string.IsNullOrEmpty(value))
+                {
+                    // The values are expected in linear order, so we have to end at the first missing one
+                    break;
+                }
+
+                arg.Append(',');
+                arg.Append(value);
+            }
+
+            return arg.ToString();
         }
 
         private CancellationTokenSource _cancellation = new CancellationTokenSource();

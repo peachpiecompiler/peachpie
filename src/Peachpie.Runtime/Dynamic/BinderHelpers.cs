@@ -136,85 +136,77 @@ namespace Pchp.Core.Dynamic
         /// <remarks>Necessary restriction are already resolved within returned <paramref name="instance"/>.</remarks>
         public static bool TryTargetAsObject(DynamicMetaObject target, out DynamicMetaObject instance)
         {
+            var expr = target.Expression;
             var value = target.Value;
+            var restrictions = target.Restrictions;
+
             if (value == null)
             {
                 instance = new DynamicMetaObject(
-                    target.Expression,
-                    target.Restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.ReferenceEqual(target.Expression, Expression.Constant(null)))),
+                    expr,
+                    restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.ReferenceEqual(expr, Expression.Constant(null)))),
                     null);
 
                 return false;
             }
 
-            var expr = target.Expression;
-
             // dereference PhpAlias first:
-            if (target.LimitType == typeof(PhpAlias))
+            if (expr.Type == typeof(PhpAlias))
             {
+                // PhpAlias.Value
                 expr = Expression.Field(expr, Cache.PhpAlias.Value);
                 value = ((PhpAlias)value).Value;
 
                 //
                 return TryTargetAsObject(
-                    new DynamicMetaObject(expr, target.Restrictions, value),
+                    new DynamicMetaObject(expr, restrictions, value),
+                    out instance);
+            }
+
+            if (value is PhpAlias alias)
+            {
+                // PhpAlias is provided but typed as System.Object
+                // create restriction and retry with properly typed {expr:PhpAlias}
+                restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(expr, typeof(PhpAlias)));
+                expr = Expression.Convert(expr, typeof(PhpAlias));
+
+                return TryTargetAsObject(
+                    new DynamicMetaObject(expr, restrictions, alias),
                     out instance);
             }
 
             // unwrap PhpValue
-            if (target.LimitType == typeof(PhpValue))
+            if (expr.Type == typeof(PhpValue))
             {
-                var phpvalue = (PhpValue)value;
-                if (phpvalue.IsAlias)
-                {
-                    // target of PhpValue.Alias when PhpValue.IsAlias
-                    return TryTargetAsObject(
-                        new DynamicMetaObject(
-                            Expression.Property(expr, "Alias"),
-                            target.Restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Property(expr, "IsAlias"))),
-                            phpvalue.Alias),
-                        out instance);
-                }
+                // PhpValue.Object
+                expr = Expression.Property(expr, Cache.Properties.PhpValue_Object);
+                value = ((PhpValue)value).Object;
 
-                if (phpvalue.IsObject)
-                {
-                    expr = Expression.Property(expr, "Object");
+                return TryTargetAsObject(
+                    new DynamicMetaObject(expr, restrictions, value),
+                    out instance);
+            }
 
-                    // PhpValue.Object when PhpValue.IsObject
-                    instance = new DynamicMetaObject(
-                        expr,     // PhpValue.Object
-                        target.Restrictions.Merge(BindingRestrictions.GetTypeRestriction(expr, phpvalue.Object.GetType())), // PhpValue.Object.GetType() == TYPE
-                        phpvalue.Object);
+            // well-known non-objects:
+            Type nonObjectType = null;
+            if (value is PhpResource) nonObjectType = typeof(PhpResource);
+            if (value is PhpArray) nonObjectType = typeof(PhpArray);
+            if (value is PhpString.Blob) nonObjectType = typeof(PhpString.Blob);
 
-                    // PhpResource is an exception, not acting like an object in PHP
-                    if (phpvalue.Object is PhpResource)
-                    {
-                        // "PhpValue.Object is PhpResource"
-                        // ignore the "PhpValue.IsObject" restriction (not needed)
-                        instance = new DynamicMetaObject(
-                            expr,    // PhpValue.Object
-                            target.Restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.TypeIs(expr, typeof(PhpResource)))),   // PhpValue.Object is PhpResource
-                            instance.Value);
-                        return false;
-                    }
-
-                    //
-                    return true;
-                }
-
-                // anything else is not an object, PhpValue.TypeCode == value.TypeCode
+            if (nonObjectType != null)
+            {
                 instance = new DynamicMetaObject(
                     expr,
-                    target.Restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.Equal(Expression.Property(expr, "TypeCode"), Expression.Constant(phpvalue.TypeCode)))),
+                    restrictions.Merge(BindingRestrictions.GetExpressionRestriction(Expression.TypeIs(expr, nonObjectType))),   // PhpValue.Object is T (including any derived class)
                     value);
+
                 return false;
             }
 
             //
 
-            var restrictions = target.Restrictions;
-            var lt = target.Expression.Type.GetTypeInfo();
-            if (!lt.IsValueType && !lt.IsSealed && !typeof(PhpArray).IsAssignableFrom(lt.AsType()) && !typeof(PhpResource).IsAssignableFrom(lt.AsType()))
+            var lt = target.Expression.Type;
+            if (!lt.IsValueType && !lt.IsSealed && !typeof(PhpArray).IsAssignableFrom(lt) && !typeof(PhpResource).IsAssignableFrom(lt))
             {
                 // we need to set the type restriction
                 restrictions = restrictions.Merge(BindingRestrictions.GetTypeRestriction(expr, value.GetType()));
@@ -222,14 +214,15 @@ namespace Pchp.Core.Dynamic
 
             //
             instance = new DynamicMetaObject(expr, restrictions, value);
-            return !(   // TODO: ReflectionUtils.IsClassType
-                value is PhpResource ||
-                value is PhpArray ||
+            return !(
+                value is string ||
                 value is bool ||
                 value is int ||
                 value is long ||
                 value is double ||
-                value is string ||
+                value is char ||
+                value is uint ||
+                value is ulong ||
                 value is PhpString);
         }
 
@@ -916,12 +909,12 @@ namespace Pchp.Core.Dynamic
                         if (p.ParameterType == typeof(QueryValue<CallerScript>))
                         {
                             // we don't have this info
-                            throw new NotSupportedException();
+                            throw new NotSupportedException("Pass <CallerScript> dynamically.");
                         }
                         else if (p.ParameterType == typeof(QueryValue<CallerArgs>))
                         {
                             // we don't have this info
-                            throw new NotImplementedException();    // TODO: empty array & report warning
+                            throw new NotSupportedException("Pass <CallerArgs> dynamically.");    // TODO: empty array & report warning
                         }
                         else if (p.ParameterType == typeof(QueryValue<LocalVariables>))
                         {
@@ -930,6 +923,15 @@ namespace Pchp.Core.Dynamic
 
                             // TODO: report it might get wrong
                             // TODO: if we create IPhpCallback in compile-time, we know the routine needs the locals, ...
+                        }
+                        else if (p.ParameterType == typeof(QueryValue<ThisVariable>))
+                        {
+                            // $this is unknown, get NULL
+                            boundargs[i] = Expression.Default(p.ParameterType);
+                        }
+                        else if (p.ParameterType == typeof(QueryValue<DummyFieldsOnlyCtor>))
+                        {
+                            boundargs[i] = Expression.Default(p.ParameterType);
                         }
                     }
                     else if (p.IsLateStaticParameter())
@@ -953,7 +955,7 @@ namespace Pchp.Core.Dynamic
                     }
                     else if (p.IsImportCallerStaticClassParameter())
                     {
-                        throw new NotSupportedException(); // we don't know current late static bound type
+                        throw new NotSupportedException("ImportCallerStaticClassAttribute dynamically."); // we don't know current late static bound type
                     }
                     else if (p.IsClosureParameter())
                     {

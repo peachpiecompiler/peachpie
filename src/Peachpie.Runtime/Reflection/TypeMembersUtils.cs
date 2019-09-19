@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Pchp.Core.Dynamic;
+using Pchp.Core.QueryValue;
 using Pchp.Core.Utilities;
 
 namespace Pchp.Core.Reflection
@@ -72,12 +74,12 @@ namespace Pchp.Core.Reflection
         /// <param name="instance">Object which fields will be enumerated.</param>
         /// <param name="caller">Current class context for field visibility check.</param>
         /// <returns>Enumeration of fields and their values, including runtime fields.</returns>
-        public static IEnumerable<KeyValuePair<IntStringKey, PhpValue>> EnumerateVisibleInstanceFields(object instance, RuntimeTypeHandle caller = default(RuntimeTypeHandle))
+        public static IEnumerable<KeyValuePair<IntStringKey, PhpValue>> EnumerateVisibleInstanceFields(object instance, RuntimeTypeHandle caller = default)
         {
             return EnumerateInstanceFields(instance,
                 (f, d) => new IntStringKey(f.Name),
                 FuncExtensions.Identity<IntStringKey>(),
-                (f) => IsVisible(f, caller));
+                (m) => s_notInternalFieldsPredicate(m) && IsVisible(m, caller));
         }
 
         /// <summary>
@@ -95,19 +97,49 @@ namespace Pchp.Core.Reflection
 
         static readonly Func<IntStringKey, string> s_keyToString = new Func<IntStringKey, string>(k => k.ToString());
 
-        static readonly Func<FieldInfo, bool> s_notInternalFieldsPredicate = new Func<FieldInfo, bool>(f =>
+        public static readonly Func<MemberInfo, bool> s_notInternalFieldsPredicate = new Func<MemberInfo, bool>(m =>
         {
-            var access = f.Attributes & FieldAttributes.FieldAccessMask;
-            return
-                access != FieldAttributes.Assembly && access != FieldAttributes.FamANDAssem &&  // ignore "internal" and "private protected" fields
-                !f.FieldType.IsPointer;
+            // ignore "internal" and "private protected" fields
+            // ignore pointer types
+
+            if (m is FieldInfo f)
+            {
+                var access = f.Attributes & FieldAttributes.FieldAccessMask;
+                return
+                    access != FieldAttributes.Assembly && access != FieldAttributes.FamANDAssem &&
+                    !f.FieldType.IsPointer;
+            }
+            else if (m is PropertyInfo p)
+            {
+                var access = p.GetMethod.Attributes & MethodAttributes.MemberAccessMask;
+                return
+                    access != MethodAttributes.Assembly && access != MethodAttributes.FamANDAssem &&
+                    !p.PropertyType.IsPointer;
+            }
+            else
+            {
+                return false;
+            }
         });
 
-        static readonly Func<FieldInfo, PhpTypeInfo, string> s_formatPropertyNameForPrint = new Func<FieldInfo, PhpTypeInfo, string>((f, declarer) =>
+        static readonly Func<MemberInfo, PhpTypeInfo, string> s_formatPropertyNameForPrint = new Func<MemberInfo, PhpTypeInfo, string>((m, declarer) =>
         {
-            if (f.IsPublic) return f.Name;
-            if (f.IsPrivate) return string.Concat(f.Name, ":", declarer.Name, ":private");
-            return f.Name + ":protected";
+            if (m is FieldInfo f)
+            {
+                if (f.IsPublic) return f.Name;
+                if (f.IsPrivate) return string.Concat(f.Name, ":", declarer.Name, ":private");
+                return f.Name + ":protected";
+            }
+            else if (m is PropertyInfo p)
+            {
+                if (p.GetMethod.IsPublic) return p.Name;
+                if (p.GetMethod.IsPrivate) return string.Concat(p.Name, ":", declarer.Name, ":private");
+                return p.Name + ":protected";
+            }
+            else
+            {
+                throw new ArgumentException();
+            }
         });
 
         /// <summary>
@@ -123,25 +155,54 @@ namespace Pchp.Core.Reflection
                 s_notInternalFieldsPredicate);
         }
 
-        static readonly Func<FieldInfo, PhpTypeInfo, string> s_formatPropertyNameForDump = new Func<FieldInfo, PhpTypeInfo, string>((f, declarer) =>
+        /// <summary>
+        /// Enumerates instance fields of given object, transforms field names according to <c>var_export</c> notation.
+        /// </summary>
+        /// <param name="instance">Object which fields will be enumerated.</param>
+        /// <returns>Enumeration of fields and their values, including runtime fields.</returns>
+        public static IEnumerable<KeyValuePair<string, PhpValue>> EnumerateInstanceFieldsForExport(object instance)
         {
-            var name = "\"" + f.Name + "\"";
-            if (f.IsPublic) return name;
-            if (f.IsPrivate) return string.Concat(name, ":\"", declarer.Name, "\":private");
-            return name + ":protected";
+            return EnumerateInstanceFields(instance,
+                s_formatPropertyNameForExport,
+                s_keyToString,
+                s_notInternalFieldsPredicate);
+        }
+
+        static readonly Func<MemberInfo, PhpTypeInfo, string> s_formatPropertyNameForExport = new Func<MemberInfo, PhpTypeInfo, string>((m, declarer) => m.Name);
+
+        static readonly Func<MemberInfo, PhpTypeInfo, string> s_formatPropertyNameForDump = new Func<MemberInfo, PhpTypeInfo, string>((m, declarer) =>
+        {
+            var name = "\"" + m.Name + "\"";
+
+            if (m is FieldInfo f)
+            {
+                if (f.IsPublic) return name;
+                if (f.IsPrivate) return string.Concat(name, ":\"", declarer.Name, "\":private");
+                return name + ":protected";
+            }
+            else if (m is PropertyInfo p)
+            {
+                if (p.GetMethod.IsPublic) return name;
+                if (p.GetMethod.IsPrivate) return string.Concat(name, ":\"", declarer.Name, "\":private");
+                return name + ":protected";
+            }
+            else
+            {
+                throw new ArgumentException();
+            }
         });
 
         /// <summary>
         /// Enumerates instance fields of given object.
         /// </summary>
         /// <param name="instance">Object which fields will be enumerated.</param>
-        /// <param name="keyFormatter">Function converting field to a <typeparamref name="TKey"/>.</param>
+        /// <param name="keyFormatter">Function converting field/property to a <typeparamref name="TKey"/>.</param>
         /// <param name="keyFormatter2">Function converting </param>
         /// <param name="predicate">Optional. Predicate filtering instance fields.</param>
         /// <param name="ignoreRuntimeFields">Whether to ignore listing runtime fields.</param>
         /// <returns>Enumeration of fields and their values, including runtime fields.</returns>
         /// <typeparam name="TKey">Enumerated pairs key. Usually <see cref="IntStringKey"/>.</typeparam>
-        public static IEnumerable<KeyValuePair<TKey, PhpValue>> EnumerateInstanceFields<TKey>(object instance, Func<FieldInfo, PhpTypeInfo, TKey> keyFormatter, Func<IntStringKey, TKey> keyFormatter2, Func<FieldInfo, bool> predicate = null, bool ignoreRuntimeFields = false)
+        public static IEnumerable<KeyValuePair<TKey, PhpValue>> EnumerateInstanceFields<TKey>(object instance, Func<MemberInfo, PhpTypeInfo, TKey> keyFormatter, Func<IntStringKey, TKey> keyFormatter2, Func<MemberInfo, bool> predicate = null, bool ignoreRuntimeFields = false)
         {
             Debug.Assert(instance != null);
 
@@ -163,7 +224,16 @@ namespace Pchp.Core.Reflection
                     }
                 }
 
-                // TODO: CLR properties
+                foreach (var p in t.DeclaredFields.InstanceClrProperties)
+                {
+                    // perform visibility check
+                    if (predicate == null || predicate(p))
+                    {
+                        yield return new KeyValuePair<TKey, PhpValue>(
+                            keyFormatter(p, t),
+                            PhpValue.FromClr(p.GetValue(instance)));
+                    }
+                }
             }
 
             // PhpArray __runtime_fields
@@ -244,41 +314,49 @@ namespace Pchp.Core.Reflection
         /// <summary>
         /// Builds delegate that creates uninitialized class instance for purposes of deserialization.
         /// </summary>
-        internal static Func<Context, object> BuildCreateEmptyObjectFunc(PhpTypeInfo tinfo)
+        internal static bool TryBuildCreateEmptyObjectFunc(PhpTypeInfo tinfo, out Func<Context, object> activator)
         {
             Debug.Assert(tinfo != null);
 
             Func<Context, object> candidate = null;
 
-            if (!tinfo.IsInterface && !tinfo.IsTrait)
+            if (!tinfo.IsInterface && !tinfo.IsTrait && !tinfo.Type.IsAbstract)
             {
                 var ctors = tinfo.Type.DeclaredConstructors;
 
                 foreach (var c in ctors)
                 {
-                    if (c.IsStatic || c.IsPhpHidden())
+                    if (c.IsStatic || c.IsPrivate || c.IsPhpHidden())
                     {
                         continue;
                     }
 
+                    var ps = c.GetParameters();
+
+                    // .ctor()
+                    if (ps.Length == 0)
+                        candidate = (_ctx) => c.Invoke(Array.Empty<object>());
+
+                    // .ctor(Context)
+                    if (ps.Length == 1 && ps[0].IsContextParameter())
+                        candidate = (_ctx) => c.Invoke(new object[] { _ctx });
+
+                    // [PhpFieldsOnly] .ctor(Context, Dummy)
+                    if (ps.Length == 2 && ps[0].IsContextParameter() && ps[1].ParameterType == typeof(QueryValue<DummyFieldsOnlyCtor>))
+                        candidate = (_ctx) => c.Invoke(new object[] { _ctx, default(QueryValue<DummyFieldsOnlyCtor>) });
+
+                    //
                     if (c.IsPhpFieldsOnlyCtor())
                     {
-                        // we want this one:
-                        return (_ctx) => c.Invoke(new object[] { _ctx });
+                        Debug.Assert(candidate != null);
+                        break; // candidate found
                     }
-
-                    var ps = c.GetParameters();
-                    if (ps.Length == 0) candidate = (_ctx) => c.Invoke(Array.Empty<object>());
-                    if (ps.Length == 1 && ps[0].ParameterType == typeof(Context)) candidate = (_ctx) => c.Invoke(new object[] { _ctx });
                 }
             }
 
-            return candidate
-                ?? ((_ctx) =>
-                {
-                    Debug.Fail(string.Format(Resources.ErrResources.construct_not_supported, tinfo.Name));
-                    return null;
-                });
+            //
+            activator = candidate;
+            return activator != null;
         }
 
         /// <summary>
@@ -311,6 +389,23 @@ namespace Pchp.Core.Reflection
 
             //
             return count;
+        }
+
+        static bool IsVisible(this MemberInfo m, RuntimeTypeHandle caller)
+        {
+            if (m is FieldInfo f) return IsVisible(f, caller);
+            if (m is PropertyInfo p) return IsVisible(p, caller);
+            if (m is MethodBase b) return IsVisible(b, Type.GetTypeFromHandle(caller));
+
+            return false;
+        }
+
+        static bool IsVisible(this PropertyInfo p, RuntimeTypeHandle caller)
+        {
+            return
+                (p.GetMethod.IsPublic) ||
+                (p.GetMethod.IsPrivate && p.DeclaringType.TypeHandle.Equals(caller)) ||
+                (p.GetMethod.IsFamily && IsVisible(p.DeclaringType, caller));
         }
 
         static bool IsVisible(this FieldInfo f, RuntimeTypeHandle caller)
@@ -615,5 +710,81 @@ namespace Pchp.Core.Reflection
         }
 
         #endregion
+
+        /// <summary>
+        /// Gets routine static local variables and its value in given <see cref="Context"/>.
+        /// </summary>
+        /// <param name="routine">The routine.</param>
+        /// <param name="ctx">Runtime context, variables value will be read with respect to this context.</param>
+        public static KeyValuePair<string, PhpAlias>[] GetStaticLocals(this RoutineInfo routine, Context ctx)
+        {
+            Dictionary<string, Type> locals = null;
+
+            var method = routine.Methods[0];
+            var containingType = method.DeclaringType;
+            var nestedTypes = containingType.GetNestedTypes(BindingFlags.NonPublic);
+
+            if (nestedTypes.Length != 0)
+            {
+                var metadataName = method.Name.Replace('.', '-');
+
+                for (int i= 0; i < nestedTypes.Length; i++)
+                {
+                    // name: {MetadataName}${VariableName}
+                    var name = nestedTypes[i].Name;
+                    var dollar = name.LastIndexOf('$');
+                    if (dollar < 0 || dollar + 1 >= name.Length) continue;
+
+                    var varname = name.Substring(dollar + 1);
+                    var fncname = name.Remove(dollar);
+
+                    if (fncname == metadataName)
+                    {
+                        if (locals == null)
+                        {
+                            locals = new Dictionary<string, Type>();
+                        }
+
+                        locals[varname] = nestedTypes[i];
+                    }
+                }
+            }
+
+            // invoke an resolve static locals value:
+            if (locals != null)
+            {
+                // Holder is a class with "value" field with actual static local value
+                // Holder instance gets resolved using "Context.GetStatic<Holder>()" API
+
+                var GetStatic_T = typeof(Context).GetMethod("GetStatic", Cache.Types.Empty);
+                var result = new KeyValuePair<string, PhpAlias>[locals.Count];
+                int i = 0;
+                foreach (var local in locals)
+                {
+                    PhpAlias alias = null;
+
+                    // holder.value : PhpAlias
+                    var holder = GetStatic_T.MakeGenericMethod(local.Value).Invoke(ctx, Array.Empty<object>());
+                    var valueField = local.Value.GetField("value");
+                    if (valueField != null)
+                    {
+                        alias = valueField.GetValue(holder) as PhpAlias;
+
+                        if (alias == null)
+                        {
+                            Debug.Fail("Unexpected value of type " + (holder != null ? holder.GetType().Name : PhpVariable.TypeNameNull));
+                        }
+                    }
+
+                    result[i++] = new KeyValuePair<string, PhpAlias>(local.Key, alias);
+                }
+
+                return result;
+            }
+            else
+            {
+                return Array.Empty<KeyValuePair<string, PhpAlias>>();
+            }
+        }
     }
 }

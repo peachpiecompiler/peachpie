@@ -380,13 +380,18 @@ namespace Pchp.CodeAnalysis.Semantics
             return reference.EmitLoadValue(cg, ref lhs, access);
         }
 
-        public static TypeSymbol EmitLoadValue(this PropertySymbol property, CodeGenerator cg, IPlace receiver)
+        public static TypeSymbol EmitLoadValue(CodeGenerator cg, MethodSymbol method, IPlace receiverOpt)
         {
-            using (var lhs = EmitReceiver(cg, receiver))
+            using (var lhs = EmitReceiver(cg, receiverOpt))
             {
                 // TOOD: PhpValue.FromClr
-                return cg.EmitCall(ILOpCode.Callvirt/*changed to .call by EmitCall if possible*/, property.GetMethod);
+                return cg.EmitCall(ILOpCode.Callvirt/*changed to .call by EmitCall if possible*/, method);
             }
+        }
+
+        public static TypeSymbol EmitLoadValue(this PropertySymbol property, CodeGenerator cg, IPlace receiver)
+        {
+            return EmitLoadValue(cg, property.GetMethod, receiver);
         }
 
         public static void EmitStore(this IVariableReference target, CodeGenerator cg, LocalDefinition local, BoundAccess access)
@@ -839,24 +844,25 @@ namespace Pchp.CodeAnalysis.Semantics
             // check NotNull
             if (srcparam.IsNotNull)
             {
-                if (valueplace.Type.IsReferenceType && valueplace.Type != cg.CoreTypes.PhpAlias)
+                if ((valueplace.Type.IsReferenceType /*|| valueplace.Type.Is_PhpValue()*/) && valueplace.Type != cg.CoreTypes.PhpAlias)
                 {
                     cg.EmitSequencePoint(srcparam.Syntax);
 
-                    // Template: if (<param> == null) { PhpException.ArgumentNullError(param_name); }
-                    var lbl_notnull = new object();
-                    cg.EmitNotNull(valueplace);
-                    cg.Builder.EmitBranch(ILOpCode.Brtrue_s, lbl_notnull);
-
-                    // PhpException.ArgumentNullError(param_name);
-                    // Consider: just Debug.Assert(<param> != null) for private methods
-                    cg.Builder.EmitStringConstant(srcparam.Name);
-                    cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreTypes.PhpException.Method("ArgumentNullError", cg.CoreTypes.String)));
-
-                    //
-                    cg.Builder.EmitOpCode(ILOpCode.Nop);
-
-                    cg.Builder.MarkLabel(lbl_notnull);
+                    // Template: PhpException.ArgumentNullError( value, arg )
+                    if (valueplace.Type.IsReferenceType)
+                    {
+                        valueplace.EmitLoad(cg.Builder);
+                    }
+                    else if (valueplace.Type.Is_PhpValue())
+                    {
+                        cg.CoreMethods.PhpValue.Object.Symbol.EmitLoadValue(cg, valueplace);
+                    }
+                    else
+                    {
+                        throw ExceptionUtilities.Unreachable;
+                    }
+                    cg.Builder.EmitIntConstant(srcparam.ParameterIndex + 1);
+                    cg.EmitPop(cg.EmitCall(ILOpCode.Call, cg.CoreMethods.Operators.ThrowIfArgumentNull_object_int));
                 }
             }
         }

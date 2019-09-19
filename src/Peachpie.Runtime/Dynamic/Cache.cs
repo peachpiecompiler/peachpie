@@ -35,7 +35,7 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo IsSet_PhpValue = typeof(Core.Operators).GetMethod("IsSet", Types.PhpValue);
 
             public static MethodInfo ToString_Double_Context = typeof(Core.Convert).GetMethod("ToString", typeof(double), typeof(Context));
-            public static MethodInfo ToLong_String = typeof(Core.Convert).GetMethod("StringToLongInteger", typeof(string));
+            public static MethodInfo ToLongOrThrow_String = typeof(Core.Convert).GetMethod("ToLongOrThrow", typeof(string));
             public static MethodInfo ToDouble_String = typeof(Core.Convert).GetMethod("StringToDouble", typeof(string));
             public static MethodInfo ToPhpString_PhpValue_Context = typeof(Core.Convert).GetMethod("ToPhpString", Types.PhpValue, typeof(Context));
             public static MethodInfo ToPhpNumber_String = typeof(Core.Convert).GetMethod("ToNumber", Types.String[0]);
@@ -55,8 +55,8 @@ namespace Pchp.Core.Dynamic
             public static MethodInfo PhpValue_ToClass = Types.PhpValue.GetMethod("ToClass", Types.Empty);
             public static MethodInfo PhpValue_ToArray = Types.PhpValue.GetMethod("ToArray", Types.Empty);
             /// <summary>Get the underlaying PhpArray, or <c>null</c>. Throws in case of a scalar or object.</summary>
-            public static MethodInfo PhpValue_GetArray = Types.PhpValue.GetMethod("GetArray", Types.Empty);
-            public static MethodInfo PhpValue_AsCallable_RuntimeTypeHandle = Types.PhpValue.GetMethod("AsCallable", typeof(RuntimeTypeHandle));
+            public static MethodInfo PhpValue_ToArrayOrThrow = Types.PhpValue.GetMethod("ToArrayOrThrow", Types.Empty);
+            public static MethodInfo PhpValue_AsCallable_RuntimeTypeHandle_Object = Types.PhpValue.GetMethod("AsCallable", typeof(RuntimeTypeHandle), typeof(object));
             public static MethodInfo PhpValue_AsObject = Types.PhpValue.GetMethod("AsObject", Types.Empty);
             public static MethodInfo PhpValue_AsString_Context = Types.PhpValue.GetMethod("AsString", typeof(Context));
             public static MethodInfo PhpValue_ToIntStringKey = Types.PhpValue.GetMethod("ToIntStringKey");
@@ -81,12 +81,14 @@ namespace Pchp.Core.Dynamic
 
         public static class Properties
         {
-            public static readonly PropertyInfo PhpValue_Object = Types.PhpValue.GetTypeInfo().GetDeclaredProperty("Object");
-            public static readonly FieldInfo PhpValue_Void = Types.PhpValue.GetTypeInfo().GetDeclaredField("Void");
-            public static readonly FieldInfo PhpValue_Null = Types.PhpValue.GetTypeInfo().GetDeclaredField("Null");
-            public static readonly FieldInfo PhpValue_False = Types.PhpValue.GetTypeInfo().GetDeclaredField("False");
-            public static readonly FieldInfo PhpValue_True = Types.PhpValue.GetTypeInfo().GetDeclaredField("True");
-            public static readonly FieldInfo PhpNumber_Default = Types.PhpNumber[0].GetTypeInfo().GetDeclaredField("Default");
+            public static readonly PropertyInfo PhpValue_Object = Types.PhpValue.GetProperty("Object");
+            public static readonly FieldInfo PhpValue_Void = Types.PhpValue.GetField("Void");
+            public static readonly FieldInfo PhpValue_Null = Types.PhpValue.GetField("Null");
+            public static readonly FieldInfo PhpValue_False = Types.PhpValue.GetField("False");
+            public static readonly FieldInfo PhpValue_True = Types.PhpValue.GetField("True");
+            public static readonly FieldInfo PhpNumber_Default = Types.PhpNumber[0].GetField("Default");
+            public static readonly PropertyInfo PhpValue_IsNull = Types.PhpValue.GetProperty("IsNull");
+            public static readonly PropertyInfo PhpValue_IsFalse = Types.PhpValue.GetProperty("IsFalse");
         }
 
         public static class PhpString
@@ -95,7 +97,7 @@ namespace Pchp.Core.Dynamic
             public static ConstructorInfo ctor_ByteArray = typeof(Core.PhpString).GetCtor(typeof(byte[]));
             public static readonly MethodInfo ToString_Context = typeof(Core.PhpString).GetMethod("ToString", typeof(Context));
             public static readonly MethodInfo ToBytes_Context = typeof(Core.PhpString).GetMethod("ToBytes", typeof(Context));
-            public static readonly PropertyInfo IsDefault = Types.PhpString[0].GetTypeInfo().GetDeclaredProperty("IsDefault");
+            public static readonly PropertyInfo IsDefault = Types.PhpString[0].GetProperty("IsDefault");
         }
 
         public static class IntStringKey
@@ -106,22 +108,22 @@ namespace Pchp.Core.Dynamic
 
         public static class PhpAlias
         {
-            public static readonly FieldInfo Value = Types.PhpAlias[0].GetTypeInfo().GetDeclaredField("Value");
+            public static readonly FieldInfo Value = Types.PhpAlias[0].GetField("Value");
             public static ConstructorInfo ctor_PhpValue_int => Types.PhpAlias[0].GetCtor(Types.PhpValue, Types.Int[0]);
         }
 
         public static class IndirectLocal
         {
-            public static readonly PropertyInfo Value = Types.IndirectLocal.GetTypeInfo().GetDeclaredProperty("Value");
-            public static readonly PropertyInfo ValueRef = Types.IndirectLocal.GetTypeInfo().GetDeclaredProperty("ValueRef");
-            public static readonly MethodInfo EnsureAlias = Types.IndirectLocal.GetTypeInfo().GetDeclaredMethod("EnsureAlias");
+            public static readonly PropertyInfo Value = Types.IndirectLocal.GetProperty("Value");
+            public static readonly PropertyInfo ValueRef = Types.IndirectLocal.GetProperty("ValueRef");
+            public static readonly MethodInfo EnsureAlias = Types.IndirectLocal.GetMethod("EnsureAlias");
         }
 
         public static class RecursionCheckToken
         {
             public static ConstructorInfo ctor_ctx_object_int = typeof(Context.RecursionCheckToken).GetCtor(typeof(Context), Types.Object[0], Types.Int[0]);
             public static MethodInfo Dispose = typeof(Context.RecursionCheckToken).GetMethod("Dispose");
-            public static readonly PropertyInfo IsInRecursion = typeof(Context.RecursionCheckToken).GetTypeInfo().GetDeclaredProperty("IsInRecursion");
+            public static readonly PropertyInfo IsInRecursion = typeof(Context.RecursionCheckToken).GetProperty("IsInRecursion");
         }
 
         public static class Object
@@ -163,7 +165,7 @@ namespace Pchp.Core.Dynamic
         /// </summary>
         public static ConstructorInfo GetCtor(this Type type, params Type[] ptypes)
         {
-            var ctors = type.GetTypeInfo().DeclaredConstructors;
+            var ctors = type.GetConstructors();//.GetTypeInfo().DeclaredConstructors;
             foreach (var ctor in ctors)
             {
                 var ps = ctor.GetParameters();

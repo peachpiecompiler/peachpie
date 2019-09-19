@@ -183,6 +183,23 @@ namespace Pchp.CodeAnalysis.CodeGen
             return null;
         }
 
+        /// <summary>
+        /// Emits value of <c>$this</c>.
+        /// Available only within source routines.
+        /// In case no $this is available, <c>NULL</c> is loaded on stack instead.
+        /// </summary>
+        public TypeSymbol EmitPhpThisOrNull()
+        {
+            var t = EmitPhpThis();
+            if (t == null)
+            {
+                _il.EmitNullConstant();
+                t = CoreTypes.Object;
+            }
+
+            return t;
+        }
+
         public TypeSymbol EmitGeneratorInstance()
         {
             Contract.ThrowIfNull(this.GeneratorStateMachineMethod);
@@ -1232,6 +1249,8 @@ namespace Pchp.CodeAnalysis.CodeGen
         /// Gets source element index and delegate that emits the LOAD of source element.</param>
         public void EmitEnumerateArray(IPlace arrplace, int startindex, Action<LocalDefinition, Func<TypeSymbol>> bodyemit)
         {
+            if (arrplace == null) throw new ArgumentNullException(nameof(arrplace));
+
             Debug.Assert(arrplace.Type.IsSZArray());
 
             var arr_element = ((ArrayTypeSymbol)arrplace.Type).ElementType;
@@ -1410,8 +1429,6 @@ namespace Pchp.CodeAnalysis.CodeGen
             // QueryValue<T>
             else if (SpecialParameterSymbol.IsQueryValueParameter(p, out var ctor, out var container))
             {
-                Debug.Assert(ctor != null);
-
                 switch (container)
                 {
                     case SpecialParameterSymbol.QueryValueTypes.CallerScript:
@@ -1435,6 +1452,15 @@ namespace Pchp.CodeAnalysis.CodeGen
                             .Expect(CoreTypes.PhpArray);    // PhpArray
                         EmitCall(ILOpCode.Call, ctor);      // op_Implicit
                         break;
+
+                    case SpecialParameterSymbol.QueryValueTypes.ThisVariable:
+                        this.EmitPhpThisOrNull();           // object
+                        Debug.Assert(ctor.MethodKind == MethodKind.Constructor);
+                        EmitCall(ILOpCode.Newobj, ctor);    // .ctor(object)
+                        break;
+
+                    case SpecialParameterSymbol.QueryValueTypes.DummyFieldsOnlyCtor:
+                        return EmitLoadDefaultOfValueType(p.Type);  // default()
                 }
 
                 // Template: QueryValue<T>.op_Implicit( {STACK} )
@@ -1646,7 +1672,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             int arg_params_index = (arguments.Length != 0 && arguments[arguments.Length - 1].IsUnpacking) ? arguments.Length - 1 : -1; // index of params argument, otherwise -1
             int arg_params_consumed = 0; // count of items consumed from arg_params if any
 
-            Debug.Assert(arg_params_index < 0 || (arguments[arg_params_index].Value is BoundVariableRef v && v.Variable.Type.IsSZArray()));
+            Debug.Assert(arg_params_index < 0 || (arguments[arg_params_index].Value is BoundVariableRef v && v.Variable.Type.IsSZArray()), $"Argument for params is expected to be a variable of type array, at {method.ContainingType.PhpName()}::{method.Name}().");
 
             for (; param_index < parameters.Length; param_index++)
             {
@@ -1665,15 +1691,14 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (arg_index == arg_params_index) // arg is params
                 {
-                    #region LOAD params PhpValue[]
+                    #region LOAD params T[]
 
                     //
-                    // treat argument as "params PhpValue[]"
+                    // treat argument as "params T[]"
                     //
 
                     var arg_type = (ArrayTypeSymbol)arguments[arg_index].Value.Emit(this); // {args}
-                    Debug.Assert(arg_type.ElementType == CoreTypes.PhpValue);
-
+                    
                     // {args} on STACK:
 
                     if (p.IsParams)
@@ -1681,7 +1706,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         // Template: {args}
                         if (arg_type != p.Type || arg_params_consumed > 0)  // we need to create new array from args
                         {
-                            // PhpValue[] arrtmp = {arrtmp};
+                            // T[] arrtmp = {arrtmp};
                             var arrtmp = GetTemporaryLocal(arg_type, false);
                             _il.EmitLocalStore(arrtmp);
 
@@ -1711,7 +1736,7 @@ namespace Pchp.CodeAnalysis.CodeGen
                         arguments[arg_index].Value.Emit(this);      // <args>
                         _il.EmitIntConstant(arg_params_consumed);   // <i>
 
-                        if (p.Type == CoreTypes.PhpAlias)
+                        if (p.Type.Is_PhpAlias() && arg_type.ElementType.Is_PhpValue())
                         {
                             // {args}[i].EnsureAlias()
                             _il.EmitOpCode(ILOpCode.Ldelema);               // ref args[i]
@@ -1746,19 +1771,83 @@ namespace Pchp.CodeAnalysis.CodeGen
 
                 if (p.IsParams)
                 {
-                    Debug.Assert(parameters.Length == param_index + 1); // p is last one
-                    Debug.Assert(p.Type.IsArray());
+                    Debug.Assert(parameters.Length == param_index + 1, $"params should be the last parameter, at {method.ContainingType.PhpName()}::{method.Name}()."); // p is last one
+                    Debug.Assert(p.Type.IsArray(), $"params should be of type array, at {method.ContainingType.PhpName()}::{method.Name}().");
+
+                    var p_element = ((ArrayTypeSymbol)p.Type).ElementType;
 
                     if (arg_params_index >= 0)
                     {
-                        // we have to load { arg_i, ..., arg_params[] }
-                        throw new NotImplementedException();
-                    }
+                        // we have to load remaining arguments into an array and unroll the arg_params
+                        // { arg_i, ..., arg_params[] }
 
-                    // wrap remaining arguments to array
-                    var values = (arg_index < arguments.Length) ? arguments.Skip(arg_index).AsImmutable() : ImmutableArray<BoundArgument>.Empty;
-                    arg_index += values.Length;
-                    Emit_NewArray(((ArrayTypeSymbol)p.Type).ElementType, values);
+                        #region LOAD new Array( ..., ...params )
+
+                        /*
+                         * Template:
+                         * params = new PhpValue[ {arguments.Length - arg_index - 1} +  {arguments[arg_params_index]}.Length ]
+                         * params[0] = arg_i
+                         * params[1] = ..
+                         * Array.Copy( params, arguments[arg_params_index] )
+                         */
+
+                        int arr_size1 = arguments.Length - arg_index - 1; // remaining arguments without arg_params
+                        var arg_params = arguments[arg_params_index].Value as BoundVariableRef;
+                        Debug.Assert(arg_params != null, $"Argument for params is expected to be a variable reference expression, at {method.ContainingType.PhpName()}::{method.Name}().");
+
+                        // <params> = new [arr_size1 + arg_params.Length]
+
+                        _il.EmitIntConstant(arr_size1);
+                        arguments[arg_params_index].Value.Emit(this); // {args}
+                        EmitArrayLength();
+                        _il.EmitOpCode(ILOpCode.Add);
+
+                        _il.EmitOpCode(ILOpCode.Newarr);
+                        EmitSymbolToken(p_element, null);
+
+                        var params_loc = GetTemporaryLocal(p.Type, false);
+                        _il.EmitLocalStore(params_loc);
+
+                        // { arg_i, ..., arg_(n-1) }
+                        for (int i = 0; i < arr_size1; i++)
+                        {
+                            _il.EmitLocalLoad(params_loc);  // <params>
+                            _il.EmitIntConstant(i);         // [i]
+                            EmitConvert(arguments[arg_index + i].Value, p_element);
+                            _il.EmitOpCode(ILOpCode.Stelem);
+                            EmitSymbolToken(p_element, null);
+                        }
+
+                        // { ... arg_params } // TODO: use Array.Copy() if element types match
+                        EmitEnumerateArray(arg_params.Place(), 0, (loc_i, loader) =>
+                        {
+                            _il.EmitLocalLoad(params_loc);  // <params>
+
+                            _il.EmitIntConstant(arr_size1);         // arr_size1
+                            _il.EmitLocalLoad(loc_i);               // {i}
+                            _il.EmitOpCode(ILOpCode.Add);           // +
+
+                            EmitConvert(loader(), 0, p_element);
+                            _il.EmitOpCode(ILOpCode.Stelem);
+                            EmitSymbolToken(p_element, null);
+                        });
+
+                        // params : PhpValue[]
+                        _il.EmitLocalLoad(params_loc);
+                        ReturnTemporaryLocal(params_loc);
+
+                        arg_index = arguments.Length;
+
+                        #endregion
+                    }
+                    else
+                    {
+                        // easy case,
+                        // wrap remaining arguments to array
+                        var values = (arg_index < arguments.Length) ? arguments.Skip(arg_index).AsImmutable() : ImmutableArray<BoundArgument>.Empty;
+                        arg_index += values.Length;
+                        Emit_NewArray(p_element, values);
+                    }
 
                     break;  // p is last one
                 }
@@ -1823,6 +1912,7 @@ namespace Pchp.CodeAnalysis.CodeGen
             var givenps = thismethod.Parameters;
             var arguments = new List<BoundArgument>(givenps.Length);
             BoundTypeRef staticTypeRef = null;
+
             for (int i = 0; i < givenps.Length; i++)
             {
                 var p = givenps[i];
@@ -2388,29 +2478,32 @@ namespace Pchp.CodeAnalysis.CodeGen
             }
             else if ((boundinitializer = (targetp as IPhpValue)?.Initializer) != null)
             {
-                // TODO: use `boundinitializer.Parent` instead of following
-                // magically determine the source routine corresponding to the initializer expression:
-                SourceRoutineSymbol srcr = null;
-                for (var r = targetp.ContainingSymbol;
-                     srcr == null && r != null; // we still don't have to original SourceRoutineSymbol, but we have "r"
-                     r = (r as SynthesizedMethodSymbol)?.ForwardedCall?.OriginalDefinition) // dig in and find original SourceRoutineSymbol wrapped by this synthesized stub
-                {
-                    srcr = r as SourceRoutineSymbol;
-                }
+                var cg = this;
 
-                Debug.Assert(srcr != null, "!srcr");
-
-                if (srcr != null)
+                if (targetp.OriginalDefinition is SourceParameterSymbol)
                 {
-                    using (var cg = new CodeGenerator(this, srcr))
+                    // emit using correct TypeRefContext:
+
+                    // TODO: use `boundinitializer.Parent` instead of following
+                    // magically determine the source routine corresponding to the initializer expression:
+                    SourceRoutineSymbol srcr = null;
+                    for (var r = targetp.ContainingSymbol;
+                         srcr == null && r != null; // we still don't have to original SourceRoutineSymbol, but we have "r"
+                         r = (r as SynthesizedMethodSymbol)?.ForwardedCall?.OriginalDefinition) // dig in and find original SourceRoutineSymbol wrapped by this synthesized stub
                     {
-                        cg.EmitConvert(boundinitializer, ptype = targetp.Type);
+                        srcr = r as SourceRoutineSymbol;
+                    }
+
+                    Debug.Assert(srcr != null, "!srcr");
+
+                    if (srcr != null)
+                    {
+                        cg = new CodeGenerator(this, srcr);
                     }
                 }
-                else
-                {   // should not happen
-                    ptype = EmitLoadDefault(targetp.Type, 0);
-                }
+
+                //
+                cg.EmitConvert(boundinitializer, ptype = targetp.Type);
             }
             else if (targetp.IsParams)
             {
@@ -3156,6 +3249,27 @@ namespace Pchp.CodeAnalysis.CodeGen
                                 {
                                     Builder.EmitCharConstant(str[0]);
                                     return DeclaringCompilation.GetSpecialType(SpecialType.System_Char);
+                                }
+                                break;
+                            case SpecialType.System_Int32:
+                                if (int.TryParse(str, out i))
+                                {
+                                    Builder.EmitIntConstant(i);
+                                    return targetOpt;
+                                }
+                                break;
+                            case SpecialType.System_Int64:
+                                if (long.TryParse(str, out l))
+                                {
+                                    Builder.EmitLongConstant(l);
+                                    return targetOpt;
+                                }
+                                break;
+                            case SpecialType.System_Double:
+                                if (double.TryParse(str, out var d))
+                                {
+                                    Builder.EmitDoubleConstant(d);
+                                    return targetOpt;
                                 }
                                 break;
                         }

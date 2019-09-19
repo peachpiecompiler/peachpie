@@ -14,7 +14,7 @@ namespace Pchp.Library.Spl
         /// Original stack trace created when the class was constructed.
         /// </summary>
         [PhpHidden]
-        private PhpStackTrace/*!*/_stacktrace;
+        readonly PhpStackTrace/*!*/_stacktrace = new PhpStackTrace();
 
         [PhpHidden]
         private PhpArray _trace;
@@ -39,14 +39,11 @@ namespace Pchp.Library.Spl
         [PhpFieldsOnlyCtor]
         protected Exception()
         {
-            _stacktrace = new PhpStackTrace();
         }
 
         public Exception(string message = "", long code = 0, Throwable previous = null)
             : base(message, innerException: previous as System.Exception)
         {
-            _stacktrace = new PhpStackTrace();
-
             this.file = _stacktrace.GetFilename();
             this.line = _stacktrace.GetLine();
 

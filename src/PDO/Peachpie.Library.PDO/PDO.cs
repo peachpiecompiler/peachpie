@@ -9,22 +9,21 @@ using System.Diagnostics;
 
 namespace Peachpie.Library.PDO
 {
-
     /// <summary>
     /// Represents a connection between PHP and a database server
     /// </summary>
     /// <seealso cref="Pchp.Core.PhpResource" />
     [PhpType(PhpTypeAttribute.InheritName)]
     [PhpExtension(PDOConfiguration.PdoExtensionName)]
-    public partial class PDO : IDisposable, IPDO
+    public partial class PDO : IDisposable
     {
         /// <summary>Runtime context. Cannot be <c>null</c>.</summary>
         protected readonly Context _ctx; // "_ctx" is a special name recognized by compiler. Will be reused by inherited classes.
 
-        private IPDODriver m_driver;
-        private DbConnection m_con;
-        private DbTransaction m_tx;
-        private readonly Dictionary<PDO_ATTR, PhpValue> m_attributes = new Dictionary<PDO_ATTR, PhpValue>();
+        IPDODriver m_driver;
+        DbConnection m_con;
+        DbTransaction m_tx;
+        readonly Dictionary<PDO_ATTR, PhpValue> m_attributes = new Dictionary<PDO_ATTR, PhpValue>();
 
         internal DbTransaction CurrentTransaction { get { return this.m_tx; } }
         internal IPDODriver Driver { get { return this.m_driver; } }
@@ -61,13 +60,26 @@ namespace Peachpie.Library.PDO
         /// <param name="username">The user name for the DSN string.</param>
         /// <param name="password">The password for the DSN string.</param>
         /// <param name="options">A key=&gt;value array of driver-specific connection options.</param>
-        public PDO(Context ctx, string dsn, string username = null, string password = null, PhpArray options = null) : this(ctx)
+        public PDO(Context ctx, string dsn, string username = null, string password = null, PhpArray options = null)
+            : this(ctx)
         {
-            this.__construct(dsn, username, password, options);
+            construct(dsn, username, password, options);
         }
 
-        /// <inheritDoc />
-        public void __construct(string dsn, string username = null, string password = null, PhpArray options = null)
+        /// <summary>
+        /// Creates a PDO instance representing a connection to a database
+        /// </summary>
+        /// <param name="dsn">The DSN.</param>
+        /// <param name="username">The username.</param>
+        /// <param name="password">The password.</param>
+        /// <param name="options">The options.</param>
+        public virtual void __construct(string dsn, string username = null, string password = null, PhpArray options = null)
+        {
+            construct(dsn, username, password, options);
+        }
+
+        [PhpHidden]
+        void construct(string dsn, string username = null, string password = null, PhpArray options = null)
         {
             this.SetDefaultAttributes();
 
@@ -126,7 +138,10 @@ namespace Peachpie.Library.PDO
             this.m_attributes[PDO_ATTR.ATTR_CLIENT_VERSION] = (PhpValue)this.m_driver.ClientVersion;
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Checks if inside a transaction
+        /// </summary>
+        /// <returns></returns>
         public bool inTransaction() => this.m_tx != null;
 
         /// <inheritDoc />
@@ -171,8 +186,12 @@ namespace Peachpie.Library.PDO
             return dbCommand;
         }
 
-        /// <inheritDoc />
-        public PhpValue exec(string statement)
+        /// <summary>
+        /// Execute an SQL statement and return the number of affected rows.
+        /// </summary>
+        /// <param name="statement">The statement.</param>
+        /// <returns></returns>
+        public virtual PhpValue exec(string statement)
         {
             this.ClearError();
 
@@ -193,8 +212,12 @@ namespace Peachpie.Library.PDO
             }
         }
 
-        /// <inheritDoc />
-        public bool beginTransaction()
+        /// <summary>
+        /// Initiates a transaction
+        /// </summary>
+        /// <exception cref="PDOException">When a transaction has already been started</exception>
+        /// <returns>True if transaction started successfully, or false</returns>
+        public virtual bool beginTransaction()
         {
             if (this.m_tx != null)
                 throw new PDOException("Transaction already active");
@@ -203,8 +226,11 @@ namespace Peachpie.Library.PDO
             return true;
         }
 
-        /// <inheritDoc />
-        public bool commit()
+        /// <summary>
+        /// Commits a transaction
+        /// </summary>
+        /// <returns></returns>
+        public virtual bool commit()
         {
             if (this.m_tx == null)
                 throw new PDOException("No active transaction");
@@ -213,8 +239,11 @@ namespace Peachpie.Library.PDO
             return true;
         }
 
-        /// <inheritDoc />
-        public bool rollBack()
+        /// <summary>
+        /// Rolls back a transaction.
+        /// </summary>
+        /// <returns></returns>
+        public virtual bool rollBack()
         {
             if (this.m_tx == null)
                 throw new PDOException("No active transaction");
@@ -223,8 +252,12 @@ namespace Peachpie.Library.PDO
             return true;
         }
 
-        /// <inheritDoc />
-        public string lastInsertId(string name = null)
+        /// <summary>
+        /// Returns the ID of the last inserted row or sequence value.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <returns></returns>
+        public virtual string lastInsertId(string name = null)
         {
             return this.m_driver.GetLastInsertId(this, name);
         }
@@ -248,9 +281,14 @@ namespace Peachpie.Library.PDO
             return false;
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Prepares a statement for execution and returns a statement object.
+        /// </summary>
+        /// <param name="statement">The statement.</param>
+        /// <param name="driver_options">The driver options.</param>
+        /// <returns></returns>
         [return: CastToFalse]
-        public PDOStatement prepare(string statement, PhpArray driver_options = null)
+        public virtual PDOStatement prepare(string statement, PhpArray driver_options = null)
         {
             try
             {
@@ -265,9 +303,14 @@ namespace Peachpie.Library.PDO
             }
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Executes an SQL statement, returning a result set as a PDOStatement object.
+        /// </summary>
+        /// <param name="statement">The statement.</param>
+        /// <param name="args">The arguments.</param>
+        /// <returns></returns>
         [return: CastToFalse]
-        public PDOStatement query(string statement, params PhpValue[] args)
+        public virtual PDOStatement query(string statement, params PhpValue[] args)
         {
             var stmt = lastExecutedStatement = new PDOStatement(_ctx, this, statement, null);
 
@@ -294,9 +337,14 @@ namespace Peachpie.Library.PDO
             }
         }
 
-        /// <inheritDoc />
+        /// <summary>
+        /// Quotes a string for use in a query.
+        /// </summary>
+        /// <param name="str">The string.</param>
+        /// <param name="parameter_type">Type of the parameter.</param>
+        /// <returns></returns>
         [return: CastToFalse]
-        public string quote(string str, PARAM parameter_type = PARAM.PARAM_STR)
+        public virtual string quote(string str, PARAM parameter_type = PARAM.PARAM_STR)
         {
             return m_driver?.Quote(str, parameter_type);
         }
@@ -325,19 +373,5 @@ namespace Peachpie.Library.PDO
             //this.m_attributes[PDO_ATTR.ATTR_DEFAULT_FETCH_MODE] = 0;
             this.m_attributes[PDO_ATTR.ATTR_EMULATE_PREPARES] = PhpValue.False;
         }
-
-        #region Interface artifacts
-        /// <inheritDoc />
-        IPDOStatement IPDO.prepare(string statement, PhpArray driver_options)
-        {
-            return this.prepare(statement, driver_options);
-        }
-
-        /// <inheritDoc />
-        IPDOStatement IPDO.query(string statement, params PhpValue[] args)
-        {
-            return this.query(statement, args);
-        }
-        #endregion
     }
 }

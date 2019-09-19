@@ -21,8 +21,14 @@ namespace Peachpie.Library.XmlDom
 
         internal XmlDocument XmlDocument
         {
-            get { return (XmlDocument)XmlNode; }
-            set { XmlNode = value; }
+            get
+            {
+                return XmlNode as XmlDocument ?? XmlNode?.OwnerDocument;
+            }
+            set
+            {
+                XmlNode = value;
+            }
         }
 
         private bool _formatOutput;
@@ -262,8 +268,10 @@ namespace Peachpie.Library.XmlDom
 
         public DOMDocument(string version = null, string encoding = null)
         {
-            this.XmlDocument = new XmlDocument();
-            this.XmlDocument.PreserveWhitespace = true;
+            this.XmlDocument = new XmlDocument()
+            {
+                PreserveWhitespace = true,
+            };
 
             __construct(version, encoding);
         }
@@ -284,8 +292,7 @@ namespace Peachpie.Library.XmlDom
             }
 
             // append the corresponding XML declaration to the document
-            if (version == null) version = "1.0";
-            XmlDocument.AppendChild(XmlDocument.CreateXmlDeclaration(version, encoding, String.Empty));
+            XmlDocument.AppendChild(XmlDocument.CreateXmlDeclaration(version ?? "1.0", encoding, string.Empty));
         }
 
         #endregion
@@ -520,7 +527,7 @@ namespace Peachpie.Library.XmlDom
             throw new NotImplementedException();
         }
 
-        private XmlDeclaration GetXmlDeclaration() => (XmlNode.FirstChild as XmlDeclaration);
+        private XmlDeclaration GetXmlDeclaration() => (XmlDocument.FirstChild as XmlDeclaration);
 
         /// <summary>
         /// Register extended class used to create base node type.
@@ -749,7 +756,7 @@ namespace Peachpie.Library.XmlDom
         {
             XmlNode xml_node;
 
-            if (node == null) xml_node = XmlNode;
+            if (node == null) xml_node = XmlDocument;
             else
             {
                 xml_node = node.XmlNode;

@@ -42,12 +42,11 @@ namespace Peachpie.Library.PDO
                 case PDO_ERRMODE.ERRMODE_SILENT:
                     break;
                 case PDO_ERRMODE.ERRMODE_WARNING:
-                    _ctx.Throw(PhpError.E_WARNING, ex.Message);
+                    PhpException.Throw(PhpError.E_WARNING, ex.Message);
                     break;
                 case PDO_ERRMODE.ERRMODE_EXCEPTION:
-                    if (ex is Pchp.Library.Spl.Exception)
+                    if (ex is Pchp.Library.Spl.Exception pex)
                     {
-                        var pex = (Pchp.Library.Spl.Exception)ex;
                         throw new PDOException(pex.Message, pex.getCode(), pex);
                     }
                     else
@@ -57,11 +56,17 @@ namespace Peachpie.Library.PDO
             }
         }
 
-        /// <inheritDoc />
-        public string errorCode() => _errorCode;
+        /// <summary>
+        /// Fetch the SQLSTATE associated with the last operation on the database handle
+        /// </summary>
+        /// <returns></returns>
+        public virtual string errorCode() => _errorCode;
 
-        /// <inheritDoc />
-        public PhpArray errorInfo() => new PhpArray(3)
+        /// <summary>
+        /// Fetch extended error information associated with the last operation on the database handle
+        /// </summary>
+        /// <returns></returns>
+        public virtual PhpArray errorInfo() => new PhpArray(3)
         {
             _errorSqlState, _errorCode, _errorMessage,
         };

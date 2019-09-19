@@ -105,7 +105,7 @@ namespace Pchp.Core.Reflection
             public override string ToString() => ToStackTraceLine(-1);
         }
 
-        PhpStackFrame[] _frames;
+        readonly PhpStackFrame[] _frames;
 
         [DebuggerNonUserCode]
         public PhpStackTrace()
@@ -117,12 +117,12 @@ namespace Pchp.Core.Reflection
         public PhpStackTrace(StackTrace/*!*/clrtrace)
         {
             // collect stack trace if possible:
-            InitPhpStackFrames(clrtrace);
+            _frames = InitPhpStackFrames(clrtrace);
         }
 
-        void InitPhpStackFrames(StackTrace clrtrace)
+        static PhpStackFrame[] InitPhpStackFrames(StackTrace clrtrace)
         {
-            _frames = clrtrace.GetFrames()
+            return clrtrace.GetFrames()
                 .Where(IsPhpStackFrame)
                 .Select(clrframe => new PhpStackFrame(clrframe))
                 .ToArray();
@@ -167,14 +167,16 @@ namespace Pchp.Core.Reflection
                         return false;
                     }
                 }
-                else if (tokenkey == "b77a5c561934e089" || tokenkey == "b03f5f7f11d50a3a")    // System
+                else if (tokenkey == "b77a5c561934e089" || tokenkey == "b03f5f7f11d50a3a" || tokenkey == "7cec85d7bea7798e")    // System
                 {
                     return false;
                 }
             }
 
-            // [DebuggerNonUserCodeAttribute] or [DebuggerHiddenAttribute]
-            if (method.GetCustomAttribute<DebuggerNonUserCodeAttribute>() != null || method.GetCustomAttribute<DebuggerHiddenAttribute>() != null ||
+            // [DebuggerNonUserCodeAttribute] or [DebuggerHiddenAttribute] or [PhpHiddenAttribute]
+            if (method.GetCustomAttribute<DebuggerNonUserCodeAttribute>() != null ||
+                method.GetCustomAttribute<DebuggerHiddenAttribute>() != null ||
+                method.GetCustomAttribute<PhpHiddenAttribute>() != null ||
                 tinfo.GetCustomAttribute<DebuggerNonUserCodeAttribute>() != null)
             {
                 return false;
@@ -184,9 +186,45 @@ namespace Pchp.Core.Reflection
             return true;
         }
 
-        public string GetFilename() => (_frames.Length != 0 && _frames[0].HasLocation) ? _frames[0].FileName : string.Empty;
+        public string GetFilename()
+        {
+            var f = UserStackFrame;
+            return (f != null && f.HasLocation) ? f.FileName : string.Empty;
+        }
 
-        public int GetLine() => (_frames.Length != 0 && _frames[0].HasLocation) ? _frames[0].Line : 0;
+        public int GetLine()
+        {
+            var f = UserStackFrame;
+            return (f != null && f.HasLocation) ? f.Line : 0;
+        }
+
+        public int GetColumn()
+        {
+            var f = UserStackFrame;
+            return (f != null && f.HasLocation) ? f.Column : 0;
+        }
+
+        /// <summary>
+        /// Gets first non-core-assembly stack frame or <c>null</c>.
+        /// </summary>
+        PhpStackFrame UserStackFrame
+        {
+            get
+            {
+                if (_frames != null)
+                {
+                    for (int i = 0; i < _frames.Length; i++)
+                    {
+                        if (!_frames[i].IsCoreAssembly)
+                        {
+                            return _frames[i];
+                        }
+                    }
+                }
+
+                return null;
+            }
+        }
 
         /// <summary>
         /// Stack trace text formatted as PHP stack trace.
@@ -239,7 +277,7 @@ namespace Pchp.Core.Reflection
 
         public bool HasLocation => FileName != null;
 
-        public int Line => _clrframe.GetFileLineNumber() - 1;
+        public int Line => _clrframe.GetFileLineNumber();
 
         public int Column => _clrframe.GetFileColumnNumber() - 1;
 
@@ -302,10 +340,10 @@ namespace Pchp.Core.Reflection
         {
             get
             {
-                var method = _clrframe.GetMethod();
                 var typename = TypeName;
                 if (typename != null)
                 {
+                    var method = _clrframe.GetMethod();
                     return string.Concat(typename, MethodOperator, method.Name);
                 }
                 else
@@ -354,6 +392,28 @@ namespace Pchp.Core.Reflection
                 str.Append(')');
 
                 return str.ToString();
+            }
+        }
+
+        /// <summary>
+        /// Determines if the stack frame coresponds to the core assembly.
+        /// </summary>
+        public bool IsCoreAssembly
+        {
+            get
+            {
+                var method = _clrframe.GetMethod();
+                if (method != null)
+                {
+                    var token = method.DeclaringType.Assembly.GetName().GetPublicKeyToken();
+                    if (token != null)
+                    {
+                        var tokenkey = Utilities.StringUtils.BinToHex(token);
+                        return (tokenkey == ReflectionUtils.PeachpieAssemblyTokenKey);
+                    }
+                }
+
+                return false;
             }
         }
 

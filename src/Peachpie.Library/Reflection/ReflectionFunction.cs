@@ -49,7 +49,7 @@ namespace Pchp.Library.Reflection
             if (str != null)
             {
                 _closure = null;
-                _routine = ctx.GetDeclaredFunction(str);
+                _routine = ctx.GetDeclaredFunction(str) ?? throw new ReflectionException(string.Format(Resources.LibResources.function_does_not_exist, str));
             }
             else if ((instance = name.AsObject()) != null)
             {
@@ -63,7 +63,7 @@ namespace Pchp.Library.Reflection
 
             if (_routine == null)
             {
-                throw new ArgumentException();  // TODO: ReflectionException
+                throw new ReflectionException();
             }
         }
 

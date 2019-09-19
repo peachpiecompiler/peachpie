@@ -404,9 +404,9 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
             }
 
             // the base class should be resolved first?
-            if (x.BaseClass is ClassTypeRef cref) // != null
+            if (x.BaseClass != null)
             {
-                if (!IsDeclared(cref.ClassName))
+                if (!IsDeclared(x.BaseClass.ClassName))
                     return true;
             }
 

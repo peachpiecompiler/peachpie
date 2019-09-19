@@ -85,38 +85,27 @@ namespace Pchp.Library.Spl
 
         readonly protected Context _ctx;
 
-        PhpArray _array;// PHP compatibility: private PhpArray storage;
-        internal protected IPhpEnumerator _arrayEnumerator;    // lazily instantiated so we can rewind() once when needed
-        bool isArrayIterator => _array != null;
+        /// <summary>
+        /// Either <see cref="PhpArray"/> or <see cref="object"/>.
+        /// </summary>
+        private object storage; // PHP compatibility: private $storage;
 
-        object _dobj = null;
-        IEnumerator<KeyValuePair<IntStringKey, PhpValue>> _dobjEnumerator = null;    // lazily instantiated so we can rewind() once when needed
-        bool isObjectIterator => _dobj != null;
+        /// <summary>
+        /// Lazily created enumerator over <see cref="storage"/>.
+        /// </summary>
+        internal protected IPhpEnumerator _enumerator;
 
         bool _isValid = false;
 
         /// <summary>
-        /// Instantiate new PHP array's enumerator and advances its position to the first element.
+        /// Instantiates new enumerator and advances its position to the first element.
         /// </summary>
-        /// <returns><c>True</c> whether there is an first element.</returns>
-        void InitArrayIteratorHelper()
+        void InitEnumerator()
         {
-            Debug.Assert(_array != null);
+            Debug.Assert(storage != null);
 
-            _arrayEnumerator = _array.GetForeachEnumerator(false);
-            _isValid = _arrayEnumerator.MoveFirst();
-        }
-
-        /// <summary>
-        /// Instantiate new object's enumerator and advances its position to the first element.
-        /// </summary>
-        /// <returns><c>True</c> whether there is an first element.</returns>
-        void InitObjectIteratorHelper()
-        {
-            Debug.Assert(_dobj != null);
-
-            _dobjEnumerator = TypeMembersUtils.EnumerateVisibleInstanceFields(_dobj).GetEnumerator();   // we have to create new enumerator (or implement InstancePropertyIterator.Reset)
-            _isValid = _dobjEnumerator.MoveNext();
+            _enumerator = Operators.GetForeachEnumerator(storage, false, default);
+            _isValid = _enumerator.MoveNext();
         }
 
         #endregion
@@ -125,8 +114,7 @@ namespace Pchp.Library.Spl
 
         public ArrayIterator(Context/*!*/ctx)
         {
-            if (ctx == null) throw new ArgumentNullException(nameof(ctx));
-            _ctx = ctx;
+            _ctx = ctx ?? throw new ArgumentNullException(nameof(ctx));
         }
 
         public ArrayIterator(Context/*!*/ctx, PhpValue array, int flags = 0)
@@ -141,24 +129,21 @@ namespace Pchp.Library.Spl
         /// <param name="ctx">Runtime context.</param>
         /// <param name="array">The array or object to be iterated on.</param>
         /// <param name="flags">Flags to control the behaviour of the ArrayIterator object. See ArrayIterator::setFlags().</param>
-        public virtual void __construct(Context/*!*/ctx, PhpValue array, int flags = 0)
+        public virtual void __construct(Context/*!*/ctx, PhpValue array = default, int flags = 0)
         {
-            if ((_array = array.ArrayOrNull()) != null)
+            if (array.IsPhpArray(out var phparray))
             {
-                InitArrayIteratorHelper();  // instantiate now, avoid repetitous checks during iteration
+                storage = phparray;
+                // ok
             }
-            else if ((_dobj = array.AsObject()) != null)
+            else if ((storage = array.AsObject()) != null)
             {
-                //InitObjectIteratorHelper();   // lazily to avoid one additional allocation
+                // ok
             }
             else
             {
-                throw new ArgumentException();
-                //// throw an PHP.Library.SPL.InvalidArgumentException if anything besides an array or an object is given.
-                //Exception.ThrowSplException(
-                //    _ctx => new InvalidArgumentException(_ctx, true),
-                //    context,
-                //    null, 0, null);
+                // throw an PHP.Library.SPL.InvalidArgumentException if anything besides an array or an object is given.
+                throw new InvalidArgumentException();
             }
         }
 
@@ -212,21 +197,26 @@ namespace Pchp.Library.Spl
 
         public virtual PhpArray getArrayCopy()
         {
-            if (isArrayIterator)
-                return _array.DeepCopy();
-
-            throw new NotImplementedException();
+            if (storage is PhpArray arr)
+            {
+                return arr.DeepCopy();
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
         }
 
         public virtual void append(PhpValue value)
         {
-            if (isArrayIterator)
+            if (storage is PhpArray arr)
             {
-                _array.Add(value);
+                arr.Add(value);
             }
-            else if (isObjectIterator)
+            else
             {
                 // php_error_docref(NULL TSRMLS_CC, E_RECOVERABLE_ERROR, "Cannot append properties to objects, use %s::offsetSet() instead", Z_OBJCE_P(object)->name);
+                throw new NotSupportedException();
             }
         }
 
@@ -236,41 +226,30 @@ namespace Pchp.Library.Spl
 
         public virtual void rewind()
         {
-            if (isArrayIterator)
+            if (_enumerator != null && storage is PhpArray)
             {
-                _isValid = _arrayEnumerator.MoveFirst();
+                _isValid = _enumerator.MoveFirst();
+                return;
             }
-            else if (isObjectIterator)
-            {
-                // isValid set by InitObjectIteratorHelper()
-                InitObjectIteratorHelper(); // DObject enumerator does not support MoveFirst()
-            }
+
+            // NOTE: object enumeration does not support MoveFirst() yet
+            // create new enumerator:
+            InitEnumerator();
         }
 
-        private void EnsureEnumeratorsHelper()
+        private IPhpEnumerator EnsureEnumeratorsHelper()
         {
-            if (isArrayIterator)
+            if (_enumerator == null)
             {
-                // arrayEnumerator initialized in __construct()
+                InitEnumerator();
             }
-            else
-            {
-                if (isObjectIterator && _dobjEnumerator == null)
-                    InitObjectIteratorHelper();
-            }
+
+            return _enumerator;
         }
 
         public virtual void next()
         {
-            if (isArrayIterator)
-            {
-                _isValid = _arrayEnumerator.MoveNext();
-            }
-            else if (isObjectIterator)
-            {
-                EnsureEnumeratorsHelper();
-                _isValid = _dobjEnumerator.MoveNext();
-            }
+            _isValid = EnsureEnumeratorsHelper().MoveNext();
         }
 
         public virtual bool valid()
@@ -283,34 +262,14 @@ namespace Pchp.Library.Spl
         {
             EnsureEnumeratorsHelper();
 
-            if (_isValid)
-            {
-                if (isArrayIterator)
-                    return _arrayEnumerator.CurrentKey;
-                else if (isObjectIterator)
-                    return PhpValue.Create(_dobjEnumerator.Current.Key);
-                else
-                    Debug.Fail(null);
-            }
-
-            return PhpValue.Null;
+            return _isValid ? _enumerator.CurrentKey : PhpValue.Null;
         }
 
         public virtual PhpValue current()
         {
             EnsureEnumeratorsHelper();
 
-            if (_isValid)
-            {
-                if (isArrayIterator)
-                    return _arrayEnumerator.CurrentValue;
-                else if (isObjectIterator)
-                    return _dobjEnumerator.Current.Value;
-                else
-                    Debug.Fail(null);
-            }
-
-            return PhpValue.Null;
+            return _isValid ? _enumerator.CurrentValue : PhpValue.Null;
         }
 
         #endregion
@@ -319,50 +278,62 @@ namespace Pchp.Library.Spl
 
         public virtual PhpValue offsetGet(PhpValue index)
         {
-            if (isArrayIterator)
+            if (storage is PhpArray arr)
             {
-                return _array.GetItemValue(index);
+                return arr.GetItemValue(index);
             }
-            //else if (isObjectIterator)
-            //    return _dobj[index];
-
-            return PhpValue.False;
+            else
+            {
+                throw new NotImplementedException();
+            }
         }
 
         public virtual void offsetSet(PhpValue index, PhpValue value)
         {
-            if (isArrayIterator)
+            if (storage is PhpArray arr)
             {
                 if (index.IsNull)
                 {
-                    _array.Add(value);
+                    arr.Add(value);
                 }
                 else
                 {
-                    _array.Add(index, value);
+                    arr.Add(index, value);
                 }
             }
-            //else if (isObjectIterator)
-            //{
-            //    _dobj.Add(index, value);
-            //}
+            else
+            {
+                // storage.Add(index, value);
+                throw new NotImplementedException();
+            }
         }
 
         public virtual void offsetUnset(PhpValue index)
         {
-            throw new NotImplementedException();
+            if (storage is PhpArray arr)
+            {
+                if (index.TryToIntStringKey(out var key))
+                {
+                    arr.Remove(key);
+                }
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
         }
 
         public virtual bool offsetExists(PhpValue index)
         {
-            if (isArrayIterator)
+            if (storage is PhpArray arr)
             {
-                return index.TryToIntStringKey(out var iskey) && _array.ContainsKey(iskey);
+                return index.TryToIntStringKey(out var iskey) && arr.ContainsKey(iskey);
             }
-            //else if (isObjectIterator)
-            //    return _dobj.Contains(index);
-
-            return false;
+            else
+            {
+                //    return _dobj.Contains(index);
+                throw new NotImplementedException();
+            }
         }
 
         #endregion
@@ -393,12 +364,14 @@ namespace Pchp.Library.Spl
 
         public virtual long count()
         {
-            if (isArrayIterator)
-                return _array.Count;
-            else if (isObjectIterator)
-                return TypeMembersUtils.FieldsCount(_dobj);
-
-            return 0;
+            if (storage is PhpArray arr)
+            {
+                return arr.Count;
+            }
+            else
+            {
+                return TypeMembersUtils.FieldsCount(storage);
+            }
         }
 
         #endregion
@@ -554,6 +527,8 @@ namespace Pchp.Library.Spl
             _valid = false;
             _enumerator = null;
 
+            // TODO: IteratorAggregate -> getIterator
+
             if (iterator is Iterator)
             {
                 // ok
@@ -575,10 +550,12 @@ namespace Pchp.Library.Spl
         {
             if (_iterator != null)
             {
-                // we can make use of standard foreach enumerator
-                _enumerator = Operators.GetForeachEnumerator(_iterator, true, default(RuntimeTypeHandle));
+                // TODO: _valid = _enumerator.MoveFirst() // if possible
 
-                //
+                _enumerator?.Dispose();
+
+                // we can make use of standard foreach enumerator
+                _enumerator = Operators.GetForeachEnumerator(_iterator, true, default);
                 _valid = _enumerator.MoveNext();
             }
         }
@@ -855,9 +832,9 @@ namespace Pchp.Library.Spl
     public class AppendIterator : IteratorIterator, OuterIterator
     {
         /// <summary>
-        /// Current item in <see cref="_array"/>;
+        /// Current item in <see cref="_array"/>.
         /// </summary>
-        protected internal KeyValuePair<IntStringKey, Iterator> _index;
+        protected internal KeyValuePair<int, Iterator> _index;
 
         [PhpFieldsOnlyCtor]
         protected AppendIterator() { }
@@ -875,7 +852,7 @@ namespace Pchp.Library.Spl
         {
             if (_index.Value == null && ArrayIterator.valid())
             {
-                _index = new KeyValuePair<IntStringKey, Iterator>(ArrayIterator.key().ToIntStringKey(), (Iterator)ArrayIterator.current().AsObject());
+                _index = new KeyValuePair<int, Iterator>((int)ArrayIterator.key().ToLong(), (Iterator)ArrayIterator.current().AsObject());
             }
         }
 
@@ -897,14 +874,23 @@ namespace Pchp.Library.Spl
 
         public virtual void __construct(Context ctx)
         {
-            base.__construct(new ArrayIterator(ctx, (PhpValue)(_array = PhpArray.NewEmpty())));
+            base.__construct(new ArrayIterator(ctx, (_array = new PhpArray())));
         }
 
         public virtual void append(Iterator iterator)
         {
             _array.Add(PhpValue.FromClass(iterator ?? throw new ArgumentNullException(nameof(iterator))));
 
-            if (_array.Count == 1) { rewindImpl(); }
+            if (_array.Count == 1)
+            {
+                // IMPORTANT: we set the enumerator forcibly here,
+                // it allows us to enumerate over _array in read/write mode.
+                // Additional appends will be reflected by this enumerator.
+                ArrayIterator._enumerator = _array.GetForeachEnumerator(aliasedValues: true);
+
+                // updade underlaying state
+                rewindImpl();
+            }
         }
 
         /// <summary>
@@ -912,14 +898,14 @@ namespace Pchp.Library.Spl
         /// </summary>
         public virtual ArrayIterator getArrayIterator() => ArrayIterator;
 
-        public virtual int getIteratorIndex() => isValidImpl() ? _index.Key.Integer : 0/*should be NULL*/;
+        public virtual int getIteratorIndex() => isValidImpl() ? _index.Key : 0/*should be NULL*/;
 
         public override Iterator getInnerIterator() => InnerIterator;
 
         public override void rewind()
         {
             rewindImpl();
-            _index = default(KeyValuePair<IntStringKey, Iterator>);
+            _index = default;
         }
 
         public override void next()
@@ -939,7 +925,7 @@ namespace Pchp.Library.Spl
                 base.next();
 
                 // reset index
-                _index = default(KeyValuePair<IntStringKey, Iterator>);
+                _index = default;
             }
         }
 
@@ -1544,7 +1530,7 @@ namespace Pchp.Library.Spl
                 case REPLACE:
                     long replaceCount = 0;
                     var replaceResult = PCRE.preg_replace(_ctx, _regex, replacement, subject, -1, out replaceCount);
-                    
+
                     if (replaceResult.IsNull || replaceCount == 0)
                     {
                         result = false;

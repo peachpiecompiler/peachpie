@@ -87,6 +87,8 @@ namespace Pchp.CodeAnalysis.Symbols
         /// </summary>
         public MethodSymbol PhpConstructor => _phpconstruct;
 
+        readonly int _sourceParamsCount;
+
         public bool IsInitFieldsOnly { get; internal set; }
 
         protected SynthesizedPhpCtorSymbol(SourceTypeSymbol containingType, Accessibility accessibility,
@@ -96,10 +98,24 @@ namespace Pchp.CodeAnalysis.Symbols
             _basector = basector ?? throw ExceptionUtilities.ArgumentNull(nameof(basector));
             _phpconstruct = __construct;
 
-            // clone parameters from __construct ?? basector
-            var template = (__construct ?? basector).Parameters;
+            _sourceParamsCount = paramsLimit;
+            _parameters = default; // lazy
+        }
 
-            _parameters = CreateParameters(template.Take(paramsLimit)).ToImmutableArray();
+        public override ImmutableArray<ParameterSymbol> Parameters
+        {
+            get
+            {
+                if (_parameters.IsDefault)
+                {
+                    // clone parameters from __construct ?? basector
+                    var template = (_phpconstruct ?? _basector).Parameters;
+
+                    _parameters = CreateParameters(template.Take(_sourceParamsCount)).ToImmutableArray();
+                }
+
+                return _parameters;
+            }
         }
 
         protected virtual IEnumerable<ParameterSymbol> CreateParameters(IEnumerable<ParameterSymbol> baseparams)
@@ -109,14 +125,21 @@ namespace Pchp.CodeAnalysis.Symbols
             // Context <ctx>
             yield return new SpecialParameterSymbol(this, DeclaringCompilation.CoreTypes.Context, SpecialParameterSymbol.ContextName, index++);
 
+            if (IsInitFieldsOnly)
+            {
+                // QueryValue<DummyFieldsOnlyCtor> _
+                var dummy = DeclaringCompilation.CoreTypes.QueryValue_T.Symbol.Construct(DeclaringCompilation.CoreTypes.QueryValue_DummyFieldsOnlyCtor);
+                yield return new SpecialParameterSymbol(this, dummy, "_", index++);
+            }
+
             // same parameters as PHP constructor
             foreach (var p in baseparams)
             {
-                if (!SpecialParameterSymbol.IsContextParameter(p))
-                {
-                    yield return new SynthesizedParameterSymbol(this, p.Type, index++, p.RefKind, p.Name, p.IsParams,
-                        explicitDefaultConstantValue: p.ExplicitDefaultConstantValue);
-                }
+                if (SpecialParameterSymbol.IsContextParameter(p)) continue;
+                if (SpecialParameterSymbol.IsQueryValueParameter(p, out var _, out var t) && t == SpecialParameterSymbol.QueryValueTypes.DummyFieldsOnlyCtor) continue;
+
+                yield return new SynthesizedParameterSymbol(this, p.Type, index++, p.RefKind, p.Name, p.IsParams,
+                    explicitDefaultConstantValue: p.ExplicitDefaultConstantValue);
             }
         }
 
@@ -187,8 +210,7 @@ namespace Pchp.CodeAnalysis.Symbols
                 var ps = phpconstruct.Parameters;
                 for (int i = 0; i < ps.Length; i++)
                 {
-                    var p = ps[i] as SourceParameterSymbol;
-                    if (p != null && p.Initializer != null && p.ExplicitDefaultConstantValue == null)   // => ConstantValue couldn't be resolved for optional parameter
+                    if (ps[i].HasUnmappedDefaultValue)
                     {
                         yield return new SynthesizedPhpCtorSymbol(type, phpconstruct.DeclaredAccessibility, fieldsinitctor, phpconstruct, i);
                     }

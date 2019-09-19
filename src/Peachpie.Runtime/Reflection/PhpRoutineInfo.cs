@@ -13,7 +13,7 @@ namespace Pchp.Core.Reflection
     /// Runtime information about a function.
     /// </summary>
     [DebuggerDisplay("{Name,nq}")]
-    public abstract class RoutineInfo : IPhpCallable
+    public abstract class RoutineInfo : IPhpCallable, ICloneable
     {
         /// <summary>
         /// Index to the routine slot.
@@ -53,6 +53,12 @@ namespace Pchp.Core.Reflection
         /// Gets methods representing the routine.
         /// </summary>
         public abstract MethodInfo[] Methods { get; }
+
+        /// <summary>
+        /// Gets the method declaring type.
+        /// Might get <c>null</c> if the routine represents a global function or a delegate.
+        /// </summary>
+        public abstract PhpTypeInfo DeclaringType { get; }
 
         /// <summary>Target instance when binding the MethodInfo call.</summary>
         internal virtual object Target => null;
@@ -96,6 +102,8 @@ namespace Pchp.Core.Reflection
         PhpValue IPhpCallable.ToPhpValue() => PhpValue.Void;
 
         #endregion
+
+        object ICloneable.Clone() => this;
     }
 
     internal class PhpRoutineInfo : RoutineInfo
@@ -111,6 +119,8 @@ namespace Pchp.Core.Reflection
         public override int GetHashCode() => _handle.GetHashCode();
 
         public override MethodInfo[] Methods => new[] { (MethodInfo)MethodBase.GetMethodFromHandle(_handle) };
+
+        public override PhpTypeInfo DeclaringType => null;
 
         public override PhpCallable PhpCallable => _lazyDelegate ?? BindDelegate();
 
@@ -187,6 +197,8 @@ namespace Pchp.Core.Reflection
 
         public override MethodInfo[] Methods => new[] { _delegate.GetMethodInfo() };
 
+        public override PhpTypeInfo DeclaringType => null;
+
         internal override object Target => _delegate.Target;
 
         public override int GetHashCode() => _delegate.GetHashCode();
@@ -227,6 +239,8 @@ namespace Pchp.Core.Reflection
         MethodInfo[] _methods;
 
         public override MethodInfo[] Methods => _methods;
+
+        public override PhpTypeInfo DeclaringType => null;
 
         public override PhpCallable PhpCallable => _lazyDelegate ?? BindDelegate();
 
@@ -290,7 +304,7 @@ namespace Pchp.Core.Reflection
                 }
 
                 // reuse PhpMethodInfo from base type if possible
-                if (AllDeclaredInBase(methods, callertype.Type.AsType()) &&
+                if (AllDeclaredInBase(methods, callertype.Type) &&
                     callertype.BaseType != null &&
                     callertype.BaseType.RuntimeMethods[name] is PhpMethodInfo frombase)
                 {
@@ -318,6 +332,8 @@ namespace Pchp.Core.Reflection
         /// </summary>
         public override MethodInfo[] Methods => _methods;
         readonly MethodInfo[] _methods;
+
+        public override PhpTypeInfo DeclaringType => _methods[0].DeclaringType.GetPhpTypeInfo();
 
         /// <summary>Optional. Bound static type.</summary>
         public virtual PhpTypeInfo LateStaticType => null;

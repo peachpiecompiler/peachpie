@@ -85,7 +85,7 @@ namespace Pchp.Core
         /// <summary>
         /// The list of LevelElements.
         /// </summary>
-        private List<LevelElement> _levels;
+        readonly List<LevelElement> _levels;
 
         // the current level of buffering (usually the last one); null iff the buffering is disabled
         private LevelElement _level;
@@ -108,15 +108,14 @@ namespace Pchp.Core
         private Stream _byteSink;
 
         /// <summary>
-        /// Encoding used by <see cref="GetContentAsString"/> converting binary data to a string.
+        /// Encoding used to convert between single-byte string and Unicode string.
         /// </summary>
         public override Encoding Encoding { get { return _ctx.StringEncoding; } }
         
         /// <summary>
         /// The buffered binary stream used as for loading binary data to buffers.
         /// </summary>
-        public BufferedOutputStream Stream { get { return _stream; } }
-        private BufferedOutputStream _stream;
+        public BufferedOutputStream Stream { get; }
 
         /// <summary>
         /// Runtime context.
@@ -152,7 +151,7 @@ namespace Pchp.Core
             _ctx = ctx;
             _charSink = charSink;
             _byteSink = byteSink;
-            _stream = new BufferedOutputStream(this);
+            Stream = new BufferedOutputStream(this);
             _levels = new List<LevelElement>();
 
             if (enableBuffering)
@@ -446,15 +445,19 @@ namespace Pchp.Core
         /// <summary>
         /// Flushes data on current level of buffering to sinks or to the previous level and discards them.
         /// </summary>
-        public override void Flush()
+        public void FlushLevel()
         {
-            if (_level == null)
-                return;
-
-            InternalFlush();
-            Clean();
+            if (_level != null)
+            {
+                InternalFlush();
+                Clean();
+            }
         }
 
+        public override void Flush()
+        {
+            // nothing to do in .NET's System.IO.Stream.Flush
+        }
 
         /// <summary>
         /// Flushes data on current level of buffering to the sinks or to the previous level.
@@ -473,13 +476,15 @@ namespace Pchp.Core
                     // writes top-level data to sinks:
                     for (int i = 0; i < _level.buffers.Count; i++)
                     {
-                        BufferElement element = _level.buffers[i];
-
-                        byte[] bytes = element.data as byte[];
-                        if (bytes != null)
-                            _byteSink.Write(bytes, 0, element.size);
+                        var element = _level.buffers[i];
+                        if (element.data is char[] chars)
+                        {
+                            _charSink.Write(chars, 0, element.size);
+                        }
                         else
-                            _charSink.Write((char[])element.data, 0, element.size);
+                        {
+                            _byteSink.Write((byte[])element.data, 0, element.size);
+                        }
                     }
                 }
                 else
@@ -529,7 +534,7 @@ namespace Pchp.Core
                         // checks whether the filtered data are binary at first; if not so, converts them to a string:
                         if (bytes != null)
                         {
-                            _stream.Write(bytes);
+                            Stream.Write(bytes);
                         }
                         else
                         {
@@ -549,56 +554,31 @@ namespace Pchp.Core
         #region GetContent
 
         /// <summary>
-        /// Gets a content of buffers on current buffering level converted to string regardless of its type.
-        /// </summary>
-        /// <returns>
-        /// The content converted to a string. Binary data are converted using <see cref="Encoding"/>.
-        /// </returns>
-        public string GetContentAsString()
-        {
-            if (_level == null) return null;
-
-            var result = new StringBuilder(_level.size, _level.size);
-
-            for (int i = 0; i < _level.buffers.Count; i++)
-            {
-                var element = _level.buffers[i];
-
-                byte[] bytes = element.data as byte[];
-                if (bytes != null)
-                    result.Append(this.Encoding.GetString(bytes, 0, element.size));
-                else
-                    result.Append((char[])element.data, 0, element.size);
-            }
-            return result.ToString();
-        }
-
-        /// <summary>
         /// Gets a content of buffers on current buffering level.
         /// </summary>
         /// <returns>The content as <see cref="string"/> or array of <see cref="byte"/>s or a 
         /// <c>null</c> reference if output buffering is disabled.</returns>
-        public PhpValue GetContent()
+        public PhpString GetContent()
         {
             if (_level == null)
-                return PhpValue.False;
+                return default; // FALSE
 
             if (_level.size == 0)
-                return PhpValue.Create(string.Empty);
+                return string.Empty;
 
             // TODO: return level.buffers directly once it is implemented as PhpString
 
             if (!_level.containsByteData)
             {
                 // contains characters only:
-                StringBuilder result = new StringBuilder(_level.size, _level.size);
+                var result = new StringBuilder(_level.size, _level.size);
 
                 for (int i = 0; i < _level.buffers.Count; i++)
                 {
                     var element = _level.buffers[i];
                     result.Append((char[])element.data, 0, element.size);
                 }
-                return PhpValue.Create(result.ToString());
+                return result.ToString();
             }
             else if (!_level.containsCharData)
             {
@@ -611,12 +591,29 @@ namespace Pchp.Core
                     Array.Copy(element.data, 0, result, k, element.size);
                     k += element.size;
                 }
-                return PhpValue.Create(new PhpString(result));
+                return new PhpString(result);
             }
             else
             {
                 // contains both bytes and characters:
-                return PhpValue.Create(GetContentAsString());
+                var result = new PhpString.Blob();
+
+                for (int i = 0; i < _level.buffers.Count; i++)
+                {
+                    var element = _level.buffers[i];
+
+                    if (element.data is char[] chars)
+                    {
+                        result.Add(new string(chars, 0, element.size));
+                    }
+                    else
+                    {
+                        var data = new byte[element.size];
+                        Array.Copy(element.data, 0, data, 0, data.Length);
+                        result.Add(data);
+                    }
+                }
+                return new PhpString(result);
             }
         }
 

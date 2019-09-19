@@ -245,15 +245,20 @@ namespace Pchp.CodeAnalysis.Semantics.Model
         /// </summary>
         public PhpCompilation Compilation => _compilation;
 
-        public INamedTypeSymbol ResolveType(QualifiedName name)
+        public INamedTypeSymbol ResolveType(QualifiedName name, Dictionary<QualifiedName, INamedTypeSymbol> resolved = null)
         {
             Debug.Assert(!name.IsReservedClassName);
             Debug.Assert(!name.IsEmpty());
 
+            if (resolved != null && resolved.TryGetValue(name, out var type))
+            {
+                return type;
+            }
+
             return
                 ExportedTypes.TryGetOrDefault(name) ??
                 GetTypeFromNonExtensionAssemblies(name.ClrName()) ??
-                _next.ResolveType(name);
+                _next.ResolveType(name, resolved);
         }
 
         NamedTypeSymbol GetTypeFromNonExtensionAssemblies(string clrName)
