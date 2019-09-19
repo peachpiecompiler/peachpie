@@ -14,7 +14,7 @@ using Ast = Devsense.PHP.Syntax.Ast;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
-    internal class TransformationRewriter : GraphRewriter
+    internal partial class TransformationRewriter : GraphRewriter
     {
         private readonly DelayedTransformations _delayedTransformations;
         private readonly SourceRoutineSymbol _routine;
