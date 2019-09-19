@@ -877,9 +877,6 @@ namespace Pchp.CodeAnalysis.Semantics
             /// <summary>Inplace copies the parameter.</summary>
             void EmitPass(CodeGenerator cg);
 
-            /// <summary>Dereferences the value of a possible alias.</summary>
-            void EmitDereference(CodeGenerator cg);
-
             /// <summary>Loads copied parameter value.</summary>
             TypeSymbol EmitLoad(CodeGenerator cg);
         }
@@ -962,17 +959,6 @@ namespace Pchp.CodeAnalysis.Semantics
                     cg.EmitDeepCopy(_place.EmitLoad(cg.Builder), nullcheck: !_notNull);
 
                     _place.EmitStore(cg.Builder);
-                }
-            }
-
-            public void EmitDereference(CodeGenerator cg)
-            {
-                // Only PhpValue or PhpAlias may contain aliases, while the latter is used only
-                // if we explicitly want the parameter to be a reference
-                if (_place.Type == cg.CoreTypes.PhpValue)
-                {
-                    _place.EmitLoadAddress(cg.Builder);
-                    cg.EmitCall(ILOpCode.Call, cg.CoreMethods.PhpValue.PassValueNoCopy);
                 }
             }
 
@@ -1073,8 +1059,6 @@ namespace Pchp.CodeAnalysis.Semantics
 
             public void EmitPass(CodeGenerator cg) => throw ExceptionUtilities.Unreachable;
 
-            public void EmitDereference(CodeGenerator cg) => throw ExceptionUtilities.Unreachable;
-
             public void EmitTypeCheck(CodeGenerator cg, SourceParameterSymbol srcp)
             {
                 // throw new NotImplementedException();
@@ -1113,9 +1097,9 @@ namespace Pchp.CodeAnalysis.Semantics
         #endregion
 
         /// <summary>
-        /// Whether to skip calling the in-place copy during the initialization (potential aliases must be dereferenced nevertheless).
+        /// Whether to skip passing the parameter value, as it is unnecessary (e.g. unused parameter or only delegation to another method)
         /// </summary>
-        public bool SkipCopy { get; set; }
+        public bool SkipPass { get; set; }
 
         public ParameterSymbol Parameter => (ParameterSymbol)Symbol;
 
@@ -1183,15 +1167,10 @@ namespace Pchp.CodeAnalysis.Semantics
 
             if (source == target)
             {
-                // 2a. (source == target): Pass (inplace copy and dereference)
-                if (!SkipCopy)
+                // 2a. (source == target): Pass (inplace copy and dereference) if necessary
+                if (!SkipPass)
                 {
                     source.EmitPass(cg);
-                }
-                else
-                {
-                    // Even if the copy is unnecessary, we still need to dereference unintentional aliases
-                    source.EmitDereference(cg);
                 }
             }
             else

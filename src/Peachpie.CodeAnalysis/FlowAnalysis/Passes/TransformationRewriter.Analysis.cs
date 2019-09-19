@@ -52,9 +52,14 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         private struct VariableInfos
         {
             /// <summary>
-            /// Records variables whose value might change during the method execution.
+            /// Records parameters which were once passed as arguments to another method.
             /// </summary>
-            public VariableMask MightChange;
+            public VariableMask DelegatedParams;
+
+            /// <summary>
+            /// Records parameters which need to be deep copied and dealiased upon routine start.
+            /// </summary>
+            public VariableMask NeedPassValueParams;
         }
 
         /// <summary>
@@ -82,28 +87,53 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 return walker._infos;
             }
 
+            public override VoidStruct VisitArgument(BoundArgument x)
+            {
+                VariableHandle varindex;
+
+                if (x.Value is BoundVariableRef varRef
+                    && varRef.Variable is ParameterReference
+                    && varRef.Name.IsDirect
+                    && !_flowContext.IsReference(varindex = _flowContext.GetVarIndex(varRef.Name.NameValue)))
+                {
+                    // Each parameter can be passed only to once to another routine (and not used in any other context)
+                    // without the need to be deeply copied, then we need to copy it
+                    if (!_infos.NeedPassValueParams.Get(varindex))
+                    {
+                        if (_infos.DelegatedParams.Get(varindex))
+                            _infos.NeedPassValueParams.Set(varindex);
+                        else
+                            _infos.DelegatedParams.Set(varindex);
+                    }
+
+                    return default;
+                }
+                else
+                {
+                    return base.VisitArgument(x);
+                }
+            }
+
             public override VoidStruct VisitVariableRef(BoundVariableRef x)
             {
-                if (x.Access.MightChange)
+                // Other usage than being passed as an argument to another function requires a parameter to be deeply copied
+                if (!x.Name.IsDirect)
                 {
-                    if (!x.Name.IsDirect)
+                    // In the worst case, any variable can be targeted
+                    _infos.NeedPassValueParams.SetAll();
+                }
+                else
+                {
+                    var varindex = _flowContext.GetVarIndex(x.Name.NameValue);
+                    if (!_flowContext.IsReference(varindex))
                     {
-                        // In the worst case, any variable can be targeted
-                        _infos.MightChange.SetAll();
+                        // Mark only the specific variable as possibly being changed
+                        _infos.NeedPassValueParams.Set(varindex);
                     }
                     else
                     {
-                        var varindex = _flowContext.GetVarIndex(x.Name.NameValue);
-                        if (!_flowContext.IsReference(varindex))
-                        {
-                            // Mark only the specific variable as possibly being changed
-                            _infos.MightChange.Set(varindex);
-                        }
-                        else
-                        {
-                            // TODO: Mark only those that can be referenced
-                            _infos.MightChange.SetAll();
-                        }
+                        // TODO: Mark only those that can be referenced
+                        _infos.NeedPassValueParams.SetAll();
                     }
                 }
 
