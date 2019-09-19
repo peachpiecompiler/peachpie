@@ -12,47 +12,49 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
     partial class TransformationRewriter
     {
         /// <summary>
-        /// Used to gather and store additional flow-insensitive information about variables.
+        /// A general structure to record bit information about variables in the code.
         /// </summary>
-        private struct VariableInfos
+        private struct VariableMask
         {
-            private ulong _mightChangeMask;
+            private ulong _mask;
 
-            /// <summary>
-            /// Marks that the value stored in the variable might change.
-            /// </summary>
-            public void SetMightChange(VariableHandle handle)
+            public void Set(VariableHandle handle)
             {
                 var varindex = handle.Slot;
                 if (varindex >= 0 && varindex < FlowContext.BitsCount)
                 {
-                    _mightChangeMask |= 1ul << varindex;
+                    _mask |= 1ul << varindex;
                 }
             }
 
-            /// <summary>
-            /// Marks that the values stored in all the variables might change.
-            /// </summary>
-            public void SetAllMightChange()
+            public void SetAll()
             {
-                _mightChangeMask = ~0ul;
+                _mask = ~0ul;
             }
 
-            /// <summary>
-            /// Retrieves whether the value stored in the variable might change.
-            /// </summary>
-            public bool GetMightChange(VariableHandle handle)
+            public bool Get(VariableHandle handle)
             {
                 var varindex = handle.Slot;
                 if (varindex >= 0 && varindex < FlowContext.BitsCount)
                 {
-                    return (_mightChangeMask & (1ul << varindex)) != 0;
+                    return (_mask & (1ul << varindex)) != 0;
                 }
                 else
                 {
                     return true;
                 }
             }
+        }
+
+        /// <summary>
+        /// Used to gather and store additional flow-insensitive information about variables.
+        /// </summary>
+        private struct VariableInfos
+        {
+            /// <summary>
+            /// Records variables whose value might change during the method execution.
+            /// </summary>
+            public VariableMask MightChange;
         }
 
         /// <summary>
@@ -87,7 +89,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     if (!x.Name.IsDirect)
                     {
                         // In the worst case, any variable can be targeted
-                        _infos.SetAllMightChange();
+                        _infos.MightChange.SetAll();
                     }
                     else
                     {
@@ -95,12 +97,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         if (!_flowContext.IsReference(varindex))
                         {
                             // Mark only the specific variable as possibly being changed
-                            _infos.SetMightChange(varindex);
+                            _infos.MightChange.Set(varindex);
                         }
                         else
                         {
                             // TODO: Mark only those that can be referenced
-                            _infos.SetAllMightChange();
+                            _infos.MightChange.SetAll();
                         }
                     }
                 }
