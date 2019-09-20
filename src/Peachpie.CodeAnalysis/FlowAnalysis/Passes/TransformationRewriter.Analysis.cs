@@ -52,11 +52,6 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         private struct VariableInfos
         {
             /// <summary>
-            /// Records parameters which were once passed as arguments to another method.
-            /// </summary>
-            public VariableMask DelegatedParams;
-
-            /// <summary>
             /// Records parameters which need to be deep copied and dealiased upon routine start.
             /// </summary>
             public VariableMask NeedPassValueParams;
@@ -94,18 +89,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 if (x.Value is BoundVariableRef varRef
                     && varRef.Variable is ParameterReference
                     && varRef.Name.IsDirect
-                    && !_flowContext.IsReference(varindex = _flowContext.GetVarIndex(varRef.Name.NameValue)))
+                    && !_flowContext.IsReference(varindex = _flowContext.GetVarIndex(varRef.Name.NameValue))
+                    && !varRef.Access.MightChange)
                 {
-                    // Each parameter can be passed only to once to another routine (and not used in any other context)
-                    // without the need to be deeply copied, then we need to copy it
-                    if (!_infos.NeedPassValueParams.Get(varindex))
-                    {
-                        if (_infos.DelegatedParams.Get(varindex))
-                            _infos.NeedPassValueParams.Set(varindex);
-                        else
-                            _infos.DelegatedParams.Set(varindex);
-                    }
-
+                    // Passing a parameter as an argument by value to another function is a safe use which does not
+                    // require it to be deeply copied (the called function will do it on its own if necessary)
                     return default;
                 }
                 else
