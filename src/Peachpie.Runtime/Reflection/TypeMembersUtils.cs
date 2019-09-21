@@ -266,49 +266,65 @@ namespace Pchp.Core.Reflection
             Debug.Assert(instance != null);
             Debug.Assert(arr != null);
 
-            // PhpTypeInfo
-            var tinfo = PhpTypeInfoExtension.GetPhpTypeInfo(instance.GetType());
-
-            // iterate through type and its base types
-            for (var t = tinfo; t != null; t = t.BaseType)
+            foreach (var pair in EnumerateInstanceFields(instance, FieldAsArrayKey, s_keyToString,
+                // only public|protected|public fields
+                predicate: m => m is FieldInfo f ? (f.IsPrivate || f.IsPublic || f.IsFamily) : (m is PropertyInfo p && (p.GetMethod.IsPublic || p.GetMethod.IsPrivate || p.GetMethod.IsFamily)),
+                // include runtime fields as well
+                ignoreRuntimeFields: false))
             {
-                // iterate through instance fields
-                foreach (var f in t.DeclaredFields.InstanceFields)
-                {
-                    arr[FieldAsArrayKey(f, t)] = PhpValue.FromClr(f.GetValue(instance)).DeepCopy();
-                }
-
-                // TODO: CLR properties
-            }
-
-            // PhpArray __runtime_fields
-            var runtime_fields = tinfo.GetRuntimeFields(instance);
-            if (runtime_fields != null && runtime_fields.Count != 0)
-            {
-                // all runtime fields are considered public
-                var enumerator = runtime_fields.GetFastEnumerator();
-                while (enumerator.MoveNext())
-                {
-                    arr[enumerator.CurrentKey] = enumerator.CurrentValue.DeepCopy();
-                }
+                arr[pair.Key] = pair.Value.DeepCopy();
             }
         }
 
         /// <summary>
         /// Gets field name to be used as array key when casting object to array.
         /// </summary>
-        static string FieldAsArrayKey(FieldInfo f, PhpTypeInfo declaringType)
+        static string FieldAsArrayKey(MemberInfo m, PhpTypeInfo declaringType)
         {
-            Debug.Assert(f != null);
+            Debug.Assert(m != null);
             Debug.Assert(declaringType != null);
 
-            if (f.IsPublic) return f.Name;
-            if (f.IsFamily) return " * " + f.Name;
-            if (f.IsPrivate) return " " + declaringType.Name + " " + f.Name;
+            if (m is FieldInfo f)
+            {
+                switch (f.Attributes & FieldAttributes.FieldAccessMask)
+                {
+                    // private:
+                    case FieldAttributes.PrivateScope:
+                    case FieldAttributes.Private:
+                        return " " + declaringType.Name + " " + f.Name;
 
-            Debug.Fail($"Unexpected field attributes {f.Attributes}");
+                    // protected
+                    case FieldAttributes.FamANDAssem:
+                    case FieldAttributes.Assembly:
+                    case FieldAttributes.Family:
+                    case FieldAttributes.FamORAssem:
+                        return " * " + f.Name;
 
-            return f.Name;
+                    // public:
+                    default:
+                    case FieldAttributes.Public:
+                        return f.Name;
+                }
+            }
+            else if (m is PropertyInfo p)
+            {
+                // the same as above (!)
+                if (p.GetMethod.IsAssembly || p.GetMethod.IsFamily)
+                {
+                    return " * " + p.Name;
+                }
+
+                if (p.GetMethod.IsPrivate)
+                {
+                    return " " + declaringType.Name + " " + p.Name;
+                }
+
+                return p.Name;
+            }
+            else
+            {
+                throw new ArgumentException();
+            }
         }
 
         /// <summary>
@@ -728,7 +744,7 @@ namespace Pchp.Core.Reflection
             {
                 var metadataName = method.Name.Replace('.', '-');
 
-                for (int i= 0; i < nestedTypes.Length; i++)
+                for (int i = 0; i < nestedTypes.Length; i++)
                 {
                     // name: {MetadataName}${VariableName}
                     var name = nestedTypes[i].Name;
