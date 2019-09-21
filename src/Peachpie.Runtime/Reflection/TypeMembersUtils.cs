@@ -79,7 +79,7 @@ namespace Pchp.Core.Reflection
             return EnumerateInstanceFields(instance,
                 (f, d) => new IntStringKey(f.Name),
                 FuncExtensions.Identity<IntStringKey>(),
-                (m) => s_notInternalFieldsPredicate(m) && IsVisible(m, caller));
+                (m) => s_notClrInternalFieldsPredicate(m) && IsVisible(m, caller));
         }
 
         /// <summary>
@@ -92,12 +92,12 @@ namespace Pchp.Core.Reflection
             return EnumerateInstanceFields(instance,
                 s_formatPropertyNameForPrint,
                 s_keyToString,
-                s_notInternalFieldsPredicate);
+                s_notClrInternalFieldsPredicate);
         }
 
         static readonly Func<IntStringKey, string> s_keyToString = new Func<IntStringKey, string>(k => k.ToString());
 
-        public static readonly Func<MemberInfo, bool> s_notInternalFieldsPredicate = new Func<MemberInfo, bool>(m =>
+        public static readonly Func<MemberInfo, bool> s_notClrInternalFieldsPredicate = new Func<MemberInfo, bool>(m =>
         {
             // ignore "internal" and "private protected" fields
             // ignore pointer types
@@ -124,21 +124,19 @@ namespace Pchp.Core.Reflection
 
         static readonly Func<MemberInfo, PhpTypeInfo, string> s_formatPropertyNameForPrint = new Func<MemberInfo, PhpTypeInfo, string>((m, declarer) =>
         {
-            if (m is FieldInfo f)
+            if (m.IsPhpPublic())
             {
-                if (f.IsPublic) return f.Name;
-                if (f.IsPrivate) return string.Concat(f.Name, ":", declarer.Name, ":private");
-                return f.Name + ":protected";
+                return m.Name;
             }
-            else if (m is PropertyInfo p)
+
+            if (m.IsPhpPrivate())
             {
-                if (p.GetMethod.IsPublic) return p.Name;
-                if (p.GetMethod.IsPrivate) return string.Concat(p.Name, ":", declarer.Name, ":private");
-                return p.Name + ":protected";
+                return string.Concat(m.Name, ":", declarer.Name, ":private");
             }
-            else
+
+            //if (m.IsPhpProtected())
             {
-                throw new ArgumentException();
+                return m.Name + ":protected";
             }
         });
 
@@ -152,7 +150,7 @@ namespace Pchp.Core.Reflection
             return EnumerateInstanceFields(instance,
                 s_formatPropertyNameForDump,
                 s_keyToString,
-                s_notInternalFieldsPredicate);
+                s_notClrInternalFieldsPredicate);
         }
 
         /// <summary>
@@ -165,7 +163,7 @@ namespace Pchp.Core.Reflection
             return EnumerateInstanceFields(instance,
                 s_formatPropertyNameForExport,
                 s_keyToString,
-                s_notInternalFieldsPredicate);
+                s_notClrInternalFieldsPredicate);
         }
 
         static readonly Func<MemberInfo, PhpTypeInfo, string> s_formatPropertyNameForExport = new Func<MemberInfo, PhpTypeInfo, string>((m, declarer) => m.Name);
@@ -174,21 +172,19 @@ namespace Pchp.Core.Reflection
         {
             var name = "\"" + m.Name + "\"";
 
-            if (m is FieldInfo f)
+            if (m.IsPhpPublic())
             {
-                if (f.IsPublic) return name;
-                if (f.IsPrivate) return string.Concat(name, ":\"", declarer.Name, "\":private");
-                return name + ":protected";
+                return name;
             }
-            else if (m is PropertyInfo p)
+
+            if (m.IsPhpPrivate())
             {
-                if (p.GetMethod.IsPublic) return name;
-                if (p.GetMethod.IsPrivate) return string.Concat(name, ":\"", declarer.Name, "\":private");
-                return name + ":protected";
+                return string.Concat(name, ":\"", declarer.Name, "\":private");
             }
-            else
+
+            //if (m.IsPhpProtected())
             {
-                throw new ArgumentException();
+                return name + ":protected";
             }
         });
 
@@ -266,11 +262,7 @@ namespace Pchp.Core.Reflection
             Debug.Assert(instance != null);
             Debug.Assert(arr != null);
 
-            foreach (var pair in EnumerateInstanceFields(instance, FieldAsArrayKey, s_keyToString,
-                // only public|protected|public fields
-                predicate: m => m is FieldInfo f ? (f.IsPrivate || f.IsPublic || f.IsFamily) : (m is PropertyInfo p && (p.GetMethod.IsPublic || p.GetMethod.IsPrivate || p.GetMethod.IsFamily)),
-                // include runtime fields as well
-                ignoreRuntimeFields: false))
+            foreach (var pair in EnumerateInstanceFields(instance, FieldAsArrayKey, s_keyToString, s_notClrInternalFieldsPredicate, false))
             {
                 arr[pair.Key] = pair.Value.DeepCopy();
             }
@@ -284,46 +276,19 @@ namespace Pchp.Core.Reflection
             Debug.Assert(m != null);
             Debug.Assert(declaringType != null);
 
-            if (m is FieldInfo f)
+            if (m.IsPhpPublic())
             {
-                switch (f.Attributes & FieldAttributes.FieldAccessMask)
-                {
-                    // private:
-                    case FieldAttributes.PrivateScope:
-                    case FieldAttributes.Private:
-                        return " " + declaringType.Name + " " + f.Name;
-
-                    // protected
-                    case FieldAttributes.FamANDAssem:
-                    case FieldAttributes.Assembly:
-                    case FieldAttributes.Family:
-                    case FieldAttributes.FamORAssem:
-                        return " * " + f.Name;
-
-                    // public:
-                    default:
-                    case FieldAttributes.Public:
-                        return f.Name;
-                }
+                return m.Name;
             }
-            else if (m is PropertyInfo p)
+
+            if (m.IsPhpPrivate())
             {
-                // the same as above (!)
-                if (p.GetMethod.IsAssembly || p.GetMethod.IsFamily)
-                {
-                    return " * " + p.Name;
-                }
-
-                if (p.GetMethod.IsPrivate)
-                {
-                    return " " + declaringType.Name + " " + p.Name;
-                }
-
-                return p.Name;
+                return " " + declaringType.Name + " " + m.Name;
             }
-            else
+
+            //if (m.IsPhpProtected())
             {
-                throw new ArgumentException();
+                return " * " + m.Name;
             }
         }
 
