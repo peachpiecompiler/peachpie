@@ -225,7 +225,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 var paramType = parameter.Parameter.Type;
                 if (!_varInfos.NeedPassValueParams.Get(varindex) && !parameter.SkipPass)
                 {
-                    // It is unnecessary to copy a parameter whose value cannot change in the routine
+                    // It is unnecessary to copy a parameter whose value is only passed to another routines and cannot change
                     parameter.SkipPass = true;
                     TransformationCount++;
                 }
@@ -617,7 +617,8 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             }
             else if (expr is BoundCopyValue copyVal)
             {
-                return MatchExprSkipCopy<T>(copyVal.Expression, out typedExpr, out isCopied);
+                isCopied = true;
+                return MatchExprSkipCopy<T>(copyVal.Expression, out typedExpr, out _);
             }
             else
             {
