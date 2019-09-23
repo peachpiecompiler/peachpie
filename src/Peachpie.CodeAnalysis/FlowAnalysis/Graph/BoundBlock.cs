@@ -36,6 +36,18 @@ namespace Pchp.CodeAnalysis.Semantics.Graph
         /// Whether to reanalyse this block regardless of the flow state convergence.
         /// </summary>
         internal virtual bool ForceRepeatedAnalysis => false;
+
+        /// <summary>
+        /// Comparer to sort the blocks in the ascending order of <see cref="Ordinal"/>.
+        /// </summary>
+        internal sealed class OrdinalComparer : IComparer<BoundBlock>, IEqualityComparer<BoundBlock>
+        {
+            int IEqualityComparer<BoundBlock>.GetHashCode(BoundBlock obj) => obj.GetHashCode();
+
+            bool IEqualityComparer<BoundBlock>.Equals(BoundBlock x, BoundBlock y) => object.ReferenceEquals(x, y);
+
+            int IComparer<BoundBlock>.Compare(BoundBlock x, BoundBlock y) => x.Ordinal - y.Ordinal;
+        }
     }
 
     partial class ExitBlock

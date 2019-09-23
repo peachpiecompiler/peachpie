@@ -20,19 +20,6 @@ namespace Pchp.CodeAnalysis.CodeGen
 {
     internal partial class CodeGenerator : IDisposable
     {
-        #region BoundBlockOrdinalComparer
-
-        sealed class BoundBlockOrdinalComparer : IComparer<BoundBlock>, IEqualityComparer<BoundBlock>
-        {
-            int IEqualityComparer<BoundBlock>.GetHashCode(BoundBlock obj) => obj.GetHashCode();
-
-            bool IEqualityComparer<BoundBlock>.Equals(BoundBlock x, BoundBlock y) => object.ReferenceEquals(x, y);
-
-            int IComparer<BoundBlock>.Compare(BoundBlock x, BoundBlock y) => y.Ordinal - x.Ordinal;
-        }
-
-        #endregion
-
         #region LocalScope
 
         internal class LocalScope

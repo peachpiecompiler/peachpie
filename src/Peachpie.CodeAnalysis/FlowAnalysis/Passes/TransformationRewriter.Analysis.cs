@@ -5,47 +5,13 @@ using Pchp.CodeAnalysis.FlowAnalysis;
 using Pchp.CodeAnalysis.Semantics;
 using Pchp.CodeAnalysis.Semantics.Graph;
 using Pchp.CodeAnalysis.Symbols;
+using Pchp.CodeAnalysis.Utilities;
 using Peachpie.CodeAnalysis.Utilities;
 
 namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
     partial class TransformationRewriter
     {
-        /// <summary>
-        /// A general structure to record bit information about variables in the code.
-        /// </summary>
-        private struct VariableMask
-        {
-            private ulong _mask;
-
-            public void Set(VariableHandle handle)
-            {
-                var varindex = handle.Slot;
-                if (varindex >= 0 && varindex < FlowContext.BitsCount)
-                {
-                    _mask |= 1ul << varindex;
-                }
-            }
-
-            public void SetAll()
-            {
-                _mask = ~0ul;
-            }
-
-            public bool Get(VariableHandle handle)
-            {
-                var varindex = handle.Slot;
-                if (varindex >= 0 && varindex < FlowContext.BitsCount)
-                {
-                    return (_mask & (1ul << varindex)) != 0;
-                }
-                else
-                {
-                    return true;
-                }
-            }
-        }
-
         /// <summary>
         /// Used to gather and store additional flow-insensitive information about variables.
         /// </summary>
@@ -54,7 +20,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             /// <summary>
             /// Records parameters which need to be deep copied and dealiased upon routine start.
             /// </summary>
-            public VariableMask NeedPassValueParams;
+            public BitMask NeedPassValueParams;
         }
 
         /// <summary>
@@ -92,7 +58,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     && !_flowContext.IsReference(varindex = _flowContext.GetVarIndex(varRef.Name.NameValue))
                     && !varRef.Access.MightChange)
                 {
-                    // Passing a parameter as an argument by value to another function is a safe use which does not
+                    // Passing a parameter as an argument by value to another routine is a safe use which does not
                     // require it to be deeply copied (the called function will do it on its own if necessary)
                     return default;
                 }
