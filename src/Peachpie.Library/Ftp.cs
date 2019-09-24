@@ -587,11 +587,7 @@ namespace Pchp.Library
 
             try
             {
-                // Unix timestamp
-                System.DateTime mdDateTime = resource.Client.GetModifiedTime(remote_file,FtpDate.Original);
-                System.DateTime dtDateTime = new System.DateTime(1970,1, 1, 0, 0, 0, 0, System.DateTimeKind.Unspecified);
-                TimeSpan diff = mdDateTime - dtDateTime;
-                return (long)diff.TotalSeconds;
+                return DateTimeUtils.UtcToUnixTimeStamp(resource.Client.GetModifiedTime(remote_file, FtpDate.Original));
             }
             catch (FtpCommandException ex) { PhpException.Throw(PhpError.Warning, ex.Message); }
             catch (ArgumentException ex) { PhpException.Throw(PhpError.Warning, Resources.Resources.file_not_exists, ex.ParamName); }
