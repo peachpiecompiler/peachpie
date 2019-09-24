@@ -6,6 +6,7 @@ using Pchp.Core;
 using FluentFTP;
 using System.IO;
 using System.Net.Sockets;
+using Pchp.Library.Streams;
 
 namespace Pchp.Library
 {
@@ -24,6 +25,7 @@ namespace Pchp.Library
         public const int FTP_AUTOSEEK = 1;
         public const int FTP_TIMEOUT_SEC = 0;
         public const int FTP_USEPASVADDRESS = 2;
+        public const int FTP_AUTORESUME = -1;
 
         #endregion
 
@@ -36,6 +38,7 @@ namespace Pchp.Library
         {
             private int _timeout = 90000; // ms
             private bool _usepasvaddress = true;
+            private bool _autoseek = true;
 
             /// <summary>
             /// Constructor
@@ -64,6 +67,7 @@ namespace Pchp.Library
             }
 
             public bool UsePASVAddress { get => _usepasvaddress; set => _usepasvaddress = value; }
+            public bool Autoseek { get => _autoseek; set => _autoseek = value; }
 
             protected override void FreeManaged()
             {
@@ -92,7 +96,7 @@ namespace Pchp.Library
 
         #endregion
 
-        #region ftp_connect, ftp_login, ftp_put, ftp_close
+        #region ftp_connect, ftp_login, ftp_put, ftp_close, ftp_ssl_connect
 
         private static PhpResource Connect(FtpClient client, int port = 21, int timeout = 90)
         {
@@ -134,6 +138,22 @@ namespace Pchp.Library
             return Connect(client, port, timeout);
         }
 
+        /// <summary>
+        /// Opens an explicit SSL-FTP connection to the specified host. That implies that ftp_ssl_connect() will succeed even if the server is not configured for SSL-FTP, or its certificate is invalid. Only when ftp_login() is called, the client will send the appropriate AUTH FTP command, so ftp_login() will fail in the mentioned cases.
+        /// </summary>
+        /// <param name="host">The FTP server address. This parameter shouldn't have any trailing slashes and shouldn't be prefixed with ftp://.</param>
+        /// <param name="port">This parameter specifies an alternate port to connect to. If it is omitted or set to zero, then the default FTP port, 21, will be used.</param>
+        /// <param name="timeout">This parameter specifies the timeout for all subsequent network operations. If omitted, the default value is 90 seconds. The timeout can be changed and queried at any time with ftp_set_option() and ftp_get_option().</param>
+        /// <returns>Returns a SSL-FTP stream on success or FALSE on error.</returns>
+        [return: CastToFalse]
+        public static PhpResource ftp_ssl_connect(string host, int port = 21, int timeout = 90)
+        {
+            FtpClient client = new FtpClient(host);
+            //Ssl configuration
+            client.EncryptionMode = FtpEncryptionMode.Implicit;
+            client.SslProtocols = System.Security.Authentication.SslProtocols.Ssl3;
+
+            return Connect(client, port, timeout);
         }
 
         /// <summary>
