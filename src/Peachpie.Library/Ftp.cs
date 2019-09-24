@@ -671,6 +671,47 @@ namespace Pchp.Library
 
             return false;
         }
+
+        /// <summary>
+        /// Uploads the data from a file pointer to a remote file on the FTP server.
+        /// </summary>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <param name="remote_file">The remote file path.</param>
+        /// <param name="handle">An open file pointer on the local file. Reading stops at end of file.</param>
+        /// <param name="mode">The transfer mode. Must be either FTP_ASCII or FTP_BINARY.</param>
+        /// <param name="startpos">The position in the remote file to start uploading to.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool ftp_fput(PhpResource ftp_stream, string remote_file, PhpResource handle, int mode = FTP_IMAGE, int startpos = 0)
+        {
+            // Check file resource
+            var stream = PhpStream.GetValid(handle);
+            if (stream == null)
+            {
+                return false;
+            }
+            // Check ftp_stream resource
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+                return false;
+
+            resource.Client.UploadDataType = (mode == 1) ? FtpDataType.ASCII : FtpDataType.Binary;
+
+            try
+            {
+                if (startpos !=0)
+                {
+                    // Not supported because ftp library does not support this option 
+                    PhpException.Throw(PhpError.Warning, Resources.Resources.option_not_supported);
+                }
+
+                return resource.Client.Upload(stream.RawStream,remote_file,FtpExists.Overwrite);
+            }
+            catch (FtpException ex) { PhpException.Throw(PhpError.Warning, ex.InnerException.Message); }
+            catch (ArgumentException ex) { PhpException.Throw(PhpError.Warning, Resources.Resources.file_not_exists, ex.ParamName); }
+
+            return false;
+        }
+
         /// <summary>
         /// Sends a SITE command to the server
         /// </summary>
