@@ -475,7 +475,7 @@ namespace Peachpie.CodeAnalysis.Errors {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Use of &apos;__destruct&apos; is discouraged. Garbage collection is non-deterministic unlike in PHP..
+        ///   Looks up a localized string similar to Use of &apos;__destruct&apos; is discouraged. Garbage collection behavior is a subject to change..
         /// </summary>
         internal static string INF_DestructDiscouraged {
             get {
