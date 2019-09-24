@@ -7,6 +7,7 @@ using FluentFTP;
 using System.IO;
 using System.Net.Sockets;
 using Pchp.Library.Streams;
+using System.Security.Authentication;
 
 namespace Pchp.Library
 {
@@ -149,9 +150,11 @@ namespace Pchp.Library
         public static PhpResource ftp_ssl_connect(string host, int port = 21, int timeout = 90)
         {
             FtpClient client = new FtpClient(host);
-            //Ssl configuration
-            client.EncryptionMode = FtpEncryptionMode.Implicit;
-            client.SslProtocols = System.Security.Authentication.SslProtocols.Ssl3;
+            // Ssl configuration
+            client.EncryptionMode = FtpEncryptionMode.Explicit;
+            client.SslProtocols = SslProtocols.None;
+            // ftp_ssl_connect() opens an explicit SSL-FTP connection to the specified host. That implies that ftp_ssl_connect() will succeed even if the server is not configured for SSL-FTP, or its certificate is invalid. 
+            client.ValidateCertificate += new FtpSslValidation((FtpClient control, FtpSslValidationEventArgs e)=> { e.Accept = true; });
 
             return Connect(client, port, timeout);
         }
