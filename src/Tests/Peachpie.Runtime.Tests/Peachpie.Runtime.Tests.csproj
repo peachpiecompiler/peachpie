@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Peachpie.Runtime\Peachpie.Runtime.csproj" />
+    <ProjectReference Include="..\..\Peachpie.Runtime\Peachpie.Library.csproj" />
   </ItemGroup>
 
   <ItemGroup>

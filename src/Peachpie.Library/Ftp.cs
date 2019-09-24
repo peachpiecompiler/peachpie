@@ -83,7 +83,8 @@ namespace Pchp.Library
             var h = context as FtpResource;
             if (h == null || !h.IsValid)
             {
-                PhpException.InvalidArgumentType(nameof(context), PhpResource.PhpTypeName);
+                PhpException.Throw(PhpError.Warning, Resources.Resources.invalid_context_resource);
+                //PhpException.InvalidArgumentType(nameof(context), PhpResource.PhpTypeName);
             }
 
             return h;
@@ -93,17 +94,8 @@ namespace Pchp.Library
 
         #region ftp_connect, ftp_login, ftp_put, ftp_close
 
-        [return: CastToFalse]
-        /// <summary>
-        /// Opens an FTP connection to the specified host.
-        /// </summary>
-        /// <param name="host">The FTP server address. This parameter shouldn't have any trailing slashes and shouldn't be prefixed with ftp://.</param>
-        /// <param name="port">This parameter specifies an alternate port to connect to. If it is omitted or set to zero, then the default FTP port, 21, will be used.</param>
-        /// <param name="timeout">This parameter specifies the timeout in seconds for all subsequent network operations. If omitted, the default value is 90 seconds. The timeout can be changed and queried at any time with ftp_set_option() and ftp_get_option().</param>
-        /// <returns>Returns a FTP stream on success or FALSE on error.</returns>
-        public static PhpResource ftp_connect(string host, int port = 21, int timeout = 90)
+        private static PhpResource Connect(FtpClient client, int port = 21, int timeout = 90)
         {
-            FtpClient client = new FtpClient(host);
             client.ConnectTimeout = timeout * 1000;
             client.Port = port;
             client.Credentials = null; // Disable anonymous login
@@ -121,10 +113,27 @@ namespace Pchp.Library
                     return null;
                 }
 
-                throw ex;
+                throw;
             }
 
-            return new FtpResource(client, timeout);
+            return new FtpResource(client, client.ConnectTimeout / 1000);
+        }
+
+        /// <summary>
+        /// Opens an FTP connection to the specified host.
+        /// </summary>
+        /// <param name="host">The FTP server address. This parameter shouldn't have any trailing slashes and shouldn't be prefixed with ftp://.</param>
+        /// <param name="port">This parameter specifies an alternate port to connect to. If it is omitted or set to zero, then the default FTP port, 21, will be used.</param>
+        /// <param name="timeout">This parameter specifies the timeout in seconds for all subsequent network operations. If omitted, the default value is 90 seconds. The timeout can be changed and queried at any time with ftp_set_option() and ftp_get_option().</param>
+        /// <returns>Returns a FTP stream on success or FALSE on error.</returns>
+        [return: CastToFalse]
+        public static PhpResource ftp_connect(string host, int port = 21, int timeout = 90)
+        {
+            FtpClient client = new FtpClient(host);
+
+            return Connect(client, port, timeout);
+        }
+
         }
 
         /// <summary>
@@ -184,8 +193,11 @@ namespace Pchp.Library
             // Two types of data transfer
             resource.Client.UploadDataType = (mode == 1) ? FtpDataType.ASCII : FtpDataType.Binary;
 
-            if (startpos == 0) // https://github.com/php/php-src/blob/a1479fbbd9d4ad53fb6b0ed027548ea078558f5b/ext/ftp/ftp.c
-                throw new NotSupportedException();
+            if (startpos > 0) 
+            {
+                // Not supported because ftp library does not support this option 
+                PhpException.Throw(PhpError.Warning, Resources.Resources.option_not_supported);
+            }
 
             try
             {
@@ -272,17 +284,20 @@ namespace Pchp.Library
         /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
         /// <param name="directory">The name of the directory that will be created.</param>
         /// <returns>Returns the newly created directory name on success or FALSE on error.</returns>
-        public static PhpValue ftp_mkdir(PhpResource ftp_stream, string directory)
+        [return: CastToFalse]
+        public static string ftp_mkdir(PhpResource ftp_stream, string directory)
         {
             var resource = ValidateFtpResource(ftp_stream);
             if (resource == null)
-                return PhpValue.False;
+                return null;
+
+            string workingDirectory = resource.Client.GetWorkingDirectory();
 
             if (FtpCommand(directory, resource.Client.CreateDirectory))
-                return PhpValue.Create(directory);
+                return workingDirectory == "/" ? $"/{directory}" : $"{workingDirectory}/{directory}";
             else
-                return PhpValue.False;
-        }     
+                return null;
+        }
 
         /// <summary>
         /// Changes the current directory to the specified one.
@@ -294,7 +309,7 @@ namespace Pchp.Library
         {
             var resource = ValidateFtpResource(ftp_stream);
             if (resource == null)
-                return PhpValue.False;
+                return false;
 
             return FtpCommand(directory, resource.Client.SetWorkingDirectory);
         }
@@ -314,7 +329,7 @@ namespace Pchp.Library
         {
             var resource = ValidateFtpResource(ftp_stream);
             if (resource == null)
-                return PhpValue.False;
+                return false;
 
             try
             {
@@ -332,13 +347,14 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
         /// <returns>Returns the current directory name or FALSE on error.</returns>
-        public static PhpValue ftp_pwd(PhpResource ftp_stream)
+        [return: CastToFalse]
+        public static string ftp_pwd(PhpResource ftp_stream)
         {
             var resource = ValidateFtpResource(ftp_stream);
             if (resource == null)
-                return PhpValue.False;
+                return null;
 
-            return PhpValue.Create(resource.Client.GetWorkingDirectory());
+            return resource.Client.GetWorkingDirectory();
         }
 
         /// <summary>
@@ -356,7 +372,7 @@ namespace Pchp.Library
             switch (option)
             {
                 case FTP_AUTOSEEK:
-                    throw new NotSupportedException();
+                    return resource.Autoseek;
                 case FTP_TIMEOUT_SEC:
                     return PhpValue.Create(resource.Client.ConnectTimeout);
                 case FTP_USEPASVADDRESS: // Ignore the IP address returned by the FTP server in response to the PASV command and instead use the IP address that was supplied in the ftp_connect()
@@ -383,9 +399,15 @@ namespace Pchp.Library
             switch (option)
             {
                 case FTP_AUTOSEEK:
-                    throw new NotSupportedException();
+                    if (!value.IsBoolean)
+                    {
+                        PhpException.Throw(PhpError.Warning, Resources.Resources.unexpected_arg_given, "value", "Boolean", value.TypeCode.ToString());
+                        return false;
+                    }
+                    resource.Autoseek = value.ToBoolean();
+                    return true;
                 case FTP_TIMEOUT_SEC:
-                    if (value.IsInteger())
+                    if (!value.IsInteger())
                     {
                         PhpException.Throw(PhpError.Warning, Resources.Resources.unexpected_arg_given, "value", "int", value.TypeCode.ToString());
                         return false;
@@ -454,6 +476,20 @@ namespace Pchp.Library
             return true;
         }
 
+        private static int ConvertDecToOctal(int decimalNumber)
+        {
+            int octalNumber = 0;
+            int position = 1;
+            while (decimalNumber != 0)
+            {
+                octalNumber += decimalNumber % 8 * position;
+                position *= 10;
+                decimalNumber /= 8;
+            }
+
+            return octalNumber;
+        }
+
         /// <summary>
         /// Sets the permissions on the specified remote file to mode.
         /// </summary>
@@ -469,7 +505,7 @@ namespace Pchp.Library
 
             try
             {
-                resource.Client.Chmod(filename, mode);
+                resource.Client.Chmod(filename, ConvertDecToOctal(mode));
                 return mode;
             }
             catch (FtpCommandException ex) { PhpException.Throw(PhpError.Warning, ex.Message); }
@@ -483,14 +519,15 @@ namespace Pchp.Library
         /// </summary>
         /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
         /// <returns>Returns the remote system type, or FALSE on error.</returns>
-        public static PhpValue ftp_systype(PhpResource ftp_stream)
+        [return: CastToFalse]
+        public static string ftp_systype(PhpResource ftp_stream)
         {
             var resource = ValidateFtpResource(ftp_stream);
             if (resource == null)
-                return PhpValue.False;
+                return null;
 
             // Inspired by https://github.com/php/php-src/blob/a1479fbbd9d4ad53fb6b0ed027548ea078558f5b/ext/ftp/ftp.c#L411
-            return PhpValue.Create(resource.Client.SystemType.Split(' ')[0]);
+            return resource.Client.SystemType.Split(' ')[0];
         }
 
         /// <summary>
@@ -499,20 +536,21 @@ namespace Pchp.Library
         /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
         /// <param name="directory">The directory to be listed.</param>
         /// <returns>Returns an array of filenames from the specified directory on success or FALSE on error.</returns>
-        public static PhpValue ftp_nlist(PhpResource ftp_stream, string directory)
+        [return: CastToFalse]
+        public static PhpArray ftp_nlist(PhpResource ftp_stream, string directory)
         {
             var resource = ValidateFtpResource(ftp_stream);
             if (resource == null)
-                return PhpValue.False;
+                return null;
 
             try
             {
-                return PhpValue.Create(new PhpArray(resource.Client.GetNameListing()));
+                return new PhpArray(resource.Client.GetNameListing());
             }
             catch (FtpCommandException ex) { PhpException.Throw(PhpError.Warning, ex.Message); }
             catch (ArgumentException ex) { PhpException.Throw(PhpError.Warning, Resources.Resources.file_not_exists, ex.ParamName); }
 
-            return PhpValue.False;
+            return null;
         }
 
         /// <summary>
@@ -530,8 +568,8 @@ namespace Pchp.Library
             try
             {
                 // Unix timestamp
-                System.DateTime mdDateTime = resource.Client.GetModifiedTime(remote_file);
-                System.DateTime dtDateTime = new System.DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+                System.DateTime mdDateTime = resource.Client.GetModifiedTime(remote_file,FtpDate.Original);
+                System.DateTime dtDateTime = new System.DateTime(1970,1, 1, 0, 0, 0, 0, System.DateTimeKind.Unspecified);
                 TimeSpan diff = mdDateTime - dtDateTime;
                 return (long)diff.TotalSeconds;
             }
@@ -548,11 +586,12 @@ namespace Pchp.Library
         /// <param name="directory">The directory path. May include arguments for the LIST command.</param>
         /// <param name="recursive">If set to TRUE, the issued command will be LIST -R.</param>
         /// <returns>Returns an array where each element corresponds to one line of text. Returns FALSE when passed directory is invalid.</returns>
-        public static PhpValue ftp_rawlist(PhpResource ftp_stream, string directory, bool recursive = false)
+        [return: CastToFalse]
+        public static PhpArray ftp_rawlist(PhpResource ftp_stream, string directory, bool recursive = false)
         {
             var resource = ValidateFtpResource(ftp_stream);
             if (resource == null)
-                return PhpValue.False;
+                return null;
 
             try
             {
@@ -562,12 +601,12 @@ namespace Pchp.Library
                 else
                     list = resource.Client.GetListing(directory, FtpListOption.ForceList);
 
-                return PhpValue.Create(new PhpArray(Getlist(list)));
+                return new PhpArray(Getlist(list));
             }
             catch (FtpCommandException ex) { PhpException.Throw(PhpError.Warning, ex.Message); }
             catch (ArgumentException ex) { PhpException.Throw(PhpError.Warning, Resources.Resources.file_not_exists, ex.ParamName); }
 
-            return PhpValue.False;
+            return null;
         }
 
         private static string[] Getlist(FtpListItem[] list)
@@ -581,5 +620,84 @@ namespace Pchp.Library
         }
 
         #endregion
+
+        #region ftp_fget, ftp_fput, ftp_site
+
+        /// <summary>
+        /// Retrieves remote_file from the FTP server, and writes it to the given file pointer.
+        /// </summary>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <param name="handle">An open file pointer in which we store the data.</param>
+        /// <param name="remotefile">The remote file path.</param>
+        /// <param name="mode">The transfer mode. Must be either FTP_ASCII or FTP_BINARY.</param>
+        /// <param name="resumepos">The position in the remote file to start downloading from.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool ftp_fget(PhpResource ftp_stream, PhpResource handle, string remotefile, int mode = FTP_IMAGE, int resumepos = 0)
+        {
+            // Check file resource
+            var stream = PhpStream.GetValid(handle);
+            if (stream == null)
+            {
+                return false;
+            }
+            // Check ftp_stream resource
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+                return false;
+
+            resource.Client.DownloadDataType = (mode == 1) ? FtpDataType.ASCII : FtpDataType.Binary;
+
+            // Ignore autoresume if autoseek is switched off 
+            if (resource.Autoseek && resumepos == FTP_AUTORESUME)
+                resumepos = 0;
+
+            if(resource.Autoseek && resumepos!=0)
+            {
+                if (resumepos == FTP_AUTORESUME)
+                {
+                    stream.Seek(0, SeekOrigin.End);
+                    resumepos = stream.Tell();
+                }
+                else
+                    stream.Seek(resumepos, SeekOrigin.Begin);
+            }
+
+            try
+            {
+                return resource.Client.Download(stream.RawStream, remotefile, resumepos);
+            }
+            catch (FtpException ex) { PhpException.Throw(PhpError.Warning, ex.InnerException.Message); }
+            catch (ArgumentException ex) { PhpException.Throw(PhpError.Warning, Resources.Resources.file_not_exists, ex.ParamName); }
+
+            return false;
+        }
+        /// <summary>
+        /// Sends a SITE command to the server
+        /// </summary>
+        /// <param name="ftp_stream">The link identifier of the FTP connection.</param>
+        /// <param name="command">The SITE command. Note that this parameter isn't escaped so there may be some issues with filenames containing spaces and other characters.</param>
+        /// <returns>Returns TRUE on success or FALSE on failure.</returns>
+        public static bool ftp_site(PhpResource ftp_stream, string command)
+        {
+            // Check ftp_stream resource
+            var resource = ValidateFtpResource(ftp_stream);
+            if (resource == null)
+                return false;
+
+            try
+            {
+                FtpReply reply = resource.Client.Execute($"SITE {command}");
+
+                int code = System.Convert.ToInt32(reply.Code);
+
+                return !(code < 200 || code >= 300);
+            }
+            catch (FtpException ex) { PhpException.Throw(PhpError.Warning, ex.InnerException.Message); }
+
+            return false;
+        }
+
+        #endregion
+
     }
 }
