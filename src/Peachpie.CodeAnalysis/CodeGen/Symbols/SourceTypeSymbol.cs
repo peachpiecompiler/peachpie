@@ -232,54 +232,54 @@ namespace Pchp.CodeAnalysis.Symbols
 
             module.SynthesizedManager.AddMethod(this, dispose);
 
-            //
-            // Finalize()
-            //
-            var finalize = new SynthesizedFinalizeSymbol(this)
-            {
-                ForwardedCall = dispose,
-            };
+            ////
+            //// Finalize()
+            ////
+            //var finalize = new SynthesizedFinalizeSymbol(this)
+            //{
+            //    ForwardedCall = dispose,
+            //};
 
-            Debug.Assert(finalize.OverriddenMethod != null);
+            //Debug.Assert(finalize.OverriddenMethod != null);
 
-            module.SetMethodBody(finalize, MethodGenerator.GenerateMethodBody(module, finalize, il =>
-            {
-                var thisPlace = new ArgPlace(this, 0);
-                var ctxPlace = new FieldPlace(thisPlace, this.ContextStore, module);
-                var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, this, ctxPlace, thisPlace)
-                {
-                    CallerType = this,
-                };
+            //module.SetMethodBody(finalize, MethodGenerator.GenerateMethodBody(module, finalize, il =>
+            //{
+            //    var thisPlace = new ArgPlace(this, 0);
+            //    var ctxPlace = new FieldPlace(thisPlace, this.ContextStore, module);
+            //    var cg = new CodeGenerator(il, module, diagnostics, module.Compilation.Options.OptimizationLevel, false, this, ctxPlace, thisPlace)
+            //    {
+            //        CallerType = this,
+            //    };
 
-                // 
-                cg.Builder.OpenLocalScope(ScopeType.TryCatchFinally);
-                // try {
-                cg.Builder.OpenLocalScope(ScopeType.Try);
+            //    // 
+            //    cg.Builder.OpenLocalScope(ScopeType.TryCatchFinally);
+            //    // try {
+            //    cg.Builder.OpenLocalScope(ScopeType.Try);
 
-                // Dispose()
-                cg.EmitPop(cg.EmitForwardCall(dispose, finalize, callvirt: false));
-                //if (cg.EmitPdbSequencePoints) cg.Builder.EmitOpCode(ILOpCode.Nop);
+            //    // Dispose()
+            //    cg.EmitPop(cg.EmitForwardCall(dispose, finalize, callvirt: false));
+            //    //if (cg.EmitPdbSequencePoints) cg.Builder.EmitOpCode(ILOpCode.Nop);
 
-                // }
-                cg.Builder.CloseLocalScope();
-                // finally {
-                cg.Builder.OpenLocalScope(ScopeType.Finally);
+            //    // }
+            //    cg.Builder.CloseLocalScope();
+            //    // finally {
+            //    cg.Builder.OpenLocalScope(ScopeType.Finally);
 
-                // base.Finalize()
-                thisPlace.EmitLoad(cg.Builder);
-                cg.EmitCall(ILOpCode.Call, finalize.ExplicitOverride);
-                //if (cg.EmitPdbSequencePoints) cg.Builder.EmitOpCode(ILOpCode.Nop);
+            //    // base.Finalize()
+            //    thisPlace.EmitLoad(cg.Builder);
+            //    cg.EmitCall(ILOpCode.Call, finalize.ExplicitOverride);
+            //    //if (cg.EmitPdbSequencePoints) cg.Builder.EmitOpCode(ILOpCode.Nop);
 
-                // }
-                cg.Builder.CloseLocalScope();
-                cg.Builder.CloseLocalScope();
+            //    // }
+            //    cg.Builder.CloseLocalScope();
+            //    cg.Builder.CloseLocalScope();
 
-                // .ret
-                cg.EmitRet(DeclaringCompilation.GetSpecialType(SpecialType.System_Void));
+            //    // .ret
+            //    cg.EmitRet(DeclaringCompilation.GetSpecialType(SpecialType.System_Void));
 
-            }, null, diagnostics, false));
+            //}, null, diagnostics, false));
 
-            module.SynthesizedManager.AddMethod(this, finalize);
+            //module.SynthesizedManager.AddMethod(this, finalize);
         }
 
         void EmitPhpCtors(ImmutableArray<MethodSymbol> instancectors, Emit.PEModuleBuilder module, DiagnosticBag diagnostics)
