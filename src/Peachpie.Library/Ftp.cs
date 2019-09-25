@@ -8,6 +8,7 @@ using System.IO;
 using System.Net.Sockets;
 using Pchp.Library.Streams;
 using System.Security.Authentication;
+using System.Text.RegularExpressions;
 
 namespace Pchp.Library
 {
@@ -216,10 +217,10 @@ namespace Pchp.Library
             // Two types of data transfer
             resource.Client.UploadDataType = (mode == 1) ? FtpDataType.ASCII : FtpDataType.Binary;
 
-            if (startpos > 0) 
+            if (startpos != 0)
             {
-                // Not supported because ftp library does not support this option 
-                PhpException.Throw(PhpError.Warning, Resources.Resources.option_not_supported);
+                // There is no API for this parameter in FluentFTP Library. 
+                throw new NotImplementedException();
             }
 
             try
@@ -713,16 +714,16 @@ namespace Pchp.Library
             if (resource == null)
                 return false;
 
+            if (startpos != 0)
+            {
+                // There is no API for this parameter in FluentFTP Library. 
+                throw new NotImplementedException();
+            }
+
             resource.Client.UploadDataType = (mode == 1) ? FtpDataType.ASCII : FtpDataType.Binary;
 
             try
             {
-                if (startpos !=0)
-                {
-                    // Not supported because ftp library does not support this option 
-                    PhpException.Throw(PhpError.Warning, Resources.Resources.option_not_supported);
-                }
-
                 return resource.Client.Upload(stream.RawStream,remote_file,FtpExists.Overwrite);
             }
             catch (FtpException ex) { PhpException.Throw(PhpError.Warning, ex.InnerException.Message); }
