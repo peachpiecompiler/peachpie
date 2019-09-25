@@ -174,7 +174,7 @@ namespace Pchp.Library.Database
                     Names = GetNames(),
                     DataTypes = GetDataTypes(),
                     RecordsAffected = reader.RecordsAffected,
-                    CustomData = GetCustomData()
+                    CustomData = GetCustomData(),
                 };
 
                 while (reader.Read())

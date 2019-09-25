@@ -114,7 +114,7 @@ namespace Peachpie.Library.MySql
         /// <summary>
         /// The elements are of type <see cref="MySqlDbColumn"/>.
         /// </summary>
-        public ReadOnlyCollection<DbColumn> ColumnSchema => (ReadOnlyCollection<DbColumn>)GetRowCustomData();
+        public IReadOnlyList<DbColumn> ColumnSchema => (IReadOnlyList<DbColumn>)GetRowCustomData();
 
         public MySqlDbColumn GetColumnSchema(int fieldIndex) => CheckFieldIndex(fieldIndex) ? (MySqlDbColumn)ColumnSchema[fieldIndex] : null;
 
@@ -125,7 +125,7 @@ namespace Peachpie.Library.MySql
         {
             // see ColumnSchema
 
-            return Reader.GetColumnSchema();
+            return Reader.FieldCount != 0 ? (IReadOnlyList<DbColumn>)Reader.GetColumnSchema() : Array.Empty<DbColumn>();
 
             //var reader = this.Reader;
             //var columns = reader.GetColumnSchema();
