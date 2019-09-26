@@ -8,7 +8,6 @@ using System.IO;
 using System.Net.Sockets;
 using Pchp.Library.Streams;
 using System.Security.Authentication;
-using System.Text.RegularExpressions;
 
 namespace Pchp.Library
 {
@@ -59,8 +58,9 @@ namespace Pchp.Library
             public FtpClient Client { get; }
             public int Timeout
             {
-                get => _timeout;
+                get => _timeout/1000;
                 set {
+                    Client.ConnectTimeout = value;
                     Client.ReadTimeout = value;
                     Client.DataConnectionConnectTimeout = value;
                     Client.DataConnectionReadTimeout = value;
@@ -102,9 +102,10 @@ namespace Pchp.Library
 
         private static PhpResource Connect(FtpClient client, int port = 21, int timeout = 90)
         {
-            client.ConnectTimeout = timeout * 1000;
-            client.Port = port;
-            client.Credentials = null; // Disable anonymous login
+            FtpResource resource = new FtpResource(client, timeout);
+
+            resource.Client.Port = port;
+            resource.Client.Credentials = null; // Disable anonymous login
 
             try // Try to connect, if excetion, return false
             {
@@ -122,7 +123,7 @@ namespace Pchp.Library
                 throw;
             }
 
-            return new FtpResource(client, client.ConnectTimeout / 1000);
+            return resource;
         }
 
         /// <summary>
@@ -398,7 +399,7 @@ namespace Pchp.Library
                 case FTP_AUTOSEEK:
                     return resource.Autoseek;
                 case FTP_TIMEOUT_SEC:
-                    return PhpValue.Create(resource.Client.ConnectTimeout);
+                    return PhpValue.Create(resource.Timeout);
                 case FTP_USEPASVADDRESS: // Ignore the IP address returned by the FTP server in response to the PASV command and instead use the IP address that was supplied in the ftp_connect()
                     return resource.Client.DataConnectionType != FtpDataConnectionType.PASVEX;
                 default:
@@ -591,7 +592,7 @@ namespace Pchp.Library
 
             try
             {
-                return DateTimeUtils.UtcToUnixTimeStamp(resource.Client.GetModifiedTime(remote_file, FtpDate.Original));
+                return DateTimeUtils.UtcToUnixTimeStamp(resource.Client.GetModifiedTime(remote_file, FtpDate.Original).ToUniversalTime());
             }
             catch (FtpCommandException ex) { PhpException.Throw(PhpError.Warning, ex.Message); }
             catch (ArgumentException ex) { PhpException.Throw(PhpError.Warning, Resources.Resources.file_not_exists, ex.ParamName); }
