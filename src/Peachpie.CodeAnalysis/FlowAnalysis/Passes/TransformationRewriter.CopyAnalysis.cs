@@ -33,19 +33,39 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
         private class CopyAnalysisContext : SingleBlockWalker<VoidStruct>, IFixPointAnalysisContext<CopyAnalysisState>
         {
-            private readonly SourceRoutineSymbol _routine;
+            private readonly Dictionary<BoundCopyValue, int> _copyIndices = new Dictionary<BoundCopyValue, int>();
+            private readonly FlowContext _flowContext;
 
             private CopyAnalysisState _state;
-            private Dictionary<BoundAssignEx, int> _assignmentIndices = new Dictionary<BoundAssignEx, int>();
-            private BitMask _copyNeededAssignments;
+            private BitMask _neededCopies;
 
-            private int VariableCount => _routine.ControlFlowGraph.FlowContext.VarsType.Length;
+            private int VariableCount => _flowContext.VarsType.Length;
 
-            private FlowContext FlowContext => _routine.ControlFlowGraph.FlowContext;
-
-            public CopyAnalysisContext(SourceRoutineSymbol routine)
+            private CopyAnalysisContext(FlowContext flowContext)
             {
-                _routine = routine;
+                _flowContext = flowContext;
+            }
+
+            public static HashSet<BoundCopyValue> TryGetUnnecessaryCopies(SourceRoutineSymbol routine)
+            {
+                var cfg = routine.ControlFlowGraph;
+                var context = new CopyAnalysisContext(cfg.FlowContext);
+                var analysis = new FixPointAnalysis<CopyAnalysisContext, CopyAnalysisState>(context, routine);
+                analysis.Run();
+
+                HashSet<BoundCopyValue> result = null;
+                foreach (var kvp in context._copyIndices)
+                {
+                    if (!context._neededCopies.Get(kvp.Value))
+                    {
+                        if (result == null)
+                            result = new HashSet<BoundCopyValue>();
+
+                        result.Add(kvp.Key);
+                    }
+                }
+
+                return result;
             }
 
             public bool StatesEqual(CopyAnalysisState x, CopyAnalysisState y)
@@ -74,8 +94,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             public CopyAnalysisState MergeStates(CopyAnalysisState x, CopyAnalysisState y)
             {
-                //if (x.Data == y.Data)
-                //    return x;
+                if (x.IsDefault)
+                    return y;
+                else if (y.IsDefault)
+                    return x;
 
                 var merged = new CopyAnalysisState(VariableCount);
                 for (int i = 0; i < merged.Data.Length; i++)
@@ -98,18 +120,18 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 // Handle assignment to a variable
                 VariableHandle trgHandle;
                 if (assign.Target is BoundVariableRef trgVarRef && trgVarRef.Name.IsDirect
-                    && !FlowContext.IsReference(trgHandle = FlowContext.GetVarIndex(trgVarRef.Name.NameValue)))
+                    && !_flowContext.IsReference(trgHandle = _flowContext.GetVarIndex(trgVarRef.Name.NameValue)))
                 {
                     VariableHandle srcHandle;
                     if (MatchExprSkipCopy(assign.Value, out BoundVariableRef srcVarRef, out bool isCopied)
                         && srcVarRef.Name.IsDirect
-                        && !FlowContext.IsReference(srcHandle = FlowContext.GetVarIndex(srcVarRef.Name.NameValue)))
+                        && !_flowContext.IsReference(srcHandle = _flowContext.GetVarIndex(srcVarRef.Name.NameValue)))
                     {
                         if (isCopied)
                         {
                             // Make the assignment a candidate for copy removal, possibly causing aliasing.
                             // It is removed if either trgVar or srcVar are modified later.
-                            int assignIndex = GetAssignmentIndex(assign);
+                            int assignIndex = EnsureCopyIndex((BoundCopyValue)assign.Value);
                             var assignMask = BitMask.FromSingleValue(assignIndex);
                             _state.Data[trgHandle] = assignMask;
                             _state.Data[srcHandle] |= assignMask;
@@ -146,7 +168,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 {
                     for (int i = 0; i < _state.Data.Length; i++)
                     {
-                        _copyNeededAssignments |= _state.Data[i];
+                        _neededCopies |= _state.Data[i];
                     }
                 }
 
@@ -161,10 +183,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                     }
                     else
                     {
-                        var varindex = FlowContext.GetVarIndex(x.Name.NameValue);
-                        if (!FlowContext.IsReference(varindex))
+                        var varindex = _flowContext.GetVarIndex(x.Name.NameValue);
+                        if (!_flowContext.IsReference(varindex))
                         {
-                            _copyNeededAssignments |= _state.Data[varindex];
+                            _neededCopies |= _state.Data[varindex];
                         }
                         else
                         {
@@ -177,13 +199,12 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 return default;
             }
 
-            private int GetAssignmentIndex(BoundAssignEx assign)
+            private int EnsureCopyIndex(BoundCopyValue copy)
             {
-                int index;
-                if (!_assignmentIndices.TryGetValue(assign, out index))
+                if (!_copyIndices.TryGetValue(copy, out int index))
                 {
-                    index = _assignmentIndices.Count;
-                    _assignmentIndices.Add(assign, index);
+                    index = _copyIndices.Count;
+                    _copyIndices.Add(copy, index);
                 }
 
                 return index;

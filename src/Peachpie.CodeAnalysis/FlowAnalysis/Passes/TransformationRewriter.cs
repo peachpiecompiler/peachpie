@@ -19,6 +19,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         private readonly DelayedTransformations _delayedTransformations;
         private readonly SourceRoutineSymbol _routine;
         private readonly VariableInfos _varInfos;
+        private readonly HashSet<BoundCopyValue> _unnecessaryCopies;    // Possibly null if all are necessary
 
         protected PhpCompilation DeclaringCompilation => _routine.DeclaringCompilation;
         protected BoundTypeRefFactory BoundTypeRefFactory => DeclaringCompilation.TypeRefFactory;
@@ -215,6 +216,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             // Gather variable information not present in the previous analysis
             _varInfos = VariableInfoWalker.Analyze(_routine);
+
+            // Gather information about value copy operations which can be removed
+            _unnecessaryCopies = CopyAnalysisContext.TryGetUnnecessaryCopies(_routine);
         }
 
         private void TryTransformParameters()
@@ -349,7 +353,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
         public override object VisitCopyValue(BoundCopyValue x)
         {
             var valueEx = (BoundExpression)Accept(x.Expression);
-            if (valueEx.IsDeeplyCopied)
+            if (valueEx.IsDeeplyCopied && _unnecessaryCopies?.Contains(x) != true)
             {
                 return x.Update(valueEx);
             }
