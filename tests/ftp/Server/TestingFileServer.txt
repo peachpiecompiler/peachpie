@@ -1,0 +1,5 @@
+FTP URL syntax is described in RFC 1738, taking the form: ftp://[user[:password]@]host[:port]/url-path (the bracketed parts are optional).
+For example, the URL ftp://public.ftp-servers.example.com/mydirectory/myfile.txt represents the file myfile.txt from the directory mydirectory on the server public.ftp-servers.example.com as an FTP resource. The URL ftp://user001:secretpassword@private.ftp-servers.example.com/mydirectory/myfile.txt adds a specification of the username and password that must be used to access this resource.
+More details on specifying a username and password may be found in the browsers' documentation (e.g., Firefox[13] and Internet Explorer[14]). By default, most web browsers use passive (PASV) mode, which more easily traverses end-user firewalls.
+
+Some variation has existed in how different browsers treat path resolution in cases where there is a non-root home directory for a user.[15]
