@@ -32,7 +32,7 @@ namespace Peachpie.CodeAnalysis.Utilities
     internal class FixPointAnalysis<TContext, TState>
         where TContext : IFixPointAnalysisContext<TState>
     {
-        private class BlockAnalysis
+        private struct BlockAnalysis
         {
             public bool InWorklist;
             public TState Before;
@@ -52,11 +52,9 @@ namespace Peachpie.CodeAnalysis.Utilities
             _worklist = new PriorityQueue<BoundBlock>(new BoundBlock.OrdinalComparer());
 
             var startBlock = cfg.Start;
-            var startAnalysis = new BlockAnalysis { Before = _context.GetInitialState(), After = default };
-
-            _results[startBlock.Ordinal] = startAnalysis;
             _worklist.Push(startBlock);
-            startAnalysis.InWorklist = true;
+
+            _results[startBlock.Ordinal] = new BlockAnalysis { InWorklist = true, Before = _context.GetInitialState(), After = default };
         }
 
         public void Run()
@@ -66,7 +64,7 @@ namespace Peachpie.CodeAnalysis.Utilities
                 var block = _worklist.Top;
                 _worklist.Pop();
 
-                var analysis = _results[block.Ordinal];
+                ref var analysis = ref _results[block.Ordinal];
                 analysis.InWorklist = false;
 
                 var after = _context.ProcessBlock(block, analysis.Before);
@@ -75,7 +73,7 @@ namespace Peachpie.CodeAnalysis.Utilities
                     analysis.After = after;
                     foreach (var nextBlock in block.NextEdge?.Targets ?? Enumerable.Empty<BoundBlock>())
                     {
-                        var nextAnalysis = EnsureResult(nextBlock);
+                        ref var nextAnalysis = ref _results[nextBlock.Ordinal];
 
                         var merged = _context.MergeStates(after, nextAnalysis.Before);
 
@@ -88,20 +86,6 @@ namespace Peachpie.CodeAnalysis.Utilities
                         }
                     }
                 }
-            }
-        }
-
-        private BlockAnalysis EnsureResult(BoundBlock block)
-        {
-            if (_results[block.Ordinal] is BlockAnalysis result)
-            {
-                return result;
-            }
-            else
-            {
-                result = new BlockAnalysis();
-                _results[block.Ordinal] = result;
-                return result;
             }
         }
 
