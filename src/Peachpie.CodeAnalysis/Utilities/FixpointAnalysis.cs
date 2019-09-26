@@ -34,32 +34,40 @@ namespace Peachpie.CodeAnalysis.Utilities
     {
         private class BlockAnalysis
         {
+            public bool InWorklist;
             public TState Before;
             public TState After;
         }
 
         TContext _context;
         private readonly Dictionary<BoundBlock, BlockAnalysis> _results;    // TODO: Consider making ordinals continuous and using array
-        private readonly DistinctQueue<BoundBlock> _worklist;               // TODO: Use a simple PriorityQueue (mark insertion in BlockAnalysis?)
+        private readonly PriorityQueue<BoundBlock> _worklist;
 
         public FixPointAnalysis(TContext context, SourceRoutineSymbol routine)
         {
             _context = context;
 
             _results = new Dictionary<BoundBlock, BlockAnalysis>();
-            _worklist = new DistinctQueue<BoundBlock>(new BoundBlock.OrdinalComparer());
+            _worklist = new PriorityQueue<BoundBlock>(new BoundBlock.OrdinalComparer());
 
             var startBlock = routine.ControlFlowGraph.Start;
             var startAnalysis = new BlockAnalysis { Before = _context.GetInitialState(), After = default };
+
             _results.Add(startBlock, startAnalysis);
-            _worklist.Enqueue(startBlock);
+            _worklist.Push(startBlock);
+            startAnalysis.InWorklist = true;
         }
 
         public void Run()
         {
-            while (_worklist.TryDequeue(out var block))
+            while (_worklist.Count > 0)
             {
+                var block = _worklist.Top;
+                _worklist.Pop();
+
                 var analysis = _results[block];
+                analysis.InWorklist = false;
+
                 var after = _context.ProcessBlock(block, analysis.Before);
                 if (!_context.StatesEqual(analysis.After, after))
                 {
@@ -73,7 +81,9 @@ namespace Peachpie.CodeAnalysis.Utilities
                         if (!_context.StatesEqual(nextAnalysis.Before, merged))
                         {
                             nextAnalysis.Before = merged;
-                            _worklist.Enqueue(nextBlock);
+
+                            if (!nextAnalysis.InWorklist)
+                                _worklist.Push(nextBlock);
                         }
                     }
                 }
