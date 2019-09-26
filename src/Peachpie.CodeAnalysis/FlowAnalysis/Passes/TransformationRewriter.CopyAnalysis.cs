@@ -95,25 +95,45 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
             public override VoidStruct VisitAssign(BoundAssignEx assign)
             {
-                // TODO: Fix to prevent aliasing from both sides (trg and src)
-                // TODO: Assignment from a different source than another variable should just set the trg set to empty (not passing to VisitVariableRef)
-                // TODO: Handle behaviour in case of aliases
+                // Handle assignment to a variable
+                VariableHandle trgHandle;
                 if (assign.Target is BoundVariableRef trgVarRef && trgVarRef.Name.IsDirect
-                    && MatchExprSkipCopy(assign.Value, out BoundVariableRef srcVarRef, out bool isCopied))
+                    && !FlowContext.IsReference(trgHandle = FlowContext.GetVarIndex(trgVarRef.Name.NameValue)))
                 {
-                    var trgHandle = FlowContext.GetVarIndex(trgVarRef.Name.NameValue);
-                    if (isCopied)
+                    VariableHandle srcHandle;
+                    if (MatchExprSkipCopy(assign.Value, out BoundVariableRef srcVarRef, out bool isCopied)
+                        && srcVarRef.Name.IsDirect
+                        && !FlowContext.IsReference(srcHandle = FlowContext.GetVarIndex(srcVarRef.Name.NameValue)))
                     {
-                        int assignIndex = GetAssignmentIndex(assign);
-                        _state.Data[trgHandle] = BitMask.FromSingleValue(assignIndex);
+                        if (isCopied)
+                        {
+                            // Make the assignment a candidate for copy removal, possibly causing aliasing.
+                            // It is removed if either trgVar or srcVar are modified later.
+                            int assignIndex = GetAssignmentIndex(assign);
+                            var assignMask = BitMask.FromSingleValue(assignIndex);
+                            _state.Data[trgHandle] = assignMask;
+                            _state.Data[srcHandle] |= assignMask;
+                        }
+                        else
+                        {
+                            // The copy was removed by a previous transformation, making them aliases sharing the assignments
+                            _state.Data[trgHandle] = _state.Data[srcHandle];
+                        }
+
+                        // Visiting trgVar would destroy the effort (due to the assignment it's considered as MightChange),
+                        // visiting srcVar is unnecessary
+                        return default;
                     }
                     else
                     {
-                        if (srcVarRef.Name.IsDirect)
-                        {
-                            var srcHandle = FlowContext.GetVarIndex(srcVarRef.Name.NameValue);
-                            _state.Data[trgHandle] = _state.Data[srcHandle];
-                        }
+                        // Analyze the assigned expression
+                        assign.Value.Accept(this);
+
+                        // Do not attempt to remove copying from any other expression, just clear the assignment set for trgVar
+                        _state.Data[trgHandle] = 0;
+
+                        // Prevent from visiting trgVar due to its MightChange property
+                        return default;
                     }
                 }
 
@@ -132,6 +152,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 
                 base.VisitVariableRef(x);
 
+                // If a variable is modified, disable the deletion of all its current assignments
                 if (x.Access.MightChange)
                 {
                     if (!x.Name.IsDirect)
