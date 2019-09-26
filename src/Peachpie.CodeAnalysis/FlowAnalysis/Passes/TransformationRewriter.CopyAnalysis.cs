@@ -13,21 +13,101 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
     {
         private struct CopyAnalysisState
         {
-            public BitMask[] Data;
+            private BitMask[] _data;
 
             public CopyAnalysisState(int varCount)
             {
-                Data = new BitMask[varCount];
+                _data = new BitMask[varCount];
             }
 
-            public bool IsDefault => Data == null;
+            public bool IsDefault => _data == null;
+
+            public int VariableCount => _data.Length;
 
             public CopyAnalysisState Clone()
             {
-                var clone = new CopyAnalysisState(this.Data.Length);
-                this.Data.CopyTo(clone.Data, 0);
+                var clone = new CopyAnalysisState(_data.Length);
+                _data.CopyTo(clone._data, 0);
 
                 return clone;
+            }
+
+            public bool Equals(CopyAnalysisState other)
+            {
+                if (this.IsDefault != other.IsDefault)
+                    return false;
+
+                if ((this.IsDefault && other.IsDefault) || _data == other._data)
+                    return true;
+
+                // We are supposed to compare only states from the same routine
+                Debug.Assert(_data.Length == other._data.Length);
+
+                for (int i = 0; i < other._data.Length; i++)
+                {
+                    if (_data[i] != other._data[i])
+                        return false;
+                }
+
+                return true;
+            }
+
+            public BitMask GetValue(int varIndex) => _data[varIndex];
+
+            public CopyAnalysisState WithMerge(CopyAnalysisState other)
+            {
+                if (this.IsDefault)
+                    return other;
+                else if (other.IsDefault)
+                    return this;
+
+                if (this.Equals(other))
+                {
+                    return this;
+                }
+
+                var merged = new CopyAnalysisState(_data.Length);
+                for (int i = 0; i < merged._data.Length; i++)
+                {
+                    merged._data[i] = _data[i] | other._data[i];
+                }
+
+                return merged;
+            }
+
+            public CopyAnalysisState WithValue(int varIndex, BitMask value)
+            {
+                Debug.Assert(!IsDefault);
+
+                if (_data[varIndex] == value)
+                {
+                    return this;
+                }
+                else
+                {
+                    var result = Clone();
+                    result._data[varIndex] = value;
+                    return result;
+                }
+            }
+
+            public CopyAnalysisState WithCopyAssignment(int trgVarIndex, int srcVarIndex, int copyIndex)
+            {
+                Debug.Assert(!IsDefault);
+
+                var copyMask = BitMask.FromSingleValue(copyIndex);
+
+                if (_data[trgVarIndex] != copyMask || _data[srcVarIndex] != (_data[srcVarIndex] | copyMask))
+                {
+                    var result = Clone();
+                    result._data[trgVarIndex] = copyMask;
+                    result._data[srcVarIndex] |= copyMask;
+                    return result;
+                }
+                else
+                {
+                    return this;
+                }
             }
         }
 
@@ -68,49 +148,15 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                 return result;
             }
 
-            public bool StatesEqual(CopyAnalysisState x, CopyAnalysisState y)
-            {
-                if (x.IsDefault != y.IsDefault)
-                    return false;
+            public bool StatesEqual(CopyAnalysisState x, CopyAnalysisState y) => x.Equals(y);
 
-                if (x.IsDefault && y.IsDefault || x.Data == y.Data)
-                    return true;
+            public CopyAnalysisState GetInitialState() => new CopyAnalysisState(VariableCount);
 
-                Debug.Assert(x.Data.Length == y.Data.Length);
-
-                for (int i = 0; i < x.Data.Length; i++)
-                {
-                    if (x.Data[i] != y.Data[i])
-                        return false;
-                }
-
-                return true;
-            }
-
-            public CopyAnalysisState GetInitialState()
-            {
-                return new CopyAnalysisState(VariableCount);
-            }
-
-            public CopyAnalysisState MergeStates(CopyAnalysisState x, CopyAnalysisState y)
-            {
-                if (x.IsDefault)
-                    return y;
-                else if (y.IsDefault)
-                    return x;
-
-                var merged = new CopyAnalysisState(VariableCount);
-                for (int i = 0; i < merged.Data.Length; i++)
-                {
-                    merged.Data[i] = x.Data[i] | y.Data[i];
-                }
-
-                return merged;
-            }
+            public CopyAnalysisState MergeStates(CopyAnalysisState x, CopyAnalysisState y) => x.WithMerge(y);
 
             public CopyAnalysisState ProcessBlock(BoundBlock block, CopyAnalysisState state)
             {
-                _state = state.Clone();
+                _state = state;
                 block.Accept(this);
                 return _state;
             }
@@ -131,15 +177,13 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         {
                             // Make the assignment a candidate for copy removal, possibly causing aliasing.
                             // It is removed if either trgVar or srcVar are modified later.
-                            int assignIndex = EnsureCopyIndex((BoundCopyValue)assign.Value);
-                            var assignMask = BitMask.FromSingleValue(assignIndex);
-                            _state.Data[trgHandle] = assignMask;
-                            _state.Data[srcHandle] |= assignMask;
+                            int copyIndex = EnsureCopyIndex((BoundCopyValue)assign.Value);
+                            _state = _state.WithCopyAssignment(trgHandle, srcHandle, copyIndex);
                         }
                         else
                         {
                             // The copy was removed by a previous transformation, making them aliases sharing the assignments
-                            _state.Data[trgHandle] = _state.Data[srcHandle];
+                            _state = _state.WithValue(trgHandle, _state.GetValue(srcHandle));
                         }
 
                         // Visiting trgVar would destroy the effort (due to the assignment it's considered as MightChange),
@@ -152,7 +196,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         assign.Value.Accept(this);
 
                         // Do not attempt to remove copying from any other expression, just clear the assignment set for trgVar
-                        _state.Data[trgHandle] = 0;
+                        _state = _state.WithValue(trgHandle, 0);
 
                         // Prevent from visiting trgVar due to its MightChange property
                         return default;
@@ -166,9 +210,9 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             {
                 void MarkAllKnownAssignments()
                 {
-                    for (int i = 0; i < _state.Data.Length; i++)
+                    for (int i = 0; i < _state.VariableCount; i++)
                     {
-                        _neededCopies |= _state.Data[i];
+                        _neededCopies |= _state.GetValue(i);
                     }
                 }
 
@@ -186,7 +230,7 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
                         var varindex = _flowContext.GetVarIndex(x.Name.NameValue);
                         if (!_flowContext.IsReference(varindex))
                         {
-                            _neededCopies |= _state.Data[varindex];
+                            _neededCopies |= _state.GetValue(varindex);
                         }
                         else
                         {
