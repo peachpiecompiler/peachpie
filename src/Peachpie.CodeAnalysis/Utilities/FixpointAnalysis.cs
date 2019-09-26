@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Pchp.CodeAnalysis;
 using Pchp.CodeAnalysis.Semantics.Graph;
@@ -63,9 +64,9 @@ namespace Peachpie.CodeAnalysis.Utilities
                 if (!_context.StatesEqual(analysis.After, after))
                 {
                     analysis.After = after;
-                    foreach (var nextBlock in block.NextEdge?.Targets)
+                    foreach (var nextBlock in block.NextEdge?.Targets ?? Enumerable.Empty<BoundBlock>())
                     {
-                        var nextAnalysis = _results[nextBlock];
+                        var nextAnalysis = EnsureResult(nextBlock);
 
                         var merged = _context.MergeStates(after, nextAnalysis.Before);
 
@@ -79,6 +80,30 @@ namespace Peachpie.CodeAnalysis.Utilities
             }
         }
 
-        public TState GetResult(BoundBlock block) => _results.TryGetOrDefault(block).After;
+        private BlockAnalysis EnsureResult(BoundBlock block)
+        {
+            if (_results.TryGetValue(block, out var result))
+            {
+                return result;
+            }
+            else
+            {
+                result = new BlockAnalysis();
+                _results[block] = result;
+                return result;
+            }
+        }
+
+        public TState GetResult(BoundBlock block)
+        {
+            if (_results.TryGetValue(block, out var value))
+            {
+                return value.After;
+            }
+            else
+            {
+                return default;
+            }
+        }
     }
 }
