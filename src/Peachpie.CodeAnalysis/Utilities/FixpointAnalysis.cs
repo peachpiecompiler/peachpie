@@ -40,20 +40,21 @@ namespace Peachpie.CodeAnalysis.Utilities
         }
 
         TContext _context;
-        private readonly Dictionary<BoundBlock, BlockAnalysis> _results;    // TODO: Consider making ordinals continuous and using array
+        private readonly BlockAnalysis[] _results;    // TODO: Make ordinals continuous to save memory
         private readonly PriorityQueue<BoundBlock> _worklist;
 
         public FixPointAnalysis(TContext context, SourceRoutineSymbol routine)
         {
             _context = context;
 
-            _results = new Dictionary<BoundBlock, BlockAnalysis>();
+            var cfg = routine.ControlFlowGraph;
+            _results = new BlockAnalysis[cfg.Exit.Ordinal + 1];
             _worklist = new PriorityQueue<BoundBlock>(new BoundBlock.OrdinalComparer());
 
-            var startBlock = routine.ControlFlowGraph.Start;
+            var startBlock = cfg.Start;
             var startAnalysis = new BlockAnalysis { Before = _context.GetInitialState(), After = default };
 
-            _results.Add(startBlock, startAnalysis);
+            _results[startBlock.Ordinal] = startAnalysis;
             _worklist.Push(startBlock);
             startAnalysis.InWorklist = true;
         }
@@ -65,7 +66,7 @@ namespace Peachpie.CodeAnalysis.Utilities
                 var block = _worklist.Top;
                 _worklist.Pop();
 
-                var analysis = _results[block];
+                var analysis = _results[block.Ordinal];
                 analysis.InWorklist = false;
 
                 var after = _context.ProcessBlock(block, analysis.Before);
@@ -92,21 +93,21 @@ namespace Peachpie.CodeAnalysis.Utilities
 
         private BlockAnalysis EnsureResult(BoundBlock block)
         {
-            if (_results.TryGetValue(block, out var result))
+            if (_results[block.Ordinal] is BlockAnalysis result)
             {
                 return result;
             }
             else
             {
                 result = new BlockAnalysis();
-                _results[block] = result;
+                _results[block.Ordinal] = result;
                 return result;
             }
         }
 
         public TState GetResult(BoundBlock block)
         {
-            if (_results.TryGetValue(block, out var value))
+            if (_results[block.Ordinal] is var value)
             {
                 return value.After;
             }
