@@ -31,6 +31,7 @@ namespace Peachpie.DiagnosticTests
         private static readonly Regex TypeAnnotationRegex = new Regex(@"/\*\|([^/]*)\|\*/");
         private static readonly Regex RoutinePropertiesRegex = new Regex(@"/\*{version:([0-9]+)}\*/");
         private static readonly Regex ParameterPropertiesRegex = new Regex(@"/\*{skipPass:([01])}\*/");
+        private static readonly Regex OperationPropertiesRegex = new Regex(@"/\*{skipCopy:([01])}\*/");
 
         /// <summary>
         /// Init test class.
@@ -86,6 +87,18 @@ namespace Peachpie.DiagnosticTests
             if (expectedRoutineProps.Count > 0)
             {
                 isCorrect &= CheckRoutineProperties(syntaxTree, compilation.SourceSymbolCollection.AllRoutines, expectedRoutineProps);
+            }
+
+            // Gather and check operation properties if there are any annotations
+            var expectedOpProps = OperationPropertiesRegex.Matches(code);
+            if (expectedOpProps.Count > 0)
+            {
+                var interestingOps = compilation.UserDeclaredRoutines
+                    .OfType<SourceRoutineSymbol>()
+                    .SelectMany(r => OperationSelector.Select(r))
+                    .ToArray();
+
+                isCorrect &= CheckOperationProperties(syntaxTree, interestingOps, expectedOpProps);
             }
 
             Assert.True(isCorrect);
@@ -319,6 +332,30 @@ namespace Peachpie.DiagnosticTests
                     var linePos = GetLinePosition(syntaxTree.GetLineSpan(match.GetTextSpan()));
                     _output.WriteLine(
                         $"Wrong value of SkipPass {actualSkipPass} instead of {expectedSkipPass} of the parameter {param.Name} in {param.Routine.Name} on {linePos.Line},{linePos.Character}");
+                    isCorrect = false;
+                }
+            }
+
+            return isCorrect;
+        }
+
+        private bool CheckOperationProperties(PhpSyntaxTree syntaxTree, IEnumerable<IPhpOperation> interestingOps, MatchCollection expectedOpProps)
+        {
+            var copyPositionSet = new HashSet<int>(
+                interestingOps
+                .OfType<BoundCopyValue>()
+                .Select(c => c.Expression.PhpSyntax.Span.End));
+
+            bool isCorrect = true;
+            foreach (Match match in expectedOpProps)
+            {
+                bool expectedSkipCopy = (int.Parse(match.Groups[1].Value) != 0);
+                bool actualSkipCopy = !copyPositionSet.Contains(match.Index);
+                if (expectedSkipCopy != actualSkipCopy)
+                {
+                    var linePos = GetLinePosition(syntaxTree.GetLineSpan(match.GetTextSpan()));
+                    _output.WriteLine(
+                        $"Wrong value of copy skipping {actualSkipCopy} instead of {expectedSkipCopy} of the expression on {linePos.Line},{linePos.Character}");
                     isCorrect = false;
                 }
             }
