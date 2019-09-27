@@ -63,5 +63,15 @@ namespace Peachpie.CodeAnalysis.Utilities
         public static implicit operator ulong(BitMask type) => type.Mask;
 
         public static implicit operator BitMask(ulong mask) => FromMask(mask);
+
+        public override bool Equals(object obj)
+        {
+            return obj is BitMask mask && Mask == mask.Mask;
+        }
+
+        public override int GetHashCode()
+        {
+            return 1051679217 + Mask.GetHashCode();
+        }
     }
 }

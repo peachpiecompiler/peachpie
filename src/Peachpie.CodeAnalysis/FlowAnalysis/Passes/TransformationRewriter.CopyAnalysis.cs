@@ -11,6 +11,11 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
 {
     partial class TransformationRewriter
     {
+        /// <summary>
+        /// Each state in copy analysis maps each variable to a set of <see cref="BoundCopyValue"/> instances.
+        /// Whenever a variable is modified, all the mapped copy operations are considered unavailable for removal
+        /// due to the possible aliasing.
+        /// </summary>
         private struct CopyAnalysisState
         {
             private BitMask[] _data;
@@ -111,6 +116,10 @@ namespace Pchp.CodeAnalysis.FlowAnalysis.Passes
             }
         }
 
+        /// <summary>
+        /// Implements copy analysis using <see cref="CopyAnalysisState"/>, producing a set of <see cref="BoundCopyValue"/>
+        /// instances available for removal.
+        /// </summary>
         private class CopyAnalysisContext : SingleBlockWalker<VoidStruct>, IFixPointAnalysisContext<CopyAnalysisState>
         {
             private readonly Dictionary<BoundCopyValue, int> _copyIndices = new Dictionary<BoundCopyValue, int>();

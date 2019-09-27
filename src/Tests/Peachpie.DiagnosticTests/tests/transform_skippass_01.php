@@ -27,6 +27,3 @@ function test3($x/*{skipPass:0}*/, array $a/*{skipPass:0}*/) {
   echo $x;
   print_r($a);
 }
-
-test("foo", ['a'], "bar");
-test2("foo", ['a'], "bar");
