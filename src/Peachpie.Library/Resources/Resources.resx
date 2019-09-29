@@ -677,6 +677,7 @@
   </data>
   <data name="invalid_resource" xml:space="preserve">
     <value>Invalid resource type {0}</value>
+  </data>
   <data name="pcre_make_error" xml:space="preserve">
     <value>{0} at offset {1}</value>
   </data>
