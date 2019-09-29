@@ -434,7 +434,7 @@ namespace Pchp.Library
                 case FTP_USEPASVADDRESS:
                     return resource.Client.DataConnectionType != FtpDataConnectionType.PASVEX;
                 default:
-                    PhpException.Throw(PhpError.Warning, Resources.Resources.unknown_option, option.ToString());
+                    PhpException.Throw(PhpError.Warning, Resources.Resources.arg_invalid_value, option.ToString(), nameof(option));
                     return PhpValue.False;
             }
         }
