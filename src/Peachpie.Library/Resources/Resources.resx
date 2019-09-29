@@ -672,6 +672,11 @@
   <data name="var_export_circular_reference" xml:space="preserve">
     <value>var_export does not handle circular references</value>
   </data>
+  <data name="incorrect_pass_or_login" xml:space="preserve">
+    <value>Login or password incorrect!</value>
+  </data>
+  <data name="invalid_resource" xml:space="preserve">
+    <value>Invalid resource type {0}</value>
   <data name="pcre_make_error" xml:space="preserve">
     <value>{0} at offset {1}</value>
   </data>

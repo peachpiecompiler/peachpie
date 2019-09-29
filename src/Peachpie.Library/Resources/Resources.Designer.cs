@@ -718,6 +718,15 @@ namespace Pchp.Library.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Login or password incorrect!.
+        /// </summary>
+        public static string incorrect_pass_or_login {
+            get {
+                return ResourceManager.GetString("incorrect_pass_or_login", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Parse error on line {0}.
         /// </summary>
         public static string ini_parse_error {
@@ -885,6 +894,15 @@ namespace Pchp.Library.Resources {
         public static string invalid_process_resource {
             get {
                 return ResourceManager.GetString("invalid_process_resource", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Invalid resource type {0}.
+        /// </summary>
+        public static string invalid_resource {
+            get {
+                return ResourceManager.GetString("invalid_resource", resourceCulture);
             }
         }
         
