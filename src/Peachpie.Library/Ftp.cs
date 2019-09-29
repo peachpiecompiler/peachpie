@@ -565,14 +565,23 @@ namespace Pchp.Library
         /// <param name="mode">The new permissions, given as an octal value.</param>
         /// <param name="filename">The remote file.</param>
         /// <returns>Returns the new file permissions on success or FALSE on error.</returns>
-        public static PhpValue ftp_chmod(PhpResource ftp_stream, int mode, string filename)
+        [return: CastToFalse]
+        public static int ftp_chmod(PhpResource ftp_stream, int mode, string filename)
         {
             var resource = ValidateFtpResource(ftp_stream);
             if (resource == null)
-                return PhpValue.False;
+            {
+                return -1;
+            }
 
             try
             {
+
+                // FtpClient converts given integer to string,
+                // expecting it to result in unix-chmod like number.
+
+                mode = (mode & 7) + (((mode >> 3) & 7) * 10) + (((mode >> 6) & 7) * 100);   // TODO: move to utils, might be needed for chmod()
+
                 resource.Client.Chmod(filename, mode);
                 return mode;
             }
@@ -585,7 +594,8 @@ namespace Pchp.Library
                 PhpException.Throw(PhpError.Warning, Resources.Resources.file_not_exists, ex.ParamName);
             }
 
-            return PhpValue.False;
+            //
+            return -1;
         }
 
         /// <summary>
